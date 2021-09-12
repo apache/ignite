@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -25,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -35,8 +37,11 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -45,6 +50,7 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 
 /** */
@@ -144,15 +150,50 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testSnapshotCachesStoppedIfLoadingFail() throws Exception {
+    public void testSnapshotCachesStoppedIfLoadingFailOnRemote() throws Exception {
+        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+        scc.cluster().state(ClusterState.ACTIVE);
+
+        copyAndShuffle(snpParts, G.allGrids());
+
+        grid(0).cache(DEFAULT_CACHE_NAME).destroy();
+
+        TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grid(0));
+        commSpi.blockMessages((node, msg) -> msg instanceof SnapshotRequestMessage);
+
+        IgniteSnapshotManager mgr = snp(grid(1));
+        mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
+            @Override public SnapshotSender apply(String s, UUID uuid) {
+                return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
+                    @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                        if (partId(part.getName()) > 0)
+                            throw new IgniteException("Test exception. Uploading partition file fails: " + pair);
+
+                        super.sendPart0(part, cacheDirName, pair, length);
+                    }
+                };
+            }
+        });
+
+        IgniteFuture<?> fut = grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+
+        commSpi.waitForBlocked();
+        commSpi.stopBlock();
+
+        fut.get(TIMEOUT);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSnapshotCachesStoppedIfNodeCrashed() throws Exception {
 
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testSnapshotCachesStoppedIfNodeCrashed() throws Exception {
+    public void testSnapshotRestoreDuringForceReassignment() throws Exception {
 
     }
 

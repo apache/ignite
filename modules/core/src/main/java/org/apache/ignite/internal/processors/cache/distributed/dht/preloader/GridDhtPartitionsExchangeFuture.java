@@ -3587,7 +3587,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     resetVer,
                     ideal.get(part));
 
-                // This map will be send to other nodes in the cluster inside the full message.
+                // This map will be sent to other nodes in the cluster inside the full message.
                 partsToReload.put(entry.getKey(), top.groupId(), part);
             }
         }

@@ -463,6 +463,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         RESTORE_CACHE_GROUP_SNAPSHOT_START,
 
         /**
+         * Cache group restore cache late affinity assignment change phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_LATE_AFFINITY,
+
+        /**
          * Cache group restore rollback phase.
          */
         RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
