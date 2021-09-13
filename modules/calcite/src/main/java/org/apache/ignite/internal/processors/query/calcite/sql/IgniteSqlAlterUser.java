@@ -37,14 +37,14 @@ public class IgniteSqlAlterUser extends SqlDdl {
     private final SqlIdentifier user;
 
     /** */
-    private final SqlNode pwd;
+    private final SqlLiteral pwd;
 
     /** */
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER USER", SqlKind.OTHER_DDL);
 
     /** */
-    protected IgniteSqlAlterUser(SqlParserPos pos, SqlIdentifier user, SqlNode pwd) {
+    protected IgniteSqlAlterUser(SqlParserPos pos, SqlIdentifier user, SqlLiteral pwd) {
         super(OPERATOR, pos);
         this.user = Objects.requireNonNull(user, "user");
         this.pwd = Objects.requireNonNull(pwd, "password");
@@ -77,6 +77,6 @@ public class IgniteSqlAlterUser extends SqlDdl {
      * @return Password
      */
     public String password() {
-        return ((SqlLiteral)pwd).getValueAs(String.class);
+        return pwd.getValueAs(String.class);
     }
 }

@@ -37,14 +37,14 @@ public class IgniteSqlCreateUser extends SqlCreate {
     private final SqlIdentifier user;
 
     /** */
-    private final SqlNode pwd;
+    private final SqlLiteral pwd;
 
     /** */
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE USER", SqlKind.OTHER_DDL);
 
     /** */
-    protected IgniteSqlCreateUser(SqlParserPos pos, SqlIdentifier user, SqlNode pwd) {
+    protected IgniteSqlCreateUser(SqlParserPos pos, SqlIdentifier user, SqlLiteral pwd) {
         super(OPERATOR, pos, false, false);
         this.user = Objects.requireNonNull(user, "user");
         this.pwd = Objects.requireNonNull(pwd, "password");
@@ -77,6 +77,6 @@ public class IgniteSqlCreateUser extends SqlCreate {
      * @return Password
      */
     public String password() {
-        return ((SqlLiteral)pwd).getValueAs(String.class);
+        return pwd.getValueAs(String.class);
     }
 }

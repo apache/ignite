@@ -365,7 +365,7 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
 {
     <USER> user = SimpleIdentifier()
     <WITH> <PASSWORD> password = StringLiteral() {
-        return new IgniteSqlCreateUser(s.end(this), user, password);
+        return new IgniteSqlCreateUser(s.end(this), user, SqlLiteral.unchain(password));
     }
 }
 
@@ -378,7 +378,7 @@ SqlNode SqlAlterUser() :
 {
     <ALTER> { s = span(); } <USER> user = SimpleIdentifier()
     <WITH> <PASSWORD> password = StringLiteral() {
-        return new IgniteSqlAlterUser(s.end(this), user, password);
+        return new IgniteSqlAlterUser(s.end(this), user, SqlLiteral.unchain(password));
     }
 }
 
