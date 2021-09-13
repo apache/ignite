@@ -34,7 +34,7 @@ public abstract class AbstractMetric implements Metric {
      * @param name Name.
      * @param desc Description.
      */
-    public AbstractMetric(String name, String desc) {
+    protected AbstractMetric(String name, String desc) {
         assert name != null;
         assert !name.isEmpty();
 
@@ -62,10 +62,7 @@ public abstract class AbstractMetric implements Metric {
 
         AbstractMetric metric = (AbstractMetric)o;
 
-        if (!name.equals(metric.name))
-            return false;
-
-        return true;
+        return name.equals(metric.name);
     }
 
     /** {@inheritDoc} */

@@ -173,46 +173,34 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        if (iteratorParametersBuilder.sharedCtx == null) {
-            GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
+        boolean stopComps = iteratorParametersBuilder.sharedCtx == null;
 
-            for (GridComponent comp : sctx.kernalContext())
-                comp.start();
+        GridCacheSharedContext<?, ?> sctx = iteratorParametersBuilder.sharedCtx != null
+            ? iteratorParametersBuilder.sharedCtx
+            : prepareSharedCtx(iteratorParametersBuilder);
 
-            return new StandaloneWalRecordsIterator(
-                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-                sctx,
-                iteratorParametersBuilder.ioFactory,
-                resolveWalFiles(iteratorParametersBuilder),
-                iteratorParametersBuilder.filter,
-                iteratorParametersBuilder.lowBound,
-                iteratorParametersBuilder.highBound,
-                iteratorParametersBuilder.keepBinary,
-                iteratorParametersBuilder.bufferSize,
-                iteratorParametersBuilder.strictBoundsCheck
-            ) {
-                @Override protected void onClose() throws IgniteCheckedException {
-                    super.onClose();
+        return new StandaloneWalRecordsIterator(
+            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+            sctx,
+            iteratorParametersBuilder.ioFactory,
+            resolveWalFiles(iteratorParametersBuilder),
+            iteratorParametersBuilder.filter,
+            iteratorParametersBuilder.lowBound,
+            iteratorParametersBuilder.highBound,
+            iteratorParametersBuilder.keepBinary,
+            iteratorParametersBuilder.bufferSize,
+            iteratorParametersBuilder.strictBoundsCheck
+        ) {
+            @Override protected void onClose() throws IgniteCheckedException {
+                super.onClose();
 
-                    for (GridComponent comp : sctx.kernalContext())
-                        comp.stop(true);
-                }
-            };
-        }
-        else {
-            return new StandaloneWalRecordsIterator(
-                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-                iteratorParametersBuilder.sharedCtx,
-                iteratorParametersBuilder.ioFactory,
-                resolveWalFiles(iteratorParametersBuilder),
-                iteratorParametersBuilder.filter,
-                iteratorParametersBuilder.lowBound,
-                iteratorParametersBuilder.highBound,
-                iteratorParametersBuilder.keepBinary,
-                iteratorParametersBuilder.bufferSize,
-                iteratorParametersBuilder.strictBoundsCheck
-            );
-        }
+                if (!stopComps)
+                    return;
+
+                for (GridComponent comp : sctx.kernalContext())
+                    comp.stop(true);
+            }
+        };
     }
 
     /**
@@ -401,12 +389,17 @@ public class IgniteWalIteratorFactory {
 
         dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
 
-        return new GridCacheSharedContext<>(
+        GridCacheSharedContext sctx = new GridCacheSharedContext<>(
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null, null,
             null, null, null, null, null,
             null, null, null, null, null, null
         );
+
+        for (GridComponent comp : sctx.kernalContext())
+            comp.start();
+
+        return sctx;
     }
 
     /**

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.processors.resource.GridResourceLoggerInjector;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -207,29 +208,7 @@ public class CdcMain implements Runnable {
             throw new IllegalArgumentException(ERR_MSG);
         }
 
-        PdsFolderSettings<CdcFileLockHolder> settings =
-            new PdsFolderResolver<>(igniteCfg, log, null, this::tryLock).resolve();
-
-        if (settings == null) {
-            throw new IgniteException("Can't find folder to read WAL segments from based on provided configuration! " +
-                "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
-        }
-
-        CdcFileLockHolder lock = settings.getLockedFileLockHolder();
-
-        if (lock == null) {
-            File consIdDir = settings.persistentStoreNodePath();
-
-            lock = tryLock(consIdDir);
-
-            if (lock == null) {
-                throw new IgniteException(
-                    "Can't acquire lock for Change Data Capture folder [dir=" + consIdDir.getAbsolutePath() + ']'
-                );
-            }
-        }
-
-        try {
+        try (CdcFileLockHolder lock = lockPds()) {
             String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
             Files.createDirectories(cdcDir.resolve(STATE_DIR));
@@ -237,6 +216,12 @@ public class CdcMain implements Runnable {
             binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(igniteCfg.getWorkDirectory(), consIdDir);
 
             marshaller = MarshallerContextImpl.mappingFileStoreWorkDir(igniteCfg.getWorkDirectory());
+
+            StandaloneGridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
+                @Override public IgniteConfiguration config() {
+                    return igniteCfg;
+                }
+            };
 
             if (log.isInfoEnabled()) {
                 log.info("Change Data Capture [dir=" + cdcDir + ']');
@@ -265,9 +250,36 @@ public class CdcMain implements Runnable {
                     log.info("Ignite Change Data Capture Application stopped.");
             }
         }
-        finally {
-            U.closeQuiet(lock);
+    }
+
+    /**
+     * @return CDC lock holder for specifi folder.
+     * @throws IgniteCheckedException If failed.
+     */
+    private CdcFileLockHolder lockPds() throws IgniteCheckedException {
+        PdsFolderSettings<CdcFileLockHolder> settings =
+            new PdsFolderResolver<>(igniteCfg, log, null, this::tryLock).resolve();
+
+        if (settings == null) {
+            throw new IgniteException("Can't find folder to read WAL segments from based on provided configuration! " +
+                "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
+
+        CdcFileLockHolder lock = settings.getLockedFileLockHolder();
+
+        if (lock == null) {
+            File consIdDir = settings.persistentStoreNodePath();
+
+            lock = tryLock(consIdDir);
+
+            if (lock == null) {
+                throw new IgniteException(
+                    "Can't acquire lock for Change Data Capture folder [dir=" + consIdDir.getAbsolutePath() + ']'
+                );
+            }
+        }
+
+        return lock;
     }
 
     /** Waits and consumes new WAL segments until stopped. */

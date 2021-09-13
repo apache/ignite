@@ -57,10 +57,10 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
  */
 public class MetricRegistry implements ReadOnlyMetricRegistry {
     /** Registry name. */
-    private String regName;
+    private final String regName;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Registered metrics. */
     private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
@@ -77,8 +77,12 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
-        Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
+    public MetricRegistry(
+        String regName,
+        Function<String, Long> hitRateCfgProvider,
+        Function<String, long[]> histogramCfgProvider,
+        IgniteLogger log
+    ) {
         this.regName = regName;
         this.log = log;
         this.hitRateCfgProvider = hitRateCfgProvider;

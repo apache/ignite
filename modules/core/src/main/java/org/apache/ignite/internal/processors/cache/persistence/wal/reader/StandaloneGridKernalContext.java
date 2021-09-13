@@ -145,7 +145,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * @param log Logger.
      * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
      * {@code null} means no specific folder is configured. <br>
-     *
      * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
      * {@code null} means no specific folder is configured.
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
