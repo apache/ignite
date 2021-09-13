@@ -61,6 +61,7 @@ namespace Apache.Ignite.Tests
             {
                 if (file.Contains(InternalDir, StringComparison.Ordinal) ||
                     file.Contains(".Tests", StringComparison.Ordinal) ||
+                    file.Contains(".Benchmarks", StringComparison.Ordinal) ||
                     file.EndsWith("Exception.cs", StringComparison.Ordinal))
                 {
                     continue;
