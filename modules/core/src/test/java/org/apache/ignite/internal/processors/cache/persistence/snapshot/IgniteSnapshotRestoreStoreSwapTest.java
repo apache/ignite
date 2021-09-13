@@ -59,6 +59,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_ST
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_LATE_AFFINITY;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
@@ -253,7 +254,7 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
         spi0.waitForBlocked();
 
         copyAndShuffle(snpParts, G.allGrids());
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi0, RESTORE_CACHE_GROUP_SNAPSHOT_LATE_AFFINITY, DEFAULT_CACHE_NAME);
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi0, RESTORE_CACHE_GROUP_SNAPSHOT_START, DEFAULT_CACHE_NAME);
 
         IgniteFuture<?> forceRebFut = cache.rebalance();
 
@@ -261,6 +262,8 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
 
         fut.get(TIMEOUT);
         forceRebFut.get(TIMEOUT);
+
+        awaitPartitionMapExchange(true, true, null);
 
         assertCacheKeys(scc.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
         assertCacheKeys(scc.cache(locCacheName), CACHE_KEYS_RANGE);
@@ -289,7 +292,7 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
     }
 
     /**
-     * @param clusterPrefix Array of prefixes to cleanup directories.
+     * @param clusterPrefix Array of prefixes to clean up directories.
      */
     private static void cleanupDedicatedPersistenceDirs(String... clusterPrefix) {
         for (String prefix : clusterPrefix) {
