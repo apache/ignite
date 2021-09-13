@@ -15,7 +15,15 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.client.proto;
+
 /**
- * Ignite thin client shared logic (client and server: serialization, op codes, etc).
+ * Server to client message types.
  */
-package org.apache.ignite.client.proto;
+public class ServerMessageType {
+    /** Response to a request (initiated by the client). */
+    public static final int RESPONSE = 0;
+
+    /** Notification (initiated by the server). */
+    public static final int NOTIFICATION = 1;
+}

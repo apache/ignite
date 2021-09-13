@@ -19,7 +19,7 @@ package org.apache.ignite.client.handler;
 
 import java.util.BitSet;
 
-import org.apache.ignite.client.proto.ProtocolVersion;
+import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.tostring.S;
 
 /**

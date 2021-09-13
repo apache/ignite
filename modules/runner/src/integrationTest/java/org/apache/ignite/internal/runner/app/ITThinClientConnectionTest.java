@@ -127,6 +127,9 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
                 table.upsert(tuple);
                 assertEquals("Hello", table.get(keyTuple).stringValue(valCol));
 
+                var kvView = table.kvView();
+                assertEquals("Hello", kvView.get(keyTuple).stringValue(valCol));
+
                 assertTrue(table.delete(keyTuple));
             }
         }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client.table;
 
-import org.apache.ignite.client.proto.ClientDataType;
+import org.apache.ignite.internal.client.proto.ClientDataType;
 
 /**
  * Schema column.

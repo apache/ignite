@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
+package org.apache.ignite.internal.client.proto;
 
 import java.util.Arrays;
 import io.netty.buffer.ByteBuf;
@@ -24,8 +24,8 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.CharsetUtil;
 import org.apache.ignite.lang.IgniteException;
 
-import static org.apache.ignite.client.proto.ClientMessageCommon.HEADER_SIZE;
-import static org.apache.ignite.client.proto.ClientMessageCommon.MAGIC_BYTES;
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.MAGIC_BYTES;
 
 /**
  * Decodes full client messages:

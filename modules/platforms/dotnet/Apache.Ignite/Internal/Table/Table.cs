@@ -113,9 +113,18 @@ namespace Apache.Ignite.Internal.Table
 
                 var tuple = new IgniteTuple(columns.Count);
 
-                foreach (var column in columns)
+                for (var i = 0; i < columns.Count; i++)
                 {
-                    tuple[column.Name] = r.ReadObject(column.Type);
+                    var column = columns[i];
+
+                    if (i < schema.KeyColumnCount)
+                    {
+                        tuple[column.Name] = keyRec[column.Name];
+                    }
+                    else
+                    {
+                        tuple[column.Name] = r.ReadObject(column.Type);
+                    }
                 }
 
                 return tuple;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.client.proto.ClientErrorCode;
+import org.apache.ignite.internal.client.proto.ClientErrorCode;
 import org.apache.ignite.lang.IgniteException;
 
 /**

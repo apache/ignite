@@ -128,7 +128,7 @@ public abstract class AbstractClientTest {
             return;
         }
 
-        assertEquals(x.columnCount(), y.columnCount());
+        assertEquals(x.columnCount(), y.columnCount(), x + " != " + y);
 
         for (var i = 0; i < x.columnCount(); i++) {
             assertEquals(x.columnName(i), y.columnName(i));

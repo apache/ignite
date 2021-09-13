@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
+package org.apache.ignite.internal.client.proto;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,21 +40,21 @@ import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.buffer.InputStreamBufferInput;
 import org.msgpack.value.ImmutableValue;
 
-import static org.apache.ignite.client.proto.ClientDataType.BITMASK;
-import static org.apache.ignite.client.proto.ClientDataType.BYTES;
-import static org.apache.ignite.client.proto.ClientDataType.DATE;
-import static org.apache.ignite.client.proto.ClientDataType.DATETIME;
-import static org.apache.ignite.client.proto.ClientDataType.DECIMAL;
-import static org.apache.ignite.client.proto.ClientDataType.DOUBLE;
-import static org.apache.ignite.client.proto.ClientDataType.FLOAT;
-import static org.apache.ignite.client.proto.ClientDataType.INT16;
-import static org.apache.ignite.client.proto.ClientDataType.INT32;
-import static org.apache.ignite.client.proto.ClientDataType.INT64;
-import static org.apache.ignite.client.proto.ClientDataType.INT8;
-import static org.apache.ignite.client.proto.ClientDataType.NUMBER;
-import static org.apache.ignite.client.proto.ClientDataType.STRING;
-import static org.apache.ignite.client.proto.ClientDataType.TIME;
-import static org.apache.ignite.client.proto.ClientDataType.TIMESTAMP;
+import static org.apache.ignite.internal.client.proto.ClientDataType.BITMASK;
+import static org.apache.ignite.internal.client.proto.ClientDataType.BYTES;
+import static org.apache.ignite.internal.client.proto.ClientDataType.DATE;
+import static org.apache.ignite.internal.client.proto.ClientDataType.DATETIME;
+import static org.apache.ignite.internal.client.proto.ClientDataType.DECIMAL;
+import static org.apache.ignite.internal.client.proto.ClientDataType.DOUBLE;
+import static org.apache.ignite.internal.client.proto.ClientDataType.FLOAT;
+import static org.apache.ignite.internal.client.proto.ClientDataType.INT16;
+import static org.apache.ignite.internal.client.proto.ClientDataType.INT32;
+import static org.apache.ignite.internal.client.proto.ClientDataType.INT64;
+import static org.apache.ignite.internal.client.proto.ClientDataType.INT8;
+import static org.apache.ignite.internal.client.proto.ClientDataType.NUMBER;
+import static org.apache.ignite.internal.client.proto.ClientDataType.STRING;
+import static org.apache.ignite.internal.client.proto.ClientDataType.TIME;
+import static org.apache.ignite.internal.client.proto.ClientDataType.TIMESTAMP;
 
 /**
  * Ignite-specific MsgPack extension based on Netty ByteBuf.

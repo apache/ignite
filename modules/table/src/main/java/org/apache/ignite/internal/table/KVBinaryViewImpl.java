@@ -93,6 +93,11 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
+    @Override public CompletableFuture<Boolean> containsAsync(@NotNull Tuple key) {
+        return getAsync(key).thenApply(Objects::nonNull);
+    }
+
+    /** {@inheritDoc} */
     @Override public void put(@NotNull Tuple key, Tuple val) {
         sync(putAsync(key, val));
     }

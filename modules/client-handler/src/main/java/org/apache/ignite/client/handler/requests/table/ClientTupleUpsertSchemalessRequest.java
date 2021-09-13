@@ -18,7 +18,7 @@
 package org.apache.ignite.client.handler.requests.table;
 
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.table.manager.IgniteTables;
 
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTable;
@@ -37,7 +37,7 @@ public class ClientTupleUpsertSchemalessRequest {
      */
     public static CompletableFuture<Void> process(ClientMessageUnpacker in, IgniteTables tables) {
         var table = readTable(in, tables);
-        var tuple = readTupleSchemaless(in, table);
+        var tuple = readTupleSchemaless(in);
 
         return table.upsertAsync(tuple);
     }

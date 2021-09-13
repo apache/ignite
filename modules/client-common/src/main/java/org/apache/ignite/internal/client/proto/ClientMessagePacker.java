@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
+package org.apache.ignite.internal.client.proto;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,7 +35,7 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.buffer.OutputStreamBufferOutput;
 import org.msgpack.value.Value;
 
-import static org.apache.ignite.client.proto.ClientMessageCommon.HEADER_SIZE;
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
 
 /**
  * Ignite-specific MsgPack extension based on Netty ByteBuf.

@@ -18,7 +18,7 @@
 package org.apache.ignite.client.handler.requests.table;
 
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.table.manager.IgniteTables;
 

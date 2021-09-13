@@ -27,11 +27,11 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientConnectionException;
-import org.apache.ignite.client.proto.ClientMessageDecoder;
 import org.apache.ignite.internal.client.io.ClientConnection;
 import org.apache.ignite.internal.client.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.io.ClientMessageHandler;
+import org.apache.ignite.internal.client.proto.ClientMessageDecoder;
 
 /**
  * Netty-based multiplexer.

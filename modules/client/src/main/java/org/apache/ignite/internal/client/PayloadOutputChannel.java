@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 
 /**
  * Thin client payload output channel.

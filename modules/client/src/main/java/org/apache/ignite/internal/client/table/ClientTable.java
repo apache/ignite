@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -31,10 +32,10 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.client.IgniteClientException;
-import org.apache.ignite.client.proto.ClientMessagePacker;
-import org.apache.ignite.client.proto.ClientMessageUnpacker;
-import org.apache.ignite.client.proto.ClientOp;
 import org.apache.ignite.internal.client.ReliableChannel;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.internal.client.proto.ClientOp;
 import org.apache.ignite.internal.tostring.IgniteToStringBuilder;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.table.InvokeProcessor;
@@ -73,6 +74,9 @@ public class ClientTable implements Table {
     /** */
     private final Object latestSchemaLock = new Object();
 
+    /** */
+    private final KeyValueBinaryView kvView;
+
     /**
      * Constructor.
      *
@@ -88,6 +92,7 @@ public class ClientTable implements Table {
         this.ch = ch;
         this.id = id;
         this.name = name;
+        this.kvView = new ClientKeyValueBinaryView(this);
     }
 
     /**
@@ -116,7 +121,7 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public KeyValueBinaryView kvView() {
-        throw new UnsupportedOperationException();
+        return kvView;
     }
 
     /** {@inheritDoc} */
@@ -137,7 +142,7 @@ public class ClientTable implements Table {
         return doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET,
                 (schema, out) -> writeTuple(keyRec, schema, out, true),
-                this::readTuple);
+                (inSchema, in) -> readValueTuple(inSchema, in, keyRec));
     }
 
     /** {@inheritDoc} */
@@ -200,7 +205,7 @@ public class ClientTable implements Table {
         return doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_UPSERT,
                 (s, w) -> writeTuple(rec, s, w, false),
-                this::readTuple);
+                (schema, in) -> readValueTuple(schema, in, rec));
     }
 
     /** {@inheritDoc} */
@@ -280,7 +285,7 @@ public class ClientTable implements Table {
         return doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_REPLACE,
                 (s, w) -> writeTuple(rec, s, w, false),
-                this::readTuple);
+                (schema, in) -> readValueTuple(schema, in, rec));
     }
 
     /** {@inheritDoc} */
@@ -325,7 +330,7 @@ public class ClientTable implements Table {
         return doSchemaOutInOpAsync(
                 ClientOp.TUPLE_GET_AND_DELETE,
                 (s, w) -> writeTuple(rec, s, w, false),
-                this::readTuple);
+                (schema, in) -> readValueTuple(schema, in, rec));
     }
 
     /** {@inheritDoc} */
@@ -468,7 +473,7 @@ public class ClientTable implements Table {
         return IgniteToStringBuilder.toString(ClientTable.class, this);
     }
 
-    private void writeTuple(
+    public void writeTuple(
             @NotNull Tuple tuple,
             ClientSchema schema,
             ClientMessagePacker out
@@ -476,7 +481,7 @@ public class ClientTable implements Table {
         writeTuple(tuple, schema, out, false, false);
     }
 
-    private void writeTuple(
+    public void writeTuple(
             @NotNull Tuple tuple,
             ClientSchema schema,
             ClientMessagePacker out,
@@ -485,7 +490,7 @@ public class ClientTable implements Table {
         writeTuple(tuple, schema, out, keyOnly, false);
     }
 
-    private void writeTuple(
+    public void writeTuple(
             @NotNull Tuple tuple,
             ClientSchema schema,
             ClientMessagePacker out,
@@ -515,7 +520,56 @@ public class ClientTable implements Table {
             out.packObject(val);
     }
 
-    private void writeTuples(
+    public void writeKvTuple(
+            @NotNull Tuple key,
+            @Nullable Tuple val,
+            ClientSchema schema,
+            ClientMessagePacker out,
+            boolean skipHeader
+    ) {
+        var vals = new Object[schema.columns().length];
+
+        for (var i = 0; i < key.columnCount(); i++) {
+            var colName = key.columnName(i);
+            var col = schema.column(colName);
+
+            if (!col.key())
+                continue;
+
+            vals[col.schemaIndex()] = key.value(i);
+        }
+
+        if (val != null) {
+            for (var i = 0; i < val.columnCount(); i++) {
+                var colName = val.columnName(i);
+                var col = schema.column(colName);
+
+                if (col.key())
+                    continue;
+
+                vals[col.schemaIndex()] = val.value(i);
+            }
+        }
+
+        if (!skipHeader) {
+            out.packUuid(id);
+            out.packInt(schema.version());
+        }
+
+        for (var v : vals)
+            out.packObject(v);
+    }
+
+    public void writeKvTuples(Map<Tuple, Tuple> pairs, ClientSchema schema, ClientMessagePacker out) {
+        out.packUuid(id);
+        out.packInt(schema.version());
+        out.packInt(pairs.size());
+
+        for (Map.Entry<Tuple, Tuple> pair : pairs.entrySet())
+            writeKvTuple(pair.getKey(), pair.getValue(), schema, out, true);
+    }
+
+    public void writeTuples(
             @NotNull Collection<Tuple> tuples,
             ClientSchema schema,
             ClientMessagePacker out,
@@ -529,11 +583,11 @@ public class ClientTable implements Table {
             writeTuple(tuple, schema, out, keyOnly, true);
     }
 
-    private Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in) {
+    public static Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in) {
         return readTuple(schema, in, false);
     }
 
-    private Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
+    private static Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
         var tuple = new ClientTuple(schema);
 
         var colCnt = keyOnly ? schema.keyColumnCount() : schema.columns().length;
@@ -544,7 +598,71 @@ public class ClientTable implements Table {
         return tuple;
     }
 
-    private Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in) {
+    public static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in, Tuple keyTuple) {
+        var tuple = new ClientTuple(schema);
+
+        for (var i = 0; i < schema.columns().length; i++) {
+            ClientColumn col = schema.columns()[i];
+
+            Object value = i < schema.keyColumnCount()
+                    ? keyTuple.value(col.name())
+                    : in.unpackObject(schema.columns()[i].type());
+
+            tuple.setInternal(i, value);
+        }
+
+        return tuple;
+    }
+
+    public static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in) {
+        var keyColCnt = schema.keyColumnCount();
+        var colCnt = schema.columns().length;
+
+        var valTuple = new ClientTuple(schema, keyColCnt, schema.columns().length - 1);
+
+        for (var i = keyColCnt; i < colCnt; i++) {
+            ClientColumn col = schema.columns()[i];
+            Object val = in.unpackObject(col.type());
+
+            valTuple.setInternal(i - keyColCnt, val);
+        }
+
+        return valTuple;
+    }
+
+    public static IgniteBiTuple<Tuple, Tuple> readKvTuple(ClientSchema schema, ClientMessageUnpacker in) {
+        var keyColCnt = schema.keyColumnCount();
+        var colCnt = schema.columns().length;
+
+        var keyTuple = new ClientTuple(schema, 0, keyColCnt - 1);
+        var valTuple = new ClientTuple(schema, keyColCnt, schema.columns().length - 1);
+
+        for (var i = 0; i < colCnt; i++) {
+            ClientColumn col = schema.columns()[i];
+            Object val = in.unpackObject(col.type());
+
+            if (i < keyColCnt)
+                keyTuple.setInternal(i, val);
+            else
+                valTuple.setInternal(i - keyColCnt, val);
+        }
+
+        return new IgniteBiTuple<>(keyTuple, valTuple);
+    }
+
+    public Map<Tuple, Tuple> readKvTuples(ClientSchema schema, ClientMessageUnpacker in) {
+        var cnt = in.unpackInt();
+        Map<Tuple, Tuple> res = new HashMap<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            var pair = readKvTuple(schema, in);
+            res.put(pair.get1(), pair.get2());
+        }
+
+        return res;
+    }
+
+    public Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in) {
         return readTuples(schema, in, false);
     }
 
@@ -558,7 +676,7 @@ public class ClientTable implements Table {
         return res;
     }
 
-    private <T> CompletableFuture<T> doSchemaOutInOpAsync(
+    public <T> CompletableFuture<T> doSchemaOutInOpAsync(
             int opCode,
             BiConsumer<ClientSchema, ClientMessagePacker> writer,
             BiFunction<ClientSchema, ClientMessageUnpacker, T> reader
@@ -566,7 +684,7 @@ public class ClientTable implements Table {
         return doSchemaOutInOpAsync(opCode, writer, reader, null);
     }
 
-    private <T> CompletableFuture<T> doSchemaOutInOpAsync(
+    public <T> CompletableFuture<T> doSchemaOutInOpAsync(
             int opCode,
             BiConsumer<ClientSchema, ClientMessagePacker> writer,
             BiFunction<ClientSchema, ClientMessageUnpacker, T> reader,
@@ -580,7 +698,7 @@ public class ClientTable implements Table {
                 .thenCompose(t -> loadSchemaAndReadData(t, reader));
     }
 
-    private <T> CompletableFuture<T> doSchemaOutOpAsync(
+    protected <T> CompletableFuture<T> doSchemaOutOpAsync(
             int opCode,
             BiConsumer<ClientSchema, ClientMessagePacker> writer,
             Function<ClientMessageUnpacker, T> reader) {

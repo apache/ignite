@@ -20,7 +20,7 @@ package org.apache.ignite.internal.client;
 import java.util.EnumSet;
 
 import org.apache.ignite.client.IgniteClientFeatureNotSupportedByServerException;
-import org.apache.ignite.client.proto.ProtocolVersion;
+import org.apache.ignite.internal.client.proto.ProtocolVersion;
 
 /**
  * Protocol Context.

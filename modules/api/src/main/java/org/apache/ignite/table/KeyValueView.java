@@ -75,10 +75,19 @@ public interface KeyValueView<K, V> {
      * Determines if the table contains an entry for the specified key.
      *
      * @param key A key which presence is to be tested.
-     * The keys cannot be {@code null}.
+     * The key cannot be {@code null}.
      * @return {@code True} if a value exists for the specified key, {@code false} otherwise.
      */
     boolean contains(@NotNull K key);
+
+    /**
+     * Determines if the table contains an entry for the specified key.
+     *
+     * @param key A key which presence is to be tested.
+     * The key cannot be {@code null}.
+     * @return Future representing pending completion of the operation.
+     */
+    CompletableFuture<Boolean> containsAsync(@NotNull K key);
 
     /**
      * Puts value associated with given key into the table.

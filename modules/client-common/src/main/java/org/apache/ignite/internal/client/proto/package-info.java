@@ -15,33 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
-
 /**
- * Ignite-specific extension type codes.
+ * Ignite thin client shared logic (client and server: serialization, op codes, etc).
  */
-public class ClientMsgPackType {
-    /** Number. */
-    public static final byte NUMBER = 1;
-
-    /** Decimal. */
-    public static final byte DECIMAL = 2;
-
-    /** UUID. */
-    public static final byte UUID = 3;
-
-    /** Date. */
-    public static final byte DATE = 4;
-
-    /** Time. */
-    public static final byte TIME = 5;
-
-    /** DateTime. */
-    public static final byte DATETIME = 6;
-
-    /** DateTime. */
-    public static final byte TIMESTAMP = 7;
-
-    /** Bit mask. */
-    public static final byte BITMASK = 8;
-}
+package org.apache.ignite.internal.client.proto;

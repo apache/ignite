@@ -24,7 +24,7 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.util.BitSet;
 import java.util.UUID;
-import org.apache.ignite.client.proto.ClientDataType;
+import org.apache.ignite.internal.client.proto.ClientDataType;
 import org.apache.ignite.internal.client.table.ClientColumn;
 import org.apache.ignite.internal.client.table.ClientSchema;
 import org.apache.ignite.internal.client.table.ClientTuple;

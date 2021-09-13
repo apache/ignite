@@ -42,46 +42,66 @@ public final class ClientTuple implements Tuple {
     /** Schema. */
     private final ClientSchema schema;
 
+    /** Offset within schema. */
+    private final int minColumnIndex;
+
+    /** Limit within schema. */
+    private final int maxColumnIndex;
+
     /**
      * Constructor.
      *
      * @param schema Schema.
      */
     public ClientTuple(ClientSchema schema) {
+        this(schema, 0, schema.columns().length - 1);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param schema Schema.
+     */
+    public ClientTuple(ClientSchema schema, int minColumnIndex, int maxColumnIndex) {
         assert schema != null : "Schema can't be null.";
         assert schema.columns().length > 0 : "Schema can't be empty.";
+        assert minColumnIndex >= 0 : "offset >= 0";
+        assert maxColumnIndex >= minColumnIndex : "maxColumnIndex >= minColumnIndex";
+        assert maxColumnIndex < schema.columns().length : "maxColumnIndex < schema.columns().length";
 
         this.schema = schema;
-        this.vals = new Object[schema.columns().length];
+        this.vals = new Object[maxColumnIndex + 1 - minColumnIndex];
+        this.minColumnIndex = minColumnIndex;
+        this.maxColumnIndex = maxColumnIndex;
     }
 
     /** {@inheritDoc} */
-    @Override public Tuple set(String columnName, Object value) {
+    @Override public Tuple set(@NotNull String columnName, Object value) {
         // TODO: Live schema and schema evolution support IGNITE-15194
         var col = schema.column(columnName);
 
-        vals[col.schemaIndex()] = value == null ? NULL_OBJ : value;
+        vals[col.schemaIndex() - minColumnIndex] = value == null ? NULL_OBJ : value;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T valueOrDefault(String columnName, T def) {
+    @Override public <T> T valueOrDefault(@NotNull String columnName, T def) {
         var col = schema.columnSafe(columnName);
 
         if (col == null)
             return def;
 
-        var val = (T)vals[col.schemaIndex()];
+        var val = (T)vals[col.schemaIndex() - minColumnIndex];
 
         return val == null ? def : convertValue(val);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T value(String columnName) {
+    @Override public <T> T value(@NotNull String columnName) {
         var col = schema.column(columnName);
 
-        return getValue(col.schemaIndex());
+        return getValue(col.schemaIndex() - minColumnIndex);
     }
 
     /** {@inheritDoc} */
@@ -100,18 +120,21 @@ public final class ClientTuple implements Tuple {
     @Override public String columnName(int columnIndex) {
         Objects.checkIndex(columnIndex, vals.length);
 
-        return schema.columns()[columnIndex].name();
+        return schema.columns()[columnIndex + minColumnIndex].name();
     }
 
     /** {@inheritDoc} */
-    @Override public int columnIndex(String columnName) {
+    @Override public int columnIndex(@NotNull String columnName) {
         var col = schema.columnSafe(columnName);
 
-        return col == null ? -1 : col.schemaIndex();
+        if (col == null || col.schemaIndex() < minColumnIndex || col.schemaIndex() > maxColumnIndex)
+            return -1;
+
+        return col.schemaIndex() - minColumnIndex;
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectValue(String columnName) {
+    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -121,7 +144,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(String columnName) {
+    @Override public byte byteValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -131,7 +154,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(String columnName) {
+    @Override public short shortValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -141,7 +164,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(String columnName) {
+    @Override public int intValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -151,7 +174,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(String columnName) {
+    @Override public long longValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -161,7 +184,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(String columnName) {
+    @Override public float floatValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -171,7 +194,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(String columnName) {
+    @Override public double doubleValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -181,7 +204,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(String columnName) {
+    @Override public String stringValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -191,7 +214,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(String columnName) {
+    @Override public UUID uuidValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -201,7 +224,7 @@ public final class ClientTuple implements Tuple {
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(String columnName) {
+    @Override public BitSet bitmaskValue(@NotNull String columnName) {
         return value(columnName);
     }
 
@@ -266,6 +289,22 @@ public final class ClientTuple implements Tuple {
                 return cur < vals.length ? vals[cur++] : null;
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        var sb = new StringBuilder("ClientTupleBuilder [");
+
+        for (int i = 0; i < columnCount(); i++) {
+            if (i > 0)
+                sb.append(", ");
+
+            sb.append(columnName(i)).append('=').append((Object) value(i));
+        }
+
+        sb.append(']');
+
+        return sb.toString();
     }
 
     /**

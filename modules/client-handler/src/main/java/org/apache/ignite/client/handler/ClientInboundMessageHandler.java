@@ -28,6 +28,7 @@ import org.apache.ignite.client.handler.requests.table.ClientSchemasGetRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTableDropRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTableGetRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTablesGetRequest;
+import org.apache.ignite.client.handler.requests.table.ClientTupleContainsKeyRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleDeleteAllExactRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleDeleteAllRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleDeleteExactRequest;
@@ -51,13 +52,13 @@ import org.apache.ignite.client.handler.requests.table.ClientTupleUpsertAllReque
 import org.apache.ignite.client.handler.requests.table.ClientTupleUpsertAllSchemalessRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleUpsertRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTupleUpsertSchemalessRequest;
-import org.apache.ignite.client.proto.ClientErrorCode;
-import org.apache.ignite.client.proto.ClientMessageCommon;
-import org.apache.ignite.client.proto.ClientMessagePacker;
-import org.apache.ignite.client.proto.ClientMessageUnpacker;
-import org.apache.ignite.client.proto.ClientOp;
-import org.apache.ignite.client.proto.ProtocolVersion;
-import org.apache.ignite.client.proto.ServerMessageType;
+import org.apache.ignite.internal.client.proto.ClientErrorCode;
+import org.apache.ignite.internal.client.proto.ClientMessageCommon;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.internal.client.proto.ClientOp;
+import org.apache.ignite.internal.client.proto.ProtocolVersion;
+import org.apache.ignite.internal.client.proto.ServerMessageType;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -321,6 +322,9 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
 
             case ClientOp.TUPLE_GET_AND_DELETE:
                 return ClientTupleGetAndDeleteRequest.process(in, out, igniteTables);
+
+            case ClientOp.TUPLE_CONTAINS_KEY:
+                return ClientTupleContainsKeyRequest.process(in, out, igniteTables);
 
             default:
                 throw new IgniteException("Unexpected operation code: " + opCode);

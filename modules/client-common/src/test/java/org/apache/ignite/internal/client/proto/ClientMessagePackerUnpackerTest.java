@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
+package org.apache.ignite.internal.client.proto;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -56,7 +55,7 @@ public class ClientMessagePackerUnpackerTest {
     }
 
     @Test
-    public void testPackerIncludesFourByteMessageLength() throws IOException {
+    public void testPackerIncludesFourByteMessageLength() {
         try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
             packer.packInt(1); // 1 byte
             packer.packString("Foo"); // 4 bytes
@@ -82,13 +81,13 @@ public class ClientMessagePackerUnpackerTest {
     }
 
     @Test
-    public void testUUID() throws IOException {
+    public void testUUID() {
         testUUID(UUID.randomUUID());
         testUUID(new UUID(0, 0));
     }
 
     @Test
-    public void testNumber() throws IOException {
+    public void testNumber() {
         testNumber(BigInteger.ZERO);
         testNumber(BigInteger.valueOf(Long.MIN_VALUE));
         testNumber(BigInteger.valueOf(Long.MAX_VALUE));
@@ -99,7 +98,7 @@ public class ClientMessagePackerUnpackerTest {
     }
 
     @Test
-    public void testDecimal() throws IOException {
+    public void testDecimal() {
         testDecimal(BigDecimal.ZERO);
         testDecimal(BigDecimal.valueOf(Long.MIN_VALUE));
         testDecimal(BigDecimal.valueOf(Long.MAX_VALUE));
@@ -110,7 +109,7 @@ public class ClientMessagePackerUnpackerTest {
     }
 
     @Test
-    public void testBitSet() throws IOException {
+    public void testBitSet() {
         testBitSet(BitSet.valueOf(new byte[0]));
         testBitSet(BitSet.valueOf(randomBytes(rnd, 1)));
         testBitSet(BitSet.valueOf(randomBytes(rnd, 100)));
@@ -118,7 +117,7 @@ public class ClientMessagePackerUnpackerTest {
     }
 
     @Test
-    public void testTemporalTypes() throws IOException {
+    public void testTemporalTypes() {
         try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
             LocalDate date = LocalDate.now();
             LocalTime time = LocalTime.now();
@@ -146,7 +145,7 @@ public class ClientMessagePackerUnpackerTest {
     }
 
     @Test
-    public void testVariousTypesSupport() throws IOException {
+    public void testVariousTypesSupport() {
         Object[] values = new Object[]{
             (byte)1, (short)2, 3, 4L, 5.5f, 6.6d,
             BigDecimal.valueOf(rnd.nextLong()),
@@ -201,7 +200,7 @@ public class ClientMessagePackerUnpackerTest {
         }
     }
 
-    private void testUUID(UUID u) throws IOException {
+    private void testUUID(UUID u) {
         try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
             packer.packUuid(u);
 

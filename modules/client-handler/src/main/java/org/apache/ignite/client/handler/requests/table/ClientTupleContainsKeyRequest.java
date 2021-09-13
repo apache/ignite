@@ -26,9 +26,9 @@ import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.
 import static org.apache.ignite.client.handler.requests.table.ClientTableCommon.readTuple;
 
 /**
- * Client tuple delete request.
+ * Client tuple contains key request.
  */
-public class ClientTupleDeleteRequest {
+public class ClientTupleContainsKeyRequest {
     /**
      * Processes the request.
      *
@@ -43,8 +43,8 @@ public class ClientTupleDeleteRequest {
             IgniteTables tables
     ) {
         var table = readTable(in, tables);
-        var tuple = readTuple(in, table, true);
+        var keyTuple = readTuple(in, table, true);
 
-        return table.deleteAsync(tuple).thenAccept(out::packBoolean);
+        return table.getAsync(keyTuple).thenAccept(t -> out.packBoolean(t != null));
     }
 }

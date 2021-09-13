@@ -15,15 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.proto;
+package org.apache.ignite.internal.client.proto;
 
 /**
- * Server to client message types.
+ * Defines tuple part to write or read - key, value, or both.
  */
-public class ServerMessageType {
-    /** Response to a request (initiated by the client). */
-    public static final int RESPONSE = 0;
+public enum TuplePart {
+    /**
+     * Key columns.
+     */
+    KEY,
 
-    /** Notification (initiated by the server). */
-    public static final int NOTIFICATION = 1;
+    /**
+     * Value columns.
+     */
+    VAL,
+
+    /**
+     * Key and value columns.
+     */
+    KEY_AND_VAL
 }

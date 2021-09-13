@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.handler.requests.table;
-
-import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
-import org.apache.ignite.table.manager.IgniteTables;
+package org.apache.ignite.internal.client.proto;
 
 /**
- * Client table drop request.
+ * Client error codes.
  */
-public class ClientTableDropRequest {
-    /**
-     * Processes the request.
-     *
-     * @param in Unpacker.
-     * @param tables Ignite tables.
-     * @return Future.
-     */
-    public static CompletableFuture<Void> process(ClientMessageUnpacker in, IgniteTables tables) {
-        var tableName = in.unpackString();
+public class ClientErrorCode {
+    /** Operation succeeded (no error). */
+    public static final int SUCCESS = 0;
 
-        return tables.dropTableAsync(tableName);
-    }
+    /** General error (uncategorized). */
+    public static final int FAILED = 1;
+
+    /** Authentication or authorization failure. */
+    public static final int AUTH_FAILED = 2;
 }
