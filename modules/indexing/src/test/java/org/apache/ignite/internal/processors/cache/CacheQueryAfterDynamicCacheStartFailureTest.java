@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 
+/** */
 public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractDynamicCacheStartFailTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

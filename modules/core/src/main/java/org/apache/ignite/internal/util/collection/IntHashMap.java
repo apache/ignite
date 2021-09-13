@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -102,6 +105,15 @@ public class IntHashMap<V> implements IntMap<V> {
         scaleThreshold = (int)(entriesSize * SCALE_LOAD_FACTOR);
 
         entries = (Entry<V>[])new Entry[entriesSize];
+    }
+
+    /**
+     * Copy constructor.
+     */
+    public IntHashMap(IntMap<? extends V> other) {
+        this(other.size());
+
+        other.forEach(this::put);
     }
 
     /** {@inheritDoc} */
@@ -194,14 +206,12 @@ public class IntHashMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V[] values() {
-        V[] vals = (V[])new Object[size];
-
-        int idx = 0;
+    @Override public Collection<V> values() {
+        List<V> vals = new ArrayList<>(size);
 
         for (Entry<V> entry : entries)
             if (entry != null)
-                vals[idx++] = entry.val;
+                vals.add(entry.val);
 
         return vals;
     }
@@ -216,6 +226,15 @@ public class IntHashMap<V> implements IntMap<V> {
         return Arrays.stream(entries)
             .filter(Objects::nonNull)
             .anyMatch(entry -> Objects.equals(val, entry.val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
+
+        compactThreshold = 0;
+        scaleThreshold = 0;
+        size = 0;
     }
 
     /** {@inheritDoc} */

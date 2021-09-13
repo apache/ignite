@@ -363,13 +363,13 @@ public class Checkpointer extends GridWorker {
 
         long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
-        if (sched.nextCpNanos() <= nextNanos)
+        if (sched.nextCpNanos() - nextNanos <= 0)
             return sched;
 
         synchronized (this) {
             sched = scheduledCp;
 
-            if (sched.nextCpNanos() > nextNanos) {
+            if (sched.nextCpNanos() - nextNanos > 0) {
                 sched.reason(reason);
 
                 sched.nextCpNanos(nextNanos);
@@ -699,7 +699,7 @@ public class Checkpointer extends GridWorker {
 
             Runnable destroyPartTask = () -> {
                 try {
-                    offheap.destroyPartitionStore(grpId, partId);
+                    offheap.destroyPartitionStore(partId);
 
                     req.onDone(null);
 

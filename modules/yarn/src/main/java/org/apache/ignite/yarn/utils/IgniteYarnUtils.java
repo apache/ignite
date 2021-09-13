@@ -54,6 +54,7 @@ public class IgniteYarnUtils {
      * @param file Path.
      * @param fs File system.
      * @param type Local resource type.
+     * @return Resource file.
      * @throws Exception If failed.
      */
     public static LocalResource setupFile(Path file, FileSystem fs, LocalResourceType type)

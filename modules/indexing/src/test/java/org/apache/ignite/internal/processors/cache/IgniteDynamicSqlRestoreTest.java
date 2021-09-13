@@ -56,9 +56,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @SuppressWarnings("Duplicates")
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
-
+    /** */
     public static final String TEST_CACHE_NAME = "test";
 
+    /** */
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";
 
     /** {@inheritDoc} */
@@ -190,7 +191,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 " LANG VARCHAR,\n" +
                 " BIRTH_DATE TIMESTAMP,\n" +
                 " CONSTRAINT PK_PERSON PRIMARY KEY (FIRST_NAME,LAST_NAME,ADDRESS,LANG)\n" +
-                " ) WITH \"key_type=PersonKeyType, CACHE_NAME=PersonCache, value_type=PersonValueType, AFFINITY_KEY=FIRST_NAME,template=PARTITIONED,backups=1\"");
+                " ) WITH \"key_type=PersonKeyType, " +
+                    "CACHE_NAME=PersonCache, value_type=PersonValueType, AFFINITY_KEY=FIRST_NAME,template=PARTITIONED,backups=1\"");
 
             try (PreparedStatement stmt = conn.prepareStatement(
                 "insert into Person(LANG, FIRST_NAME, ADDRESS, LAST_NAME, BIRTH_DATE) values(?,?,?,?,?)")) {

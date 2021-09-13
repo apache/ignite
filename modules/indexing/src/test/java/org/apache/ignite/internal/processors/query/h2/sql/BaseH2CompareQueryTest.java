@@ -117,7 +117,13 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void createCaches() {
-        cacheOrg = jcache(ignite, cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class), ORG, Integer.class, Organization.class);
+        cacheOrg = jcache(
+            ignite,
+            cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class),
+            ORG,
+            Integer.class,
+            Organization.class
+        );
         cachePers = ignite.cache(PERS);
         cachePurch = ignite.cache(PURCH);
         cacheProd = ignite.cache(PROD);
@@ -317,7 +323,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         compareQueryRes0(cachePers, "select distinct firstName, street from \"pers\".Person, " +
             "\"addr\".Address");
         // TODO uncomment and investigate (Rows count has to be equal.: Expected :2500, Actual :900)
-//        compareQueryRes0("select p1.firstName, a2.street from \"part\".Person p1, \"repl\".Address a1, \"part\".Person p2, \"repl\".Address a2");
+        //compareQueryRes0(
+        //    "select p1.firstName, a2.street from \"part\".Person p1, \"repl\".Address a1, \"part\".Person p2, \"repl\".Address a2"
+        //);
 
         //TODO look at it (org.h2.jdbc.JdbcSQLException: Feature not supported: "VARCHAR +" // at H2)
 //        compareQueryRes0("select p.firstName n, a.street s from \"part\".Person p, \"repl\".Address a");
@@ -347,7 +355,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         // TODO analyse
 //        compareQueryRes0("select " + star + " from \"part\".Person p where p.firstName in ('a', 'b', '_' + RAND())"); // test ConditionIn
-        compareQueryRes0(cachePers, "select " + star + " from \"pers\".Person p where p.firstName in ('a', 'b', 'c')"); // test ConditionInConstantSet
+        // test ConditionInConstantSet
+        compareQueryRes0(cachePers, "select " + star + " from \"pers\".Person p where p.firstName in ('a', 'b', 'c')");
         compareQueryRes0(cachePers, "select " + star + " from \"pers\".Person p " +
             "where p.firstName in (select a.street from \"addr\".Address a)"); // test ConditionInConstantSet
 
@@ -709,11 +718,13 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         }
     }
 
+    /** */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /** */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
@@ -948,12 +959,15 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * Address class. Stored at replicated cache.
      */
     private static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         private int id;
 
+        /** */
         @QuerySqlField(index = true)
         private String street;
 
+        /** */
         Address(int id, String street) {
             this.id = id;
             this.street = street;

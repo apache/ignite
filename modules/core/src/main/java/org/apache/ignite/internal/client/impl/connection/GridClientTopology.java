@@ -379,6 +379,7 @@ public class GridClientTopology {
         }
     }
 
+    /** */
     public @Nullable GridClientException lastError() {
         lock.readLock().lock();
 

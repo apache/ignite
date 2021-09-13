@@ -84,7 +84,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore) {
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore, boolean primary) {
         assert false;
 
         return false;
@@ -419,7 +419,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -436,7 +435,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public EntryGetResult innerGetAndReserveForLoad(
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
@@ -452,7 +450,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         IgniteInternalTx tx,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -486,7 +483,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -542,7 +538,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean metrics,
         @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
-        UUID subjId,
         String taskName,
         boolean transformOp)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -574,7 +569,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion conflictVer,
         boolean conflictResolve,
         boolean intercept,
-        UUID subjId,
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
@@ -601,7 +595,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion drVer,
-        UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -711,6 +704,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         AffinityTopologyVersion topVer,
         GridDrType drType,
         boolean fromStore,
+        boolean primary,
         CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;

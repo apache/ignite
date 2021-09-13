@@ -87,8 +87,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Note that this SPI must always be used in conjunction with
  * {@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi JobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
- * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency() IgniteConfiguration#getMetricsUpdateFrequency()}
- * should be set to positive value).
+ * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()
+ * IgniteConfiguration#getMetricsUpdateFrequency()} should be set to positive value).
  * The responsibility of Job Stealing Failover SPI is to properly route <b>stolen</b>
  * jobs to the nodes that initially requested (<b>stole</b>) these jobs. The
  * SPI maintains a counter of how many times a jobs was stolen and
@@ -308,6 +308,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      * Sets number of jobs that can be executed in parallel.
      *
      * @param activeJobsThreshold Number of jobs that can be executed in parallel.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public JobStealingCollisionSpi setActiveJobsThreshold(int activeJobsThreshold) {

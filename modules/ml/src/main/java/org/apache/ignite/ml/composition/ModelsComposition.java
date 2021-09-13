@@ -32,8 +32,8 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * Model consisting of several models and prediction aggregation strategy.
  */
-public class ModelsComposition<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<ModelsCompositionFormat>,
-    DeployableObject {
+public class ModelsComposition<M extends IgniteModel<Vector, Double>>
+    implements IgniteModel<Vector, Double>, Exportable<ModelsCompositionFormat>, DeployableObject {
     /**
      * Predictions aggregator.
      */
@@ -55,6 +55,7 @@ public class ModelsComposition<M extends IgniteModel<Vector, Double>> implements
         this.models = Collections.unmodifiableList(models);
     }
 
+    /** */
     public ModelsComposition() {
     }
 

@@ -218,7 +218,11 @@ public class IgniteBenchmarkArguments {
     private boolean printPartStats;
 
     /** */
-    @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
+    @Parameter(
+        names = {"-ltops", "--allowedLoadTestOperations"},
+        variableArity = true,
+        description = "List of enabled load test operations"
+    )
     private List<String> allowedLoadTestOps = new ArrayList<>();
 
     /** */
@@ -284,6 +288,7 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    /** */
     @ParametersDelegate
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
@@ -463,6 +468,7 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    /** */
     public void setRange(int newVal) {
         range = newVal;
     }

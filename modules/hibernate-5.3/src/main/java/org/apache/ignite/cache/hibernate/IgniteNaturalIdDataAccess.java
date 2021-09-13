@@ -35,7 +35,14 @@ public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess impl
     /** Strategy access type. */
     private final AccessType accessType;
 
-    /** */
+    /**
+     * @param stgy Access strategy adapter.
+     * @param accessType Access type.
+     * @param regionFactory Region factory.
+     * @param domainDataRegion Domain data region.
+     * @param ignite Ignite instance.
+     * @param cache Cache proxy.
+     */
     public IgniteNaturalIdDataAccess(
         HibernateAccessStrategyAdapter stgy,
         AccessType accessType,
@@ -80,7 +87,12 @@ public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, SoftLock lock) throws CacheException {
+    @Override public boolean afterUpdate(
+        SharedSessionContractImplementor ses,
+        Object key,
+        Object val,
+        SoftLock lock
+    ) throws CacheException {
         return stgy.afterUpdate(key, val);
     }
 }

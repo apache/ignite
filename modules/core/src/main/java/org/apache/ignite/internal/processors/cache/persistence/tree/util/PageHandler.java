@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -240,7 +241,21 @@ public abstract class PageHandler<X, R> {
         PageLockListener lsnr,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
-        Boolean res = writePage(pageMem, grpId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE, statHolder, DEFAULT_PAGE_IO_RESOLVER);
+        Boolean res = writePage(
+            pageMem,
+            grpId,
+            pageId,
+            lsnr,
+            PageHandler.NO_OP,
+            init,
+            wal,
+            null,
+            null,
+            0,
+            FALSE,
+            statHolder,
+            DEFAULT_PAGE_IO_RESOLVER
+        );
 
         assert res != FALSE;
     }
@@ -447,7 +462,9 @@ public abstract class PageHandler<X, R> {
 
         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-        init.initNewPage(pageAddr, pageId, pageMem.realPageSize(grpId));
+        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(grpId);
+
+        init.initNewPage(pageAddr, pageId, pageMem.realPageSize(grpId), metrics);
 
         // Here we should never write full page, because it is known to be new.
         if (isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, FALSE))

@@ -19,8 +19,8 @@ package org.apache.ignite.tests;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.policies.RoundRobinPolicy;
@@ -442,8 +442,10 @@ public class IgnitePersistentStoreTest {
         Map<SimplePersonId, SimplePerson> personMap6 = TestsHelper.generateSimplePersonIdsPersonsMap();
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
-            IgniteCache<SimplePersonId, SimplePerson> personCache5 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
-            IgniteCache<SimplePersonId, SimplePerson> personCache6 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache5 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache6 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
 
             LOGGER.info("Running single operation write tests");
 
@@ -466,8 +468,10 @@ public class IgnitePersistentStoreTest {
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
             LOGGER.info("Running POJO strategy read tests for simple objects");
 
-            IgniteCache<SimplePersonId, SimplePerson> personCache5 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
-            IgniteCache<SimplePersonId, SimplePerson> personCache6 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache5 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache6 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
 
             LOGGER.info("Running single operation read tests");
 
@@ -613,7 +617,7 @@ public class IgnitePersistentStoreTest {
         Map<Long, ProductOrder> ordersMap = TestsHelper.generateOrdersMap(5);
         Map<Long, ProductOrder> ordersMap1;
         Product product = TestsHelper.generateRandomProduct(-1L);
-        ProductOrder order = TestsHelper.generateRandomOrder(-1L, -1L, new Date());
+        ProductOrder order = TestsHelper.generateRandomOrder(-1L, -1L, Instant.now());
 
         IgniteTransactions txs = ignite.transactions();
 
@@ -794,7 +798,7 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("-----------------------------------------------------------------------------------");
     }
 
-    /*
+    /**
      * KeyValuePersistenceSettings is passed directly, not as a bean and should be
      * serialized and deserialized correctly
      */
@@ -855,6 +859,7 @@ public class IgnitePersistentStoreTest {
         }
     }
 
+    /** */
     private IgniteConfiguration igniteConfig() throws IOException {
         URL url = getClass().getClassLoader().getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml");
         String persistence = U.readFileToString(url.getFile(), "UTF-8");

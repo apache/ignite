@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -39,8 +40,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setEncryptedPageIndex(pageAddr, 0);
         setEncryptedPageCount(pageAddr, 0);

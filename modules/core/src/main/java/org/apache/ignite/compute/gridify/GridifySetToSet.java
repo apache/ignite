@@ -153,24 +153,24 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface GridifySetToSet {
     /**
-     * Optional node filter to filter nodes participated in job split.
+     * @return Optional node filter to filter nodes participated in job split.
      */
     Class<? extends GridifyNodeFilter> nodeFilter() default GridifyNodeFilter.class;
 
     /**
-     * Optional gridify task execution timeout. Default is {@code 0}
+     * @return Optional gridify task execution timeout. Default is {@code 0}
      * which indicates that task will not timeout.
      */
     long timeout() default 0;
 
     /**
-     * Optional parameter that defines the minimal value below which the
+     * @return Optional parameter that defines the minimal value below which the
      * execution will NOT be grid-enabled.
      */
     int threshold() default 0;
 
     /**
-     * Optional parameter that defines a split size. Split size in other words means how big will
+     * @return Optional parameter that defines a split size. Split size in other words means how big will
      * be the sub-collection
      * that will travel to remote nodes. Note that this is NOT a dynamic setting and you have to set
      * the split size up front. This may look
@@ -191,12 +191,12 @@ public @interface GridifySetToSet {
     int splitSize() default 0;
 
     /**
-     * Optional interceptor class.
+     * @return Optional interceptor class.
      */
     Class<? extends GridifyInterceptor> interceptor() default GridifyInterceptor.class;
 
     /**
-     * Name of the grid to use. By default, no-name default grid is used.
+     * @return Name of the grid to use. By default, no-name default grid is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
      *
      * @deprecated Use {@link #igniteInstanceName()}. Nonempty {@link #igniteInstanceName()} takes precedence.
@@ -205,7 +205,7 @@ public @interface GridifySetToSet {
     String gridName() default "";
 
     /**
-     * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
+     * @return Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
      */
     String igniteInstanceName() default "";

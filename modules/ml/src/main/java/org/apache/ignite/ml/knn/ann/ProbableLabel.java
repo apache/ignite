@@ -27,6 +27,7 @@ public class ProbableLabel {
     /** Key is label, value is probability to be this class */
     public TreeMap<Double, Double> clsLbls;
 
+    /** */
     public ProbableLabel() {
     }
 

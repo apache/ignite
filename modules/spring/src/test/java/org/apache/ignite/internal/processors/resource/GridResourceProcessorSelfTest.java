@@ -228,6 +228,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                 @TestAnnotation
                 private String str6;
 
+                /** */
                 private Callable<String> c = new Callable<String>() {
                     @TestAnnotation
                     private String cStr;
@@ -279,7 +280,8 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
         TestClassWithAnnotationsOuter.TestClassWithAnnotationsInner inner = outer.new TestClassWithAnnotationsInner();
 
-        TestClassWithAnnotationsOuter.TestClassWithAnnotationsInner.TestClassWithAnnotationsDeep deep = inner.new TestClassWithAnnotationsDeep();
+        TestClassWithAnnotationsOuter.TestClassWithAnnotationsInner.TestClassWithAnnotationsDeep deep =
+            inner.new TestClassWithAnnotationsDeep();
 
         String testStr = Long.toString(System.currentTimeMillis());
 

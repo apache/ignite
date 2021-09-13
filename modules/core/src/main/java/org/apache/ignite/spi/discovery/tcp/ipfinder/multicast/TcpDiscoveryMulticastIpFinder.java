@@ -253,8 +253,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * socket is bound to this interface. If local address is not set or is any local address then IP finder
      * creates multicast sockets for all found non-loopback addresses.
      * <p>
-     * If not provided then this property is initialized by the local address set in {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
-     * configuration.
+     * If not provided then this property is initialized by the local address set in
+     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} configuration.
      *
      * @param locAddr Local host address.
      * @see org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi#setLocalAddress(String)

@@ -61,6 +61,7 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
         this.dimension = dimension;
     }
 
+    /** */
     public DistributionMixture() {
     }
 

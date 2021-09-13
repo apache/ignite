@@ -136,6 +136,11 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
     }
 
+    /** @return Data center ID. */
+    public byte dataCenterId() {
+        return dataCenterId;
+    }
+
     /**
      * @param nodeId Node ID.
      * @param ver Remote version.

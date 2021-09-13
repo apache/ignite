@@ -23,9 +23,15 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Class for LinkMap tests.
@@ -37,21 +43,40 @@ public class LinkMapTest extends GridCommonAbstractTest {
     /** */
     protected static final long MB = 1024 * 1024;
 
+    /** */
+    private final PageMemory pageMem = createPageMemory();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        pageMem.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        pageMem.stop(true);
+    }
+
     /**
      * Test that LinkMap works.
      * @throws Exception
      */
     @Test
     public void test() throws Exception {
-        PageMemory pageMem = createPageMemory();
-
         int cacheGroupId = 1;
 
         String groupName = "test";
 
         FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGroupId, 0, PageIdAllocator.FLAG_DATA), cacheGroupId);
 
-        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true);
+        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+
+        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+
+        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true, pageLockTrackerManager);
 
         for (int i = 0; i < 10_000; i++)
             map.put(i, i + 1);
@@ -63,21 +88,19 @@ public class LinkMapTest extends GridCommonAbstractTest {
     /**
      * Create page memory for LinkMap tree.
      */
-    protected PageMemory createPageMemory() throws Exception {
+    private static PageMemory createPageMemory() {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration()
                 .setInitialSize(2 * MB)
                 .setMaxSize(2 * MB);
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-                new UnsafeMemoryProvider(log),
-                null,
-                PAGE_SIZE,
-                plcCfg,
-                new LongAdderMetric("NO_OP", null),
-                true);
-
-        pageMem.start();
-
-        return pageMem;
+        return new PageMemoryNoStoreImpl(
+            log,
+            new UnsafeMemoryProvider(log),
+            null,
+            PAGE_SIZE,
+            plcCfg,
+            new DataRegionMetricsImpl(plcCfg, new GridTestKernalContext(log)),
+            true
+        );
     }
 }

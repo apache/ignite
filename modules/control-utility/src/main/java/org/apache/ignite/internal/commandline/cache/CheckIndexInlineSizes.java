@@ -40,7 +40,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 
 /**
  * Command for check secondary indexes inline size on the different nodes.
@@ -127,7 +126,9 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
         log.info("");
 
         log.info("Recommendations:");
-        log.info(INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes.");
+        log.info(
+            INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes."
+        );
         log.info(INDENT + "Recreate indexes (execute DROP INDEX, CREATE INDEX commands) with different inline size.");
     }
 

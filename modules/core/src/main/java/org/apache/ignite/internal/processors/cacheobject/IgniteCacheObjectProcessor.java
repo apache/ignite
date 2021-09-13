@@ -21,11 +21,13 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -307,6 +309,15 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public void saveMetadata(Collection<BinaryType> types, File dir);
 
     /**
+     * Merge the binary metadata files stored in the specified directory.
+     *
+     * @param metadataDir Directory containing binary metadata files.
+     * @param stopChecker Process interrupt checker.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException;
+
+    /**
      * @param typeName Type name.
      * @param ord ordinal.
      * @return Enum object.
@@ -348,4 +359,13 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param typeId Type ID.
      */
     public void removeType(int typeId);
+
+    /**
+     * Register binary type for specified class.
+     *
+     * @param cls Class.
+     * @return Metadata.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerClass(Class<?> cls) throws BinaryObjectException;
 }

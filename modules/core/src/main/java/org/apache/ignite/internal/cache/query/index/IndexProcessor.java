@@ -58,9 +58,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -346,8 +346,12 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @param force Force rebuild indexes.
      * @return A future of rebuilding cache indexes.
      */
-    @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean force) {
-        return idxRebuild.rebuild(cctx, force);
+    @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(
+        GridCacheContext<?, ?> cctx,
+        boolean force,
+        IndexRebuildCancelToken cancelTok
+    ) {
+        return idxRebuild.rebuild(cctx, force, cancelTok);
     }
 
     /** */
@@ -455,8 +459,8 @@ public class IndexProcessor extends GridProcessorAdapter {
         String indexName,
         int grpId,
         PageMemory pageMemory,
-        final GridAtomicLong removeId,
-        final ReuseList reuseList,
+        GridAtomicLong removeId,
+        ReuseList reuseList,
         boolean mvccEnabled) throws IgniteCheckedException {
 
         assert ctx.cache().context().database().checkpointLockIsHeldByThread();
@@ -467,11 +471,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
         String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
 
-        PageLockListener lockLsnr = ctx.cache().context().diagnostic()
-            .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
-
         BPlusTree<IndexRow, IndexRow> tree = new BPlusTree<IndexRow, IndexRow>(
-            indexName,
+            grpName + "IndexTree##" + indexName,
             grpId,
             grpName,
             pageMemory,
@@ -483,7 +484,7 @@ public class IndexProcessor extends GridProcessorAdapter {
             AbstractInlineLeafIO.versions(inlineSize, mvccEnabled),
             PageIdAllocator.FLAG_IDX,
             ctx.failure(),
-            lockLsnr
+            ctx.cache().context().diagnostic().pageLockTracker()
         ) {
             @Override protected int compare(BPlusIO io, long pageAddr, int idx, IndexRow row) {
                 throw new AssertionError();

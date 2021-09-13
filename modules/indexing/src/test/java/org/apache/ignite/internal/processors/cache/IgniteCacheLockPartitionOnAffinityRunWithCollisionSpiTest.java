@@ -43,6 +43,7 @@ import org.junit.Test;
 public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
 
+    /** */
     private static volatile boolean cancelAllJobs = false;
 
     /** {@inheritDoc} */
@@ -135,6 +136,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
      *
      */
     private static class TestRun implements IgniteRunnable {
+        /** */
         private int jobNum;
 
         /** Ignite Logger. */

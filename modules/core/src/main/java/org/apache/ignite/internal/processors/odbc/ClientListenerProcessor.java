@@ -59,6 +59,7 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
@@ -80,9 +81,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Cancel counter. For testing purposes only. */
     public static final AtomicLong CANCEL_COUNTER = new AtomicLong(0);
-
-    /** Default number of selectors. */
-    private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = true;
@@ -177,6 +175,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
+                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_METRICS))
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -334,7 +333,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log);
+                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);
 

@@ -146,6 +146,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlReque
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
+import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManagerImpl;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -312,6 +314,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Query message listener. */
     private GridMessageListener qryLsnr;
+
+    /** Statistic manager. */
+    private IgniteStatisticsManager statsMgr;
 
     /** Distributed config. */
     private DistributedSqlConfiguration distrCfg;
@@ -2106,6 +2111,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr = new SchemaManager(ctx, connMgr);
         schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
 
+        statsMgr = new IgniteStatisticsManagerImpl(ctx, schemaMgr);
+
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
 
@@ -2330,6 +2337,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         connMgr.stop();
 
         cmdProc.stop();
+
+        statsMgr.stop();
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -3067,12 +3076,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Map<String, Integer> map = new HashMap<>();
         for (GridH2Table table : schemaMgr.dataTables()) {
             for (Index index : table.getIndexes()) {
-                if (index instanceof H2TreeIndexBase && !index.getIndexType().isPrimaryKey())
-                    map.put(index.getSchema().getName() + "#" + index.getTable().getName() + "#" + index.getName(), ((H2TreeIndexBase)index).inlineSize());
+                if (index instanceof H2TreeIndexBase && !index.getIndexType().isPrimaryKey()) {
+                    map.put(
+                        index.getSchema().getName() + "#" + index.getTable().getName() + "#" + index.getName(),
+                        ((H2TreeIndexBase)index).inlineSize()
+                    );
+                }
             }
 
         }
 
         return map;
+    }
+
+    /**
+     * @return Statistics manager.
+     */
+    public IgniteStatisticsManager statsManager() {
+        return statsMgr;
     }
 }

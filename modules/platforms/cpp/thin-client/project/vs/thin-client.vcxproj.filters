@@ -31,6 +31,9 @@
     <ClCompile Include="..\..\src\cache\query\query_fields_row.cpp">
       <Filter>Code\cache\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\compute\compute_client.cpp">
+      <Filter>Code\cache\query</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\impl\data_router.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
@@ -47,6 +50,9 @@
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\compute\compute_client_impl.cpp">
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\data_channel.cpp">
@@ -147,6 +153,9 @@
     <ClInclude Include="..\..\src\impl\cache\query\query_fields_row_impl.h">
       <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\impl\compute\compute_client_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h">
       <Filter>Code\cache</Filter>
     </ClInclude>
@@ -157,6 +166,9 @@
       <Filter>Code\cache\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\cache\query\query_sql_fields.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\compute\compute_client.h">
       <Filter>Code\cache\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\remote_type_updater.h">

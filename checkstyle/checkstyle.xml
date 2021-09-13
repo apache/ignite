@@ -134,5 +134,62 @@
             See: https://checkstyle.sourceforge.io/config_whitespace.html#GenericWhitespace
         -->
         <module name="GenericWhitespace"/>
+
+        <!--
+           Checks for missing Javadoc comments for a method or constructor arguments.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#MissingJavadocMethod
+        -->
+        <module name="MissingJavadocMethod">
+            <property name="scope" value="private"/>
+            <property name="allowedAnnotations" value="{}"/>
+        </module>
+
+        <!--
+           Checks presence of a Javadoc for a method or constructor.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#JavadocMethod
+        -->
+        <module name="JavadocMethod">
+            <property name="accessModifiers" value="public"/>
+        </module>
+
+        <!--
+           Checks for missing Javadoc comments for class, enum, interface, and annotation interface definitions.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#MissingJavadocType
+        -->
+        <module name="MissingJavadocType">
+            <property name="scope" value="private"/>
+        </module>
+
+        <!--
+           Checks that a variable has a Javadoc comment. Ignores serialVersionUID fields.
+           See: https://checkstyle.sourceforge.io/config_javadoc.html#JavadocVariable
+        -->
+        <module name="JavadocVariable"/>
+
+        <!--
+          Suppresses MissingJavadocMethod check violations in the specified packages.
+          See: https://checkstyle.sourceforge.io/config_filters.html#SuppressionXpathSingleFilter
+       -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="(?&lt;!Missing)JavadocMethod"/>
+            <property name="files" value="[\\/]internal[\\/]|[\\/]test[\\/]|[\\/]tests[\\/]|[\\/]ml[\\/]|[\\/]yardstick[\\/]"/>
+        </module>
+
+        <!--
+          Suppresses all Javadoc check violations in the specified files.
+          See: https://checkstyle.sourceforge.io/config_filters.html#SuppressionXpathSingleFilter
+       -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="Javadoc"/>
+            <property name="files" value="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
+        </module>
+    </module>
+
+    <!--
+        Checks that the line length not exceeds 140 chars.
+        See: https://checkstyle.org/config_sizes.html#LineLength
+    -->
+    <module name="LineLength">
+        <property name="max" value="140"/>
     </module>
 </module>

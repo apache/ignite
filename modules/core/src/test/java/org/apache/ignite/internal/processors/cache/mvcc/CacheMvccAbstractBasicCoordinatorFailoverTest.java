@@ -265,7 +265,10 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                                     res = readAllByMode(cache, vals.keySet(), readMode, INTEGER_CODEC);
 
                                 if (readInTx) { // TODO IGNITE-8841
-                                    assertTrue("res.size=" + (res == null ? 0 : res.size()) + ", res=" + res, res == null || vals.size() == res.size());
+                                    assertTrue(
+                                        "res.size=" + (res == null ? 0 : res.size()) + ", res=" + res,
+                                        res == null || vals.size() == res.size()
+                                    );
                                 }
                                 else {
                                     assertEquals(vals.size(), res.size());

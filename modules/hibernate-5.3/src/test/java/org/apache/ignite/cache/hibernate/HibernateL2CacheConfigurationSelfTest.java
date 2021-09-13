@@ -161,8 +161,14 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
-        cfg.setProperty(REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME, DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME);
-        cfg.setProperty(REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME);
+        cfg.setProperty(
+            REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME
+        );
+        cfg.setProperty(
+            REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME
+        );
 
         return cfg;
     }
@@ -257,6 +263,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
     private <T> List<T> getResultsList(Session ses, Class<T> entityClass) {
         CriteriaBuilder builder = ses.getCriteriaBuilder();
         CriteriaQuery<T> query = builder.createQuery(entityClass);

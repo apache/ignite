@@ -257,6 +257,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
+    /** */
     private static <T extends Enum<T>> @Nullable T enumValue(
         String key,
         Map<String, String> params,
@@ -464,7 +465,11 @@ public class GridJettyRestHandler extends AbstractHandler {
             if (sesTok != null)
                 cmdRes.setSessionToken(U.byteArray2HexString(sesTok));
 
-            res.setStatus(cmdRes.getSuccessStatus() == GridRestResponse.SERVICE_UNAVAILABLE ? HttpServletResponse.SC_SERVICE_UNAVAILABLE : HttpServletResponse.SC_OK);
+            res.setStatus(
+                cmdRes.getSuccessStatus() == GridRestResponse.SERVICE_UNAVAILABLE
+                    ? HttpServletResponse.SC_SERVICE_UNAVAILABLE
+                    : HttpServletResponse.SC_OK
+            );
         }
         catch (Throwable e) {
             res.setStatus(HttpServletResponse.SC_OK);

@@ -34,7 +34,14 @@ public class IgniteEntityDataAccess extends IgniteCachedDomainDataAccess impleme
     /** Strategy access type. */
     private final AccessType accessType;
 
-    /** */
+    /**
+     * @param stgy Access strategy adapter.
+     * @param accessType Access type.
+     * @param regionFactory Region factory.
+     * @param domainDataRegion Domain data region.
+     * @param ignite Ignite instance.
+     * @param cache Hibernate cache proxy.
+     */
     public IgniteEntityDataAccess(
         HibernateAccessStrategyAdapter stgy,
         AccessType accessType,
@@ -75,7 +82,14 @@ public class IgniteEntityDataAccess extends IgniteCachedDomainDataAccess impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, Object curVer, Object prevVer, SoftLock lock) {
+    @Override public boolean afterUpdate(
+        SharedSessionContractImplementor ses,
+        Object key,
+        Object val,
+        Object curVer,
+        Object prevVer,
+        SoftLock lock
+    ) {
         return stgy.afterUpdate(key, val);
     }
 

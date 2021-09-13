@@ -41,7 +41,8 @@ import org.junit.Test;
  */
 public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /** */
-    public static final String MESSAGE_PAYLOAD_VALUE = "expValType=Payload, actualValType=o.a.i.i.processors.cache.BinaryTypeMismatchLoggingTest$Payload";
+    public static final String MESSAGE_PAYLOAD_VALUE =
+        "expValType=Payload, actualValType=o.a.i.i.processors.cache.BinaryTypeMismatchLoggingTest$Payload";
 
     /** */
     private GridStringLogger capture;

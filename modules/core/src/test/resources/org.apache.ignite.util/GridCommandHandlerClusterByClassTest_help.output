@@ -56,9 +56,11 @@ This utility can do the following commands:
   View caches information in a cluster. For more details type:
     control.(sh|bat) --cache help
 
+  [EXPERIMENTAL]
   Print absolute paths of unused archived wal segments on each node:
     control.(sh|bat) --wal print [consistentId1,consistentId2,....,consistentIdN]
 
+  [EXPERIMENTAL]
   Delete unused archived wal segments on each node:
     control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
 
@@ -155,43 +157,73 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Restore snapshot:
+    control.(sh|bat) --snapshot restore snapshot_name --start [group1,...groupN]
+
+    Parameters:
+      snapshot_name     - Snapshot name.
+      group1,...groupN  - Cache group names.
+
+  Snapshot restore operation status:
+    control.(sh|bat) --snapshot restore snapshot_name --status
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Cancel snapshot restore operation:
+    control.(sh|bat) --snapshot restore snapshot_name --cancel
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 
+  [EXPERIMENTAL]
   Print metadata command help:
     control.(sh|bat) --meta help
 
+  [EXPERIMENTAL]
   Print list of binary metadata types:
     control.(sh|bat) --meta list
 
+  [EXPERIMENTAL]
   Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
     control.(sh|bat) --meta details [--typeId <typeId>] [--typeName <typeName>]
 
+  [EXPERIMENTAL]
   Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
 If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
 
+  [EXPERIMENTAL]
   Update cluster metadata from specified file (file name is required)
     control.(sh|bat) --meta update --in <fileName>
 
   Set or display shutdown policy:
     control.(sh|bat) --shutdown-policy [IMMEDIATE|GRACEFUL]
 
+  [EXPERIMENTAL]
   Print tracing configuration:
     control.(sh|bat) --tracing-configuration
 
+  [EXPERIMENTAL]
   Print tracing configuration:
     control.(sh|bat) --tracing-configuration get_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
+  [EXPERIMENTAL]
   Print specific tracing configuration based on specified --scope and --label:
     control.(sh|bat) --tracing-configuration get (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL) [--label]
 
+  [EXPERIMENTAL]
   Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration.
     control.(sh|bat) --tracing-configuration reset_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
+  [EXPERIMENTAL]
   Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration.
     control.(sh|bat) --tracing-configuration reset (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL) [--label]
 
+  [EXPERIMENTAL]
   Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration.
     control.(sh|bat) --tracing-configuration set (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL])
 
@@ -268,6 +300,14 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
 
   Get status of collecting performance statistics in the cluster:
     control.(sh|bat) --performance-statistics status
+
+  [EXPERIMENTAL]
+  Checks/Repairs cache consistency using Read Repair approach:
+    control.(sh|bat) --consistency repair cache-name partition
+
+    Parameters:
+      cache-name  - Cache to be checked/repaired.
+      partition   - Cache's partition to be checked/repaired.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

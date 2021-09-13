@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -42,6 +41,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -61,7 +61,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
@@ -101,8 +100,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         disableAutoActivation = false;
-
-        System.clearProperty(IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /** {@inheritDoc} */
@@ -216,7 +213,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static class DataNodeFilter implements IgnitePredicate<ClusterNode> {
-
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
             return clusterNode.attribute(DATA_NODE);
         }
@@ -875,13 +872,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void checkMapTxNodes(boolean primary, boolean near) throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
-
         int bltNodesCnt = 3;
 
         Ignite ig = startGrids(bltNodesCnt);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         ig.createCache(new CacheConfiguration<>()
             .setName(CACHE_NAME)
@@ -977,8 +972,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         for (int i = 1; i < 4; i++) {
             IgniteEx ig0 = grid(i);
 
-            for (int p = 0; p < 32; p++)
-                assertEqualsCollections(ig.affinity(cacheName).mapPartitionToPrimaryAndBackups(p), ig0.affinity(cacheName).mapPartitionToPrimaryAndBackups(p));
+            for (int p = 0; p < 32; p++) {
+                assertEqualsCollections(
+                    ig.affinity(cacheName).mapPartitionToPrimaryAndBackups(p),
+                    ig0.affinity(cacheName).mapPartitionToPrimaryAndBackups(p)
+                );
+            }
         }
 
         for (Map.Entry<Integer, String> e : keyToConsId.entrySet()) {
