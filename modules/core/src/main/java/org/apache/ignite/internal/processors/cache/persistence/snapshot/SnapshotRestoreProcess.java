@@ -152,6 +152,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *  (?) 19. Exclude partitions for restoring caches from PME.
  *  20. Make the CacheGroupActionData private inner class.
  *  21. Partitions may not be even created in a snapshot.
+ *  22. Snapshot interrupted during caches loading from snapshot.
  *
  * Other strategies to be memento to:
  *

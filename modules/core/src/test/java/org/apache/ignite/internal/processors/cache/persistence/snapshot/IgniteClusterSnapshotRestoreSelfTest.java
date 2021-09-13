@@ -563,12 +563,15 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> startGrid(3),
-            IgniteSpiException.class,
-            "to add the node to cluster - remove directories with the caches"
-        );
+        dfltCacheCfg = null;
+
+        // Should start successfully.
+        Ignite ignite = startGrid(3);
+
+        resetBaselineTopology();
+        awaitPartitionMapExchange();
+
+        assertNull(ignite.cache(DEFAULT_CACHE_NAME));
     }
 
     /** @throws Exception If failed. */
