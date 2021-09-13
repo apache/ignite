@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -88,10 +89,10 @@ class KillCommandsTests {
     private static CountDownLatch computeLatch;
 
     /** Scan query filter latch. */
-    private static CountDownLatch filterLatch;
+    private static volatile CountDownLatch filterLatch;
 
     /** Scan query cancel latch. */
-    private static CountDownLatch cancelLatch;
+    private static volatile CountDownLatch cancelLatch;
 
     /**
      * Test cancel of the scan query.
@@ -100,8 +101,11 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs,
-        Consumer<T3<UUID, String, Long>> qryCanceler) throws Exception {
+    public static void doTestScanQueryCancel(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        Consumer<T3<UUID, String, Long>> qryCanceler
+    ) throws Exception {
         checkScanQueryCancelBeforeFetching(cli, srvs, qryCanceler);
 
         checkScanQueryCancelDuringFetching(cli, srvs, qryCanceler);
@@ -114,8 +118,11 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    public static void checkScanQueryCancelBeforeFetching(IgniteEx cli, List<IgniteEx> srvs,
-        Consumer<T3<UUID, String, Long>> qryCanceler) {
+    public static void checkScanQueryCancelBeforeFetching(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        Consumer<T3<UUID, String, Long>> qryCanceler
+    ) {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -124,14 +131,7 @@ class KillCommandsTests {
         // Fetch first entry and therefore caching first page.
         assertNotNull(iter1.next());
 
-        List<List<?>> scanQries0 = execute(srvs.get(0),
-            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
-
-        assertEquals(1, scanQries0.size());
-
-        UUID originNodeId = (UUID)scanQries0.get(0).get(0);
-        String cacheName = (String)scanQries0.get(0).get(1);
-        long qryId = (Long)scanQries0.get(0).get(2);
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
 
         // Opens second query.
         QueryCursor<Cache.Entry<Object, Object>> qry2 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -141,7 +141,7 @@ class KillCommandsTests {
         assertNotNull(iter2.next());
 
         // Cancel first query.
-        qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
+        qryCanceler.accept(qryInfo);
 
         // Fetch all cached entries. It's size equal to the {@code PAGE_SZ * NODES_CNT}.
         for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
@@ -154,7 +154,7 @@ class KillCommandsTests {
         for (int i = 0; i < PAGE_SZ * PAGE_SZ - 1; i++)
             assertNotNull(iter2.next());
 
-        checkScanQueryResources(cli, srvs, qryId);
+        checkScanQueryResources(cli, srvs, qryInfo.get3());
 
         qry2.close();
     }
@@ -166,8 +166,11 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    private static void checkScanQueryCancelDuringFetching(IgniteEx cli, List<IgniteEx> srvs,
-        Consumer<T3<UUID, String, Long>> qryCanceler) throws Exception {
+    private static void checkScanQueryCancelDuringFetching(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        Consumer<T3<UUID, String, Long>> qryCanceler
+    ) throws Exception {
         filterLatch = new CountDownLatch(1);
         cancelLatch = new CountDownLatch(1);
 
@@ -190,22 +193,15 @@ class KillCommandsTests {
 
         assertTrue(filterLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
-        List<List<?>> scanQries0 = execute(srvs.get(0),
-            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
 
-        assertEquals(1, scanQries0.size());
-
-        UUID originNodeId = (UUID)scanQries0.get(0).get(0);
-        String cacheName = (String)scanQries0.get(0).get(1);
-        long qryId = (Long)scanQries0.get(0).get(2);
-
-        qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
+        qryCanceler.accept(qryInfo);
 
         cancelLatch.countDown();
 
         assertThrowsAnyCause(null, fut::get, NoSuchElementException.class, "Iterator has been closed.");
 
-        checkScanQueryResources(cli, srvs, qryId);
+        checkScanQueryResources(cli, srvs, qryInfo.get3());
     }
 
     /**
@@ -237,6 +233,21 @@ class KillCommandsTests {
             assertNotNull(futs);
             assertFalse(futs.containsKey(qryId));
         }
+    }
+
+    /**
+     * Gets scan query info.
+     *
+     * @param node Node to get query info.
+     * @return Tuple of scan query info.
+     */
+    private static T3<UUID, String, Long> scanQuery(Ignite node) {
+        List<List<?>> qry = execute(node,
+            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
+
+        assertEquals(1, qry.size());
+
+        return new T3<>((UUID)qry.get(0).get(0), (String)qry.get(0).get(1), (Long)qry.get(0).get(2));
     }
 
     /**
