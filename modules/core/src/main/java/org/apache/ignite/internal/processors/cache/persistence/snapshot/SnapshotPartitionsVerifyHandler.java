@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -103,7 +104,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             if (!grps.remove(grpId))
                 continue;
 
-            Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
+            Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
+                new HashSet<>(meta.partitions().get(grpId));
 
             for (File part : cachePartitionFiles(dir)) {
                 int partId = partId(part.getName());
@@ -212,6 +214,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     return null;
                 }
             );
+        }
+        catch (Throwable t) {
+            log.error("Error executing handler: ", t);
+
+            throw t;
         }
         finally {
             for (GridComponent comp : snpCtx)

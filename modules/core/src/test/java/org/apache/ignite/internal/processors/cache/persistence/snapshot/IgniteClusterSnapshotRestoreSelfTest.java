@@ -749,29 +749,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /**
-     * @param spi Test communication spi.
-     * @param restorePhase The type of distributed process on which communication is blocked.
-     * @param grpName Cache group name.
-     * @return Snapshot restore future.
-     * @throws InterruptedException if interrupted.
-     */
-    private IgniteFuture<Void> waitForBlockOnRestore(
-        TestRecordingCommunicationSpi spi,
-        DistributedProcessType restorePhase,
-        String grpName
-    ) throws InterruptedException {
-        spi.blockMessages((node, msg) ->
-            msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == restorePhase.ordinal());
-
-        IgniteFuture<Void> fut =
-            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(grpName));
-
-        spi.waitForBlocked();
-
-        return fut;
-    }
-
-    /**
      * Custom I/O factory to preprocessing created files.
      */
     private static class CustomFileIOFactory implements FileIOFactory {

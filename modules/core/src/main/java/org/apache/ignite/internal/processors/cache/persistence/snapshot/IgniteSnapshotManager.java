@@ -391,6 +391,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(restoreCacheGrpProc);
     }
 
     /**
@@ -505,7 +506,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         cctx.exchange().registerExchangeAwareComponent(restoreCacheGrpProc);
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(restoreCacheGrpProc);
 
         // Manage remote snapshots.
         snpRmtHandler = new SequentialRemoteSnapshotManager();
@@ -2038,6 +2038,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new SnapshotHandlerResult<>(hnd.invoke(ctx), null, ctx.localNode());
             }
             catch (Exception e) {
+                U.error(null, "Error invoking snapshot handler", e);
+
                 return new SnapshotHandlerResult<>(null, e, ctx.localNode());
             }
         }

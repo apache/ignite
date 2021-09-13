@@ -260,13 +260,16 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         assert metastorage != null;
+        assert ctx.cache().cacheDescriptors().isEmpty();
+
+        String workDirAbs = ((FilePageStoreManager)ctx.cache().context().pageStore()).workDir().getAbsolutePath();
 
         try {
             metastorage.iterate(RESTORE_KEY_PREFIX, (key, val) -> {
                 // Cache group directory name the restore of which has been guarded by this key.
                 String cacheDirAbsPath = key.replace(RESTORE_KEY_PREFIX, "");
 
-                Path path = Paths.get(cacheDirAbsPath);
+                Path path = Paths.get(workDirAbs, cacheDirAbsPath);
 
                 if (path.isAbsolute()) {
                     U.delete(path);
@@ -288,7 +291,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
 
             crashRecoveryKeys.removeIf(key -> {
                 try {
-                    metastorage.remove(key);
+                    metaStorage.remove(key);
 
                     return true;
                 }
@@ -965,6 +968,9 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                 opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
             }
 
+            // Guard all snapshot restore operations with the metastorage keys.
+            updateMetastorageRecoveryKeys(opCtx0.dirs, false);
+
             CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
                 CompletableFuture.runAsync(
                     () -> {
@@ -984,9 +990,6 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                     }, snpMgr.snapshotExecutorService()) : CompletableFuture.completedFuture(null);
 
             CompletableFuture<Void> partFut = CompletableFuture.completedFuture(null);
-
-            // Guard all snapshot restore operations with the metastorage keys.
-            updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, false);
 
             if (opCtx0.sameTop) {
                 if (log.isInfoEnabled()) {
@@ -1204,7 +1207,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
             if (opCtx0.sameTop) {
                 finishProcess(reqId);
 
-                updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
+                updateMetastorageRecoveryKeys(opCtx0.dirs, true);
             }
             else
                 lateAffProc.start(reqId, reqId);
@@ -1573,7 +1576,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         if (failure == null) {
             finishProcess(reqId);
 
-            updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
+            updateMetastorageRecoveryKeys(opCtx0.dirs, true);
 
             ctx.cache().restartProxies();
 
@@ -1684,7 +1687,7 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                 " operation [reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", node(s)=" + leftNodes + ']');
         }
 
-        updateMetastorageRecoveryKeys(metaStorage, opCtx0.dirs, true);
+        updateMetastorageRecoveryKeys(opCtx0.dirs, true);
 
         finishProcess(reqId, opCtx0.err.get());
     }
@@ -1730,19 +1733,20 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
     }
 
     /**
-     * @param metastorage Metastorage to update.
      * @param dirs List of keys to process.
      * @param remove {@code} if the keys must be removed.
      */
-    private void updateMetastorageRecoveryKeys(ReadWriteMetastorage metastorage, Collection<File> dirs, boolean remove) {
+    private void updateMetastorageRecoveryKeys(Collection<File> dirs, boolean remove) {
         for (File dir : dirs) {
             ctx.cache().context().database().checkpointReadLock();
 
+            String mKey = RESTORE_KEY_PREFIX + dir.getName();
+
             try {
                 if (remove)
-                    metastorage.remove(RESTORE_KEY_PREFIX + dir.getAbsolutePath());
+                    metaStorage.remove(mKey);
                 else
-                    metastorage.write(RESTORE_KEY_PREFIX + dir.getAbsolutePath(), true);
+                    metaStorage.write(mKey, true);
             }
             catch (IgniteCheckedException e) {
                 log.error("Updating the metastorage crash-recovery guard key fails [remove=" + remove +
