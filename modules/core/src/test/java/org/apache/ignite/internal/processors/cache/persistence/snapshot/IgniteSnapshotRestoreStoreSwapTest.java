@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -169,7 +170,7 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
                     @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         if (partId(part.getName()) > 0)
-                            throw new IgniteException("Test exception. Uploading partition file fails: " + pair);
+                            throw new IgniteException("Test exception. Uploading partition file failed: " + pair);
 
                         super.sendPart0(part, cacheDirName, pair, length);
                     }
@@ -182,7 +183,11 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
         commSpi.waitForBlocked();
         commSpi.stopBlock();
 
-        fut.get(TIMEOUT);
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> fut.get(TIMEOUT),
+            IgniteException.class,
+            "Test exception. Uploading partition file failed");
+        assertNull(scc.cache(DEFAULT_CACHE_NAME));
     }
 
     /** @throws Exception If failed. */

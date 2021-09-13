@@ -1969,8 +1969,6 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
             this.cfgs = cfgs;
 
             metasPerNode.computeIfAbsent(locNodeId, id -> new ArrayList<>()).addAll(locMetas);
-
-            cachesLoadFut.listen(f -> System.out.println(">>>>>> cacheRebalanceFut" + f.error()));
         }
     }
 
