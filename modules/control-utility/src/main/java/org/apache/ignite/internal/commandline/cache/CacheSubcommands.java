@@ -94,9 +94,9 @@ public enum CacheSubcommands {
     CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", null, new CheckIndexInlineSizes()),
 
     /**
-     * Delete cache.
+     * Destroy cache.
      */
-    DELETE("delete", null, new CacheDelete());
+    DESTROY("destroy", null, new CacheDestroy());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

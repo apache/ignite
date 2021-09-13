@@ -29,11 +29,11 @@ Arguments: --cache help --yes
       --groups                    - print information about groups.
       --seq                       - print information about sequences.
 
-  --cache delete [cacheName1,...,cacheNameN] [--delete-all-caches] [--skip-existence-check]
-    Permanently delete specified caches.
+  --cache destroy [cacheName1,...,cacheNameN] [--destroy-all-caches] [--skip-existence-check]
+    Permanently destroy specified caches.
 
     Parameters:
-      --delete-all-caches     - permanently delete all user-created caches.
+      --destroy-all-caches    - permanently destroy all user-created caches.
       --skip-existence-check  - disable check for cache existence, otherwise, the command will fail if at least one of the specified caches does not exist.
 
   --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]

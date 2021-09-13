@@ -40,9 +40,9 @@ public enum CacheCommandList {
     LIST("list", new CacheViewer()),
 
     /**
-     * Delete user-created caches.
+     * Destroy user-created caches.
      */
-    DELETE("delete", new CacheDelete()),
+    DELETE("delete", new CacheDestroy()),
 
     /**
      * Validates indexes attempting to read each indexed entry.

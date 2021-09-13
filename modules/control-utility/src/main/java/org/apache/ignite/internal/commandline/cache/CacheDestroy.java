@@ -36,21 +36,20 @@ import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DELETE;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 
 /**
- * Cache delete command.
+ * Cache destroy command.
  */
-public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
-    /** Command argument to delete all user-created caches. */
-    public static final String DELETE_ALL_ARG = "--delete-all-caches";
+public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
+    /** Command argument to destroy all user-created caches. */
+    public static final String DESTROY_ALL_ARG = "--destroy-all-caches";
 
     /** Command argument to disable checking for the existence of caches. */
     public static final String SKIP_EXISTENCE_ARG = "--skip-existence-check";
 
     /** Confirmation message format. */
-    public static final String CONFIRM_MSG = "Warning! The command will delete %d caches: %s.\n" +
+    public static final String CONFIRM_MSG = "Warning! The command will destroy %d caches: %s.\n" +
         "If you continue, the cache data will be impossible to recover.";
 
     /** No user-created caches exists message. */
@@ -74,13 +73,13 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
     @Override public void printUsage(Logger log) {
         usageCache(
             log,
-            DELETE,
-            "Permanently delete specified caches.",
-            F.asMap(DELETE_ALL_ARG, "permanently delete all user-created caches.",
+            DESTROY,
+            "Permanently destroy specified caches.",
+            F.asMap(DESTROY_ALL_ARG, "permanently destroy all user-created caches.",
                 SKIP_EXISTENCE_ARG, "disable check for cache existence, otherwise, the command will fail " +
                                     "if at least one of the specified caches does not exist."),
             optional("cacheName1,...,cacheNameN"),
-            optional(DELETE_ALL_ARG),
+            optional(DESTROY_ALL_ARG),
             optional(SKIP_EXISTENCE_ARG)
         );
     }
@@ -88,7 +87,7 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         boolean checkExisting = true;
-        boolean deleteAll = false;
+        boolean destroyAll = false;
         Set<String> caches = null;
 
         do {
@@ -97,16 +96,16 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
             if (SKIP_EXISTENCE_ARG.equals(cmdArg))
                 checkExisting = false;
             else
-            if (DELETE_ALL_ARG.equals(cmdArg)) {
+            if (DESTROY_ALL_ARG.equals(cmdArg)) {
                 if (caches != null) {
                     throw new IllegalArgumentException(
                         "Unexpected argument \"" + cmdArg + "\". The cache names are already specified.");
                 }
 
-                deleteAll = true;
+                destroyAll = true;
             }
             else {
-                if (deleteAll) {
+                if (destroyAll) {
                     throw new IllegalArgumentException(
                         "Unexpected argument \"" + cmdArg + "\". The flag for deleting all caches is already set.");
                 }
@@ -115,7 +114,7 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
             }
         } while (argIter.hasNextSubArg());
 
-        args = new Arguments(caches, deleteAll, checkExisting);
+        args = new Arguments(caches, destroyAll, checkExisting);
     }
 
     /** {@inheritDoc} */
@@ -171,37 +170,35 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return DELETE.text().toUpperCase();
+        return DESTROY.text().toUpperCase();
     }
 
     /** Command arguments. */
     private static class Arguments {
-        /** Flag to delete all user-created caches. */
-        private final boolean deleteAll;
+        /** Flag to destroy all user-created caches. */
+        private final boolean destroyAll;
 
         /** Flag to check the existence of caches. */
         private final boolean checkExisting;
 
-        /** Caches tp delete. */
+        /** Caches to destroy. */
         private final Set<String> rmvCaches;
 
         /** User-created caches existing in the cluster. */
         private Set<String> clusterCaches;
 
         /**
-         * @param rmvCaches Caches tp delete.
-         * @param deleteAll Flag to delete all user-created caches.
+         * @param rmvCaches Caches to destroy.
+         * @param destroyAll Flag to destroy all user-created caches.
          * @param checkExisting Flag to check the existence of caches.
          */
-        public Arguments(Set<String> rmvCaches, boolean deleteAll, boolean checkExisting) {
-            this.deleteAll = deleteAll;
+        public Arguments(Set<String> rmvCaches, boolean destroyAll, boolean checkExisting) {
+            this.destroyAll = destroyAll;
             this.checkExisting = checkExisting;
             this.rmvCaches = rmvCaches;
         }
 
-        /**
-         * @return Caches tp delete.
-         */
+        /** @return Caches to destroy. */
         public Set<String> cacheNames() {
             return rmvCaches == null ? clusterCaches : rmvCaches;
         }
@@ -220,7 +217,7 @@ public class CacheDelete extends AbstractCommand<VisorCacheStopTaskArg> {
                 }
             }
 
-            if (deleteAll || !checkExisting)
+            if (destroyAll || !checkExisting)
                 return;
 
             Set<String> unknownCaches = new HashSet<>(rmvCaches);
