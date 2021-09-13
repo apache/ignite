@@ -392,6 +392,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
         ctx.internalSubscriptionProcessor().registerMetastorageListener(restoreCacheGrpProc);
+
+        // Manage remote snapshots.
+        snpRmtHandler = new SequentialRemoteSnapshotManager();
     }
 
     /**
@@ -506,9 +509,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         cctx.exchange().registerExchangeAwareComponent(restoreCacheGrpProc);
-
-        // Manage remote snapshots.
-        snpRmtHandler = new SequentialRemoteSnapshotManager();
 
         cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtHandler);
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtHandler);
