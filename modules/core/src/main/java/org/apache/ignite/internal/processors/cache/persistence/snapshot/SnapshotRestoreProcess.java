@@ -1405,10 +1405,11 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         }
 
         // Load other partitions from remote nodes.
+        Map<UUID, Map<Integer, Set<Integer>>> snpAff = snapshotAffinity(opCtx0.metasPerNode,
+            (grpId, partId) -> notScheduled.get(grpId) != null && notScheduled.get(grpId).contains(partId));
+
         try {
-            for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m :
-                snapshotAffinity(opCtx0.metasPerNode,
-                    (grpId, partId) -> notScheduled.get(grpId) != null && notScheduled.get(grpId).contains(partId)).entrySet()) {
+            for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
                 if (m.getKey().equals(ctx.localNodeId()))
                     continue;
 
@@ -1462,11 +1463,9 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
                                 opCtx0.errHnd.accept(t);
 
                                 // Complete everything else from this request.
-                                opCtx0.locProgress.entrySet().stream()
-                                    .filter(e -> m.getValue().containsKey(e.getKey().grp.groupId()))
-                                    .flatMap(e -> e.getValue().stream())
-                                    .collect(Collectors.toList())
-                                    .forEach(f -> f.completeExceptionally(t));
+                                completeExceptionally(opCtx0.locProgress.values(),
+                                    m.getValue(),
+                                    t);
                             }
                         });
 
@@ -1476,8 +1475,13 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
             assert F.size(notScheduled.values(), p -> !p.isEmpty()) == 0 : "[notScheduled=" + notScheduled + ']';
         }
         catch (IgniteCheckedException e) {
-            // TODO will it be handled?
             opCtx0.errHnd.accept(e);
+
+            completeExceptionally(opCtx0.locProgress.values(),
+                snpAff.values().stream()
+                    .flatMap(s -> s.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                e);
         }
 
         // Complete loading futures.
@@ -1816,6 +1820,23 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
         catch (Throwable t) {
             ex.accept(t);
         }
+    }
+
+    /**
+     * @param futs Map of futures to complete.
+     * @param filter Filtering collection.
+     * @param ex Exception.
+     */
+    private static void completeExceptionally(
+        Collection<Set<PartitionRestoreLifecycleFuture>> futs,
+        Map<Integer, Set<Integer>> filter,
+        Throwable ex
+    ) {
+        futs.stream()
+            .flatMap(Collection::stream)
+            .filter(e -> filter.containsKey(e.grp.groupId()))
+            .collect(Collectors.toList())
+            .forEach(f -> f.completeExceptionally(ex));
     }
 
     /**

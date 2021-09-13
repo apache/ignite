@@ -31,8 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -132,7 +135,6 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
         cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
     }
 
-    // TODO add test when force affinity reassignment occurs during the restore procedure.
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
@@ -227,7 +229,41 @@ public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRes
     /** @throws Exception If failed. */
     @Test
     public void testSnapshotRestoreDuringForceReassignment() throws Exception {
+        String locCacheName = "IgniteTestCache";
+        dfltCacheCfg = null;
 
+        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+        scc.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Object> cache = scc.getOrCreateCache(new CacheConfiguration<Integer, Object>(locCacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 8)).setBackups(2));
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            cache.put(i, valBuilder.apply(i));
+
+        forceCheckpoint();
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
+        spi0.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+
+        startDedicatedGrid(SECOND_CLUSTER_PREFIX, 2);
+
+        resetBaselineTopology();
+        spi0.waitForBlocked();
+
+        copyAndShuffle(snpParts, G.allGrids());
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi0, RESTORE_CACHE_GROUP_SNAPSHOT_LATE_AFFINITY, DEFAULT_CACHE_NAME);
+
+        IgniteFuture<?> forceRebFut = cache.rebalance();
+
+        spi0.stopBlock();
+
+        fut.get(TIMEOUT);
+        forceRebFut.get(TIMEOUT);
+
+        assertCacheKeys(scc.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(scc.cache(locCacheName), CACHE_KEYS_RANGE);
     }
 
     /**
