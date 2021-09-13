@@ -183,6 +183,37 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * - Two strategies for the restore on the same topology with indexes: start cache group from preloaded files or start cache
  *   and then re-init index for started cache group. The second case will require data structures re-initialization on the fly.
  *
+ *
+ * IMPLEMENTATION NOTES
+ * ---------------------
+ *
+ * There are still some dirty pages related to processing partition available in the PageMemory.
+ *
+ * Loaded:
+ * - need to set MOVING states to loading partitions.
+ * - need to acquire partition counters from each part
+ *
+ * The process of re-init options:
+ * 1. Clear heap entries from GridDhtLocalPartition, swap datastore, re-init counters
+ * 2. Re-create the whole GridDhtLocalPartition from scratch in GridDhtPartitionTopologyImpl
+ * as it the eviction does
+ *
+ * The re-init notes:
+ * - clearAsync() should move the clearVer in clearAll() to the end.
+ * - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
+ * - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
+ * - CacheDataStore markDestroyed() may be called prior to checkpoint?
+ * - Does new pages on acquirePage will be read from new page store after tag has been incremented?
+ * - invalidate() returns a new tag -> no updates will be written to page store.
+ * - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
+ * - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
+ * - getOrCreatePartition() resets also partition counters of new partitions can be updated
+ * only on cp-write-lock (GridDhtLocalPartition ?).
+ * - update the cntrMap in the GridDhtTopology prior to partition creation
+ * - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
+ * - check there is no reservations on MOVING partition during the switch procedure
+ * - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
+ * locParts in GridDhtPartitionTopologyImpl
  */
 public class SnapshotRestoreProcess implements PartitionsExchangeAware, MetastorageLifecycleListener {
     /** Temporary cache directory prefix. */
@@ -2308,34 +2339,6 @@ public class SnapshotRestoreProcess implements PartitionsExchangeAware, Metastor
 
                 return null;
             }, inited::completeExceptionally);
-
-            // There are still some dirty pages related to processing partition available in the PageMemory.
-
-            // Loaded:
-            // - need to set MOVING states to loading partitions.
-            // - need to acquire partition counters from each part
-
-            // The process of re-init options:
-            // 1. Clear heap entries from GridDhtLocalPartition, swap datastore, re-init counters
-            // 2. Re-create the whole GridDhtLocalPartition from scratch in GridDhtPartitionTopologyImpl
-            // as it the eviction does
-
-            // The re-init notes:
-            // - clearAsync() should move the clearVer in clearAll() to the end.
-            // - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
-            // - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
-            // - CacheDataStore markDestroyed() may be called prior to checkpoint?
-            // - Does new pages on acquirePage will be read from new page store after tag has been incremented?
-            // - invalidate() returns a new tag -> no updates will be written to page store.
-            // - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
-            // - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
-            // - getOrCreatePartition() resets also partition counters of new partitions can be updated
-            // only on cp-write-lock (GridDhtLocalPartition ?).
-            // - update the cntrMap in the GridDhtTopology prior to partition creation
-            // - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
-            // - check there is no reservations on MOVING partition during the switch procedure
-            // - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
-            // locParts in GridDhtPartitionTopologyImpl
         }
 
         /** {@inheritDoc} */
