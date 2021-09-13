@@ -33,6 +33,8 @@ public class RestApiInitializer extends ChannelInitializer<SocketChannel> {
     private final Router router;
 
     /**
+     * Creates a new instance of initializer.
+     *
      * @param router Router.
      */
     public RestApiInitializer(Router router) {

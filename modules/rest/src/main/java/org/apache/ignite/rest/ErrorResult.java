@@ -39,6 +39,8 @@ public class ErrorResult {
     }
 
     /**
+     * Returns error type describing the class of the error occurred.
+     *
      * @return Error type describing the class of the error occurred.
      */
     public String type() {
@@ -46,6 +48,8 @@ public class ErrorResult {
     }
 
     /**
+     * Returns user-friendly error message.
+     *
      * @return User-friendly error message.
      */
     public String message() {

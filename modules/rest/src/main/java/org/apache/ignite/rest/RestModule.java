@@ -141,6 +141,7 @@ public class RestModule implements IgniteComponent {
      *
      * @param router Dispatcher of http requests.
      * @return Future which will be notified when this channel is closed.
+     * @throws RuntimeException if this module cannot be bound to a port.
      */
     private ChannelFuture startRestEndpoint(Router router) {
         RestView restConfigurationView = nodeCfgRegistry.getConfiguration(RestConfiguration.KEY).value();

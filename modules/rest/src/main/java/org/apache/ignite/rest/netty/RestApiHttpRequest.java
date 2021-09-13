@@ -32,6 +32,8 @@ public class RestApiHttpRequest {
     private final Map<String, String> qryParams;
 
     /**
+     * Creates a new instance of http request.
+     *
      * @param req Request.
      * @param qryParams Query params.
      */

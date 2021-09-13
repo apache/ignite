@@ -81,6 +81,8 @@ public class RestApiHttpResponse {
     }
 
     /**
+     * Returns content in a form of raw bytes.
+     *
      * @return Content.
      */
     public byte[] content() {
@@ -108,6 +110,8 @@ public class RestApiHttpResponse {
     }
 
     /**
+     * Returns protocol version.
+     *
      * @return Protocol version
      */
     public HttpVersion protocolVersion() {
@@ -126,6 +130,8 @@ public class RestApiHttpResponse {
     }
 
     /**
+     * Returns mutable response headers.
+     *
      * @return Mutable response headers.
      */
     public HttpHeaders headers() {

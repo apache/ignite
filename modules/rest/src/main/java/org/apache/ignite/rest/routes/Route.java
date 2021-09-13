@@ -46,6 +46,8 @@ public class Route {
     private final BiConsumer<RestApiHttpRequest, RestApiHttpResponse> hnd;
 
     /**
+     * Create a new URI route with the given parameters.
+     *
      * @param route Route.
      * @param method Method.
      * @param acceptType Accept type.
@@ -86,8 +88,10 @@ public class Route {
     }
 
     /**
+     * Returns {@code true} if route matches the request, else otherwise.
+     *
      * @param s Content type.
-     * @return true if route matches the request, else otherwise.
+     * @return {@code true} if route matches the request, else otherwise.
      */
     private boolean matchContentType(String s) {
         return (acceptType == null) || (acceptType.equals(s));
@@ -125,6 +129,7 @@ public class Route {
      *
      * @param uri Input URI.
      * @return Map of decoded params.
+     * @throws IllegalArgumentException if provided URI is incorrect.
      */
     private Map<String, String> paramsDecode(String uri) {
         var receivedParts = new ArrayDeque<>(Arrays.asList(uri.split("/")));

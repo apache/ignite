@@ -47,13 +47,15 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  * It receives http request, process it by {@link Router} and produce http response.
  */
 public class RestApiHandler extends SimpleChannelInboundHandler<HttpObject> {
-    /** */
+    /** Ignite logger. */
     private final IgniteLogger log = IgniteLogger.forClass(getClass());
 
     /** Requests' router. */
     private final Router router;
 
     /**
+     * Creates a new instance of API handler.
+     *
      * @param router Router.
      */
     public RestApiHandler(Router router) {

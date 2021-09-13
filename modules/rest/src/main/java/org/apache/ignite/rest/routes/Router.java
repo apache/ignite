@@ -42,7 +42,7 @@ import org.apache.ignite.rest.netty.RestApiHttpResponse;
  */
 public class Router {
     /** Routes. */
-    private/*public*/ final List<Route> routes;
+    private final List<Route> routes;
 
     /**
      * Creates a new router with the given list of {@code routes}.
