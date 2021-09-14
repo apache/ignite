@@ -134,8 +134,13 @@ public class H2QueryInfo {
      * Query type.
      */
     public enum QueryType {
+        /** */
         LOCAL,
+
+        /** */
         MAP,
+
+        /** */
         REDUCE
     }
 }

@@ -37,6 +37,8 @@ public @interface IgniteSpiConsistencyChecked {
     /**
      * Optional consistency check means that check will be performed only if
      * SPI class names and versions match.
+     *
+     * @return Whether check will be performed only if SPI class names and versions match.
      */
     public boolean optional();
 
@@ -44,6 +46,8 @@ public @interface IgniteSpiConsistencyChecked {
      * If false, skip consistency checks for client cluster nodes. Could be useful
      * for SwapSpaceSpi for example, since client nodes has no data at all, so they
      * don't need to be consistent with server nodes.
+     *
+     * @return Whether perform consistency checks for client cluster nodes.
      */
     public boolean checkClient() default true;
 }

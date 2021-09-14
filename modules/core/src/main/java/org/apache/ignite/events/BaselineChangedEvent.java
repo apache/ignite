@@ -83,7 +83,7 @@ public class BaselineChangedEvent extends EventAdapter {
         this.baselineNodes = baselineNodes;
     }
 
-    /** New baseline nodes. */
+    /** @return New baseline nodes. */
     public Collection<BaselineNode> baselineNodes() {
         //noinspection AssignmentOrReturnOfFieldWithMutableType
         return baselineNodes;

@@ -28,17 +28,17 @@
     <version>2.12.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-sdk-bom</artifactId>
-                <version>1.0.2</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+<!--    <dependencyManagement>-->
+<!--        <dependencies>-->
+<!--            <dependency>-->
+<!--                <groupId>com.azure</groupId>-->
+<!--                <artifactId>azure-sdk-bom</artifactId>-->
+<!--                <version>1.0.2</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
+<!--        </dependencies>-->
+<!--    </dependencyManagement>-->
 
     <dependencies>
         <dependency>
@@ -73,25 +73,38 @@
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core-http-netty</artifactId>
-            <version>1.0.0</version>
+            <version>1.10.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core</artifactId>
-            <version>1.0.0</version>
+            <version>1.17.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-internal-avro</artifactId>
+            <version>12.0.5</version>
         </dependency>
 
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-storage-blob</artifactId>
-            <version>${azure.sdk.version}</version>
+            <version>12.13.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-storage-common</artifactId>
-            <version>${azure.sdk.version}</version>
+            <version>12.12.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
@@ -99,15 +112,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-security-keyvault-secrets</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-identity</artifactId>
         </dependency>
 
         <dependency>
@@ -172,6 +176,13 @@
             <version>${netty.version}</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-codec -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-dns</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/io.netty/netty-codec-http2 -->
         <dependency>
             <groupId>io.netty</groupId>
@@ -221,6 +232,32 @@
             <version>${netty.version}</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-resolver-dns -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>2.0.39.Final</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-codec-dns -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-dns</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/io.netty/netty-transport -->
         <dependency>
             <groupId>io.netty</groupId>
@@ -249,6 +286,13 @@
             <version>${netty.version}</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/io.netty/netty-tcnative -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative</artifactId>
+            <version>2.0.40.Final</version>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -265,14 +309,27 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.3.0.RELEASE</version>
+            <version>3.4.6</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/io.projectreactor.netty/reactor-netty -->
+        <!-- https://mvnrepository.com/artifact/io.projectreactor.netty/reactor-netty-core -->
         <dependency>
             <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty</artifactId>
-            <version>0.9.0.RELEASE</version>
+            <artifactId>reactor-netty-core</artifactId>
+            <version>1.0.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+            <version>1.0.7</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.woodstox/woodstox-core -->
+        <dependency>
+            <groupId>com.fasterxml.woodstox</groupId>
+            <artifactId>woodstox-core</artifactId>
+            <version>6.2.4</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.codehaus.woodstox/stax2-api -->
@@ -280,13 +337,6 @@
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>stax2-api</artifactId>
             <version>4.2.1</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.reflections/reflections -->

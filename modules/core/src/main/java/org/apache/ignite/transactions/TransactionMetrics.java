@@ -62,6 +62,7 @@ public interface TransactionMetrics {
      * Gets a map of all transactions for which the local node is the originating node and which duration
      * exceeds the given duration.
      *
+     * @param duration Transaction duration.
      * @return Map of local node owning transactions which duration is longer than {@code duration}.
      */
     public Map<String, String> getLongRunningOwnerTransactions(int duration);

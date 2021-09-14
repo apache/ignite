@@ -774,6 +774,7 @@ final class TestMemcacheClient {
             return success;
         }
 
+        /** */
         Object key() {
             return key;
         }
@@ -787,6 +788,7 @@ final class TestMemcacheClient {
         }
     }
 
+    /** */
     private static class Data {
         /** Bytes. */
         private final byte[] bytes;

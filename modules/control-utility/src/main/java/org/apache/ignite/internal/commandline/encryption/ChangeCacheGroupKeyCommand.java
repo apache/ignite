@@ -84,7 +84,7 @@ public class ChangeCacheGroupKeyCommand extends AbstractCommand<VisorCacheGroupE
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Change the encryption key of the cache group:", ENCRYPTION,
+        usage(log, "Change the encryption key of the cache group:", ENCRYPTION,
             CHANGE_CACHE_GROUP_KEY.toString(), "cacheGroupName");
     }
 

@@ -70,8 +70,8 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "List or kill transactions:", TX, getTxOptions());
-        Command.usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
+        usage(logger, "List or kill transactions:", TX, getTxOptions());
+        usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
             TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
                 "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
 

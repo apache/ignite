@@ -864,7 +864,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class EventListener implements IgnitePredicate<Event> {
+        /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
             System.out.println("Cache event: " + evt);
 
