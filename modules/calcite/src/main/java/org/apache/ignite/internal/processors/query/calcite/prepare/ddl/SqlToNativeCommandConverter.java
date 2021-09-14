@@ -29,12 +29,18 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropUser;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
@@ -50,7 +56,10 @@ public class SqlToNativeCommandConverter {
     public static boolean isSupported(SqlNode sqlCmd) {
         return sqlCmd instanceof IgniteSqlCreateIndex
             || sqlCmd instanceof IgniteSqlDropIndex
-            || sqlCmd instanceof IgniteSqlAlterTable;
+            || sqlCmd instanceof IgniteSqlAlterTable
+            || sqlCmd instanceof IgniteSqlCreateUser
+            || sqlCmd instanceof IgniteSqlAlterUser
+            || sqlCmd instanceof IgniteSqlDropUser;
     }
 
     /**
@@ -73,6 +82,12 @@ public class SqlToNativeCommandConverter {
             return convertDropIndex((IgniteSqlDropIndex)cmd, pctx);
         else if (cmd instanceof IgniteSqlAlterTable)
             return convertAlterTable((IgniteSqlAlterTable)cmd, pctx);
+        else if (cmd instanceof IgniteSqlCreateUser)
+            return convertCreateUser((IgniteSqlCreateUser)cmd, pctx);
+        else if (cmd instanceof IgniteSqlAlterUser)
+            return convertAlterUser((IgniteSqlAlterUser)cmd, pctx);
+        else if (cmd instanceof IgniteSqlDropUser)
+            return convertDropUser((IgniteSqlDropUser)cmd, pctx);
 
         throw new IgniteSQLException("Unsupported native operation [" +
             "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
@@ -128,5 +143,26 @@ public class SqlToNativeCommandConverter {
         String tblName = deriveObjectName(sqlCmd.name(), ctx, "table name");
 
         return new SqlAlterTableCommand(schemaName, tblName, sqlCmd.ifExists(), sqlCmd.logging());
+    }
+
+    /**
+     * Converts CREATE USER ... command.
+     */
+    private static SqlCreateUserCommand convertCreateUser(IgniteSqlCreateUser sqlCmd, PlanningContext ctx) {
+        return new SqlCreateUserCommand(sqlCmd.user().getSimple(), sqlCmd.password());
+    }
+
+    /**
+     * Converts ALTER USER ... command.
+     */
+    private static SqlAlterUserCommand convertAlterUser(IgniteSqlAlterUser sqlCmd, PlanningContext ctx) {
+        return new SqlAlterUserCommand(sqlCmd.user().getSimple(), sqlCmd.password());
+    }
+
+    /**
+     * Converts DROP USER ... command.
+     */
+    private static SqlDropUserCommand convertDropUser(IgniteSqlDropUser sqlCmd, PlanningContext ctx) {
+        return new SqlDropUserCommand(sqlCmd.user().getSimple());
     }
 }

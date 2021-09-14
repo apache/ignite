@@ -356,3 +356,38 @@ SqlNode SqlAlterTable() :
         }
     )
 }
+
+SqlCreate SqlCreateUser(Span s, boolean replace) :
+{
+    final SqlIdentifier user;
+    final SqlNode password;
+}
+{
+    <USER> user = SimpleIdentifier()
+    <WITH> <PASSWORD> password = StringLiteral() {
+        return new IgniteSqlCreateUser(s.end(this), user, SqlLiteral.unchain(password));
+    }
+}
+
+SqlNode SqlAlterUser() :
+{
+    final Span s;
+    final SqlIdentifier user;
+    final SqlNode password;
+}
+{
+    <ALTER> { s = span(); } <USER> user = SimpleIdentifier()
+    <WITH> <PASSWORD> password = StringLiteral() {
+        return new IgniteSqlAlterUser(s.end(this), user, SqlLiteral.unchain(password));
+    }
+}
+
+SqlDrop SqlDropUser(Span s, boolean replace) :
+{
+    final SqlIdentifier user;
+}
+{
+    <USER> user = SimpleIdentifier() {
+        return new IgniteSqlDropUser(s.end(this), user);
+    }
+}

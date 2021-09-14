@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.SetOpInte
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
@@ -64,6 +65,7 @@ import org.junit.runners.Suite;
     SortAggregateIntegrationTest.class,
     TableDdlIntegrationTest.class,
     IndexDdlIntegrationTest.class,
+    UserDdlIntegrationTest.class,
     FunctionsTest.class,
     TableDmlIntegrationTest.class,
     DataTypesTest.class,

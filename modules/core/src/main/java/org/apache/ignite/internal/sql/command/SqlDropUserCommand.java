@@ -28,6 +28,20 @@ public class SqlDropUserCommand implements SqlCommand {
     /** User name. */
     private String userName;
 
+    /**
+     * Default constructor.
+     */
+    public SqlDropUserCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param userName User name.
+     */
+    public SqlDropUserCommand(String userName) {
+        this.userName = userName;
+    }
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return null;
