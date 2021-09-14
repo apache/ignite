@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -79,7 +81,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final IgniteStatisticsHelper helper;
 
     /** Statistics collector. */
-    private final StatisticsGatherer gatherer;
+    private final StatisticsProcessor statProc;
 
     /** Statistics configuration manager. */
     private final IgniteStatisticsConfigurationManager statCfgMgr;
@@ -156,7 +158,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         statsRepos = new IgniteStatisticsRepository(store, ctx.systemView(), helper, ctx::log);
 
-        gatherer = new StatisticsGatherer(
+        statProc = new StatisticsProcessor(
             statsRepos,
             gatherPool,
             ctx::log
@@ -169,7 +171,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.state(),
             ctx.cache().context().exchange(),
             statsRepos,
-            gatherer,
+            statProc,
             mgmtPool,
             ctx::log
         );
@@ -193,10 +195,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         stateChanged();
 
         if (!ctx.clientNode()) {
+            // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
             ctx.timeout().schedule(() -> {
                 mgmtPool.submit(() -> {
                     try {
-                        gatherer.busyRun(() -> processObsolescence());
+                        statProc.busyRun(() -> processObsolescence());
                     }
                     catch (Throwable e) {
                         log.warning("Error while processing statistics obsolescence", e);
@@ -218,7 +221,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     log.debug("Starting statistics subsystem...");
 
                 statsRepos.start();
-                gatherer.start();
+                statProc.start();
                 statCfgMgr.start();
 
                 started = true;
@@ -230,7 +233,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     log.debug("Stopping statistics subsystem");
 
                 statCfgMgr.stop();
-                gatherer.stop();
+                statProc.stop();
                 statsRepos.stop();
 
                 started = false;
@@ -344,6 +347,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /**
      * Save dirty obsolescence info to local metastore. Check if statistics need to be refreshed and schedule it.
+     * 1) Get all dirty partition statistics.
+     * 2) Make separate tasks for each key to avoid saving obsolescence info for removed partition.
+     * 3) Check if partition should be recollected and add it to list in its tables task.
+     * 4) Submit tasks. Actually obsolescence info will be
      */
     public synchronized void processObsolescence() {
         StatisticsUsageState state = usageState();
@@ -354,13 +361,20 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (log.isTraceEnabled())
             log.trace("Processing statistics obsolescence...");
 
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = statsRepos.saveObsolescenceInfo();
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = statsRepos.getDirtyObsolescenceInfo();
+
+        if (F.isEmpty(dirty)) {
+            if (log.isTraceEnabled())
+                log.trace("No dirty obsolescence info found.");
+
+            return;
+        }
+        else {
+            if (log.isTraceEnabled())
+                log.trace(String.format("Scheduling obsolescence savings for %d targets", dirty.size()));
+        }
 
         Map<StatisticsKey, List<Integer>> tasks = calculateObsolescenceRefreshTasks(dirty);
-
-        if (!F.isEmpty(tasks))
-            if (log.isTraceEnabled())
-                log.trace(String.format("Refreshing statistics for %d targets", tasks.size()));
 
         for (Map.Entry<StatisticsKey, List<Integer>> objTask : tasks.entrySet()) {
             GridH2Table tbl = schemaMgr.dataTable(objTask.getKey().schema(), objTask.getKey().obj());
@@ -368,11 +382,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             if (tbl == null) {
                 if (log.isDebugEnabled())
                     log.debug(String.format("Got obsolescence statistics for unknown table %s", objTask.getKey()));
-
-                continue;
             }
 
             StatisticsObjectConfiguration objCfg;
+
             try {
                 objCfg = statCfgMgr.config(objTask.getKey());
             }
@@ -382,19 +395,38 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 continue;
             }
 
-            if (objCfg == null) {
-                if (log.isDebugEnabled())
-                    log.debug(String.format("Got obsolescence statistics for unknown configuration %s", objTask.getKey()));
+            if (objTask.getValue().isEmpty()) {
+                // Just save obsolescence info, no additional operations needed.
+                statProc.updateKeyAsync(true, tbl, objCfg, Collections.emptySet(), null);
+            }
+            else {
+                // Schedule full gathering and aggregating.
+                if (objCfg == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("Got obsolescence statistics for unknown configuration %s",
+                            objTask.getKey()));
+                    }
 
-                continue;
+                    continue;
+                }
+
+                GridCacheContext<?, ?> cctx = (tbl == null) ? null : tbl.cacheContext();
+
+                AffinityTopologyVersion topVer = null;
+                if (!cctx.gate().enterIfNotStopped())
+                    continue;
+                try {
+                    topVer = cctx.affinity().affinityTopologyVersion();
+                }
+                finally {
+                    cctx.gate().leave();
+                }
+
+                statProc.updateKeyAsync(true, tbl, objCfg, new HashSet<>(objTask.getValue()), topVer);
+
             }
 
-            GridCacheContext<?, ?> cctx = tbl.cacheContext();
-
-            Set<Integer> parts = cctx.affinity().primaryPartitions(
-                cctx.localNodeId(), cctx.affinity().affinityTopologyVersion());
-
-            statCfgMgr.gatherLocalStatistics(objCfg, tbl, parts, new HashSet<>(objTask.getValue()), null);
+            //statCfgMgr.gatherLocalStatistics(objCfg, tbl, parts, new HashSet<>(objTask.getValue()), null);
         }
     }
 
@@ -424,11 +456,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 continue;
             }
 
-            if (F.isEmpty(cfg.columns())) {
-                statsRepos.removeObsolescenceInfo(key);
-                continue;
-            }
-
             StatisticsObjectConfiguration finalCfg = cfg;
 
             objObs.getValue().forEach((k, v) -> {
@@ -439,8 +466,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     taskParts.add(k);
             });
 
-            if (!taskParts.isEmpty())
-                res.put(key, taskParts);
+            res.put(key, taskParts);
         }
 
         return res;

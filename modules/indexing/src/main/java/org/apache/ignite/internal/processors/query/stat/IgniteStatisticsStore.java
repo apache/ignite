@@ -104,6 +104,15 @@ public interface IgniteStatisticsStore {
     );
 
     /**
+     * Save obsolescence info.
+     *
+     * @param key Statistics key which it is belongs to.
+     * @param partId Partition id.
+     * @param partObs Info to save.
+     */
+    public void saveObsolescenceInfo(StatisticsKey key, int partId, ObjectPartitionStatisticsObsolescence partObs);
+
+    /**
      * Remove obsolescence info for the given key and partitions (if specified).
      *
      * @param key Statistics key to remove obsolescense info by.
@@ -124,4 +133,8 @@ public interface IgniteStatisticsStore {
      * @return StatisticsKey to parititonId map with all presented obsolescence info.
      */
     public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap();
+
+    public Collection<Integer> loadObsolescenceMap(StatisticsKey key);
+
+    public Collection<Integer> loadLocalPartitionMap(StatisticsKey key);
 }

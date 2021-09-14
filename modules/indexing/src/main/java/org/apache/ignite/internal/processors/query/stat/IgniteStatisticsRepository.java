@@ -94,16 +94,16 @@ public class IgniteStatisticsRepository {
         log = logSupplier.apply(IgniteStatisticsRepository.class);
 
         ColumnPartitionDataViewSupplier colPartDataViewSupplier = new ColumnPartitionDataViewSupplier(store);
-        
+
         sysViewMgr.registerFiltrableView(STAT_PART_DATA_VIEW, STAT_PART_DATA_VIEW_DESC,
-            new StatisticsColumnPartitionDataViewWalker(), 
+            new StatisticsColumnPartitionDataViewWalker(),
             colPartDataViewSupplier::columnPartitionStatisticsViewSupplier,
             Function.identity());
 
         ColumnLocalDataViewSupplier colLocDataViewSupplier = new ColumnLocalDataViewSupplier(this);
-        
+
         sysViewMgr.registerFiltrableView(STAT_LOCAL_DATA_VIEW, STAT_LOCAL_DATA_VIEW_DESC,
-            new StatisticsColumnLocalDataViewWalker(), 
+            new StatisticsColumnLocalDataViewWalker(),
             colLocDataViewSupplier::columnLocalStatisticsViewSupplier,
             Function.identity());
     }
@@ -128,7 +128,8 @@ public class IgniteStatisticsRepository {
         if (F.isEmpty(colNames)) {
             store.clearLocalPartitionsStatistics(key);
             store.clearObsolescenceInfo(key, null);
-
+            locStats.remove(key);
+            statObs.remove(key);
             return;
         }
 
@@ -185,23 +186,25 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Refresh statistics obsolescence after partition gathering.
+     * Refresh statistics obsolescence and save clear object to store after partition gathering.
      *
      * @param key Statistics key.
      * @param partId Partition id.
      */
     public void refreshObsolescence(StatisticsKey key, int partId) {
+        ObjectPartitionStatisticsObsolescence newObs = new ObjectPartitionStatisticsObsolescence();
+        newObs.dirty(false);
+
         statObs.compute(key, (k, v) -> {
             if (v == null)
                 v = new IntHashMap<>();
-
-            ObjectPartitionStatisticsObsolescence newObs = new ObjectPartitionStatisticsObsolescence();
-            newObs.dirty(true);
 
             v.put(partId, newObs);
 
             return v;
         });
+
+        store.saveObsolescenceInfo(key, partId, newObs);
     }
 
     /**
@@ -249,6 +252,7 @@ public class IgniteStatisticsRepository {
      */
     public void clearLocalPartitionStatistics(StatisticsKey key, int partId) {
         store.clearLocalPartitionStatistics(key, partId);
+
     }
 
     /**
@@ -259,6 +263,23 @@ public class IgniteStatisticsRepository {
      */
     public void saveLocalStatistics(StatisticsKey key, ObjectStatisticsImpl statistics) {
         locStats.put(key, statistics);
+    }
+
+    /**
+     * Clear specified partition ids statistics.
+     *
+     * @param key Key to remove statistics by.
+     * @param partsToRemove Set of parititon ids to remove.
+     */
+    public void clearLocalPartitionIdsStatistics(StatisticsKey key, Set<Integer> partsToRemove) {
+        store.clearLocalPartitionsStatistics(key, partsToRemove);
+
+        statObs.computeIfPresent(key, (k,v) -> {
+            for (Integer partToRemove : partsToRemove)
+                v.remove(partToRemove);
+
+            return (v.isEmpty()) ? null : v;
+        });
     }
 
     /**
@@ -355,31 +376,21 @@ public class IgniteStatisticsRepository {
 
     /**
      * Scan local partitioned statistic and aggregate local statistic for specified statistic object.
-     * @param parts Partitions numbers to aggregate,
+     *
+     * @param stats Partitions statistics to aggregate.
      * @param cfg Statistic configuration to specify statistic object to aggregate.
      * @return aggregated local statistic.
      */
     public ObjectStatisticsImpl aggregatedLocalStatistics(
-        Set<Integer> parts,
+        Collection<ObjectPartitionStatisticsImpl> stats,
         StatisticsObjectConfiguration cfg
     ) {
         if (log.isDebugEnabled()) {
             log.debug("Refresh local aggregated statistic [cfg=" + cfg +
-                ", part=" + parts + ']');
+                ", part.size()=" + stats.size() + ']');
         }
 
-        Collection<ObjectPartitionStatisticsImpl> stats = store.getLocalPartitionsStatistics(cfg.key());
-
-        Collection<ObjectPartitionStatisticsImpl> statsToAgg = stats.stream()
-            .filter(s -> parts.contains(s.partId()))
-            .collect(Collectors.toList());
-
-        assert statsToAgg.size() == parts.size() : "Cannot aggregate local statistics: not enough partitioned statistics";
-
-        ObjectStatisticsImpl locStat = helper.aggregateLocalStatistics(
-            cfg,
-            statsToAgg
-        );
+        ObjectStatisticsImpl locStat = helper.aggregateLocalStatistics(cfg, stats);
 
         if (locStat != null)
             saveLocalStatistics(cfg.key(), locStat);
@@ -507,6 +518,7 @@ public class IgniteStatisticsRepository {
         for (Map.Entry<StatisticsObjectConfiguration, Set<Integer>> objObsCfg : cfg.entrySet()) {
             StatisticsKey key = objObsCfg.getKey().key();
             IntMap<ObjectPartitionStatisticsObsolescence> objObs = obsolescence.get(objObsCfg.getKey().key());
+
             if (objObs == null) {
                 objObs = new IntHashMap<>();
 
@@ -520,6 +532,7 @@ public class IgniteStatisticsRepository {
             objObs.forEach((partId, v) -> {
                 if (!partIds.remove(partId)) {
                     objObsFinal.remove(partId);
+
                     res.computeIfAbsent(key, k -> new HashSet<>()).add(partId);
                 }
             });
@@ -552,37 +565,56 @@ public class IgniteStatisticsRepository {
     }
 
     /**
+     * Get all dirty partityions map.
+     *
+     * @return Map with all dirty partitions.
+     */
+    public synchronized Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> getDirtyObsolescenceInfo() {
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirtyObs = new HashMap<>();
+
+        for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : statObs.entrySet()) {
+            objObs.getValue().forEach((k, v) -> {
+                if (v.dirty())
+                    dirtyObs.computeIfAbsent(objObs.getKey(), k2 -> new IntHashMap()).put(k, v);
+
+            });
+        }
+
+        return dirtyObs;
+    }
+
+    /**
      * Save all modified obsolescence info to store.
      *
      * @return Map with all partitions of objects with dirty partitions.
      */
+    @Deprecated
     public synchronized Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> saveObsolescenceInfo() {
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirtyObs = new HashMap<>();
-
-        boolean hasDirty[] = new boolean[1];
-
-        for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : statObs.entrySet()) {
-            hasDirty[0] = false;
-
-            objObs.getValue().forEach((k, v) -> {
-                if (v.dirty()) {
-                    v.dirty(false);
-                    hasDirty[0] = true;
-                }
-            });
-
-            if (hasDirty[0]) {
-                IntMap<ObjectPartitionStatisticsObsolescence> objDirtyObs = new IntHashMap<>();
-
-                objObs.getValue().forEach((k, v) -> objDirtyObs.put(k, v));
-
-                dirtyObs.put(objObs.getKey(), objDirtyObs);
-            }
-        }
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirtyObs = getDirtyObsolescenceInfo();
 
         store.saveObsolescenceInfo(dirtyObs);
 
         return dirtyObs;
+    }
+
+    /**
+     * Save obsolescence info by specified key. Reset dirty flags.
+     *
+     * @param key Key to save obsolescence info by.
+     */
+    public void saveObsolescenceInfo(StatisticsKey key) {
+        IntMap<ObjectPartitionStatisticsObsolescence> objObs = statObs.get(key);
+
+        if (objObs == null)
+            return;
+
+        objObs.forEach((k, v) -> {
+            if (v.dirty()) {
+                store.saveObsolescenceInfo(key, k, v);
+
+                v.dirty(false);
+            }
+        });
     }
 
     /**

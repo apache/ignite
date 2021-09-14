@@ -133,6 +133,22 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
     }
 
     /** {@inheritDoc} */
+    @Override public void saveObsolescenceInfo(
+        StatisticsKey key,
+        int partId,
+        ObjectPartitionStatisticsObsolescence partObs
+    ) {
+        obsStats.compute(key, (k,v) -> {
+            if (v == null)
+                v = new IntHashMap<>();
+
+            v.put(partId, partObs);
+
+            return v;
+        });
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearObsolescenceInfo(StatisticsKey key, Collection<Integer> partIds) {
         if (F.isEmpty(partIds))
             obsStats.remove(key);
@@ -231,5 +247,35 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
         }
 
         return statisticsMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> loadObsolescenceMap(StatisticsKey key) {
+        Collection<Integer> res[] = new Collection[1];
+        res[0] = new ArrayList<>();
+
+        obsStats.computeIfPresent(key, (k, v) -> {
+            for (Integer partId : v.keys())
+                res[0].add(partId);
+
+            return v;
+        });
+
+        return res[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> loadLocalPartitionMap(StatisticsKey key) {
+        Collection<Integer> res[] = new Collection[1];
+        res[0] = new ArrayList<>();
+
+        partsStats.computeIfPresent(key, (k, v) -> {
+            for (Integer partId : v.keys())
+                res[0].add(partId);
+
+            return v;
+        });
+
+        return res[0];
     }
 }

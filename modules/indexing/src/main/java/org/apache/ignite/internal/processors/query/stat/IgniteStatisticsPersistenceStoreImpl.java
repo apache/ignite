@@ -516,6 +516,22 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
     }
 
     /** {@inheritDoc} */
+    @Override public void saveObsolescenceInfo(
+        StatisticsKey key,
+        int partId,
+        ObjectPartitionStatisticsObsolescence partObs
+    ) {
+        String keyPrefix = getObsolescencePartKeyPrefix(key);
+
+        try {
+            writeMeta(keyPrefix + partId, partObs);
+        }
+        catch (IgniteCheckedException e) {
+            log.warning(String.format("Error while saving statistics obs %s:%d - %s", key, partId, e.getMessage()));
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearObsolescenceInfo(StatisticsKey key, Collection<Integer> partIds) {
         String keyPrefix = getObsolescencePartKeyPrefix(key);
         List<String> keysToRmv = new ArrayList<>();
@@ -578,6 +594,50 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
         catch (IgniteCheckedException e) {
             if (log.isInfoEnabled())
                 log.info(String.format("Unable to load statistics obsolescence keys due to %s", e.getMessage()));
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> loadObsolescenceMap(StatisticsKey key) {
+        List<Integer> res = new ArrayList<>();
+        String prefix = getObsolescencePartKeyPrefix(key);
+
+        try {
+            iterateMeta(prefix, (k, v) -> {
+                int partId = getObsolescenceStatsPartId(k);
+
+                res.add(partId);
+            }, false);
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isInfoEnabled()) {
+                log.info(String.format("Unable to load statistics obsolescence %s.%s due to %s",
+                    key.schema(), key.obj(), e.getMessage()));
+            }
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> loadLocalPartitionMap(StatisticsKey key) {
+        List<Integer> res = new ArrayList<>();
+        String prefix = getPartKeyPrefix(key);
+
+        try {
+            iterateMeta(prefix, (k, v) -> {
+                int partId = getPartitionId(k);
+
+                res.add(partId);
+            }, false);
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isInfoEnabled()) {
+                log.info(String.format("Error during reading statistics %s.%s due to %s",
+                    key.schema(), key.obj(), e.getMessage()));
+            }
         }
 
         return res;
