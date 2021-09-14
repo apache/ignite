@@ -3561,7 +3561,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         for (Map.Entry<UUID, Set<Integer>> entry : partsToRebalance.entrySet()) {
             UUID nodeId = entry.getKey();
-            Set<Integer> rebalancedParts = new HashSet<>(entry.getValue());
+            Set<Integer> rebalancedParts = entry.getValue();
 
             if (!rebalancedParts.isEmpty()) {
                 Set<Integer> historical = rebalancedParts.stream()
