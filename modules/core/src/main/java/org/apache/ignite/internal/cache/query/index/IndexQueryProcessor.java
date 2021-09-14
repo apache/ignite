@@ -332,50 +332,38 @@ public class IndexQueryProcessor {
              *
              * @return {@code true} if the row doesn't belong the range, otherwise {@code false}.
              */
-            private boolean rowIsOutOfRange(IndexRow row, IndexRow lower, IndexRow upper) throws IgniteCheckedException {
-                return exclude(row, lower, 1) || exclude(row, upper, -1);
-            }
-
-            /**
-             * Matches index row, boundary and inclusion mask to decide whether this row will be excluded from result.
-             *
-             * @param row Result row to check.
-             * @param boundary Index search boundary.
-             * @param boundarySign {@code 1} for lower boundary and {@code -1} for upper boundary.
-             * @return {@code true} if specified row has to be excluded from result.
-             */
-            private boolean exclude(IndexRow row, IndexRow boundary, int boundarySign) throws IgniteCheckedException {
-                // Unbounded search, include all.
-                if (boundary == null)
-                    return false;
+            private boolean rowIsOutOfRange(IndexRow row, IndexRow low, IndexRow high) throws IgniteCheckedException {
+                if (low == null && high == null)
+                    return true;  // Unbounded search, include all.
 
                 int criteriaKeysCnt = treeCriteria.size();
 
                 for (int i = 0; i < criteriaKeysCnt; i++) {
                     RangeIndexQueryCriterion c = treeCriteria.get(i);
 
-                    // Include all values on this field.
-                    if (boundary.key(i) == null)
-                        continue;
+                    boolean descOrder = hnd.indexKeyDefinitions().get(i).order().sortOrder() == DESC;
 
-                    int cmp = rowCmp.compareKey(row, boundary, i);
+                    if (low != null && low.key(i) != null) {
+                        int cmp = rowCmp.compareKey(row, low, i);
 
-                    // Swap direction.
-                    if (hnd.indexKeyDefinitions().get(i).order().sortOrder() == DESC)
-                        cmp = -cmp;
-
-                    // Exclude if field equals boundary field and criteria is excluding.
-                    if (cmp == 0) {
-                        if (boundarySign > 0 && !c.lowerIncl())
-                            return true;
-
-                        if (boundarySign < 0 && !c.upperIncl())
-                            return true;
+                        if (cmp == 0) {
+                            if (!c.lowerIncl())
+                                return true;  // Exclude if field equals boundary field and criteria is excluding.
+                        }
+                        else if ((cmp < 0) ^ descOrder)
+                            return true;  // Out of bound. Either below 'low' margin or column with desc order.
                     }
 
-                    // Check sign. Exclude if field is out of boundaries.
-                    if (cmp * boundarySign < 0)
-                        return true;
+                    if (high != null && high.key(i) != null) {
+                        int cmp = rowCmp.compareKey(row, high, i);
+
+                        if (cmp == 0) {
+                            if (!c.upperIncl())
+                                return true;  // Exclude if field equals boundary field and criteria is excluding.
+                        }
+                        else if ((cmp > 0) ^ descOrder)
+                            return true;  // Out of bound. Either above 'high' margin or column with desc order.
+                    }
                 }
 
                 return false;
