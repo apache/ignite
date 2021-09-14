@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,12 +31,14 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 
 /**
  * Snapshot test for encrypted-only snapshots.
@@ -133,27 +136,48 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testValidatingSnapshotFailsWithNoEncryption() throws Exception {
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false);
+        File tmpSnpDir = null;
 
-        stopAllGrids();
+        try {
+            startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false);
 
-        encryption = false;
-        dfltCacheCfg = null;
+            stopAllGrids();
 
-        cleanPersistenceDir(false);
+            encryption = false;
+            dfltCacheCfg = null;
 
-        IgniteEx ig = startGrids(3);
+            File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false);
+            assert snpDir.isDirectory() && snpDir.listFiles().length > 0;
 
-        ig.cluster().state(ACTIVE);
+            tmpSnpDir = new File(snpDir.getAbsolutePath() + "_tmp");
 
-        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
+            assert tmpSnpDir.length() == 0;
 
-        for (Exception e : snpCheckRes.exceptions().values()) {
-            if (e.getMessage().contains("has encrypted caches while encryption is disabled"))
-                return;
+            assert snpDir.renameTo(tmpSnpDir);
+
+            cleanPersistenceDir();
+
+            assert tmpSnpDir.renameTo(snpDir);
+
+            IgniteEx ig = startGrids(3);
+
+            snpDir.renameTo(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+
+            ig.cluster().state(ACTIVE);
+
+            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
+
+            for (Exception e : snpCheckRes.exceptions().values()) {
+                if (e.getMessage().contains("has encrypted caches while encryption is disabled"))
+                    return;
+            }
+
+            throw new IllegalStateException("Snapshot validation must contain error due to encryption is currently disabled.");
         }
-
-        throw new IllegalStateException("Snapshot validation must contain error due to encryption is currently disabled.");
+        finally {
+            if (tmpSnpDir != null)
+                U.delete(tmpSnpDir);
+        }
     }
 
     /** Checks re-encryption fails during snapshot restoration. */
