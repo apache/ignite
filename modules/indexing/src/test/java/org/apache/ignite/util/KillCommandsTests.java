@@ -171,7 +171,7 @@ class KillCommandsTests {
         List<IgniteEx> srvs,
         Consumer<T3<UUID, String, Long>> qryCanceler
     ) throws Exception {
-        filterLatch = new CountDownLatch(1);
+        filterLatch = new CountDownLatch(2);
         cancelLatch = new CountDownLatch(1);
 
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
@@ -180,7 +180,8 @@ class KillCommandsTests {
             try {
                 filterLatch.countDown();
 
-                cancelLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+                if (filterLatch.getCount() == 0)
+                    cancelLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }
             catch (Exception ignored) {
                 // No-op.
@@ -189,7 +190,12 @@ class KillCommandsTests {
             return true;
         }));
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)() -> qry.iterator().next());
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)() -> {
+            Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
+
+            iter.next();
+            iter.next();
+        });
 
         assertTrue(filterLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
