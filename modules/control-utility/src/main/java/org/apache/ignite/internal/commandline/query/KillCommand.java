@@ -193,7 +193,6 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 break;
 
-
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
