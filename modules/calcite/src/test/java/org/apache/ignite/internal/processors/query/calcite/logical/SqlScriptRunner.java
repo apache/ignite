@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -75,6 +77,9 @@ public class SqlScriptRunner {
 
     /** Script. */
     private Script script;
+
+    /** nl to bytes representation. */
+    private static final byte[] NL_BYTES = "\n".getBytes();
 
     /** */
     public SqlScriptRunner(Path test, QueryEngine engine, IgniteLogger log) {
@@ -585,14 +590,43 @@ public class SqlScriptRunner {
 
         /** */
         private void checkResultsHashed(List<List<?>> res) {
-            // TODO:
-            throw new UnsupportedOperationException("Hashed results compare not supported");
+            MessageDigest messageDigest = null;
+            try {
+                messageDigest = MessageDigest.getInstance("MD5");
+            }
+            catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+
+                throw new IgniteException(e);
+            }
+
+            messageDigest.reset();
+
+            for (List<?> l : res) {
+                for (Object itm : l) {
+                    messageDigest.update(String.valueOf(itm).getBytes());
+                    messageDigest.update(NL_BYTES);
+                }
+            }
+
+            String res0 = byteArrayToHex(messageDigest.digest());
+
+            if (!res0.equals(expectedHash))
+                throw new AssertionError("Unexpected hash result");
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Query.class, this);
         }
+    }
+
+    /** */
+    public static String byteArrayToHex(byte[] arr) {
+        StringBuilder sb = new StringBuilder(arr.length * 2);
+        for(byte b: arr)
+            sb.append(String.format("%02x", b));
+        return sb.toString();
     }
 
     /** */

@@ -1,0 +1,1101 @@
+statement ok
+CREATE TABLE t1(a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER)
+
+statement ok
+INSERT INTO t1(e,c,b,d,a) VALUES(103,102,100,101,104)
+
+statement ok
+INSERT INTO t1(a,c,d,e,b) VALUES(107,106,108,109,105)
+
+statement ok
+INSERT INTO t1(e,d,b,a,c) VALUES(110,114,112,111,113)
+
+statement ok
+INSERT INTO t1(d,c,e,a,b) VALUES(116,119,117,115,118)
+
+statement ok
+INSERT INTO t1(c,d,b,e,a) VALUES(123,122,124,120,121)
+
+statement ok
+INSERT INTO t1(a,d,b,e,c) VALUES(127,128,129,126,125)
+
+statement ok
+INSERT INTO t1(e,c,a,d,b) VALUES(132,134,131,133,130)
+
+statement ok
+INSERT INTO t1(a,d,b,e,c) VALUES(138,136,139,135,137)
+
+statement ok
+INSERT INTO t1(e,c,d,a,b) VALUES(144,141,140,142,143)
+
+statement ok
+INSERT INTO t1(b,a,e,d,c) VALUES(145,149,146,148,147)
+
+statement ok
+INSERT INTO t1(b,c,a,d,e) VALUES(151,150,153,154,152)
+
+statement ok
+INSERT INTO t1(c,e,a,d,b) VALUES(155,157,159,156,158)
+
+statement ok
+INSERT INTO t1(c,b,a,d,e) VALUES(161,160,163,164,162)
+
+statement ok
+INSERT INTO t1(b,d,a,e,c) VALUES(167,169,168,165,166)
+
+statement ok
+INSERT INTO t1(d,b,c,e,a) VALUES(171,170,172,173,174)
+
+statement ok
+INSERT INTO t1(e,c,a,d,b) VALUES(177,176,179,178,175)
+
+statement ok
+INSERT INTO t1(b,e,a,d,c) VALUES(181,180,182,183,184)
+
+statement ok
+INSERT INTO t1(c,a,b,e,d) VALUES(187,188,186,189,185)
+
+statement ok
+INSERT INTO t1(d,b,c,e,a) VALUES(190,194,193,192,191)
+
+statement ok
+INSERT INTO t1(a,e,b,d,c) VALUES(199,197,198,196,195)
+
+statement ok
+INSERT INTO t1(b,c,d,a,e) VALUES(200,202,203,201,204)
+
+statement ok
+INSERT INTO t1(c,e,a,b,d) VALUES(208,209,205,206,207)
+
+statement ok
+INSERT INTO t1(c,e,a,d,b) VALUES(214,210,213,212,211)
+
+statement ok
+INSERT INTO t1(b,c,a,d,e) VALUES(218,215,216,217,219)
+
+statement ok
+INSERT INTO t1(b,e,d,a,c) VALUES(223,221,222,220,224)
+
+statement ok
+INSERT INTO t1(d,e,b,a,c) VALUES(226,227,228,229,225)
+
+statement ok
+INSERT INTO t1(a,c,b,e,d) VALUES(234,231,232,230,233)
+
+statement ok
+INSERT INTO t1(e,b,a,c,d) VALUES(237,236,239,235,238)
+
+statement ok
+INSERT INTO t1(e,c,b,a,d) VALUES(242,244,240,243,241)
+
+statement ok
+INSERT INTO t1(e,d,c,b,a) VALUES(246,248,247,249,245)
+
+query I nosort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+ ORDER BY 1
+----
+1000
+1180
+1240
+
+query I nosort
+SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND a>b
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1
+----
+
+query III nosort
+SELECT a,
+       c-d,
+       d
+  FROM t1
+ WHERE c>d
+   AND a>b
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1,2,3
+----
+131
+1
+133
+182
+1
+183
+
+query I nosort
+SELECT e
+  FROM t1
+ WHERE b>c
+   AND d>e
+ ORDER BY 1
+----
+120
+126
+135
+152
+165
+230
+237
+246
+
+query IIIII nosort
+SELECT a+b*2,
+       d,
+       a,
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
+   AND d NOT BETWEEN 110 AND 150
+   AND e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 1,2,4,5,3
+----
+317
+108
+107
+-1
+333
+
+query I nosort
+SELECT e
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1
+----
+165
+
+query II nosort
+SELECT a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND b>c
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1,2
+----
+-1
+222
+-1
+222
+1
+333
+
+query III nosort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d,
+       a+b*2+c*3
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND (a>b-2 AND a<b+2)
+   AND d NOT BETWEEN 110 AND 150
+ ORDER BY 1,2,3
+----
+333
+-3
+1000
+
+query IIII nosort
+SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE c>d
+   AND b>c
+   AND e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 3,4,1,2
+----
+4
+1
+1240
+738
+
+query I nosort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND (e>c OR e<d)
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 1
+----
+3331
+
+query II nosort
+SELECT b-c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b>c
+   AND a>b
+   AND (e>a AND e<b)
+ ORDER BY 2,1
+----
+
+query I nosort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d>e
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 1
+----
+222
+
+query II nosort
+SELECT abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND d NOT BETWEEN 110 AND 150
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 2,1
+----
+205
+222
+168
+333
+182
+333
+201
+333
+
+query IIIII nosort
+SELECT (a+b+c+d+e)/5,
+       a+b*2,
+       a+b*2+c*3+d*4+e*5,
+       a,
+       d-e
+  FROM t1
+ WHERE d>e
+   AND (e>a AND e<b)
+   AND b>c
+ ORDER BY 1,5,3,4,2
+----
+247
+743
+3706
+245
+2
+
+query IIIIII nosort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       b,
+       b-c,
+       e,
+       a
+  FROM t1
+ WHERE EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
+   AND (e>a AND e<b)
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 3,2,1,6,5,4
+----
+
+query IIII nosort
+SELECT d-e,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND (e>a AND e<b)
+   AND a>b
+ ORDER BY 3,4,1,2
+----
+
+query IIIIII nosort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       a
+  FROM t1
+ WHERE EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
+   AND (e>a AND e<b)
+   AND a>b
+ ORDER BY 2,4,6,5,1,3
+----
+
+query I nosort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND c BETWEEN b-2 AND d+2
+   AND b>c
+ ORDER BY 1
+----
+905
+1000
+1391
+1416
+
+query I nosort
+SELECT abs(b-c)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+ ORDER BY 1
+----
+1
+1
+2
+
+query IIIIII nosort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c),
+       b-c,
+       c,
+       a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b>c
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 3,5,2,1,6,4
+----
+
+query IIIIIII nosort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       b-c,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       a-b
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND c>d
+   AND b>c
+ ORDER BY 6,5,7,4,3,1,2
+----
+192
+2878
+1
+191
+444
+1918
+-3
+
+query I nosort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND c BETWEEN b-2 AND d+2
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 1
+----
+222
+
+query IIIIII nosort
+SELECT a-b,
+       a+b*2+c*3+d*4,
+       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
+       abs(a),
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b>c
+   AND (c<=d-2 OR c>=d+2)
+   AND c>d
+ ORDER BY 2,1,5,6,4,3
+----
+-3
+1918
+18
+191
+1158
+382
+
+query IIII nosort
+SELECT b,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND (e>c OR e<d)
+ ORDER BY 2,1,4,3
+----
+105
+1
+333
+-1
+129
+4
+333
+4
+
+query I nosort
+SELECT abs(a)
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND d>e
+   AND (e>a AND e<b)
+ ORDER BY 1
+----
+220
+245
+
+query IIIII nosort
+SELECT a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b,
+       d-e,
+       a+b*2+c*3
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 3,2,5,4,1
+----
+
+query III nosort
+SELECT a,
+       a+b*2+c*3+d*4+e*5,
+       c-d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+ ORDER BY 3,2,1
+----
+245
+3706
+-1
+220
+3331
+2
+
+query II nosort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+ ORDER BY 2,1
+----
+1826
+333
+1529
+555
+
+query IIIIIII nosort
+SELECT (a+b+c+d+e)/5,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       a,
+       abs(a),
+       a-b
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
+   AND e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 5,4,1,2,7,6,3
+----
+112
+114
+1120
+1130
+111
+111
+-1
+
+query IIII nosort
+SELECT abs(a),
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1,3,2,4
+----
+111
+113
+111
+4
+
+query III nosort
+SELECT (a+b+c+d+e)/5,
+       e,
+       b
+  FROM t1
+ WHERE d>e
+   AND (a>b-2 AND a<b+2)
+   AND d NOT BETWEEN 110 AND 150
+ ORDER BY 1,3,2
+----
+167
+165
+167
+182
+180
+181
+
+query III nosort
+SELECT d-e,
+       c-d,
+       a
+  FROM t1
+ WHERE b>c
+   AND (e>a AND e<b)
+   AND c>d
+ ORDER BY 1,2,3
+----
+-2
+3
+191
+
+query I nosort
+SELECT d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 1
+----
+101
+108
+114
+116
+122
+128
+
+query II nosort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c>d
+   AND b>c
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 2,1
+----
+137
+222
+142
+222
+
+query I nosort
+SELECT abs(b-c)
+  FROM t1
+ WHERE c>d
+   AND d NOT BETWEEN 110 AND 150
+   AND a>b
+ ORDER BY 1
+----
+1
+2
+2
+3
+3
+4
+
+query II nosort
+SELECT a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c>d
+   AND b>c
+ ORDER BY 2,1
+----
+-3
+222
+-3
+222
+-1
+222
+-1
+222
+
+query III nosort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND (a>b-2 AND a<b+2)
+   AND b>c
+ ORDER BY 1,3,2
+----
+
+query I nosort
+SELECT abs(b-c)
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND c>d
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1
+----
+
+query I nosort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND c>d
+   AND d>e
+ ORDER BY 1
+----
+1828
+2125
+2226
+
+query I nosort
+SELECT a-b
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
+   AND c BETWEEN b-2 AND d+2
+ ORDER BY 1
+----
+-1
+-1
+-1
+-1
+1
+1
+1
+1
+
+query I nosort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d>e
+   AND (c<=d-2 OR c>=d+2)
+   AND (e>a AND e<b)
+ ORDER BY 1
+----
+444
+
+query II nosort
+SELECT c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE b>c
+   AND (a>b-2 AND a<b+2)
+   AND (e>a AND e<b)
+ ORDER BY 2,1
+----
+
+query II nosort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a)
+  FROM t1
+ WHERE c>d
+   AND b>c
+ ORDER BY 2,1
+----
+1240
+121
+1390
+138
+1430
+142
+382
+191
+
+query II nosort
+SELECT abs(b-c),
+       b-c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1,2
+----
+1
+-1
+
+query II nosort
+SELECT abs(a),
+       d
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND a>b
+   AND c>d
+ ORDER BY 2,1
+----
+
+query IIIII nosort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a),
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e
+  FROM t1
+ WHERE a>b
+   AND (e>a AND e<b)
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 3,1,5,4,2
+----
+
+query III nosort
+SELECT c,
+       a+b*2+c*3+d*4+e*5,
+       abs(a)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (e>a AND e<b)
+ ORDER BY 1,3,2
+----
+119
+1757
+115
+
+query III nosort
+SELECT a+b*2,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+   AND d>e
+ ORDER BY 3,1,2
+----
+666
+-3
+440
+743
+-4
+490
+
+query II nosort
+SELECT abs(a),
+       a-b
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND c BETWEEN b-2 AND d+2
+   AND (e>a AND e<b)
+ ORDER BY 1,2
+----
+220
+-3
+245
+-4
+
+query IIIIIII nosort
+SELECT e,
+       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a),
+       c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b>c
+   AND (e>a AND e<b)
+ ORDER BY 4,6,2,5,7,3,1
+----
+
+query II nosort
+SELECT c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND b>c
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 1,2
+----
+193
+222
+
+query IIII nosort
+SELECT abs(b-c),
+       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
+       b-c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND (e>a AND e<b)
+   AND d>e
+ ORDER BY 2,1,4,3
+----
+1
+24
+-1
+2226
+2
+29
+2
+2476
+
+query IIIII nosort
+SELECT d,
+       (a+b+c+d+e)/5,
+       d-e,
+       a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND (c<=d-2 OR c>=d+2)
+   AND a>b
+ ORDER BY 5,2,1,4,3
+----
+
+query IIIIII nosort
+SELECT b,
+       c,
+       e,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       b-c
+  FROM t1
+ WHERE EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
+   AND a>b
+   AND e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 5,6,1,2,4,3
+----
+105
+106
+109
+1612
+107
+-1
+
+query II nosort
+SELECT a+b*2+c*3+d*4,
+       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND d>e
+   AND b>c
+ ORDER BY 2,1
+----
+1226
+4
+1272
+5
+
+query I nosort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (e>a AND e<b)
+   AND e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 1
+----
+
+query IIIII nosort
+SELECT d,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       abs(a),
+       d-e
+  FROM t1
+ WHERE (c<=d-2 OR c>=d+2)
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 2,5,4,3,1
+----
+169
+2501
+502
+168
+4
+
+query I nosort
+SELECT c-d
+  FROM t1
+ WHERE d>e
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND a>b
+ ORDER BY 1
+----
+
+query IIIIII nosort
+SELECT a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       abs(a),
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a>b
+   AND (e>a AND e<b)
+ ORDER BY 6,3,1,5,2,4
+----
+
+query I nosort
+SELECT c
+  FROM t1
+ WHERE d>e
+   AND (a>b-2 AND a<b+2)
+   AND c BETWEEN b-2 AND d+2
+ ORDER BY 1
+----
+113
+134
+137
+166
+184
+
+query II nosort
+SELECT b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND c BETWEEN b-2 AND d+2
+   AND d>e
+ ORDER BY 1,2
+----
+-1
+440
+2
+490
+
+query I nosort
+SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (e>a AND e<b)
+   AND (a>b-2 AND a<b+2)
+ ORDER BY 1
+----
+
+query III nosort
+SELECT a-b,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE a>b
+   AND (e>a AND e<b)
+   AND (c<=d-2 OR c>=d+2)
+ ORDER BY 1,2,3
+----
+
+query I nosort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 1
+----
+1014
+1067
+1130
+1172
+1226
+1272
+
+query I nosort
+SELECT a+b*2
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND b>c
+ ORDER BY 1
+----
+416
+428
+475
+502
+595
+685
+
+query I nosort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE a>b
+   AND c>d
+   AND d>e
+ ORDER BY 1
+----
+364
+426
+1300
+
+query I nosort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 1
+----
+610
+635
+674
+708
+738
+760
+
+query IIIIII nosort
+SELECT b-c,
+       a+b*2+c*3,
+       a+b*2,
+       c-d,
+       (a+b+c+d+e)/5,
+       a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND d NOT BETWEEN 110 AND 150
+   AND d>e
+ ORDER BY 6,1,5,3,2,4
+----
+
+query IIIIIII nosort
+SELECT a+b*2+c*3+d*4+e*5,
+       a-b,
+       b,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       d-e,
+       abs(b-c)
+  FROM t1
+ WHERE b>c
+   AND a>b
+   AND c>d
+ ORDER BY 4,2,1,7,5,6,3
+----
+
+query I nosort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND (e>a AND e<b)
+   AND e+d BETWEEN a+b-10 AND c+130
+ ORDER BY 1
+----
+
+query II nosort
+SELECT d-e,
+       c
+  FROM t1
+ WHERE (e>a AND e<b)
+ ORDER BY 1,2
+----
+-2
+193
+-1
+119
+1
+224
+2
+247
+
