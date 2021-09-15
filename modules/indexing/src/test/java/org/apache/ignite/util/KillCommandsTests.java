@@ -122,7 +122,7 @@ class KillCommandsTests {
         IgniteEx cli,
         List<IgniteEx> srvs,
         Consumer<T3<UUID, String, Long>> qryCanceler
-    ) {
+    ) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -171,7 +171,7 @@ class KillCommandsTests {
         List<IgniteEx> srvs,
         Consumer<T3<UUID, String, Long>> qryCanceler
     ) throws Exception {
-        filterLatch = new CountDownLatch(2);
+        filterLatch = new CountDownLatch(1);
         cancelLatch = new CountDownLatch(1);
 
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
@@ -180,8 +180,7 @@ class KillCommandsTests {
             try {
                 filterLatch.countDown();
 
-                if (filterLatch.getCount() == 0)
-                    cancelLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+                cancelLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }
             catch (Exception ignored) {
                 // No-op.
@@ -190,12 +189,7 @@ class KillCommandsTests {
             return true;
         }));
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)() -> {
-            Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
-
-            iter.next();
-            iter.next();
-        });
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)() -> qry.iterator().next());
 
         assertTrue(filterLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
@@ -247,7 +241,14 @@ class KillCommandsTests {
      * @param node Node to get query info.
      * @return Tuple of scan query info.
      */
-    private static T3<UUID, String, Long> scanQuery(Ignite node) {
+    private static T3<UUID, String, Long> scanQuery(Ignite node) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(() -> {
+            List<List<?>> qry = execute(node,
+                "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
+
+            return !qry.isEmpty();
+        }, TIMEOUT);
+
         List<List<?>> qry = execute(node,
             "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
 
