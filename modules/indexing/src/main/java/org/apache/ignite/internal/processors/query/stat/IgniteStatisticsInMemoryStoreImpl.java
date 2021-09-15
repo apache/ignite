@@ -138,7 +138,7 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
         int partId,
         ObjectPartitionStatisticsObsolescence partObs
     ) {
-        obsStats.compute(key, (k,v) -> {
+        obsStats.compute(key, (k, v) -> {
             if (v == null)
                 v = new IntHashMap<>();
 

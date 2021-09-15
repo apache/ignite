@@ -134,7 +134,19 @@ public interface IgniteStatisticsStore {
      */
     public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap();
 
+    /**
+     * Load obsolescence partitions map by key.
+     *
+     * @param key Statistics key to load map by.
+     * @return Collection of all parititon ids for which there are obsolescnence info.
+     */
     public Collection<Integer> loadObsolescenceMap(StatisticsKey key);
 
+    /**
+     * Load partitions map by key.
+     *
+     * @param key Staistics key to load map by.
+     * @return Collection of all partition ids for which there are local partitions statistics.
+     */
     public Collection<Integer> loadLocalPartitionMap(StatisticsKey key);
 }

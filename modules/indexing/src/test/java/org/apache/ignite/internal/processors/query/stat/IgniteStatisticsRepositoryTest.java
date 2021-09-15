@@ -152,77 +152,38 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
         assertEquals(2, repo.getLocalPartitionsStatistics(K1).size());
     }
 
-
-
     /**
-     * Test obsolescence work with statistics repository:
-     * 1) Test no obsolescence info present.
-     * 2) Check to load obsolescence by
-     */
-    @Test
-    public void testObsolescenceLoadSave() {
-        StatisticsObjectConfiguration defCfgs[] = buildDefaultConfigurations(T1_TARGET, T2_TARGET);
-
-        Map<StatisticsObjectConfiguration, Set<Integer>> cfg = new HashMap<>();
-        cfg.put(defCfgs[0], setOf(1, 3, 5, 7));
-        cfg.put(defCfgs[1], setOf(2, 4, 5, 7));
-
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
-            .getFieldValue(repo, "statObs");
-
-        IgniteStatisticsStore store = repo.statisticsStore();
-
-        repo.stop();
-        store.clearAllStatistics();
-        repo.start();
-
-        assertTrue(statObs.isEmpty());
-        assertTrue(store.loadAllObsolescence().isEmpty());
-
-        repo.checkObsolescenceInfo(cfg);
-
-        assertFalse(statObs.isEmpty());
-        assertTrue(store.loadAllObsolescence().isEmpty());
-
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = repo.saveObsolescenceInfo();
-
-        assertTrue(dirty.isEmpty());
-
-        repo.addRowsModified(T2_KEY, 2, new byte[]{1, 1, 0, 100});
-
-        assertTrue(store.loadAllObsolescence().isEmpty());
-
-        dirty = repo.saveObsolescenceInfo();
-
-        assertEquals(1, dirty.size());
-        assertNotNull(dirty.get(T2_KEY).get(2));
-
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> allObs = store.loadAllObsolescence();
-        assertFalse(allObs.isEmpty());
-
-        dirty = repo.saveObsolescenceInfo();
-
-        assertTrue(dirty.isEmpty());
-    }
-
-    /**
-     * Try to remove lack object.
+     * Try to remove obsolescence by key:
+     *
+     * 1) Start clear repo
+     * 2) Add some obsolescence through repository
+     * 3) Remove added obsolescence by key
+     * 4) Check neither store and repository contains obsolescence info.
      */
     @Test
     public void testRemoveWrongObsolescence() {
         IgniteStatisticsStore store = repo.statisticsStore();
 
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
+            .getFieldValue(repo, "statObs");
+
         repo.stop();
         store.clearAllStatistics();
-
         repo.start();
+
+        repo.refreshObsolescence(K1, 1);
+
+        assertFalse(store.loadObsolescenceMap(K1).isEmpty());
 
         repo.removeObsolescenceInfo(K1);
 
+        assertTrue(store.loadObsolescenceMap(K1).isEmpty());
+        assertTrue(statObs.isEmpty());
     }
 
     /**
      * Test refresh for partition obsolescence info:
+     *
      * 1) Try to refresh partition obsolescence info.
      * 2) Get it as dirty object.
      */
@@ -232,15 +193,14 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
 
         repo.stop();
         store.clearAllStatistics();
-
         repo.start();
 
         repo.refreshObsolescence(K1, 1);
 
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = repo.saveObsolescenceInfo();
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = repo.getDirtyObsolescenceInfo();
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> allObs = store.loadAllObsolescence();
 
-        assertEquals(1, dirty.size());
+        assertTrue(dirty.isEmpty());
         assertEquals(1, allObs.size());
     }
 }

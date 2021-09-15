@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -94,7 +93,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** Cluster wide statistics usage state. */
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
-        "statistics.usage.state", StatisticsUsageState::fromOrdinal, StatisticsUsageState::index, StatisticsUsageState.class);
+        "statistics.usage.state",
+        StatisticsUsageState::fromOrdinal,
+        StatisticsUsageState::index,
+        StatisticsUsageState.class);
 
     /** Last known statistics usage state. */
     private volatile StatisticsUsageState lastUsageState = null;
@@ -211,8 +213,12 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         ctx.cache().context().exchange().registerExchangeAwareComponent(exchAwareLsnr);
     }
 
+    /**
+     * Check if statistics should be stopped or started and do it.
+     */
     private synchronized void stateChanged() {
         StatisticsUsageState statUsageState = usageState();
+        // Statistics can be processed on: ACTIVE cluster, not stopping, with appropriate usageState
         if (ClusterState.ACTIVE == ctx.state().clusterState().state()
             && !ctx.isStopping()
             && (statUsageState == ON || statUsageState == NO_UPDATE)) {
@@ -294,7 +300,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        //disableOperations();
         stateChanged();
 
         if (gatherPool != null) {
@@ -310,7 +315,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         }
     }
 
-    /** */
+    /**
+     * @return Statistics configuration manager.
+     */
     public IgniteStatisticsConfigurationManager statisticConfiguration() {
         return statCfgMgr;
     }
@@ -334,38 +341,35 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void onRowUpdated(String schemaName, String objName, int partId, byte[] keyBytes) {
-        try {
-            if (statCfgMgr.config(new StatisticsKey(schemaName, objName)) != null)
-                statsRepos.addRowsModified(new StatisticsKey(schemaName, objName), partId, keyBytes);
-        }
-        catch (IgniteCheckedException e) {
-            if (log.isInfoEnabled())
-                log.info(String.format("Error while obsolescence key in %s.%s due to %s", schemaName, objName,
-                    e.getMessage()));
-        }
+        statsRepos.addRowsModified(new StatisticsKey(schemaName, objName), partId, keyBytes);
     }
 
     /**
      * Save dirty obsolescence info to local metastore. Check if statistics need to be refreshed and schedule it.
+     *
      * 1) Get all dirty partition statistics.
-     * 2) Make separate tasks for each key to avoid saving obsolescence info for removed partition.
+     * 2) Make separate tasks for each key to avoid saving obsolescence info for removed partition (race).
      * 3) Check if partition should be recollected and add it to list in its tables task.
-     * 4) Submit tasks. Actually obsolescence info will be
+     * 4) Submit tasks. Actually obsolescence info will be stored during task processing.
      */
     public synchronized void processObsolescence() {
         StatisticsUsageState state = usageState();
 
-        if (state != ON || ctx.isStopping())
+        if (state != ON || ctx.isStopping()) {
+            if (log.isDebugEnabled())
+                log.debug("Skipping obsolescence processing.");
+
             return;
+        }
 
         if (log.isTraceEnabled())
-            log.trace("Processing statistics obsolescence...");
+            log.trace("Process statistics obsolescence started.");
 
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = statsRepos.getDirtyObsolescenceInfo();
 
         if (F.isEmpty(dirty)) {
             if (log.isTraceEnabled())
-                log.trace("No dirty obsolescence info found.");
+                log.trace("No dirty obsolescence info found. Finish obsolescence processing.");
 
             return;
         }
@@ -374,72 +378,62 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 log.trace(String.format("Scheduling obsolescence savings for %d targets", dirty.size()));
         }
 
-        Map<StatisticsKey, List<Integer>> tasks = calculateObsolescenceRefreshTasks(dirty);
+        Map<StatisticsObjectConfiguration, List<Integer>> tasks = calculateObsolescenceRefreshTasks(dirty);
 
-        for (Map.Entry<StatisticsKey, List<Integer>> objTask : tasks.entrySet()) {
-            GridH2Table tbl = schemaMgr.dataTable(objTask.getKey().schema(), objTask.getKey().obj());
+        for (Map.Entry<StatisticsObjectConfiguration, List<Integer>> objTask : tasks.entrySet()) {
+            StatisticsKey key = objTask.getKey().key();
+            GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
 
             if (tbl == null) {
+                // Table can be removed earlier, but not already processed. Or somethink goes wrong. Try to reschedule.
                 if (log.isDebugEnabled())
                     log.debug(String.format("Got obsolescence statistics for unknown table %s", objTask.getKey()));
             }
 
-            StatisticsObjectConfiguration objCfg;
-
-            try {
-                objCfg = statCfgMgr.config(objTask.getKey());
-            }
-            catch (IgniteCheckedException e) {
-                log.warning("Unable to load statistics object configuration from global metastore", e);
-
-                continue;
-            }
-
-            if (objTask.getValue().isEmpty()) {
-                // Just save obsolescence info, no additional operations needed.
-                statProc.updateKeyAsync(true, tbl, objCfg, Collections.emptySet(), null);
-            }
-            else {
-                // Schedule full gathering and aggregating.
-                if (objCfg == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("Got obsolescence statistics for unknown configuration %s",
-                            objTask.getKey()));
-                    }
-
-                    continue;
-                }
-
-                GridCacheContext<?, ?> cctx = (tbl == null) ? null : tbl.cacheContext();
-
-                AffinityTopologyVersion topVer = null;
-                if (!cctx.gate().enterIfNotStopped())
-                    continue;
-                try {
-                    topVer = cctx.affinity().affinityTopologyVersion();
-                }
-                finally {
-                    cctx.gate().leave();
-                }
-
-                statProc.updateKeyAsync(true, tbl, objCfg, new HashSet<>(objTask.getValue()), topVer);
-
-            }
-
-            //statCfgMgr.gatherLocalStatistics(objCfg, tbl, parts, new HashSet<>(objTask.getValue()), null);
+            statProc.updateKeyAsync(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
+                null);
+//            if (objTask.getValue().isEmpty()) {
+//                // Just save or totally remove obsolescence info, no additional operations needed.
+//                statProc.updateKeyAsync(true, tbl, objTask.getKey(), Collections.emptySet(), null);
+//            }
+//            else {
+//                // Schedule full gathering.
+//                GridCacheContext<?, ?> cctx = (tbl == null) ? null : tbl.cacheContext();
+//
+//                AffinityTopologyVersion topVer = null;
+//
+//                if (!cctx.gate().enterIfNotStopped())
+//                    continue;
+//
+//                try {
+//                    topVer = cctx.affinity().affinityTopologyVersion();
+//                    cctx.affinity().affinityReadyFuture(topVer).get();
+//                }
+//                catch (IgniteCheckedException e) {
+//                    log.warning("Unable to get topology ready.", e);
+//                }
+//                finally {
+//                    cctx.gate().leave();
+//                }
+//
+//                statProc.updateKeyAsync(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
+//                    topVer);
+//
+//            }
         }
     }
 
     /**
-     * Calculate targets to refresh obsolescence statistics by map of dirty partitions.
+     * Calculate targets to refresh obsolescence statistics by map of dirty partitions and actual per partition
+     * statistics.
      *
-     * @param dirty Map of statistics key to list of it's dirty obsolescence info.
-     * @return Map of statistics key to partition to refresh statistics.
+     * @param dirty Map of statistics key to list of it's "dirty" paritions.
+     * @return Map of statistics cfg to partition to refresh statistics.
      */
-    private Map<StatisticsKey, List<Integer>> calculateObsolescenceRefreshTasks(
+    private Map<StatisticsObjectConfiguration, List<Integer>> calculateObsolescenceRefreshTasks(
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty
     ) {
-        Map<StatisticsKey, List<Integer>> res = new HashMap<>();
+        Map<StatisticsObjectConfiguration, List<Integer>> res = new HashMap<>();
 
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : dirty.entrySet()) {
             StatisticsKey key = objObs.getKey();
@@ -466,7 +460,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     taskParts.add(k);
             });
 
-            res.put(key, taskParts);
+            // Will add even empty list of partitions to recollect just to force obsolescence info to be stored.
+            res.put(finalCfg, taskParts);
         }
 
         return res;

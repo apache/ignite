@@ -186,7 +186,7 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Refresh statistics obsolescence and save clear object to store after partition gathering.
+     * Refresh statistics obsolescence and save clear object to store, after partition gathering.
      *
      * @param key Statistics key.
      * @param partId Partition id.
@@ -274,7 +274,7 @@ public class IgniteStatisticsRepository {
     public void clearLocalPartitionIdsStatistics(StatisticsKey key, Set<Integer> partsToRemove) {
         store.clearLocalPartitionsStatistics(key, partsToRemove);
 
-        statObs.computeIfPresent(key, (k,v) -> {
+        statObs.computeIfPresent(key, (k, v) -> {
             for (Integer partToRemove : partsToRemove)
                 v.remove(partToRemove);
 
@@ -432,7 +432,6 @@ public class IgniteStatisticsRepository {
 
         for (Map.Entry<StatisticsKey, Set<Integer>> objDeleted : deleted.entrySet())
             store.clearObsolescenceInfo(objDeleted.getKey(), objDeleted.getValue());
-
     }
 
     /**
@@ -449,17 +448,17 @@ public class IgniteStatisticsRepository {
         fitObsolescenceInfo(cfg);
     }
 
-    /**
-     * Load or update obsolescence info cache to fit specified cfg. Remove the others from store to clean it.
-     *
-     * @param cfg Map object statistics configuration to primary partitions set.
-     */
-    public synchronized void checkObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
-        if (!started.compareAndSet(false, true))
-            loadObsolescenceInfo(cfg);
-        else
-            updateObsolescenceInfo(cfg);
-    }
+//    /**
+//     * Load or update obsolescence info cache to fit specified cfg. Remove the others from store to clean it.
+//     *
+//     * @param cfg Map object statistics configuration to primary partitions set.
+//     */
+//    public synchronized void checkObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
+//        if (!started.compareAndSet(false, true))
+//            loadObsolescenceInfo(cfg);
+//        else
+//            updateObsolescenceInfo(cfg);
+//    }
 
     /**
      * Check store to clean unnecessary records.
@@ -492,18 +491,19 @@ public class IgniteStatisticsRepository {
 
     /**
      * Make obsolescence map correlated with configuration and return removed elements map.
+     * Save new obsolescence info if necessary.
      *
      * @param obsolescence Obsolescence info map.
-     * @param cfg Obsolescence configuration.
+     * @param targetCfg Obsolescence configuration.
      * @return Removed from obsolescence info map partitions.
      */
     private static Map<StatisticsKey, Set<Integer>> updateObsolescenceInfo(
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> obsolescence,
-        Map<StatisticsObjectConfiguration, Set<Integer>> cfg
+        Map<StatisticsObjectConfiguration, Set<Integer>> targetCfg
     ) {
         Map<StatisticsKey, Set<Integer>> res = new HashMap<>();
 
-        Set<StatisticsKey> keys = cfg.keySet().stream().map(StatisticsObjectConfiguration::key).collect(Collectors.toSet());
+        Set<StatisticsKey> keys = targetCfg.keySet().stream().map(StatisticsObjectConfiguration::key).collect(Collectors.toSet());
 
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : obsolescence.entrySet()) {
             StatisticsKey key = objObs.getKey();
@@ -515,9 +515,9 @@ public class IgniteStatisticsRepository {
             }
         }
 
-        for (Map.Entry<StatisticsObjectConfiguration, Set<Integer>> objObsCfg : cfg.entrySet()) {
+        for (Map.Entry<StatisticsObjectConfiguration, Set<Integer>> objObsCfg : targetCfg.entrySet()) {
             StatisticsKey key = objObsCfg.getKey().key();
-            IntMap<ObjectPartitionStatisticsObsolescence> objObs = obsolescence.get(objObsCfg.getKey().key());
+            IntMap<ObjectPartitionStatisticsObsolescence> objObs = obsolescence.get(key);
 
             if (objObs == null) {
                 objObs = new IntHashMap<>();
@@ -579,20 +579,6 @@ public class IgniteStatisticsRepository {
 
             });
         }
-
-        return dirtyObs;
-    }
-
-    /**
-     * Save all modified obsolescence info to store.
-     *
-     * @return Map with all partitions of objects with dirty partitions.
-     */
-    @Deprecated
-    public synchronized Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> saveObsolescenceInfo() {
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirtyObs = getDirtyObsolescenceInfo();
-
-        store.saveObsolescenceInfo(dirtyObs);
 
         return dirtyObs;
     }

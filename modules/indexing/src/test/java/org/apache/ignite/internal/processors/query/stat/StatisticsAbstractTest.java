@@ -463,7 +463,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     /** Check that all statistics collections related tasks is empty in specified node. */
     protected void checkStatisticTasksEmpty(IgniteEx ign) {
         Map<StatisticsKey, LocalStatisticsGatheringContext> currColls = GridTestUtils.getFieldValue(
-            statisticsMgr(ign), "gatherer", "gatheringInProgress"
+            statisticsMgr(ign), "statProc", "gatheringInProgress"
         );
 
         assertTrue(currColls.toString(), currColls.isEmpty());

@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Statistics gathering context.
  */
 public class LocalStatisticsGatheringContext {
+    /** Additional steps count: prepare and aggregate (should be counted down if any). */
+    private static final int ADDITIONAL_STEPS = 2;
+
     /** Recollection flag to update obsolescence statistics. */
     private final boolean byObsolescence;
 
@@ -77,7 +80,7 @@ public class LocalStatisticsGatheringContext {
         this.allParts = (byObsolescence) ? null : new HashSet<>(remainingParts);
         this.topVer = topVer;
         this.future = new CompletableFuture<>();
-        this.finished = new CountDownLatch(remainingParts.size());
+        this.finished = new CountDownLatch(remainingParts.size() + ADDITIONAL_STEPS);
     }
 
     /**
@@ -134,6 +137,7 @@ public class LocalStatisticsGatheringContext {
      */
     public synchronized boolean partitionNotAvailable(int partId) {
         remainingParts.remove(partId);
+
         return remainingParts.isEmpty();
     }
 
