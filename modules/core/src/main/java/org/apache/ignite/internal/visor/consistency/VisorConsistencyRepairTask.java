@@ -47,7 +47,8 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 /**
  *
  */
-public class VisorConsistencyRepairTask extends VisorMultiNodeTask<VisorConsistencyRepairTaskArg, VisorConsistencyRepairTaskResult, String> {
+public class VisorConsistencyRepairTask extends
+    VisorMultiNodeTask<VisorConsistencyRepairTaskArg, VisorConsistencyRepairTaskResult, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
