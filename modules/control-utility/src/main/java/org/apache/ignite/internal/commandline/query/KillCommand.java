@@ -124,12 +124,16 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorComputeCancelSessionTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case SERVICE:
                 taskArgs = new VisorCancelServiceTaskArg(argIter.nextArg("Expected service name."));
 
                 taskName = VisorCancelServiceTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -140,6 +144,8 @@ public class KillCommand extends AbstractCommand<Object> {
                     null, null);
 
                 taskName = VisorTxTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -152,6 +158,8 @@ public class KillCommand extends AbstractCommand<Object> {
                 taskArgs = new VisorQueryCancelOnInitiatorTaskArg(ids.get1(), ids.get2());
 
                 taskName = VisorQueryCancelOnInitiatorTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -168,6 +176,8 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorScanQueryCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case CONTINUOUS:
@@ -177,6 +187,8 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorContinuousQueryCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case SNAPSHOT:
@@ -184,10 +196,14 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorSnapshotCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case CONSISTENCY:
                 taskName = VisorConsistencyCancelTask.class.getName();
+
+                taskArgs = null;
 
                 nodeId = BROADCAST_UUID;
 
