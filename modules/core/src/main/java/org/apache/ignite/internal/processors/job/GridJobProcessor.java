@@ -22,10 +22,12 @@ import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -713,6 +715,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
         for (GridJobWorker job : activeJobs.values())
             if (job.getSession().getId().equals(sesId))
                 job.onMasterNodeLeft();
+    }
+
+    /** Searches for jobs that satisfy the condition.
+     *
+     * @param clo Closure.
+     */
+    public Set<GridJobWorker> findJobs(IgnitePredicate<GridJobWorker> clo) {
+        Set<GridJobWorker> jobsWorkers = new HashSet<>();
+
+        for (GridJobWorker jobWorker : activeJobs.values()) {
+            if (clo.apply(jobWorker))
+                jobsWorkers.add(jobWorker);
+        }
+
+        return jobsWorkers;
     }
 
     /**
