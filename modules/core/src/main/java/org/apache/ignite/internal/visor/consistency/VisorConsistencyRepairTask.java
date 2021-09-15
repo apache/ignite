@@ -129,7 +129,10 @@ public class VisorConsistencyRepairTask extends
             IgniteInternalCache<Object, Object> internalCache = ignite.context().cache().cache(cacheName);
 
             if (internalCache == null)
-                return null; // Node filtered by node filter.
+                if (ignite.context().cache().cacheDescriptor(cacheName) != null)
+                    return null; // Node filtered by node filter.
+                else
+                    throw new IgniteException("Cache not found [name=" + cacheName + "]");
 
             GridCacheContext<Object, Object> cctx = internalCache.context();
 

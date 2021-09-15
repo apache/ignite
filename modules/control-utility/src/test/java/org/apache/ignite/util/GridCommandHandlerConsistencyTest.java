@@ -42,6 +42,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
@@ -166,6 +167,21 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         readRepairTx(brokenParts, cacheName);
 
         assertEquals(0, brokenParts.get());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testRepairNonExistentCache() throws Exception {
+        startGrids(3);
+
+        injectTestSystemOut();
+
+        for (int i = 0; i < PARTITIONS; i++) {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", "non-existent", String.valueOf(i)));
+            assertContains(log, testOut.toString(), "Cache not found");
+        }
     }
 
     /**
