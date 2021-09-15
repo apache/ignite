@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
@@ -1290,6 +1292,26 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
                         res.computeIfAbsent(remoteNodeId, n -> new HashSet<>()).add(part);
                     }
+                }
+            }
+
+            for (Map.Entry<UUID, Set<Integer>> entry : res.entrySet()) {
+                UUID nodeId = entry.getKey();
+                Set<Integer> partsToRebalance = entry.getValue();
+
+                if (!partsToRebalance.isEmpty()) {
+                    Set<Integer> historical = partsToRebalance.stream()
+                        .filter(haveHist::contains)
+                        .collect(Collectors.toSet());
+
+                    // Filter out partitions having WAL history.
+                    partsToRebalance.removeAll(historical);
+
+                    U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
+                        + "[grpId=" + grpId
+                        + ", nodeId=" + nodeId
+                        + ", partsFull=" + S.compact(partsToRebalance)
+                        + ", partsHistorical=" + S.compact(historical) + "]");
                 }
             }
 
