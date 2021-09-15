@@ -29,6 +29,7 @@ public class IndexQueryCriteriaBuilder {
      *
      * @param field Index field to apply criterion.
      * @param val Strict equality value.
+     * @return Criterion.
      */
     public static IndexQueryCriterion eq(String field, Object val) {
         return between(field, val, val);
@@ -39,6 +40,7 @@ public class IndexQueryCriteriaBuilder {
      *
      * @param field Index field to apply criterion.
      * @param val Exclusive upper bound.
+     * @return Criterion.
      */
     public static IndexQueryCriterion lt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
@@ -55,6 +57,7 @@ public class IndexQueryCriteriaBuilder {
      *
      * @param field Index field to apply criterion.
      * @param val Inclusive upper bound.
+     * @return Criterion.
      */
     public static IndexQueryCriterion lte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
@@ -72,6 +75,7 @@ public class IndexQueryCriteriaBuilder {
      *
      * @param field Index field to apply criterion.
      * @param val Exclusive lower bound.
+     * @return Criterion.
      */
     public static IndexQueryCriterion gt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
@@ -88,6 +92,7 @@ public class IndexQueryCriteriaBuilder {
      *
      * @param field Index field to apply criterion.
      * @param val Inclusive lower bound.
+     * @return Criterion.
      */
     public static IndexQueryCriterion gte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
@@ -106,6 +111,7 @@ public class IndexQueryCriteriaBuilder {
      * @param field Index field to apply criterion.
      * @param lower Inclusive lower bound.
      * @param upper Inclusive upper bound.
+     * @return Criterion.
      */
     public static IndexQueryCriterion between(String field, Object lower, Object upper) {
         A.notNullOrEmpty(field, "field");
