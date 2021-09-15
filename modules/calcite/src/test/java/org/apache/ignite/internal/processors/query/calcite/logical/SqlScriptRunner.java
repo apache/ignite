@@ -81,11 +81,23 @@ public class SqlScriptRunner {
     /** nl to bytes representation. */
     private static final byte[] NL_BYTES = "\n".getBytes();
 
+    /** Hash algo. */
+    MessageDigest messageDigest;
+
     /** */
     public SqlScriptRunner(Path test, QueryEngine engine, IgniteLogger log) {
         this.test = test;
         this.engine = engine;
         this.log = log;
+
+        try {
+            messageDigest = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+
+            throw new IgniteException(e);
+        }
     }
 
     /** */
@@ -590,16 +602,6 @@ public class SqlScriptRunner {
 
         /** */
         private void checkResultsHashed(List<List<?>> res) {
-            MessageDigest messageDigest = null;
-            try {
-                messageDigest = MessageDigest.getInstance("MD5");
-            }
-            catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-
-                throw new IgniteException(e);
-            }
-
             messageDigest.reset();
 
             for (List<?> l : res) {
@@ -612,7 +614,8 @@ public class SqlScriptRunner {
             String res0 = byteArrayToHex(messageDigest.digest());
 
             if (!res0.equals(expectedHash))
-                throw new AssertionError("Unexpected hash result");
+                throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
+                    ", rows=" + res.size() + ", expected=" + expectedRows);
         }
 
         /** {@inheritDoc} */
