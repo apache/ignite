@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -436,6 +437,7 @@ public interface GridDhtPartitionTopology {
     public Map<UUID, Set<Integer>> resetPartitionStates(
         Map<Integer, Set<UUID>> partsToReset,
         Predicate<GridDhtPartitionState> statesToReset,
+        Supplier<AffinityTopologyVersion> awaitAffVer,
         Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut,
         IgniteBiPredicate<Integer, UUID> rebCond);

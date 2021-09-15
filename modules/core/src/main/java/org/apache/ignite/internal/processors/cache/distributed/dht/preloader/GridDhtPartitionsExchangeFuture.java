@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -3417,7 +3418,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         resetStateByCondition(IntStream.range(0, top.partitions()).boxed().collect(Collectors.toMap(part -> part, part -> emptySet())),
             state -> true,
-            AffinityTopologyVersion.NONE, // The last major affinity version will be used (e.g. node left, node join event).
+            () -> AffinityTopologyVersion.NONE, // The last major affinity version will be used (e.g. node left, node join event).
             top,
             emptySet(),
             (partId, nodeId) -> F.transform(ideal.get(partId), ClusterNode::id).contains(nodeId),
@@ -3521,7 +3522,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (resetOwners) {
             resetStateByCondition(maxCntrs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().nodes)),
                 state -> state == GridDhtPartitionState.OWNING,
-                top.topologyVersionFuture().initialVersion(),
+                () -> top.topologyVersionFuture().initialVersion(),
                 top,
                 haveHistory,
                 (partId, nodeId) -> !maxCntrs.get(partId).nodes.contains(nodeId),
@@ -3536,14 +3537,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * If anyone of OWNING partitions have a counter less than maximum this partition changes state to MOVING forcibly.
      *
      * @param top Topology.
-     * @param resetVer Topology version to wait late affinity assignment to. If <tt>NONE</tt> is used then
+     * @param awaitAffVer Topology version to wait late affinity assignment to. If <tt>NONE</tt> is used then
      * the last topology version which requires affinity re-calculation is used.
      * @param haveHistory Set of partitions witch have historical supplier.
      */
     private void resetStateByCondition(
         Map<Integer, Set<UUID>> partsToReset,
         Predicate<GridDhtPartitionState> statesToReset,
-        AffinityTopologyVersion resetVer,
+        Supplier<AffinityTopologyVersion> awaitAffVer,
         GridDhtPartitionTopology top,
         Set<Integer> haveHistory,
         IgniteBiPredicate<Integer, UUID> rebCond,
@@ -3551,45 +3552,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     ) {
         Map<UUID, Set<Integer>> partsToRebalance = top.resetPartitionStates(partsToReset,
             statesToReset,
+            awaitAffVer,
             haveHistory,
             this,
             rebCond);
 
         top.globalPartSizes(partSizes);
 
-        List<List<ClusterNode>> ideal = cctx.affinity().affinity(top.groupId()).idealAssignmentRaw();
-
         for (Map.Entry<UUID, Set<Integer>> entry : partsToRebalance.entrySet()) {
-            UUID nodeId = entry.getKey();
-            Set<Integer> rebalancedParts = entry.getValue();
-
-            if (!rebalancedParts.isEmpty()) {
-                Set<Integer> historical = rebalancedParts.stream()
-                    .filter(haveHistory::contains)
-                    .collect(Collectors.toSet());
-
-                // Filter out partitions having WAL history.
-                rebalancedParts.removeAll(historical);
-
-                U.log(log, "Partitions states has been reset to MOVING " +
-                    "[grpId=" + top.groupId() +
-                    ", topVer=" + initialVersion() +
-                    ", nodeId=" + nodeId +
-                    ", partsFull=" + S.compact(rebalancedParts) +
-                    ", partsHistorical=" + S.compact(historical) + ']');
-            }
-
-            for (Integer part : entry.getValue()) {
-                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
-                cctx.cache().context().affinity().addToWaitGroup(
-                    top.groupId(),
-                    part,
-                    resetVer,
-                    ideal.get(part));
-
-                // This map will be sent to other nodes in the cluster inside the full message.
+            // This map will be sent to other nodes in the cluster inside the full message.
+            for (Integer part : entry.getValue())
                 partsToReload.put(entry.getKey(), top.groupId(), part);
-            }
         }
     }
 

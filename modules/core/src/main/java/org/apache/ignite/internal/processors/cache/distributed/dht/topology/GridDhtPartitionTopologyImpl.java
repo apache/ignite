@@ -32,6 +32,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -2376,6 +2378,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public Map<UUID, Set<Integer>> resetPartitionStates(
         Map<Integer, Set<UUID>> partsToReset,
         Predicate<GridDhtPartitionState> statesToReset,
+        Supplier<AffinityTopologyVersion> awaitAffVer,
         Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut,
         IgniteBiPredicate<Integer, UUID> rebCond
@@ -2394,6 +2397,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
+            Map<UUID, Set<Integer>> addToWaitGroups = new HashMap<>();
+
             lock.writeLock().lock();
 
             try {
@@ -2445,10 +2450,48 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
+                for (Map.Entry<UUID, Set<Integer>> entry : res.entrySet()) {
+                    UUID nodeId = entry.getKey();
+                    Set<Integer> rebalancedParts = entry.getValue();
+
+                    addToWaitGroups.put(nodeId, new HashSet<>(rebalancedParts));
+
+                    if (!rebalancedParts.isEmpty()) {
+                        Set<Integer> historical = rebalancedParts.stream()
+                            .filter(haveHist::contains)
+                            .collect(Collectors.toSet());
+
+                        // Filter out partitions having WAL history.
+                        rebalancedParts.removeAll(historical);
+
+                        U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
+                            + "[grp=" + grp.cacheOrGroupName()
+                            + ", readyTopVer=" + readyTopVer
+                            + ", topVer=" + exchFut.initialVersion()
+                            + ", nodeId=" + nodeId
+                            + ", partsFull=" + S.compact(rebalancedParts)
+                            + ", partsHistorical=" + S.compact(historical) + "]");
+                    }
+                }
+
                 node2part = new GridDhtPartitionFullMap(node2part, updateSeq.incrementAndGet());
             }
             finally {
                 lock.writeLock().unlock();
+            }
+
+            List<List<ClusterNode>> ideal = ctx.affinity().affinity(groupId()).idealAssignmentRaw();
+
+            for (Map.Entry<UUID, Set<Integer>> entry : addToWaitGroups.entrySet()) {
+                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
+                for (Integer part : entry.getValue()) {
+                    ctx.cache().context().affinity().addToWaitGroup(
+                        groupId(),
+                        part,
+                        awaitAffVer.get(),
+                        ideal.get(part)
+                    );
+                }
             }
         }
         finally {

@@ -30,6 +30,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -1261,6 +1262,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @Override public Map<UUID, Set<Integer>> resetPartitionStates(
         Map<Integer, Set<UUID>> partsToReset,
         Predicate<GridDhtPartitionState> statesToReset,
+        Supplier<AffinityTopologyVersion> awaitAffVer,
         Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut,
         IgniteBiPredicate<Integer, UUID> rebCond
@@ -1286,15 +1288,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
                         partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
-                        res.computeIfAbsent(remoteNodeId, n -> new HashSet<>());
-                        res.get(remoteNodeId).add(part);
+                        res.computeIfAbsent(remoteNodeId, n -> new HashSet<>()).add(part);
                     }
                 }
             }
 
-            for (Map.Entry<Integer, Set<UUID>> entry : partsToReset.entrySet())
-                part2node.put(entry.getKey(), entry.getValue());
-
+            part2node.putAll(partsToReset);
             updateSeq.incrementAndGet();
         } finally {
             lock.writeLock().unlock();
