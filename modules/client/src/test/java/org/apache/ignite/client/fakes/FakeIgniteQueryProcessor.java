@@ -17,46 +17,21 @@
 
 package org.apache.ignite.client.fakes;
 
-import org.apache.ignite.app.Ignite;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
-import org.apache.ignite.table.manager.IgniteTables;
-import org.apache.ignite.tx.IgniteTransactions;
+import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 
-/**
- * Fake Ignite.
- */
-public class FakeIgnite implements Ignite {
-    /**
-     * Default constructor.
-     */
-    public FakeIgnite() {
-        super();
+public class FakeIgniteQueryProcessor implements QueryProcessor {
+    @Override public List<SqlCursor<List<?>>> query(String schemaName, String qry, Object... params) {
+        return Collections.singletonList(new FakeCursor());
     }
 
-    /** */
-    private final IgniteTables tables = new FakeIgniteTables();
+    @Override public void start() {
 
-    /** {@inheritDoc} */
-    @Override public IgniteTables tables() {
-        return tables;
     }
 
-    public QueryProcessor queryEngine() {
-        return new FakeIgniteQueryProcessor();
-    }
+    @Override public void stop() throws Exception {
 
-    /** {@inheritDoc} */
-    @Override public IgniteTransactions transactions() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return null;
     }
 }

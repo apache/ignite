@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
+import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -191,7 +192,7 @@ public class ITClientHandlerTest {
                 local -> local.changePort(10800).changePortRange(10)
         ).join();
 
-        var module = new ClientHandlerModule(mock(IgniteTables.class), registry);
+        var module = new ClientHandlerModule(mock(QueryProcessor.class), mock(IgniteTables.class), registry);
 
         module.start();
 

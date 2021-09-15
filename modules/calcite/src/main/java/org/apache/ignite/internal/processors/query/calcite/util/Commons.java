@@ -61,15 +61,17 @@ import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.generated.query.calcite.sql.IgniteSqlParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.util.ArrayUtils;
-import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
@@ -132,12 +134,16 @@ public final class Commons {
     /** */
     private Commons(){}
 
-    public static <T> Cursor<T> createCursor(Iterable<T> iterable) {
-        return createCursor(iterable.iterator());
+    public static <T> SqlCursor<T> createCursor(Iterable<T> iterable, QueryPlan.Type plan) {
+        return createCursor(iterable.iterator(), plan);
     }
 
-    public static <T> Cursor<T> createCursor(Iterator<T> iter) {
-        return new Cursor<>() {
+    public static <T> SqlCursor<T> createCursor(Iterator<T> iter, QueryPlan.Type type) {
+        return new SqlCursor<>() {
+            @Override public SqlQueryType getQueryType() {
+                return SqlQueryType.mapPlanTypeToSqlType(type);
+            }
+
             @Override public void remove() {
                 iter.remove();
             }

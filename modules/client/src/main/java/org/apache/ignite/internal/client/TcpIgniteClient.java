@@ -23,6 +23,7 @@ import java.util.function.BiFunction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientException;
+import org.apache.ignite.client.proto.query.ClientMessage;
 import org.apache.ignite.internal.client.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.table.ClientTables;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -113,5 +114,19 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public IgniteClientConfiguration configuration() {
         return cfg;
+    }
+
+    /**
+     * Send JdbcClientMessage request to server size and reads JdbcClientMessage result.
+     *
+     * @param opCode Operation code.
+     * @param req JdbcClientMessage request.
+     * @param res JdbcClientMessage result.
+     */
+    public void sendRequest(int opCode, ClientMessage req, ClientMessage res) {
+        ch.serviceAsync(opCode, w -> req.writeBinary(w.out()), p -> {
+            res.readBinary(p.in());
+            return res;
+        }).join();
     }
 }

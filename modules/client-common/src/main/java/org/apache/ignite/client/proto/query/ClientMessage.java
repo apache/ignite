@@ -15,31 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.client.proto.query;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 
 /**
- *
+ * Interface that allows to implement custom serialization logic to client events.
  */
-public interface ExecutionService {
+public interface ClientMessage {
     /**
-     * Executes a query.
+     * Writes fields to provided packer.
      *
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
+     * @param packer Client message packer.
      */
-    List<SqlCursor<List<?>>> executeQuery(String schema, String query, Object[] params);
+    void writeBinary(ClientMessagePacker packer);
 
     /**
-     * Cancels a running query.
+     * Reads fields from provided reader.
      *
-     * @param queryId Query ID.
+     * @param unpacker Client message unpacker.
      */
-    void cancelQuery(UUID queryId);
+    void readBinary(ClientMessageUnpacker unpacker);
 }

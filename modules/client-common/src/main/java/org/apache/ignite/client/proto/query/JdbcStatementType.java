@@ -15,31 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
-
-import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+package org.apache.ignite.client.proto.query;
 
 /**
- *
+ * JDBC statement type.
  */
-public interface ExecutionService {
-    /**
-     * Executes a query.
-     *
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
-     */
-    List<SqlCursor<List<?>>> executeQuery(String schema, String query, Object[] params);
+public enum JdbcStatementType {
+    /** Any statement type. */
+    ANY_STATEMENT_TYPE,
+
+    /** Select statement type. */
+    SELECT_STATEMENT_TYPE,
+
+    /** DML / DDL statement type. */
+    UPDATE_STMT_TYPE;
+
+    /** Enumerated values. */
+    private static final JdbcStatementType[] VALS = values();
 
     /**
-     * Cancels a running query.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @param queryId Query ID.
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    void cancelQuery(UUID queryId);
+    public static JdbcStatementType fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

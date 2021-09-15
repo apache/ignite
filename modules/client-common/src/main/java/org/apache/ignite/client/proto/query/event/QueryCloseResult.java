@@ -15,31 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.client.proto.query.event;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.tostring.S;
 
 /**
- *
+ * JDBC query fetch result.
  */
-public interface ExecutionService {
+public class QueryCloseResult extends Response {
     /**
-     * Executes a query.
-     *
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
+     * Default constructor is used for deserialization.
      */
-    List<SqlCursor<List<?>>> executeQuery(String schema, String query, Object[] params);
+    public QueryCloseResult() {
+        hasResults = true;
+    }
 
     /**
-     * Cancels a running query.
+     * Constructor.
      *
-     * @param queryId Query ID.
+     * @param status Status code.
+     * @param err Error message.
      */
-    void cancelQuery(UUID queryId);
+    public QueryCloseResult(int status, String err) {
+        super(status, err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryCloseResult.class, this);
+    }
 }

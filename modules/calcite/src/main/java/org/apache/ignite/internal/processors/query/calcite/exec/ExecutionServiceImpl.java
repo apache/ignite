@@ -44,6 +44,7 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.NodeLeaveHandler
 import org.apache.ignite.internal.processors.query.calcite.util.TransformingIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.Cancellable;
-import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
@@ -193,7 +193,7 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Cursor<List<?>>> executeQuery(
+    @Override public List<SqlCursor<List<?>>> executeQuery(
         String schema,
         String qry,
         Object[] params
@@ -211,16 +211,16 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
      * @param pctx Query context.
      * @return List of query result cursors.
      */
-    @NotNull public List<Cursor<List<?>>> executePlans(
+    @NotNull public List<SqlCursor<List<?>>> executePlans(
         Collection<QueryPlan> qryPlans,
         PlanningContext pctx
     ) {
-        List<Cursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
+        List<SqlCursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
 
         for (QueryPlan plan : qryPlans) {
             UUID qryId = UUID.randomUUID();
 
-            Cursor<List<?>> cur = executePlan(qryId, pctx, plan);
+            SqlCursor<List<?>> cur = executePlan(qryId, pctx, plan);
 
             cursors.add(cur);
         }
@@ -415,7 +415,7 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
     }
 
     /** */
-    private Cursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
+    private SqlCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
         switch (plan.type()) {
             case DML:
                 // TODO a barrier between previous operation and this one
@@ -432,12 +432,12 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
     }
 
     /** */
-    private Cursor<List<?>> executeDdl(DdlPlan plan, PlanningContext pctx) {
+    private SqlCursor<List<?>> executeDdl(DdlPlan plan, PlanningContext pctx) {
         throw new UnsupportedOperationException("plan=" + plan + ", ctx=" + pctx);
     }
 
     /** */
-    private Cursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
+    private SqlCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
         plan.init(pctx);
 
         List<Fragment> fragments = plan.fragments();
@@ -522,12 +522,12 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
                 res.add(ectx.rowHandler().get(i, row));
 
             return res;
-        }));
+        }), plan.type());
     }
 
     /** */
-    private Cursor<List<?>> executeExplain(ExplainPlan plan) {
-        Cursor<List<?>> cur = Commons.createCursor(singletonList(singletonList(plan.plan())));
+    private SqlCursor<List<?>> executeExplain(ExplainPlan plan) {
+        SqlCursor<List<?>> cur = Commons.createCursor(singletonList(singletonList(plan.plan())), plan.type());
         // TODO: fix this
 //        cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(pctx.typeFactory()));
 

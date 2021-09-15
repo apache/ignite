@@ -15,31 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.util.Cursor;
 
 /**
+ * Sql query cursor.
  *
+ * @param <T> Type of elements.
  */
-public interface ExecutionService {
+public interface SqlCursor<T> extends Cursor<T> {
     /**
-     * Executes a query.
-     *
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
+     * @return Query type.
      */
-    List<SqlCursor<List<?>>> executeQuery(String schema, String query, Object[] params);
-
-    /**
-     * Cancels a running query.
-     *
-     * @param queryId Query ID.
-     */
-    void cancelQuery(UUID queryId);
+    SqlQueryType getQueryType();
 }

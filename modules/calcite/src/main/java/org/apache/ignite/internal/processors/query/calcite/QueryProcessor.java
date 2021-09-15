@@ -15,31 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.manager.IgniteComponent;
 
 /**
- *
+ * QueryProcessor interface.
  */
-public interface ExecutionService {
+public interface QueryProcessor extends IgniteComponent {
     /**
-     * Executes a query.
+     * Execute the query with given schema name and parameters.
      *
-     * @param schema Schema name.
-     * @param query Query.
+     * @param schemaName Schema name.
+     * @param qry Sql query.
      * @param params Query parameters.
-     * @return Query cursor.
-     */
-    List<SqlCursor<List<?>>> executeQuery(String schema, String query, Object[] params);
-
-    /**
-     * Cancels a running query.
-     *
-     * @param queryId Query ID.
-     */
-    void cancelQuery(UUID queryId);
+     * @return List of sql cursors.
+     * */
+    List<SqlCursor<List<?>>> query(String schemaName, String qry, Object... params);
 }

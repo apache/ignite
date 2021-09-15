@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorCo
 import org.apache.ignite.internal.client.proto.ClientMessageDecoder;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.manager.IgniteComponent;
+import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -53,16 +54,22 @@ public class ClientHandlerModule implements IgniteComponent {
     /** Netty channel. */
     private volatile Channel channel;
 
+    /** Processor. */
+    private QueryProcessor processor;
+
     /**
      * Constructor.
      *
+     * @param processor Sql query processor.
      * @param igniteTables Ignite.
      * @param registry Configuration registry.
      */
-    public ClientHandlerModule(IgniteTables igniteTables, ConfigurationRegistry registry) {
+    public ClientHandlerModule(QueryProcessor processor, IgniteTables igniteTables, ConfigurationRegistry registry) {
         assert igniteTables != null;
         assert registry != null;
+        assert processor != null;
 
+        this.processor = processor;
         this.igniteTables = igniteTables;
         this.registry = registry;
     }
@@ -125,7 +132,7 @@ public class ClientHandlerModule implements IgniteComponent {
                 protected void initChannel(Channel ch) {
                     ch.pipeline().addLast(
                             new ClientMessageDecoder(),
-                            new ClientInboundMessageHandler(igniteTables));
+                            new ClientInboundMessageHandler(igniteTables, processor));
                 }
             })
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout())

@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
 import org.apache.ignite.internal.manager.EventListener;
-import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
@@ -33,13 +32,12 @@ import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.internal.thread.StripedThreadPoolExecutor;
-import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class SqlQueryProcessor implements IgniteComponent {
+public class SqlQueryProcessor implements QueryProcessor {
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
 
@@ -103,7 +101,8 @@ public class SqlQueryProcessor implements IgniteComponent {
         // TODO: IGNITE-15161 Implement component's stop.
     }
 
-    public List<Cursor<List<?>>> query(String schemaName, String qry, Object... params) {
+    /** {@inheritDoc} */
+    @Override public List<SqlCursor<List<?>>> query(String schemaName, String qry, Object... params) {
         return executionSrvc.executeQuery(schemaName, qry, params);
     }
 

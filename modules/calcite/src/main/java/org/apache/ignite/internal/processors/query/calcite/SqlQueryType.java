@@ -15,31 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 
 /**
- *
+ * Possible query types.
  */
-public interface ExecutionService {
-    /**
-     * Executes a query.
-     *
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
-     */
-    List<SqlCursor<List<?>>> executeQuery(String schema, String query, Object[] params);
+public enum SqlQueryType {
+    /** Query. */
+    QUERY,
+
+    /** DML. */
+    DML,
+
+    /** DDL. */
+    DDL,
+
+    /** Explain. */
+    EXPLAIN;
 
     /**
-     * Cancels a running query.
-     *
-     * @param queryId Query ID.
+     * @param type QueryPlan.Type.
+     * @return Associated SqlQueryType.
      */
-    void cancelQuery(UUID queryId);
+    public static SqlQueryType mapPlanTypeToSqlType(QueryPlan.Type type) {
+        switch (type) {
+            case QUERY:
+                return QUERY;
+            case DML:
+                return DML;
+            case DDL:
+                return DDL;
+            case EXPLAIN:
+                return EXPLAIN;
+            default:
+                throw new UnsupportedOperationException("Unexpected query plan type: " + type.name());
+        }
+    }
 }

@@ -256,4 +256,67 @@ public class ClientMessagePackerUnpackerTest {
             }
         }
     }
+
+    @Test
+    public void testIntegerArray() {
+        try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
+            int[] arr = new int[] {4, 8, 15, 16, 23, 42};
+
+            packer.packIntArray(arr);
+
+            var buf = packer.getBuffer();
+
+            byte[] data = new byte[buf.readableBytes()];
+
+            buf.readBytes(data);
+
+            try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
+                unpacker.skipValue(4);
+                int[] res = unpacker.unpackIntArray();
+                assertArrayEquals(arr, res);
+            }
+        }
+    }
+
+    @Test
+    public void testObjectArray() {
+        try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
+            Object[] args = new Object[] {(byte)4, (short)8, 15, 16L, 23.0f, 42.0d, "TEST_STRING", null, UUID.randomUUID(), false};
+            packer.packObjectArray(args);
+
+            var buf = packer.getBuffer();
+
+            byte[] data = new byte[buf.readableBytes()];
+
+            buf.readBytes(data);
+
+            try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
+                unpacker.skipValue(4);
+                Object[] res = unpacker.unpackObjectArray();
+                assertArrayEquals(args, res);
+            }
+        }
+    }
+
+    @Test
+    public void testObjectArrayLongValue() {
+        try (var packer = new ClientMessagePacker(PooledByteBufAllocator.DEFAULT.directBuffer())) {
+            Object[] args = new Object[] {16L};
+            packer.packObjectArray(args);
+
+            var buf = packer.getBuffer();
+
+            byte[] data = new byte[buf.readableBytes()];
+
+            buf.readBytes(data);
+
+            try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
+                unpacker.skipValue(4);
+
+                Object[] res = unpacker.unpackObjectArray();
+
+                assertEquals(16L,(Long) res[0]);
+            }
+        }
+    }
 }
