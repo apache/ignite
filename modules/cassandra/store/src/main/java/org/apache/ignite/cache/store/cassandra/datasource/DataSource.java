@@ -220,7 +220,7 @@ public class DataSource implements Externalizable {
         invalidate();
     }
 
-    /** Sets maximum time to wait for schema agreement before returning from a DDL query. */
+    /** @param seconds Maximum time to wait for schema agreement before returning from a DDL query. */
     public void setMaxSchemaAgreementWaitSeconds(int seconds) {
         maxSchemaAgreementWaitSeconds = seconds;
 

@@ -19,5 +19,9 @@ package org.apache.ignite.platform.model;
 
 /** Test enum. */
 public enum ACL {
-    ALLOW, DENY
+    /** */
+    ALLOW,
+
+    /** */
+    DENY
 }

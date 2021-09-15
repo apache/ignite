@@ -379,6 +379,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
      * @param <E> Closure argument type.
      */
     private abstract static class GridInUnsafeClosure<E> {
+        /** */
         public abstract void apply(E p) throws IgniteCheckedException;
     }
 }

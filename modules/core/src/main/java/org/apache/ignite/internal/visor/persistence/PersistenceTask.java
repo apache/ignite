@@ -65,6 +65,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
     /** */
     private static final String BACKUP_FOLDER_PREFIX = "backup_";
 
+    /** {@inheritDoc} */
     @Override protected VisorJob<PersistenceTaskArg, PersistenceTaskResult> job(PersistenceTaskArg arg) {
         return new PersistenceJob(arg, debug);
     }

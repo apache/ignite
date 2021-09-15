@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 public class ActivateCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Activate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", ACTIVATE);
+        usage(logger, "Activate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", ACTIVATE);
     }
 
     /**

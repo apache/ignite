@@ -49,6 +49,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      * terminate if no tasks arrive within the keep-alive time.
      * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
      * that excess idle threads will wait for new tasks before terminating.
+     * @param eHnd Uncaught exception handler.
      */
     public IgniteStripedThreadPoolExecutor(
         int concurrentLvl,

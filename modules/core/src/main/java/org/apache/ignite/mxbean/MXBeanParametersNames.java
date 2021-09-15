@@ -34,8 +34,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface MXBeanParametersNames {
     /**
-     *
-     * Array of parameter names in MBean.
+     * @return Array of parameter names in MBean.
      */
     public String[] value();
 }

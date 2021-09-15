@@ -112,6 +112,9 @@ public abstract class PojoField implements Serializable {
     /**
      * Creates instance of {@link PojoField} from the other instance
      * and java class.
+     *
+     * @param field {@link PojoField} instance to copy from.
+     * @param pojoCls Class of the {@link PojoField} instance.
      */
     public PojoField(PojoField field, Class<?> pojoCls) {
         this.name = field.name;
@@ -196,6 +199,7 @@ public abstract class PojoField implements Serializable {
     /**
      * Returns POJO field annotation.
      *
+     * @param clazz Class of the annotation to get.
      * @return annotation.
      */
     public Annotation getAnnotation(Class clazz) {

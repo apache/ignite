@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -138,9 +137,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private boolean keepBinary;
-
-    /** */
-    private UUID subjId;
 
     /** */
     private int taskHash;
@@ -254,7 +250,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param limit Response limit. Set to 0 for no limits.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
-     * @param subjId Security subject ID.
      * @param taskHash Task hash.
      * @param mvccSnapshot Mvcc version.
      * @param dataPageScanEnabled Flag to enable data page scan.
@@ -276,7 +271,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         int limit,
         boolean incMeta,
         boolean keepBinary,
-        UUID subjId,
         int taskHash,
         MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
@@ -297,7 +291,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.limit = limit;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
-        this.subjId = subjId;
         this.taskHash = taskHash;
         this.mvccSnapshot = mvccSnapshot;
         this.dataPageScanEnabled = dataPageScanEnabled;
@@ -394,24 +387,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
-     * @return Security subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
      * @return Task hash.
      */
     public int taskHash() {
         return taskHash;
-    }
-
-    /**
-     * @param subjId Security subject ID.
-     */
-    public void subjectId(UUID subjId) {
-        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -583,9 +562,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             }
         }
 
-        if (subjId == null)
-            subjId = cctx.localNodeId();
-
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
@@ -641,9 +617,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (cctx.deploymentEnabled())
             cctx.deploy().registerClasses(filter);
-
-        if (subjId == null)
-            subjId = cctx.localNodeId();
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 

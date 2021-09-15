@@ -469,6 +469,7 @@ public class TestsHelper {
         return map;
     }
 
+    /** */
     public static Collection<Long> getOrderIds(Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> orders) {
         Set<Long> ids = new HashSet<>();
 

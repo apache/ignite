@@ -284,7 +284,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.limit(),
                 req.includeMetaData(),
                 req.keepBinary(),
-                req.subjectId(),
                 req.taskHash(),
                 req.mvccSnapshot(),
                 req.isDataPageScanEnabled()
@@ -565,7 +564,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.arguments(),
                 false,
                 qry.query().keepBinary(),
-                qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
                 mvccSnapshot,
@@ -743,7 +741,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 fut.fields(),
                 all,
                 qry.keepBinary(),
-                qry.subjectId(),
                 qry.taskHash(),
                 queryTopologyVersion(),
                 // Force deployment anyway if scan query is used.
@@ -813,7 +810,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.arguments(),
                 qry.query().includeMetadata(),
                 qry.query().keepBinary(),
-                qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
                 null,

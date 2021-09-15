@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
  * Stores all index items.
  */
 class ItemsListStorage<T> implements ItemStorage<T> {
+    /** */
     final List<T> store = new LinkedList<>();
 
     /** {@inheritDoc} */

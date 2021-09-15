@@ -111,6 +111,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH_REQ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH_RESP;
@@ -533,7 +534,7 @@ public class IgniteTxHandler {
                     req.onePhaseCommit(),
                     req.txSize(),
                     req.transactionNodes(),
-                    req.subjectId(),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel(),
                     originTx
@@ -1720,7 +1721,7 @@ public class IgniteTxHandler {
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
-                    req.subjectId(),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     single,
                     req.storeWriteThrough(),
@@ -1837,7 +1838,6 @@ public class IgniteTxHandler {
                                                 /*readThrough*/false,
                                                 /*updateMetrics*/false,
                                                 /*evt*/false,
-                                                tx.subjectId(),
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
@@ -2109,7 +2109,7 @@ public class IgniteTxHandler {
                     req.timeout(),
                     req.nearWrites(),
                     req.txSize(),
-                    req.subjectId(),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel()
                 );
