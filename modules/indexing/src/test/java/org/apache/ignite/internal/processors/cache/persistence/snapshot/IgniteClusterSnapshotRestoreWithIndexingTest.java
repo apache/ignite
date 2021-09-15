@@ -82,6 +82,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** @throws Exception If failed. */
     @Test
     public void testBasicClusterSnapshotRestoreWithMetadata() throws Exception {
+        valBuilder = new BinaryValueBuilder(TYPE_NAME);
+
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         // Remove metadata.
