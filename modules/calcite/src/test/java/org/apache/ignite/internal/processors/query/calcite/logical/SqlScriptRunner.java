@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -602,6 +603,8 @@ public class SqlScriptRunner {
 
         /** */
         private void checkResultsHashed(List<List<?>> res) {
+            Objects.requireNonNull(res, "empty result set");
+
             messageDigest.reset();
 
             for (List<?> l : res) {
@@ -615,7 +618,7 @@ public class SqlScriptRunner {
 
             if (!res0.equals(expectedHash))
                 throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
-                    ", rows=" + res.size() + ", expected=" + expectedRows);
+                    ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
         }
 
         /** {@inheritDoc} */
