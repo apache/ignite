@@ -776,13 +776,13 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Add persistence to default data region specified ignite configuration.
+     * Add persistence region to default data region specified ignite configuration.
      *
      * @param cfg Base configuration to add persistence into.
      * @param igniteInstanceName Instance name.
      * @return Same configuration with persistence enabled.
      */
-    protected IgniteConfiguration addPersistence(IgniteConfiguration cfg, String igniteInstanceName) {
+    protected IgniteConfiguration addPersistenceRegion(IgniteConfiguration cfg, String igniteInstanceName) {
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -794,13 +794,13 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Add in memory to default data region specified ignite configuration.
+     * Add in memory region to default data region specified ignite configuration.
      *
      * @param cfg Base configuration to add in memory into.
      * @param igniteInstanceName Instance name.
      * @return Same configuration with persistence enabled.
      */
-    protected IgniteConfiguration addImMemory(IgniteConfiguration cfg, String igniteInstanceName) {
+    protected IgniteConfiguration addImMemoryRegion(IgniteConfiguration cfg, String igniteInstanceName) {
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()

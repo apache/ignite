@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -31,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.value.Value;
 
 /**
- * Utilities to convert statistics from/to messages.
+ * Utilities to convert statistics from/to messages, validate configurations with statistics and so on.
  */
 public class StatisticsUtils {
     /**
@@ -171,5 +173,56 @@ public class StatisticsUtils {
     public static StatisticsTarget statisticsTarget(StatisticsKeyMessage msg) {
         String[] cols = (msg.colNames() == null) ? null : msg.colNames().toArray(new String[0]);
         return new StatisticsTarget(msg.schema(), msg.obj(), cols);
+    }
+
+    /**
+     * Test if specified statistics is fit to all required versions.
+     * It means that specified statistics contains all columns with at least versions
+     * from specified map.
+     *
+     * @param stat Statistics to check. Can be {@code null}.
+     * @param versions Map of column name to required version.
+     * @return {@code true} if it is, {@code false} otherwise.
+     */
+    public static boolean checkStatisticsVersions(
+        ObjectStatisticsImpl stat,
+        Map<String, Long> versions
+    ) {
+        if (stat == null)
+            return false;
+
+        for (Map.Entry<String, Long> version : versions.entrySet()) {
+            ColumnStatistics colStat = stat.columnsStatistics().get(version.getKey());
+
+            if (colStat == null || colStat.version() < version.getValue())
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Test if secified statistics configuration is fit to all required versions.
+     * It means that specified statistics configuraion contains all columns with at least versions from specified map.
+     *
+     * @param cfg Statistics configuraion to check. Can be {@code null}.
+     * @param versions Map of column name to required version.
+     * @return {@code true} if it is, {@code talse} otherwise.
+     */
+    public static boolean checkStatisticsConfigurationVersions(
+        StatisticsObjectConfiguration cfg,
+        Map<String, Long> versions
+    ) {
+        if (cfg == null)
+            return false;
+
+        for(Map.Entry<String, Long> version : versions.entrySet()) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
+
+            if (colCfg == null || colCfg.version() < version.getValue())
+                return false;
+        }
+
+        return true;
     }
 }

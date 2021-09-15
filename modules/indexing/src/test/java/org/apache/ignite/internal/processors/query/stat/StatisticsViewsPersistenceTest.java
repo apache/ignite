@@ -27,6 +27,6 @@ public class StatisticsViewsPersistenceTest extends StatisticsViewsTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        return addPersistence(cfg, igniteInstanceName);
+        return addPersistenceRegion(cfg, igniteInstanceName);
     }
 }

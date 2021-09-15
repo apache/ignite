@@ -27,6 +27,6 @@ public class StatisticsGlobalViewInMemoryTest extends StatisticsGlobalViewTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        return addImMemory(cfg, igniteInstanceName);
+        return addImMemoryRegion(cfg, igniteInstanceName);
     }
 }

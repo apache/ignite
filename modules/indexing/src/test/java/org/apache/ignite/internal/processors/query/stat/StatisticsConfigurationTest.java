@@ -274,13 +274,11 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
-        System.out.println("Drop SMALL.A statistics");
         statisticsMgr(0).dropStatistics(new StatisticsTarget("PUBLIC", "SMALL", "A"));
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT,
             (stats) -> stats.forEach(s -> assertNull(s.columnStatistics("A"))));
 
-        System.out.println("Recollect SMALL.A statistics");
         collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "A"));
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);

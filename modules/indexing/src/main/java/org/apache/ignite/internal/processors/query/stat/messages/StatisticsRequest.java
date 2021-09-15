@@ -90,17 +90,17 @@ public class StatisticsRequest implements Message {
     }
 
     /**
-     * @return Key for required statitics.
-     */
-    public StatisticsKeyMessage key() {
-        return key;
-    }
-
-    /**
      * @return Required statistics type.
      */
     public StatisticsType type() {
         return type;
+    }
+
+    /**
+     * @return Key for required statitics.
+     */
+    public StatisticsKeyMessage key() {
+        return key;
     }
 
     /**

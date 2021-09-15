@@ -95,6 +95,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state", StatisticsUsageState::fromOrdinal, StatisticsUsageState::index, StatisticsUsageState.class);
 
+    /** Started flag */
+    private boolean started;
+
     /**
      * Constructor.
      *
@@ -163,9 +166,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         );
 
         globalStatsMgr = new IgniteGlobalStatisticsManager(
-            statCfgMgr,
+            this,
             ctx.systemView(),
-            statsRepos,
             gatherer,
             mgmtPool,
             ctx.discovery(),
@@ -226,20 +228,30 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * Enable statistics operations.
      */
     private synchronized void enableOperations() {
+        if (started)
+            return;
+
         statsRepos.start();
         gatherer.start();
         statCfgMgr.start();
         globalStatsMgr.start();
+
+        started = true;
     }
 
     /**
      * Disable statistics operations.
      */
     private synchronized void disableOperations() {
+        if (!started)
+            return;
+
         statCfgMgr.stop();
         gatherer.stop();
         statsRepos.stop();
         globalStatsMgr.stop();
+
+        started = false;
     }
 
     /**
@@ -254,6 +266,17 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         StatisticsUsageState currState = usageState();
 
         return (currState == ON || currState == NO_UPDATE) ? statsRepos.getLocalStatistics(key) : null;
+    }
+
+    /**
+     * Get local statitsics with specified topology version if exists.
+     *
+     * @param key Key to get statistics by.
+     * @param topVer Required topology version.
+     * @return Local object statistics or {@code null} if there are no statistics with requested topology version.
+     */
+    public ObjectStatisticsImpl getLocalStatistics(StatisticsKey key, AffinityTopologyVersion topVer) {
+        return statsRepos.getLocalStatistics(key, topVer);
     }
 
     @Override public ObjectStatistics getGlobalStatistics(StatisticsKey key) {
@@ -308,7 +331,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Statistics manager started.");
+            log.debug("Statistics manager stopped.");
     }
 
     /** */

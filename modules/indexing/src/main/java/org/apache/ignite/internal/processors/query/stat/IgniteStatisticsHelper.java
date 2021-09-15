@@ -79,7 +79,7 @@ public class IgniteStatisticsHelper {
      * @return Cache group context for the given key.
      * @throws IgniteCheckedException If unable to find table by specified key.
      */
-    public CacheGroupContext getGroupContext(StatisticsKey key) throws IgniteCheckedException {
+    public CacheGroupContext groupContext(StatisticsKey key) throws IgniteCheckedException {
         GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
 
         if (tbl == null)
@@ -104,7 +104,7 @@ public class IgniteStatisticsHelper {
 
         Map<String, Long> versions = cfg.columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().version()));
-        CacheGroupContext grpCtx = getGroupContext(target.key());
+        CacheGroupContext grpCtx = groupContext(target.key());
         AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
 
         StatisticsRequest req = new StatisticsRequest(UUID.randomUUID(), keyMsg, StatisticsType.LOCAL, topVer, versions);
