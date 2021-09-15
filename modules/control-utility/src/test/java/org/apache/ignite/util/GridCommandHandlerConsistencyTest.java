@@ -175,7 +175,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i)));
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=1]");
+            assertContains(log, testOut.toString(), "[found=1, fixed=1");
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
@@ -196,7 +196,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) { // This may be a copy of previous (tx case), implement atomic repair to make this happen :)
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i)));
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=0]"); // Nothing fixed.
+            assertContains(log, testOut.toString(), "[found=1, fixed=0"); // Nothing fixed.
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
             assertContains(log, testOut.toString(),

@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -125,7 +126,12 @@ public class VisorConsistencyRepairTask extends
             int p = arg.part();
             int batchSize = 1024;
 
-            GridCacheContext<Object, Object> cctx = ignite.context().cache().cache(cacheName).context();
+            IgniteInternalCache<Object, Object> internalCache = ignite.context().cache().cache(cacheName);
+
+            if (internalCache == null)
+                return null; // Node filtered by node filter.
+
+            GridCacheContext<Object, Object> cctx = internalCache.context();
 
             if (!cctx.gridEvents().isRecordable(EVT_CONSISTENCY_VIOLATION))
                 throw new UnsupportedOperationException("Consistency violation events recording is disabled on cluster.");
