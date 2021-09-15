@@ -111,7 +111,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
 
             IgniteEx srv = gridx(getTestIgniteInstanceName());
 
-            assertTrue(StreamSupport.stream(srv.context().metric().spliterator(), false)
+            assertTrue(StreamSupport.stream(srv.context().metric().manager().spliterator(), false)
                 .map(ReadOnlyMetricRegistry::name)
                 .collect(Collectors.toSet())
                 .containsAll(THREAD_POOL_METRICS));

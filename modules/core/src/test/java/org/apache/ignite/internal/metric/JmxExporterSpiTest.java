@@ -275,13 +275,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         mmgr.registry(regName);
 
-        assertTrue(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+        assertTrue(Iterators.tryFind(mmgr.manager().iterator(), mreg -> regName.equals(mreg.name())).isPresent());
 
         assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
 
         mmgr.remove(regName);
 
-        assertFalse(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+        assertFalse(Iterators.tryFind(mmgr.manager().iterator(), mreg -> regName.equals(mreg.name())).isPresent());
 
         assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
     }

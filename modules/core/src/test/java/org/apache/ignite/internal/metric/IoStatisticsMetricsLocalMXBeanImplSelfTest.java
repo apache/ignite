@@ -154,7 +154,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public static void resetAllIoMetrics(IgniteEx ignite) throws MalformedObjectNameException {
         GridMetricManager mmgr = ignite.context().metric();
 
-        StreamSupport.stream(mmgr.spliterator(), false)
+        StreamSupport.stream(mmgr.manager().spliterator(), false)
             .map(ReadOnlyMetricRegistry::name)
             .filter(name -> {
                 for (IoStatisticsType type : IoStatisticsType.values()) {

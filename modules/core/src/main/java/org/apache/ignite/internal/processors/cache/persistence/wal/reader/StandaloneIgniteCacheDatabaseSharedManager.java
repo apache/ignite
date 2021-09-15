@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 /**
  * Fake implementation for publishing setter and for creation in standalone WAL reader tool
  */
-class StandaloneIgniteCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+public class StandaloneIgniteCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
     /** {@inheritDoc} */
     @Override public void setPageSize(int pageSize) {
         super.setPageSize(pageSize);
