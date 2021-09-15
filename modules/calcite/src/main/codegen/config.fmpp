@@ -57,6 +57,11 @@ data: {
       "LOGGING"
       "NOLOGGING"
       "PASSWORD"
+      "KILL"
+      "SCAN"
+      "CONTINUOUS"
+      "SERVICE"
+      "COMPUTE"
     ]
 
     # List of non-reserved keywords to add;
@@ -79,6 +84,11 @@ data: {
       "LOGGING"
       "NOLOGGING"
       "PASSWORD"
+      "KILL"
+      "SCAN"
+      "CONTINUOUS"
+      "SERVICE"
+      "COMPUTE"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -590,7 +600,12 @@ data: {
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
       "SqlAlterTable()",
-      "SqlAlterUser()"
+      "SqlAlterUser()",
+      "SqlKillScanQuery()"
+      "SqlKillContinuousQuery()"
+      "SqlKillService()"
+      "SqlKillTransaction()"
+      "SqlKillComputeTask()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

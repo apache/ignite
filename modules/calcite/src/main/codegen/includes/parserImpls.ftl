@@ -397,3 +397,111 @@ SqlDrop SqlDropUser(Span s, boolean replace) :
     < NEGATE: "!" >
 |   < TILDE: "~" >
 }
+
+SqlNumericLiteral QueryIdLiteral() :
+{
+    final Span s;
+}
+{
+    <PLUS> <UNSIGNED_INTEGER_LITERAL> {
+        return SqlLiteral.createExactNumeric(token.image, getPos());
+    }
+|
+    <MINUS> { s = span(); } <UNSIGNED_INTEGER_LITERAL> {
+        return SqlLiteral.createNegative(SqlLiteral.createExactNumeric(token.image, getPos()), s.end(this));
+    }
+|
+    <UNSIGNED_INTEGER_LITERAL> {
+        return SqlLiteral.createExactNumeric(token.image, getPos());
+    }
+}
+
+SqlNode SqlKillScanQuery():
+{
+    final Span s;
+    final SqlCharStringLiteral originNodeId;
+    final SqlCharStringLiteral cacheName;
+    final SqlNumericLiteral queryId;
+    final String rawUuid;
+}{
+    <KILL> { s = span(); } <SCAN>
+    <QUOTED_STRING> {
+        rawUuid = SqlParserUtil.parseString(token.image);
+        if (!IgniteSqlKill.isUuid(rawUuid)) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
+        }
+        originNodeId = SqlLiteral.createCharString(rawUuid, getPos());
+    }
+    <QUOTED_STRING> {
+        cacheName = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
+    }
+    queryId = QueryIdLiteral() {
+        return IgniteSqlKill.createScanQueryKill(s.end(this), originNodeId, cacheName, queryId);
+    }
+}
+
+SqlNode SqlKillContinuousQuery():
+{
+    final Span s;
+    final SqlCharStringLiteral originNodeId;
+    final SqlCharStringLiteral routineId;
+    String rawUuid;
+}{
+    <KILL> { s = span(); } <CONTINUOUS>
+    <QUOTED_STRING> {
+        rawUuid = SqlParserUtil.parseString(token.image);
+        if (!IgniteSqlKill.isUuid(rawUuid)) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
+        }
+        originNodeId = SqlLiteral.createCharString(rawUuid, getPos());
+    }
+    <QUOTED_STRING> {
+        rawUuid = SqlParserUtil.parseString(token.image);
+        if (!IgniteSqlKill.isUuid(rawUuid)) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
+        }
+        routineId = SqlLiteral.createCharString(rawUuid, getPos());
+        return IgniteSqlKill.createContinuousQueryKill(s.end(this), originNodeId, routineId);
+    }
+}
+
+SqlNode SqlKillTransaction():
+{
+    final Span s;
+    final SqlCharStringLiteral xid;
+}{
+    <KILL> { s = span(); } <TRANSACTION>
+    <QUOTED_STRING> {
+        xid = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
+        return IgniteSqlKill.createTransactionKill(s.end(this), xid);
+    }
+}
+
+SqlNode SqlKillService():
+{
+    final Span s;
+    final SqlCharStringLiteral srvName;
+}{
+    <KILL> { s = span(); } <SERVICE>
+    <QUOTED_STRING> {
+        srvName = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
+        return IgniteSqlKill.createServiceKill(s.end(this), srvName);
+    }
+}
+
+SqlNode SqlKillComputeTask():
+{
+    final Span s;
+    final SqlCharStringLiteral sesId;
+    final String rawSesId;
+}{
+    <KILL> { s = span(); } <COMPUTE>
+    <QUOTED_STRING> {
+        rawSesId = SqlParserUtil.parseString(token.image);
+        if (!IgniteSqlKill.isIgniteUuid(rawSesId)) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalIgniteUuid(rawSesId));
+        }
+        sesId = SqlLiteral.createCharString(rawSesId, getPos());
+        return IgniteSqlKill.createComputeTaskKill(s.end(this), sesId);
+    }
+}
