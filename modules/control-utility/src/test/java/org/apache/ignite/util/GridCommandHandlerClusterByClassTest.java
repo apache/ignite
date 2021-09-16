@@ -1131,6 +1131,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testCacheDestroy() throws IgniteCheckedException {
+        String warningMsgPrefix = "Warning! The command will destroy";
         List<String> cacheNames = new ArrayList<>();
 
         // Create some internal caches.
@@ -1149,16 +1150,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         // No user caches.
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
-        assertNotContains(log, testOut.toString(), "Warning");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Invalid arguments.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX", CacheDestroy.DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), "Unexpected argument \"" + CacheDestroy.DESTROY_ALL_ARG + "\"");
-        assertNotContains(log, testOut.toString(), "Warning");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG, "cacheX"));
         assertContains(log, testOut.toString(), "Unexpected argument \"cacheX\"");
-        assertNotContains(log, testOut.toString(), "Warning");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Create user caches.
         cacheNames.addAll(createCaches(0, 10, null));
@@ -1180,7 +1181,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         // Cache existence check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), invalidCacheNamesStr));
         assertContains(log, testOut.toString(), String.format(CacheDestroy.NOT_EXISTS_MSG, "shared3"));
-        assertNotContains(log, testOut.toString(), "Warning");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         autoConfirmation = true;
 
