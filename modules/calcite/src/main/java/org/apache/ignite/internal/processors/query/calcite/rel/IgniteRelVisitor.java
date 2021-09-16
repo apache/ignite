@@ -140,6 +140,11 @@ public interface IgniteRelVisitor<T> {
     T visit(IgniteTableSpool rel);
 
     /**
+     * See {@link IgniteRelVisitor#visit(IgniteNLJRightSpool)}
+     */
+    T visit(IgniteNLJRightSpool rel);
+
+    /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
     T visit(IgniteSortedIndexSpool rel);

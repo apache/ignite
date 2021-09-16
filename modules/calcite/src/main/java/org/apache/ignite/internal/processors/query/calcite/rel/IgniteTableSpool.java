@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
@@ -75,6 +76,14 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public boolean isEnforcer() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return pw
+            .input("input", getInput())
+            .item("readType", readType.name())
+            .item("writeType", writeType.name());
     }
 
     /** {@inheritDoc} */

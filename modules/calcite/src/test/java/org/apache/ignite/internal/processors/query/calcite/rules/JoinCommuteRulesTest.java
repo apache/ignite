@@ -25,8 +25,8 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 
 /** Tests correctness applying of JOIN_COMMUTE* rules. */
 public class JoinCommuteRulesTest extends GridCommonAbstractTest {
@@ -64,8 +64,8 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             "COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
-            .matches(containsTableScan("PUBLIC", "HUGE"))
-            .matches(containsTableScan("PUBLIC", "SMALL"))
+            .matches(containsIndexScan("PUBLIC", "HUGE"))
+            .matches(containsIndexScan("PUBLIC", "SMALL"))
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[left]"))
             .check();
 
@@ -73,8 +73,8 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             "COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
-            .matches(containsTableScan("PUBLIC", "HUGE"))
-            .matches(containsTableScan("PUBLIC", "SMALL"))
+            .matches(containsIndexScan("PUBLIC", "HUGE"))
+            .matches(containsIndexScan("PUBLIC", "SMALL"))
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($1, $0)], joinType=[right]"))
             .check();
     }
@@ -86,8 +86,8 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
-            .matches(containsTableScan("PUBLIC", "HUGE"))
-            .matches(containsTableScan("PUBLIC", "SMALL"))
+            .matches(containsIndexScan("PUBLIC", "HUGE"))
+            .matches(containsIndexScan("PUBLIC", "SMALL"))
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[inner]"))
             .check();
 
@@ -95,8 +95,8 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
-            .matches(containsTableScan("PUBLIC", "HUGE"))
-            .matches(containsTableScan("PUBLIC", "SMALL"))
+            .matches(containsIndexScan("PUBLIC", "HUGE"))
+            .matches(containsIndexScan("PUBLIC", "SMALL"))
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($1, $0)], joinType=[inner]"))
             .check();
     }

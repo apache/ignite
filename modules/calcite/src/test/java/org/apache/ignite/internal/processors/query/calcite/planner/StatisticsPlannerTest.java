@@ -53,6 +53,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -231,6 +232,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     /**
      * Check index choosing with is null condition. Due to AbstractIndexScan logic - no index should be choosen.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15466")
     @Test
     public void testIsNull() throws Exception {
         tbl1.setStatistics(tbl1stat);
@@ -257,6 +259,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     /**
      * Check index choosing with not null condition. Due to AbstractIndexScan logic - no index should be choosen.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15466")
     @Test
     public void testNotNull() throws Exception {
         tbl1.setStatistics(tbl1stat);
@@ -373,6 +376,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
      * Run query with expression and check index wouldn't be choosen for the sum of two columns.
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15466")
     @Test
     public void testIndexChoosingFromExpression() throws Exception {
         tbl1.setStatistics(tbl1stat);
@@ -390,6 +394,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
      *
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15466")
     @Test
     public void testIndexChoosingFromSumConst() throws Exception {
         tbl1.setStatistics(tbl1stat);
@@ -406,6 +411,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
      *
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15466")
     @Test
     public void testIndexChoosingFromUnifunction() throws Exception {
         tbl1.setStatistics(tbl1stat);

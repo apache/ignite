@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsUnion;
@@ -203,7 +204,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "WHERE cat_id > 1 " +
             "OR subcat_id < 10 ")
             .matches(not(containsUnion(true)))
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -221,7 +222,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "WHERE name = 'Canon' " +
             "OR category = 'Video'")
             .matches(not(containsUnion(true)))
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyScan("PUBLIC", "PRODUCTS"))
             .returns(5, "Video", 2, "Camera Media", 21, "Media 3")
             .returns(6, "Video", 2, "Camera Lens", 22, "Lens 3")
             .returns(7, "Video", 1, null, 0, "Canon")
@@ -240,7 +241,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "WHERE name = 'Canon' " +
             "OR name = 'Sony'")
             .matches(not(containsUnion(true)))
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
             .returns(7, "Video", 1, null, 0, "Canon")
             .check();
     }

@@ -639,7 +639,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table logging/nologing.
      */
     @Test
-    public void alterTableLogging() {
+    public void alterTableLogging() throws InterruptedException {
         String cacheName = "cache";
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(cacheName)
@@ -648,6 +648,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertTrue(client.cluster().isWalEnabled(cacheName));
 
         executeSql("alter table \"" + cacheName + "\".Integer nologging");
+
+        awaitPartitionMapExchange();
 
         assertFalse(client.cluster().isWalEnabled(cacheName));
 

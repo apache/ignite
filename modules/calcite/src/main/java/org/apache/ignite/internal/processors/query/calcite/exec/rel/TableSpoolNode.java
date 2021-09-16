@@ -101,7 +101,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         if (isClosed())
             return;
 
-        if (!lazyRead && waiting != -1)
+        if (!lazyRead && waiting != NOT_WAITING)
             return;
 
         int processed = 0;
@@ -118,7 +118,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
             inLoop = false;
         }
 
-        if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
+        if (rowIdx >= rows.size() && waiting == NOT_WAITING && requested > 0) {
             requested = 0;
             downstream().end();
         }
@@ -151,7 +151,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         checkState();
 
-        waiting = -1;
+        waiting = NOT_WAITING;
 
         context().execute(this::doPush, this::onError);
     }

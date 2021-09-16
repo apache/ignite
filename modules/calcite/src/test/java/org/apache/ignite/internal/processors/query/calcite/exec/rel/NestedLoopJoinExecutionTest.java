@@ -253,7 +253,7 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
             {2, "SQL"},
             {3, "Arch"},
             {4, "QA"},
-            {4, "OLD_QA"},
+            {4, "OLD_QA"}
         };
 
         verifyJoin(left, right, INNER, new Object[][] {
@@ -289,7 +289,7 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
             {5, "Ivan", "OLD_QA"},
             {6, "Andrey", "QA"},
             {6, "Andrey", "OLD_QA"},
-            {null, null, "Arch"}
+            {null, null, "Arch"},
         });
         verifyJoin(left, right, FULL, new Object[][] {
             {1, "Roman", null},

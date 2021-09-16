@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Deque;
-import java.util.List;
 import java.util.function.BiPredicate;
 
 import org.apache.calcite.rel.core.JoinRelType;
@@ -33,9 +31,6 @@ import org.jetbrains.annotations.NotNull;
 
 /** */
 public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
-    /** Special value to highlights that all row were received and we are not waiting any more. */
-    protected static final int NOT_WAITING = -1;
-
     /** */
     protected final BiPredicate<Row, Row> cond;
 
@@ -52,10 +47,10 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     protected int waitingRight;
 
     /** */
-    protected final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
+    protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
-    protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
+    protected final Deque<Row> rightInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
     protected boolean inLoop;
@@ -97,8 +92,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         waitingLeft = 0;
         waitingRight = 0;
 
-        rightMaterialized.clear();
         leftInBuf.clear();
+        rightInBuf.clear();
     }
 
     /** {@inheritDoc} */
@@ -146,13 +141,11 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        checkState();
-
         waitingLeft--;
 
         leftInBuf.add(row);
 
-        join();
+        doJoin();
     }
 
     /** */
@@ -160,14 +153,10 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingRight > 0;
 
-        checkState();
+        rightInBuf.add(row);
 
-        waitingRight--;
-
-        rightMaterialized.add(row);
-
-        if (waitingRight == 0)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
+        if (--waitingRight == 0)
+            doJoin();
     }
 
     /** */
@@ -195,6 +184,16 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
+    protected void requestRight() throws Exception {
+        rightSource().request(waitingRight = IN_BUFFER_SIZE);
+    }
+
+    /** */
+    protected void requestLeft() throws Exception {
+        leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+    }
+
+    /** */
     protected Node<Row> leftSource() {
         return sources().get(0);
     }
@@ -212,7 +211,9 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         RelDataType leftRowType, RelDataType rightRowType, JoinRelType joinType, BiPredicate<Row, Row> cond) {
         switch (joinType) {
             case INNER:
-                return new InnerJoin<>(ctx, outputRowType, cond);
+            case SEMI:
+            case ANTI:
+                return new InnerJoin<>(ctx, outputRowType, cond, joinType);
 
             case LEFT: {
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
@@ -220,24 +221,13 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 return new LeftJoin<>(ctx, outputRowType, cond, rightRowFactory);
             }
 
+            case FULL:
             case RIGHT: {
-                RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
-
-                return new RightJoin<>(ctx, outputRowType, cond, leftRowFactory);
-            }
-
-            case FULL: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new FullOuterJoin<>(ctx, outputRowType, cond, leftRowFactory, rightRowFactory);
+                return new RightOrFullJoin<>(ctx, outputRowType, cond, leftRowFactory, rightRowFactory, joinType);
             }
-
-            case SEMI:
-                return new SemiJoin<>(ctx, outputRowType, cond);
-
-            case ANTI:
-                return new AntiJoin<>(ctx, outputRowType, cond);
 
             default:
                 throw new IllegalStateException("Join type \"" + joinType + "\" is not supported yet");
@@ -250,64 +240,135 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         private Row left;
 
         /** */
-        private int rightIdx;
+        private Row right;
+
+        /** */
+        private final JoinRelType joinType;
+
+        /** Whether current left row was matched or not. */
+        private boolean matched;
 
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
+         * @param joinType Join operation type.
          */
-        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
+        public InnerJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            BiPredicate<Row, Row> cond,
+            JoinRelType joinType
+        ) {
             super(ctx, rowType, cond);
+
+            this.joinType = joinType;
         }
 
         /** {@inheritDoc} */
         @Override protected void rewindInternal() {
             left = null;
-            rightIdx = 0;
+            right = null;
 
             super.rewindInternal();
         }
 
         /** */
+        private boolean leftIsEmpty() {
+            return left == null && F.isEmpty(leftInBuf);
+        }
+
+        /** */
+        private boolean rightIsEmptying() {
+            return waitingRight == NOT_WAITING && F.isEmpty(rightInBuf);
+        }
+
+        /** */
         @Override protected void join() throws Exception {
-            if (waitingRight == NOT_WAITING) {
-                inLoop = true;
-                try {
-                    while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                        if (left == null)
-                            left = leftInBuf.remove();
+            inLoop = true;
 
-                        while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+            try {
+                while (requested > 0 && !leftIsEmpty() && !F.isEmpty(rightInBuf)) {
+                    checkState();
 
-                            if (!cond.test(left, rightMaterialized.get(rightIdx++)))
-                                continue;
+                    if (left == null)
+                        left = leftInBuf.remove();
 
-                            requested--;
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
-                            downstream().push(row);
-                        }
+                    right = rightInBuf.remove();
 
-                        if (rightIdx == rightMaterialized.size()) {
-                            left = null;
-                            rightIdx = 0;
-                        }
+                    if (!cond.test(left, right))
+                        continue;
+
+                    matched = true;
+
+                    if (joinType == JoinRelType.SEMI) {
+                        requested--;
+                        downstream().push(left);
+                        left = null;
+                    } else if (joinType == JoinRelType.INNER) {
+                        requested--;
+
+                        final Row row = handler.concat(left, right);
+                        
+                        downstream().push(row);
                     }
                 }
-                finally {
-                    inLoop = false;
+
+                if (waitingRight == NOT_WAITING && left != null && joinType == JoinRelType.ANTI) {
+                    if (!matched && requested > 0) {
+                        requested--;
+
+                        downstream().push(left);
+                    }
+                }
+            } finally {
+                inLoop = false;
+            }
+
+            if (requested > 0) {
+                if (waitingLeft == 0 && F.isEmpty(leftInBuf))
+                    requestLeft();
+
+                if (waitingRight == 0 && F.isEmpty(rightInBuf))
+                    requestRight();
+            }
+
+            // rewind right if left is not empty.
+            if (requested > 0 && rightIsEmptying() && !leftIsEmpty()) {
+                // if left == null seems no progress and right is empty.
+                if (left != null) {
+                    left = null;
+                    matched = false;
+                    rightSource().rewind();
+                    requestRight();
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
+            // empty right side, only for ANTI join purposes.
+            if (requested > 0 && joinType == JoinRelType.ANTI &&
+                rightIsEmptying() && left == null && !F.isEmpty(leftInBuf)) {
+                while (requested > 0 && !F.isEmpty(leftInBuf)) {
+                    requested--;
 
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+                    left = leftInBuf.remove();
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
+                    downstream().push(left);
+
+                    left = null;
+                }
+            }
+
+            // complete if:
+            // 1) left is empty.
+            // 2) right is empty and not ANTI.
+            // 3) ANTI and left is empty.
+            if (requested > 0) {
+                if (((waitingLeft == NOT_WAITING && leftIsEmpty()) ||
+                    (!F.isEmpty(leftInBuf) && rightIsEmptying() && left == null && joinType != JoinRelType.ANTI) ||
+                    (joinType == JoinRelType.ANTI && waitingLeft == NOT_WAITING && F.isEmpty(leftInBuf) &&
+                        (waitingRight == NOT_WAITING || !F.isEmpty(rightInBuf))))) {
+                    requested = 0;
+                    downstream().end();
+                }
             }
         }
     }
@@ -324,7 +385,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         private Row left;
 
         /** */
-        private int rightIdx;
+        private Row right;
 
         /**
          * @param ctx Execution context.
@@ -345,191 +406,72 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         @Override protected void rewindInternal() {
             matched = false;
             left = null;
-            rightIdx = 0;
+            right = null;
 
             super.rewindInternal();
         }
 
         /** {@inheritDoc} */
         @Override protected void join() throws Exception {
-            if (waitingRight == NOT_WAITING) {
-                inLoop = true;
-                try {
-                    while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                        if (left == null) {
-                            left = leftInBuf.remove();
+            inLoop = true;
+            try {
+                while (requested > 0 && (left != null || !F.isEmpty(leftInBuf)) && !F.isEmpty(rightInBuf)) {
+                    checkState();
 
-                            matched = false;
-                        }
+                    if (left == null)
+                        left = leftInBuf.remove();
 
-                        while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                    right = rightInBuf.remove();
 
-                            if (!cond.test(left, rightMaterialized.get(rightIdx++)))
-                                continue;
+                    if (!cond.test(left, right))
+                        continue;
 
-                            requested--;
-                            matched = true;
+                    final Row row = handler.concat(left, right);
 
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
-                            downstream().push(row);
-                        }
-
-                        if (rightIdx == rightMaterialized.size()) {
-                            boolean wasPushed = false;
-
-                            if (!matched && requested > 0) {
-                                requested--;
-                                wasPushed = true;
-
-                                downstream().push(handler.concat(left, rightRowFactory.create()));
-                            }
-
-                            if (matched || wasPushed) {
-                                left = null;
-                                rightIdx = 0;
-                            }
-                        }
-                    }
-                }
-                finally {
-                    inLoop = false;
-                }
-            }
-
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
-            }
-        }
-    }
-
-    /** */
-    private static class RightJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** Right row factory. */
-        private final RowHandler.RowFactory<Row> leftRowFactory;
-
-        /** */
-        private BitSet rightNotMatchedIndexes;
-
-        /** */
-        private int lastPushedInd;
-
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
-        public RightJoin(
-            ExecutionContext<Row> ctx,
-            RelDataType rowType,
-            BiPredicate<Row, Row> cond,
-            RowHandler.RowFactory<Row> leftRowFactory
-        ) {
-            super(ctx, rowType, cond);
-
-            this.leftRowFactory = leftRowFactory;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            left = null;
-            rightNotMatchedIndexes.clear();
-            lastPushedInd = 0;
-            rightIdx = 0;
-
-            super.rewindInternal();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void join() throws Exception {
-            if (waitingRight == NOT_WAITING) {
-                if (rightNotMatchedIndexes == null) {
-                    rightNotMatchedIndexes = new BitSet(rightMaterialized.size());
-
-                    rightNotMatchedIndexes.set(0, rightMaterialized.size());
+                    requested--;
+                    matched = true;
+                    downstream().push(row);
                 }
 
-                inLoop = true;
-                try {
-                    while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                        if (left == null)
-                            left = leftInBuf.remove();
-
-                        while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
-
-                            Row right = rightMaterialized.get(rightIdx++);
-
-                            if (!cond.test(left, right))
-                                continue;
-
-                            requested--;
-                            rightNotMatchedIndexes.clear(rightIdx - 1);
-
-                            Row joined = handler.concat(left, right);
-                            downstream().push(joined);
-                        }
-
-                        if (rightIdx == rightMaterialized.size()) {
-                            left = null;
-                            rightIdx = 0;
-                        }
-                    }
-                }
-                finally {
-                    inLoop = false;
-                }
-            }
-
-            if (waitingLeft == NOT_WAITING && requested > 0 && (rightNotMatchedIndexes != null && !rightNotMatchedIndexes.isEmpty())) {
-                assert lastPushedInd >= 0;
-
-                inLoop = true;
-                try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        checkState();
-
-                        if (lastPushedInd < 0)
-                            break;
-
-                        Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
-
-                        rightNotMatchedIndexes.clear(lastPushedInd);
-
+                if (waitingRight == NOT_WAITING && left != null) {
+                    if (!matched && requested > 0) {
                         requested--;
-                        downstream().push(row);
 
-                        if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
-                            break;
+                        downstream().push(handler.concat(left, rightRowFactory.create()));
                     }
                 }
-                finally {
-                    inLoop = false;
-                }
+            }
+            finally {
+                inLoop = false;
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
+            if (requested > 0 && waitingLeft == 0 && F.isEmpty(leftInBuf))
+                requestLeft();
 
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+            if (requested > 0 && (left != null || !F.isEmpty(leftInBuf))) {
+                if (waitingRight == NOT_WAITING) {
+                    // no progress, seems right is empty.
+                    if (left == null) {
+                        while (requested > 0 && !F.isEmpty(leftInBuf)) {
+                            left = leftInBuf.remove();
+                            requested--;
+                            downstream().push(handler.concat(left, rightRowFactory.create()));
+                            left = null;
+                        }
+                    }
+                    else {
+                        left = null;
+                        matched = false;
+                        rightSource().rewind();
+                        requestRight();
+                    }
+                }
+                else if (requested > 0 && waitingRight == 0 && F.isEmpty(rightInBuf))
+                    requestRight();
+            }
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
-                && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
+            // no more data from left side.
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && F.isEmpty(leftInBuf)) {
                 requested = 0;
                 downstream().end();
             }
@@ -537,134 +479,110 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    private static class FullOuterJoin<Row> extends NestedLoopJoinNode<Row> {
+    private static class RightOrFullJoin<Row> extends NestedLoopJoinNode<Row> {
         /** Left row factory. */
         private final RowHandler.RowFactory<Row> leftRowFactory;
 
         /** Right row factory. */
         private final RowHandler.RowFactory<Row> rightRowFactory;
 
-        /** Whether current left row was matched or not. */
-        private boolean leftMatched;
+        /** Rows from right side that have no matching with left. */
+        private BitSet rightNotMatchedRows;
 
-        /** */
-        private BitSet rightNotMatchedIndexes;
-
-        /** */
-        private int lastPushedInd;
+        /** Last checked position from {@link RightOrFullJoin#rightNotMatchedRows}. */
+        private int lastPushedIdx;
 
         /** */
         private Row left;
 
         /** */
+        private Row right;
+
+        /** */
         private int rightIdx;
+
+        /** */
+        private int leftIdx;
+
+        /** If {@code true} start to processing right side. */
+        private boolean doRight;
+
+        /** If {@code true} fill right matching structure. */
+        private boolean initRight = true;
+
+        /** Whether current left row was matched or not, used only with {@link JoinRelType.FULL} type. */
+        private boolean leftMatched;
+
+        /** Join type. */
+        private final JoinRelType joinType;
 
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public FullOuterJoin(
+        public RightOrFullJoin(
             ExecutionContext<Row> ctx,
             RelDataType rowType,
             BiPredicate<Row, Row> cond,
             RowHandler.RowFactory<Row> leftRowFactory,
-            RowHandler.RowFactory<Row> rightRowFactory
+            RowHandler.RowFactory<Row> rightRowFactory,
+            JoinRelType joinType
         ) {
             super(ctx, rowType, cond);
 
             this.leftRowFactory = leftRowFactory;
             this.rightRowFactory = rightRowFactory;
+
+            this.joinType = joinType;
         }
 
         /** {@inheritDoc} */
         @Override protected void rewindInternal() {
             left = null;
+            right = null;
+            rightNotMatchedRows.clear();
+            lastPushedIdx = 0;
+            rightIdx = 0;
+            leftIdx = 0;
+            doRight = false;
             leftMatched = false;
-            rightNotMatchedIndexes.clear();
-            lastPushedInd = 0;
-            rightIdx = 0;
 
             super.rewindInternal();
         }
 
-        /** {@inheritDoc} */
-        @Override protected void join() throws Exception {
-            if (waitingRight == NOT_WAITING) {
-                if (rightNotMatchedIndexes == null) {
-                    rightNotMatchedIndexes = new BitSet(rightMaterialized.size());
+        /** */
+        private boolean leftIsEmpty() {
+            return left == null && F.isEmpty(leftInBuf);
+        }
 
-                    rightNotMatchedIndexes.set(0, rightMaterialized.size());
-                }
-
+        /** */
+        private void doRight() throws Exception {
+            if (requested > 0 && !F.isEmpty(rightInBuf) && !rightNotMatchedRows.isEmpty()) {
                 inLoop = true;
                 try {
-                    while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                        if (left == null) {
-                            left = leftInBuf.remove();
+                    lastPushedIdx = rightNotMatchedRows.nextSetBit(lastPushedIdx);
 
-                            leftMatched = false;
-                        }
-
-                        while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
-
-                            Row right = rightMaterialized.get(rightIdx++);
-
-                            if (!cond.test(left, right))
-                                continue;
-
-                            requested--;
-                            leftMatched = true;
-                            rightNotMatchedIndexes.clear(rightIdx - 1);
-
-                            Row joined = handler.concat(left, right);
-                            downstream().push(joined);
-                        }
-
-                        if (rightIdx == rightMaterialized.size()) {
-                            boolean wasPushed = false;
-
-                            if (!leftMatched && requested > 0) {
-                                requested--;
-                                wasPushed = true;
-
-                                downstream().push(handler.concat(left, rightRowFactory.create()));
-                            }
-
-                            if (leftMatched || wasPushed) {
-                                left = null;
-                                rightIdx = 0;
-                            }
-                        }
-                    }
-                }
-                finally {
-                    inLoop = false;
-                }
-            }
-
-            if (waitingLeft == NOT_WAITING && requested > 0 && (rightNotMatchedIndexes != null && !rightNotMatchedIndexes.isEmpty())) {
-                assert lastPushedInd >= 0;
-
-                inLoop = true;
-                try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
+                    while (requested > 0 && !F.isEmpty(rightInBuf)) {
                         checkState();
 
-                        if (lastPushedInd < 0)
+                        if (lastPushedIdx < 0) {
+                            doRight = false;
+                            rightNotMatchedRows.clear();
                             break;
+                        }
 
-                        Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+                        right = rightInBuf.remove();
 
-                        rightNotMatchedIndexes.clear(lastPushedInd);
+                        if (leftIdx++ == lastPushedIdx) {
+                            Row row = handler.concat(leftRowFactory.create(), right);
 
-                        requested--;
-                        downstream().push(row);
+                            rightNotMatchedRows.clear(lastPushedIdx);
 
-                        if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
-                            break;
+                            requested--;
+                            downstream().push(row);
+
+                            lastPushedIdx = rightNotMatchedRows.nextSetBit(lastPushedIdx + 1);
+                        }
                     }
                 }
                 finally {
@@ -672,152 +590,154 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
+            // complete if right is empty or there is no items on matching set.
+            if ((waitingRight == NOT_WAITING && F.isEmpty(rightInBuf)) || rightNotMatchedRows.isEmpty()) {
+                doRight = false;
+                rightNotMatchedRows.clear();
 
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+                if (requested > 0)
+                    complete();
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
-                && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
-                requested = 0;
-                downstream().end();
+                return;
             }
-        }
-    }
 
-    /** */
-    private static class SemiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
-        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
-            super(ctx, rowType, cond);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            left = null;
-            rightIdx = 0;
-
-            super.rewindInternal();
+            // reads all from right.
+            if (waitingRight == 0 && F.isEmpty(rightInBuf) && doRight)
+                requestRight();
         }
 
         /** {@inheritDoc} */
         @Override protected void join() throws Exception {
-            if (waitingRight == NOT_WAITING) {
-                while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                    if (left == null)
+            if (doRight) {
+                doRight();
+
+                return;
+            }
+
+            if (rightNotMatchedRows == null)
+                rightNotMatchedRows = new BitSet(IN_BUFFER_SIZE);
+
+            if (initRight && !F.isEmpty(rightInBuf))
+                rightNotMatchedRows.set(rightIdx, rightIdx + rightInBuf.size());
+
+            try {
+                inLoop = true;
+
+                while (requested > 0 && !leftIsEmpty() && !F.isEmpty(rightInBuf)) {
+                    checkState();
+
+                    if (left == null) {
                         left = leftInBuf.remove();
+                        leftMatched = false;
+                    }
 
-                    boolean matched = false;
+                    right = rightInBuf.remove();
 
-                    while (!matched && requested > 0 && rightIdx < rightMaterialized.size()) {
-                        checkState();
+                    rightIdx++;
 
-                        if (!cond.test(left, rightMaterialized.get(rightIdx++)))
-                            continue;
+                    if (!cond.test(left, right))
+                        continue;
 
+                    final Row row = handler.concat(left, right);
+
+                    requested--;
+                    leftMatched = true;
+                    rightNotMatchedRows.clear(rightIdx - 1);
+                    downstream().push(row);
+                }
+            }
+            finally {
+                inLoop = false;
+            }
+
+            if (requested > 0 && waitingLeft == 0 && F.isEmpty(leftInBuf))
+                requestLeft();
+
+            if (requested > 0 && waitingRight == 0 && F.isEmpty(rightInBuf))
+                requestRight();
+
+            // right is empty.
+            if (requested > 0 && waitingRight == NOT_WAITING && F.isEmpty(rightInBuf) && left == null &&
+                joinType == JoinRelType.FULL) {
+                if (!F.isEmpty(leftInBuf)) {
+                    while (!F.isEmpty(leftInBuf) && requested > 0) {
+                        final Row left0 = leftInBuf.remove();
                         requested--;
-                        downstream().push(left);
-
-                        matched = true;
+                        downstream().push(handler.concat(left0, rightRowFactory.create()));
                     }
-
-                    if (matched || rightIdx == rightMaterialized.size()) {
-                        left = null;
-                        rightIdx = 0;
-                    }
+                }
+                else {
+                    if (waitingLeft == NOT_WAITING && F.isEmpty(leftInBuf))
+                        complete();
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
-                && leftInBuf.isEmpty()) {
-                downstream().end();
-                requested = 0;
-            }
-        }
-    }
-
-    /** */
-    private static class AntiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
-        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
-            super(ctx, rowType, cond);
-        }
-
-        /** */
-        @Override protected void rewindInternal() {
-            left = null;
-            rightIdx = 0;
-
-            super.rewindInternal();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void join() throws Exception {
-            if (waitingRight == NOT_WAITING) {
-                inLoop = true;
-                try {
-                    while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
-                        if (left == null)
-                            left = leftInBuf.remove();
-
-                        boolean matched = false;
-
-                        while (!matched && rightIdx < rightMaterialized.size()) {
-                            checkState();
-
-                            if (cond.test(left, rightMaterialized.get(rightIdx++)))
-                                matched = true;
-                        }
-
-                        if (!matched) {
-                            requested--;
-                            downstream().push(left);
-                        }
-
-                        left = null;
-                        rightIdx = 0;
+            if (requested > 0 && waitingLeft == NOT_WAITING && leftIsEmpty() && initRight) {
+                if (!F.isEmpty(rightInBuf)) {
+                    while (!F.isEmpty(rightInBuf)) {
+                        rightInBuf.remove();
+                        rightNotMatchedRows.set(rightIdx++);
                     }
-                }
-                finally {
-                    inLoop = false;
+
+                    if (waitingRight != NOT_WAITING)
+                        requestRight();
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
+            // do final stuff
+            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING
+                && F.isEmpty(rightInBuf) && F.isEmpty(leftInBuf)) {
+                if (rightNotMatchedRows.isEmpty())
+                    complete();
+                else {
+                    doRight = true;
+                    initRight = false;
 
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
+                    if (!leftMatched && requested > 0 && joinType == JoinRelType.FULL && left != null) {
+                        requested--;
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
+                        downstream().push(handler.concat(left, rightRowFactory.create()));
+                    }
+
+                    left = null;
+
+                    rightSource().rewind();
+                    requestRight();
+                }
+
+                return;
             }
+
+            if (requested > 0 && ((waitingLeft == NOT_WAITING && !initRight && leftIsEmpty()) ||
+                (waitingRight == NOT_WAITING && rightIdx == 0 && F.isEmpty(rightInBuf) && joinType != JoinRelType.FULL))) {
+                assert rightNotMatchedRows.isEmpty() : "rightIdxs: " + rightNotMatchedRows;
+                complete();
+            }
+
+            // rewind right.
+            if (requested > 0 && waitingRight == NOT_WAITING && !F.isEmpty(leftInBuf) && F.isEmpty(rightInBuf)) {
+                if (!leftMatched && requested > 0 && joinType == JoinRelType.FULL) {
+                    requested--;
+
+                    downstream().push(handler.concat(left, rightRowFactory.create()));
+                }
+
+                left = null;
+
+                rightIdx = 0;
+
+                rightSource().rewind();
+                requestRight();
+
+                initRight = false;
+            }
+        }
+
+        /** */
+        private void complete() throws Exception {
+            rightNotMatchedRows = null;
+            requested = 0;
+            downstream().end();
         }
     }
 }
