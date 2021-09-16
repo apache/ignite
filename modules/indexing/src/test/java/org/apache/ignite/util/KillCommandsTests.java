@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -54,6 +53,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -122,7 +122,7 @@ class KillCommandsTests {
         IgniteEx cli,
         List<IgniteEx> srvs,
         Consumer<T3<UUID, String, Long>> qryCanceler
-    ) {
+    ) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -241,7 +241,9 @@ class KillCommandsTests {
      * @param node Node to get query info.
      * @return Tuple of scan query info.
      */
-    private static T3<UUID, String, Long> scanQuery(Ignite node) {
+    private static T3<UUID, String, Long> scanQuery(IgniteEx node) throws IgniteCheckedException {
+        assertTrue(waitForCondition(() -> node.context().systemView().view(SCAN_QRY_SYS_VIEW).size() > 0, TIMEOUT));
+
         List<List<?>> qry = execute(node,
             "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
 
