@@ -42,7 +42,7 @@ public enum CacheCommandList {
     /**
      * Destroy user-created caches.
      */
-    DELETE("delete", new CacheDestroy()),
+    DESTROY("destroy", new CacheDestroy()),
 
     /**
      * Validates indexes attempting to read each indexed entry.

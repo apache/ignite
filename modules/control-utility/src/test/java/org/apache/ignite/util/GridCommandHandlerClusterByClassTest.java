@@ -1130,7 +1130,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
-    public void testCacheDelete() throws IgniteCheckedException {
+    public void testCacheDestroy() throws IgniteCheckedException {
         List<String> cacheNames = new ArrayList<>();
 
         // Create some internal caches.
