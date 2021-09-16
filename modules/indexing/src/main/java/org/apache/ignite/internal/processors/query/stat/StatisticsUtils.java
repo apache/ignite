@@ -216,7 +216,7 @@ public class StatisticsUtils {
         if (cfg == null)
             return false;
 
-        for(Map.Entry<String, Long> version : versions.entrySet()) {
+        for (Map.Entry<String, Long> version : versions.entrySet()) {
             StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
 
             if (colCfg == null || colCfg.version() < version.getValue())
