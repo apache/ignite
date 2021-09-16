@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.all;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -207,6 +208,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         checkPerson(cache.query(qry), 0, CNT);
 
+        // Should return all data for ID and SECID that greater any inserted.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(all("id"), lt("secId", CNT));
+
+        checkPerson(cache.query(qry), 0, CNT);
+
         // Should return part of data, as ID equals to inserted data ID field.
         qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 0), lt("secId", pivot));
@@ -218,6 +225,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
             .setCriteria(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
+
+        // Should return all data for ID greater any inserted.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), all("secId"));
+
+        checkPerson(cache.query(qry), 0, CNT);
     }
 
     /** */
@@ -562,6 +575,44 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(eq("id", 0), lt("secId", pivot), lt("_KEY", (long) pivot));
+
+        checkPerson(cache.query(qry), 0, pivot);
+    }
+
+    /** */
+    @Test
+    public void testAllCriterionOnMultipleFields() {
+        insertData();
+
+        int pivot = new Random().nextInt(CNT);
+
+        // Should apply the _KEY field criterion despite the all() criterion on previous fields.
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(all("id"), all("secId"), lt("_KEY", (long) pivot));
+
+        checkPerson(cache.query(qry), 0, pivot);
+
+        // Should apply criteria for secId field despite the all() criterion on other fields.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(all("id"), lt("secId", pivot), all("_KEY"));
+
+        checkPerson(cache.query(qry), 0, pivot);
+
+        // Should apply criteria for id field despite the all() criterion on other fields.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 0), all("secId"), all("_KEY"));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        // Should not filter for repeated the all() criterion.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(all("id"), all("secId"), all("_KEY"));
+
+        checkPerson(cache.query(qry), 0, CNT);
+
+        // Should apply criteria for id and _KEY field despite the all() criterion in middle.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(eq("id", 0), all("secId"), lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
     }

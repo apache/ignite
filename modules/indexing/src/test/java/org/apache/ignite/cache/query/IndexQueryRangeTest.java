@@ -43,6 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.all;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -208,6 +209,12 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         // Add data
         insertData();
 
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(all("id"));
+
+        check(cache.query(qry), 0, CNT);
+
+        // Range queries.
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
@@ -253,14 +260,20 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeDescQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Add data
         insertData();
 
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
+            .setCriteria(all("descId"));
+
+        check(cache.query(qry), 0, CNT);
+
+        // Range queries.
         int pivot = new Random().nextInt(CNT);
 
         // Eq.

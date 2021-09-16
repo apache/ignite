@@ -334,7 +334,7 @@ public class IndexQueryProcessor {
              */
             private boolean rowIsOutOfRange(IndexRow row, IndexRow low, IndexRow high) throws IgniteCheckedException {
                 if (low == null && high == null)
-                    return true;  // Unbounded search, include all.
+                    return false;  // Unbounded search, include all.
 
                 int criteriaKeysCnt = treeCriteria.size();
 

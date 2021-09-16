@@ -25,6 +25,18 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 public class IndexQueryCriteriaBuilder {
     /**
+     * All.
+     *
+     * @param field Index field to apply criterion.
+     * @return Criterion.
+     */
+    public static IndexQueryCriterion all(String field) {
+        A.notNullOrEmpty(field, "field");
+
+        return new RangeIndexQueryCriterion(field, null, null);
+    }
+
+    /**
      * Equal To.
      *
      * @param field Index field to apply criterion.
