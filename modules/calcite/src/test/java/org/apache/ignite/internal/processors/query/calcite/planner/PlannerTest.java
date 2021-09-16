@@ -1189,11 +1189,10 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertNotNull(rel);
             assertEquals("" +
-                    "LogicalFilter(condition=[=(CAST(+($0, $1)):INTEGER, 2)])\n" +
-                    "  LogicalJoin(condition=[true], joinType=[inner])\n" +
-                    "    LogicalProject(DEPTNO=[$0])\n" +
+                    "LogicalProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
+                    "  LogicalFilter(condition=[=(CAST(+($0, $4)):INTEGER, 2)])\n" +
+                    "    LogicalJoin(condition=[true], joinType=[inner])\n" +
                     "      IgniteLogicalTableScan(table=[[PUBLIC, DEPT]])\n" +
-                    "    LogicalProject(DEPTNO=[$2])\n" +
                     "      IgniteLogicalTableScan(table=[[PUBLIC, EMP]])\n",
                 RelOptUtil.toString(rel));
 
@@ -1209,10 +1208,11 @@ public class PlannerTest extends AbstractPlannerTest {
             assertNotNull(phys);
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], " +
-                    "correlationVariables=[[$cor1]])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
+                "IgniteProject(DEPTNO=[$3], DEPTNO0=[$2])\n" +
+                    "  IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($3, $2)):INTEGER, 2)], joinType=[inner], " +
+                    "correlationVariables=[[$cor2]])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, DEPT]], filters=[=(CAST(+($t0, $cor2.DEPTNO)):INTEGER, 2)])\n",
                 RelOptUtil.toString(phys));
 
             checkSplitAndSerialization(phys, publicSchema);
