@@ -1167,13 +1167,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cacheNames.addAll(createCaches(15, 5, "shared2"));
 
         String expConfirmation = String.format(CacheDestroy.CONFIRM_MSG, cacheNames.size(),
-            "temp-user-cache-00, temp-user-cache-01, temp-user-cache-02, temp-user-cache-03,... temp-user-cache-19");
+            "temp-user-cache-00, temp-user-cache-01, temp-user-cache-02, temp-user-cache-03, temp-user-cache-04, " +
+                "temp-user-cache-05, temp-user-cache-06, temp-user-cache-07, temp-user-cache-08,... temp-user-cache-19");
 
         injectTestSystemIn(CONFIRM_MSG);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), expConfirmation);
-        assertTrue("Caches must be destroyed." + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
+        assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
         cacheNames = createCaches(20, 2, "shared3");
         String invalidCacheNamesStr = F.concat(cacheNames, ", ") + ", shared3";
@@ -1188,7 +1189,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         // Skip cache existence check.
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), invalidCacheNamesStr, CacheDestroy.SKIP_EXISTENCE_ARG));
         assertContains(log, testOut.toString(), "following caches have been stopped");
-        assertTrue("Caches must be destroyed." + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
+        assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
         // Sql-cache.
         String qry = "CREATE TABLE Person (id LONG PRIMARY KEY, name VARCHAR) WITH \"CACHE_NAME=sql-cache\";";
@@ -1196,7 +1197,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), String.format(CacheDestroy.RESULT_MSG, "sql-cache"));
-        assertTrue("Caches must be destroyed." + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
+        assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
     }
 
     /**

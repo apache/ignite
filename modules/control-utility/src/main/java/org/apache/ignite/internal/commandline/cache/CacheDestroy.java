@@ -95,8 +95,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
 
             if (SKIP_EXISTENCE_ARG.equals(cmdArg))
                 checkExisting = false;
-            else
-            if (DESTROY_ALL_ARG.equals(cmdArg)) {
+            else if (DESTROY_ALL_ARG.equals(cmdArg)) {
                 if (caches != null) {
                     throw new IllegalArgumentException(
                         "Unexpected argument \"" + cmdArg + "\". The cache names are already specified.");
@@ -130,7 +129,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         // Limit the number of cache names displayed to the user.
         SortedSet<String> cacheNames = new TreeSet<>(args.cacheNames());
         SB buf = new SB();
-        int limit = 5;
+        int limit = 10;
 
         boolean compact = cacheNames.size() > limit;
 
