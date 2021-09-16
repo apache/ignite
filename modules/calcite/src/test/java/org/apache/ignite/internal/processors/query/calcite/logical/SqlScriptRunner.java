@@ -26,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -82,6 +83,9 @@ public class SqlScriptRunner {
 
     /** nl to bytes representation. */
     private static final byte[] NL_BYTES = "\n".getBytes();
+
+    /** Eqivalent results store. */
+    private Map<String, Collection<String>> eqResStorage = new HashMap<>();
 
     /** Hash algo. */
     MessageDigest messageDigest;
@@ -156,9 +160,7 @@ public class SqlScriptRunner {
 
         /** */
         String nextLine() throws IOException {
-            String ret = nextLineWithoutTrim();
-
-            return ret == null ? null : ret.trim();
+            return nextLineWithoutTrim();
         }
 
         /** */
@@ -432,14 +434,20 @@ public class SqlScriptRunner {
         int expectedRows;
 
         /** Sorting algo. */
-        SortType sortType;
+        SortType sortType = SortType.NOSORT;
+
+        /** Equality label. */
+        String eqLabel;
 
         /** */
         Query(String[] cmd) throws IOException {
             String resTypesChars = cmd[1];
-            String sort = cmd[2];
 
-            sortType = SortType.valueOf(sort.toUpperCase());
+            if (cmd.length > 2)
+                sortType = SortType.valueOf(cmd[2].toUpperCase());
+
+            if (cmd.length > 3)
+                eqLabel = cmd[3].toLowerCase();
 
             if (sortType == SortType.VALUESORT)
                 throw new IgniteException(sortType + " not supported.");
@@ -642,6 +650,18 @@ public class SqlScriptRunner {
 
             String res0 = byteArrayToHex(messageDigest.digest());
 
+            if (eqLabel != null) {
+                if (res0.equals(expectedHash))
+                    eqResStorage.computeIfAbsent(eqLabel, k -> new ArrayList<>()).add(sql.toString());
+                else {
+                    Collection<String> eq = eqResStorage.get(eqLabel);
+
+                    if (eq != null)
+                        throw new AssertionError("Results of queries need to be equal: " + eq +
+                            U.nl() + " and " + U.nl() + sql);
+                }
+            }
+
             if (!res0.equals(expectedHash))
                 throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
                     ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
@@ -656,7 +676,7 @@ public class SqlScriptRunner {
     /** */
     public static String byteArrayToHex(byte[] arr) {
         StringBuilder sb = new StringBuilder(arr.length * 2);
-        for(byte b: arr)
+        for (byte b : arr)
             sb.append(String.format("%02x", b));
         return sb.toString();
     }
