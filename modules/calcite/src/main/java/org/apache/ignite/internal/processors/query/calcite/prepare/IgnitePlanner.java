@@ -210,11 +210,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
-        RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
 
-        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
-
-        return trimUnusedFields(root);
+        return sqlToRelConverter.convertQuery(sql, false, true);
     }
 
     /** {@inheritDoc} */
@@ -328,7 +325,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
      */
-    protected RelRoot trimUnusedFields(RelRoot root) {
+    public RelRoot trimUnusedFields(RelRoot root) {
         // For now, don't trim if there are more than 3 joins. The projects
         // near the leaves created by trim migrate past joins and seem to
         // prevent join-reordering.
