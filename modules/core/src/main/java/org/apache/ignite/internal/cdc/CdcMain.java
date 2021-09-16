@@ -38,18 +38,20 @@ import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.processors.resource.GridResourceLoggerInjector;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -59,16 +61,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
-import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Change Data Capture (CDC) application.
@@ -125,6 +126,15 @@ public class CdcMain implements Runnable {
     /** Spring resource context. */
     private final GridSpringResourceContext ctx;
 
+    /** Standalone kernal context. */
+    private GridKernalContext kctx;
+
+    /** */
+    private MetricRegistry mreg;
+
+    /** */
+    private AtomicLongMetric curSegmentMetric;
+
     /** Change Data Capture configuration. */
     private final CdcConfiguration cdcCfg;
 
@@ -140,11 +150,11 @@ public class CdcMain implements Runnable {
     /** Change Data Capture directory. */
     private Path cdcDir;
 
-    /** */
-    private StandaloneGridKernalContext kctx;
+    /** Binary meta directory. */
+    private File binaryMeta;
 
-    /** */
-    private GridCacheSharedContext<?, ?> cctx;
+    /** Marshaller directory. */
+    private File marshaller;
 
     /** Change Data Capture state. */
     private CdcConsumerState state;
@@ -218,9 +228,23 @@ public class CdcMain implements Runnable {
 
             Files.createDirectories(cdcDir.resolve(STATE_DIR));
 
-            startStandaloneKernal(consIdDir);
+            binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(igniteCfg.getWorkDirectory(), consIdDir);
+
+            marshaller = MarshallerContextImpl.mappingFileStoreWorkDir(igniteCfg.getWorkDirectory());
+
+            if (log.isInfoEnabled()) {
+                log.info("Change Data Capture [dir=" + cdcDir + ']');
+                log.info("Ignite node Binary meta [dir=" + binaryMeta + ']');
+                log.info("Ignite node Marshaller [dir=" + marshaller + ']');
+            }
 
             injectResources(consumer.consumer());
+
+            startStandaloneKernal();
+
+            mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
+            mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
+            mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
 
             state = new CdcConsumerState(cdcDir.resolve(STATE_DIR));
 
@@ -243,40 +267,27 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /** */
-    private void startStandaloneKernal(String consIdDir) throws IgniteCheckedException {
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(igniteCfg.getWorkDirectory(), consIdDir);
-
-        File marshaller = MarshallerContextImpl.mappingFileStoreWorkDir(igniteCfg.getWorkDirectory());
-
-        kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startStandaloneKernal() throws IgniteCheckedException {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                if (F.isEmpty(cdcCfg.getMetricExporterSpi()))
-                    cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
-                else
+                if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
 
                 return cfg;
             }
         };
 
-        cctx = U.createStandaloneCacheSharedContext(
-            kctx,
-            igniteCfg.getDataStorageConfiguration() == null
-                ? DFLT_PAGE_SIZE
-                : igniteCfg.getDataStorageConfiguration().getPageSize()
-        );
-
         for (GridComponent comp : kctx)
             comp.start();
 
-        if (log.isInfoEnabled()) {
-            log.info("Change Data Capture [dir=" + cdcDir + ']');
-            log.info("Ignite node Binary meta [dir=" + binaryMeta + ']');
-            log.info("Ignite node Marshaller [dir=" + marshaller + ']');
-        }
+        mreg = kctx.metric().registry(metricName("cdc", "sys"));
+
+        curSegmentMetric = mreg.longMetric("segmentIndex", "Current segment index");
     }
 
     /**
@@ -355,14 +366,17 @@ public class CdcMain implements Runnable {
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
-                .sharedContext(cctx)
+                .binaryMetadataFileStoreDir(binaryMeta)
+                .marshallerMappingFileStoreDir(marshaller)
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile())
                 .addFilter((type, ptr) -> type == DATA_RECORD_V2);
 
-        if (initState != null) {
-            long segmentIdx = segmentIndex(segment);
+        long segmentIdx = segmentIndex(segment);
 
+        curSegmentMetric.value(segmentIdx);
+
+        if (initState != null) {
             if (segmentIdx > initState.index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
                     "[state=" + initState + ", segment=" + segmentIdx + ']');

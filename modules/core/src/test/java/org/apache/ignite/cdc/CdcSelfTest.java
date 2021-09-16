@@ -18,15 +18,16 @@
 package org.apache.ignite.cdc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -68,16 +71,23 @@ public class CdcSelfTest extends AbstractCdcTest {
     public WALMode walMode;
 
     /** */
-    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}")
+    @Parameterized.Parameter(2)
+    public Supplier<MetricExporterSpi> metricExporter;
+
+    /** */
+    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}, metricExporter={2}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {true, WALMode.FSYNC},
-            {false, WALMode.FSYNC},
-            {true, WALMode.LOG_ONLY},
-            {false, WALMode.LOG_ONLY},
-            {true, WALMode.BACKGROUND},
-            {false, WALMode.BACKGROUND}
-        });
+        List<Object[]> params = new ArrayList<>();
+
+        for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
+            for (boolean specificConsistentId : new boolean[] {true, false}) {
+                Supplier<MetricExporterSpi> jmx = JmxMetricExporterSpi::new;
+
+                params.add(new Object[] {specificConsistentId, mode, null});
+                params.add(new Object[] {specificConsistentId, mode, jmx});
+            }
+
+        return params;
     }
 
     /** Consistent id. */
