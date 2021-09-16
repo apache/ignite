@@ -650,7 +650,7 @@ data: {
       "parserImpls.ftl"
     ]
 
-    includePosixOperators: false
+    includePosixOperators: true
     includeCompoundIdentifier: true
     includeBraces: true
     includeAdditionalDeclarations: false

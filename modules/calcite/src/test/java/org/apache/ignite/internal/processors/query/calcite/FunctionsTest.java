@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -41,6 +42,9 @@ public class FunctionsTest extends GridCommonAbstractTest {
     /** */
     private static QueryEngine qryEngine;
 
+    /** */
+    private static final Object[] NULL_RESULT = new Object[] { null };
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite grid = startGridsMultiThreaded(3);
@@ -52,7 +56,7 @@ public class FunctionsTest extends GridCommonAbstractTest {
     @Test
     public void testLength() {
         checkQuery("SELECT LENGTH('TEST')").returns(4).check();
-        checkQuery("SELECT LENGTH(NULL)").returns(new Object[] { null }).check();
+        checkQuery("SELECT LENGTH(NULL)").returns(NULL_RESULT).check();
     }
 
     /** */
@@ -100,9 +104,9 @@ public class FunctionsTest extends GridCommonAbstractTest {
     @Test
     public void testReplace() {
         checkQuery("SELECT REPLACE('12341234', '1', '55')").returns("5523455234").check();
-        checkQuery("SELECT REPLACE(NULL, '1', '5')").returns(new Object[] { null }).check();
-        checkQuery("SELECT REPLACE('1', NULL, '5')").returns(new Object[] { null }).check();
-        checkQuery("SELECT REPLACE('11', '1', NULL)").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE(NULL, '1', '5')").returns(NULL_RESULT).check();
+        checkQuery("SELECT REPLACE('1', NULL, '5')").returns(NULL_RESULT).check();
+        checkQuery("SELECT REPLACE('11', '1', NULL)").returns(NULL_RESULT).check();
         checkQuery("SELECT REPLACE('11', '1', '')").returns("").check();
     }
 
@@ -204,22 +208,22 @@ public class FunctionsTest extends GridCommonAbstractTest {
     public void testPercentRemainder() {
         checkQuery("SELECT 3 % 2").returns(1).check();
         checkQuery("SELECT 4 % 2").returns(0).check();
-        checkQuery("SELECT NULL % 2").returns(new Object[] { null }).check();
-        checkQuery("SELECT 3 % NULL::int").returns(new Object[] { null }).check();
-        checkQuery("SELECT 3 % NULL").returns(new Object[] { null }).check();
+        checkQuery("SELECT NULL % 2").returns(NULL_RESULT).check();
+        checkQuery("SELECT 3 % NULL::int").returns(NULL_RESULT).check();
+        checkQuery("SELECT 3 % NULL").returns(NULL_RESULT).check();
     }
 
     /** */
     @Test
     public void testNullFunctionArguments() {
         // Don't infer result data type from arguments (result is always INTEGER_NULLABLE).
-        checkQuery("SELECT ASCII(NULL)").returns(new Object[] { null }).check();
+        checkQuery("SELECT ASCII(NULL)").returns(NULL_RESULT).check();
         // Inferring result data type from first STRING argument.
-        checkQuery("SELECT REPLACE(NULL, '1', '2')").returns(new Object[] { null }).check();
+        checkQuery("SELECT REPLACE(NULL, '1', '2')").returns(NULL_RESULT).check();
         // Inferring result data type from both arguments.
-        checkQuery("SELECT MOD(1, null)").returns(new Object[] { null }).check();
+        checkQuery("SELECT MOD(1, null)").returns(NULL_RESULT).check();
         // Inferring result data type from first NUMERIC argument.
-        checkQuery("SELECT TRUNCATE(NULL, 0)").returns(new Object[] { null }).check();
+        checkQuery("SELECT TRUNCATE(NULL, 0)").returns(NULL_RESULT).check();
         // Inferring arguments data types and then inferring result data type from all arguments.
         checkQuery("SELECT FALSE AND NULL").returns(false).check();
     }
@@ -243,6 +247,36 @@ public class FunctionsTest extends GridCommonAbstractTest {
         checkQuery("SELECT TYPEOF(NULL::VARCHAR(100))").returns("VARCHAR(100)").check();
         assertThrows("SELECT TYPEOF()", SqlValidatorException.class, "Invalid number of arguments");
         assertThrows("SELECT TYPEOF(1, 2)", SqlValidatorException.class, "Invalid number of arguments");
+    }
+
+    /** */
+    @Test
+    public void testRegex() {
+        checkQuery("SELECT 'abcd' ~ 'ab[cd]'").returns(true).check();
+        checkQuery("SELECT 'abcd' ~ 'ab[cd]$'").returns(false).check();
+        checkQuery("SELECT 'abcd' ~ 'ab[CD]'").returns(false).check();
+        checkQuery("SELECT 'abcd' ~* 'ab[cd]'").returns(true).check();
+        checkQuery("SELECT 'abcd' ~* 'ab[cd]$'").returns(false).check();
+        checkQuery("SELECT 'abcd' ~* 'ab[CD]'").returns(true).check();
+        checkQuery("SELECT 'abcd' !~ 'ab[cd]'").returns(false).check();
+        checkQuery("SELECT 'abcd' !~ 'ab[cd]$'").returns(true).check();
+        checkQuery("SELECT 'abcd' !~ 'ab[CD]'").returns(true).check();
+        checkQuery("SELECT 'abcd' !~* 'ab[cd]'").returns(false).check();
+        checkQuery("SELECT 'abcd' !~* 'ab[cd]$'").returns(true).check();
+        checkQuery("SELECT 'abcd' !~* 'ab[CD]'").returns(false).check();
+        checkQuery("SELECT null ~ 'ab[cd]'").returns(NULL_RESULT).check();
+        checkQuery("SELECT 'abcd' ~ null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null ~ null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null ~* 'ab[cd]'").returns(NULL_RESULT).check();
+        checkQuery("SELECT 'abcd' ~* null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null ~* null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null !~ 'ab[cd]'").returns(NULL_RESULT).check();
+        checkQuery("SELECT 'abcd' !~ null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null !~ null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null !~* 'ab[cd]'").returns(NULL_RESULT).check();
+        checkQuery("SELECT 'abcd' !~* null").returns(NULL_RESULT).check();
+        checkQuery("SELECT null !~* null").returns(NULL_RESULT).check();
+        assertThrows("SELECT 'abcd' ~ '\\X'", IgniteSQLException.class, null);
     }
 
     /** */
