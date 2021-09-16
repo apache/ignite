@@ -391,3 +391,9 @@ SqlDrop SqlDropUser(Span s, boolean replace) :
         return new IgniteSqlDropUser(s.end(this), user);
     }
 }
+
+<DEFAULT, DQID, BTID> TOKEN :
+{
+    < NEGATE: "!" >
+|   < TILDE: "~" >
+}
