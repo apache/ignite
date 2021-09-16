@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import static org.apache.ignite.internal.util.IgniteUtils.byteArray2HexString;
 
 /**
  *
@@ -100,8 +101,6 @@ public class SqlScriptRunner {
             messageDigest = MessageDigest.getInstance("MD5");
         }
         catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-
             throw new IgniteException(e);
         }
     }
@@ -641,14 +640,14 @@ public class SqlScriptRunner {
 
             messageDigest.reset();
 
-            for (List<?> l : res) {
-                for (Object itm : l) {
-                    messageDigest.update(String.valueOf(itm).getBytes());
+            for (List<?> row : res) {
+                for (Object col : row) {
+                    messageDigest.update(String.valueOf(col).getBytes());
                     messageDigest.update(NL_BYTES);
                 }
             }
 
-            String res0 = byteArrayToHex(messageDigest.digest());
+            String res0 = byteArray2HexString(messageDigest.digest(), false);
 
             if (eqLabel != null) {
                 if (res0.equals(expectedHash))
@@ -671,14 +670,6 @@ public class SqlScriptRunner {
         @Override public String toString() {
             return S.toString(Query.class, this);
         }
-    }
-
-    /** */
-    public static String byteArrayToHex(byte[] arr) {
-        StringBuilder sb = new StringBuilder(arr.length * 2);
-        for (byte b : arr)
-            sb.append(String.format("%02x", b));
-        return sb.toString();
     }
 
     /** */

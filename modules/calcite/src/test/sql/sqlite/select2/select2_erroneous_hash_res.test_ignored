@@ -829,17 +829,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
 210 values hashing to f687ab94c7a21d83732ee96a366aad41
 
 query IIII rowsort
-SELECT c-d,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       a+b*2+c*3,
-       b
-  FROM t1
- WHERE (a>b-2 AND a<b+2)
-   AND d>e
-----
-12 values hashing to 383eb65446347ea6e607173208759bd4
-
-query IIII rowsort
 SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
         WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
        b,
@@ -2954,17 +2943,6 @@ SELECT abs(a),
 ----
 138 values hashing to 8d59f2064f6a4d8a9932bb0487115ad1
 
-query III rowsort
-SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
-  FROM t1
- WHERE b>c
-----
-39 values hashing to 0a7270cbb622612fe7d21399b291ea34
-
 query IIIIIII rowsort
 SELECT c-d,
        a-b,
@@ -3313,15 +3291,6 @@ SELECT (a+b+c+d+e)/5,
 ----
 65 values hashing to 7d1010ffd2bac09eacbd2c9fba7ac5e3
 
-query III rowsort
-SELECT a-b,
-       abs(b-c),
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE (a>b-2 AND a<b+2)
-----
-24 values hashing to 06f69cfca8d245108f238d4c1bc772da
-
 query IIII rowsort
 SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
         WHEN a<b+3 THEN 333 ELSE 444 END,
@@ -3489,19 +3458,6 @@ SELECT b-c,
  WHERE coalesce(a,b,c,d,e)<>0
 ----
 90 values hashing to b695930cba779990506825371a4cb6f0
-
-query IIIII rowsort
-SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       abs(b-c),
-       c,
-       b,
-       a-b
-  FROM t1
- WHERE (c<=d-2 OR c>=d+2)
-   AND c BETWEEN b-2 AND d+2
-   AND d>e
-----
-20 values hashing to f36747a922a64a45b6021838f71a7404
 
 query IIII rowsort
 SELECT abs(b-c),
@@ -4785,20 +4741,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
 ----
 120 values hashing to 8ab46353ee866e071bf1b7af72db7e40
 
-query IIIIII rowsort
-SELECT d,
-       c-d,
-       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       a+b*2+c*3+d*4,
-       (a+b+c+d+e)/5,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE c>d
-   AND b IS NOT NULL
-   AND a>b
-----
-30 values hashing to fdd011a2e0a18abb3227e4326df8ecdd
-
 query IIIIIII rowsort
 SELECT a-b,
        (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
@@ -5412,19 +5354,6 @@ SELECT abs(b-c),
   FROM t1
 ----
 120 values hashing to a9c76f87fd78b4d3ad82ce7bc8e64ac8
-
-query IIIII rowsort
-SELECT abs(b-c),
-       c-d,
-       d-e,
-       e,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE (a>b-2 AND a<b+2)
-   AND d>e
-   AND b IS NOT NULL
-----
-15 values hashing to 7c787a6339d303da1db7c981873e544b
 
 query IIII rowsort
 SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
@@ -7939,18 +7868,6 @@ SELECT a+b*2+c*3+d*4+e*5,
   FROM t1
 ----
 180 values hashing to e180b57b4723cf0cf9dbac7b9bf7036a
-
-query IIII rowsort
-SELECT a,
-       a+b*2+c*3+d*4,
-       c,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE a>b
-   AND c>d
-   AND b IS NOT NULL
-----
-20 values hashing to bd0a4f265ee4fa29a213395d83a0776d
 
 query IIIII rowsort
 SELECT e,

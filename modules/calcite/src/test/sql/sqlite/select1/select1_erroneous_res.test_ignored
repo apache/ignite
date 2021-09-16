@@ -121,22 +121,6 @@ SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
 ----
 
 query II nosort
-SELECT a,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE (e>a AND e<b)
- ORDER BY 2,1
-----
-115
-3
-191
-18
-220
-24
-245
-29
-
-query II nosort
 SELECT b-c,
        (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d)
   FROM t1
@@ -198,17 +182,6 @@ SELECT c,
 247
 0
 
-query I nosort
-SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE (e>a AND e<b)
- ORDER BY 1
-----
-3
-18
-24
-29
-
 query III nosort
 SELECT a+b*2+c*3,
        (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
@@ -219,25 +192,6 @@ SELECT a+b*2+c*3,
    AND c>d
  ORDER BY 1,2,3
 ----
-
-query IIIII nosort
-SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END,
-       a+b*2+c*3+d*4,
-       a-b,
-       e,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE c BETWEEN b-2 AND d+2
-   AND (a>b-2 AND a<b+2)
-   AND e+d BETWEEN a+b-10 AND c+130
- ORDER BY 1,3,4,5,2
-----
-222
-1130
--1
-110
-2
 
 query IIIIII nosort
 SELECT a,
@@ -253,53 +207,6 @@ SELECT a,
    AND (e>c OR e<d)
  ORDER BY 4,2,5,1,3,6
 ----
-
-query I nosort
-SELECT a-b
-  FROM t1
- WHERE EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
-   AND e+d BETWEEN a+b-10 AND c+130
- ORDER BY 1
-----
--3
--3
--2
--1
-2
-
-query II nosort
-SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       e
-  FROM t1
- WHERE b>c
-   AND EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
-   AND c>d
- ORDER BY 1,2
-----
-382
-192
-1240
-120
-1390
-135
-1430
-144
-
-query II nosort
-SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       abs(a)
-  FROM t1
- WHERE (e>a AND e<b)
- ORDER BY 2,1
-----
-3
-115
-18
-191
-24
-220
-29
-245
 
 query IIIII nosort
 SELECT a,
@@ -603,16 +510,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
  ORDER BY 1,3,4,2
 ----
 88 values hashing to 271cfc0737d448d8e0ae9b778205fcad
-
-query I nosort
-SELECT b
-  FROM t1
- WHERE a>b
-    OR EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
-    OR (e>c OR e<d)
- ORDER BY 1
-----
-30 values hashing to bac2461f7c1f964c0863658a20e1c90b
 
 query IIII nosort
 SELECT a+b*2+c*3,
@@ -1630,18 +1527,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
 ----
 180 values hashing to e80b8346172b01fad12a7248e5bbc7a4
 
-query IIII nosort
-SELECT a,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       b,
-       a-b
-  FROM t1
- WHERE EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
-    OR (a>b-2 AND a<b+2)
- ORDER BY 1,3,2,4
-----
-116 values hashing to 2f04f12bdebfaef35c093d47a9aedc6f
-
 query IIIII nosort
 SELECT c-d,
        abs(a),
@@ -1733,14 +1618,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
  ORDER BY 1,2,3
 ----
 90 values hashing to 16f9d5fdf4a5fcefd72fd63af183a51a
-
-query I nosort
-SELECT a
-  FROM t1
- WHERE d>e
- ORDER BY 1
-----
-16 values hashing to 952e6c754c450612dd99b9d315977052
 
 query IIIIIII nosort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
@@ -2119,65 +1996,6 @@ SELECT a+b*2+c*3+d*4+e*5,
 ----
 10 values hashing to 2d123a0355480421449ef9e36dafe214
 
-query II nosort
-SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END
-  FROM t1
- WHERE d NOT BETWEEN 110 AND 150
- ORDER BY 1,2
-----
-44 values hashing to c717f7f71db4237a894aeac4be41b23d
-
-query III nosort
-SELECT a+b*2+c*3,
-       a-b,
-       c-d
-  FROM t1
- WHERE a>b
- ORDER BY 1,3,2
-----
-57 values hashing to ef45e87dcde7a60906a6839e404a6b19
-
-query IIIII nosort
-SELECT d,
-       a+b*2+c*3,
-       a+b*2,
-       (a+b+c+d+e)/5,
-       a+b*2+c*3+d*4
-  FROM t1
- WHERE (e>a AND e<b)
-   AND d>e
-   AND d NOT BETWEEN 110 AND 150
- ORDER BY 1,2,3,5,4
-----
-10 values hashing to e577677386407b04f8bdb559232e1085
-
-query IIIIIII nosort
-SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END,
-       a+b*2+c*3,
-       c,
-       d-e,
-       a+b*2+c*3+d*4+e*5,
-       d,
-       a-b
-  FROM t1
- ORDER BY 3,1,7,6,4,2,5
-----
-210 values hashing to 170ee3d655d116f8524c3fcfc94ff7eb
-
-query IIII nosort
-SELECT c-d,
-       e,
-       (a+b+c+d+e)/5,
-       a+b*2+c*3+d*4+e*5
-  FROM t1
- ORDER BY 4,1,3,2
-----
-120 values hashing to 179b1a322c10a0b9d1ec5b326ea081e1
-
 query III nosort
 SELECT a+b*2+c*3+d*4,
        (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
@@ -2186,49 +2004,6 @@ SELECT a+b*2+c*3+d*4,
  ORDER BY 1,2,3
 ----
 90 values hashing to d8520212db20c57541d0c28d4fddae94
-
-query II nosort
-SELECT b-c,
-       c
-  FROM t1
- ORDER BY 1,2
-----
-60 values hashing to 5dbfa03f06c7e5ccaaab18dc8fe14c36
-
-query IIIIII nosort
-SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       a+b*2+c*3+d*4+e*5,
-       a+b*2+c*3+d*4,
-       a+b*2+c*3,
-       c-d
-  FROM t1
- WHERE (e>a AND e<b)
-    OR (e>c OR e<d)
-    OR c>d
- ORDER BY 3,2,6,5,4,1
-----
-180 values hashing to 97f125b8bdce9deb0111aa11307179d3
-
-query I nosort
-SELECT d
-  FROM t1
- WHERE d>e
- ORDER BY 1
-----
-16 values hashing to 8e559d439152e33138660c7aa7710793
-
-query IIII nosort
-SELECT a+b*2+c*3+d*4+e*5,
-       a,
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       a-b
-  FROM t1
- ORDER BY 4,3,2,1
-----
-120 values hashing to f614d7af58f04a09e4b5dda636fb7790
 
 query IIIIII nosort
 SELECT abs(a),
@@ -2245,65 +2020,6 @@ SELECT abs(a),
 ----
 48 values hashing to 603d52ce942c28eb4f224d7e9ea74524
 
-query IIII nosort
-SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END,
-       b-c,
-       abs(a)
-  FROM t1
- ORDER BY 4,1,3,2
-----
-120 values hashing to 6a046c7033b3c6303622e32e104e981f
-
-query IIII nosort
-SELECT d,
-       abs(a),
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       a
-  FROM t1
- WHERE a>b
- ORDER BY 1,3,4,2
-----
-76 values hashing to 10d6eaf3cbdaaff42d6460c350423046
-
-query III nosort
-SELECT a,
-       a+b*2+c*3,
-       (a+b+c+d+e)/5
-  FROM t1
- ORDER BY 2,3,1
-----
-90 values hashing to a94a0b4568605d51d7e9a369e55805d8
-
-query IIIIII nosort
-SELECT c-d,
-       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END,
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       a+b*2+c*3,
-       c,
-       abs(a)
-  FROM t1
- WHERE e+d BETWEEN a+b-10 AND c+130
-    OR (e>a AND e<b)
- ORDER BY 2,4,1,3,5,6
-----
-54 values hashing to b0cf52609ba06d12170fa285e22df845
-
-query II nosort
-SELECT d,
-       a+b*2
-  FROM t1
- WHERE b>c
-    OR c BETWEEN b-2 AND d+2
-    OR (a>b-2 AND a<b+2)
- ORDER BY 1,2
-----
-56 values hashing to 8e9a734c55398ee1e2d087d50531c3db
-
 query II nosort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
        CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
@@ -2316,25 +2032,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
 ----
 52 values hashing to fb874a11725bff133c5555192c29d1d4
 
-query I nosort
-SELECT b
-  FROM t1
- WHERE d>e
-    OR (e>a AND e<b)
-    OR (a>b-2 AND a<b+2)
- ORDER BY 1
-----
-24 values hashing to 94f786f5e40682c2bbc4979d44bfbe20
-
-query III nosort
-SELECT (a+b+c+d+e)/5,
-       b-c,
-       a
-  FROM t1
- ORDER BY 3,1,2
-----
-90 values hashing to 7ead3c920199ae810a2ae8119e9797cd
-
 query II nosort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
        abs(a)
@@ -2342,42 +2039,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
  ORDER BY 1,2
 ----
 60 values hashing to 60ed925e6266c564dc3551acfa13417d
-
-query IIII nosort
-SELECT abs(a),
-       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       c,
-       e
-  FROM t1
- WHERE e+d BETWEEN a+b-10 AND c+130
-    OR (e>c OR e<d)
- ORDER BY 3,2,4,1
-----
-112 values hashing to 3bff9edf646027ba054d0234b3c9852d
-
-query IIIIIII nosort
-SELECT a+b*2+c*3+d*4,
-       d-e,
-       a+b*2+c*3,
-       abs(b-c),
-       d,
-       b-c,
-       a+b*2+c*3+d*4+e*5
-  FROM t1
- WHERE (e>c OR e<d)
- ORDER BY 3,7,1,6,5,2,4
-----
-189 values hashing to 23d53e2a95ea74676a3bcce44e2c6fea
-
-query III nosort
-SELECT c-d,
-       b-c,
-       abs(b-c)
-  FROM t1
- WHERE d>e
- ORDER BY 1,2,3
-----
-48 values hashing to 40e60735f1fdf2e1d665a6c00b9bd1d3
 
 query IIIII nosort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
@@ -2415,72 +2076,6 @@ SELECT e,
 ----
 57 values hashing to c8d389e6c270e554bc93a318ef21e848
 
-query II nosort
-SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       abs(b-c)
-  FROM t1
- WHERE d NOT BETWEEN 110 AND 150
- ORDER BY 2,1
-----
-44 values hashing to 892187bfe8f83478b3118df7af04c478
-
-query III nosort
-SELECT a+b*2+c*3+d*4+e*5,
-       a,
-       a+b*2
-  FROM t1
- WHERE (c<=d-2 OR c>=d+2)
- ORDER BY 2,1,3
-----
-45 values hashing to b667af4ebb350909eba296967ceeb7db
-
-query IIII nosort
-SELECT a+b*2+c*3,
-       c-d,
-       d,
-       a
-  FROM t1
- ORDER BY 3,2,1,4
-----
-120 values hashing to 99149ba966bceda06aa78c50f1a92ceb
-
-query IIIIII nosort
-SELECT b-c,
-       a+b*2+c*3+d*4,
-       c-d,
-       a,
-       d-e,
-       c
-  FROM t1
- WHERE d>e
- ORDER BY 3,4,1,5,6,2
-----
-96 values hashing to a2adef429b6e4247068b4049bbe324c2
-
-query IIII nosort
-SELECT c-d,
-       c,
-       abs(a),
-       a+b*2+c*3
-  FROM t1
- WHERE c BETWEEN b-2 AND d+2
-   AND (e>c OR e<d)
- ORDER BY 1,4,2,3
-----
-88 values hashing to df51c546808c5d4db3a7d7c4d020b7dc
-
-query III nosort
-SELECT d-e,
-       abs(b-c),
-       (a+b+c+d+e)/5
-  FROM t1
- WHERE (c<=d-2 OR c>=d+2)
-   AND (e>a AND e<b)
- ORDER BY 2,3,1
-----
-9 values hashing to 722881c1ff15283d5c95a5ef39fccb6d
-
 query IIII nosort
 SELECT b-c,
        d,
@@ -2504,49 +2099,6 @@ SELECT abs(a),
  ORDER BY 1,6,3,5,4,2
 ----
 180 values hashing to dfff98b6d7e9b049c8feace97a7eb622
-
-query IIIIIII nosort
-SELECT a-b,
-       c,
-       a+b*2+c*3,
-       b,
-       d,
-       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       c-d
-  FROM t1
- ORDER BY 4,3,5,6,2,1,7
-----
-210 values hashing to 97070114fe06bdcda7ac636afcb1201d
-
-query IIIII nosort
-SELECT a,
-       d-e,
-       c,
-       a+b*2,
-       e
-  FROM t1
- WHERE a>b
-    OR c>d
-    OR (c<=d-2 OR c>=d+2)
- ORDER BY 2,3,5,4,1
-----
-140 values hashing to 9644b07604668d80e82ada3908306f8b
-
-query IIIIIII nosort
-SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       b-c,
-       e,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       c,
-       a,
-       a+b*2
-  FROM t1
- WHERE (e>a AND e<b)
-   AND (e>c OR e<d)
- ORDER BY 3,6,2,1,5,7,4
-----
-14 values hashing to b3cdf8a3a0bfb3e38e63a70a6887354d
 
 query IIIII nosort
 SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
@@ -2589,32 +2141,6 @@ SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
 ----
 42 values hashing to 86eba634c2a25d3e9a0aca99b8b9b7a3
 
-query IIIIII nosort
-SELECT b,
-       a-b,
-       a+b*2+c*3+d*4+e*5,
-       a+b*2+c*3,
-       c,
-       c-d
-  FROM t1
- WHERE (c<=d-2 OR c>=d+2)
- ORDER BY 5,3,4,6,1,2
-----
-90 values hashing to 81d55ba8fc8d4f980c895049d3ced18b
-
-query IIIIII nosort
-SELECT a-b,
-       b,
-       a+b*2+c*3+d*4+e*5,
-       d-e,
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       c-d
-  FROM t1
- ORDER BY 5,2,1,4,3,6
-----
-180 values hashing to 8290882412be354b12366d09fa630d1e
-
 query IIIIIII nosort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
        (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
@@ -2630,20 +2156,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
 ----
 154 values hashing to ead80733a2080af9498e2ac38198e68e
 
-query IIII nosort
-SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       d-e,
-       c-d,
-       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END
-  FROM t1
- WHERE c BETWEEN b-2 AND d+2
-   AND EXISTS(SELECT 1 FROM t1 AS x WHERE x.b<t1.b)
-   AND c>d
- ORDER BY 1,2,3,4
-----
-40 values hashing to ce114edef775ad5ff5fdc63fd86c4a61
-
 query III nosort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
        (a+b+c+d+e)/5,
@@ -2652,33 +2164,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
  ORDER BY 3,1,2
 ----
 90 values hashing to 05b2f3f52d4f5af4cf24810c343f5954
-
-query IIII nosort
-SELECT a+b*2+c*3+d*4,
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
-       c
-  FROM t1
- WHERE (c<=d-2 OR c>=d+2)
- ORDER BY 4,2,1,3
-----
-60 values hashing to a2af299d7b2197866b7c8f6854b77ab5
-
-query IIIII nosort
-SELECT a,
-       (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
-       b-c,
-       a-b,
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
-  FROM t1
- WHERE c BETWEEN b-2 AND d+2
-    OR a>b
-    OR b>c
- ORDER BY 1,4,3,2,5
-----
-145 values hashing to 65042db64d506f67a37c85f825cdd11f
 
 query IIIIII nosort
 SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
@@ -3197,17 +2682,3 @@ SELECT e,
 ----
 120 values hashing to 3ce25b7100fcbfe7c7142b3160cb9ebf
 
-query IIIIIII nosort
-SELECT d-e,
-       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
-        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
-       c-d,
-       (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
-       b,
-       abs(a),
-       a+b*2+c*3
-  FROM t1
- WHERE (e>a AND e<b)
- ORDER BY 2,3,6,7,1,5,4
-----
-28 values hashing to b0f5cf1d8e139fbcd94d22a04596c191

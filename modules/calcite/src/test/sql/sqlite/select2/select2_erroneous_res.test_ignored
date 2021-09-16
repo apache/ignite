@@ -99,22 +99,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
    AND (e>a AND e<b)
 ----
 
-query IIII rowsort
-SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END,
-       a+b*2+c*3,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       a-b
-  FROM t1
- WHERE a>b
-   AND b>c
-   AND (c<=d-2 OR c>=d+2)
-----
-333
-1391
-23
-2
-
 query IIIII rowsort
 SELECT a+b*2+c*3+d*4+e*5,
        CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
@@ -151,23 +135,6 @@ SELECT c,
 333
 
 query IIIII rowsort
-SELECT a+b*2+c*3+d*4+e*5,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       c,
-       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
-       a
-  FROM t1
- WHERE (a>b-2 AND a<b+2)
-   AND d NOT BETWEEN 110 AND 150
-   AND d>e
-----
-2728
-14
-184
-364
-182
-
-query IIIII rowsort
 SELECT (a+b+c+d+e)/5,
        a+b*2+c*3+d*4,
        abs(a),
@@ -183,23 +150,6 @@ NULL
 -1
 0
 
-query IIII rowsort
-SELECT a,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       a+b*2+c*3+d*4+e*5,
-       d
-  FROM t1
- WHERE a IS NULL
-----
-NULL
-1
-NULL
-114
-NULL
-18
-NULL
-207
-
 query II rowsort
 SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
        (a+b+c+d+e)/5
@@ -211,23 +161,6 @@ SELECT (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
 0
 127
 
-query IIIII rowsort
-SELECT b,
-       d-e,
-       a+b*2+c*3+d*4,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
-        WHEN a<b+3 THEN 333 ELSE 444 END
-  FROM t1
- WHERE a IS NULL
-   AND d>e
-----
-112
-4
-NULL
-1
-444
-
 query IIII rowsort
 SELECT (a+b+c+d+e)/5,
        (SELECT count(*) FROM t1 AS x WHERE x.c>t1.c AND x.d<t1.d),
@@ -238,16 +171,6 @@ SELECT (a+b+c+d+e)/5,
    AND (c<=d-2 OR c>=d+2)
    AND (e>a AND e<b)
 ----
-
-query II rowsort
-SELECT abs(a),
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b)
-  FROM t1
- WHERE e+d BETWEEN a+b-10 AND c+130
-   AND c BETWEEN b-2 AND d+2
-----
-107
-0
 
 query IIII rowsort
 SELECT c-d,
@@ -285,42 +208,6 @@ SELECT a+b*2+c*3+d*4+e*5,
 1902
 -3
 3
-
-query IIIII rowsort
-SELECT (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       c,
-       a,
-       a+b*2+c*3+d*4+e*5,
-       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
-  FROM t1
- WHERE (e>c OR e<d)
-   AND a IS NULL
-----
-1
-113
-NULL
-NULL
-1120
-
-query IIIIIII rowsort
-SELECT b-c,
-       (SELECT count(*) FROM t1 AS x WHERE x.b<t1.b),
-       c,
-       a+b*2,
-       d-e,
-       a+b*2+c*3+d*4,
-       c-d
-  FROM t1
- WHERE a IS NULL
-   AND c>d
-----
--2
-18
-208
-NULL
-NULL
-NULL
-1
 
 query IIIII rowsort
 SELECT abs(a),
