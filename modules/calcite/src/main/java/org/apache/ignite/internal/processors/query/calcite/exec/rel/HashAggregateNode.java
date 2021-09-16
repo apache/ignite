@@ -146,7 +146,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     @Override protected void rewindInternal() {
         requested = 0;
         waiting = 0;
-        groupings.forEach(grouping -> grouping.groups.clear());
+        groupings.forEach(Grouping::reset);
     }
 
     /** {@inheritDoc} */
@@ -238,6 +238,13 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
             this.grpFields = grpFields;
 
             handler = context().rowHandler();
+
+            reset();
+        }
+
+        /** */
+        private void reset() {
+            groups.clear();
 
             // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
             // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
