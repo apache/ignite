@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -430,9 +431,18 @@ public class SqlScriptRunner {
         /** */
         int expectedRows;
 
+        /** Sorting algo. */
+        SortType sortType;
+
         /** */
         Query(String[] cmd) throws IOException {
             String resTypesChars = cmd[1];
+            String sort = cmd[2];
+
+            sortType = SortType.valueOf(sort.toUpperCase());
+
+            if (sortType == SortType.VALUESORT)
+                throw new IgniteException(sortType + " not supported.");
 
             for (int i = 0; i < resTypesChars.length(); i++) {
                 switch (resTypesChars.charAt(i)) {
@@ -470,7 +480,7 @@ public class SqlScriptRunner {
                     break;
 
                 if (sql.length() > 0)
-                    sql.append(" ");
+                    sql.append(U.nl());
 
                 sql.append(s);
             }
@@ -545,6 +555,22 @@ public class SqlScriptRunner {
 
         /** */
         void checkResult(List<List<?>> res) {
+            if (sortType == SortType.ROWSORT) {
+                res.sort((l1, l2) -> {
+                    int rows = l1.size();
+
+                    for (int i = 0; i < rows; ++i) {
+                        String s1 = String.valueOf(l1.get(i));
+                        String s2 = String.valueOf(l2.get(i));
+
+                        if (!s1.equals(s2))
+                            return s1.compareTo(s2);
+                    }
+
+                    return 0;
+                });
+            }
+
             if (expectedHash != null)
                 checkResultsHashed(res);
             else
@@ -646,5 +672,12 @@ public class SqlScriptRunner {
         I,
         T,
         R
+    }
+
+    /** */
+    private enum SortType {
+        ROWSORT,
+        VALUESORT,
+        NOSORT
     }
 }
