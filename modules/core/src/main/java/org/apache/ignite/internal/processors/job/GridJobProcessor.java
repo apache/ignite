@@ -718,22 +718,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Searches for jobs that satisfy the condition.
-     *
-     * @param clo Closure.
-     */
-    public Set<GridJobWorker> findJobs(IgnitePredicate<GridJobWorker> clo) {
-        Set<GridJobWorker> jobsWorkers = new HashSet<>();
-
-        for (GridJobWorker jobWorker : activeJobs.values()) {
-            if (clo.apply(jobWorker))
-                jobsWorkers.add(jobWorker);
-        }
-
-        return jobsWorkers;
-    }
-
-    /**
      * @param sesId Session ID.
      * @param jobId Job ID.
      * @param sys System flag.

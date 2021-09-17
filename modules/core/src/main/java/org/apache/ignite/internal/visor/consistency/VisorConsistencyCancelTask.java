@@ -18,14 +18,18 @@
 package org.apache.ignite.internal.visor.consistency;
 
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.job.GridJobWorker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.SystemView;
+
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 
 /**
  * Cancels given consistency repairs on all cluster nodes.
@@ -69,12 +73,14 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<Void, Void, V
          * {@inheritDoc}
          */
         @Override protected Void run(Void arg) throws IgniteException {
-            Set<GridJobWorker> jobs = ignite.context().job().findJobs(
-                worker -> worker.getJob() instanceof VisorConsistencyRepairTask.VisorConsistencyRepairJob
+            SystemView<ComputeJobView> jobs = ignite.context().systemView().view(JOBS_VIEW);
+
+            Iterable<IgniteUuid> sesIds = F.iterator(jobs, ComputeJobView::sessionId, true,
+                job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName())
             );
 
-            for (GridJobWorker job : jobs)
-                ignite.context().job().cancelJob(null, job.getJobId(), false);
+            for (IgniteUuid sesId : sesIds)
+                ignite.context().job().cancelJob(sesId, null, false);
 
             return null;
         }

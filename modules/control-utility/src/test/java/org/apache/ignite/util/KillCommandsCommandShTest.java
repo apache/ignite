@@ -29,16 +29,19 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
-import org.apache.ignite.internal.processors.job.GridJobWorker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
@@ -258,11 +261,14 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
                 fail();
             }
 
-            IgnitePredicate<GridJobWorker> repairJobFilter =
-                worker -> worker.getJob() instanceof VisorConsistencyRepairTask.VisorConsistencyRepairJob;
+            IgnitePredicate<ComputeJobView> repairJobFilter =
+                job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName());
 
-            for (IgniteEx node : srvs)
-                assertFalse(node.context().job().findJobs(repairJobFilter).isEmpty()); // Found.
+            for (IgniteEx node : srvs) {
+                SystemView<ComputeJobView> jobs = node.context().systemView().view(JOBS_VIEW);
+
+                assertTrue(F.iterator0(jobs, true, repairJobFilter).hasNext()); // Found.
+            }
 
             int res = execute("--kill", "consistency");
 
@@ -270,9 +276,12 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
             try {
                 assertTrue(GridTestUtils.waitForCondition(() -> {
-                    for (IgniteEx node : srvs)
-                        if (!node.context().job().findJobs(repairJobFilter).isEmpty())
+                    for (IgniteEx node : srvs) {
+                        SystemView<ComputeJobView> jobs = node.context().systemView().view(JOBS_VIEW);
+
+                        if (F.iterator0(jobs, true, repairJobFilter).hasNext()) // Found.
                             return false;
+                    }
 
                     return true;
                 }, 5000L)); // Missed.

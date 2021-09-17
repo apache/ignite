@@ -101,7 +101,7 @@ public class VisorConsistencyRepairTask extends
     /**
      *
      */
-    public static class VisorConsistencyRepairJob extends VisorJob<VisorConsistencyRepairTaskArg, String> {
+    private static class VisorConsistencyRepairJob extends VisorJob<VisorConsistencyRepairTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
