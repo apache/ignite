@@ -267,12 +267,12 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
     /**
      * Check drop statistics.
-     * - Create statistic for a table;
-     * - Check statistics on all nodes of the cluster;
-     * - Drop stat for one columns
-     * - Check that statistic is dropped for specified column on all nodes of the cluster;
-     * - Re-create statistics
-     * - Check statistics on all nodes of the cluster;
+     * 1. Create statistic for a table;
+     * 2. Check statistics on all nodes of the cluster;
+     * 3. Drop stat for one column;
+     * 4. Check that statistic is dropped for specified column on all nodes of the cluster;
+     * 5. Re-create statistics;
+     * 6. Check statistics on all nodes of the cluster;
      */
     @Test
     public void dropUpdate() throws Exception {
@@ -282,17 +282,23 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
+        // 1. Create statistic for a table;
         collectStatistics(SMALL_TARGET);
 
+        // 2. Check statistics on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        // 3. Drop stat for one column;
         statisticsMgr(0).dropStatistics(new StatisticsTarget("PUBLIC", "SMALL", "A"));
 
+        // 4. Check that statistic is dropped for specified column on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT,
             (stats) -> stats.forEach(s -> assertNull(s.columnStatistics("A"))));
 
+        // 5. Re-create statistics;
         collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "A"));
 
+        // 6. Check statistics on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
     }
 

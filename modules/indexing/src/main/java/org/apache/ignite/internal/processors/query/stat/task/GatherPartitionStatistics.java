@@ -137,18 +137,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 log.debug("Existing parititon statistics fit to configuration requirements. " +
                     "Skipping recollection for " + gathCtx.configuration().key() + "[" + partId + "].");
 
-            Set<String> colToRemove = getColumnsToRemove(partStat);
-            if (F.isEmpty(colToRemove))
-                return partStat;
-            else{
-                Map<String, ColumnStatistics> allCols = partStat.columnsStatistics();
-
-                for (String col : colToRemove)
-                    allCols.remove(col);
-
-                return new ObjectPartitionStatisticsImpl(partStat.partId(), partStat. rowCount(), partStat.updCnt(),
-                    allCols);
-            }
+            return removeExtraColumns(partStat);
         }
 
         CacheGroupContext grp = cctx.group();
@@ -224,16 +213,36 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
             Map<String, ColumnStatistics> colStats = Arrays.stream(collectors).collect(
                 Collectors.toMap(csc -> csc.col().getName(), ColumnStatisticsCollector::finish));
 
-            return new ObjectPartitionStatisticsImpl(
+            // Add existing to full replace existing statistics with new one.
+            if (partStat != null)
+                colStats.putAll(partStat.columnsStatistics());
+
+            return removeExtraColumns(new ObjectPartitionStatisticsImpl(
                 partId,
                 colStats.values().iterator().next().total(),
                 locPart.updateCounter(),
                 colStats
-            );
+            ));
         }
         finally {
             if (reserved)
                 locPart.release();
+        }
+    }
+
+    private ObjectPartitionStatisticsImpl removeExtraColumns(ObjectPartitionStatisticsImpl partStat) {
+        Set<String> colToRemove = getColumnsToRemove(partStat);
+
+        if (F.isEmpty(colToRemove))
+            return partStat;
+        else {
+            Map<String, ColumnStatistics> allCols = partStat.columnsStatistics();
+
+            for (String col : colToRemove)
+                allCols.remove(col);
+
+            return new ObjectPartitionStatisticsImpl(partStat.partId(), partStat. rowCount(), partStat.updCnt(),
+                allCols);
         }
     }
 
