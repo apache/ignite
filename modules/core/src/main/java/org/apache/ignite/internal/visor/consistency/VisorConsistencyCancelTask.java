@@ -69,9 +69,7 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<Void, Void, V
             super(arg, debug);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected Void run(Void arg) throws IgniteException {
             SystemView<ComputeJobView> jobs = ignite.context().systemView().view(JOBS_VIEW);
 
