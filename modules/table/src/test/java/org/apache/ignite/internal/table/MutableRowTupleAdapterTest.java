@@ -379,7 +379,7 @@ public class MutableRowTupleAdapterTest {
     public void testSerialization() throws Exception {
         Random rnd = new Random();
 
-        SchemaDescriptor schema = new SchemaDescriptor(tbl.tableId(), 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyUuidCol", NativeTypes.UUID, true)},
             new Column[]{
                 new Column("valByteCol", INT8, true),
@@ -431,7 +431,7 @@ public class MutableRowTupleAdapterTest {
     public void testKeyValueSerialization() throws Exception {
         Random rnd = new Random();
 
-        SchemaDescriptor schema = new SchemaDescriptor(tbl.tableId(), 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyUuidCol", NativeTypes.UUID, true)},
             new Column[]{
                 new Column("valByteCol", INT8, true),
