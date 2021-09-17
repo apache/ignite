@@ -22,13 +22,17 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,7 +47,9 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import static org.apache.ignite.internal.util.IgniteUtils.byteArray2HexString;
 
 /**
  *
@@ -76,11 +82,27 @@ public class SqlScriptRunner {
     /** Script. */
     private Script script;
 
+    /** nl to bytes representation. */
+    private static final byte[] NL_BYTES = "\n".getBytes();
+
+    /** Eqivalent results store. */
+    private Map<String, Collection<String>> eqResStorage = new HashMap<>();
+
+    /** Hash algo. */
+    MessageDigest messageDigest;
+
     /** */
     public SqlScriptRunner(Path test, QueryEngine engine, IgniteLogger log) {
         this.test = test;
         this.engine = engine;
         this.log = log;
+
+        try {
+            messageDigest = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */
@@ -137,9 +159,7 @@ public class SqlScriptRunner {
 
         /** */
         String nextLine() throws IOException {
-            String ret = nextLineWithoutTrim();
-
-            return ret == null ? null : ret.trim();
+            return nextLineWithoutTrim();
         }
 
         /** */
@@ -412,9 +432,24 @@ public class SqlScriptRunner {
         /** */
         int expectedRows;
 
+        /** Sorting algo. */
+        SortType sortType = SortType.NOSORT;
+
+        /** Equality label. */
+        String eqLabel;
+
         /** */
         Query(String[] cmd) throws IOException {
             String resTypesChars = cmd[1];
+
+            if (cmd.length > 2)
+                sortType = SortType.valueOf(cmd[2].toUpperCase());
+
+            if (cmd.length > 3)
+                eqLabel = cmd[3].toLowerCase();
+
+            if (sortType == SortType.VALUESORT)
+                throw new IgniteException(sortType + " not supported.");
 
             for (int i = 0; i < resTypesChars.length(); i++) {
                 switch (resTypesChars.charAt(i)) {
@@ -452,7 +487,7 @@ public class SqlScriptRunner {
                     break;
 
                 if (sql.length() > 0)
-                    sql.append(" ");
+                    sql.append(U.nl());
 
                 sql.append(s);
             }
@@ -527,6 +562,22 @@ public class SqlScriptRunner {
 
         /** */
         void checkResult(List<List<?>> res) {
+            if (sortType == SortType.ROWSORT) {
+                res.sort((l1, l2) -> {
+                    int rows = l1.size();
+
+                    for (int i = 0; i < rows; ++i) {
+                        String s1 = String.valueOf(l1.get(i));
+                        String s2 = String.valueOf(l2.get(i));
+
+                        if (!s1.equals(s2))
+                            return s1.compareTo(s2);
+                    }
+
+                    return 0;
+                });
+            }
+
             if (expectedHash != null)
                 checkResultsHashed(res);
             else
@@ -585,8 +636,34 @@ public class SqlScriptRunner {
 
         /** */
         private void checkResultsHashed(List<List<?>> res) {
-            // TODO:
-            throw new UnsupportedOperationException("Hashed results compare not supported");
+            Objects.requireNonNull(res, "empty result set");
+
+            messageDigest.reset();
+
+            for (List<?> row : res) {
+                for (Object col : row) {
+                    messageDigest.update(String.valueOf(col).getBytes());
+                    messageDigest.update(NL_BYTES);
+                }
+            }
+
+            String res0 = byteArray2HexString(messageDigest.digest(), false);
+
+            if (eqLabel != null) {
+                if (res0.equals(expectedHash))
+                    eqResStorage.computeIfAbsent(eqLabel, k -> new ArrayList<>()).add(sql.toString());
+                else {
+                    Collection<String> eq = eqResStorage.get(eqLabel);
+
+                    if (eq != null)
+                        throw new AssertionError("Results of queries need to be equal: " + eq +
+                            U.nl() + " and " + U.nl() + sql);
+                }
+            }
+
+            if (!res0.equals(expectedHash))
+                throw new AssertionError("Unexpected hash result, expected=" + expectedHash +
+                    ", values=" + res.size() * res.get(0).size() + ", expected=" + expectedRows);
         }
 
         /** {@inheritDoc} */
@@ -606,5 +683,12 @@ public class SqlScriptRunner {
         I,
         T,
         R
+    }
+
+    /** */
+    private enum SortType {
+        ROWSORT,
+        VALUESORT,
+        NOSORT
     }
 }
