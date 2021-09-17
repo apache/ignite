@@ -24,10 +24,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.SystemView;
 
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 
@@ -71,14 +69,11 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<Void, Void, V
 
         /** {@inheritDoc} */
         @Override protected Void run(Void arg) throws IgniteException {
-            SystemView<ComputeJobView> jobs = ignite.context().systemView().view(JOBS_VIEW);
-
-            Iterable<IgniteUuid> sesIds = F.iterator(jobs, ComputeJobView::sessionId, true,
+            F.iterator(ignite.context().systemView().view(JOBS_VIEW),
+                ComputeJobView::sessionId,
+                true,
                 job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName())
-            );
-
-            for (IgniteUuid sesId : sesIds)
-                ignite.context().job().cancelJob(sesId, null, false);
+            ).forEach(sesId -> ignite.context().job().cancelJob(sesId, null, false));
 
             return null;
         }
