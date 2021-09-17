@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -250,7 +251,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         new Thread(() -> {
             try {
-                getLatch.await(); // Waiting for consistency repair start.
+                getLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS); // Waiting for consistency repair start.
             }
             catch (InterruptedException e) {
                 fail();
