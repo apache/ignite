@@ -24,7 +24,6 @@ import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.TransferLeaderRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 /**
  * Snapshot request processor.
@@ -47,7 +46,7 @@ public class TransferLeaderRequestProcessor extends BaseCliRequestProcessor<Tran
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final TransferLeaderRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final PeerId peer = new PeerId();
         if (request.peerId() != null && !peer.parse(request.peerId())) {
             return RaftRpcFactory.DEFAULT //

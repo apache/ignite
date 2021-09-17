@@ -27,7 +27,7 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
-import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
@@ -40,7 +40,7 @@ abstract class RaftServerAbstractTest {
     protected static final IgniteLogger LOG = IgniteLogger.forClass(RaftServerAbstractTest.class);
 
     /** */
-    protected static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
+    protected static final RaftMessagesFactory FACTORY = new RaftMessagesFactory();
 
     /** Network factory. */
     protected static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();

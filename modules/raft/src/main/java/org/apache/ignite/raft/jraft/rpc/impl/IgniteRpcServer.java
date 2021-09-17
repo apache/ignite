@@ -21,17 +21,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import org.apache.ignite.network.NetworkMessageHandler;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.NetworkMessageHandler;
 import org.apache.ignite.network.TopologyEventHandler;
-import org.apache.ignite.raft.client.message.RaftClientMessageGroup;
-import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.NodeManager;
-import org.apache.ignite.raft.jraft.RaftMessageGroup;
-import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
 import org.apache.ignite.raft.jraft.rpc.RpcServer;
@@ -46,7 +44,6 @@ import org.apache.ignite.raft.jraft.rpc.impl.cli.ResetLearnersRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.cli.ResetPeerRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.cli.SnapshotRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.cli.TransferLeaderRequestProcessor;
-import org.apache.ignite.raft.jraft.rpc.impl.client.ActionRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.AppendEntriesRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.GetFileRequestProcessor;
 import org.apache.ignite.raft.jraft.rpc.impl.core.InstallSnapshotRequestProcessor;
@@ -71,14 +68,12 @@ public class IgniteRpcServer implements RpcServer<Void> {
     /**
      * @param service The cluster service.
      * @param nodeManager The node manager.
-     * @param raftClientMessagesFactory Client message factory.
      * @param raftMessagesFactory Message factory.
      * @param rpcExecutor The executor for RPC requests.
      */
     public IgniteRpcServer(
         ClusterService service,
         NodeManager nodeManager,
-        RaftClientMessagesFactory raftClientMessagesFactory,
         RaftMessagesFactory raftMessagesFactory,
         Executor rpcExecutor
     ) {
@@ -110,14 +105,11 @@ public class IgniteRpcServer implements RpcServer<Void> {
         registerProcessor(new RemoveLearnersRequestProcessor(rpcExecutor, raftMessagesFactory));
         registerProcessor(new ResetLearnersRequestProcessor(rpcExecutor, raftMessagesFactory));
         // common client integration
-        registerProcessor(new org.apache.ignite.raft.jraft.rpc.impl.client.GetLeaderRequestProcessor(rpcExecutor, raftClientMessagesFactory));
-        registerProcessor(new ActionRequestProcessor(rpcExecutor, raftClientMessagesFactory));
-        registerProcessor(new org.apache.ignite.raft.jraft.rpc.impl.client.SnapshotRequestProcessor(rpcExecutor, raftClientMessagesFactory));
+        registerProcessor(new ActionRequestProcessor(rpcExecutor, raftMessagesFactory));
 
         var messageHandler = new RpcMessageHandler();
 
         service.messagingService().addMessageHandler(RaftMessageGroup.class, messageHandler);
-        service.messagingService().addMessageHandler(RaftClientMessageGroup.class, messageHandler);
 
         service.topologyService().addEventHandler(new TopologyEventHandler() {
             @Override public void onAppeared(ClusterNode member) {

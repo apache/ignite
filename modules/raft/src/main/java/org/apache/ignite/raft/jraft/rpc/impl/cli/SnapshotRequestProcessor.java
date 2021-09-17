@@ -20,7 +20,6 @@ import java.util.concurrent.Executor;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.SnapshotRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 /**
  * Snapshot request processor.
@@ -43,7 +42,7 @@ public class SnapshotRequestProcessor extends BaseCliRequestProcessor<SnapshotRe
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final SnapshotRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         LOG.info("Receive SnapshotRequest to {} from {}", ctx.node.getNodeId(), request.peerId());
         ctx.node.snapshot(done);
         return null;

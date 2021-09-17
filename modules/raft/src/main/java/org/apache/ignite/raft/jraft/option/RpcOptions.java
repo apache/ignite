@@ -18,7 +18,6 @@ package org.apache.ignite.raft.jraft.option;
 
 import com.codahale.metrics.MetricRegistry;
 import java.util.concurrent.ExecutorService;
-import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.core.FSMCallerImpl;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
@@ -30,9 +29,6 @@ import org.apache.ignite.raft.jraft.storage.impl.LogManagerImpl;
 public class RpcOptions {
     /** Raft message factory. */
     private RaftMessagesFactory raftMessagesFactory = new RaftMessagesFactory();
-
-    /** Raft client message factory. */
-    private RaftClientMessagesFactory raftClientMessagesFactory = new RaftClientMessagesFactory();
 
     /**
      * Rpc handshake timeout in milliseconds Default: 2000(1s)
@@ -194,21 +190,6 @@ public class RpcOptions {
      */
     public void setRaftMessagesFactory(RaftMessagesFactory raftMessagesFactory) {
         this.raftMessagesFactory = raftMessagesFactory;
-    }
-
-    /**
-     * @return Raft client message factory.
-     */
-    public RaftClientMessagesFactory getRaftClientMessagesFactory() {
-        return raftClientMessagesFactory;
-    }
-
-    /**
-     * Sets the Raft client message factory.
-     */
-    public void setRaftClientMessagesFactory(
-        RaftClientMessagesFactory raftClientMessagesFactory) {
-        this.raftClientMessagesFactory = raftClientMessagesFactory;
     }
 
     /** {@inheritDoc} */

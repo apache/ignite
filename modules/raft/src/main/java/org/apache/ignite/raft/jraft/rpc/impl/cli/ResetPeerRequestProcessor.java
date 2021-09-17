@@ -25,7 +25,6 @@ import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.ResetPeerRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 /**
  * Reset peer request processor.
@@ -48,7 +47,7 @@ public class ResetPeerRequestProcessor extends BaseCliRequestProcessor<ResetPeer
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final ResetPeerRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final Configuration newConf = new Configuration();
         for (final String peerIdStr : request.newPeersList()) {
             final PeerId peer = new PeerId();

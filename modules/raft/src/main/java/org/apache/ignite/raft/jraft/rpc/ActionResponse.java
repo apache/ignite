@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client.message;
+package org.apache.ignite.raft.jraft.rpc;
 
-import java.io.Serializable;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.raft.jraft.rpc.Message;
 
 /**
- * Get leader.
+ * The result of an action.
  */
-@Transferable(value = RaftClientMessageGroup.GET_LEADER_REQUEST, autoSerializable = false)
-public interface GetLeaderRequest extends NetworkMessage, Serializable {
+@Transferable(value = RaftMessageGroup.RpcActionMessageGroup.ACTION_RESPONSE, autoSerializable = false)
+public interface ActionResponse extends Message {
     /**
-     * @return Group id.
+     * @return A result for this request, can be of any type.
      */
-    String groupId();
+    Object result();
 }

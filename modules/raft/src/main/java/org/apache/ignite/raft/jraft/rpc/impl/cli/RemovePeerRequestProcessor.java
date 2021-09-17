@@ -26,7 +26,6 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.RemovePeerRequest;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.RemovePeerResponse;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 /**
  * Remove peer request processor.
@@ -49,7 +48,7 @@ public class RemovePeerRequestProcessor extends BaseCliRequestProcessor<RemovePe
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final RemovePeerRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final List<PeerId> oldPeers = ctx.node.listPeers();
         final String removingPeerIdStr = request.peerId();
         final PeerId removingPeer = new PeerId();

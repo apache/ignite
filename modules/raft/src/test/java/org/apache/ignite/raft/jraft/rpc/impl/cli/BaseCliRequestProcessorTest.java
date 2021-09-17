@@ -26,7 +26,6 @@ import org.apache.ignite.raft.jraft.error.RaftError;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.ErrorResponse;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests.PingRequest;
 import org.apache.ignite.raft.jraft.test.MockAsyncContext;
@@ -47,7 +46,7 @@ public class BaseCliRequestProcessorTest {
     private static class MockCliRequestProcessor extends BaseCliRequestProcessor<PingRequest> {
         private String peerId;
         private String groupId;
-        private RpcRequestClosure done;
+        private IgniteCliRpcRequestClosure done;
         private CliRequestContext ctx;
 
         MockCliRequestProcessor(String peerId, String groupId) {
@@ -67,7 +66,7 @@ public class BaseCliRequestProcessorTest {
         }
 
         @Override
-        protected Message processRequest0(CliRequestContext ctx, PingRequest request, RpcRequestClosure done) {
+        protected Message processRequest0(CliRequestContext ctx, PingRequest request, IgniteCliRpcRequestClosure done) {
             this.ctx = ctx;
             this.done = done;
             return RaftRpcFactory.DEFAULT.newResponse(msgFactory(), Status.OK());

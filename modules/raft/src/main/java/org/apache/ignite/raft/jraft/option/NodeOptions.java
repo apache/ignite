@@ -206,7 +206,6 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
 
     public NodeOptions() {
         raftOptions.setRaftMessagesFactory(getRaftMessagesFactory());
-        raftOptions.setRaftClientMessagesFactory(getRaftClientMessagesFactory());
     }
 
     /**

@@ -26,7 +26,6 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.ChangePeersRequest;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.ChangePeersResponse;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 import static java.util.stream.Collectors.toList;
 
@@ -51,7 +50,7 @@ public class ChangePeersRequestProcessor extends BaseCliRequestProcessor<ChangeP
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final ChangePeersRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final List<PeerId> oldConf = ctx.node.listPeers();
 
         final Configuration conf = new Configuration();

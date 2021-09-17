@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client.message;
+package org.apache.ignite.raft.jraft.rpc;
 
-import java.io.Serializable;
-import java.util.List;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
-import org.apache.ignite.raft.client.Peer;
+import org.apache.ignite.raft.client.Command;
+import org.apache.ignite.raft.jraft.RaftMessageGroup;
+import org.apache.ignite.raft.jraft.rpc.Message;
 
 /**
- *
+ * Submit an action to a replication group.
  */
-@Transferable(value = RaftClientMessageGroup.GET_PEERS_RESPONSE, autoSerializable = false)
-public interface GetPeersResponse extends NetworkMessage, Serializable {
+@Transferable(value = RaftMessageGroup.RpcActionMessageGroup.ACTION_REQUEST, autoSerializable = false)
+public interface ActionRequest extends Message {
     /**
-     * @return Current peers.
+     * @return Group id.
      */
-    List<Peer> peers();
+    String groupId();
 
     /**
-     * @return Current leaners.
+     * @return Action's command.
      */
-    List<Peer> learners();
+    Command command();
+
+    /**
+     * @return {@code True} for linearizable reading.
+     */
+    boolean readOnlySafe();
 }

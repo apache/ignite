@@ -27,6 +27,7 @@ import org.apache.ignite.raft.jraft.util.CrcUtil;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.StringUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represent a participant in a replicating group.
@@ -286,7 +287,16 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
         return this.idx == other.idx;
     }
 
-    public static PeerId fromPeer(Peer p) {
-        return new PeerId(p.address().host(), p.address().port(), 0, p.getPriority());
+    /**
+     * Convert {@link Peer} to {@link PeerId}.
+     *
+     * @param p Peer.
+     * @return PeerId if {@code p != null}, {@code null} otherwise.
+     */
+    public static @Nullable PeerId fromPeer(@Nullable Peer p) {
+        if (p == null)
+            return null;
+        else
+            return new PeerId(p.address().host(), p.address().port(), 0, p.getPriority());
     }
 }

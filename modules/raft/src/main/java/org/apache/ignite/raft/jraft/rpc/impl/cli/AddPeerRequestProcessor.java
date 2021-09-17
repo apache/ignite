@@ -26,7 +26,6 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.AddPeerRequest;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.AddPeerResponse;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 /**
  * AddPeer request processor.
@@ -49,7 +48,7 @@ public class AddPeerRequestProcessor extends BaseCliRequestProcessor<AddPeerRequ
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final AddPeerRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final List<PeerId> oldPeers = ctx.node.listPeers();
         final String addingPeerIdStr = request.peerId();
         final PeerId addingPeer = new PeerId();

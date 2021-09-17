@@ -27,17 +27,17 @@ import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
-import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
-import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
+import org.apache.ignite.raft.jraft.RaftMessagesFactory;
+import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 
 /**
  * Best raft manager ever since 1982.
  */
 public class Loza implements IgniteComponent {
     /** Factory. */
-    private static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
+    private static final RaftMessagesFactory FACTORY = new RaftMessagesFactory();
 
     /** Timeout. */
     private static final int TIMEOUT = 1000;
@@ -89,7 +89,7 @@ public class Loza implements IgniteComponent {
 
         String locNodeName = clusterNetSvc.topologyService().localMember().name();
 
-        if (nodes.stream().map(ClusterNode::name).collect(Collectors.toSet()).contains(locNodeName))
+        if (nodes.stream().anyMatch(n -> locNodeName.equals(n.name())))
             raftServer.startRaftGroup(groupId, lsnr, peers);
 
         return RaftGroupServiceImpl.start(

@@ -21,6 +21,8 @@ import org.apache.ignite.network.annotations.MessageGroup;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
 import org.apache.ignite.raft.jraft.rpc.CliRequests;
 import org.apache.ignite.raft.jraft.rpc.RpcRequests;
+import org.apache.ignite.raft.jraft.rpc.ActionRequest;
+import org.apache.ignite.raft.jraft.rpc.ActionResponse;
 
 /**
  * Message group for the Raft module.
@@ -151,5 +153,20 @@ public class RaftMessageGroup {
 
         /** */
         public static final short READ_INDEX_RESPONSE = 36;
+    }
+
+    /**
+     * Message types for Ignite actions.
+     */
+    public static final class RpcActionMessageGroup {
+        /**
+         * Message type for {@link ActionRequest}.
+         */
+        public static final short ACTION_REQUEST = 37;
+
+        /**
+         * Message type for {@link ActionResponse}.
+         */
+        public static final short ACTION_RESPONSE = 38;
     }
 }

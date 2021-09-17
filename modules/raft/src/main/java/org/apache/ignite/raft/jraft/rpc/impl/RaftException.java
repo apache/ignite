@@ -15,56 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.raft.client;
+package org.apache.ignite.raft.jraft.rpc.impl;
+
+import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.raft.jraft.error.RaftError;
 
 /**
- * Public error codes for raft protocol.
+ * A raft exception containing code and description.
  */
-public enum RaftErrorCode {
-    /** */
-    NO_LEADER(1001, "No leader is elected"),
-
-    /** */
-    LEADER_CHANGED(1002, "Stale leader"),
-
-    /** */
-    ILLEGAL_STATE(1003, "Internal server error"),
-
-    /** */
-    BUSY(1004, "A peer is overloaded, retry later"),
-
-    /** */
-    SNAPSHOT(1005, "Snapshot error"),
-
-    /** */
-    STATE_MACHINE(1006, "Unrecoverable state machine error");
-
-    /** */
-    private final int code;
-
-    /** */
-    private final String desc;
+public class RaftException extends IgniteInternalCheckedException {
+    /** Raft error. */
+    private final RaftError raftError;
 
     /**
-     * @param code The code.
-     * @param desc The desctiption.
+     * @param raftError RaftError.
      */
-    RaftErrorCode(int code, String desc) {
-        this.code = code;
-        this.desc = desc;
+    public RaftException(RaftError raftError) {
+        super(RaftError.describeCode(raftError.getNumber()));
+        this.raftError = raftError;
     }
 
     /**
-     * @return The code.
+     * @param raftError RaftError..
+     * @param message Error message.
      */
-    public int code() {
-        return code;
+    public RaftException(RaftError raftError, String message) {
+        super(raftError.name() + ":" + message);
+
+        this.raftError = raftError;
     }
 
     /**
-     * @return The description.
+     * @return RaftError.
      */
-    public String description() {
-        return desc;
+    public RaftError raftError() {
+        return raftError;
     }
 }

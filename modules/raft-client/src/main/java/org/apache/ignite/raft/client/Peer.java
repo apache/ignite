@@ -25,6 +25,7 @@ import org.apache.ignite.network.NetworkAddress;
 /**
  * A participant of a replication group.
  */
+// TODO: IGNITE-15506 Replace it by jraft Peer
 public final class Peer implements Serializable {
     /**
      * Network address.

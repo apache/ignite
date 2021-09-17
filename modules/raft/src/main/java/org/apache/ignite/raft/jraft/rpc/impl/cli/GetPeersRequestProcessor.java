@@ -22,7 +22,6 @@ import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.GetPeersRequest;
 import org.apache.ignite.raft.jraft.rpc.Message;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 import static java.util.stream.Collectors.toList;
 
@@ -47,7 +46,7 @@ public class GetPeersRequestProcessor extends BaseCliRequestProcessor<GetPeersRe
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final GetPeersRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final List<PeerId> peers;
         final List<PeerId> learners;
         if (request.onlyAlive()) {

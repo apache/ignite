@@ -26,7 +26,6 @@ import org.apache.ignite.raft.jraft.rpc.CliRequests.AddLearnersRequest;
 import org.apache.ignite.raft.jraft.rpc.CliRequests.LearnersOpResponse;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RaftRpcFactory;
-import org.apache.ignite.raft.jraft.rpc.RpcRequestClosure;
 
 /**
  * AddLearners request processor.
@@ -50,7 +49,7 @@ public class AddLearnersRequestProcessor extends BaseCliRequestProcessor<AddLear
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final AddLearnersRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         final List<PeerId> oldLearners = ctx.node.listLearners();
         final List<PeerId> addingLearners = new ArrayList<>();
 

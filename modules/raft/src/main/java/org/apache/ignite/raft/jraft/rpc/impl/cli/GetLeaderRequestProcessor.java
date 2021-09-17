@@ -50,7 +50,7 @@ public class GetLeaderRequestProcessor extends BaseCliRequestProcessor<GetLeader
 
     @Override
     protected Message processRequest0(final CliRequestContext ctx, final GetLeaderRequest request,
-        final RpcRequestClosure done) {
+        final IgniteCliRpcRequestClosure done) {
         // ignore
         return null;
     }

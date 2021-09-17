@@ -104,20 +104,33 @@ public interface RaftGroupService {
     CompletableFuture<Void> refreshMembers(boolean onlyAlive);
 
     /**
-     * Adds a voting peers to the replication group.
+     * Adds a voting peer to the replication group.
      * <p>
      * After the future completion methods like {@link #peers()} and {@link #learners()}
      * can be used to retrieve current members of a group.
      * <p>
      * This operation is executed on a group leader.
      *
-     * @param peers Peers.
+     * @param peer Peer
      * @return A future.
      */
-    CompletableFuture<Void> addPeers(List<Peer> peers);
+    CompletableFuture<Void> addPeer(Peer peer);
 
     /**
-     * Removes peers from the replication group.
+     * Removes peer from the replication group.
+     * <p>
+     * After the future completion methods like {@link #peers()} and {@link #learners()}
+     * can be used to retrieve current members of a group.
+     * <p>
+     * This operation is executed on a group leader.
+     *
+     * @param peer Peer.
+     * @return A future.
+     */
+    CompletableFuture<Void> removePeer(Peer peer);
+
+    /**
+     * Changes peers of the replication group.
      * <p>
      * After the future completion methods like {@link #peers()} and {@link #learners()}
      * can be used to retrieve current members of a group.
@@ -127,7 +140,7 @@ public interface RaftGroupService {
      * @param peers Peers.
      * @return A future.
      */
-    CompletableFuture<Void> removePeers(List<Peer> peers);
+    CompletableFuture<Void> changePeers(List<Peer> peers);
 
     /**
      * Adds learners (non-voting members).
@@ -154,6 +167,19 @@ public interface RaftGroupService {
      * @return A future.
      */
     CompletableFuture<Void> removeLearners(List<Peer> learners);
+
+    /**
+     * Set learners of the raft group to needed list of learners.
+     * <p>
+     * After the future completion methods like {@link #peers()} and {@link #learners()}
+     * can be used to retrieve current members of a group.
+     * <p>
+     * This operation is executed on a group leader.
+     *
+     * @param learners List of learners.
+     * @return A future.
+     */
+    CompletableFuture<Void> resetLearners(List<Peer> learners);
 
     /**
      * Takes a state machine snapshot on a given group peer.

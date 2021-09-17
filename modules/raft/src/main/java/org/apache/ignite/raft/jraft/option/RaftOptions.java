@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.raft.jraft.option;
 
-import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.util.Copiable;
 
@@ -30,12 +29,6 @@ public class RaftOptions implements Copiable<RaftOptions> {
      * Has a default value for easier testing. Should always be set externally in the production code.
      */
     private RaftMessagesFactory raftMessagesFactory = new RaftMessagesFactory();
-
-    /** Raft client message factory.
-     * <p>
-     * Has a default value for easier testing. Should always be set externally in the production code.
-     */
-    private RaftClientMessagesFactory raftClientMessagesFactory = new RaftClientMessagesFactory();
 
     /**
      * Maximum of block size per RPC
@@ -292,21 +285,6 @@ public class RaftOptions implements Copiable<RaftOptions> {
         this.raftMessagesFactory = raftMessagesFactory;
     }
 
-    /**
-     * @return Raft client message factory.
-     */
-    public RaftClientMessagesFactory getRaftClientMessagesFactory() {
-        return raftClientMessagesFactory;
-    }
-
-    /**
-     * Sets the Raft client message factory.
-     */
-    public void setRaftClientMessagesFactory(
-        RaftClientMessagesFactory raftClientMessagesFactory) {
-        this.raftClientMessagesFactory = raftClientMessagesFactory;
-    }
-
     /** {@inheritDoc} */
     @Override
     public RaftOptions copy() {
@@ -329,7 +307,6 @@ public class RaftOptions implements Copiable<RaftOptions> {
         raftOptions.setEnableLogEntryChecksum(this.enableLogEntryChecksum);
         raftOptions.setReadOnlyOptions(this.readOnlyOptions);
         raftOptions.setRaftMessagesFactory(this.raftMessagesFactory);
-        raftOptions.setRaftClientMessagesFactory(this.raftClientMessagesFactory);
         return raftOptions;
     }
 
