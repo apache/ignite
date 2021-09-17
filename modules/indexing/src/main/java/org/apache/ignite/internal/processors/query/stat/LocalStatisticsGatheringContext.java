@@ -31,8 +31,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Statistics gathering context.
  */
 public class LocalStatisticsGatheringContext {
-    /** Additional steps count: prepare and aggregate (should be counted down if any). */
-    private static final int ADDITIONAL_STEPS = 2;
+    /** Additional steps count: prepare to prevent cancellation if some service tasks
+     * (save obsolescense or drop table).
+     */
+    private static final int ADDITIONAL_STEPS = 1;
 
     /** Recollection flag to update obsolescence statistics. */
     private final boolean byObsolescence;
@@ -61,7 +63,7 @@ public class LocalStatisticsGatheringContext {
     /**
      * Constructor.
      *
-     * @param forceRecollect Force recollect flag.
+     * @param byObsolescence Started by obsolescence, need to recollect data instead of using existing one.
      * @param tbl Table to process.
      * @param cfg Statistics configuration to use.
      * @param remainingParts Set of partition ids to collect.
@@ -105,7 +107,7 @@ public class LocalStatisticsGatheringContext {
     }
 
     /**
-     * Decrement remaining due to successfully processed partition.
+     * Decrement remaining partitions due to successfully processed partition.
      *
      * @param partId Partition id.
      * @return {@code true} if no more partitions left, {@code false} - otherwise.
@@ -130,7 +132,7 @@ public class LocalStatisticsGatheringContext {
     }
 
     /**
-     * Decrement remaining due to unavailable partition.
+     * Decrement remaining partitions due to unavailable partition.
      *
      * @param partId Unavailable partition id.
      * @return {@code true} if no more partitions left, {@code false} - otherwise.

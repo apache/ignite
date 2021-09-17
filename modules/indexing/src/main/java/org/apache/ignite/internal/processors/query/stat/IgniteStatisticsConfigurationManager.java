@@ -250,7 +250,7 @@ public class IgniteStatisticsConfigurationManager {
             statProc.updateKeyAsync(false, tbl, cfg, parts, topVer0);
         }
         catch (IgniteCheckedException e) {
-            // TODO
+            log.warning("Unexpected error during statistics collection: " + e.getMessage(), e);
         }
         finally {
             cctx.gate().leave();
@@ -291,6 +291,7 @@ public class IgniteStatisticsConfigurationManager {
         this.exchange = exchange;
 
         this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
+        exchange.registerExchangeAwareComponent(exchAwareLsnr);
 
         ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
             logSupplier);
@@ -322,8 +323,6 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager starting...");
 
-        exchange.registerExchangeAwareComponent(exchAwareLsnr);
-
         schemaMgr.registerDropColumnsListener(dropColsLsnr);
         schemaMgr.registerDropTableListener(dropTblLsnr);
 
@@ -353,8 +352,6 @@ public class IgniteStatisticsConfigurationManager {
     public void stop() {
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager stopping...");
-
-        exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
 
         schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
         schemaMgr.unregisterDropTableListener(dropTblLsnr);

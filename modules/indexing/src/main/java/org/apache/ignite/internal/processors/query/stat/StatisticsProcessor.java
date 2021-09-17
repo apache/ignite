@@ -113,13 +113,13 @@ public class StatisticsProcessor {
         if (!startJob("Updating key " + cfg.key()))
             return;
 
-        if (log.isDebugEnabled()) {
-            log.debug(String.format(
-                "Start statistics processing: byObsolescence=%b, cfg=%s, partToProcess = %s, topVer=%s",
-                byObsolescence, cfg, partsToProcess, topVer));
-        }
-
         try {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format(
+                    "Start statistics processing: byObsolescence=%b, cfg=%s, partToProcess = %s, topVer=%s",
+                    byObsolescence, cfg, partsToProcess, topVer));
+            }
+
             LocalStatisticsGatheringContext newCtx = new LocalStatisticsGatheringContext(byObsolescence, tbl, cfg,
                 partsToProcess, topVer);
             LocalStatisticsGatheringContext registeredCtx = registerNewTask(newCtx);
@@ -132,10 +132,10 @@ public class StatisticsProcessor {
                     !registeredCtx.configuration().columns().isEmpty())
                     submitTasks(registeredCtx);
                 else {
-                    statRepo.clearLocalPartitionsStatistics(registeredCtx.configuration().key(), null);
-                    // Aggregate phase done, finishing.
-                    registeredCtx.finished().countDown();
-                    gatheringInProgress.remove(cfg.key(), registeredCtx);
+                    gatheringInProgress.remove(registeredCtx.configuration().key(), registeredCtx);
+
+                    assert registeredCtx.remainingParts().isEmpty();
+                    assert registeredCtx.finished().getCount() == 0;
                 }
             }
             else {
@@ -149,23 +149,25 @@ public class StatisticsProcessor {
     }
 
     /**
-     * Do preparations steps before schedule any gathering.
+     * Do preparation step before schedule any gathering.
      *
      * @param ctx Context to do preparations.
      */
     private void prepareTask(LocalStatisticsGatheringContext ctx) {
-        if (ctx.byObsolescence()) {
-            // Double check that repository is clear
-            // (it's enough to just clear obsolescence with statRepo.removeObsolescenceInfo(cfg.key()); here)
-            if (ctx.table() == null)
-                // No table - just clean store
-                statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), null);
-            else
+        try {
+            if (ctx.byObsolescence())
                 statRepo.saveObsolescenceInfo(ctx.configuration().key());
-        }
 
-        // Prepare phase done
-        ctx.finished().countDown();
+            if (ctx.table() == null || ctx.configuration().columns().isEmpty())
+                statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), null);
+        }
+        catch (Throwable t) {
+            ctx.future().cancel(true);
+        }
+        finally {
+            // Prepare phase done
+            ctx.finished().countDown();
+        }
     }
 
     /**
@@ -176,6 +178,7 @@ public class StatisticsProcessor {
      */
     private LocalStatisticsGatheringContext registerNewTask(LocalStatisticsGatheringContext ctx) {
         LocalStatisticsGatheringContext ctxToSubmit[] = new LocalStatisticsGatheringContext[1];
+        LocalStatisticsGatheringContext ctxToAwait[] = new LocalStatisticsGatheringContext[1];
 
         gatheringInProgress.compute(ctx.configuration().key(), (k, v) -> {
             if (v == null) {
@@ -190,14 +193,7 @@ public class StatisticsProcessor {
                     !checkStatisticsCfg(v.configuration(), ctx.configuration()))) {
                 // Old context for older topology or config - cancel and start new
                 v.future().cancel(true);
-
-                try {
-                    v.finished().await();
-                }
-                catch (InterruptedException e) {
-                    log.warning("Unable to wait statistics gathering task finished by key " +
-                        ctx.configuration().key(), e);
-                }
+                ctxToAwait[0] = v;
 
                 ctxToSubmit[0] = ctx;
 
@@ -208,6 +204,18 @@ public class StatisticsProcessor {
 
             return v;
         });
+
+        // Can't wait in map critical section (to allow task to try to remove itselves), but
+        // have to wait here in busyLock to do gracefull shutdown.
+        if (ctxToAwait[0] != null) {
+            try {
+                ctxToAwait[0].finished().await();
+            }
+            catch (InterruptedException e) {
+                log.warning("Unable to wait statistics gathering task finished by key " +
+                    ctx.configuration().key(), e);
+            }
+        }
 
         return ctxToSubmit[0];
     }
@@ -349,18 +357,23 @@ public class StatisticsProcessor {
      * Mark partition task failed. If that was the last partition -
      * finalize ctx and remove it from gathering in progress.
      *
-     * @param ctx Context to fail partition in.
+     * @param ctx Context to fishish partition in.
      * @param partId Partition id.
      */
     private void failPartTask(LocalStatisticsGatheringContext ctx, int partId) {
+        // Partition skipped
         ctx.finished().countDown();
+
+        // No need to gather rest partitions.
+        ctx.future().cancel(true);
 
         if (log.isDebugEnabled())
             log.debug(String.format("Gathering failed for key %s.%d ", ctx.configuration().key(), partId));
 
         if (ctx.partitionNotAvailable(partId)) {
-            ctx.finished().countDown();
             gatheringInProgress.remove(ctx.configuration().key(), ctx);
+
+            assert ctx.finished().getCount() == 0;
 
             if (log.isDebugEnabled())
                 log.debug(String.format("Gathering removed for key %s", ctx.configuration().key()));
@@ -383,43 +396,66 @@ public class StatisticsProcessor {
 
                 return;
             }
-
             try {
-                ObjectPartitionStatisticsImpl partStat = null;
+                GatheredPartitionResult gatherRes = new GatheredPartitionResult();
 
-                if (!ctx.byObsolescence()) {
-                    // Try to use existing partition statistics instead of gather new one
-                    ObjectPartitionStatisticsImpl existingPartStat = statRepo.getLocalPartitionStatistics(
-                        ctx.configuration().key(), task.partition());
+                try {
+                    gatherCtxPartition(ctx, task, gatherRes);
 
-                    if (existingPartStat != null && partStatFit(existingPartStat, ctx.configuration()))
-                        partStat = existingPartStat;
+                    completePartitionStatistic(gatherRes.newPart, ctx, task.partition(), gatherRes.partStats);
                 }
-                boolean newStat = partStat == null;
+                catch (Throwable t) {
+                    //failPartTask(ctx, task.partition());
+                    gatherRes.partStats = null;
 
-                if (partStat == null)
-                    partStat = task.call();
-
-                completePartitionStatistic(newStat, ctx, task.partition(), partStat);
-            }
-            catch (Throwable t) {
-                if (t instanceof GatherStatisticCancelException) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Collect statistics task was cancelled " +
-                            "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+                    if (t instanceof GatherStatisticCancelException) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Collect statistics task was cancelled " +
+                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+                        }
                     }
+                    else
+                        log.warning("Unexpected error on statistic gathering", t);
                 }
-                else {
-                    log.error("Unexpected error on statistic gathering", t);
+                finally {
+                    if (gatherRes.partStats == null)
+                        failPartTask(ctx, task.partition());
+                    else {
+                        // Finish partition task
+                        ctx.finished().countDown();
 
-                    ctx.future().cancel(true);
+                        if (ctx.partitionDone(task.partition()))
+                            gatheringInProgress.remove(ctx.configuration().key(), ctx);
+                    }
+
                 }
+
+
             }
             finally {
-                ctx.finished().countDown();
                 endJob();
             }
         });
+    }
+
+    private void gatherCtxPartition(
+        final LocalStatisticsGatheringContext ctx,
+        final GatherPartitionStatistics task,
+        GatheredPartitionResult result
+    ) {
+        if (!ctx.byObsolescence()) {
+            // Try to use existing partition statistics instead of gather new one
+            ObjectPartitionStatisticsImpl existingPartStat = statRepo.getLocalPartitionStatistics(
+                ctx.configuration().key(), task.partition());
+
+            if (existingPartStat != null && partStatFit(existingPartStat, ctx.configuration()))
+                result.partStats = existingPartStat;
+        }
+
+        result.newPart = result.partStats == null;
+
+        if (result.partStats == null)
+            result.partStats = task.call();
     }
 
     /**
@@ -473,41 +509,36 @@ public class StatisticsProcessor {
      *
      * @param newStat If {@code true} - partition statitsics was just gathered and need to be saved to repo.
      * @param ctx Gathering context.
-     * @param part Partition id.
+     * @param partId Partition id.
      * @param partStat Collected statistics or {@code null} if it was impossible to gather current partition.
      */
     private void completePartitionStatistic(
         boolean newStat,
         LocalStatisticsGatheringContext ctx,
-        int part,
+        int partId,
         ObjectPartitionStatisticsImpl partStat
     ) {
-        if (ctx.future().isCancelled() || partStat == null) {
-            failPartTask(ctx, part);
-
+        if (ctx.future().isCancelled() || partStat == null)
             return;
-        }
 
         StatisticsKey key = ctx.configuration().key();
 
         if (newStat) {
             if (ctx.configuration().columns().size() == partStat.columnsStatistics().size())
-                statRepo.refreshObsolescence(key, part);
+                statRepo.refreshObsolescence(key, partId);
 
-            statRepo.saveLocalPartitionStatistics(key, partStat);
+            statRepo.replaceLocalPartitionStatistics(key, partStat);
+            //statRepo.saveLocalPartitionStatistics(key, partStat);
 
             if (log.isDebugEnabled())
                 log.debug("Local partitioned statistic saved [stat=" + partStat + ']');
         }
-
-        if (ctx.partitionDone(part)) {
+        if (ctx.partitionDone(partId)) {
             if (log.isDebugEnabled())
-                log.debug("Local partitions statistics successfully gathered by key " + key);
+                log.debug("Local partitions statistics successfully gathered by key " +
+                    ctx.configuration().key());
 
             aggregateStatistics(ctx);
-
-            ctx.finished().countDown();
-            gatheringInProgress.remove(ctx.configuration().key(), ctx);
         }
     }
 
@@ -566,5 +597,13 @@ public class StatisticsProcessor {
      */
     public IgniteThreadPoolExecutor gatheringPool() {
         return gatherPool;
+    }
+
+    /**
+     *
+     */
+    private static class GatheredPartitionResult{
+        public boolean newPart;
+        public ObjectPartitionStatisticsImpl partStats;
     }
 }

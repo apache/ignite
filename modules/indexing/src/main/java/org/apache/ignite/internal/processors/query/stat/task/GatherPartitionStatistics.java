@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.query.stat.task;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,7 @@ import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsReposito
 import org.apache.ignite.internal.processors.query.stat.LocalStatisticsGatheringContext;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.table.Column;
 
@@ -133,7 +137,18 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 log.debug("Existing parititon statistics fit to configuration requirements. " +
                     "Skipping recollection for " + gathCtx.configuration().key() + "[" + partId + "].");
 
-            return partStat;
+            Set<String> colToRemove = getColumnsToRemove(partStat);
+            if (F.isEmpty(colToRemove))
+                return partStat;
+            else{
+                Map<String, ColumnStatistics> allCols = partStat.columnsStatistics();
+
+                for (String col : colToRemove)
+                    allCols.remove(col);
+
+                return new ObjectPartitionStatisticsImpl(partStat.partId(), partStat. rowCount(), partStat.updCnt(),
+                    allCols);
+            }
         }
 
         CacheGroupContext grp = cctx.group();
@@ -238,6 +253,26 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
 
             if (colStat == null || colStatCfg.version() > colStat.version())
                 res.put(colStatCfg.name(), colStatCfg);
+        }
+
+        return res;
+    }
+
+    /**
+     * Get columns list to remove statistics by.
+     */
+    private Set<String> getColumnsToRemove(
+        ObjectPartitionStatisticsImpl partStat
+    ) {
+        if (partStat == null)
+            return Collections.emptySet();
+
+        Set<String> res = new HashSet<>();
+        Map<String, StatisticsColumnConfiguration> colCfg = gathCtx.configuration().columns();
+
+        for (String col : partStat.columnsStatistics().keySet()) {
+            if (!colCfg.containsKey(col))
+                res.add(col);
         }
 
         return res;

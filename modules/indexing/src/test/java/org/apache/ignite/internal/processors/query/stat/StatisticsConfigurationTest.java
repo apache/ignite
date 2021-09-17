@@ -501,14 +501,16 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
      * @return {@code true} if all commands pass successfully, {@code false} - otherwise.
      */
     private boolean executeStatisticsConfigurationCommands(IgniteEx ign) throws IgniteInterruptedCheckedException {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
-        IgniteStatisticsManager statMgr = indexing.statsManager();
+        IgniteStatisticsManager statMgr = statisticsMgr(ign);
 
         int success = 0;
+
         try {
             statMgr.collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
+
             success++;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!(e instanceof IgniteException && e.getMessage().contains("while statistics usage state is OFF.")))
                 fail("Unknown error: " + e);
         }
@@ -519,7 +521,8 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         try {
             statMgr.refreshStatistics(SMALL_TARGET);
             success++;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!(e instanceof IgniteException && e.getMessage().contains("while statistics usage state is OFF.")))
                 fail("Unknown error: " + e);
         }
@@ -527,7 +530,8 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         try {
             statMgr.dropStatistics(SMALL_TARGET);
             success++;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!(e instanceof IgniteException && e.getMessage().contains("while statistics usage state is OFF.")))
                 fail("Unknown error: " + e);
         }
