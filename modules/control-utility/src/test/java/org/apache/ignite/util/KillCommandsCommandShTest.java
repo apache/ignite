@@ -251,7 +251,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         new Thread(() -> {
             try {
-                getLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS); // Waiting for consistency repair start.
+                // Waiting for consistency repair start.
+                assertTrue(getLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
             }
             catch (InterruptedException e) {
                 fail();
