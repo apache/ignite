@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -224,10 +225,13 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
             list -> !list.isEmpty());
 
-        smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            ObjectStatisticsImpl stat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-        assertNotNull(smallStat);
-        assertEquals(8, smallStat.rowCount());
+            return stat != null && stat.rowCount() == 8;
+        }, TIMEOUT));
+
+        smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         Timestamp tsA = new Timestamp(smallStat.columnStatistics("A").createdAt());
         Timestamp tsB = new Timestamp(smallStat.columnStatistics("B").createdAt());

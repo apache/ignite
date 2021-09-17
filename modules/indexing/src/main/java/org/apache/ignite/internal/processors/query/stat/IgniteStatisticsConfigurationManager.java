@@ -82,9 +82,6 @@ public class IgniteStatisticsConfigurationManager {
     /** Distributed metastore. */
     private volatile DistributedMetaStorage distrMetaStorage;
 
-    /** Statistics repository.*/
-    private final IgniteStatisticsRepository repo;
-
     /** Statistic processor. */
     private final StatisticsProcessor statProc;
 
@@ -265,7 +262,6 @@ public class IgniteStatisticsConfigurationManager {
      * @param sysViewMgr
      * @param cluster
      * @param exchange
-     * @param repo
      * @param gatherer
      * @param mgmtPool
      * @param logSupplier
@@ -276,14 +272,12 @@ public class IgniteStatisticsConfigurationManager {
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
         GridCachePartitionExchangeManager<?, ?> exchange,
-        IgniteStatisticsRepository repo,
         StatisticsProcessor gatherer,
         IgniteThreadPoolExecutor mgmtPool,
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
-        this.repo = repo;
         this.mgmtPool = mgmtPool;
         this.statProc = gatherer;
         this.cluster = cluster;

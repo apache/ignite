@@ -214,8 +214,10 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 Collectors.toMap(csc -> csc.col().getName(), ColumnStatisticsCollector::finish));
 
             // Add existing to full replace existing statistics with new one.
-            if (partStat != null)
-                colStats.putAll(partStat.columnsStatistics());
+            if (partStat != null) {
+                for (Map.Entry<String, ColumnStatistics> oldColStat : partStat.columnsStatistics().entrySet())
+                    colStats.putIfAbsent(oldColStat.getKey(), oldColStat.getValue());
+            }
 
             return removeExtraColumns(new ObjectPartitionStatisticsImpl(
                 partId,

@@ -533,7 +533,8 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                     if (minVer == Long.MAX_VALUE)
                         minVer = -1;
 
-                    assertEquals((long)ver, minVer);
+                    assertEquals(String.format("Expected minimum statistics version %d but found %d", ver, minVer),
+                        (long)ver, minVer);
                 }
 
                 return;

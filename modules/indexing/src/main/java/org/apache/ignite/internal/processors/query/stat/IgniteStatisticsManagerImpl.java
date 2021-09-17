@@ -169,7 +169,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.systemView(),
             ctx.state(),
             ctx.cache().context().exchange(),
-            statsRepos,
             statProc,
             mgmtPool,
             ctx::log
