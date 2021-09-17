@@ -76,7 +76,9 @@ public final class TestUtils {
                 return BigInteger.probablePrime(12, rnd);
 
             case DECIMAL:
-                return BigDecimal.valueOf(rnd.nextInt(), 3);
+                DecimalNativeType decimalType = (DecimalNativeType)type;
+
+                return BigDecimal.valueOf(rnd.nextInt(), decimalType.scale());
 
             case BITMASK: {
                 BitmaskNativeType maskType = (BitmaskNativeType)type;

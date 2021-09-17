@@ -19,6 +19,10 @@ package org.apache.ignite.internal.schema.registry;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -260,7 +264,7 @@ class UpgradingRowAdapter extends Row {
 
         Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.schema().column(mappedId);
 
-        if (NativeTypeSpec.STRING != column.type().spec())
+        if (NativeTypeSpec.BYTES != column.type().spec())
             throw new SchemaException("Type conversion is not supported yet.");
 
         return mappedId < 0 ? (byte[])column.defaultValue() : super.bytesValue(mappedId);
@@ -278,7 +282,6 @@ class UpgradingRowAdapter extends Row {
         return mappedId < 0 ? (UUID)column.defaultValue() : super.uuidValue(mappedId);
     }
 
-
     /** {@inheritDoc} */
     @Override public BitSet bitmaskValue(int colIdx) throws InvalidTypeException {
         int mappedId = mapColumn(colIdx);
@@ -289,5 +292,53 @@ class UpgradingRowAdapter extends Row {
             throw new SchemaException("Type conversion is not supported yet.");
 
         return mappedId < 0 ? (BitSet)column.defaultValue() : super.bitmaskValue(mappedId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDate dateValue(int colIdx) throws InvalidTypeException {
+        int mappedId = mapColumn(colIdx);
+
+        Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.schema().column(mappedId);
+
+        if (NativeTypeSpec.DATE != column.type().spec())
+            throw new SchemaException("Type conversion is not supported yet.");
+
+        return mappedId < 0 ? (LocalDate)column.defaultValue() : super.dateValue(mappedId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalTime timeValue(int colIdx) throws InvalidTypeException {
+        int mappedId = mapColumn(colIdx);
+
+        Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.schema().column(mappedId);
+
+        if (NativeTypeSpec.TIME != column.type().spec())
+            throw new SchemaException("Type conversion is not supported yet.");
+
+        return mappedId < 0 ? (LocalTime)column.defaultValue() : super.timeValue(mappedId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LocalDateTime dateTimeValue(int colIdx) throws InvalidTypeException {
+        int mappedId = mapColumn(colIdx);
+
+        Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.schema().column(mappedId);
+
+        if (NativeTypeSpec.DATETIME != column.type().spec())
+            throw new SchemaException("Type conversion is not supported yet.");
+
+        return mappedId < 0 ? (LocalDateTime)column.defaultValue() : super.dateTimeValue(mappedId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Instant timestampValue(int colIdx) throws InvalidTypeException {
+        int mappedId = mapColumn(colIdx);
+
+        Column column = mappedId < 0 ? mapper.mappedColumn(colIdx) : super.schema().column(mappedId);
+
+        if (NativeTypeSpec.TIMESTAMP != column.type().spec())
+            throw new SchemaException("Type conversion is not supported yet.");
+
+        return mappedId < 0 ? (Instant)column.defaultValue() : super.timestampValue(mappedId);
     }
 }
