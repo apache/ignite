@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 
 /**
@@ -54,5 +56,10 @@ public class GeoSpatialIndexDefinition implements IndexDefinition {
     /** {@inheritDoc} */
     @Override public IndexName idxName() {
         return idxName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+        return rowHnd.indexKeyDefinitions();
     }
 }

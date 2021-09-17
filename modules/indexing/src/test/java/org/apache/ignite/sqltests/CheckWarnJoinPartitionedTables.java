@@ -18,9 +18,14 @@
 package org.apache.ignite.sqltests;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -303,6 +308,20 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void joinSameTableWithAnnotationAffinityKeyMapped() {
+        QueryEntity qe = new QueryEntity(BookKey.class, BookComment.class)
+            .setTableName("A");
+
+        crd.createCache(new CacheConfiguration<>()
+            .setName("CACHE")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(Collections.singletonList(qe)));
+
+        checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType();
+    }
+
+    /** */
     private void checkSameTableWithComplexPrimaryKeySingleAffKeyWithJoinType() {
         checkLogListener(false,
             "SELECT a1.* FROM A a1 " + joinType + " A a2 on a1.ID = a2.ID;");
@@ -509,5 +528,28 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
         FieldsQueryCursor<List<?>> cursor = crd.context().query().querySqlFields(qry, false);
 
         cursor.getAll();
+    }
+
+    /** */
+    private static class BookKey {
+        /** */
+        @QuerySqlField
+        @AffinityKeyMapped
+        private int id;
+
+        /** */
+        @QuerySqlField
+        private String title;
+
+        /** */
+        @QuerySqlField
+        private int price;
+    }
+
+    /** */
+    private static class BookComment {
+        /** */
+        @QuerySqlField
+        private String comment;
     }
 }

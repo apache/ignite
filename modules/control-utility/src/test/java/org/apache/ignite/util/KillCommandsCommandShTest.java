@@ -83,9 +83,9 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         // No-op. Prevent cache destroy from super class.
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testCancelScanQuery() {
+    public void testCancelScanQuery() throws Exception {
         doTestScanQueryCancel(client, srvs, args -> {
             int res = execute("--kill", "scan", args.get1().toString(), args.get2(), args.get3().toString());
 
