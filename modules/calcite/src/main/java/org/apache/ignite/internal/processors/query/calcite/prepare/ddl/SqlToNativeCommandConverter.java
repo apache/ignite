@@ -24,7 +24,6 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -219,19 +218,6 @@ public class SqlToNativeCommandConverter {
             throw new IgniteSQLException("Unsupported native operation [" +
                 "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
                 "querySql=\"" + pctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
-    }
-
-    /**
-     * Convert string literal to UUID.
-     */
-    private static UUID convertToUuid(SqlLiteral literal) {
-        try {
-            return UUID.fromString(literal.getValueAs(String.class));
-        }
-        catch (Exception e) {
-            throw new IgniteSQLException("Failed to convert " + literal + " to UUID",
-                IgniteQueryErrorCode.PARSING);
         }
     }
 }

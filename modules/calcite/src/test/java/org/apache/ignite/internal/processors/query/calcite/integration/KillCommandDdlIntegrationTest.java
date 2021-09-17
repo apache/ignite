@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
@@ -36,18 +35,24 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -94,13 +99,12 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         // Fetch first entry and therefore caching first page.
         assertNotNull(scanQryIter.next());
 
-        ConcurrentMap<UUID, GridCacheQueryManager<Object, Object>.RequestFutureMap> qryIters =
-            grid(0).context().cache().cache(DEFAULT_CACHE_NAME).context().queries().queryIterators();
+        SystemView<ScanQueryView> queries = grid(0).context().systemView().view(SCAN_QRY_SYS_VIEW);
+        assertEquals(1, queries.size());
+        ScanQueryView qryView = queries.iterator().next();
 
-        assertEquals(qryIters.values().size(), 1);
-
-        long qryId = qryIters.values().iterator().next().keySet().iterator().next();
-        UUID originNodeId = client.cluster().localNode().id();
+        long qryId = qryView.queryId();
+        UUID originNodeId = qryView.originNodeId();
 
         executeSql(client, "KILL SCAN '" + originNodeId + "' '" + DEFAULT_CACHE_NAME + "' " + qryId);
 
@@ -114,7 +118,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
     /** */
     @Test
-    public void testCancelComputeTask() {
+    public void testCancelComputeTask() throws Exception {
         CountDownLatch computeLatch = new CountDownLatch(1);
 
         IgniteFuture<Collection<Integer>> fut = client.compute().broadcastAsync(() -> {
@@ -124,12 +128,26 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         });
 
         try {
-            IgniteUuid taskId = client.compute().activeTaskFutures().keySet().iterator().next();
+            AtomicReference<ComputeJobView> jobViewHolder = new AtomicReference<>();
+            boolean res = waitForCondition(() -> {
+                SystemView<ComputeJobView> jobs = grid(0).context().systemView().view(JOBS_VIEW);
 
-            executeSql(client, "KILL COMPUTE '" + taskId + "'");
+                if (jobs.size() >= 1) {
+                    assertEquals(1, jobs.size());
+                    jobViewHolder.set(jobs.iterator().next());
+                    return true;
+                }
+
+                return false;
+            }, TIMEOUT);
+
+            assertTrue(res);
+
+            executeSql(client, "KILL COMPUTE '" + jobViewHolder.get().id() + "'");
 
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
-        } finally {
+        }
+        finally {
             computeLatch.countDown();
         }
     }
@@ -169,7 +187,8 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertNotNull(svc);
 
         executeSql(client, "KILL SERVICE '" + serviceName + "'");
-        boolean res = waitForCondition(() -> grid(0).services().serviceDescriptors().isEmpty(), TIMEOUT);
+
+        boolean res = waitForCondition(() -> grid(0).context().systemView().view(SVCS_VIEW).size() == 0, TIMEOUT);
         assertTrue(res);
     }
 
@@ -201,12 +220,12 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         boolean res = waitForCondition(() -> cntr.get() == PAGE_SZ * PAGE_SZ, TIMEOUT);
         assertTrue(res);
 
-        Map<UUID, Object> routines = getFieldValue(grid(0).context().continuous(), "rmtInfos");
-        assertEquals(1, routines.size());
-        Map.Entry<UUID, Object> entry = routines.entrySet().iterator().next();
+        SystemView<ContinuousQueryView> contQueries = grid(0).context().systemView().view(CQ_SYS_VIEW);
+        assertEquals(1, contQueries.size());
 
-        UUID nodeId = getFieldValue(entry.getValue(), "nodeId");
-        UUID routineId = entry.getKey();
+        ContinuousQueryView cqView = contQueries.iterator().next();
+        UUID nodeId = cqView.nodeId();
+        UUID routineId = cqView.routineId();
 
         executeSql(client, "KILL CONTINUOUS '" + nodeId + "' '" + routineId + "'");
 
@@ -215,9 +234,9 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
 
-        res = waitForCondition(() -> cntr.get() > cnt, TIMEOUT);
-
-        assertFalse(res);
+        res = waitForCondition(() -> contQueries.size() == 0, TIMEOUT);
+        assertTrue(res);
+        assertEquals(cnt, cntr.get());
     }
 
     /** */
@@ -241,9 +260,8 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** */
     @Test
     public void testCancelUnknownTx() {
-        executeSql(client, "KILL TRANSACTION 'unknown'");
+        executeSql(client, "KILL TRANSACTION '" + IgniteUuid.randomUuid() + "'");
     }
-
 
     /** */
     @Test

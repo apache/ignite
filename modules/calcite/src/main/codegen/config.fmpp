@@ -27,11 +27,13 @@ data: {
     # List of additional classes and packages to import.
     # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
+      "java.util.UUID",
       "org.apache.calcite.sql.SqlCreate",
       "org.apache.calcite.sql.SqlDrop",
       "org.apache.calcite.sql.SqlLiteral",
       "org.apache.calcite.schema.ColumnStrategy",
       "org.apache.ignite.internal.processors.query.calcite.util.IgniteResource",
+      "org.apache.ignite.lang.IgniteUuid",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
     ]
 

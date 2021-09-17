@@ -625,9 +625,10 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     public void killTransaction() throws Exception {
         IgniteSqlKill killTx;
 
-        killTx = parse("kill transaction '1233415'");
+        String txId = IgniteUuid.randomUuid().toString();
+        killTx = parse("kill transaction '" + txId + "'");
         assertTrue(killTx instanceof IgniteSqlKillTransaction);
-        assertEquals("1233415", stringValue(((IgniteSqlKillTransaction)killTx).xid()));
+        assertEquals(txId, stringValue(((IgniteSqlKillTransaction)killTx).xid()));
 
         assertParserThrows("kill transaction '1233415' '1'", SqlParseException.class);
         assertParserThrows("kill transaction 10000", SqlParseException.class);

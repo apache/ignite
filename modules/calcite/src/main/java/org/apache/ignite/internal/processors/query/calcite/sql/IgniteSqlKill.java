@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
-import java.util.UUID;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -27,7 +26,6 @@ import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKil
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Abstract base class for KILL queries.
@@ -79,27 +77,5 @@ public abstract class IgniteSqlKill extends SqlDdl {
         SqlCharStringLiteral sesId
     ) {
         return new IgniteSqlKillComputeTask(pos, sesId);
-    }
-
-    /** */
-    public static boolean isUuid(String rawUuid) {
-        try {
-            UUID.fromString(rawUuid);
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
-    }
-
-    /** */
-    public static boolean isIgniteUuid(String rawUuid) {
-        try {
-            IgniteUuid.fromString(rawUuid);
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
     }
 }

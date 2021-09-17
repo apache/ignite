@@ -398,7 +398,7 @@ SqlDrop SqlDropUser(Span s, boolean replace) :
 |   < TILDE: "~" >
 }
 
-SqlNumericLiteral QueryIdLiteral() :
+SqlNumericLiteral SignedIntegerLiteral() :
 {
     final Span s;
 }
@@ -416,26 +416,56 @@ SqlNumericLiteral QueryIdLiteral() :
     }
 }
 
+SqlCharStringLiteral UuidLiteral():
+{
+    final Span s;
+    final String rawUuuid;
+}
+{
+    <QUOTED_STRING> {
+        String rawUuid = SqlParserUtil.parseString(token.image);
+        try {
+            UUID.fromString(rawUuid);
+            return SqlLiteral.createCharString(rawUuid, getPos());
+        }
+        catch (Exception e) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
+        }
+    }
+}
+
+SqlCharStringLiteral IgniteUuidLiteral():
+{
+    final Span s;
+    final String rawUuuid;
+}
+{
+    <QUOTED_STRING> {
+        String rawUuid = SqlParserUtil.parseString(token.image);
+        try {
+            IgniteUuid.fromString(rawUuid);
+            return SqlLiteral.createCharString(rawUuid, getPos());
+        }
+        catch (Exception e) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalIgniteUuid(rawUuid));
+        }
+    }
+}
+
 SqlNode SqlKillScanQuery():
 {
     final Span s;
     final SqlCharStringLiteral originNodeId;
     final SqlCharStringLiteral cacheName;
     final SqlNumericLiteral queryId;
-    final String rawUuid;
-}{
+}
+{
     <KILL> { s = span(); } <SCAN>
-    <QUOTED_STRING> {
-        rawUuid = SqlParserUtil.parseString(token.image);
-        if (!IgniteSqlKill.isUuid(rawUuid)) {
-            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
-        }
-        originNodeId = SqlLiteral.createCharString(rawUuid, getPos());
-    }
+    originNodeId = UuidLiteral()
     <QUOTED_STRING> {
         cacheName = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
     }
-    queryId = QueryIdLiteral() {
+    queryId = SignedIntegerLiteral() {
         return IgniteSqlKill.createScanQueryKill(s.end(this), originNodeId, cacheName, queryId);
     }
 }
@@ -445,22 +475,11 @@ SqlNode SqlKillContinuousQuery():
     final Span s;
     final SqlCharStringLiteral originNodeId;
     final SqlCharStringLiteral routineId;
-    String rawUuid;
-}{
+}
+{
     <KILL> { s = span(); } <CONTINUOUS>
-    <QUOTED_STRING> {
-        rawUuid = SqlParserUtil.parseString(token.image);
-        if (!IgniteSqlKill.isUuid(rawUuid)) {
-            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
-        }
-        originNodeId = SqlLiteral.createCharString(rawUuid, getPos());
-    }
-    <QUOTED_STRING> {
-        rawUuid = SqlParserUtil.parseString(token.image);
-        if (!IgniteSqlKill.isUuid(rawUuid)) {
-            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
-        }
-        routineId = SqlLiteral.createCharString(rawUuid, getPos());
+    originNodeId = UuidLiteral()
+    routineId = UuidLiteral() {
         return IgniteSqlKill.createContinuousQueryKill(s.end(this), originNodeId, routineId);
     }
 }
@@ -469,10 +488,10 @@ SqlNode SqlKillTransaction():
 {
     final Span s;
     final SqlCharStringLiteral xid;
-}{
+}
+{
     <KILL> { s = span(); } <TRANSACTION>
-    <QUOTED_STRING> {
-        xid = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
+    xid = IgniteUuidLiteral() {
         return IgniteSqlKill.createTransactionKill(s.end(this), xid);
     }
 }
@@ -481,7 +500,8 @@ SqlNode SqlKillService():
 {
     final Span s;
     final SqlCharStringLiteral srvName;
-}{
+}
+{
     <KILL> { s = span(); } <SERVICE>
     <QUOTED_STRING> {
         srvName = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
@@ -493,15 +513,10 @@ SqlNode SqlKillComputeTask():
 {
     final Span s;
     final SqlCharStringLiteral sesId;
-    final String rawSesId;
-}{
+}
+{
     <KILL> { s = span(); } <COMPUTE>
-    <QUOTED_STRING> {
-        rawSesId = SqlParserUtil.parseString(token.image);
-        if (!IgniteSqlKill.isIgniteUuid(rawSesId)) {
-            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalIgniteUuid(rawSesId));
-        }
-        sesId = SqlLiteral.createCharString(rawSesId, getPos());
+    sesId = IgniteUuidLiteral() {
         return IgniteSqlKill.createComputeTaskKill(s.end(this), sesId);
     }
 }
