@@ -20,12 +20,25 @@ package org.apache.ignite.client.handler;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.client.handler.requests.sql.JdbcMetadataCatalog;
 import org.apache.ignite.client.proto.query.JdbcQueryEventHandler;
 import org.apache.ignite.client.proto.query.event.BatchExecuteRequest;
 import org.apache.ignite.client.proto.query.event.BatchExecuteResult;
+import org.apache.ignite.client.proto.query.event.JdbcColumnMeta;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaPrimaryKeysRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaTablesRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaTablesResult;
+import org.apache.ignite.client.proto.query.event.JdbcPrimaryKeyMeta;
+import org.apache.ignite.client.proto.query.event.JdbcTableMeta;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
 import org.apache.ignite.client.proto.query.event.QueryExecuteRequest;
@@ -53,13 +66,18 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
     /** Sql query processor. */
     private final QueryProcessor processor;
 
+    /** Jdbc metadata info. */
+    private final JdbcMetadataCatalog meta;
+
     /**
      * Constructor.
      *
      * @param processor Processor.
+     * @param meta JdbcMetadataInfo.
      */
-    public JdbcQueryEventHandlerImpl(QueryProcessor processor) {
+    public JdbcQueryEventHandlerImpl(QueryProcessor processor, JdbcMetadataCatalog meta) {
         this.processor = processor;
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */
@@ -152,6 +170,34 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         }
 
         return new QueryCloseResult();
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req) {
+        List<JdbcTableMeta> tblsMeta = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
+
+        return new JdbcMetaTablesResult(tblsMeta);
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req) {
+        Collection<JdbcColumnMeta> tblsMeta = meta.getColumnsMeta(req.schemaName(), req.tableName(), req.columnName());
+
+        return new JdbcMetaColumnsResult(tblsMeta);
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req) {
+        Collection<String> tblsMeta = meta.getSchemasMeta(req.schemaName());
+
+        return new JdbcMetaSchemasResult(tblsMeta);
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req) {
+        Collection<JdbcPrimaryKeyMeta> tblsMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
+
+        return new JdbcMetaPrimaryKeysResult(tblsMeta);
     }
 
     /**

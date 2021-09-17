@@ -19,6 +19,14 @@ package org.apache.ignite.client.proto.query;
 
 import org.apache.ignite.client.proto.query.event.BatchExecuteRequest;
 import org.apache.ignite.client.proto.query.event.BatchExecuteResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaPrimaryKeysRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaTablesRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaTablesResult;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
 import org.apache.ignite.client.proto.query.event.QueryExecuteRequest;
@@ -61,4 +69,36 @@ public interface JdbcQueryEventHandler {
      * @return Result.
      */
     QueryCloseResult close(QueryCloseRequest req);
+
+    /**
+     * {@link JdbcMetaTablesRequest} command handler.
+     *
+     * @param req Jdbc tables metadata request.
+     * @return Result.
+     */
+    JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req);
+
+    /**
+     * {@link JdbcMetaColumnsRequest} command handler.
+     *
+     * @param req Jdbc columns metadata request.
+     * @return Result.
+     */
+    JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req);
+
+    /**
+     * {@link JdbcMetaSchemasRequest} command handler.
+     *
+     * @param req Jdbc schemas metadata request.
+     * @return Result.
+     */
+    JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req);
+
+    /**
+     * {@link JdbcMetaPrimaryKeysRequest} command handler.
+     *
+     * @param req Jdbc primary keys metadata request.
+     * @return Result.
+     */
+    JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req);
 }

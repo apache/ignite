@@ -20,6 +20,14 @@ package org.apache.ignite.internal.client.query;
 import org.apache.ignite.client.proto.query.JdbcQueryEventHandler;
 import org.apache.ignite.client.proto.query.event.BatchExecuteRequest;
 import org.apache.ignite.client.proto.query.event.BatchExecuteResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaPrimaryKeysRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaPrimaryKeysResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasResult;
+import org.apache.ignite.client.proto.query.event.JdbcMetaTablesRequest;
+import org.apache.ignite.client.proto.query.event.JdbcMetaTablesResult;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
 import org.apache.ignite.client.proto.query.event.QueryExecuteRequest;
@@ -75,6 +83,42 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
         QueryCloseResult res = new QueryCloseResult();
 
         client.sendRequest(ClientOp.SQL_CURSOR_CLOSE, req, res);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req) {
+        JdbcMetaTablesResult res = new JdbcMetaTablesResult();
+
+        client.sendRequest(ClientOp.SQL_TABLE_META, req, res);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req) {
+        JdbcMetaColumnsResult res = new JdbcMetaColumnsResult();
+
+        client.sendRequest(ClientOp.SQL_COLUMN_META, req, res);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req) {
+        JdbcMetaSchemasResult res = new JdbcMetaSchemasResult();
+
+        client.sendRequest(ClientOp.SQL_SCHEMAS_META, req, res);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req) {
+        JdbcMetaPrimaryKeysResult res = new JdbcMetaPrimaryKeysResult();
+
+        client.sendRequest(ClientOp.SQL_PK_META, req, res);
 
         return res;
     }

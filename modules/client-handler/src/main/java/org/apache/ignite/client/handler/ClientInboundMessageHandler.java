@@ -25,9 +25,14 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.ignite.client.handler.requests.sql.ClientSqlCloseRequest;
+import org.apache.ignite.client.handler.requests.sql.ClientSqlColumnMetadataRequest;
 import org.apache.ignite.client.handler.requests.sql.ClientSqlExecuteBatchRequest;
 import org.apache.ignite.client.handler.requests.sql.ClientSqlExecuteRequest;
 import org.apache.ignite.client.handler.requests.sql.ClientSqlFetchRequest;
+import org.apache.ignite.client.handler.requests.sql.ClientSqlPrimaryKeyMetadataRequest;
+import org.apache.ignite.client.handler.requests.sql.ClientSqlSchemasMetadataRequest;
+import org.apache.ignite.client.handler.requests.sql.ClientSqlTableMetadataRequest;
+import org.apache.ignite.client.handler.requests.sql.JdbcMetadataCatalog;
 import org.apache.ignite.client.handler.requests.table.ClientSchemasGetRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTableDropRequest;
 import org.apache.ignite.client.handler.requests.table.ClientTableGetRequest;
@@ -98,7 +103,7 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
 
         this.igniteTables = igniteTables;
 
-        this.handler = new JdbcQueryEventHandlerImpl(processor);
+        this.handler = new JdbcQueryEventHandlerImpl(processor, new JdbcMetadataCatalog(igniteTables));
     }
 
     /** {@inheritDoc} */
@@ -350,6 +355,18 @@ public class ClientInboundMessageHandler extends ChannelInboundHandlerAdapter {
 
             case ClientOp.SQL_CURSOR_CLOSE:
                 return ClientSqlCloseRequest.process(in, out, handler);
+
+            case ClientOp.SQL_TABLE_META:
+                return ClientSqlTableMetadataRequest.process(in, out, handler);
+
+            case ClientOp.SQL_COLUMN_META:
+                return ClientSqlColumnMetadataRequest.process(in, out, handler);
+
+            case ClientOp.SQL_SCHEMAS_META:
+                return ClientSqlSchemasMetadataRequest.process(in, out, handler);
+
+            case ClientOp.SQL_PK_META:
+                return ClientSqlPrimaryKeyMetadataRequest.process(in, out, handler);
 
             default:
                 throw new IgniteException("Unexpected operation code: " + opCode);

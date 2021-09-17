@@ -82,7 +82,7 @@ public class JdbcConnectionSelfTest extends AbstractJdbcSelfTest {
      */
     @SuppressWarnings({"EmptyTryBlock", "unused"})
     @Test
-    @Disabled
+    @Disabled("ITDS-1887")
     public void testDefaultsIPv6() throws Exception {
         var url = "jdbc:ignite:thin://[::1]:10800";
 

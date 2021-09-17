@@ -117,11 +117,11 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /**
-     * Send JdbcClientMessage request to server size and reads JdbcClientMessage result.
+     * Send ClientMessage request to server size and reads ClientMessage result.
      *
      * @param opCode Operation code.
-     * @param req JdbcClientMessage request.
-     * @param res JdbcClientMessage result.
+     * @param req ClientMessage request.
+     * @param res ClientMessage result.
      */
     public void sendRequest(int opCode, ClientMessage req, ClientMessage res) {
         ch.serviceAsync(opCode, w -> req.writeBinary(w.out()), p -> {
