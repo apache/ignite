@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -233,34 +233,11 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
 
-        CountDownLatch getLatch = new CountDownLatch(SERVER_NODE_CNT); // Each node should send a get request.
-
-        for (IgniteEx server : srvs) {
-            TestRecordingCommunicationSpi spi =
-                ((TestRecordingCommunicationSpi)server.configuration().getCommunicationSpi());
-
-            spi.blockMessages((node, message) -> {
-                if (message instanceof GridNearGetRequest) { // Get request caused by read repair operation.
-                    getLatch.countDown();
-
-                    return true; // Blocking to freeze '--consistency repair' operation.
-                }
-
-                return false;
-            });
-        }
+        AtomicInteger getCnt = new AtomicInteger();
 
         CountDownLatch thLatch = new CountDownLatch(1);
 
-        new Thread(() -> {
-            try {
-                // Waiting for consistency repair start.
-                assertTrue(getLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-            }
-            catch (InterruptedException e) {
-                fail();
-            }
-
+        Thread th = new Thread(() -> {
             IgnitePredicate<ComputeJobView> repairJobFilter =
                 job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName());
 
@@ -291,7 +268,23 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             }
 
             thLatch.countDown();
-        }).start();
+        });
+
+        for (IgniteEx server : srvs) {
+            TestRecordingCommunicationSpi spi =
+                ((TestRecordingCommunicationSpi)server.configuration().getCommunicationSpi());
+
+            spi.blockMessages((node, message) -> {
+                if (message instanceof GridNearGetRequest) { // Get request caused by read repair operation.
+                    if (getCnt.incrementAndGet() == SERVER_NODE_CNT) // Each node should send a get request.
+                        th.start();
+
+                    return true; // Blocking to freeze '--consistency repair' operation.
+                }
+
+                return false;
+            });
+        }
 
         injectTestSystemOut();
 
