@@ -59,5 +59,30 @@ namespace Apache.Ignite.Tests.Table
             Assert.AreEqual("x", tuple[1]);
             Assert.IsNull(tuple[2]);
         }
+
+        [Test]
+        public void TestToStringEmpty()
+        {
+            Assert.AreEqual("IgniteTuple []", new IgniteTuple().ToString());
+        }
+
+        [Test]
+        public void TestToStringOneField()
+        {
+            var tuple = new IgniteTuple { ["foo"] = 1 };
+            Assert.AreEqual("IgniteTuple [foo=1]", tuple.ToString());
+        }
+
+        [Test]
+        public void TestToStringTwoFields()
+        {
+            var tuple = new IgniteTuple
+            {
+                ["foo"] = 1,
+                ["b"] = "abcd"
+            };
+
+            Assert.AreEqual("IgniteTuple [foo=1, b=abcd]", tuple.ToString());
+        }
     }
 }

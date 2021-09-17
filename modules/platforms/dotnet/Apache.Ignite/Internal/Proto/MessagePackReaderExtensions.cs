@@ -69,6 +69,17 @@ namespace Apache.Ignite.Internal.Proto
         }
 
         /// <summary>
+        /// Reads nullable integer.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>Nullable int.</returns>
+        public static int? ReadInt32Nullable(this ref MessagePackReader reader)
+        {
+            // ReSharper disable RedundantCast (does not build on older SDKs)
+            return reader.IsNil ? (int?)null : reader.ReadInt32();
+        }
+
+        /// <summary>
         /// Skips multiple elements.
         /// </summary>
         /// <param name="reader">Reader.</param>

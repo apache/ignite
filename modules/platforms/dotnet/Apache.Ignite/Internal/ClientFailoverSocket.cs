@@ -129,7 +129,7 @@ namespace Apache.Ignite.Internal
         /// Gets the primary socket. Reconnects if necessary.
         /// </summary>
         /// <returns>Client socket.</returns>
-        private async Task<ClientSocket> GetSocketAsync()
+        private async ValueTask<ClientSocket> GetSocketAsync()
         {
             await _socketLock.WaitAsync().ConfigureAwait(false);
 
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Internal
         /// <summary>
         /// Gets next connected socket, or connects a new one.
         /// </summary>
-        private async Task<ClientSocket> GetNextSocketAsync()
+        private async ValueTask<ClientSocket> GetNextSocketAsync()
         {
             List<Exception>? errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);

@@ -17,40 +17,33 @@
 
 namespace Apache.Ignite.Tests.Table
 {
-    using System;
-    using System.Threading.Tasks;
     using Ignite.Table;
-    using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="ITables"/>.
+    /// Custom tuple implementation for tests.
     /// </summary>
-    public class TablesTests : IgniteTestsBase
+    public class CustomTestIgniteTuple : IIgniteTuple
     {
-        [Test]
-        public async Task TestGetTables()
-        {
-            var tables = await Client.Tables.GetTablesAsync();
+        public const int Key = 42;
 
-            Assert.AreEqual(1, tables.Count);
-            Assert.AreEqual("PUB.tbl1", tables[0].Name);
+        public const string Value = "Val1";
+
+        public int FieldCount => 2;
+
+        public object? this[int ordinal]
+        {
+            get => ordinal switch { 0 => Key, _ => Value };
+            set => throw new System.NotImplementedException();
         }
 
-        [Test]
-        public async Task TestGetExistingTable()
+        public object? this[string name]
         {
-            var table = await Client.Tables.GetTableAsync(TableName);
-
-            Assert.IsNotNull(table);
-            Assert.AreEqual("PUB.tbl1", table!.Name);
+            get => name switch { "key" => Key, _ => Value };
+            set => throw new System.NotImplementedException();
         }
 
-        [Test]
-        public async Task TestGetNonExistentTableReturnsNull()
-        {
-            var table = await Client.Tables.GetTableAsync(Guid.NewGuid().ToString());
+        public string GetName(int ordinal) => ordinal switch { 0 => "key", _ => "val" };
 
-            Assert.IsNull(table);
-        }
+        public int GetOrdinal(string name) => name switch { "key" => 0, _ => 1 };
     }
 }

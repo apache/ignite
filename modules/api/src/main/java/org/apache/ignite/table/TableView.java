@@ -276,7 +276,7 @@ public interface TableView<R> {
      *
      * @param recs Records with key columns set.
      * The records cannot be {@code null}.
-     * @return Records with key columns set that were not exists.
+     * @return Records with key columns set that did not exist.
      */
     Collection<R> deleteAll(@NotNull Collection<R> recs);
 

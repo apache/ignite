@@ -67,106 +67,387 @@ namespace Apache.Ignite.Internal.Table
         public IgniteUuid Id { get; }
 
         /// <inheritdoc/>
-        public async Task<IIgniteTuple?> GetAsync(IIgniteTuple keyRec)
+        public async Task<IIgniteTuple?> GetAsync(IIgniteTuple key)
         {
-            IgniteArgumentCheck.NotNull(keyRec, nameof(keyRec));
+            IgniteArgumentCheck.NotNull(key, nameof(key));
 
             var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
 
             using var writer = new PooledArrayBufferWriter();
-            Write(writer.GetMessageWriter());
+            WriteTuple(writer, schema, key, keyOnly: true);
 
             using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleGet, writer).ConfigureAwait(false);
-            return Read(resBuf.GetReader());
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
 
-            void Write(MessagePackWriter w)
-            {
-                w.Write(Id);
-                w.Write(schema.Version);
-
-                for (var i = 0; i < schema.KeyColumnCount; i++)
-                {
-                    var col = schema.Columns[i];
-
-                    w.WriteObject(keyRec[col.Name]);
-                }
-
-                w.Flush();
-            }
-
-            IIgniteTuple? Read(MessagePackReader r)
-            {
-                if (r.NextMessagePackType == MessagePackType.Nil)
-                {
-                    return null;
-                }
-
-                var schemaVersion = r.ReadInt32();
-
-                if (schemaVersion != schema.Version)
-                {
-                    // TODO: Load schema (IGNITE-15430).
-                    throw new NotSupportedException();
-                }
-
-                var columns = schema.Columns;
-
-                var tuple = new IgniteTuple(columns.Count);
-
-                for (var i = 0; i < columns.Count; i++)
-                {
-                    var column = columns[i];
-
-                    if (i < schema.KeyColumnCount)
-                    {
-                        tuple[column.Name] = keyRec[column.Name];
-                    }
-                    else
-                    {
-                        tuple[column.Name] = r.ReadObject(column.Type);
-                    }
-                }
-
-                return tuple;
-            }
+            return ReadValueTuple(resBuf, resSchema, key);
         }
 
         /// <inheritdoc/>
-        public async Task UpsertAsync(IIgniteTuple rec)
+        public async Task<IList<IIgniteTuple>> GetAllAsync(IEnumerable<IIgniteTuple> keys)
         {
-            IgniteArgumentCheck.NotNull(rec, nameof(rec));
+            IgniteArgumentCheck.NotNull(keys, nameof(keys));
+
+            using var iterator = keys.GetEnumerator();
+
+            if (!iterator.MoveNext())
+            {
+                return Array.Empty<IIgniteTuple>();
+            }
 
             var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
 
             using var writer = new PooledArrayBufferWriter();
-            Write(writer.GetMessageWriter());
+            WriteTuples(writer, schema, iterator, keyOnly: true);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleGetAll, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadTuples(resBuf, resSchema);
+        }
+
+        /// <inheritdoc/>
+        public async Task UpsertAsync(IIgniteTuple record)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, record);
 
             using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleUpsert, writer).ConfigureAwait(false);
+        }
 
-            void Write(MessagePackWriter w)
+        /// <inheritdoc/>
+        public async Task UpsertAllAsync(IEnumerable<IIgniteTuple> records)
+        {
+            IgniteArgumentCheck.NotNull(records, nameof(records));
+
+            using var iterator = records.GetEnumerator();
+
+            if (!iterator.MoveNext())
             {
-                w.Write(Id);
-                w.Write(schema.Version);
+                return;
+            }
 
-                foreach (var col in schema.Columns)
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuples(writer, schema, iterator);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleUpsertAll, writer).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<IIgniteTuple?> GetAndUpsertAsync(IIgniteTuple record)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, record);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleGetAndUpsert, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadValueTuple(resBuf, resSchema, record);
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> InsertAsync(IIgniteTuple record)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, record);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleInsert, writer).ConfigureAwait(false);
+            return resBuf.GetReader().ReadBoolean();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IList<IIgniteTuple>> InsertAllAsync(IEnumerable<IIgniteTuple> records)
+        {
+            IgniteArgumentCheck.NotNull(records, nameof(records));
+
+            using var iterator = records.GetEnumerator();
+
+            if (!iterator.MoveNext())
+            {
+                return Array.Empty<IIgniteTuple>();
+            }
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuples(writer, schema, iterator);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleInsertAll, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadTuples(resBuf, resSchema);
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> ReplaceAsync(IIgniteTuple record)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, record);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleReplace, writer).ConfigureAwait(false);
+            return resBuf.GetReader().ReadBoolean();
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> ReplaceAsync(IIgniteTuple record, IIgniteTuple newRecord)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuples(writer, schema, record, newRecord);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleReplaceExact, writer).ConfigureAwait(false);
+            return resBuf.GetReader().ReadBoolean();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IIgniteTuple?> GetAndReplaceAsync(IIgniteTuple record)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, record);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleGetAndReplace, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadValueTuple(resBuf, resSchema, record);
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> DeleteAsync(IIgniteTuple key)
+        {
+            IgniteArgumentCheck.NotNull(key, nameof(key));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, key, keyOnly: true);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleDelete, writer).ConfigureAwait(false);
+            return resBuf.GetReader().ReadBoolean();
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> DeleteExactAsync(IIgniteTuple record)
+        {
+            IgniteArgumentCheck.NotNull(record, nameof(record));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, record);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleDeleteExact, writer).ConfigureAwait(false);
+            return resBuf.GetReader().ReadBoolean();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IIgniteTuple?> GetAndDeleteAsync(IIgniteTuple key)
+        {
+            IgniteArgumentCheck.NotNull(key, nameof(key));
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuple(writer, schema, key, keyOnly: true);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleGetAndDelete, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadValueTuple(resBuf, resSchema, key);
+        }
+
+        /// <inheritdoc/>
+        public async Task<IList<IIgniteTuple>> DeleteAllAsync(IEnumerable<IIgniteTuple> keys)
+        {
+            IgniteArgumentCheck.NotNull(keys, nameof(keys));
+
+            using var iterator = keys.GetEnumerator();
+
+            if (!iterator.MoveNext())
+            {
+                return Array.Empty<IIgniteTuple>();
+            }
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuples(writer, schema, iterator, keyOnly: true);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleDeleteAll, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadTuples(resBuf, resSchema, keyOnly: true);
+        }
+
+        /// <inheritdoc/>
+        public async Task<IList<IIgniteTuple>> DeleteAllExactAsync(IEnumerable<IIgniteTuple> records)
+        {
+            IgniteArgumentCheck.NotNull(records, nameof(records));
+
+            using var iterator = records.GetEnumerator();
+
+            if (!iterator.MoveNext())
+            {
+                return Array.Empty<IIgniteTuple>();
+            }
+
+            var schema = await GetLatestSchemaAsync().ConfigureAwait(false);
+
+            using var writer = new PooledArrayBufferWriter();
+            WriteTuples(writer, schema, iterator);
+
+            using var resBuf = await _socket.DoOutInOpAsync(ClientOp.TupleDeleteAllExact, writer).ConfigureAwait(false);
+            var resSchema = await ReadSchemaAsync(resBuf, schema).ConfigureAwait(false);
+
+            return ReadTuples(resBuf, resSchema);
+        }
+
+        private static IIgniteTuple? ReadValueTuple(PooledBuffer buf, Schema? schema, IIgniteTuple key)
+        {
+            if (schema == null)
+            {
+                return null;
+            }
+
+            // Skip schema version.
+            var r = buf.GetReader();
+            r.Skip();
+
+            var columns = schema.Columns;
+            var tuple = new IgniteTuple(columns.Count);
+
+            for (var i = 0; i < columns.Count; i++)
+            {
+                var column = columns[i];
+
+                if (i < schema.KeyColumnCount)
                 {
-                    var colIdx = rec.GetOrdinal(col.Name);
-
-                    if (colIdx < 0)
-                    {
-                        w.WriteNil();
-                    }
-                    else
-                    {
-                        w.WriteObject(rec[colIdx]);
-                    }
+                    tuple[column.Name] = key[column.Name];
                 }
+                else
+                {
+                    tuple[column.Name] = r.ReadObject(column.Type);
+                }
+            }
 
-                w.Flush();
+            return tuple;
+        }
+
+        private static IIgniteTuple ReadTuple(ref MessagePackReader r, Schema schema, bool keyOnly = false)
+        {
+            var columns = schema.Columns;
+            var count = keyOnly ? schema.KeyColumnCount : columns.Count;
+            var tuple = new IgniteTuple(count);
+
+            for (var index = 0; index < count; index++)
+            {
+                var column = columns[index];
+                tuple[column.Name] = r.ReadObject(column.Type);
+            }
+
+            return tuple;
+        }
+
+        private static IList<IIgniteTuple> ReadTuples(PooledBuffer buf, Schema? schema, bool keyOnly = false)
+        {
+            if (schema == null)
+            {
+                return Array.Empty<IIgniteTuple>();
+            }
+
+            // Skip schema version.
+            var r = buf.GetReader();
+            r.Skip();
+
+            var count = r.ReadInt32();
+            var res = new List<IIgniteTuple>(count);
+
+            for (var i = 0; i < count; i++)
+            {
+                res.Add(ReadTuple(ref r, schema, keyOnly));
+            }
+
+            return res;
+        }
+
+        private static int? ReadSchemaVersion(PooledBuffer buf)
+        {
+            var reader = buf.GetReader();
+
+            return reader.ReadInt32Nullable();
+        }
+
+        private static void WriteTuple(
+            ref MessagePackWriter w,
+            Schema schema,
+            IIgniteTuple tuple,
+            bool keyOnly = false)
+        {
+            var columns = schema.Columns;
+            var count = keyOnly ? schema.KeyColumnCount : columns.Count;
+
+            for (var index = 0; index < count; index++)
+            {
+                var col = columns[index];
+                var colIdx = tuple.GetOrdinal(col.Name);
+
+                if (colIdx < 0)
+                {
+                    w.WriteNil();
+                }
+                else
+                {
+                    w.WriteObject(tuple[colIdx]);
+                }
             }
         }
 
-        private async Task<Schema> GetLatestSchemaAsync()
+        private async ValueTask<Schema?> ReadSchemaAsync(PooledBuffer buf, Schema currentSchema)
+        {
+            var ver = ReadSchemaVersion(buf);
+
+            if (ver == null)
+            {
+                return null;
+            }
+
+            if (currentSchema.Version == ver.Value)
+            {
+                return currentSchema;
+            }
+
+            if (_schemas.TryGetValue(ver.Value, out var res))
+            {
+                return res;
+            }
+
+            return await LoadSchemaAsync(ver).ConfigureAwait(false);
+        }
+
+        private async ValueTask<Schema> GetLatestSchemaAsync()
         {
             var latestSchemaVersion = _latestSchemaVersion;
 
@@ -181,13 +462,14 @@ namespace Apache.Ignite.Internal.Table
         private async Task<Schema> LoadSchemaAsync(int? version)
         {
             using var writer = new PooledArrayBufferWriter();
-            Write(writer.GetMessageWriter());
+            Write();
 
             using var resBuf = await _socket.DoOutInOpAsync(ClientOp.SchemasGet, writer).ConfigureAwait(false);
-            return Read(resBuf.GetReader());
+            return Read();
 
-            void Write(MessagePackWriter w)
+            void Write()
             {
+                var w = writer.GetMessageWriter();
                 w.Write(Id);
 
                 if (version == null)
@@ -203,8 +485,9 @@ namespace Apache.Ignite.Internal.Table
                 w.Flush();
             }
 
-            Schema Read(MessagePackReader r)
+            Schema Read()
             {
+                var r = resBuf.GetReader();
                 var schemaCount = r.ReadMapHeader();
 
                 if (schemaCount == 0)
@@ -270,6 +553,76 @@ namespace Apache.Ignite.Internal.Table
             }
 
             return schema;
+        }
+
+        private void WriteTuple(PooledArrayBufferWriter buf, Schema schema, IIgniteTuple tuple, bool keyOnly = false)
+        {
+            var w = buf.GetMessageWriter();
+
+            WriteTupleWithHeader(ref w, schema, tuple, keyOnly);
+
+            w.Flush();
+        }
+
+        private void WriteTuples(
+            PooledArrayBufferWriter buf,
+            Schema schema,
+            IIgniteTuple t,
+            IIgniteTuple t2,
+            bool keyOnly = false)
+        {
+            var w = buf.GetMessageWriter();
+
+            WriteTupleWithHeader(ref w, schema, t, keyOnly);
+            WriteTuple(ref w, schema, t2, keyOnly);
+
+            w.Flush();
+        }
+
+        private void WriteTuples(
+            PooledArrayBufferWriter buf,
+            Schema schema,
+            IEnumerator<IIgniteTuple> tuples,
+            bool keyOnly = false)
+        {
+            var w = buf.GetMessageWriter();
+
+            w.Write(Id);
+            w.Write(schema.Version);
+            w.Flush();
+
+            var count = 0;
+            var countPos = buf.ReserveInt32();
+
+            do
+            {
+                var tuple = tuples.Current;
+
+                if (tuple == null)
+                {
+                    throw new ArgumentException("Tuple collection can't contain null elements.");
+                }
+
+                WriteTuple(ref w, schema, tuple, keyOnly);
+                count++;
+            }
+            while (tuples.MoveNext()); // First MoveNext is called outside to check for empty IEnumerable.
+
+            buf.WriteInt32(countPos, count);
+
+            w.Flush();
+        }
+
+        private void WriteTupleWithHeader(
+            ref MessagePackWriter w,
+            Schema schema,
+            IIgniteTuple tuple,
+            bool keyOnly = false)
+        {
+            w.Write(Id);
+            w.Write(schema.Version);
+
+            WriteTuple(ref w, schema, tuple, keyOnly);
         }
     }
 }

@@ -208,7 +208,7 @@ public interface KeyValueView<K, V> {
      *
      * @param keys Keys which mapping is to be removed from the table.
      * The keys cannot be {@code null}.
-     * @return Keys whose values were not existed.
+     * @return Keys which did not exist.
      */
     Collection<K> removeAll(@NotNull Collection<K> keys);
 

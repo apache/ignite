@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Table
 {
     using System.Collections.Generic;
+    using System.Text;
 
     /// <summary>
     /// Ignite tuple.
@@ -76,5 +77,27 @@ namespace Apache.Ignite.Table
 
         /// <inheritdoc/>
         public int GetOrdinal(string name) => _indexes.TryGetValue(name, out var index) ? index : -1;
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(nameof(IgniteTuple)).Append(" [");
+
+            for (var i = 0; i < FieldCount; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+
+                sb.Append(GetName(i)).Append('=').Append(this[i]);
+            }
+
+            sb.Append(']');
+
+            return sb.ToString();
+        }
     }
 }

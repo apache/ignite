@@ -154,6 +154,34 @@ namespace Apache.Ignite.Internal.Buffers
             return new(this);
         }
 
+        /// <summary>
+        /// Reserves space for an int32 value and returns its position.
+        /// </summary>
+        /// <returns>Reserved int position. To be used with <see cref="WriteInt32"/>.</returns>
+        public int ReserveInt32()
+        {
+            var pos = _index;
+
+            Advance(5);
+
+            return pos;
+        }
+
+        /// <summary>
+        /// Writes an int32 value at the given position. Intended to be used with <see cref="ReserveInt32"/>.
+        /// </summary>
+        /// <param name="position">Position.</param>
+        /// <param name="value">Value.</param>
+        public unsafe void WriteInt32(int position, int value)
+        {
+            fixed (byte* ptr = &_buffer[position + 1])
+            {
+                 *(int*)ptr = IPAddress.HostToNetworkOrder(value);
+            }
+
+            _buffer[position] = MessagePackCode.Int32;
+        }
+
         /// <inheritdoc />
         public void Dispose()
         {

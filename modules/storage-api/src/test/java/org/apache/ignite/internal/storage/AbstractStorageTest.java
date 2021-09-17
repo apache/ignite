@@ -459,7 +459,7 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Tests the {@link Storage#readAll(Collection)} operation successfully reads data rows from the storage.
+     * Tests the {@link Storage#readAll(List)} operation successfully reads data rows from the storage.
      */
     @Test
     public void testReadAll() {
@@ -477,7 +477,7 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Tests that {@link Storage#writeAll(Collection)} operation successfully writes a collection of data rows into the
+     * Tests that {@link Storage#writeAll(List)} operation successfully writes a collection of data rows into the
      * storage.
      */
     @Test
@@ -491,7 +491,7 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Tests that {@link Storage#insertAll(Collection)} operation doesn't insert data rows which keys
+     * Tests that {@link Storage#insertAll(List)} operation doesn't insert data rows which keys
      * are already present in the storage. This operation must also return the list of such data rows.
      */
     @Test
@@ -511,16 +511,16 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Tests that {@link Storage#removeAll(Collection)} operation successfully retrieves and removes a collection of
+     * Tests that {@link Storage#removeAll(List)} operation successfully retrieves and removes a collection of
      * {@link SearchRow}s.
      */
     @Test
     public void testRemoveAll() throws Exception {
         List<DataRow> rows = insertBulk(100);
 
-        Collection<DataRow> removed = storage.removeAll(rows);
+        Collection<SearchRow> skipped = storage.removeAll(rows);
 
-        assertEquals(rows, removed);
+        assertEquals(0, skipped.size());
 
         Cursor<DataRow> scan = storage.scan(row -> true);
 
@@ -531,24 +531,26 @@ public abstract class AbstractStorageTest {
 
     @Test
     public void testRemoveAllKeyNotExists() {
-        Collection<DataRow> removed = storage.removeAll(Collections.singleton(searchRow(KEY)));
+        SearchRow row = searchRow(KEY);
+        Collection<SearchRow> skipped = storage.removeAll(Collections.singletonList(row));
 
-        assertNotNull(removed);
+        assertNotNull(skipped);
 
-        assertTrue(removed.isEmpty());
+        assertEquals(1, skipped.size());
+        assertEquals(row, skipped.iterator().next());
     }
 
     /**
-     * Tests that {@link Storage#removeAllExact(Collection)} operation successfully removes and retrieves a collection
+     * Tests that {@link Storage#removeAllExact(List)} operation successfully removes and retrieves a collection
      * of data rows with the given exact keys and values from the storage.
      */
     @Test
     public void testRemoveAllExact() throws Exception {
         List<DataRow> rows = insertBulk(100);
 
-        Collection<DataRow> removed = storage.removeAllExact(rows);
+        Collection<DataRow> skipped = storage.removeAllExact(rows);
 
-        assertEquals(rows, removed);
+        assertEquals(0, skipped.size());
 
         Cursor<DataRow> scan = storage.scan(row -> true);
 
@@ -558,7 +560,7 @@ public abstract class AbstractStorageTest {
     }
 
     /**
-     * Tests that {@link Storage#removeAllExact(Collection)} operation doesn't remove and retrieve a collection
+     * Tests that {@link Storage#removeAllExact(List)} operation doesn't remove and retrieve a collection
      * of data rows with the given exact keys and values from the storage if the value in the storage doesn't match
      * the given value.
      */
@@ -570,9 +572,9 @@ public abstract class AbstractStorageTest {
             .mapToObj(i -> dataRow(KEY + i, VALUE + (i + 1)))
             .collect(Collectors.toList());
 
-        Collection<DataRow> removed = storage.removeAllExact(notExactRows);
+        Collection<DataRow> skipped = storage.removeAllExact(notExactRows);
 
-        assertEquals(0, removed.size());
+        assertEquals(notExactRows, skipped);
 
         rows.forEach(this::checkHasSameEntry);
     }

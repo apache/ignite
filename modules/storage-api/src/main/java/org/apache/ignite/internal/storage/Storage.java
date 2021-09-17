@@ -19,6 +19,7 @@ package org.apache.ignite.internal.storage;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.util.Cursor;
@@ -48,7 +49,7 @@ public interface Storage extends AutoCloseable {
      * @return Data rows.
      * @throws StorageException If failed to read the data or the storage is already stopped.
      */
-    public Collection<DataRow> readAll(Collection<? extends SearchRow> keys);
+    public Collection<DataRow> readAll(List<? extends SearchRow> keys);
 
     /**
      * Writes a DataRow into the storage.
@@ -64,7 +65,7 @@ public interface Storage extends AutoCloseable {
      * @param rows Data rows.
      * @throws StorageException If failed to write the data or the storage is already stopped.
      */
-    public void writeAll(Collection<? extends DataRow> rows) throws StorageException;
+    public void writeAll(List<? extends DataRow> rows) throws StorageException;
 
     /**
      * Inserts a collection of {@link DataRow}s into the storage and returns a collection of rows that
@@ -74,7 +75,7 @@ public interface Storage extends AutoCloseable {
      * @return Collection of rows that could not be inserted.
      * @throws StorageException If failed to write the data or the storage is already stopped.
      */
-    public Collection<DataRow> insertAll(Collection<? extends DataRow> rows) throws StorageException;
+    public Collection<DataRow> insertAll(List<? extends DataRow> rows) throws StorageException;
 
     /**
      * Removes a DataRow associated with a given Key.
@@ -88,19 +89,19 @@ public interface Storage extends AutoCloseable {
      * Removes {@link DataRow}s mapped by given keys.
      *
      * @param keys Search rows.
-     * @return List of removed data rows.
+     * @return List of skipped data rows.
      * @throws StorageException If failed to remove the data or the storage is already stopped.
      */
-    public Collection<DataRow> removeAll(Collection<? extends SearchRow> keys);
+    public Collection<SearchRow> removeAll(List<? extends SearchRow> keys);
 
     /**
      * Removes {@link DataRow}s mapped by given keys and containing given values.
      *
      * @param keyValues Data rows.
-     * @return List of removed data rows.
+     * @return List of skipped data rows.
      * @throws StorageException If failed to remove the data or the storage is already stopped.
      */
-    public Collection<DataRow> removeAllExact(Collection<? extends DataRow> keyValues);
+    public Collection<DataRow> removeAllExact(List<? extends DataRow> keyValues);
 
     /**
      * Executes an update with custom logic implemented by storage.UpdateClosure interface.

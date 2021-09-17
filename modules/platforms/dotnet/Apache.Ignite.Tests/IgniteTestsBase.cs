@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Tests
 {
     using System.Threading.Tasks;
+    using Ignite.Table;
     using NUnit.Framework;
 
     /// <summary>
@@ -25,19 +26,33 @@ namespace Apache.Ignite.Tests
     /// </summary>
     public class IgniteTestsBase
     {
+        protected const string TableName = "PUB.tbl1";
+
+        protected const string KeyCol = "key";
+
+        protected const string ValCol = "val";
+
         private JavaServer? _serverNode;
 
         protected int ServerPort => _serverNode?.Port ?? 0;
+
+        protected IIgniteClient Client { get; private set; } = null!;
+
+        protected ITable Table { get; private set; } = null!;
 
         [OneTimeSetUp]
         public async Task OneTimeSetUp()
         {
             _serverNode = await JavaServer.StartAsync();
+            Client = await IgniteClient.StartAsync(GetConfig());
+            Table = (await Client.Tables.GetTableAsync(TableName))!;
         }
 
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
+            // ReSharper disable once ConstantConditionalAccessQualifier
+            Client?.Dispose();
             _serverNode?.Dispose();
         }
 
