@@ -27,11 +27,13 @@ data: {
     # List of additional classes and packages to import.
     # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
+      "java.util.UUID",
       "org.apache.calcite.sql.SqlCreate",
       "org.apache.calcite.sql.SqlDrop",
       "org.apache.calcite.sql.SqlLiteral",
       "org.apache.calcite.schema.ColumnStrategy",
       "org.apache.ignite.internal.processors.query.calcite.util.IgniteResource",
+      "org.apache.ignite.lang.IgniteUuid",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
     ]
 
@@ -57,6 +59,11 @@ data: {
       "LOGGING"
       "NOLOGGING"
       "PASSWORD"
+      "KILL"
+      "SCAN"
+      "CONTINUOUS"
+      "SERVICE"
+      "COMPUTE"
     ]
 
     # List of non-reserved keywords to add;
@@ -79,6 +86,11 @@ data: {
       "LOGGING"
       "NOLOGGING"
       "PASSWORD"
+      "KILL"
+      "SCAN"
+      "CONTINUOUS"
+      "SERVICE"
+      "COMPUTE"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -590,7 +602,12 @@ data: {
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
       "SqlAlterTable()",
-      "SqlAlterUser()"
+      "SqlAlterUser()",
+      "SqlKillScanQuery()"
+      "SqlKillContinuousQuery()"
+      "SqlKillService()"
+      "SqlKillTransaction()"
+      "SqlKillComputeTask()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
