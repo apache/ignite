@@ -362,12 +362,16 @@ public class Processor extends AbstractProcessor {
                 leafField ? schemaFieldTypeName : Utils.getChangeName((ClassName)schemaFieldTypeName);
 
             if (namedListField) {
+                changeFieldType = ParameterizedTypeName.get(
+                    ClassName.get(NamedListChange.class),
+                    viewFieldType,
+                    changeFieldType
+                );
+
                 viewFieldType = ParameterizedTypeName.get(
                     ClassName.get(NamedListView.class),
                     WildcardTypeName.subtypeOf(viewFieldType)
                 );
-
-                changeFieldType = ParameterizedTypeName.get(ClassName.get(NamedListChange.class), changeFieldType);
             }
 
             {

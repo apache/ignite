@@ -192,7 +192,7 @@ public class TraversableTreeNodeTest {
      */
     @Test
     public void putRemoveNamedConfiguration() {
-        var elementsNode = (NamedListChange<NamedElementChange>)newParentInstance().elements();
+        var elementsNode = (NamedListChange<NamedElementView, NamedElementChange>)newParentInstance().elements();
 
         assertEquals(List.of(), elementsNode.namedListKeys());
 

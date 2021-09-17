@@ -36,7 +36,7 @@ import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
  *
  * @param <N> Type of the {@link InnerNode} that is stored in named list node object.
  */
-public final class NamedListNode<N extends InnerNode> implements NamedListChange<N>, TraversableTreeNode, ConstructableTreeNode {
+public final class NamedListNode<N extends InnerNode> implements NamedListChange<N, N>, TraversableTreeNode, ConstructableTreeNode {
     /** Name of a synthetic configuration property that describes the order of elements in a named list. */
     public static final String ORDER_IDX = "<order>";
 
@@ -116,7 +116,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N> create(String key, Consumer<N> valConsumer) {
+    @Override public NamedListChange<N, N> create(String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(valConsumer, "valConsumer");
 
@@ -134,7 +134,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N> create(int index, String key, Consumer<N> valConsumer) {
+    @Override public NamedListChange<N, N> create(int index, String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(valConsumer, "valConsumer");
 
@@ -155,7 +155,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N> createAfter(String precedingKey, String key, Consumer<N> valConsumer) {
+    @Override public NamedListChange<N, N> createAfter(String precedingKey, String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(precedingKey, "precedingKey");
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(valConsumer, "valConsumer");
@@ -177,7 +177,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public final NamedListChange<N> createOrUpdate(String key, Consumer<N> valConsumer) {
+    @Override public final NamedListChange<N, N> createOrUpdate(String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(valConsumer, "valConsumer");
 
@@ -202,7 +202,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N> rename(String oldKey, String newKey) {
+    @Override public NamedListChange<N, N> rename(String oldKey, String newKey) {
         Objects.requireNonNull(oldKey, "oldKey");
         Objects.requireNonNull(newKey, "newKey");
 
@@ -241,7 +241,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N> delete(String key) {
+    @Override public NamedListChange<N, N> delete(String key) {
         Objects.requireNonNull(key, "key");
 
         if (map.containsKey(key))
