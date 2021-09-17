@@ -44,6 +44,12 @@ DDL or DML statements that modify the data are prohibited as well.
 
 == Changing Cluster State
 
+[NOTE]
+====
+[discrete]
+Deactivation clears in-memory caches (without persistence) including the system caches.
+====
+
 You can change the cluster state in multiple ways:
 
 * link:control-script#getting-cluster-state[Control script]:
@@ -92,6 +98,6 @@ group="Kernal",name=IgniteKernal
 |Operation | Description
 
 | `clusterState()` | Get the current cluster state.
-| `clusterState(String)` | Set the cluster state.
+| `clusterState(String, boolean)` | Set the cluster state.
 |===
 --
