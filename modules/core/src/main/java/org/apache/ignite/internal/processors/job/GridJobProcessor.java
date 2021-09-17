@@ -717,7 +717,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 job.onMasterNodeLeft();
     }
 
-    /** Searches for jobs that satisfy the condition.
+    /**
+     * Searches for jobs that satisfy the condition.
      *
      * @param clo Closure.
      */
