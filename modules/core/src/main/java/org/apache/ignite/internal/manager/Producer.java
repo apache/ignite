@@ -72,7 +72,7 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param params Event parameters.
      * @param err Exception when it was happened, or {@code null} otherwise.
      */
-    protected void onEvent(T evt, P params, Throwable err) {
+    protected void fireEvent(T evt, P params, Throwable err) {
         ConcurrentLinkedQueue<EventListener<P>> queue = listeners.get(evt);
 
         if (queue == null)

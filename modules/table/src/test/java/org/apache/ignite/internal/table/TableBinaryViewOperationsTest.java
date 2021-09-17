@@ -42,16 +42,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * TODO: IGNITE-14486 Add tests for async operations.
  */
 public class TableBinaryViewOperationsTest {
-    /** Table ID test value. */
-    public final java.util.UUID tableId = java.util.UUID.randomUUID();
-
     /**
      *
      */
     @Test
     public void insert() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -84,7 +80,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void upsert() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -117,7 +112,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void getAndUpsert() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -147,7 +141,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void remove() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -176,7 +169,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void removeExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -228,7 +220,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void replace() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -262,7 +253,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void replaceExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -297,7 +287,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void validateSchema() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {
@@ -333,7 +322,6 @@ public class TableBinaryViewOperationsTest {
     @Test
     public void defaultValues() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {

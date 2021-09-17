@@ -61,7 +61,7 @@
         <junit.jupiter.version>5.7.0</junit.jupiter.version>
         <micronaut.version>2.1.2</micronaut.version>
         <micronaut.test.junit5.version>2.3.1</micronaut.test.junit5.version>
-        <mockito.framework.version>3.4.6</mockito.framework.version>
+        <mockito.framework.version>3.8.0</mockito.framework.version>
         <mockito.junit.jupiter.version>3.3.3</mockito.junit.jupiter.version>
         <picocli.version>4.5.2</picocli.version>
         <slf4j.version>1.7.32</slf4j.version>
@@ -505,6 +505,12 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
+                <version>${mockito.framework.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-inline</artifactId>
                 <version>${mockito.framework.version}</version>
             </dependency>
 

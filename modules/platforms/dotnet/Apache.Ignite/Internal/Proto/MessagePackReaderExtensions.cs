@@ -116,6 +116,22 @@ namespace Apache.Ignite.Internal.Proto
             return new Guid(a, b, c, d, e, f, g, h, i, j, k);
         }
 
+        /// <summary>
+        /// Reads and <see cref="IgniteUuid"/>.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>Ignite UUID.</returns>
+        public static unsafe IgniteUuid ReadIgniteUuid(this ref MessagePackReader reader)
+        {
+            ValidateExtensionType(ref reader, ClientMessagePackType.IgniteUuid, IgniteUuid.Size);
+            var bytes = reader.ReadRaw(IgniteUuid.Size);
+
+            var res = default(IgniteUuid);
+            bytes.CopyTo(new Span<byte>(res.Bytes, IgniteUuid.Size));
+
+            return res;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ValidateExtensionType(
             ref MessagePackReader reader,

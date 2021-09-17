@@ -33,6 +33,7 @@ import java.util.BitSet;
 import java.util.UUID;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
+import org.apache.ignite.lang.IgniteUuid;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.buffer.OutputStreamBufferOutput;
@@ -324,6 +325,33 @@ public class ClientMessagePacker extends MessagePacker {
         bb.putLong(val.getLeastSignificantBits());
 
         addPayload(bytes);
+
+        return this;
+    }
+
+    /**
+     * Writes an {@link IgniteUuid}.
+     *
+     * @param val {@link IgniteUuid} value.
+     * @return This instance.
+     */
+    public ClientMessagePacker packIgniteUuid(IgniteUuid val) {
+        assert !closed : "Packer is closed";
+
+        packExtensionTypeHeader(ClientMsgPackType.IGNITE_UUID, 24);
+
+        // TODO: Pack directly to ByteBuf without allocating IGNITE-15234.
+        var bytes = new byte[24];
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+        UUID globalId = val.globalId();
+
+        bb.putLong(globalId.getMostSignificantBits());
+        bb.putLong(globalId.getLeastSignificantBits());
+
+        bb.putLong(val.localId());
+
+        writePayload(bytes);
 
         return this;
     }

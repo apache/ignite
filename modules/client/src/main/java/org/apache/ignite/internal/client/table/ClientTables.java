@@ -108,7 +108,7 @@ public class ClientTables implements IgniteTables {
             var res = new ArrayList<Table>(cnt);
 
             for (int i = 0; i < cnt; i++)
-                res.add(new ClientTable(ch, in.unpackUuid(), in.unpackString()));
+                res.add(new ClientTable(ch, in.unpackIgniteUuid(), in.unpackString()));
 
             return res;
         });
@@ -124,6 +124,6 @@ public class ClientTables implements IgniteTables {
         Objects.requireNonNull(name);
 
         return ch.serviceAsync(ClientOp.TABLE_GET, w -> w.out().packString(name),
-                r -> new ClientTable(ch, r.in().unpackUuid(), name));
+                r -> new ClientTable(ch, r.in().unpackIgniteUuid(), name));
     }
 }

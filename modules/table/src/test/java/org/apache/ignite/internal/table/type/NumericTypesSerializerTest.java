@@ -25,7 +25,6 @@ import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeTypes;
@@ -118,7 +117,6 @@ public class NumericTypesSerializerTest {
     @MethodSource("numbers")
     public void testNumber(Pair<BigInteger, BigInteger> pair) {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {
@@ -142,7 +140,6 @@ public class NumericTypesSerializerTest {
     @Test
     public void testPrecisionRestrictionsForNumbers() {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {new Column("number1", NativeTypes.numberOf(5), false)}
@@ -164,7 +161,6 @@ public class NumericTypesSerializerTest {
     @Test
     public void testPrecisionRestrictionsForDecimal() {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {
@@ -200,7 +196,6 @@ public class NumericTypesSerializerTest {
     @Test
     public void testStringDecimalSpecialCase() {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {
@@ -225,7 +220,6 @@ public class NumericTypesSerializerTest {
     @MethodSource("stringDecimalRepresentation")
     public void testUpscaleForDecimal(String decimalStr) {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {
@@ -250,7 +244,6 @@ public class NumericTypesSerializerTest {
     @Test
     public void testDecimalMaxScale() {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {
@@ -276,7 +269,6 @@ public class NumericTypesSerializerTest {
     @MethodSource("sameDecimals")
     public void testSameBinaryRepresentation(Pair<BigInteger, BigInteger> pair) throws IOException {
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             new Column[] {

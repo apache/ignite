@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.KeyValueBinaryView;
@@ -75,7 +75,7 @@ public class TableImpl extends AbstractTableView implements Table {
      *
      * @return Table id as UUID.
      */
-    public @NotNull UUID tableId() {
+    public @NotNull IgniteUuid tableId() {
         return tbl.tableId();
     }
 

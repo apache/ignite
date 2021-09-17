@@ -37,15 +37,12 @@ public class RowAssemblerSimpleSchemaTest {
     /** Uuid test value. */
     public final UUID uuidVal = new UUID(-5204230847775358097L, 4916207022290092939L);
 
-    /** Table ID test value. */
-    public final UUID tableId = java.util.UUID.randomUUID();
-
     /**
      * Validate row layout for schema of fix-len non-null key and fix-len nullable value.
      */
     @Test
     public void fixedKeyFixedNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyIntCol", INT32, false)},
             new Column[]{new Column("valIntCol", INT32, true)});
 
@@ -77,7 +74,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedKeyFixedValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyShortCol", INT16, false)},
             new Column[]{new Column("valShortCol", INT16, false)});
 
@@ -102,7 +99,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedKeyVarlenNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyShortCol", INT16, false)},
             new Column[]{new Column("valStrCol", STRING, true)});
 
@@ -134,7 +131,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedKeyVarlenValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyShortCol", INT16, false)},
             new Column[]{new Column("valStrCol", STRING, false)});
 
@@ -158,7 +155,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedNullableKeyFixedValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyShortCol", INT16, true)},
             new Column[]{new Column("valByteCol", INT8, false)});
 
@@ -190,7 +187,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedNullableKeyFixedNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyShortCol", INT16, true)},
             new Column[]{new Column("valShortCol", INT16, true)});
 
@@ -232,7 +229,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedNullableKeyVarlenNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyIntCol", INT16, true)},
             new Column[]{new Column("valStrCol", STRING, true)});
 
@@ -280,7 +277,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void fixedNullableKeyVarlenValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyByteCol", INT8, true)},
             new Column[]{new Column("valStrCol", STRING, false)});
 
@@ -310,7 +307,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenKeyFixedNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, false)},
             new Column[]{new Column("valUuidCol", UUID, true)});
 
@@ -345,7 +342,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenKeyFixedValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, false)},
             new Column[]{new Column("valUuidCol", UUID, false)});
 
@@ -372,7 +369,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenKeyVarlenNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, false)},
             new Column[]{new Column("valBytesCol", BYTES, true)});
 
@@ -408,7 +405,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenKeyVarlenValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, false)},
             new Column[]{new Column("valBytesCol", BYTES, false)});
 
@@ -432,7 +429,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenNullableKeyFixedNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, true)},
             new Column[]{new Column("valShortCol", INT16, true)});
 
@@ -481,7 +478,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenNullableKeyFixedValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, true)},
             new Column[]{new Column("valShortCol", INT16, false)});
 
@@ -513,7 +510,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenNullableKeyVarlenNullableValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, true)},
             new Column[]{new Column("valBytesCol", BYTES, true)});
 
@@ -561,7 +558,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void varlenNullableKeyVarlenValue() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyStrCol", STRING, true)},
             new Column[]{new Column("valBytesCol", BYTES, false)});
 
@@ -593,7 +590,7 @@ public class RowAssemblerSimpleSchemaTest {
      */
     @Test
     public void mixedTypes() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{
                 new Column("keyShortCol", INT16, false),
                 new Column("keyStrCol", STRING, false)

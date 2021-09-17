@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeType;
@@ -79,9 +78,7 @@ public class UpgradingRowAdapterTest {
 
     @Test
     public void testVariousColumnTypes() {
-        UUID tableId = UUID.randomUUID();
-
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1,
+        SchemaDescriptor schema = new SchemaDescriptor(1,
             new Column[]{new Column("keyUuidCol", NativeTypes.UUID, true)},
             new Column[]{
                 new Column("valByteCol", INT8, true),
@@ -102,7 +99,7 @@ public class UpgradingRowAdapterTest {
             }
         );
 
-        SchemaDescriptor schema2 = new SchemaDescriptor(tableId, 2,
+        SchemaDescriptor schema2 = new SchemaDescriptor(2,
             new Column[]{new Column("keyUuidCol", NativeTypes.UUID, true)},
             new Column[]{
                 new Column("added", INT8, true),

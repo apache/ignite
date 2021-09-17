@@ -20,11 +20,11 @@ package org.apache.ignite.client.fakes;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +38,7 @@ public class FakeInternalTable implements InternalTable {
     private final String tableName;
 
     /** Table ID. */
-    private final UUID tableId;
+    private final IgniteUuid tableId;
 
     /** Table data. */
     private final ConcurrentHashMap<ByteBuffer, BinaryRow> data = new ConcurrentHashMap<>();
@@ -49,13 +49,13 @@ public class FakeInternalTable implements InternalTable {
      * @param tableName Name.
      * @param tableId Id.
      */
-    public FakeInternalTable(String tableName, UUID tableId) {
+    public FakeInternalTable(String tableName, IgniteUuid tableId) {
         this.tableName = tableName;
         this.tableId = tableId;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull UUID tableId() {
+    @Override public @NotNull IgniteUuid tableId() {
         return tableId;
     }
 

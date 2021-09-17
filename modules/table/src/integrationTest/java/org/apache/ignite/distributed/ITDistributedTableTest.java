@@ -50,6 +50,7 @@ import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
@@ -107,7 +108,7 @@ public class ITDistributedTableTest {
     private ClusterService client;
 
     /** Schema. */
-    public static SchemaDescriptor SCHEMA = new SchemaDescriptor(UUID.randomUUID(),
+    public static SchemaDescriptor SCHEMA = new SchemaDescriptor(
         1,
         new Column[] {new Column("key", NativeTypes.INT64, false)},
         new Column[] {new Column("value", NativeTypes.INT64, false)}
@@ -280,7 +281,7 @@ public class ITDistributedTableTest {
 
         Table tbl = new TableImpl(new InternalTableImpl(
             "tbl",
-            UUID.randomUUID(),
+            new IgniteUuid(UUID.randomUUID(), 0),
             partMap,
             PARTS
         ), new SchemaRegistry() {

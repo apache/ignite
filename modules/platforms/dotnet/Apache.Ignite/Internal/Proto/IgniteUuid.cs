@@ -15,56 +15,27 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649 // Field is never assigned.
 namespace Apache.Ignite.Internal.Proto
 {
+    using System;
+
     /// <summary>
-    /// Client MessagePack extension type codes.
+    /// Ignite UUID implementation combines a global UUID (generated once per node) and a node-local 8-byte id.
     /// </summary>
-    internal enum ClientMessagePackType
+    internal unsafe struct IgniteUuid
     {
         /// <summary>
-        /// Number.
+        /// Struct size.
         /// </summary>
-        Number = 1,
+        public const int Size = 24;
 
         /// <summary>
-        /// Decimal.
+        /// IgniteUuid bytes.
+        /// <para />
+        /// We could deserialize the data into <see cref="Guid"/> and <see cref="long"/>, but there is no need to deal
+        /// with the parts separately on the client.
         /// </summary>
-        Decimal = 2,
-
-        /// <summary>
-        /// UUID / Guid.
-        /// </summary>
-        Uuid = 3,
-
-        /// <summary>
-        /// Date.
-        /// </summary>
-        Date = 4,
-
-        /// <summary>
-        /// Time.
-        /// </summary>
-        Time = 5,
-
-        /// <summary>
-        /// DateTime.
-        /// </summary>
-        Datetime = 6,
-
-        /// <summary>
-        /// Timestamp.
-        /// </summary>
-        Timestamp = 7,
-
-        /// <summary>
-        /// Bitmask.
-        /// </summary>
-        Bitmask = 8,
-
-        /// <summary>
-        /// Ignite UUID.
-        /// </summary>
-        IgniteUuid = 9
+        public fixed byte Bytes[Size];
     }
 }

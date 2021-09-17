@@ -46,9 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class TxTest {
-    /** Table ID test value. */
-    public final java.util.UUID tableId = java.util.UUID.randomUUID();
-
     /** Accounts table. */
     private Table accounts;
 
@@ -75,7 +72,6 @@ public class TxTest {
     @BeforeEach
     public void before() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[]{new Column("accountNumber", NativeTypes.INT64, false)},
             new Column[]{new Column("balance", NativeTypes.DOUBLE, false)}

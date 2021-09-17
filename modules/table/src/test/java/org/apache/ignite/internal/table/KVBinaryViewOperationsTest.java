@@ -41,16 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * TODO: IGNITE-14487 Check key fields in Tuple is ignored for value or exception is thrown?
  */
 public class KVBinaryViewOperationsTest {
-    /** Table ID test value. */
-    public final java.util.UUID tableId = java.util.UUID.randomUUID();
-
     /**
      *
      */
     @Test
     public void put() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -94,7 +90,6 @@ public class KVBinaryViewOperationsTest {
     @Test
     public void putIfAbsent() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -128,7 +123,6 @@ public class KVBinaryViewOperationsTest {
     @Test
     public void getAndPut() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -163,7 +157,6 @@ public class KVBinaryViewOperationsTest {
     @Test
     public void remove() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -207,7 +200,6 @@ public class KVBinaryViewOperationsTest {
     @Test
     public void removeExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -263,7 +255,6 @@ public class KVBinaryViewOperationsTest {
     @Test
     public void replace() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}
@@ -310,7 +301,6 @@ public class KVBinaryViewOperationsTest {
     @Test
     public void replaceExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            tableId,
             1,
             new Column[] {new Column("id", NativeTypes.INT64, false)},
             new Column[] {new Column("val", NativeTypes.INT64, false)}

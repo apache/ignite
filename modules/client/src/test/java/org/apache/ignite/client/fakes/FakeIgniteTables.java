@@ -27,10 +27,10 @@ import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +46,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     private final ConcurrentHashMap<String, TableImpl> tables = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentHashMap<UUID, TableImpl> tablesById = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<IgniteUuid, TableImpl> tablesById = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public Table createTable(String name, Consumer<TableChange> tableInitChange) {
@@ -131,32 +131,29 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     }
 
     @NotNull private TableImpl getNewTable(String name) {
-        UUID tableId = UUID.randomUUID();
-        return new TableImpl(new FakeInternalTable(name, tableId), getSchemaReg(tableId), null, null);
-    }
-
-    @NotNull private SchemaRegistry getSchemaReg(UUID tableId) {
-        return new FakeSchemaRegistry(v -> getSchema(v, tableId));
+        return new TableImpl(
+            new FakeInternalTable(name, new IgniteUuid(UUID.randomUUID(), 0)),
+            new FakeSchemaRegistry(this::getSchema),
+            null,
+            null
+        );
     }
 
     /**
      * Gets the schema.
      * @param v Version.
-     * @param tableId id.
      * @return Schema descriptor.
      */
-    private SchemaDescriptor getSchema(Integer v, UUID tableId) {
+    private SchemaDescriptor getSchema(Integer v) {
         switch (v) {
             case 1:
                 return new SchemaDescriptor(
-                        tableId,
                         1,
                         new Column[]{new Column("id", NativeTypes.INT64, false)},
                         new Column[]{new Column("name", NativeTypes.STRING, true)});
 
             case 2:
                 return new SchemaDescriptor(
-                        tableId,
                         2,
                         new Column[]{new Column("id", NativeTypes.INT64, false)},
                         new Column[]{
@@ -169,7 +166,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public TableImpl table(UUID id) {
+    @Override public TableImpl table(IgniteUuid id) {
         return tablesById.get(id);
     }
 }

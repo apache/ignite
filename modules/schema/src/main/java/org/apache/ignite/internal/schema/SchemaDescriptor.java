@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.mapping.ColumnMapping;
 import org.apache.ignite.internal.tostring.S;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Full schema descriptor containing key columns chunk, value columns chunk, and schema version.
  */
 public class SchemaDescriptor implements Serializable {
-    /** Table identifier. */
-    private final UUID tableId;
-
     /** Schema version. Incremented on each schema modification. */
     private final int ver;
 
@@ -57,27 +53,24 @@ public class SchemaDescriptor implements Serializable {
     private ColumnMapper colMapper = ColumnMapping.identityMapping();
 
     /**
-     * @param tableId Table id.
      * @param ver Schema version.
      * @param keyCols Key columns.
      * @param valCols Value columns.
      */
-    public SchemaDescriptor(UUID tableId, int ver, Column[] keyCols, Column[] valCols) {
-        this(tableId, ver, keyCols, null, valCols);
+    public SchemaDescriptor(int ver, Column[] keyCols, Column[] valCols) {
+        this(ver, keyCols, null, valCols);
     }
 
     /**
-     * @param tableId Table id.
      * @param ver Schema version.
      * @param keyCols Key columns.
      * @param affCols Affinity column names.
      * @param valCols Value columns.
      */
-    public SchemaDescriptor(UUID tableId, int ver, Column[] keyCols, @Nullable String[] affCols, Column[] valCols) {
+    public SchemaDescriptor(int ver, Column[] keyCols, @Nullable String[] affCols, Column[] valCols) {
         assert keyCols.length > 0 : "No key columns are configured.";
         assert valCols.length > 0 : "No value columns are configured.";
 
-        this.tableId = tableId;
         this.ver = ver;
         this.keyCols = new Columns(0, keyCols);
         this.valCols = new Columns(keyCols.length, valCols);
@@ -91,13 +84,6 @@ public class SchemaDescriptor implements Serializable {
         // It is sufficient to has same column order for all nodes.
         this.affCols = (ArrayUtils.nullOrEmpty(affCols)) ? keyCols :
             Arrays.stream(affCols).map(colMap::get).toArray(Column[]::new);
-    }
-
-    /**
-     * @return Table identifier.
-     */
-    public UUID tableId() {
-        return tableId;
     }
 
     /**

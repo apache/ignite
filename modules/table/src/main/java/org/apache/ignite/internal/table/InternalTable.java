@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.table;
 
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +36,7 @@ public interface InternalTable {
      *
      * @return Table id as UUID.
      */
-    @NotNull UUID tableId();
+    @NotNull IgniteUuid tableId();
 
     /**
      * Gets a name of the table.

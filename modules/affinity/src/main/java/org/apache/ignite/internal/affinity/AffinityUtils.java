@@ -15,19 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
+package org.apache.ignite.internal.affinity;
 
-import org.apache.ignite.lang.IgniteUuid;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.network.ClusterNode;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Internal tables facade provides low-level methods for table operations.
+ * Stateless affinity utils that produces helper methods for an affinity assignments calculation.
  */
-public interface IgniteTablesInternal {
+public class AffinityUtils {
     /**
-     * Gets a table by id.
+     * Calculates affinity assignments.
      *
-     * @param id Table ID.
-     * @return Table or {@code null} when not exists.
+     * @param partitions Partitions count.
+     * @param replicas Replicas count.
+     * @return List nodes by partition.
      */
-    TableImpl table(IgniteUuid id);
+    public static List<List<ClusterNode>> calculateAssignments(
+        @NotNull Collection<ClusterNode> baselineNodes,
+        int partitions,
+        int replicas
+    ) {
+        return RendezvousAffinityFunction.assignPartitions(
+            baselineNodes,
+            partitions,
+            replicas,
+            false,
+            null
+        );
+    }
 }

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
@@ -346,7 +347,7 @@ class ClientTableCommon {
      * @return Table.
      */
     public static TableImpl readTable(ClientMessageUnpacker unpacker, IgniteTables tables) {
-        var tableId = unpacker.unpackUuid();
+        IgniteUuid tableId = unpacker.unpackIgniteUuid();
 
         return ((IgniteTablesInternal)tables).table(tableId);
     }

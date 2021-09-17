@@ -44,4 +44,7 @@ public class ClientMsgPackType {
 
     /** Bit mask. */
     public static final byte BITMASK = 8;
+
+    /** Ignite UUID. */
+    public static final byte IGNITE_UUID = 9;
 }

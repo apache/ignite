@@ -51,7 +51,7 @@ namespace Apache.Ignite.Internal.Table
         /// <param name="name">Table name.</param>
         /// <param name="id">Table id.</param>
         /// <param name="socket">Socket.</param>
-        public Table(string name, Guid id, ClientFailoverSocket socket)
+        public Table(string name, IgniteUuid id, ClientFailoverSocket socket)
         {
             _socket = socket;
             Name = name;
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Internal.Table
         /// <summary>
         /// Gets the id.
         /// </summary>
-        public Guid Id { get; }
+        public IgniteUuid Id { get; }
 
         /// <inheritdoc/>
         public async Task<IIgniteTuple?> GetAsync(IIgniteTuple keyRec)

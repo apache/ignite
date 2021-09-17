@@ -72,7 +72,6 @@ public class MutableRowTupleAdapterTest {
 
     /** Schema descriptor. */
     private SchemaDescriptor schema = new SchemaDescriptor(
-        UUID.randomUUID(),
         42,
         new Column[]{new Column("id", NativeTypes.INT64, false)},
         new Column[]{new Column("name", NativeTypes.STRING, true)}
@@ -177,7 +176,6 @@ public class MutableRowTupleAdapterTest {
     @Test
     public void testKeyValueChunks() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[]{new Column("id", NativeTypes.INT64, false)},
             new Column[]{
@@ -323,7 +321,7 @@ public class MutableRowTupleAdapterTest {
     public void testVariousColumnTypes() {
         Random rnd = new Random();
 
-        SchemaDescriptor schema = new SchemaDescriptor(tbl.tableId(), 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{new Column("keyUuidCol", NativeTypes.UUID, true)},
             new Column[]{
                 new Column("valByteCol", INT8, true),

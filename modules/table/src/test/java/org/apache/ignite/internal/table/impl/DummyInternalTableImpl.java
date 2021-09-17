@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -80,8 +81,8 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull UUID tableId() {
-        return UUID.randomUUID();
+    @Override public @NotNull IgniteUuid tableId() {
+        return new IgniteUuid(UUID.randomUUID(), 0);
     }
 
     /** {@inheritDoc} */

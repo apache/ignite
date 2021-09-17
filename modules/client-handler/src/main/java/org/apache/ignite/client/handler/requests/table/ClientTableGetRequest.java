@@ -46,7 +46,7 @@ public class ClientTableGetRequest {
             if (table == null)
                 out.packNil();
             else
-                out.packUuid(((TableImpl) table).tableId());
+                out.packIgniteUuid(((TableImpl) table).tableId());
         });
     }
 }

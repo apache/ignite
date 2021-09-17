@@ -62,7 +62,7 @@ namespace Apache.Ignite.Internal.Table
             ITable? Read(MessagePackReader r) =>
                 r.NextMessagePackType == MessagePackType.Nil
                     ? null
-                    : new Table(name, r.ReadGuid(), _socket);
+                    : new Table(name, r.ReadIgniteUuid(), _socket);
         }
 
         /// <inheritdoc/>
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Internal.Table
 
                 for (var i = 0; i < len; i++)
                 {
-                    var id = r.ReadGuid();
+                    var id = r.ReadIgniteUuid();
                     var name = r.ReadString();
                     res.Add(new Table(name, id, _socket));
                 }

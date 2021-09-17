@@ -268,7 +268,7 @@ public class RowTest {
             new Column("valStringCol", STRING, true),
         };
 
-        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
 
         Object[] checkArr = generateRowValues(sch, t -> (t.spec() == NativeTypeSpec.BYTES) ?
             randomBytes(rnd, rnd.nextInt(Constants.MiB) + (2 << 16)) :
@@ -301,7 +301,7 @@ public class RowTest {
             .mapToObj(i -> new Column("valCol" + i, INT8, true))
             .toArray(Column[]::new);
 
-        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
 
         Object[] checkArr = generateRowValues(sch);
 
@@ -320,7 +320,7 @@ public class RowTest {
             .mapToObj(i -> new Column("valCol" + i, STRING, true))
             .toArray(Column[]::new);
 
-        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
 
         Object[] checkArr = generateRowValues(sch, t -> randomString(rnd, rnd.nextInt(5)));
 
@@ -339,7 +339,7 @@ public class RowTest {
             .mapToObj(i -> new Column("valCol" + i, INT8, true))
             .toArray(Column[]::new);
 
-        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
 
         Object[] checkArr = generateRowValues(sch);
 
@@ -359,7 +359,7 @@ public class RowTest {
             .mapToObj(i -> new Column("valCol" + i, STRING, true))
             .toArray(Column[]::new);
 
-        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
 
         Object[] checkArr = generateRowValues(sch, t -> randomString(rnd, 65 + rnd.nextInt(500)));
 
@@ -388,7 +388,7 @@ public class RowTest {
      * @param valCols Value columns.
      */
     private void checkSchemaShuffled(Column[] keyCols, Column[] valCols) {
-        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
 
         Object[] checkArr = generateRowValues(sch);
 

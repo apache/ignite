@@ -23,6 +23,17 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Table schema registry interface.
+ * <p>
+ * Schemas itself MUST be registered in a version ascending order incrementing by {@code 1} with NO gaps,
+ * otherwise an exception will be thrown. The version numbering starts from the {@code 1}.
+ * <p>
+ * After some table maintenance process some first versions may become outdated and can be safely cleaned up
+ * if the process guarantees the table no longer has a data of these versions.
+ *
+ * @implSpec The changes in between two arbitrary actual versions MUST NOT be lost.
+ * Thus, schema versions can only be removed from the beginning.
+ * @implSpec Initial schema history MAY be registered without the first outdated versions
+ * that could be cleaned up earlier.
  */
 public interface SchemaRegistry {
     /**

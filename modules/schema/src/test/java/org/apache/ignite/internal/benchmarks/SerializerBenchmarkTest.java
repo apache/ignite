@@ -20,7 +20,6 @@ package org.apache.ignite.internal.benchmarks;
 import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.processing.Generated;
 import com.facebook.presto.bytecode.Access;
@@ -116,7 +115,7 @@ public class SerializerBenchmarkTest {
 
         Column[] keyCols = new Column[] {new Column("key", INT64, true)};
         Column[] valCols = mapFieldsToColumns(valClass);
-        final SchemaDescriptor schema = new SchemaDescriptor(UUID.randomUUID(), 1, keyCols, valCols);
+        final SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
 
         if ("Java".equals(serializerName))
             serializer = SerializerFactory.createJavaSerializerFactory().create(schema, Long.class, valClass);

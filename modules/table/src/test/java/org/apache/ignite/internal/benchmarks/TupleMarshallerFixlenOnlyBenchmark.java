@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.benchmarks;
 
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.schema.Column;
@@ -99,7 +98,6 @@ public class TupleMarshallerFixlenOnlyBenchmark {
         rnd = new Random(seed);
 
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", NativeTypes.INT64, false)},
             IntStream.range(0, fieldsCount).boxed()

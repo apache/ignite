@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.affinity.event;
+package org.apache.ignite.internal.configuration.schema;
 
-import org.apache.ignite.internal.manager.Event;
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.Value;
 
 /**
- * Affinity management events.
+ * Configuration schema of a table schema. Part of an internal configuration.
  */
-public enum AffinityEvent implements Event {
-    /** This event fires when affinity assignment is calculated. */
-    CALCULATED,
-
-    /** This event fires when affinity assignment is removed. */
-    REMOVED
+@Config
+public class SchemaConfigurationSchema {
+    /** Serialized table schema configuration. */
+    @Value
+    public byte[] schema;
 }

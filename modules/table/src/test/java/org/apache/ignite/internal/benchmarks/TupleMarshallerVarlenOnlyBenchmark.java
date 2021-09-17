@@ -19,7 +19,6 @@ package org.apache.ignite.internal.benchmarks;
 
 import java.io.Serializable;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -113,7 +112,6 @@ public class TupleMarshallerVarlenOnlyBenchmark {
         rnd = new Random(seed);
 
         schema = new SchemaDescriptor(
-            UUID.randomUUID(),
             42,
             new Column[] {new Column("key", INT64, false, (Supplier<Object> & Serializable)() -> 0L)},
             IntStream.range(0, fieldsCount).boxed()

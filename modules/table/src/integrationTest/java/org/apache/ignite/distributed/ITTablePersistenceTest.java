@@ -35,6 +35,7 @@ import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.storage.rocksdb.RocksDbStorage;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.raft.client.service.ITAbstractListenerSnapshotTest;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
@@ -44,7 +45,7 @@ import org.apache.ignite.raft.client.service.RaftGroupService;
  */
 public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<PartitionListener> {
     /** */
-    private static final SchemaDescriptor SCHEMA = new SchemaDescriptor(UUID.randomUUID(),
+    private static final SchemaDescriptor SCHEMA = new SchemaDescriptor(
         1,
         new Column[] {new Column("key", NativeTypes.INT64, false)},
         new Column[] {new Column("value", NativeTypes.INT64, false)}
@@ -64,14 +65,24 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
 
     /** {@inheritDoc} */
     @Override public void beforeFollowerStop(RaftGroupService service) throws Exception {
-        var table = new InternalTableImpl("table", UUID.randomUUID(), Map.of(0, service), 1);
+        var table = new InternalTableImpl(
+            "table",
+            new IgniteUuid(UUID.randomUUID(), 0),
+            Map.of(0, service),
+            1
+        );
 
         table.upsert(FIRST_VALUE, null).get();
     }
 
     /** {@inheritDoc} */
     @Override public void afterFollowerStop(RaftGroupService service) throws Exception {
-        var table = new InternalTableImpl("table", UUID.randomUUID(), Map.of(0, service), 1);
+        var table = new InternalTableImpl(
+            "table",
+            new IgniteUuid(UUID.randomUUID(), 0),
+            Map.of(0, service),
+            1
+        );
 
         // Remove the first key
         table.delete(FIRST_KEY, null).get();
@@ -82,7 +93,12 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
 
     /** {@inheritDoc} */
     @Override public void afterSnapshot(RaftGroupService service) throws Exception {
-        var table = new InternalTableImpl("table", UUID.randomUUID(), Map.of(0, service), 1);
+        var table = new InternalTableImpl(
+            "table",
+            new IgniteUuid(UUID.randomUUID(), 0),
+            Map.of(0, service),
+            1
+        );
 
         table.upsert(SECOND_VALUE, null).get();
     }

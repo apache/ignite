@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.schema;
 
 import java.util.Arrays;
-import java.util.UUID;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.junit.jupiter.api.Test;
 
@@ -33,15 +32,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
  * Validate row layout for different schema configurations.
  */
 public class RowAssemblerAdvancedSchemaTest {
-    /** Table ID test value. */
-    public final UUID tableId = UUID.randomUUID();
-
     /**
      * Validate row layout for schema of fix-len nullable key and fix-len nullable value.
      */
     @Test
     public void fixedNullableColumns() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{
                 new Column("keyCol2", INT8, true),
                 new Column("keyCol1", INT16, true),
@@ -113,7 +109,7 @@ public class RowAssemblerAdvancedSchemaTest {
      */
     @Test
     public void varlenNullableColumns() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{
                 new Column("keyCol1", STRING, true),
                 new Column("keyCol2", BYTES, true),
@@ -199,7 +195,7 @@ public class RowAssemblerAdvancedSchemaTest {
      */
     @Test
     public void mixedTypes() {
-        SchemaDescriptor schema = new SchemaDescriptor(tableId, 42,
+        SchemaDescriptor schema = new SchemaDescriptor(42,
             new Column[]{
                 new Column("keyCol1", INT8, true),
                 new Column("keyCol1", INT16, true),
