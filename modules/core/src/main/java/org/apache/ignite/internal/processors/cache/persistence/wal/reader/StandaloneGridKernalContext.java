@@ -126,6 +126,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
 
+    /** */
+    private GridResourceProcessor rsrcProc;
+
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
 
@@ -165,6 +168,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
+        this.rsrcProc = new GridResourceProcessor(this);
         this.metricMgr = new GridMetricManager(this);
         this.sysViewMgr = new GridSystemViewManager(this);
 
@@ -174,7 +178,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
+        comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
+        comps.add(metricMgr);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -305,7 +311,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridResourceProcessor resource() {
-        return null;
+        return rsrcProc;
     }
 
     /** {@inheritDoc} */
