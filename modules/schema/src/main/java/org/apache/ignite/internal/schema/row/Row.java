@@ -37,6 +37,7 @@ import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.SchemaAware;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.TemporalNativeType;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Schema-aware row.
@@ -71,7 +72,7 @@ public class Row implements BinaryRow, SchemaAware {
     /**
      * @return Row schema.
      */
-    @Override public SchemaDescriptor schema() {
+    @Override @NotNull public SchemaDescriptor schema() {
         return schema;
     }
 
@@ -486,13 +487,10 @@ public class Row implements BinaryRow, SchemaAware {
      *
      * @param colIdx Column index.
      * @param type Expected column type.
-     * @return {@code -1} if value is {@code null} for a column,
-     * or {@link Long#MAX_VALUE} if column is unknown,
-     * otherwise encoded offset + length of the column.
+     * @return {@code -1} if value is {@code null} for a column, otherwise encoded offset + length of the column.
      * @see #offset(long)
      * @see #length(long)
      * @see InvalidTypeException If actual column type does not match the requested column type.
-     * @see org.apache.ignite.internal.schema.registry.UpgradingRowAdapter
      */
     protected long findColumn(int colIdx, NativeTypeSpec type) throws InvalidTypeException {
         // Get base offset (key start or value start) for the given column.

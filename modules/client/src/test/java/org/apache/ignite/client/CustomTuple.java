@@ -64,7 +64,7 @@ public class CustomTuple implements Tuple {
         return null;
     }
 
-    @Override public int columnIndex(String columnName) {
+    @Override public int columnIndex(@NotNull String columnName) {
         switch (columnName) {
             case "id":
                 return 0;
@@ -75,7 +75,7 @@ public class CustomTuple implements Tuple {
         return -1;
     }
 
-    @Override public <T> T valueOrDefault(String columnName, T def) {
+    @Override public <T> T valueOrDefault(@NotNull String columnName, T def) {
         switch (columnName) {
             case "id":
                 return (T)id;
@@ -86,11 +86,11 @@ public class CustomTuple implements Tuple {
         return def;
     }
 
-    @Override public Tuple set(String columnName, Object value) {
+    @Override public Tuple set(@NotNull String columnName, Object value) {
         throw new UnsupportedOperationException("Tuple is immutable.");
     }
 
-    @Override public <T> T value(String columnName) {
+    @Override public <T> T value(@NotNull String columnName) {
         return valueOrDefault(columnName, null);
     }
 
@@ -105,7 +105,7 @@ public class CustomTuple implements Tuple {
         return null;
     }
 
-    @Override public BinaryObject binaryObjectValue(String columnName) {
+    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -113,7 +113,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public byte byteValue(String columnName) {
+    @Override public byte byteValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -121,7 +121,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public short shortValue(String columnName) {
+    @Override public short shortValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -129,7 +129,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public int intValue(String columnName) {
+    @Override public int intValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -137,7 +137,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public long longValue(String columnName) {
+    @Override public long longValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -145,7 +145,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public float floatValue(String columnName) {
+    @Override public float floatValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -153,7 +153,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public double doubleValue(String columnName) {
+    @Override public double doubleValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -161,7 +161,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public String stringValue(String columnName) {
+    @Override public String stringValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -169,7 +169,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public UUID uuidValue(String columnName) {
+    @Override public UUID uuidValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
@@ -177,7 +177,7 @@ public class CustomTuple implements Tuple {
         throw new UnsupportedOperationException();
     }
 
-    @Override public BitSet bitmaskValue(String columnName) {
+    @Override public BitSet bitmaskValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 

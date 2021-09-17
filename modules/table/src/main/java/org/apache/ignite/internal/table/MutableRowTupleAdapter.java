@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.table;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,15 +27,42 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.TupleImpl;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Mutable tuple adapter for a row.
+ * Adapter provides Tuple access methods and mutability for a Row.
+ * <p>
+ * Once adapter get created, it delegates all data access methods to the {@link #row}.
+ * <p>
+ * Mutability.
+ * Underlying Row is immutable serialized object and can't be mutated directly.
+ * Because of this fact, first call of {@link #set(String, Object)} method implies the Row conversion to a Tuple.
+ * <p>
+ * After the first mutation the {@link #tuple} becomes a full copy of {@link #row},
+ * all data access methods delegate to a {@link #tuple}, and the {@link #row} one is no longer useful.
+ * The adapter acts as simple schema-less tuple {@link TupleImpl} and {@link #schema()} return null.
+ * <p>
+ * Serialization.
+ * Row access methods implicitly require a context (schema) for a binary data reading, The context may be huge
+ * comparing to a row data, and its serialization is unwanted.
+ * So, Row firstly is converted to Tuple.
+ * <p>
+ * Because of after that the adapter will act as underlying tuple {@link TupleImpl},
+ * the adapter will be substituted unconditionally with the tuple itself during deserialization.
+ *
+ * @see TupleImpl
+ * @see #unmarshalRow()
+ * @see #writeReplace()
  */
-public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
+public class MutableRowTupleAdapter extends AbstractRowTupleAdapter implements Serializable {
+    // Default constructor and serialVersionUID not needed because, actually,
+    // this object never get serialized, it's unconditionally substituted during serialization.
+
     /** Tuple with overwritten data. */
     protected TupleImpl tuple;
 
@@ -44,6 +73,11 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
      */
     public MutableRowTupleAdapter(@NotNull Row row) {
         super(row);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable SchemaDescriptor schema() {
+        return tuple != null ? null : super.schema();
     }
 
     /** {@inheritDoc} */
@@ -77,7 +111,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectValue(String columnName) {
+    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
         return tuple != null ? tuple.binaryObjectValue(columnName) : super.binaryObjectValue(columnName);
     }
 
@@ -87,7 +121,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(String columnName) {
+    @Override public byte byteValue(@NotNull String columnName) {
         return tuple != null ? tuple.byteValue(columnName) : super.byteValue(columnName);
     }
 
@@ -97,7 +131,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(String columnName) {
+    @Override public short shortValue(@NotNull String columnName) {
         return tuple != null ? tuple.shortValue(columnName) : super.shortValue(columnName);
     }
 
@@ -107,7 +141,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(String columnName) {
+    @Override public int intValue(@NotNull String columnName) {
         return tuple != null ? tuple.intValue(columnName) : super.intValue(columnName);
     }
 
@@ -117,7 +151,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(String columnName) {
+    @Override public long longValue(@NotNull String columnName) {
         return tuple != null ? tuple.longValue(columnName) : super.longValue(columnName);
     }
 
@@ -127,7 +161,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(String columnName) {
+    @Override public float floatValue(@NotNull String columnName) {
         return tuple != null ? tuple.floatValue(columnName) : super.floatValue(columnName);
     }
 
@@ -137,7 +171,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(String columnName) {
+    @Override public double doubleValue(@NotNull String columnName) {
         return tuple != null ? tuple.doubleValue(columnName) : super.doubleValue(columnName);
     }
 
@@ -147,7 +181,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(String columnName) {
+    @Override public String stringValue(@NotNull String columnName) {
         return tuple != null ? tuple.stringValue(columnName) : super.stringValue(columnName);
     }
 
@@ -157,7 +191,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(String columnName) {
+    @Override public UUID uuidValue(@NotNull String columnName) {
         return tuple != null ? tuple.uuidValue(columnName) : super.uuidValue(columnName);
     }
 
@@ -167,7 +201,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(String columnName) {
+    @Override public BitSet bitmaskValue(@NotNull String columnName) {
         return tuple != null ? tuple.bitmaskValue(columnName) : super.bitmaskValue(columnName);
     }
 
@@ -223,15 +257,37 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter {
 
     /** {@inheritDoc} */
     @Override public Tuple set(@NotNull String columnName, Object value) {
-        if (tuple == null) {
-            TupleImpl tuple0 = new TupleImpl(this);
-
-            tuple = tuple0;
-            row = null;
-        }
+        unmarshalRow();
 
         tuple.set(columnName, value);
 
         return this;
+    }
+
+    /**
+     * Converts immutable row to mutable tuple.
+     */
+    private void unmarshalRow() {
+        if (tuple == null) {
+            tuple = new TupleImpl(this);
+
+            row = null;
+        }
+    }
+
+    /**
+     * Overrides default serialization flow.
+     * Serialized {@code tuple} instead of {@code this}, as wrapper make no sense after tuple is fully materialized.
+     * <p>
+     * Note: The method has protected modifier and subclass access to this method follows java accessibility rules.
+     * Thus, class successors may obtain similar behaviour.
+     *
+     * @return Tuple to serialize.
+     * @throws ObjectStreamException If failed.
+     */
+    protected Object writeReplace() throws ObjectStreamException {
+        unmarshalRow();
+
+        return tuple;
     }
 }

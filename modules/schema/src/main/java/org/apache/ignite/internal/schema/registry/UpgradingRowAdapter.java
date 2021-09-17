@@ -33,6 +33,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaException;
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.row.Row;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Adapter for row of older schema.
@@ -58,7 +59,7 @@ class UpgradingRowAdapter extends Row {
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema() {
+    @Override @NotNull public SchemaDescriptor schema() {
         return schema;
     }
 

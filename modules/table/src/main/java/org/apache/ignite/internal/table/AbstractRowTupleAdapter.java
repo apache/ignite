@@ -33,14 +33,16 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract row tuple adapter.
  */
 public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
-    /** Underlying row. */
-    protected Row row;
+    /**
+     * Underlying row.
+     * Note: Marked transient to prevent unwanted serialization of the schema and\or other context.
+     */
+    protected transient Row row;
 
     /**
      * Creates Tuple adapter for row.
@@ -52,8 +54,8 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public SchemaDescriptor schema() {
-        return row == null ? null : row.schema();
+    @Override public SchemaDescriptor schema() {
+        return row.schema();
     }
 
     /** {@inheritDoc} */
@@ -81,25 +83,25 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
 
         final Column col = row.schema().column(columnName);
 
-        return col == null ? defaultValue : (T) col.type().spec().objectValue(row, col.schemaIndex());
+        return col == null ? defaultValue : (T)col.type().spec().objectValue(row, col.schemaIndex());
     }
 
     /** {@inheritDoc} */
     @Override public <T> T value(@NotNull String columnName) {
         final Column col = rowColumnByName(columnName);
 
-        return (T) col.type().spec().objectValue(row, col.schemaIndex());
+        return (T)col.type().spec().objectValue(row, col.schemaIndex());
     }
 
     @Override public <T> T value(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
-        return (T) col.type().spec().objectValue(row, col.schemaIndex());
+        return (T)col.type().spec().objectValue(row, col.schemaIndex());
     }
 
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectValue(String columnName) {
+    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return BinaryObjects.wrap(row.bytesValue(col.schemaIndex()));
@@ -113,7 +115,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(String columnName) {
+    @Override public byte byteValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.byteValue(col.schemaIndex());
@@ -127,7 +129,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(String columnName) {
+    @Override public short shortValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.shortValue(col.schemaIndex());
@@ -141,7 +143,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(String columnName) {
+    @Override public int intValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.intValue(col.schemaIndex());
@@ -155,7 +157,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(String columnName) {
+    @Override public long longValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.longValue(col.schemaIndex());
@@ -169,7 +171,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(String columnName) {
+    @Override public float floatValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.floatValue(col.schemaIndex());
@@ -183,7 +185,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(String columnName) {
+    @Override public double doubleValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.doubleValue(col.schemaIndex());
@@ -197,7 +199,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(String columnName) {
+    @Override public String stringValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.stringValue(col.schemaIndex());
@@ -211,7 +213,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(String columnName) {
+    @Override public UUID uuidValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.uuidValue(col.schemaIndex());
@@ -225,7 +227,7 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(String columnName) {
+    @Override public BitSet bitmaskValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.bitmaskValue(col.schemaIndex());
@@ -330,7 +332,8 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /**
-     * Returns row column for index.
+     * Returns row column for given column index.
+     *
      * @param columnIndex Column index.
      * @return Column.
      */
