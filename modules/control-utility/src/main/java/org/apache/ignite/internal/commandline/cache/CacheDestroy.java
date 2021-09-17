@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
@@ -31,7 +30,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
 
@@ -93,24 +92,29 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         do {
             String cmdArg = argIter.nextArg("At least one argument is expected.");
 
-            if (SKIP_EXISTENCE_ARG.equals(cmdArg))
+            if (SKIP_EXISTENCE_ARG.equals(cmdArg)) {
                 checkExisting = false;
-            else if (DESTROY_ALL_ARG.equals(cmdArg)) {
-                if (caches != null) {
-                    throw new IllegalArgumentException(
-                        "Unexpected argument \"" + cmdArg + "\". The cache names are already specified.");
-                }
 
+                continue;
+            }
+
+            if (caches != null) {
+                throw new IllegalArgumentException("Unexpected argument \"" + cmdArg +
+                    "\". The cache names have already been specified: " + F.concat(caches, ",") + '.');
+            }
+
+            if (DESTROY_ALL_ARG.equals(cmdArg)) {
                 destroyAll = true;
-            }
-            else {
-                if (destroyAll) {
-                    throw new IllegalArgumentException(
-                        "Unexpected argument \"" + cmdArg + "\". The flag for deleting all caches is already set.");
-                }
 
-                caches = argIter.parseStringSet(cmdArg);
+                continue;
             }
+
+            if (destroyAll) {
+                throw new IllegalArgumentException(
+                    "Unexpected argument \"" + cmdArg + "\". The flag for deleting all caches is already set.");
+            }
+
+            caches = argIter.parseStringSet(cmdArg);
         } while (argIter.hasNextSubArg());
 
         args = new Arguments(caches, destroyAll, checkExisting);
@@ -126,26 +130,8 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         if (F.isEmpty(args.cacheNames()))
             return null;
 
-        // Limit the number of cache names displayed to the user.
-        SortedSet<String> cacheNames = new TreeSet<>(args.cacheNames());
-        SB buf = new SB();
-        int limit = 10;
-
-        boolean compact = cacheNames.size() > limit;
-
-        for (String cacheName : cacheNames) {
-            if (compact && --limit == 0) {
-                buf.a(",... ").a(cacheNames.last());
-
-                break;
-            }
-            else if (buf.length() > 0)
-                buf.a(", ");
-
-            buf.a(cacheName);
-        }
-
-        return String.format(CONFIRM_MSG, args.cacheNames().size(), buf.toString());
+        return String.format(CONFIRM_MSG,
+            args.cacheNames().size(), S.joinToString(new TreeSet<>(args.cacheNames()), ", ", "..", 80, 0));
     }
 
     /** {@inheritDoc} */

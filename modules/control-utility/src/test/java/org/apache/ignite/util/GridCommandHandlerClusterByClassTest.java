@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -1152,6 +1154,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.SKIP_EXISTENCE_ARG, CacheDestroy.DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
         // Invalid arguments.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX", CacheDestroy.DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), "Unexpected argument \"" + CacheDestroy.DESTROY_ALL_ARG + "\"");
@@ -1161,14 +1167,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), "Unexpected argument \"cacheX\"");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX,cacheY", "cacheZ"));
+        assertContains(log, testOut.toString(), "Unexpected argument \"cacheZ\"");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
         // Create user caches.
         cacheNames.addAll(createCaches(0, 10, null));
         cacheNames.addAll(createCaches(10, 5, "shared1"));
         cacheNames.addAll(createCaches(15, 5, "shared2"));
 
-        String expConfirmation = String.format(CacheDestroy.CONFIRM_MSG, cacheNames.size(),
-            "temp-user-cache-00, temp-user-cache-01, temp-user-cache-02, temp-user-cache-03, temp-user-cache-04, " +
-                "temp-user-cache-05, temp-user-cache-06, temp-user-cache-07, temp-user-cache-08,... temp-user-cache-19");
+        String expConfirmation = String.format(CacheDestroy.CONFIRM_MSG,
+            cacheNames.size(), S.joinToString(new TreeSet<>(cacheNames), ", ", "..", 80, 0));
 
         injectTestSystemIn(CONFIRM_MSG);
 
