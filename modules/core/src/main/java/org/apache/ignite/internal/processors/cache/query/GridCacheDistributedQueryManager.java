@@ -298,6 +298,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.partition() == -1 ? null : req.partition(),
                 req.className(),
                 req.clause(),
+                req.idxQryDesc(),
                 req.limit(),
                 req.includeMetaData(),
                 req.keepBinary(),

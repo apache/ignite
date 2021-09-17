@@ -86,6 +86,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         prepare();
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         received.set(false);
     }

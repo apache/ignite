@@ -37,6 +37,7 @@ public class SnapshotEvent extends EventAdapter {
      * @param node Node on which the event was fired.
      * @param msg Optional event message.
      * @param snpName Snapshot name.
+     * @param type Snapshot event type.
      */
     public SnapshotEvent(ClusterNode node, String msg, String snpName, int type) {
         super(node, msg, type);

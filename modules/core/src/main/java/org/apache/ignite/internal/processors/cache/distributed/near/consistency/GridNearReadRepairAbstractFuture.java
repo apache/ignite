@@ -280,7 +280,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     EntryGetResult res = entry.getValue();
                     CacheEntryVersion ver = res.version();
 
-                    Object val = ctx.unwrapBinaryIfNeeded(res.value(), false, false, null);
+                    Object val = ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null);
 
                     Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> map =
                         originalMap.computeIfAbsent(

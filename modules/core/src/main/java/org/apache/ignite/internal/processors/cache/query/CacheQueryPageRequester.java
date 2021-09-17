@@ -76,6 +76,7 @@ public class CacheQueryPageRequester {
             qry.type(),
             fut.fields(),
             qry.clause(),
+            qry.idxQryDesc(),
             qry.limit(),
             qry.queryClassName(),
             qry.scanFilter(),

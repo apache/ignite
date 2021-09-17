@@ -947,3 +947,28 @@ Parameters:
 | `status`| Get status of collecting performance statistics in the cluster.
 |===
 
+== Cache Consistency
+
+The command allows to perform cache consistency check and repair (when possible) using Read Repair approach.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency repair cache-name partition
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency repair cache-name partition
+----
+--
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `cache-name`| Cache to be checked/repaired..
+| `partition`| Cache's partition to be checked/repaired.
+|===

@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -141,6 +142,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
@@ -620,6 +622,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 case SET:
                     iter = sharedCacheSetIterator(qry);
+
+                    break;
+
+                case INDEX:
+                    iter = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(), filter(qry), qry.keepBinary());
 
                     break;
 
@@ -1188,7 +1195,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         break;
                     }
 
-                    if (type == SCAN)
+                    if (type == SCAN || type == INDEX)
                         // Scan iterator may return already transformed entry
                         data.add(row0);
 
@@ -2483,7 +2490,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 recipients.remove(rcpt);
 
-                if (recipients.isEmpty())
+                if (recipients.isEmpty() && error() == null)
                     get().close();
             }
         }
@@ -2849,6 +2856,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null)
             .limit(limit)
             .pageSize(pageSize);
+    }
+
+    /**
+     * Creates index query.
+     *
+     * @param qry User query.
+     * @param keepBinary Keep binary flag.
+     * @return Created query.
+     */
+    public <R> CacheQuery<R> createIndexQuery(IndexQuery qry, boolean keepBinary) {
+        IndexQueryDesc desc = new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType());
+
+        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(cctx, INDEX, desc, qry.getValueType());
+        q.keepBinary(keepBinary);
+
+        return q;
     }
 
     /** @return Query iterators. */

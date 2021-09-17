@@ -78,6 +78,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * Sets Node id and instantiates {@link FileHandler} delegate.
      *
      * @param nodeId Node id.
+     * @param workDir param.
      */
     public void nodeId(UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
         nodeId(null, nodeId, workDir);
@@ -87,6 +88,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * Sets Node id and instantiates {@link FileHandler} delegate.
      *
      * @param app Application name.
+     * @param workDir Path to the work directory.
      * @param nodeId Node id.
      */
     public void nodeId(@Nullable String app, UUID nodeId, String workDir) throws IgniteCheckedException, IOException {

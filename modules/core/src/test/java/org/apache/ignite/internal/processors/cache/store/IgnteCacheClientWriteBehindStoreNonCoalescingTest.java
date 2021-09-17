@@ -76,6 +76,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     /** {@inheritDoc} */
     @Override protected boolean writeBehindCoalescing() { return false; }
 
+    /** */
     private static Random rnd = new Random();
 
     /**

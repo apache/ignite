@@ -889,6 +889,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         @QuerySqlField(index = true)
         private long id;
 
+        /** */
         @QuerySqlField(index = true)
         private long persId;
 

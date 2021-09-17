@@ -102,6 +102,7 @@ public class SystemViewRowAttributeWalkerGenerator {
     public static final String TAB = "    ";
 
     /**
+     * @param args Command line arguments.
      * @throws Exception If generation failed.
      */
     public static void main(String[] args) throws Exception {

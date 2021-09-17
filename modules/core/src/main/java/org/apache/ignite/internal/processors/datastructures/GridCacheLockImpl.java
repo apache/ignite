@@ -488,10 +488,12 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
         // Methods relayed from outer class
 
+        /** */
         final int getHoldCount() {
             return isHeldExclusively() ? getState() : 0;
         }
 
+        /** */
         final boolean isLocked() throws IgniteCheckedException {
             return getState() != 0 || cacheView.get(key).get() != 0;
         }
@@ -805,6 +807,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             }
         }
 
+        /** */
         synchronized boolean checkIncomingSignals(GridCacheLockState state) {
             if (state.getSignals() == null)
                 return false;
@@ -1269,6 +1272,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException("IgniteLock does not allow creation of nameless conditions. ");
     }
@@ -1388,6 +1392,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @Override public boolean isFailoverSafe() {
         try {
             initializeReentrantLock();
@@ -1399,6 +1404,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @Override public boolean isFair() {
         try {
             initializeReentrantLock();

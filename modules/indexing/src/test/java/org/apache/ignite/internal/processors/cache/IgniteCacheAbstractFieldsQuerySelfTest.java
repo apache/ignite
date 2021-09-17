@@ -458,6 +458,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         assertEquals(0, meta.scale());
     }
 
+    /** */
     @Test
     public void testExecuteWithMetaDataAndCustomKeyPrecision() throws Exception {
         QueryEntity qeWithPrecision = new QueryEntity()
@@ -718,10 +719,12 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         assert cnt == 2;
     }
 
+    /** */
     protected boolean isReplicatedOnly() {
         return false;
     }
 
+    /** */
     private SqlFieldsQuery sqlFieldsQuery(String sql) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 

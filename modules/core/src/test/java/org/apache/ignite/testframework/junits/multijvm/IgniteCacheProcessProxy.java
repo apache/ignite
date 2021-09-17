@@ -258,6 +258,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
         return compute.callAsync(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
@@ -267,6 +268,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.call(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
         return compute.callAsync(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }

@@ -63,12 +63,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     private static final int KEY_CNT = 500;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
         configuration.setMetricsUpdateFrequency(2000);
         return configuration;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration configuration = super.cacheConfiguration(igniteInstanceName);
         configuration.setStatisticsEnabled(true);

@@ -167,6 +167,6 @@ public @interface QuerySqlField {
          *
          * @return True if field will be in descending order.
          */
-        boolean descending() default false;
+        boolean descending() default false; 
     }
 }

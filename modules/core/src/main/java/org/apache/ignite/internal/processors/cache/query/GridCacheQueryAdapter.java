@@ -73,6 +73,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -97,6 +98,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     @GridToStringInclude(sensitive = true)
     private final String clause;
+
+    /** Description of IndexQuery. */
+    private final IndexQueryDesc idxQryDesc;
 
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
@@ -144,6 +148,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private Boolean dataPageScanEnabled;
 
     /**
+     * Cache query adapter for SCAN query.
+     *
      * @param cctx Context.
      * @param type Query type.
      * @param filter Scan filter.
@@ -180,9 +186,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = false;
         this.clsName = null;
         this.clause = null;
+        this.idxQryDesc = null;
     }
 
     /**
+     * Cache query adapter for SET, SPI, TEXT queries.
+     *
      * @param cctx Context.
      * @param type Query type.
      * @param clsName Class name.
@@ -219,9 +228,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
+
+        this.idxQryDesc = null;
     }
 
     /**
+     * Cache query adapter for local query processing.
+     *
      * @param cctx Context.
      * @param type Query type.
      * @param log Logger.
@@ -254,6 +267,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         @Nullable String clsName,
         String clause,
+        IndexQueryDesc idxQryDesc,
         int limit,
         boolean incMeta,
         boolean keepBinary,
@@ -273,12 +287,38 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.clsName = clsName;
         this.clause = clause;
+        this.idxQryDesc = idxQryDesc;
         this.limit = limit;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.mvccSnapshot = mvccSnapshot;
         this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * Cache query adapter for INDEX query.
+     *
+     * @param cctx Context.
+     * @param type Query type.
+     * @param clsName Class name.
+     */
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
+        GridCacheQueryType type,
+        IndexQueryDesc idxQryDesc,
+        @Nullable String clsName
+    ) {
+        this.cctx = cctx;
+        this.type = type;
+        this.clsName = clsName;
+        this.idxQryDesc = idxQryDesc;
+
+        log = cctx.logger(getClass());
+
+        this.clause = null;
+        this.filter = null;
+        this.incMeta = false;
     }
 
     /**
@@ -463,10 +503,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @return Index query description.
+     */
+    @Nullable public IndexQueryDesc idxQryDesc() { return idxQryDesc; }
+
+    /**
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET && type != SPI) && !QueryUtils.isEnabled(cctx.config()))
+        if ((type != SCAN && type != SET && type != SPI && type != INDEX)
+            && !QueryUtils.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 

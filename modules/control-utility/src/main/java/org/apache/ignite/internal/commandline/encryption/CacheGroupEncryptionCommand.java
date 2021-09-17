@@ -151,7 +151,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
 
         /** {@inheritDoc} */
         @Override public void printUsage(Logger log) {
-            Command.usage(log, "Display re-encryption status of the cache group:", CommandList.ENCRYPTION,
+            usage(log, "Display re-encryption status of the cache group:", CommandList.ENCRYPTION,
                 EncryptionSubcommands.REENCRYPTION_STATUS.toString(), "cacheGroupName");
         }
     }
@@ -193,7 +193,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
 
         /** {@inheritDoc} */
         @Override public void printUsage(Logger log) {
-            Command.usage(log, "View encryption key identifiers of the cache group:", ENCRYPTION,
+            usage(log, "View encryption key identifiers of the cache group:", ENCRYPTION,
                 CACHE_GROUP_KEY_IDS.toString(), "cacheGroupName");
         }
     }
@@ -212,7 +212,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
 
         /** {@inheritDoc} */
         @Override public void printUsage(Logger log) {
-            Command.usage(log, "Suspend re-encryption of the cache group:", CommandList.ENCRYPTION,
+            usage(log, "Suspend re-encryption of the cache group:", CommandList.ENCRYPTION,
                 EncryptionSubcommands.REENCRYPTION_SUSPEND.toString(), "cacheGroupName");
         }
 
@@ -251,7 +251,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
 
         /** {@inheritDoc} */
         @Override public void printUsage(Logger log) {
-            Command.usage(log, "Resume re-encryption of the cache group:", CommandList.ENCRYPTION,
+            usage(log, "Resume re-encryption of the cache group:", CommandList.ENCRYPTION,
                 EncryptionSubcommands.REENCRYPTION_RESUME.toString(), "cacheGroupName");
         }
 
