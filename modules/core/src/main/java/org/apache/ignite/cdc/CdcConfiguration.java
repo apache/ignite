@@ -74,7 +74,6 @@ public class CdcConfiguration {
      * Sets fully configured instances of {@link MetricExporterSpi}.
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
-     * @return {@code this} for chaining.
      * @see CdcConfiguration#getMetricExporterSpi()
      */
     public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {

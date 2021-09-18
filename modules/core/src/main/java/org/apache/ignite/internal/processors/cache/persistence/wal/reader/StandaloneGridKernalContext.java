@@ -231,6 +231,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+        cfg.setGridLogger(log);
 
         return cfg;
     }

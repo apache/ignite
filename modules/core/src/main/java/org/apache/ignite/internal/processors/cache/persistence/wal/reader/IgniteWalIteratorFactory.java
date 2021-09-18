@@ -173,34 +173,46 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        boolean stopComps = iteratorParametersBuilder.sharedCtx == null;
+        if (iteratorParametersBuilder.sharedCtx == null) {
+            GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
 
-        GridCacheSharedContext<?, ?> sctx = iteratorParametersBuilder.sharedCtx != null
-            ? iteratorParametersBuilder.sharedCtx
-            : prepareSharedCtx(iteratorParametersBuilder);
+            for (GridComponent comp : sctx.kernalContext())
+                comp.start();
 
-        return new StandaloneWalRecordsIterator(
-            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-            sctx,
-            iteratorParametersBuilder.ioFactory,
-            resolveWalFiles(iteratorParametersBuilder),
-            iteratorParametersBuilder.filter,
-            iteratorParametersBuilder.lowBound,
-            iteratorParametersBuilder.highBound,
-            iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize,
-            iteratorParametersBuilder.strictBoundsCheck
-        ) {
-            @Override protected void onClose() throws IgniteCheckedException {
-                super.onClose();
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                sctx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            ) {
+                @Override protected void onClose() throws IgniteCheckedException {
+                    super.onClose();
 
-                if (!stopComps)
-                    return;
-
-                for (GridComponent comp : sctx.kernalContext())
-                    comp.stop(true);
-            }
-        };
+                    for (GridComponent comp : sctx.kernalContext())
+                        comp.stop(true);
+                }
+            };
+        }
+        else {
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                iteratorParametersBuilder.sharedCtx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            );
+        }
     }
 
     /**
@@ -377,7 +389,7 @@ public class IgniteWalIteratorFactory {
     /**
      * @return Fake shared context required for create minimal services for record reading.
      */
-    @NotNull private GridCacheSharedContext<?, ?> prepareSharedCtx(
+    @NotNull private GridCacheSharedContext prepareSharedCtx(
         IteratorParametersBuilder iteratorParametersBuilder
     ) throws IgniteCheckedException {
         GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
@@ -385,15 +397,16 @@ public class IgniteWalIteratorFactory {
             iteratorParametersBuilder.marshallerMappingFileStoreDir
         );
 
-        GridCacheSharedContext<?, ?> sctx = U.createStandaloneCacheSharedContext(
-            kernalCtx,
-            iteratorParametersBuilder.pageSize
+        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
+
+        dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
+
+        return new GridCacheSharedContext<>(
+            kernalCtx, null, null, null,
+            null, null, null, dbMgr, null, null,
+            null, null, null, null, null,
+            null, null, null, null, null, null
         );
-
-        for (GridComponent comp : sctx.kernalContext())
-            comp.start();
-
-        return sctx;
     }
 
     /**

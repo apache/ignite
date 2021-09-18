@@ -71,7 +71,7 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
 
             GridMetricManager mmgr = ignite.context().metric();
 
-            for (ReadOnlyMetricRegistry mreg : mmgr.manager()) {
+            for (ReadOnlyMetricRegistry mreg : mmgr) {
                 String mregName = mreg.name();
 
                 if (mregName.equals(name)) {

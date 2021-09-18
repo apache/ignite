@@ -250,12 +250,12 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             GridMetricManager mmgr = metricManager(i);
 
-            assertFalse(Iterators.tryFind(mmgr.manager().iterator(), reg -> cachePrefix.equals(reg.name())).isPresent());
+            assertFalse(Iterators.tryFind(mmgr.iterator(), reg -> cachePrefix.equals(reg.name())).isPresent());
 
             if (nearEnabled) {
                 String regName = metricName(cachePrefix, "near");
 
-                assertFalse(Iterators.tryFind(mmgr.manager().iterator(), reg -> regName.equals(reg.name())).isPresent());
+                assertFalse(Iterators.tryFind(mmgr.iterator(), reg -> regName.equals(reg.name())).isPresent());
             }
         }
     }

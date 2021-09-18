@@ -52,15 +52,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.resource.GridResourceIoc;
-import org.apache.ignite.internal.processors.resource.GridResourceLoggerInjector;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.resources.SpringApplicationContextResource;
-import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
@@ -238,9 +233,9 @@ public class CdcMain implements Runnable {
                 log.info("Ignite node Marshaller [dir=" + marshaller + ']');
             }
 
-            injectResources(consumer.consumer());
-
             startStandaloneKernal();
+
+            kctx.resource().injectGeneric(consumer.consumer());
 
             mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
             mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
@@ -271,7 +266,7 @@ public class CdcMain implements Runnable {
      * @throws IgniteCheckedException If failed.
      */
     private void startStandaloneKernal() throws IgniteCheckedException {
-        GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
+        kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -281,6 +276,8 @@ public class CdcMain implements Runnable {
                 return cfg;
             }
         };
+
+        kctx.resource().setSpringContext(ctx);
 
         for (GridComponent comp : kctx)
             comp.start();
@@ -522,37 +519,6 @@ public class CdcMain implements Runnable {
                 log.info("Stopping Change Data Capture service instance");
 
             stopped = true;
-        }
-    }
-
-    /** */
-    private void injectResources(CdcConsumer dataConsumer) throws IgniteCheckedException {
-        GridResourceIoc ioc = new GridResourceIoc();
-
-        ioc.inject(
-            dataConsumer,
-            LoggerResource.class,
-            new GridResourceLoggerInjector(log),
-            null,
-            null
-        );
-
-        if (ctx != null) {
-            ioc.inject(
-                dataConsumer,
-                SpringResource.class,
-                ctx.springBeanInjector(),
-                null,
-                null
-            );
-
-            ioc.inject(
-                dataConsumer,
-                SpringApplicationContextResource.class,
-                ctx.springContextInjector(),
-                null,
-                null
-            );
         }
     }
 

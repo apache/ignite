@@ -222,7 +222,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneIgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
@@ -12250,43 +12249,4 @@ public abstract class IgniteUtils {
         return safeAbs(hash % size);
     }
 
-    /**
-     * @param kctx Kernal context.
-     * @param pageSize Page size.
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Standalone cache shared context.
-     */
-    public static <K, V> GridCacheSharedContext<K, V> createStandaloneCacheSharedContext(
-        GridKernalContext kctx,
-        int pageSize
-    ) {
-        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
-
-        dbMgr.setPageSize(pageSize);
-
-        return new GridCacheSharedContext<>(
-            kctx,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            dbMgr,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-    }
 }

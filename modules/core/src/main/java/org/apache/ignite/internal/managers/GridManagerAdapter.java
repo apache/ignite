@@ -617,11 +617,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
-                        return ctx.metric().manager();
+                        return ctx.metric();
                     }
 
                     @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
-                        ctx.metric().manager().addMetricRegistryCreationListener(lsnr);
+                        ctx.metric().addMetricRegistryCreationListener(lsnr);
                     }
 
                     /**
