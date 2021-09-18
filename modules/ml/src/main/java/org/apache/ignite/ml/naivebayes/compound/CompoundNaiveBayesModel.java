@@ -109,18 +109,22 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return discreteModel;
     }
 
+    /** */
     public double[] getPriorProbabilities() {
         return priorProbabilities;
     }
 
+    /** */
     public double[] getLabels() {
         return labels;
     }
 
+    /** */
     public Collection<Integer> getGaussianFeatureIdsToSkip() {
         return gaussianFeatureIdsToSkip;
     }
 
+    /** */
     public Collection<Integer> getDiscreteFeatureIdsToSkip() {
         return discreteFeatureIdsToSkip;
     }

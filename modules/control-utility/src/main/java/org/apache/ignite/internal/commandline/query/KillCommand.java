@@ -188,16 +188,16 @@ public class KillCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
+        usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
             COMPUTE.toString(), "session_id");
 
-        Command.usage(log, "Kill service by name:", KILL, singletonMap("name", "Service name."),
+        usage(log, "Kill service by name:", KILL, singletonMap("name", "Service name."),
             SERVICE.toString(), "name");
 
-        Command.usage(log, "Kill transaction by xid:", KILL, singletonMap("xid", "Transaction identifier."),
+        usage(log, "Kill transaction by xid:", KILL, singletonMap("xid", "Transaction identifier."),
             TRANSACTION.toString(), "xid");
 
-        Command.usage(log, "Kill sql query by query id:", KILL, singletonMap("query_id", "Query identifier."),
+        usage(log, "Kill sql query by query id:", KILL, singletonMap("query_id", "Query identifier."),
             SQL.toString(), "query_id");
 
         Map<String, String> params = new HashMap<>();
@@ -206,17 +206,17 @@ public class KillCommand extends AbstractCommand<Object> {
         params.put("cache_name", "Cache name.");
         params.put("query_id", "Query identifier.");
 
-        Command.usage(log, "Kill scan query by node id, cache name and query id:", KILL,
+        usage(log, "Kill scan query by node id, cache name and query id:", KILL,
             params, SCAN.toString(), "origin_node_id", "cache_name", "query_id");
 
         params.clear();
         params.put("origin_node_id", "Originating node id.");
         params.put("routine_id", "Routine identifier.");
 
-        Command.usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
+        usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
             "origin_node_id", "routine_id");
 
-        Command.usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
+        usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
             SNAPSHOT.toString(), "snapshot_name");
     }
 

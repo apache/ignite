@@ -15,38 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.util;
 
 /**
- * Index operation cancellation token.
+ *
  */
-public class SchemaIndexOperationCancellationToken {
-    /** Cancel flag. */
-    private final AtomicBoolean flag = new AtomicBoolean();
-
-    /**
-     * Get cancel state.
-     *
-     * @return {@code True} if cancelled.
-     */
-    public boolean isCancelled() {
-        return flag.get();
-    }
-
-    /**
-     * Do cancel.
-     *
-     * @return {@code True} if cancel flag was set by this call.
-     */
-    public boolean cancel() {
-        return flag.compareAndSet(false, true);
-    }
-
+public class GridCommandHandlerConsistencyBinaryTest extends GridCommandHandlerConsistencyTest {
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SchemaIndexOperationCancellationToken.class, this);
+    @Override protected boolean binaryCache() {
+        return true;
     }
 }

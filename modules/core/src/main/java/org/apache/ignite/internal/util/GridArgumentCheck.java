@@ -176,6 +176,19 @@ public class GridArgumentCheck {
     }
 
     /**
+     * Checks that given String is not empty.
+     *
+     * @param str String.
+     * @param name Argument name.
+     */
+    public static void notEmpty(String str, String name) {
+        notNull(str, name);
+
+        if (str.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
      * Checks that a String is not null or empty.
      *
      * @param value Value to check.

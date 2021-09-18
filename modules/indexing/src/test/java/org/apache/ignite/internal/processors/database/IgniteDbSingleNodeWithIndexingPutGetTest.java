@@ -180,11 +180,13 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         cntr.addAndGet(inc ? 1 : -1);
     }
 
+    /** */
     @SuppressWarnings("unchecked")
     private static <X> X queryOne(IgniteCache<?, ?> cache, String qry) {
         return (X)cache.query(new SqlFieldsQuery(qry)).getAll().get(0).get(0);
     }
 
+    /** */
     private static int querySize(IgniteCache<?, ?> cache, String qry) {
         return cache.query(new SqlFieldsQuery(qry)).getAll().size();
     }
@@ -207,6 +209,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         return cfg;
     }
 
+    /** */
     static class Abc {
         /** */
         @QuerySqlField

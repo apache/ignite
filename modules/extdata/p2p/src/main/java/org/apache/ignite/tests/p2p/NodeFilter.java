@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgnitePredicate;
  *
  */
 public class NodeFilter implements IgnitePredicate<ClusterNode> {
+    /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node) {
         return true;
     }

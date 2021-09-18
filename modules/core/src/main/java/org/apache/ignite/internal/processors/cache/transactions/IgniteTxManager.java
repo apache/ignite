@@ -143,6 +143,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -760,8 +761,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
-        UUID subjId = null; // TODO GG-9141 how to get subj ID?
-
         int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
 
         GridNearTxLocal tx = new GridNearTxLocal(
@@ -776,7 +775,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             storeEnabled,
             mvccOp,
             txSize,
-            subjId,
+            securitySubjectId(cctx),
             taskNameHash,
             lb,
             txDumpsThrottling,

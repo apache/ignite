@@ -88,7 +88,6 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             writeVer,
             syncMode,
             topVer,
-            updateReq.subjectId(),
             updateReq.taskNameHash(),
             null,
             cctx.deploymentEnabled(),

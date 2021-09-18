@@ -867,6 +867,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         @IgniteInstanceResource
         private Ignite node;
 
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             String igniteInstanceName = node.configuration().getIgniteInstanceName();
 

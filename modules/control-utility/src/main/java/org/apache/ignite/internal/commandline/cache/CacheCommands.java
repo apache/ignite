@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.commandline.Command.usageParams;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -123,34 +120,6 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
         });
 
         logger.info("");
-    }
-
-    /**
-     * Print cache command usage with default indention.
-     *
-     * @param logger Logger to use.
-     * @param cmd Cache command.
-     * @param description Command description.
-     * @param paramsDesc Parameter desciptors.
-     * @param args Cache command arguments.
-     */
-    protected static void usageCache(
-        Logger logger,
-        CacheSubcommands cmd,
-        String description,
-        Map<String, String> paramsDesc,
-        String... args
-    ) {
-        logger.info("");
-        logger.info(INDENT + CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)));
-        logger.info(DOUBLE_INDENT + description);
-
-        if (!F.isEmpty(paramsDesc)) {
-            logger.info("");
-            logger.info(DOUBLE_INDENT + "Parameters:");
-
-            usageParams(paramsDesc, DOUBLE_INDENT + INDENT, logger);
-        }
     }
 
     /** {@inheritDoc} */

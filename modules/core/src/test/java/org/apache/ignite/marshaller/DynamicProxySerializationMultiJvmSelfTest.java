@@ -160,6 +160,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
         /** */
         private final BinaryObject bo;
 
+        /** */
         public FieldTestCallable(BinaryObject bo) {
             this.bo = bo;
         }

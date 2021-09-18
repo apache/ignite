@@ -60,8 +60,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Tesing index full and partial rebuild.
  */
 public class GridIndexRebuildTest extends GridCommonAbstractTest {
+    /** */
     public static final String FIRST_CACHE = "cache1";
 
+    /** */
     public static final String SECOND_CACHE = "cache2";
 
     /** */

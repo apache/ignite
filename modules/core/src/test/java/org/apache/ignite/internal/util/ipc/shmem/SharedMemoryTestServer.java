@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
  * to be used with conjunction to {@link GridJavaProcess}.
  */
 public class SharedMemoryTestServer {
+    /** */
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
     public static void main(String[] args) throws IgniteCheckedException {
         System.out.println("Starting server ...");
