@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
+import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -33,6 +35,16 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
 
     /** Filter key for attribute "nodeConsistentId" */
     public static final String NODE_CONSISTENT_ID_FILTER = "nodeConsistentId";
+
+    /** List of filtrable attributes. */
+    private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
+        "snapshotName", "nodeId", "cacheGroup", "cacheCroupLocalPartitions"
+    ));
+
+    /** {@inheritDoc} */
+    @Override public List<String> filtrableAttributes() {
+        return FILTRABLE_ATTRS;
+    }
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
