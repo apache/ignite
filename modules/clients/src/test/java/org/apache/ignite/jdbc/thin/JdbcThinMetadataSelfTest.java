@@ -787,6 +787,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SCAN_QUERIES.CACHE_ID.null.10",
                 "SYS.SCAN_QUERIES.PAGE_SIZE.null.10",
                 "SYS.SCAN_QUERIES.ORIGIN_NODE_ID.null.2147483647",
+                "SYS.SNAPSHOTES.ORIGIN_NODE_ID.null.2147483647",
                 "SYS.NODES.NODE_ID.null.2147483647",
                 "SYS.NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.NODES.VERSION.null.2147483647",
