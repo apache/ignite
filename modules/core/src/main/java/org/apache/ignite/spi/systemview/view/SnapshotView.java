@@ -18,14 +18,14 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Set;
-import jdk.internal.jline.internal.Nullable;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
- * Node attribute representation for a {@link SystemView}.
+ * Snapshot representation for a {@link SystemView}.
  */
 public class SnapshotView {
     /** Snapshot name. */

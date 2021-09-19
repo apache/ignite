@@ -77,7 +77,6 @@ import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttribu
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -2050,8 +2049,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testSnapshot() throws Exception {
+    public void testSnapshots() throws Exception {
         cleanPersistenceDir();
+
+        String testSnap0 = "testSnap0";
+        String testSnap1 = "testSnap1";
 
         try (IgniteEx ignite = startGrid(getConfiguration()
             .setDataStorageConfiguration(
@@ -2061,55 +2063,37 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         ) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            ignite.createCache("testCache").put(1,1);
-            ignite.createCache("testCache1").put(1,1);
-            IgniteCache<Object, Object> cache2 = ignite.createCache("testCache2");
+            ignite.createCache(DEFAULT_CACHE_NAME);
 
-            GridCacheContext<Object, Object> cache = ignite.cachex("testCache").context();
+            ignite.snapshot().createSnapshot(testSnap0).get();
 
-            CacheConfiguration<?,?> cfg = cache2.getConfiguration(CacheConfiguration.class);
+            SystemView<SnapshotView> views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
 
-            ignite.snapshot().createSnapshot("testSnap").get();
+            assertEquals(1, F.size(views.iterator()));
 
-            SystemView<SnapshotView> view = ignite.context().systemView()
-                .view(SNAPSHOTS_SYS_VIEW);
-//
-//            assertEquals(ignite.cluster().localNode().attributes().size(), view.size());
-//
-//            assertEquals(1, F.size(view.iterator(), row -> "consId".equals(row.nodeConsistentId()) &&
-//                "name".equals(row.name()) && "val".equals(row.value())));
+            SnapshotView view = views.iterator().next();
+
+            assertEquals(testSnap0, view.snapshotName());
+            assertEquals(DEFAULT_CACHE_NAME, view.cacheGroup());
+            assertEquals(toStringSafe(ignite.localNode().consistentId()), view.consistentId());
+
+            ignite.createCache("testCache");
+
+            ignite.snapshot().createSnapshot(testSnap1).get();
+
+            views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
+
+            assertEquals(3, F.size(views.iterator()));
 
             // Test filtering.
-            assertTrue(view instanceof FiltrableSystemView);
+            assertTrue(views instanceof FiltrableSystemView);
 
-            Iterator<SnapshotView> iter = ((FiltrableSystemView<SnapshotView>)view)
+            Iterator<SnapshotView> iter = ((FiltrableSystemView<SnapshotView>)views)
                 .iterator(
                     F.asMap(SnapshotViewWalker.SNAPSHOT_NAME_FILTER,
-                        "testSnap"));
-//                    F.asMap(SnapshotViewWalker.NODE_CONSISTENT_ID_FILTER,
-//                    toStringSafe(ignite.localNode().consistentId())));
-//                    toStringSafe(1)));
-//
-//            assertEquals(1, F.size(iter));
-//
-//            iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view).iterator(
-//                F.asMap(BaselineNodeAttributeViewWalker.NODE_CONSISTENT_ID_FILTER, "consId"));
-//
-//            assertEquals(1, F.size(iter, row -> "name".equals(row.name())));
-//
-//            iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view).iterator(
-//                F.asMap(BaselineNodeAttributeViewWalker.NAME_FILTER, "name"));
+                        testSnap1));
 
-//            assertEquals(1, F.size(iter));
-            System.err.println("cacheGroups");
-
-            while (iter.hasNext()) {
-                SnapshotView next = iter.next();
-                System.err.println(next.cacheGroup());
-                System.err.println(next.cacheGroupLocalPartitions());
-            }
-
-            System.err.println(1);
+            assertEquals(2, F.size(iter));
         }
     }
 

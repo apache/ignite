@@ -252,7 +252,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** */
     public static final String SNAPSHOTS_SYS_VIEW_DESC = "Snapshots";
 
-
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
      * It is important to have only one buffer per thread (instead of creating each buffer per
@@ -1770,7 +1769,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Baseline node attributes view supplier.
+     * Snapshots view supplier.
      *
      * @param filter Filter.
      */
@@ -1780,8 +1779,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snapshotName = (String)filter.get(SnapshotViewWalker.SNAPSHOT_NAME_FILTER);
         String nodeConsistentId = (String)filter.get(SnapshotViewWalker.NODE_CONSISTENT_ID_FILTER);
 
-        return F.flat(F.iterator(snapshotNames, snpName ->
-            {
+        return F.flat(F.iterator(snapshotNames, snpName -> {
                 if (snapshotName != null && !snapshotName.equals(snpName))
                     return Collections.emptyList();
 
@@ -1795,10 +1793,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             cacheGrp,
                             meta.partitions().get(CU.cacheId(cacheGrp))
                         ), true);
-                    },
-                    true));
-            },
-            true));
+                    }, true));
+            }, true));
     }
 
     /** */
