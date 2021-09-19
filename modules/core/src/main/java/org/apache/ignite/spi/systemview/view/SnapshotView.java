@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Set;
+import jdk.internal.jline.internal.Nullable;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
@@ -35,26 +37,26 @@ public class SnapshotView {
     /** Cache group name. */
     private final String cacheGrp;
 
-    /** Has lost partitions. */
-    private final boolean hasLostPartition;
+    /** Cache group local partitions. */
+    private final String cacheGrpLocParts;
 
     /**
      * @param name Snapshot name.
      * @param consistentId Consistent id.
      * @param cacheGrp Cache group.
-     * @param hasLostPartition Has lost partition.
+     * @param cacheGrpLocParts Cache group local partitions.
      */
-    public SnapshotView(String name, Object consistentId, String cacheGrp, boolean hasLostPartition) {
+    public SnapshotView(String name, Object consistentId, String cacheGrp, @Nullable Set<Integer> cacheGrpLocParts) {
         this.name = name;
         this.consistentId = consistentId;
         this.cacheGrp = cacheGrp;
-        this.hasLostPartition = hasLostPartition;
+        this.cacheGrpLocParts = cacheGrpLocParts != null ? String.valueOf(cacheGrpLocParts) : "[]";
     }
 
     /**
      * @return Snapshot name.
      */
-    @Order(1)
+    @Order
     @Filtrable
     public String snapshotName() {
         return name;
@@ -63,7 +65,7 @@ public class SnapshotView {
     /**
      * @return Node consistent id.
      */
-    @Order(2)
+    @Order(1)
     @Filtrable
     public String consistentId() {
         return toStringSafe(consistentId);
@@ -72,16 +74,16 @@ public class SnapshotView {
     /**
      * @return Cache group name.
      */
-    @Order(3)
+    @Order(2)
     public String cacheGroup() {
         return cacheGrp;
     }
 
     /**
-     * @return Has lost partitions.
+     * @return Cache group name.
      */
-    @Order(4)
-    public boolean hasLostPartition() {
-        return hasLostPartition;
+    @Order(3)
+    public String cacheGroupLocalPartitions() {
+        return cacheGrpLocParts;
     }
 }

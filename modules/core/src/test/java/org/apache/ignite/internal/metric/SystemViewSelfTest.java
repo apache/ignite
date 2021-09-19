@@ -76,6 +76,8 @@ import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -109,6 +111,7 @@ import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -142,6 +145,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOTS_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODE_ATTRIBUTES_SYS_VIEW;
@@ -2041,6 +2045,71 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 F.asMap(BaselineNodeAttributeViewWalker.NAME_FILTER, "name"));
 
             assertEquals(1, F.size(iter));
+        }
+    }
+
+    /** */
+    @Test
+    public void testSnapshot() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration()
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setName("pds").setPersistenceEnabled(true)
+                )))
+        ) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            ignite.createCache("testCache").put(1,1);
+            ignite.createCache("testCache1").put(1,1);
+            IgniteCache<Object, Object> cache2 = ignite.createCache("testCache2");
+
+            GridCacheContext<Object, Object> cache = ignite.cachex("testCache").context();
+
+            CacheConfiguration<?,?> cfg = cache2.getConfiguration(CacheConfiguration.class);
+
+            ignite.snapshot().createSnapshot("testSnap").get();
+
+            SystemView<SnapshotView> view = ignite.context().systemView()
+                .view(SNAPSHOTS_SYS_VIEW);
+//
+//            assertEquals(ignite.cluster().localNode().attributes().size(), view.size());
+//
+//            assertEquals(1, F.size(view.iterator(), row -> "consId".equals(row.nodeConsistentId()) &&
+//                "name".equals(row.name()) && "val".equals(row.value())));
+
+            // Test filtering.
+            assertTrue(view instanceof FiltrableSystemView);
+
+            Iterator<SnapshotView> iter = ((FiltrableSystemView<SnapshotView>)view)
+                .iterator(
+                    F.asMap(SnapshotViewWalker.SNAPSHOT_NAME_FILTER,
+                        "testSnap"));
+//                    F.asMap(SnapshotViewWalker.NODE_CONSISTENT_ID_FILTER,
+//                    toStringSafe(ignite.localNode().consistentId())));
+//                    toStringSafe(1)));
+//
+//            assertEquals(1, F.size(iter));
+//
+//            iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view).iterator(
+//                F.asMap(BaselineNodeAttributeViewWalker.NODE_CONSISTENT_ID_FILTER, "consId"));
+//
+//            assertEquals(1, F.size(iter, row -> "name".equals(row.name())));
+//
+//            iter = ((FiltrableSystemView<BaselineNodeAttributeView>)view).iterator(
+//                F.asMap(BaselineNodeAttributeViewWalker.NAME_FILTER, "name"));
+
+//            assertEquals(1, F.size(iter));
+            System.err.println("cacheGroups");
+
+            while (iter.hasNext()) {
+                SnapshotView next = iter.next();
+                System.err.println(next.cacheGroup());
+                System.err.println(next.cacheGroupLocalPartitions());
+            }
+
+            System.err.println(1);
         }
     }
 

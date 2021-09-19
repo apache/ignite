@@ -1065,6 +1065,112 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals("val0", res.get(0).get(2));
     }
 
+    /**
+     * Test baseline topology system view.
+     */
+    @Test
+    public void testSnapshotViews() throws Exception {
+        String customAttr = "CUSTOM_NODE_ATTR";
+
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0")
+            .setUserAttributes(F.asMap(customAttr, "val0")));
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1")
+            .setUserAttributes(F.asMap(customAttr, "val1")));
+
+        ignite.cluster().active(true);
+        ignite.createCache("testCache");
+        ignite.snapshot().createSnapshot("testSnapshot");
+
+        List<List<?>> res = execSql("SELECT * FROM " +
+            systemSchemaName() + ".SNAPSHOT");
+
+        assertColumnTypes(res.get(0), String.class, Boolean.class);
+
+        assertEquals(2, res.size());
+
+        assertEquals("node0", res.get(0).get(0));
+        assertEquals("node1", res.get(1).get(0));
+
+        assertEquals(true, res.get(0).get(1));
+        assertEquals(true, res.get(1).get(1));
+
+        stopGrid(getTestIgniteInstanceName(1));
+
+        res = execSql("SELECT CONSISTENT_ID FROM " + systemSchemaName() + ".SNAPSHOT WHERE ONLINE = false");
+
+        assertEquals(1, res.size());
+
+        assertEquals("node1", res.get(0).get(0));
+
+        Ignite ignite2 = startGrid(getTestIgniteInstanceName(2), getPdsConfiguration("node2")
+            .setUserAttributes(F.asMap(customAttr, "val2")));
+
+        assertEquals(2, execSql(ignite2, "SELECT CONSISTENT_ID FROM " + systemSchemaName() + ".BASELINE_NODES").size());
+
+        res = execSql("SELECT CONSISTENT_ID FROM " + systemSchemaName() + ".NODES N WHERE NOT EXISTS (SELECT 1 FROM " +
+            systemSchemaName() + ".BASELINE_NODES B WHERE B.CONSISTENT_ID = N.CONSISTENT_ID)");
+
+        assertEquals(1, res.size());
+
+        assertEquals("node2", res.get(0).get(0));
+
+        // Check baseline node attributes.
+        assertColumnTypes(execSql("SELECT NODE_CONSISTENT_ID, NAME, VALUE FROM " + systemSchemaName() +
+            ".BASELINE_NODE_ATTRIBUTES").get(0), String.class, String.class, String.class);
+
+        // Check without filters.
+        res = execSql("SELECT NAME, VALUE FROM " + systemSchemaName() + ".BASELINE_NODE_ATTRIBUTES ORDER BY VALUE");
+
+        assertTrue(res.size() > 1);
+        assertEquals(1, F.size(res, row -> customAttr.equals(row.get(0)) && "val0".equals(row.get(1))));
+        assertEquals(1, F.size(res, row -> customAttr.equals(row.get(0)) && "val1".equals(row.get(1))));
+
+        // Check filter by node consistent ID.
+        res = execSql("SELECT NAME, VALUE FROM " + systemSchemaName() + ".BASELINE_NODE_ATTRIBUTES " +
+            "WHERE NODE_CONSISTENT_ID = ?", "node0");
+
+        assertTrue(res.size() > 1);
+        assertEquals(1, F.size(res, row -> customAttr.equals(row.get(0)) && "val0".equals(row.get(1))));
+
+        // Check filter by node consistent ID and attribute name.
+        res = execSql("SELECT NAME, VALUE FROM " + systemSchemaName() + ".BASELINE_NODE_ATTRIBUTES " +
+            "WHERE NODE_CONSISTENT_ID = ? AND NAME = ?", "node0", customAttr);
+
+        assertEquals(1, res.size());
+        assertEquals("val0", res.get(0).get(1));
+
+        // Check filter by attribute name.
+        res = execSql("SELECT NAME, VALUE FROM " + systemSchemaName() + ".BASELINE_NODE_ATTRIBUTES " +
+            "WHERE NAME = ? ORDER BY VALUE", customAttr);
+
+        assertEquals(2, res.size());
+        assertEquals("val0", res.get(0).get(1));
+        assertEquals("val1", res.get(1).get(1));
+
+        // Check that stored in BLT attribute value is shown.
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1")
+            .setUserAttributes(F.asMap(customAttr, "val3")));
+
+        res = execSql("SELECT NAME, VALUE FROM " + systemSchemaName() + ".BASELINE_NODE_ATTRIBUTES " +
+            "WHERE NODE_CONSISTENT_ID = ? AND NAME = ?", "node1", customAttr);
+
+        assertEquals(1, res.size());
+        assertEquals("val1", res.get(0).get(1));
+
+        // Check join with BASELINE_NODES view.
+        res = execSql("SELECT N.CONSISTENT_ID, NA.NAME, NA.VALUE FROM " + systemSchemaName() +
+            ".BASELINE_NODE_ATTRIBUTES NA JOIN " + systemSchemaName() + ".BASELINE_NODES N " +
+            "ON N.CONSISTENT_ID = NA.NODE_CONSISTENT_ID " +
+            "WHERE NODE_CONSISTENT_ID = ? AND NAME = ?", "node0", customAttr);
+
+        assertEquals(1, res.size());
+        assertEquals("node0", res.get(0).get(0));
+        assertEquals(customAttr, res.get(0).get(1));
+        assertEquals("val0", res.get(0).get(2));
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration()

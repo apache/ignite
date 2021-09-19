@@ -80,6 +80,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -140,6 +141,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
@@ -169,6 +171,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
@@ -185,6 +188,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
@@ -241,6 +245,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
+
+    /** */
+    public static final String SNAPSHOTS_SYS_VIEW = "snapshots";
+
+    /** */
+    public static final String SNAPSHOTS_SYS_VIEW_DESC = "Snapshots";
+
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -444,6 +455,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 busyLock.leaveBusy();
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        ctx.systemView().registerFiltrableView(
+            SNAPSHOTS_SYS_VIEW,
+            SNAPSHOTS_SYS_VIEW_DESC,
+            new SnapshotViewWalker(),
+            this::snapshotViewSupplier,
+            Function.identity()
+        );
     }
 
     /** {@inheritDoc} */
@@ -1748,6 +1767,56 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
 
         return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+    }
+
+    /**
+     * Baseline node attributes view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<SnapshotView> snapshotViewSupplier(Map<String, Object> filter) {
+        List<String> snapshotNames = localSnapshotNames();
+
+        String snapshotName = (String)filter.get(SnapshotViewWalker.SNAPSHOT_NAME_FILTER);
+        String nodeConsistentId = (String)filter.get(SnapshotViewWalker.NODE_CONSISTENT_ID_FILTER);
+
+        return F.flat(F.iterator(snapshotNames, snpName ->
+            {
+                if (snapshotName != null && !snapshotName.equals(snpName))
+                    return Collections.emptyList();
+
+                return F.flat(F.iterator(readSnapshotMetadatas(snpName), meta -> {
+                        if (nodeConsistentId != null && !nodeConsistentId.equals(toStringSafe(meta.consistentId())))
+                            return Collections.emptyList();
+
+                        return F.iterator(getCacheGroupsName(meta), cacheGrp -> new SnapshotView(
+                            meta.snapshotName(),
+                            meta.consistentId(),
+                            cacheGrp,
+                            meta.partitions().get(CU.cacheId(cacheGrp))
+                        ), true);
+                    },
+                    true));
+            },
+            true));
+    }
+
+    /** */
+    private List<String> getCacheGroupsName(SnapshotMetadata meta) {
+        Path path = Paths.get(snapshotLocalDir(meta.snapshotName()).toString(), "db", meta.folderName());
+
+        List<String> res = new ArrayList<>();
+
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(path,
+            pth -> pth.getFileName().toString().startsWith(CACHE_DIR_PREFIX))) {
+
+            ds.forEach(dir -> res.add(dir.getFileName().toString().substring(CACHE_DIR_PREFIX.length())));
+        }
+        catch (IOException e) {
+            res.add(e.getMessage());
+        }
+
+        return res;
     }
 
     /** @return Snapshot handlers. */

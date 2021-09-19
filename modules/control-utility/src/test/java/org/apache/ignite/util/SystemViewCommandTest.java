@@ -431,6 +431,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
             "SCAN_QUERIES",
+            "SNAPSHOTS",
             "NODE_ATTRIBUTES",
             "TABLES",
             "CLIENT_CONNECTIONS",

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
+import java.util.List;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -27,6 +28,9 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
  * @see SnapshotView
  */
 public class SnapshotViewWalker implements SystemViewRowAttributeWalker<SnapshotView> {
+    /** Filter key for attribute "snapshotName" */
+    public static final String SNAPSHOT_NAME_FILTER = "snapshotName";
+
     /** Filter key for attribute "nodeConsistentId" */
     public static final String NODE_CONSISTENT_ID_FILTER = "nodeConsistentId";
 
@@ -35,7 +39,7 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
         v.accept(0, "snapshotName", String.class);
         v.accept(1, "nodeId", String.class);
         v.accept(2, "cacheGroup", String.class);
-        v.accept(3, "hasLostPartition", boolean.class);
+        v.accept(3, "cacheCroupLocalPartitions", String.class);
     }
 
     /** {@inheritDoc} */
@@ -43,7 +47,7 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
         v.accept(0, "snapshotName", String.class, row.snapshotName());
         v.accept(1, "nodeId", String.class, row.consistentId());
         v.accept(2, "cacheGroup", String.class, row.cacheGroup());
-        v.acceptBoolean(3, "hasLostPartition", row.hasLostPartition());
+        v.accept(3, "cacheCroupLocalPartitions", String.class, row.cacheGroupLocalPartitions());
     }
 
     /** {@inheritDoc} */
