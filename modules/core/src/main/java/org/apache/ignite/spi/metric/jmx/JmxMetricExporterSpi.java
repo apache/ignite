@@ -132,7 +132,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
-                igniteInstanceName,
+                igniteInstanceName == null ? ignite().configuration().getIgniteInstanceName() : igniteInstanceName,
                 n.root(),
                 n.subName(),
                 mregBean,

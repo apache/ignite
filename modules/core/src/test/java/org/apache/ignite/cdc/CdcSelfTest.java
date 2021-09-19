@@ -146,14 +146,14 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         ign.cluster().state(ACTIVE);
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        Supplier<CdcMain> cdc = () -> new CdcMain(cfg, null, cdcConfig(cnsmr));
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
         addAndWaitForConsumption(
             cnsmr,
-            cdc,
+            cdc.get(),
             cache,
             txCache,
             CdcSelfTest::addData,
@@ -164,7 +164,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         removeData(cache, 0, KEYS_CNT);
 
-        IgniteInternalFuture<?> rmvFut = runAsync(cdc);
+        IgniteInternalFuture<?> rmvFut = runAsync(cdc.get());
 
         assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr));
 
@@ -256,11 +256,11 @@ public class CdcSelfTest extends AbstractCdcTest {
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        CdcMain cdc1 = new CdcMain(cfg1, null, cdcConfig(cnsmr1));
-        CdcMain cdc2 = new CdcMain(cfg2, null, cdcConfig(cnsmr2));
+        Supplier<CdcMain> cdc1 = () -> new CdcMain(cfg1, null, cdcConfig(cnsmr1));
+        Supplier<CdcMain> cdc2 = () -> new CdcMain(cfg2, null, cdcConfig(cnsmr2));
 
-        IgniteInternalFuture<?> fut1 = runAsync(cdc1);
-        IgniteInternalFuture<?> fut2 = runAsync(cdc2);
+        IgniteInternalFuture<?> fut1 = runAsync(cdc1.get());
+        IgniteInternalFuture<?> fut2 = runAsync(cdc2.get());
 
         addDataFut.get(getTestTimeout());
 
@@ -281,8 +281,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         removeData(cache, 0, KEYS_CNT * 2);
 
-        IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
-        IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
+        IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1.get());
+        IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2.get());
 
         assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr1, cnsmr2));
 
@@ -384,9 +384,9 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        Supplier<CdcMain> cdc = () -> new CdcMain(cfg, null, cdcConfig(cnsmr));
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
+        IgniteInternalFuture<?> fut = runAsync(cdc.get());
 
         waitForSize(half, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
 
@@ -400,7 +400,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         consumeHalf.set(false);
 
-        fut = runAsync(cdc);
+        fut = runAsync(cdc.get());
 
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr);
@@ -408,6 +408,16 @@ public class CdcSelfTest extends AbstractCdcTest {
         fut.cancel();
 
         assertTrue(cnsmr.stopped());
+    }
+
+    /** {@inheritDoc} */
+    @Override public MetricExporterSpi[] metricExporters() {
+        MetricExporterSpi spi = metricExporter.get();
+
+        if (spi == null)
+            return null;
+
+        return new MetricExporterSpi[] {spi};
     }
 
     /** */

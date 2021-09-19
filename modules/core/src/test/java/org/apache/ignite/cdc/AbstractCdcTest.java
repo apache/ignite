@@ -29,9 +29,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
@@ -117,8 +119,14 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(false);
+        cdcCfg.setMetricExporterSpi(metricExporters());
 
         return cdcCfg;
+    }
+
+    /** */
+    public MetricExporterSpi[] metricExporters() {
+        return null;
     }
 
     /** */
@@ -130,7 +138,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         private volatile boolean stopped;
 
         /** {@inheritDoc} */
-        @Override public void start() {
+        @Override public void start(MetricRegistry mreg) {
             stopped = false;
         }
 
@@ -147,7 +155,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
                 data.computeIfAbsent(
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()).add(extract(evt));
+                    k -> new ArrayList<>()).add(extract(evt)
+                );
 
                 checkEvent(evt);
             });

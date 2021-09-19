@@ -248,7 +248,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public String igniteInstanceName() {
-        return null;
+        return cfg.getIgniteInstanceName();
     }
 
     /** {@inheritDoc} */

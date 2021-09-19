@@ -38,7 +38,6 @@ import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -62,6 +61,7 @@ import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -121,14 +121,20 @@ public class CdcMain implements Runnable {
     /** Spring resource context. */
     private final GridSpringResourceContext ctx;
 
-    /** Standalone kernal context. */
-    private GridKernalContext kctx;
-
     /** */
     private MetricRegistry mreg;
 
-    /** */
-    private AtomicLongMetric curSegmentMetric;
+    /** Current segment index metric. */
+    private AtomicLongMetric curSegmentIdx;
+
+    /** Committed state segment index metric. */
+    private AtomicLongMetric committedSegmentIdx;
+
+    /** Committed state segment offset metric. */
+    private AtomicLongMetric committedSegmentOffset;
+
+    /** Time of last segment consumption. */
+    private AtomicLongMetric lastSegmentConsumptionTs;
 
     /** Change Data Capture configuration. */
     private final CdcConfiguration cdcCfg;
@@ -233,45 +239,56 @@ public class CdcMain implements Runnable {
                 log.info("Ignite node Marshaller [dir=" + marshaller + ']');
             }
 
-            startStandaloneKernal();
-
-            kctx.resource().injectGeneric(consumer.consumer());
-
-            mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
-            mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
-            mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
-
-            state = new CdcConsumerState(cdcDir.resolve(STATE_DIR));
-
-            initState = state.load();
-
-            if (initState != null && log.isInfoEnabled())
-                log.info("Initial state loaded [state=" + initState + ']');
-
-            consumer.start();
+            StandaloneGridKernalContext kctx = startStandaloneKernal();
 
             try {
-                consumeWalSegmentsUntilStopped();
+                kctx.resource().injectGeneric(consumer.consumer());
+
+                mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
+                mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
+                mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
+
+                state = new CdcConsumerState(cdcDir.resolve(STATE_DIR));
+
+                initState = state.load();
+
+                if (initState != null && log.isInfoEnabled())
+                    log.info("Initial state loaded [state=" + initState + ']');
+
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
+
+                try {
+                    consumeWalSegmentsUntilStopped();
+                }
+                finally {
+                    consumer.stop();
+
+                    if (log.isInfoEnabled())
+                        log.info("Ignite Change Data Capture Application stopped.");
+                }
             }
             finally {
-                consumer.stop();
-
-                if (log.isInfoEnabled())
-                    log.info("Ignite Change Data Capture Application stopped.");
+                for (GridComponent comp : kctx)
+                    comp.stop(false);
             }
         }
     }
 
     /**
+     * @return Kernal instance.
      * @throws IgniteCheckedException If failed.
      */
-    private void startStandaloneKernal() throws IgniteCheckedException {
-        kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
+    private StandaloneGridKernalContext startStandaloneKernal() throws IgniteCheckedException {
+        StandaloneGridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
+                cfg.setIgniteInstanceName("cdc-" + igniteCfg.getIgniteInstanceName());
+
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
+
+                initializeDefaultMBeanServer(cfg);
 
                 return cfg;
             }
@@ -282,9 +299,15 @@ public class CdcMain implements Runnable {
         for (GridComponent comp : kctx)
             comp.start();
 
-        mreg = kctx.metric().registry(metricName("cdc", "sys"));
+        mreg = kctx.metric().registry(metricName("cdc"));
 
-        curSegmentMetric = mreg.longMetric("segmentIndex", "Current segment index");
+        curSegmentIdx = mreg.longMetric("CurrentSegmentIndex", "Current segment index");
+        committedSegmentIdx = mreg.longMetric("CommittedSegmentIndex", "Committed segment index");
+        committedSegmentOffset = mreg.longMetric("CommittedSegmentOffset", "Committed segment offset");
+        lastSegmentConsumptionTs =
+            mreg.longMetric("LastSegmentConsumptionTime", "Last time of consumption of WAL segment");
+
+        return kctx;
     }
 
     /**
@@ -360,6 +383,8 @@ public class CdcMain implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
 
+        lastSegmentConsumptionTs.value(System.currentTimeMillis());
+
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
@@ -371,9 +396,12 @@ public class CdcMain implements Runnable {
 
         long segmentIdx = segmentIndex(segment);
 
-        curSegmentMetric.value(segmentIdx);
+        curSegmentIdx.value(segmentIdx);
 
         if (initState != null) {
+            committedSegmentIdx.value(initState.index());
+            committedSegmentOffset.value(initState.fileOffset());
+
             if (segmentIdx > initState.index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
                     "[state=" + initState + ", segment=" + segmentIdx + ']');
@@ -413,7 +441,12 @@ public class CdcMain implements Runnable {
                 if (commit) {
                     assert it.lastRead().isPresent();
 
-                    state.save(it.lastRead().get());
+                    WALPointer ptr = it.lastRead().get();
+
+                    state.save(ptr);
+
+                    committedSegmentIdx.value(ptr.index());
+                    committedSegmentOffset.value(ptr.fileOffset());
 
                     // Can delete after new file state save.
                     if (!processedSegments.isEmpty()) {
