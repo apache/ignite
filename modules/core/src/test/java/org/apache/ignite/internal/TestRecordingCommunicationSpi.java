@@ -287,7 +287,17 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param nodeName Name of the node where message is sent to.
      */
     public void blockMessages(Class<?> cls, String nodeName) {
-        blockCls.computeIfAbsent(cls, k -> new HashSet<>()).add(nodeName);
+        synchronized (this) {
+            Set<String> set = blockCls.get(cls);
+
+            if (set == null) {
+                set = new HashSet<>();
+
+                blockCls.put(cls, set);
+            }
+
+            set.add(nodeName);
+        }
     }
 
     /**
