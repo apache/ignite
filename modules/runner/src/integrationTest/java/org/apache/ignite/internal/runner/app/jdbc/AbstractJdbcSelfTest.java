@@ -48,7 +48,7 @@ public class AbstractJdbcSelfTest {
     }};
 
     /** Cluster nodes. */
-    private static final List<Ignite> clusterNodes = new ArrayList<>();
+    protected static final List<Ignite> clusterNodes = new ArrayList<>();
 
     /**
      * Creates a cluster of three nodes.
@@ -71,9 +71,10 @@ public class AbstractJdbcSelfTest {
      */
     @AfterAll
     public static void afterAll() throws Exception {
-        for (Ignite clusterNode : clusterNodes) {
+        for (Ignite clusterNode : clusterNodes)
             clusterNode.close();
-        }
+
+        clusterNodes.clear();
     }
 
     /**

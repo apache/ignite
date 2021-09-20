@@ -42,6 +42,7 @@ import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.buffer.InputStreamBufferInput;
 import org.msgpack.value.ImmutableValue;
 
+import static org.apache.ignite.internal.client.proto.ClientDataType.BIGINTEGER;
 import static org.apache.ignite.internal.client.proto.ClientDataType.BITMASK;
 import static org.apache.ignite.internal.client.proto.ClientDataType.BOOLEAN;
 import static org.apache.ignite.internal.client.proto.ClientDataType.BYTES;
@@ -615,6 +616,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
 
             case DECIMAL:
                 return unpackDecimal();
+
+            case BIGINTEGER:
+                return unpackBigInteger();
 
             case BITMASK:
                 return unpackBitSet();

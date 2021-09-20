@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.client.handler.requests.sql.JdbcMetadataCatalog;
 import org.apache.ignite.client.proto.query.JdbcQueryEventHandler;
 import org.apache.ignite.client.proto.query.event.BatchExecuteRequest;
@@ -38,6 +40,7 @@ import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasResult;
 import org.apache.ignite.client.proto.query.event.JdbcMetaTablesRequest;
 import org.apache.ignite.client.proto.query.event.JdbcMetaTablesResult;
 import org.apache.ignite.client.proto.query.event.JdbcPrimaryKeyMeta;
+import org.apache.ignite.client.proto.query.event.JdbcQueryMetadataRequest;
 import org.apache.ignite.client.proto.query.event.JdbcTableMeta;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
@@ -49,6 +52,8 @@ import org.apache.ignite.client.proto.query.event.QuerySingleResult;
 import org.apache.ignite.client.proto.query.event.Response;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.Cursor;
 
 import static org.apache.ignite.client.proto.query.IgniteQueryErrorCode.UNSUPPORTED_OPERATION;
@@ -170,6 +175,65 @@ public class JdbcQueryEventHandlerImpl implements JdbcQueryEventHandler {
         }
 
         return new QueryCloseResult();
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req) {
+        SqlCursor<List<?>> cur = openCursors.get(req.cursorId());
+
+        if (cur == null)
+            return new JdbcMetaColumnsResult(Response.STATUS_FAILED,
+                "Failed to find query cursor with ID: " + req.cursorId());
+
+        if (cur.getColumnMetadata() == null)
+            return new JdbcMetaColumnsResult(Response.STATUS_FAILED,
+                "Failed to get query metadata for cursor with ID : " + req.cursorId());
+
+        FieldsMetadata metadata = cur.getColumnMetadata();
+
+        List<List<String>> origins = metadata.origins();
+        List<RelDataTypeField> list = metadata.rowType().getFieldList();
+
+        List<JdbcColumnMeta> meta = new ArrayList<>(list.size());
+
+        IgniteTypeFactory factory = new IgniteTypeFactory();
+
+        for (int i = 0; i < list.size(); i++) {
+            RelDataTypeField field = list.get(i);
+            List<String> origin = origins == null ? null : origins.get(i);
+
+            meta.add(createColumnMetadata(origin, field, factory));
+        }
+
+        return new JdbcMetaColumnsResult(meta);
+    }
+
+    /**
+     * Create Jdbc representation of column metadata from given origin and RelDataTypeField field.
+     *
+     * @param origin List of column origin. Contains schema name and table name. Might be null.
+     * @param field RelDataTypeField field with info about column.
+     * @param factory IgniteTypeFactory.
+     * @return JdbcColumnMeta object.
+     */
+    private JdbcColumnMeta createColumnMetadata(List<String> origin, RelDataTypeField field, IgniteTypeFactory factory) {
+        RelDataType val = field.getValue();
+
+        String schemaName = origin == null ? null : origin.get(0);
+        String tblName = origin == null ? null : origin.get(1);
+
+        String colName = field.getKey();
+        boolean isNullable = val.isNullable();
+
+        return new JdbcColumnMeta(
+            schemaName,
+            tblName,
+            colName,
+            factory.getJavaClass(val).getTypeName(),
+            val.getPrecision(),
+            val.getScale(),
+            isNullable
+        );
     }
 
     /** {@inheritDoc} */

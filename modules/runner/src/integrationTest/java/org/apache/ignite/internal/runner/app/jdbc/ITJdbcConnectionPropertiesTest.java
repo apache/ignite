@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * {@link ConnectionPropertiesImpl} unit tests.
  */
-public class JdbcConnectionPropertiesTest {
+public class ITJdbcConnectionPropertiesTest {
     /**
      * Test check the {@link ConnectionPropertiesImpl#getDriverPropertyInfo()} return properties with prefix {@link
      * ConnectionPropertiesImpl#PROP_PREFIX}

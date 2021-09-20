@@ -57,6 +57,8 @@ import org.apache.ignite.client.proto.query.IgniteQueryErrorCode;
 import org.apache.ignite.client.proto.query.JdbcQueryEventHandler;
 import org.apache.ignite.client.proto.query.SqlStateCode;
 import org.apache.ignite.client.proto.query.event.JdbcColumnMeta;
+import org.apache.ignite.client.proto.query.event.JdbcMetaColumnsResult;
+import org.apache.ignite.client.proto.query.event.JdbcQueryMetadataRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
 import org.apache.ignite.client.proto.query.event.QueryFetchRequest;
@@ -136,6 +138,9 @@ public class JdbcResultSet implements ResultSet {
 
     /** Query request handler. */
     private JdbcQueryEventHandler qryHandler;
+
+    /** Jdbc metadata. */
+    private JdbcResultSetMetadata jdbcMeta;
 
     /**
      * Creates new result set.
@@ -721,7 +726,10 @@ public class JdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("ResultSetMetaData are not supported.");
+        if (jdbcMeta == null)
+            jdbcMeta = new JdbcResultSetMetadata(meta());
+
+        return jdbcMeta;
     }
 
     /** {@inheritDoc} */
@@ -729,9 +737,6 @@ public class JdbcResultSet implements ResultSet {
         ensureNotClosed();
 
         Objects.requireNonNull(colLb);
-
-        if (!metaInit)
-            throw new SQLFeatureNotSupportedException("FindColumn by column label are not supported.");
 
         Integer order = columnOrder().get(colLb.toUpperCase());
 
@@ -1971,6 +1976,14 @@ public class JdbcResultSet implements ResultSet {
         if (finished && (!isQuery || autoClose))
             throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
-        throw new SQLFeatureNotSupportedException("ResultSetMetaData are not supported.");
+        if (!metaInit) {
+            JdbcMetaColumnsResult res = qryHandler.queryMetadata(new JdbcQueryMetadataRequest(cursorId));
+
+            meta = res.meta();
+
+            metaInit = true;
+        }
+
+        return meta;
     }
 }

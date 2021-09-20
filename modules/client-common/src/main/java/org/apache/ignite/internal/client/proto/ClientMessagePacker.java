@@ -701,6 +701,14 @@ public class ClientMessagePacker extends MessagePacker {
                 packInt(ClientDataType.TIMESTAMP);
                 packTimestamp(((java.util.Date)arg).toInstant());
             }
+            else if (cls == BigDecimal.class) {
+                packInt(ClientDataType.DECIMAL);
+                packDecimal(((BigDecimal)arg));
+            }
+            else if (cls == BigInteger.class) {
+                packInt(ClientDataType.BIGINTEGER);
+                packBigInteger(((BigInteger)arg));
+            }
             else
                 throw new UnsupportedOperationException("Custom objects are not supported");
         }

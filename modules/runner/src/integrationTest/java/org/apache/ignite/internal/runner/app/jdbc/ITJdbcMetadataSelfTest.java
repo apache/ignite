@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.runner.app.jdbc;
 
 import java.math.BigDecimal;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -32,26 +31,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.app.Ignite;
-import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
-import org.apache.ignite.jdbc.IgniteJdbcDriver;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.SchemaTable;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import static java.sql.Types.DATE;
 import static java.sql.Types.DECIMAL;
@@ -66,56 +56,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Metadata tests.
  */
-public class JdbcMetadataSelfTest {
+public class ITJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
     /** URL. */
     protected static final String URL = "jdbc:ignite:thin://127.0.1.1:10800";
 
-    /** Nodes bootstrap configuration. */
-    private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-        put("node2", "{\n" +
-            "  \"node\": {\n" +
-            "    \"metastorageNodes\":[ \"node2\" ]\n" +
-            "  }\n" +
-            "}");
-    }};
-
-    /** Cluster nodes. */
-    protected static final List<Ignite> clusterNodes = new ArrayList<>();
-
-    /**
-     * Creates a cluster of three nodes.
-     *
-     * @param temp Temporal directory.
-     */
+    /** Creates tables. */
     @BeforeAll
-    public static void beforeAll(@TempDir Path temp) {
-        IgniteJdbcDriver.register();
+    public static void createTables() {
+        assert !clusterNodes.isEmpty();
 
-        nodesBootstrapCfg.forEach((nodeName, configStr) ->
-            clusterNodes.add(IgnitionManager.start(nodeName, configStr, temp.resolve(nodeName)))
-        );
-    }
-
-    /**
-     * Close all cluster nodes.
-     *
-     * @throws Exception if failed.
-     */
-    @AfterAll
-    public static void afterAll() throws Exception {
-        for (Ignite clusterNode : clusterNodes) {
-            clusterNode.close();
-        }
-    }
-
-    /**
-     * Create the connection ant statement.
-     *
-     * @throws Exception if failed.
-     */
-    @BeforeEach
-    public void beforeTest() {
-        // Create table on node 0.
         SchemaTable perTbl = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
             SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
             SchemaBuilders.column("AGE", ColumnType.INT32).asNullable().build(),
@@ -127,9 +76,6 @@ public class JdbcMetadataSelfTest {
             SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
             SchemaBuilders.column("BIGDATA", ColumnType.decimalOf(20, 10)).asNullable().build()
         ).withPrimaryKey("ID").build();
-
-        if (clusterNodes.get(0).tables().table(perTbl.canonicalName()) != null)
-            return;
 
         clusterNodes.get(0).tables().createTable(perTbl.canonicalName(), tblCh ->
             SchemaConfigurationConverter.convert(perTbl, tblCh)
@@ -154,7 +100,6 @@ public class JdbcMetadataSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15187")
     public void testResultSetMetaData() throws Exception {
         Statement stmt = DriverManager.getConnection(URL).createStatement();
 

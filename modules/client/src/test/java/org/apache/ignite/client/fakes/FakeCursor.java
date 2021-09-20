@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 
 public class FakeCursor implements SqlCursor<List<?>> {
 
@@ -59,5 +60,9 @@ public class FakeCursor implements SqlCursor<List<?>> {
 
     @Override public SqlQueryType getQueryType() {
         return SqlQueryType.QUERY;
+    }
+
+    @Override public FieldsMetadata getColumnMetadata() {
+        return null;
     }
 }

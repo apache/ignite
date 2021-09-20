@@ -49,11 +49,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Result set test.
  */
-public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
+public class ITJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     /** SQL query. */
     private static final String SQL =
-        "SELECT 1::INTEGER, true, 1::TINYINT, 1::SMALLINT, 1::INTEGER, 1::BIGINT, 1.0::FLOAT, 1.0::DOUBLE, 1.0::DOUBLE, " +
-            "'1', '1', '1901-02-01'::DATE, '01:01:01'::TIME, 1::TIMESTAMP;";
+        "SELECT 1::INTEGER as id, true as boolVal, 1::TINYINT as byteVal, 1::SMALLINT as shortVal, 1::INTEGER as intVal, 1::BIGINT as longVal, 1.0::FLOAT as floatVal, 1.0::DOUBLE as doubleVal, 1.0::DECIMAL as bigVal, " +
+            "'1' as strVal, '1', '1901-02-01'::DATE as dateVal, '01:01:01'::TIME as timeVal, 1::TIMESTAMP as tsVal;";
 
     /** Statement. */
     private Statement stmt;
@@ -100,8 +100,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getBoolean("boolVal");
+                assertTrue(rs.getBoolean("boolVal"));
                 assertTrue(rs.getBoolean(2));
                 assertEquals(1, rs.getByte(2));
                 assertEquals(1, rs.getInt(2));
@@ -174,9 +173,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getByte("byteVal") == 1;
-
+                assertEquals(1, rs.getByte("byteVal"));
                 assertTrue(rs.getBoolean(3));
                 assertEquals(1, rs.getByte(3));
                 assertEquals(1, rs.getInt(3));
@@ -216,8 +213,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getShort("shortVal") == 1;
+                assertEquals(1, rs.getShort("shortVal"));
 
                 assertTrue(rs.getBoolean(4));
                 assertEquals(1, rs.getByte(4));
@@ -258,8 +254,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getInt("intVal") == 1;
+                assertEquals(1, rs.getInt("intVal"));
 
                 assertTrue(rs.getBoolean(5));
                 assertEquals(1, rs.getByte(5));
@@ -300,8 +295,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getLong("longVal") == 1;
+                assertEquals(1, rs.getLong("longVal"));
 
                 assertTrue(rs.getBoolean(6));
                 assertEquals(1, rs.getByte(6));
@@ -342,8 +336,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getFloat("floatVal") == 1.0;
+                assertEquals(1.0, rs.getFloat("floatVal"));
 
                 assertTrue(rs.getBoolean(7));
                 assertEquals(1, rs.getByte(7));
@@ -384,8 +377,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-//                assert rs.getDouble("doubleVal") == 1.0;
+                assertEquals(1.0, rs.getDouble("doubleVal"));
 
                 assertTrue(rs.getBoolean(8));
                 assertEquals(1, rs.getByte(8));
@@ -419,7 +411,6 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testBigDecimal() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -436,8 +427,8 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
                 assertEquals(1, rs.getLong(9));
                 assertEquals(1.0, rs.getDouble(9));
                 assertEquals(1.0f, rs.getFloat(9));
-                assertEquals(new BigDecimal(1), rs.getBigDecimal(9));
-                assertEquals(rs.getString(9), "1");
+                assertEquals(new BigDecimal("1.0"), rs.getBigDecimal(9));
+                assertEquals(rs.getString(9), "1.0");
 
                 assertTrue(rs.getObject(9, Boolean.class));
                 assertEquals((byte)1, rs.getObject(9, Byte.class));
@@ -446,8 +437,8 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
                 assertEquals(1, rs.getObject(9, Long.class));
                 assertEquals(1.f, rs.getObject(9, Float.class));
                 assertEquals(1, rs.getObject(9, Double.class));
-                assertEquals(new BigDecimal(1), rs.getObject(9, BigDecimal.class));
-                assertEquals(rs.getObject(9, String.class), "1");
+                assertEquals(new BigDecimal("1.0"), rs.getObject(9, BigDecimal.class));
+                assertEquals(rs.getObject(9, String.class), "1.0");
             }
 
             cnt++;
@@ -495,8 +486,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                //TODO IGNITE-15187
-                //assert "1".equals(rs.getString("strVal"));
+                assert "1".equals(rs.getString("strVal"));
 
                 assertTrue(rs.getBoolean(10));
                 assertEquals(1, rs.getByte(10));
@@ -564,7 +554,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-//                assert rs.getDate("dateVal").equals(new Date(1, 1, 1));
+                assert rs.getDate("dateVal").equals(new Date(1, 1, 1));
 
                 assertEquals(new Date(1, 1, 1), rs.getDate(12));
                 assertEquals(new Time(new Date(1, 1, 1).getTime()), rs.getTime(12));
@@ -595,7 +585,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-//                assert rs.getTime("timeVal").equals(new Time(1, 1, 1));
+                assert rs.getTime("timeVal").equals(new Time(1, 1, 1));
 
                 assertEquals(new Date(new Time(1, 1, 1).getTime()), rs.getDate(13));
                 assertEquals(new Time(1, 1, 1), rs.getTime(13));
@@ -625,7 +615,7 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-//                assert rs.getTimestamp("tsVal").getTime() == 1;
+                assertEquals(-10800000, rs.getTimestamp("tsVal").getTime());
                 assertEquals(new Date(new Timestamp(-10800000).getTime()), rs.getDate(14));
                 assertEquals(new Time(new Timestamp(-10800000).getTime()), rs.getTime(14));
                 assertEquals(new Timestamp(-10800000), rs.getTimestamp(14));
@@ -718,12 +708,9 @@ public class JdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO IGNITE-15187
-     *
      * @throws Exception If failed.
      */
     @Test
-    @Disabled
     public void testFindColumn() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 

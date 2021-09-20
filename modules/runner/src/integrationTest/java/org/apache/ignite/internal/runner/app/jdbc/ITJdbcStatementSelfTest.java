@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * Statement test.
  */
 @SuppressWarnings({"ThrowableNotThrown"})
-public class JdbcStatementSelfTest extends AbstractJdbcSelfTest {
+public class ITJdbcStatementSelfTest extends AbstractJdbcSelfTest {
     /** SQL query. */
     private static final String SQL =
         "select 1::INTEGER, true, 1::TINYINT, 1::SMALLINT, 1::INTEGER, 1::BIGINT, 1.0::FLOAT, 1.0::DOUBLE, 1.0::DOUBLE, '1';";
@@ -89,7 +89,7 @@ public class JdbcStatementSelfTest extends AbstractJdbcSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15187 + IGNITE-15108")
+    @Disabled("IGNITE-15108")
     public void testExecuteQuery0() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -146,7 +146,7 @@ public class JdbcStatementSelfTest extends AbstractJdbcSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15187 + IGNITE-15108")
+    @Disabled("IGNITE-15108")
     public void testExecute() throws Exception {
         assertTrue(stmt.execute(SQL));
 
@@ -186,7 +186,7 @@ public class JdbcStatementSelfTest extends AbstractJdbcSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Disabled("IGNITE-15187 + IGNITE-15108")
+    @Disabled("IGNITE-15108")
     public void testMaxRows() throws Exception {
         stmt.setMaxRows(1);
 

@@ -522,12 +522,12 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
                 res.add(ectx.rowHandler().get(i, row));
 
             return res;
-        }), plan.type());
+        }), plan);
     }
 
     /** */
     private SqlCursor<List<?>> executeExplain(ExplainPlan plan) {
-        SqlCursor<List<?>> cur = Commons.createCursor(singletonList(singletonList(plan.plan())), plan.type());
+        SqlCursor<List<?>> cur = Commons.createCursor(singletonList(singletonList(plan.plan())), plan);
         // TODO: fix this
 //        cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(pctx.typeFactory()));
 

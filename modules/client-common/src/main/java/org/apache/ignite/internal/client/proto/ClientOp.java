@@ -131,4 +131,7 @@ public class ClientOp {
 
     /** Get primary key metadata. */
     public static final int SQL_PK_META = 41;
+
+    /** Get query metadata. */
+    public static final int SQL_QUERY_META = 42;
 }

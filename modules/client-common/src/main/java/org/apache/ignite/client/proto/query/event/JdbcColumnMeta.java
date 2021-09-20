@@ -70,6 +70,9 @@ public class JdbcColumnMeta extends Response {
     /** Scale. */
     private int scale;
 
+    /** Data type class. */
+    private String dataTypeCls;
+
     /**
      * Default constructor is used for serialization.
      */
@@ -101,13 +104,30 @@ public class JdbcColumnMeta extends Response {
      */
     public JdbcColumnMeta(String schemaName, String tblName, String colName, Class<?> cls, int precision, int scale,
         boolean nullable) {
+        this(schemaName, tblName, colName, cls.getName(), precision, scale, nullable);
+    }
+
+    /**
+     * Constructor with nullable flag.
+     *
+     * @param schemaName Schema.
+     * @param tblName Table.
+     * @param colName Column.
+     * @param javaTypeName Java type name.
+     * @param nullable Nullable flag.
+     * @param precision Column precision.
+     * @param scale Column scale.
+     */
+    public JdbcColumnMeta(String schemaName, String tblName, String colName, String javaTypeName, int precision, int scale,
+        boolean nullable) {
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.colName = colName;
         this.nullable = nullable;
 
-        this.dataType = type(cls.getName());
-        this.dataTypeName = typeName(cls.getName());
+        this.dataType = type(javaTypeName);
+        this.dataTypeName = typeName(javaTypeName);
+        this.dataTypeCls = javaTypeName;
         this.precision = precision;
         this.scale = scale;
 
@@ -195,6 +215,15 @@ public class JdbcColumnMeta extends Response {
         return nullable;
     }
 
+    /**
+     * Gets data type class.
+     *
+     * @return Data type class.
+     */
+    public String dataTypeClass() {
+        return dataTypeCls;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
@@ -202,12 +231,13 @@ public class JdbcColumnMeta extends Response {
         if (!hasResults)
             return;
 
-        packer.packString(schemaName);
-        packer.packString(tblName);
+        ClientMessageUtils.writeStringNullable(packer, schemaName);
+        ClientMessageUtils.writeStringNullable(packer, tblName);
         packer.packString(colName);
 
         packer.packInt(dataType);
         packer.packString(dataTypeName);
+        packer.packString(dataTypeCls);
         packer.packBoolean(nullable);
         packer.packInt(precision);
         packer.packInt(scale);
@@ -220,12 +250,13 @@ public class JdbcColumnMeta extends Response {
         if (!hasResults)
             return;
 
-        schemaName = unpacker.unpackString();
-        tblName = unpacker.unpackString();
+        schemaName = ClientMessageUtils.readStringNullable(unpacker);
+        tblName = ClientMessageUtils.readStringNullable(unpacker);
         colName = unpacker.unpackString();
 
         dataType = unpacker.unpackInt();
         dataTypeName = unpacker.unpackString();
+        dataTypeCls = unpacker.unpackString();
         nullable = unpacker.unpackBoolean();
         precision = unpacker.unpackInt();
         scale = unpacker.unpackInt();
@@ -247,6 +278,7 @@ public class JdbcColumnMeta extends Response {
             && Objects.equals(schemaName, meta.schemaName)
             && Objects.equals(tblName, meta.tblName)
             && Objects.equals(colName, meta.colName)
+            && Objects.equals(dataTypeCls, meta.dataTypeCls)
             && Objects.equals(dataTypeName, meta.dataTypeName);
     }
 
@@ -256,6 +288,7 @@ public class JdbcColumnMeta extends Response {
         result = 31 * result + (schemaName != null ? schemaName.hashCode() : 0);
         result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
         result = 31 * result + (colName != null ? colName.hashCode() : 0);
+        result = 31 * result + (dataTypeCls != null ? dataTypeCls.hashCode() : 0);
         result = 31 * result + dataType;
         result = 31 * result + (dataTypeName != null ? dataTypeName.hashCode() : 0);
         result = 31 * result + precision;

@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
-public class JdbcConnectionSelfTest extends AbstractJdbcSelfTest {
+public class ITJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
     /**
      * @throws Exception If failed.
      */

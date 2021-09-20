@@ -28,6 +28,7 @@ import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasRequest;
 import org.apache.ignite.client.proto.query.event.JdbcMetaSchemasResult;
 import org.apache.ignite.client.proto.query.event.JdbcMetaTablesRequest;
 import org.apache.ignite.client.proto.query.event.JdbcMetaTablesResult;
+import org.apache.ignite.client.proto.query.event.JdbcQueryMetadataRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseRequest;
 import org.apache.ignite.client.proto.query.event.QueryCloseResult;
 import org.apache.ignite.client.proto.query.event.QueryExecuteRequest;
@@ -119,6 +120,15 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
         JdbcMetaPrimaryKeysResult res = new JdbcMetaPrimaryKeysResult();
 
         client.sendRequest(ClientOp.SQL_PK_META, req, res);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req) {
+        JdbcMetaColumnsResult res = new JdbcMetaColumnsResult();
+
+        client.sendRequest(ClientOp.SQL_QUERY_META, req, res);
 
         return res;
     }

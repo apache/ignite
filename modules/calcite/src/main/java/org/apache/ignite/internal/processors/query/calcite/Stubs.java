@@ -17,6 +17,8 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -82,6 +84,12 @@ public class Stubs {
 
         if (type == String.class)
             return UUID.randomUUID().toString();
+
+        if (type == BigDecimal.class)
+            return BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble());
+
+        if (type == BigInteger.class)
+            return BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble()).unscaledValue();
 
         throw new IllegalStateException("Can't generate value of type " + type.getTypeName());
     }
