@@ -160,7 +160,6 @@ public class IgniteStatisticsConfigurationManager {
             mgmtPool.submit(() -> {
                 updateFullCfg();
             });
-            //scanAndCheckLocalStatistics(fut.topologyVersion());
         }
     };
 
@@ -257,14 +256,14 @@ public class IgniteStatisticsConfigurationManager {
     /**
      * Constructor.
      *
-     * @param schemaMgr
-     * @param subscriptionProcessor
-     * @param sysViewMgr
-     * @param cluster
-     * @param exchange
-     * @param gatherer
-     * @param mgmtPool
-     * @param logSupplier
+     * @param schemaMgr Schema manager.
+     * @param subscriptionProcessor Subscription processor.
+     * @param sysViewMgr System view manager.
+     * @param cluster Cluster state processor.
+     * @param exchange Exchange manager.
+     * @param statProc Staitistics processor.
+     * @param mgmtPool Statistics management pool
+     * @param logSupplier Log supplier.
      */
     public IgniteStatisticsConfigurationManager(
         SchemaManager schemaMgr,
@@ -272,14 +271,14 @@ public class IgniteStatisticsConfigurationManager {
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
         GridCachePartitionExchangeManager<?, ?> exchange,
-        StatisticsProcessor gatherer,
+        StatisticsProcessor statProc,
         IgniteThreadPoolExecutor mgmtPool,
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
         this.mgmtPool = mgmtPool;
-        this.statProc = gatherer;
+        this.statProc = statProc;
         this.cluster = cluster;
         this.subscriptionProcessor = subscriptionProcessor;
         this.exchange = exchange;
@@ -327,6 +326,9 @@ public class IgniteStatisticsConfigurationManager {
             mgmtPool.submit(() -> updateFullCfg());
     }
 
+    /**
+     * Scan statistics configuration and update each key it contains.
+     */
     public void updateFullCfg() {
         try {
             distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {

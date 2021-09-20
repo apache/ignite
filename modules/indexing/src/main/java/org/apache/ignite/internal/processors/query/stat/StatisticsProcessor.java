@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
@@ -413,6 +414,11 @@ public class StatisticsProcessor {
                             log.debug("Collect statistics task was cancelled " +
                                 "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
                         }
+                    }
+                    else if (t.getCause() instanceof NodeStoppingException) {
+                        if (log.isDebugEnabled())
+                            log.debug("Node stopping during statistics collection on " +
+                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
                     }
                     else
                         log.warning("Unexpected error on statistic gathering", t);
