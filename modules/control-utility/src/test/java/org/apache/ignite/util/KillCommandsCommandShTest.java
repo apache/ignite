@@ -20,15 +20,29 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
@@ -194,5 +208,98 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             UUID.randomUUID().toString());
 
         assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testCancelConsistencyMissedTask() {
+        int res = execute("--kill", "consistency");
+
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testCancelConsistencyTask() throws InterruptedException {
+        String consistencyCancheName = "consistencyCache";
+
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
+
+        cfg.setName(consistencyCancheName);
+        cfg.setBackups(SERVER_NODE_CNT - 1);
+
+        IgniteCache<Integer, Integer> cache = client.getOrCreateCache(cfg);
+
+        for (int i = 0; i < 10_000; i++)
+            cache.put(i, i);
+
+        AtomicInteger getCnt = new AtomicInteger();
+
+        CountDownLatch thLatch = new CountDownLatch(1);
+
+        Thread th = new Thread(() -> {
+            IgnitePredicate<ComputeJobView> repairJobFilter =
+                job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName());
+
+            for (IgniteEx node : srvs) {
+                SystemView<ComputeJobView> jobs = node.context().systemView().view(JOBS_VIEW);
+
+                assertTrue(F.iterator0(jobs, true, repairJobFilter).hasNext()); // Found.
+            }
+
+            int res = execute("--kill", "consistency");
+
+            assertEquals(EXIT_CODE_OK, res);
+
+            try {
+                assertTrue(GridTestUtils.waitForCondition(() -> {
+                    for (IgniteEx node : srvs) {
+                        SystemView<ComputeJobView> jobs = node.context().systemView().view(JOBS_VIEW);
+
+                        if (F.iterator0(jobs, true, repairJobFilter).hasNext()) // Found.
+                            return false;
+                    }
+
+                    return true;
+                }, 5000L)); // Missed.
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                fail();
+            }
+
+            thLatch.countDown();
+        });
+
+        for (IgniteEx server : srvs) {
+            TestRecordingCommunicationSpi spi =
+                ((TestRecordingCommunicationSpi)server.configuration().getCommunicationSpi());
+
+            spi.blockMessages((node, message) -> {
+                if (message instanceof GridNearGetRequest) { // Get request caused by read repair operation.
+                    if (getCnt.incrementAndGet() == SERVER_NODE_CNT) // Each node should send a get request.
+                        th.start();
+
+                    return true; // Blocking to freeze '--consistency repair' operation.
+                }
+
+                return false;
+            });
+        }
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", consistencyCancheName, "0"));
+
+        assertContains(log, testOut.toString(), "Operation execution cancelled.");
+        assertContains(log, testOut.toString(), "violations were NOT found [processed=0]");
+
+        thLatch.await();
+
+        for (IgniteEx server : srvs) { // Restoring messaging for other tests.
+            TestRecordingCommunicationSpi spi =
+                ((TestRecordingCommunicationSpi)server.configuration().getCommunicationSpi());
+
+            spi.stopBlock();
+        }
     }
 }
