@@ -243,7 +243,7 @@ public class TemporalTypesHelper {
                 break;
             }
             case 9: {
-                nanos = nanos; // 1ns precision
+                // 1ns precision
                 break;
             }
             default: // Should never get here.
