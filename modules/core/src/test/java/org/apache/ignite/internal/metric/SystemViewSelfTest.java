@@ -2052,18 +2052,19 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     public void testSnapshots() throws Exception {
         cleanPersistenceDir();
 
+        String dfltCacheGrp = "testGroup";
+
         String testSnap0 = "testSnap0";
         String testSnap1 = "testSnap1";
 
         try (IgniteEx ignite = startGrid(getConfiguration()
+            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setGroupName(dfltCacheGrp))
             .setDataStorageConfiguration(
                 new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration().setName("pds").setPersistenceEnabled(true)
                 )))
         ) {
             ignite.cluster().state(ClusterState.ACTIVE);
-
-            ignite.createCache(DEFAULT_CACHE_NAME);
 
             ignite.snapshot().createSnapshot(testSnap0).get();
 
@@ -2074,7 +2075,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             SnapshotView view = views.iterator().next();
 
             assertEquals(testSnap0, view.snapshotName());
-            assertEquals(DEFAULT_CACHE_NAME, view.cacheGroup());
+            assertEquals(dfltCacheGrp, view.cacheGroup());
             assertEquals(toStringSafe(ignite.localNode().consistentId()), view.consistentId());
 
             ignite.createCache("testCache");

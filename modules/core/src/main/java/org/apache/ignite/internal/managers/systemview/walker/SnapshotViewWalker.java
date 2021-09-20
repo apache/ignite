@@ -38,7 +38,7 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
 
     /** List of filtrable attributes. */
     private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
-        "snapshotName", "nodeId", "cacheGroup", "cacheCroupLocalPartitions"
+        "snapshotName", "nodeId", "cacheGroup", "localPartitions"
     ));
 
     /** {@inheritDoc} */
@@ -51,7 +51,7 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
         v.accept(0, "snapshotName", String.class);
         v.accept(1, "nodeId", String.class);
         v.accept(2, "cacheGroup", String.class);
-        v.accept(3, "cacheCroupLocalPartitions", String.class);
+        v.accept(3, "localPartitions", String.class);
     }
 
     /** {@inheritDoc} */
@@ -59,7 +59,7 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
         v.accept(0, "snapshotName", String.class, row.snapshotName());
         v.accept(1, "nodeId", String.class, row.consistentId());
         v.accept(2, "cacheGroup", String.class, row.cacheGroup());
-        v.accept(3, "cacheCroupLocalPartitions", String.class, row.cacheGroupLocalPartitions());
+        v.accept(3, "localPartitions", String.class, row.localPartitions());
     }
 
     /** {@inheritDoc} */

@@ -172,6 +172,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
@@ -188,7 +189,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
-import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
@@ -1784,35 +1784,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return Collections.emptyList();
 
                 return F.flat(F.iterator(readSnapshotMetadatas(snpName), meta -> {
-                        if (nodeConsistentId != null && !nodeConsistentId.equals(toStringSafe(meta.consistentId())))
+                        if (nodeConsistentId != null && !nodeConsistentId.equals(meta.consistentId()))
                             return Collections.emptyList();
 
-                        return F.iterator(getCacheGroupsName(meta), cacheGrp -> new SnapshotView(
-                            meta.snapshotName(),
-                            meta.consistentId(),
-                            cacheGrp,
-                            meta.partitions().get(CU.cacheId(cacheGrp))
-                        ), true);
+                    List<String> cacheCrps = snapshotCacheDirectories(snpName, meta.folderName()).stream()
+                        .map(File::getName)
+                        .filter(name -> name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX))
+                        .map(name -> name.startsWith(CACHE_DIR_PREFIX)
+                            ? name.substring(CACHE_DIR_PREFIX.length())
+                            : name.substring(CACHE_GRP_DIR_PREFIX.length()))
+                        .collect(Collectors.toList());
+
+                    return F.iterator(cacheCrps, cacheGrp -> new SnapshotView(
+                        meta.snapshotName(),
+                        meta.consistentId(),
+                        cacheGrp,
+                        meta.partitions().get(CU.cacheId(cacheGrp))
+                    ), true);
                     }, true));
             }, true));
-    }
-
-    /** */
-    private List<String> getCacheGroupsName(SnapshotMetadata meta) {
-        Path path = Paths.get(snapshotLocalDir(meta.snapshotName()).toString(), "db", meta.folderName());
-
-        List<String> res = new ArrayList<>();
-
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(path,
-            pth -> pth.getFileName().toString().startsWith(CACHE_DIR_PREFIX))) {
-
-            ds.forEach(dir -> res.add(dir.getFileName().toString().substring(CACHE_DIR_PREFIX.length())));
-        }
-        catch (IOException e) {
-            res.add(e.getMessage());
-        }
-
-        return res;
     }
 
     /** @return Snapshot handlers. */

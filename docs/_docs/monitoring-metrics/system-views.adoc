@@ -899,3 +899,17 @@ Note, lock will be shown on the non parent node only after initial usage on that
 |GROUP_ID | int | Cache group id to store data structure
 |REMOVED | boolean | `True` if removed
 |===
+
+== SNAPSHOTS
+
+The SNAPSHOTS view exposes information about local snapshots.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| SNAPSHOT_NAME | VARCHAR | Snapshot name.
+| NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
+| CACHE_GROUP | VARCHAR | Name of cache group.
+| LOCAL_PARTITIONS | VARCHAR | Numbers of local partitions for cache group.
+
+|===

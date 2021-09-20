@@ -32,25 +32,25 @@ public class SnapshotView {
     private final String name;
 
     /** Node consistent id. */
-    private final Object consistentId;
+    private final String consistentId;
 
     /** Cache group name. */
     private final String cacheGrp;
 
     /** Cache group local partitions. */
-    private final String cacheGrpLocParts;
+    private final String locPartitions;
 
     /**
      * @param name Snapshot name.
-     * @param consistentId Consistent id.
+     * @param consistentId Node consistent id.
      * @param cacheGrp Cache group.
-     * @param cacheGrpLocParts Cache group local partitions.
+     * @param locPartitions Cache group local partitions.
      */
-    public SnapshotView(String name, Object consistentId, String cacheGrp, @Nullable Set<Integer> cacheGrpLocParts) {
+    public SnapshotView(String name, String consistentId, String cacheGrp, @Nullable Set<Integer> locPartitions) {
         this.name = name;
         this.consistentId = consistentId;
         this.cacheGrp = cacheGrp;
-        this.cacheGrpLocParts = cacheGrpLocParts != null ? String.valueOf(cacheGrpLocParts) : "[]";
+        this.locPartitions = locPartitions != null ? String.valueOf(locPartitions) : "[]";
     }
 
     /**
@@ -80,10 +80,10 @@ public class SnapshotView {
     }
 
     /**
-     * @return Cache group name.
+     * @return Numbers of local partitions for cache group.
      */
     @Order(3)
-    public String cacheGroupLocalPartitions() {
-        return cacheGrpLocParts;
+    public String localPartitions() {
+        return locPartitions;
     }
 }
