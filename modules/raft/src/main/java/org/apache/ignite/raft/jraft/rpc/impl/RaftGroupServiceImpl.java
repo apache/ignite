@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
@@ -96,8 +97,8 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     /** */
     private final long retryDelay;
 
-    /** */
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    /** TODO: Use shared executors instead https://issues.apache.org/jira/browse/IGNITE-15136 */
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, new NamedThreadFactory("Raft-Group-Service-Pool"));
 
     /**
      * Constructor.

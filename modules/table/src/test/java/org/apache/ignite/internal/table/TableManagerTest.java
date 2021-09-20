@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.schema.ColumnType;
@@ -364,7 +365,7 @@ public class TableManagerTest {
             workDir
         );
 
-        TableImpl tbl2;
+        TableImpl tbl2 = null;
 
         try {
             tableManager.start();
@@ -393,24 +394,31 @@ public class TableManagerTest {
 
                 tableCreatedFlag.set(createTbl);
 
-                when(mm.range(eq(new ByteArray(PUBLIC_PREFIX)), any())).thenAnswer(invocation -> {
-                    AtomicBoolean firstRecord = new AtomicBoolean(createTbl);
+                try {
+                    when(mm.range(eq(new ByteArray(PUBLIC_PREFIX)), any())).thenAnswer(invocation -> {
+                        AtomicBoolean firstRecord = new AtomicBoolean(createTbl);
 
-                    Cursor<Entry> cursor = mock(Cursor.class);
+                        Cursor<Entry> cursor = mock(Cursor.class);
 
-                    when(cursor.hasNext()).thenAnswer(hasNextInvocation ->
-                        firstRecord.compareAndSet(true, false));
+                        when(cursor.hasNext()).thenAnswer(hasNextInvocation ->
+                            firstRecord.compareAndSet(true, false));
 
-                    Entry mockEntry = mock(Entry.class);
+                        Entry mockEntry = mock(Entry.class);
 
-                    when(mockEntry.key()).thenReturn(new ByteArray(PUBLIC_PREFIX + "uuid." + NamedListNode.NAME));
+                        when(mockEntry.key()).thenReturn(new ByteArray(PUBLIC_PREFIX + "uuid." + NamedListNode.NAME));
 
-                    when(mockEntry.value()).thenReturn(ByteUtils.toBytes(schemaTable.canonicalName()));
+                        when(mockEntry.value()).thenReturn(ByteUtils.toBytes(schemaTable.canonicalName()));
 
-                    when(cursor.next()).thenReturn(mockEntry);
+                        when(cursor.next()).thenReturn(mockEntry);
 
-                    return cursor;
-                });
+                        return cursor;
+                    });
+                }
+                catch (NodeStoppingException e) {
+                    LOG.error("Node was stopped during table creation.", e);
+
+                    fail();
+                }
 
                 if (phaser != null)
                     phaser.arriveAndAwaitAdvance();
@@ -426,6 +434,11 @@ public class TableManagerTest {
             assertNotNull(tbl2);
 
             assertEquals(tablesBeforeCreation + 1, tableManager.tables().size());
+        }
+        catch (NodeStoppingException e) {
+            LOG.error("Node was stopped during table creation.", e);
+
+            fail();
         }
         finally {
             tableManager.stop();

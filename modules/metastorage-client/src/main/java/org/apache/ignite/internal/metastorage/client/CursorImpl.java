@@ -76,7 +76,10 @@ public class CursorImpl<T> implements Cursor<T> {
                 cursorId -> metaStorageRaftGrpSvc.run(new CursorCloseCommand(cursorId))).get();
         }
         catch (InterruptedException | ExecutionException e) {
-            LOG.error("Unable to evaluate cursor close command", e);
+            if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class))
+                return;
+
+            LOG.debug("Unable to evaluate cursor close command", e);
 
             throw new IgniteInternalException(e);
         }
@@ -101,10 +104,10 @@ public class CursorImpl<T> implements Cursor<T> {
                         cursorId -> metaStorageRaftGrpSvc.<Boolean>run(new CursorHasNextCommand(cursorId))).get();
             }
             catch (InterruptedException | ExecutionException e) {
-                if (e.getCause().getClass().equals(NodeStoppingException.class))
+                if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class))
                     return false;
 
-                LOG.error("Unable to evaluate cursor hasNext command", e);
+                LOG.debug("Unable to evaluate cursor hasNext command", e);
 
                 throw new IgniteInternalException(e);
             }
@@ -122,10 +125,10 @@ public class CursorImpl<T> implements Cursor<T> {
                     return fn.apply(res);
             }
             catch (InterruptedException | ExecutionException e) {
-                if (e.getCause().getClass().equals(NodeStoppingException.class))
+                if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class))
                     throw new NoSuchElementException();
 
-                LOG.error("Unable to evaluate cursor hasNext command", e);
+                LOG.debug("Unable to evaluate cursor hasNext command", e);
 
                 throw new IgniteInternalException(e);
             }

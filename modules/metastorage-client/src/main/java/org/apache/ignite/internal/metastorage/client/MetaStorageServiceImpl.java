@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.internal.metastorage.common.OperationType;
 import org.apache.ignite.internal.metastorage.common.command.ConditionInfo;
 import org.apache.ignite.internal.metastorage.common.command.GetAllCommand;
@@ -400,10 +401,12 @@ public class MetaStorageServiceImpl implements MetaStorageService {
             watchers.computeIfPresent(
                 watchId,
                 (k, v) -> {
-                    CompletableFuture.runAsync(v::interrupt).thenRun(() -> {
-                        try {
-                            v.stop = true;
+                    CompletableFuture.runAsync(() -> {
+                        v.stop = true;
 
+                        v.interrupt();
+                    }).thenRun(() -> {
+                        try {
                             Thread.sleep(100);
 
                             v.cursor.close();
@@ -412,6 +415,11 @@ public class MetaStorageServiceImpl implements MetaStorageService {
                             throw new IgniteInternalException(e);
                         }
                         catch (Exception e) {
+                            if (e instanceof IgniteInternalException && e.getCause().getCause() instanceof RejectedExecutionException) {
+                                LOG.warn("Cursor close command was rejected because raft executor has been already stopped.");
+                                return;
+                            }
+
                             // TODO: IGNITE-14693 Implement Meta storage exception handling logic.
                             LOG.error("Unexpected exception", e);
                         }
@@ -470,7 +478,11 @@ public class MetaStorageServiceImpl implements MetaStorageService {
                     catch (Throwable e) {
                         if (e instanceof NodeStoppingException || e.getCause() instanceof NodeStoppingException)
                             break;
-                        else {
+                        else if ((e instanceof InterruptedException || e.getCause() instanceof InterruptedException) && stop) {
+                            LOG.debug("Watcher has been stopped during node's stop");
+
+                            break;
+                        } else {
                             // TODO: IGNITE-14693 Implement Meta storage exception handling logic.
                             LOG.error("Unexpected exception", e);
                         }
