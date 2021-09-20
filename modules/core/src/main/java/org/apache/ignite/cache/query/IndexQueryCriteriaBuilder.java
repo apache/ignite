@@ -114,11 +114,25 @@ public class IndexQueryCriteriaBuilder {
      * @return Criterion.
      */
     public static IndexQueryCriterion between(String field, Object lower, Object upper) {
+        return between(field, lower, upper, true, true);
+    }
+
+    /**
+     * Between.
+     *
+     * @param field Index field to apply criterion.
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @param lowerIncl Include lower bound if {@code true}, exclude it if {@code false}.
+     * @param upperIncl Include upper bound if {@code true}, exclude it if {@code false}.
+     * @return Criterion.
+     */
+    public static IndexQueryCriterion between(String field, Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
         A.notNullOrEmpty(field, "field");
 
         RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(field, lower, upper);
-        c.lowerIncl(true);
-        c.upperIncl(true);
+        c.lowerIncl(lowerIncl);
+        c.upperIncl(upperIncl);
         c.lowerNull(lower == null);
         c.upperNull(upper == null);
 

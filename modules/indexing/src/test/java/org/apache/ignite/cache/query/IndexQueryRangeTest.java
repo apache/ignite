@@ -248,6 +248,24 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setCriteria(between("id", lower, upper));
 
         check(cache.query(qry), lower, upper + 1);
+
+        // Between lower exclusive.
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(between("id", lower, upper, false, true));
+
+        check(cache.query(qry), lower + 1, upper + 1);
+
+        // Between upper exclusive.
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(between("id", lower, upper, true, false));
+
+        check(cache.query(qry), lower, upper);
+
+        // Between lower and upper exclusive.
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(between("id", lower, upper, false, false));
+
+        check(cache.query(qry), lower + 1, upper);
     }
 
     /** */
@@ -301,6 +319,24 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setCriteria(between("descId", lower, upper));
 
         check(cache.query(descQry), lower, upper + 1);
+
+        // Between lower exclusive, desc index.
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(between("id", lower, upper, false, true));
+
+        check(cache.query(qry), lower + 1, upper + 1);
+
+        // Between upper exclusive, desc index.
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(between("id", lower, upper, true, false));
+
+        check(cache.query(qry), lower, upper);
+
+        // Between lower and upper exclusive, desc index.
+        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(between("id", lower, upper, false, false));
+
+        check(cache.query(qry), lower + 1, upper);
     }
 
     /**
