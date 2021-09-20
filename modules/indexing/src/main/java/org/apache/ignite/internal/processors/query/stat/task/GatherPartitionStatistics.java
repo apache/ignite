@@ -243,7 +243,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
             for (String col : colToRemove)
                 allCols.remove(col);
 
-            return new ObjectPartitionStatisticsImpl(partStat.partId(), partStat. rowCount(), partStat.updCnt(),
+            return new ObjectPartitionStatisticsImpl(partStat.partId(), partStat.rowCount(), partStat.updCnt(),
                 allCols);
         }
     }

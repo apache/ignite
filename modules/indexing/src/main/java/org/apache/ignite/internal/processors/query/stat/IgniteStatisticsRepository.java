@@ -448,18 +448,6 @@ public class IgniteStatisticsRepository {
         fitObsolescenceInfo(cfg);
     }
 
-//    /**
-//     * Load or update obsolescence info cache to fit specified cfg. Remove the others from store to clean it.
-//     *
-//     * @param cfg Map object statistics configuration to primary partitions set.
-//     */
-//    public synchronized void checkObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
-//        if (!started.compareAndSet(false, true))
-//            loadObsolescenceInfo(cfg);
-//        else
-//            updateObsolescenceInfo(cfg);
-//    }
-
     /**
      * Check store to clean unnecessary records.
      *
@@ -601,16 +589,5 @@ public class IgniteStatisticsRepository {
                 v.dirty(false);
             }
         });
-    }
-
-    /**
-     * Remove statistics obsolescence info by the given key.
-     *
-     * @param key Statistics key to remove obsolescence info by.
-     */
-    public void removeObsolescenceInfo(StatisticsKey key) {
-        statObs.remove(key);
-
-        store.clearObsolescenceInfo(key, null);
     }
 }

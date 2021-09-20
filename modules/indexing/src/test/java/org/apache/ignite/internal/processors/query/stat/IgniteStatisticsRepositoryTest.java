@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -30,7 +28,6 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.persistence.ReadWriteMetaStorageMock;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -40,8 +37,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
-
 /**
  * Test for statistics repository.
  */
@@ -50,19 +45,16 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
     /** */
     public static final StatisticsKey T2_KEY = new StatisticsKey(SCHEMA, "t2");
 
-    /** */
-    public static final StatisticsTarget T1_TARGET = new StatisticsTarget(SCHEMA, "t1", "c1", "c2", "c3");
-
-    /** */
-    public static final StatisticsTarget T2_TARGET = new StatisticsTarget(T2_KEY, "t22");
-
     @Parameterized.Parameter(value = 0)
     public boolean persist;
 
     @Parameterized.Parameter(value = 1)
     public IgniteStatisticsRepository repo;
 
-    /** */
+    /** Parameters: boolean, store.
+     * boolean - is persistence store;
+     * store - store instance.
+     */
     @Parameterized.Parameters(name = "persist={0}")
     public static List<Object[]> parameters() throws IgniteCheckedException {
         ArrayList<Object[]> params = new ArrayList<>();
@@ -153,32 +145,24 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
     }
 
     /**
-     * Try to remove obsolescence by key:
-     *
-     * 1) Start clear repo
-     * 2) Add some obsolescence through repository
-     * 3) Remove added obsolescence by key
-     * 4) Check neither store and repository contains obsolescence info.
+     * Save few object partition statistics, delete some of them and check the results.
      */
     @Test
-    public void testRemoveWrongObsolescence() {
-        IgniteStatisticsStore store = repo.statisticsStore();
+    public void testClearLocalPartitionIdsStatistics() {
+        ObjectPartitionStatisticsImpl stat1 = getPartitionStatistics(1);
+        ObjectPartitionStatisticsImpl stat10 = getPartitionStatistics(10);
+        ObjectPartitionStatisticsImpl stat100 = getPartitionStatistics(100);
 
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
-            .getFieldValue(repo, "statObs");
+        repo.saveLocalPartitionStatistics(K1, stat1);
+        repo.saveLocalPartitionStatistics(K1, stat10);
+        repo.saveLocalPartitionStatistics(K1, stat100);
 
-        repo.stop();
-        store.clearAllStatistics();
-        repo.start();
+        assertNotNull(repo.getLocalPartitionStatistics(K1, 10));
 
-        repo.refreshObsolescence(K1, 1);
+        repo.clearLocalPartitionIdsStatistics(K1, setOf(1, 2, 10));
 
-        assertFalse(store.loadObsolescenceMap(K1).isEmpty());
-
-        repo.removeObsolescenceInfo(K1);
-
-        assertTrue(store.loadObsolescenceMap(K1).isEmpty());
-        assertTrue(statObs.isEmpty());
+        assertNull(repo.getLocalPartitionStatistics(K1, 10));
+        assertNotNull(repo.getLocalPartitionStatistics(K1, 100));
     }
 
     /**
@@ -202,5 +186,21 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
 
         assertTrue(dirty.isEmpty());
         assertEquals(1, allObs.size());
+    }
+
+    /**
+     * Save obsolescence info and check it saved into the store.
+     */
+    @Test
+    public void testSaveObsolescenceInfo() {
+        IgniteStatisticsStore store = repo.statisticsStore();
+
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
+            .getFieldValue(repo, "statObs");
+
+        repo.refreshObsolescence(K1, 2);
+        repo.saveObsolescenceInfo(K1);
+
+        assertNotNull(statObs.get(K1).get(2));
     }
 }

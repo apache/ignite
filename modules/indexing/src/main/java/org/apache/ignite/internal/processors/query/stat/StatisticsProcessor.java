@@ -427,10 +427,7 @@ public class StatisticsProcessor {
                         if (ctx.partitionDone(task.partition()))
                             gatheringInProgress.remove(ctx.configuration().key(), ctx);
                     }
-
                 }
-
-
             }
             finally {
                 endJob();
@@ -600,10 +597,13 @@ public class StatisticsProcessor {
     }
 
     /**
-     *
+     * Gathering result.
      */
-    private static class GatheredPartitionResult{
+    private static class GatheredPartitionResult {
+        /** Partition statistics was gathered, not just read. */
         public boolean newPart;
+
+        /** Partition statistics. */
         public ObjectPartitionStatisticsImpl partStats;
     }
 }
