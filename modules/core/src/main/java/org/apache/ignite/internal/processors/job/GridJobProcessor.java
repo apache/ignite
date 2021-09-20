@@ -1296,7 +1296,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // If exception occurs on job initialization, deployment is released in job listener.
                     releaseDep = false;
 
-                    if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()))) {
+                    if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()).get1())) {
                         // Internal jobs will always be executed synchronously.
                         if (job.isInternal()) {
                             // This is an internal job and can be executed inside busy lock

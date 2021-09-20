@@ -129,6 +129,7 @@ public class AveragePersonSalaryCallable implements IgniteCallable<Double> {
         assert Double.compare(avgSalary, amount / (to - from)) == 0;
     }
 
+    /** */
     private boolean isTxCache(IgniteCache<Integer, Person> cache) {
         CacheConfiguration<Integer, Person> ccfg = cache.getConfiguration(CacheConfiguration.class);
 

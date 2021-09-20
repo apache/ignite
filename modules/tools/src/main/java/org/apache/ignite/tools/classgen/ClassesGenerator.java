@@ -197,9 +197,8 @@ public class ClassesGenerator {
     }
 
     /**
-     * Returns URLs of class loader
-     *
      * @param clsLdr Class loader.
+     * @return URLs of class loader.
      */
     public static URL[] classLoaderUrls(ClassLoader clsLdr) {
         if (clsLdr == null)

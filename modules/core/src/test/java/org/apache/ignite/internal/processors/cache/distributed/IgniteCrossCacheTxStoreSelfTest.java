@@ -368,6 +368,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class FirstStoreFactory implements Factory<CacheStore> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -383,6 +384,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class SecondStoreFactory implements Factory<CacheStore> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 

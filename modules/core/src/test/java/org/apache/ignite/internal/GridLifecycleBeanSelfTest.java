@@ -327,6 +327,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         /** */
         private LifecycleEventType errType;
 
+        /** */
         private boolean gridErr;
 
         /**

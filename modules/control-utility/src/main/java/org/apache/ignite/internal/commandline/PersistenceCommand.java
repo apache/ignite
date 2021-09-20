@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
-
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.visor.persistence.PersistenceTaskArg;
 import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.PERSISTENCE;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;

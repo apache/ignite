@@ -31,7 +31,7 @@ public final class MapUtil {
     /**
      *
      */
-    private MapUtil(){
+    private MapUtil() {
         // No-op.
     }
 

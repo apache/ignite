@@ -421,6 +421,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param pageSize Page size in bytes. Supported values are: {@code 1024}, {@code 2048}, {@code 4096}, {@code 8192}
      * and {@code 16384}. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} ({@code 4096}) will be used.
+     * @return {@code this} for chaining.
      * @see #MIN_PAGE_SIZE
      * @see #MAX_PAGE_SIZE
      */
@@ -451,6 +452,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets data regions configurations.
      *
      * @param dataRegionConfigurations Data regions configurations.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDataRegionConfigurations(DataRegionConfiguration... dataRegionConfigurations) {
         this.dataRegions = dataRegionConfigurations;
@@ -475,6 +477,7 @@ public class DataStorageConfiguration implements Serializable {
      * If value is not positive, the number of available CPUs will be used.
      *
      * @param concLvl Mapping table concurrency level.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -494,6 +497,7 @@ public class DataStorageConfiguration implements Serializable {
      * Overrides configuration of default data region which is created automatically.
      *
      * @param dfltDataRegConf Default data region configuration.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
         this.dfltDataRegConf = dfltDataRegConf;
@@ -502,7 +506,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Returns a path the root directory where the Persistent Store will persist data and indexes.
+     * @return A path the root directory where the Persistent Store will persist data and indexes.
      */
     public String getStoragePath() {
         return storagePath;
@@ -513,6 +517,7 @@ public class DataStorageConfiguration implements Serializable {
      * By default the Persistent Store's files are located under Ignite work directory.
      *
      * @param persistenceStorePath Persistence store path.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
         this.storagePath = persistenceStorePath;
@@ -773,6 +778,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether CDC enabled.
      *
      * @param cdcEnabled CDC enabled flag.
+     * @return {@code this} for chaining.
      */
     @IgniteExperimental
     public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
@@ -806,6 +812,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether persistence metrics collection is enabled.
      *
      * @param metricsEnabled Metrics enabled flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
@@ -814,7 +821,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag indicating whether write throttling is enabled.
+     * @return  Flag indicating whether write throttling is enabled.
      */
     public boolean isWriteThrottlingEnabled() {
         return writeThrottlingEnabled;
@@ -824,6 +831,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether write throttling is enabled.
      *
      * @param writeThrottlingEnabled Write throttling enabled flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
         this.writeThrottlingEnabled = writeThrottlingEnabled;
@@ -848,6 +856,7 @@ public class DataStorageConfiguration implements Serializable {
      * hits will be tracked.
      *
      * @param metricsRateTimeInterval Time interval in milliseconds.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @Deprecated
@@ -873,6 +882,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
      *
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @Deprecated
@@ -897,6 +907,7 @@ public class DataStorageConfiguration implements Serializable {
      * Different type provides different guarantees for consistency. See {@link WALMode} for details.
      *
      * @param walMode Wal mode.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalMode(WALMode walMode) {
         if (walMode == WALMode.DEFAULT)
@@ -922,6 +933,7 @@ public class DataStorageConfiguration implements Serializable {
      * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
      *
      * @param walTlbSize Thread local buffer size (in bytes).
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
         this.walTlbSize = walTlbSize;
@@ -944,6 +956,7 @@ public class DataStorageConfiguration implements Serializable {
      * If value isn't positive it calculation will be based on {@link #getWalSegmentSize()}.
      *
      * @param walBuffSize WAL buffer size(in bytes).
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
         this.walBuffSize = walBuffSize;
@@ -966,6 +979,7 @@ public class DataStorageConfiguration implements Serializable {
      * all other WAL modes.
      *
      * @param walFlushFreq WAL flush frequency, in milliseconds.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalFlushFrequency(long walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
@@ -974,7 +988,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
+     * @return Property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
@@ -990,6 +1004,7 @@ public class DataStorageConfiguration implements Serializable {
      * Total throughput should increase under load as total WAL fsync rate will be limited.
      *
      * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
         walFsyncDelay = walFsyncDelayNanos;
@@ -1012,6 +1027,7 @@ public class DataStorageConfiguration implements Serializable {
      * disk (for one reading), during go ahead wal.
      *
      * @param walRecordIterBuffSize Wal record iterator buffer size.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
         this.walRecordIterBuffSize = walRecordIterBuffSize;
@@ -1020,7 +1036,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag that enforces writing full page to WAL on every change (instead of delta record).
+     * @return  Flag that enforces writing full page to WAL on every change (instead of delta record).
      * Can be used for debugging purposes: every version of page will be present in WAL.
      * Note that WAL will take several times more space in this mode.
      */
@@ -1034,6 +1050,7 @@ public class DataStorageConfiguration implements Serializable {
      * Note that WAL will take several times more space in this mode.
      *
      * @param alwaysWriteFullPages Always write full pages flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
@@ -1056,6 +1073,7 @@ public class DataStorageConfiguration implements Serializable {
      * which is used for data storage files read/write operations
      *
      * @param fileIOFactory File I/O factory
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
         this.fileIOFactory = fileIOFactory;
@@ -1119,6 +1137,7 @@ public class DataStorageConfiguration implements Serializable {
      * This property defines order of writing pages to disk storage during checkpoint.
      *
      * @param checkpointWriteOrder Checkpoint write order.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
         this.checkpointWriteOrder = checkpointWriteOrder;
@@ -1137,6 +1156,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether WAL compaction is enabled.
      *
      * @param walCompactionEnabled Wal compaction enabled flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalCompactionEnabled(boolean walCompactionEnabled) {
         this.walCompactionEnabled = walCompactionEnabled;

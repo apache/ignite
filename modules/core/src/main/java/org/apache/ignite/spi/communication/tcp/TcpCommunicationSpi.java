@@ -1356,6 +1356,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      *
      * @param b0 The first byte.
      * @param b1 The second byte.
+     * @return Message type.
      */
     public static short makeMessageType(byte b0, byte b1) {
         return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);

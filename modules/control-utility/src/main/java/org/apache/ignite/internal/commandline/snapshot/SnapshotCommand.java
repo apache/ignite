@@ -127,21 +127,21 @@ public class SnapshotCommand extends AbstractCommand<Object> {
     @Override public void printUsage(Logger log) {
         Map<String, String> commonParams = Collections.singletonMap("snapshot_name", "Snapshot name.");
 
-        Command.usage(log, "Create cluster snapshot:", SNAPSHOT, commonParams, CREATE.toString(), "snapshot_name");
-        Command.usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
-        Command.usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
+        usage(log, "Create cluster snapshot:", SNAPSHOT, commonParams, CREATE.toString(), "snapshot_name");
+        usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
+        usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
 
         Map<String, String> startParams = new LinkedHashMap<>(commonParams);
 
         startParams.put("group1,...groupN", "Cache group names.");
 
-        Command.usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
+        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.START.cmdName(), optional("group1,...groupN"));
 
-        Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
+        usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
 
-        Command.usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
+        usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.CANCEL.cmdName());
     }
 
