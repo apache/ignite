@@ -22,8 +22,6 @@ import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
-
 /**
  * Snapshot representation for a {@link SystemView}.
  */
@@ -68,7 +66,7 @@ public class SnapshotView {
     @Order(1)
     @Filtrable
     public String consistentId() {
-        return toStringSafe(consistentId);
+        return consistentId;
     }
 
     /**
