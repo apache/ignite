@@ -54,6 +54,16 @@ public class FunctionsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testTimestampDiffWithFractionsOfSecond() {
+        checkQuery("SELECT TIMESTAMPDIFF(MICROSECOND, TIMESTAMP '2022-02-01 10:30:28.000', " +
+            "TIMESTAMP '2022-02-01 10:30:28.128')").returns(128000).check();
+
+        checkQuery("SELECT TIMESTAMPDIFF(NANOSECOND, TIMESTAMP '2022-02-01 10:30:28.000', " +
+            "TIMESTAMP '2022-02-01 10:30:28.128')").returns(128000000L).check();
+    }
+
+    /** */
+    @Test
     public void testLength() {
         checkQuery("SELECT LENGTH('TEST')").returns(4).check();
         checkQuery("SELECT LENGTH(NULL)").returns(NULL_RESULT).check();
