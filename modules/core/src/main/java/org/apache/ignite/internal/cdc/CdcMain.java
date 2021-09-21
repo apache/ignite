@@ -115,13 +115,25 @@ public class CdcMain implements Runnable {
     /** State dir. */
     public static final String STATE_DIR = "state";
 
+    /** Current segment index metric name. */
+    public static final String CURRENT_SEGMENT_INDEX = "CurrentSegmentIndex";
+
+    /** Committed segment index metric name. */
+    public static final String COMMITTED_SEGMENT_INDEX = "CommittedSegmentIndex";
+
+    /** Committed segment offset metric name. */
+    public static final String COMMITTED_SEGMENT_OFFSET = "CommittedSegmentOffset";
+
+    /** Last segment consumption time. */
+    public static final String LAST_SEGMENT_CONSUMPTION_TIME = "LastSegmentConsumptionTime";
+
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
 
     /** Spring resource context. */
     private final GridSpringResourceContext ctx;
 
-    /** */
+    /** CDC metrics registry. */
     private MetricRegistry mreg;
 
     /** Current segment index metric. */
@@ -241,12 +253,10 @@ public class CdcMain implements Runnable {
 
             StandaloneGridKernalContext kctx = startStandaloneKernal();
 
+            initMetrics();
+
             try {
                 kctx.resource().injectGeneric(consumer.consumer());
-
-                mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
-                mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
-                mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
 
                 state = new CdcConsumerState(cdcDir.resolve(STATE_DIR));
 
@@ -301,13 +311,20 @@ public class CdcMain implements Runnable {
 
         mreg = kctx.metric().registry(metricName("cdc"));
 
-        curSegmentIdx = mreg.longMetric("CurrentSegmentIndex", "Current segment index");
-        committedSegmentIdx = mreg.longMetric("CommittedSegmentIndex", "Committed segment index");
-        committedSegmentOffset = mreg.longMetric("CommittedSegmentOffset", "Committed segment offset");
-        lastSegmentConsumptionTs =
-            mreg.longMetric("LastSegmentConsumptionTime", "Last time of consumption of WAL segment");
-
         return kctx;
+    }
+
+    /** Initialize metrics. */
+    private void initMetrics() {
+        mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
+        mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
+        mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
+
+        curSegmentIdx = mreg.longMetric(CURRENT_SEGMENT_INDEX, "Current segment index");
+        committedSegmentIdx = mreg.longMetric(COMMITTED_SEGMENT_INDEX, "Committed segment index");
+        committedSegmentOffset = mreg.longMetric(COMMITTED_SEGMENT_OFFSET, "Committed segment offset");
+        lastSegmentConsumptionTs =
+            mreg.longMetric(LAST_SEGMENT_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
     }
 
     /**

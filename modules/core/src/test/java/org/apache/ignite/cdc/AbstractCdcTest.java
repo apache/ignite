@@ -155,8 +155,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
                 data.computeIfAbsent(
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()).add(extract(evt)
-                );
+                    k -> new ArrayList<>()).add(extract(evt));
 
                 checkEvent(evt);
             });

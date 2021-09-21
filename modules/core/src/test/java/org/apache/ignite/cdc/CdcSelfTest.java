@@ -83,7 +83,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             for (boolean specificConsistentId : new boolean[] {true, false}) {
                 Supplier<MetricExporterSpi> jmx = JmxMetricExporterSpi::new;
 
-                //params.add(new Object[] {specificConsistentId, mode, null});
+                params.add(new Object[] {specificConsistentId, mode, null});
                 params.add(new Object[] {specificConsistentId, mode, jmx});
             }
 
@@ -412,12 +412,10 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** {@inheritDoc} */
     @Override public MetricExporterSpi[] metricExporters() {
-        MetricExporterSpi spi = metricExporter.get();
-
-        if (spi == null)
+        if (metricExporter == null)
             return null;
 
-        return new MetricExporterSpi[] {spi};
+        return new MetricExporterSpi[] {metricExporter.get()};
     }
 
     /** */
