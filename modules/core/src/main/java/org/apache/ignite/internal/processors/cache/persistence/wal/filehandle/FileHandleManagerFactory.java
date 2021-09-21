@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.util.function.Supplier;
 
 /**
  * Factory of {@link FileHandleManager}.
  */
 public class FileHandleManagerFactory {
-    /**   */
+    /**
+     *
+     */
     private final boolean walFsyncWithDedicatedWorker =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
-    /** Data storage configuration. */
+    /**
+     * Data storage configuration.
+     */
     private final DataStorageConfiguration dsConf;
 
     /**
@@ -44,10 +53,10 @@ public class FileHandleManagerFactory {
     }
 
     /**
-     * @param cctx Cache context.
-     * @param metrics Data storage metrics.
-     * @param mmap Using mmap.
-     * @param serializer Serializer.
+     * @param cctx               Cache context.
+     * @param metrics            Data storage metrics.
+     * @param mmap               Using mmap.
+     * @param serializer         Serializer.
      * @param currHandleSupplier Supplier of current handle.
      * @return One of implementation of {@link FileHandleManager}.
      */
@@ -58,7 +67,7 @@ public class FileHandleManagerFactory {
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currHandleSupplier
     ) {
-        if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
+        if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker) {
             return new FsyncFileHandleManagerImpl(
                 cctx,
                 metrics,
@@ -69,20 +78,7 @@ public class FileHandleManagerFactory {
                 dsConf.getWalFsyncDelayNanos(),
                 dsConf.getWalThreadLocalBufferSize()
             );
-        else {
-            final FileWriteHandleService fileWriteHandleService;
-            {
-                String version = System.getProperty("java.version");
-                if(version.startsWith("1.")) {
-                    version = version.substring(2, 3);
-                } else {
-                    int dot = version.indexOf(".");
-                    if(dot != -1) { version = version.substring(0, dot); }
-                }
-                final int javaVersion = Integer.parseInt(version);
-                fileWriteHandleService = (javaVersion >= 15) ? new FileWriteHandleServiceJDK15Plus() : new FileWriteHandleServicePreJDK15();
-            }
-
+        } else {
             return new FileHandleManagerImpl(
                 cctx,
                 metrics,
@@ -93,8 +89,32 @@ public class FileHandleManagerFactory {
                 dsConf.getWalBufferSize(),
                 dsConf.getWalSegmentSize(),
                 dsConf.getWalFsyncDelayNanos(),
-                fileWriteHandleService
+                getFileWriteHandleService()
             );
         }
+    }
+
+    @NotNull
+    private FileWriteHandleService getFileWriteHandleService() {
+        final FileWriteHandleService fileWriteHandleService;
+        String version = System.getProperty("java.version");
+        if (version.startsWith("1.")) {
+            version = version.substring(2, 3);
+        } else {
+            int dot = version.indexOf(".");
+            if (dot != -1) {
+                version = version.substring(0, dot);
+            }
+        }
+        fileWriteHandleService = (Integer.parseInt(version) >= 15) ? FileHandleManagerFactory::createFileWriteHandlePreJDK15 : FileHandleManagerFactory::createFileWriteHandleJDK15Plus;
+        return fileWriteHandleService;
+    }
+
+    private static FileWriteHandle createFileWriteHandlePreJDK15(GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer, DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
+        return new FileWriteHandlePreJDK15(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay, maxWalSegmentSize);
+    }
+
+    private static FileWriteHandle createFileWriteHandleJDK15Plus(GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer, DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
+        return new FileWriteHandleJDK15Plus(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay, maxWalSegmentSize);
     }
 }

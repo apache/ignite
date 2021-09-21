@@ -10,22 +10,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import java.io.IOException;
 
 public interface FileWriteHandleService {
-    FileWriteHandle Create(
+    FileWriteHandle createFileWriteHandle(
         GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
         DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap,
         boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException;
-}
-
-class FileWriteHandleServiceJDK15Plus implements FileWriteHandleService {
-    @Override
-    public FileWriteHandle Create(GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer, DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
-        return new FileWriteHandleJDK15Plus(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay, maxWalSegmentSize);
-    }
-}
-
-class FileWriteHandleServicePreJDK15 implements FileWriteHandleService {
-    @Override
-    public FileWriteHandle Create(GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer, DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
-        return new FileWriteHandlePreJDK15(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay, maxWalSegmentSize);
-    }
 }
