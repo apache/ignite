@@ -721,12 +721,26 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
                 else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
+                    //check for enums implementing interfaces
+                    final Class<?> cls = getClass(((BinaryObject) propVal).type().typeName());
+                    if (U.box(propType).isAssignableFrom(U.box(cls))) {
+                        continue;
+                    }
+
                     throw new IgniteSQLException("Type for a column '" + idxField +
                         "' is not compatible with index definition. Expected '" +
                         propType.getSimpleName() + "', actual type '" +
                         ((BinaryObject)propVal).type().typeName() + "'");
                 }
             }
+        }
+    }
+
+    private Class<?> getClass(String clsName) throws IgniteCheckedException {
+        try {
+            return Class.forName(clsName);
+        } catch (ClassNotFoundException e) {
+            throw new IgniteCheckedException("Failed to find class: " + clsName, e);
         }
     }
 
