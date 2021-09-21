@@ -229,8 +229,6 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
         assertTrue(waitForCondition(cnsmr::stopped, getTestTimeout()));
 
-        checkMetrics(cdc, KEYS_CNT);
-
         List<Integer> keys = cnsmr.data(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
         assertEquals(KEYS_CNT, keys.size());

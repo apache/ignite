@@ -24,8 +24,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -35,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
@@ -44,9 +45,11 @@ import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFF;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -125,7 +128,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public long checkMetrics(CdcMain cdc, int expCnt) {
-        MetricRegistry mreg = GridTestUtils.getFieldValue(cdc, "mreg");
+        MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
         assertNotNull(mreg);
 
@@ -141,6 +144,17 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         if (expCnt != -1)
             assertTrue(mreg.<LongMetric>findMetric(EVTS_CNT).value() >= expCnt);
+
+        if (metricExporters() != null) {
+            IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+
+            DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+            DynamicMBean jmxCdcConsumerReg =
+                metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "cdc", "consumer");
+
+            assertNotNull(jmxCdcReg);
+            assertNotNull(jmxCdcConsumerReg);
+        }
 
         return mreg.<LongMetric>findMetric(EVTS_CNT).value();
     }

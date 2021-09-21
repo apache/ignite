@@ -293,7 +293,7 @@ public class CdcMain implements Runnable {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setIgniteInstanceName("cdc-" + igniteCfg.getIgniteInstanceName());
+                cfg.setIgniteInstanceName(cdcInstanceName(igniteCfg.getIgniteInstanceName()));
 
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
@@ -309,7 +309,7 @@ public class CdcMain implements Runnable {
         for (GridComponent comp : kctx)
             comp.start();
 
-        mreg = kctx.metric().registry(metricName("cdc"));
+        mreg = kctx.metric().registry("cdc");
 
         return kctx;
     }
@@ -622,5 +622,10 @@ public class CdcMain implements Runnable {
                 "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
                 "");
         }
+    }
+
+    /** */
+    public static String cdcInstanceName(String igniteInstanceName) {
+        return "cdc-" + igniteInstanceName;
     }
 }
