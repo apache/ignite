@@ -89,6 +89,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinStatementTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingNotOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingResetStreamTest;
+import org.apache.ignite.jdbc.thin.JdbcThinSystemViewTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
@@ -187,6 +188,7 @@ import org.junit.runners.Suite;
     JdbcThinSchemaCaseSelfTest.class,
     JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
+    JdbcThinSystemViewTest.class,
     JdbcThinMetadataPrimaryKeysSelfTest.class,
     JdbcThinMetadataSqlMatchTest.class,
     JdbcThinErrorsSelfTest.class,
