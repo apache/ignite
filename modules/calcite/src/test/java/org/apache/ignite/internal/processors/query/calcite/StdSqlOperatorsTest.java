@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Collections;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlO
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -239,7 +241,6 @@ public class StdSqlOperatorsTest extends GridCommonAbstractTest {
         checkQuery("SELECT UNIX_DATE(DATE '2021-01-01')").returns(18628).check();
         checkQuery("SELECT DATE_FROM_UNIX_DATE(18628)").returns(Date.valueOf("2021-01-01")).check();
         checkQuery("SELECT DATE('2021-01-01')").returns(Date.valueOf("2021-01-01")).check();
-        //checkQuery("SELECT TO_DATE('20210101', 'yyyymmdd')").returns(Date.valueOf("2021-01-01")).check();
     }
 
     /** */
@@ -261,12 +262,14 @@ public class StdSqlOperatorsTest extends GridCommonAbstractTest {
         checkQuery("SELECT CARDINALITY(ARRAY[1, 2, 3])").returns(3).check();
         checkQuery("SELECT ARRAY[1, 2, 3] IS EMPTY").returns(false).check();
         checkQuery("SELECT ARRAY[1, 2, 3] IS NOT EMPTY").returns(true).check();
+    }
 
-/*
-        checkQuery("SELECT MULTISET[1, 2, 3]").check();
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15550")
+    public void testQueryAsCollections() {
         checkQuery("SELECT MAP(SELECT 'a', 1)").returns(F.asMap("a", 1)).check();
-        checkQuery("SELECT ARRAY(SELECT 1)").returns(Arrays.asList(1)).check();
-*/
+        checkQuery("SELECT ARRAY(SELECT 1)").returns(Collections.singletonList(1)).check();
     }
 
     /** */
@@ -329,20 +332,6 @@ public class StdSqlOperatorsTest extends GridCommonAbstractTest {
         checkQuery("SELECT '{\"a\":1}' IS NOT JSON OBJECT").returns(false).check();
         checkQuery("SELECT '[1, 2]' IS NOT JSON ARRAY").returns(false).check();
         checkQuery("SELECT '1' IS NOT JSON SCALAR").returns(false).check();
-    }
-
-    /** */
-    @Test
-    public void testSystemFunctions() {
-/*
-        checkQuery("SELECT USER").check();
-        checkQuery("SELECT CURRENT_USER").check();
-        checkQuery("SELECT SESSION_USER").check();
-        checkQuery("SELECT SYSTEM_USER").check();
-*/
-        checkQuery("SELECT CURRENT_PATH").check();
-        checkQuery("SELECT CURRENT_ROLE").check();
-        checkQuery("SELECT CURRENT_CATALOG").check();
     }
 
     /** */

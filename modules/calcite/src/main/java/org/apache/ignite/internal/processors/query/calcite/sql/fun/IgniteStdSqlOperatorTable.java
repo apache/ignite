@@ -126,7 +126,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.CHARACTER_LENGTH);
         register(SqlStdOperatorTable.CONCAT);
         register(SqlLibraryOperators.CONCAT_FUNCTION);
-        //register(SqlLibraryOperators.CONCAT2);
         register(SqlStdOperatorTable.OVERLAY);
         register(SqlStdOperatorTable.POSITION);
         register(SqlStdOperatorTable.ASCII);
@@ -199,7 +198,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.UNIX_DATE); // Date to days since 1970-01-01.
         register(SqlLibraryOperators.DATE_FROM_UNIX_DATE); // Days since 1970-01-01 to date.
         register(SqlLibraryOperators.DATE); // String to date.
-        register(SqlLibraryOperators.TO_DATE); // String to date with custom format.
 
         // POSIX REGEX.
         register(SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE);
@@ -208,32 +206,36 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE);
         register(SqlLibraryOperators.REGEXP_REPLACE);
 
-        // Multisets & arrays.
+        // Collections.
         register(SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR);
-        register(SqlStdOperatorTable.MAP_QUERY);
         register(SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR);
-        register(SqlStdOperatorTable.ARRAY_QUERY);
         register(SqlStdOperatorTable.ITEM);
         register(SqlStdOperatorTable.CARDINALITY);
         register(SqlStdOperatorTable.IS_EMPTY);
         register(SqlStdOperatorTable.IS_NOT_EMPTY);
 
-        register(SqlStdOperatorTable.MULTISET_VALUE);
-        register(SqlStdOperatorTable.MULTISET_QUERY);
-        register(SqlStdOperatorTable.SLICE);
-        register(SqlStdOperatorTable.ELEMENT);
-        register(SqlStdOperatorTable.STRUCT_ACCESS);
-        register(SqlStdOperatorTable.MEMBER_OF);
-        register(SqlStdOperatorTable.IS_A_SET);
-        register(SqlStdOperatorTable.IS_NOT_A_SET);
-        register(SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT);
-        register(SqlStdOperatorTable.MULTISET_INTERSECT);
-        register(SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT);
-        register(SqlStdOperatorTable.MULTISET_EXCEPT);
-        register(SqlStdOperatorTable.MULTISET_UNION_DISTINCT);
-        register(SqlStdOperatorTable.MULTISET_UNION);
-        register(SqlStdOperatorTable.SUBMULTISET_OF);
-        register(SqlStdOperatorTable.NOT_SUBMULTISET_OF);
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15550
+        //register(SqlStdOperatorTable.MAP_QUERY);
+        //register(SqlStdOperatorTable.ARRAY_QUERY);
+
+        // Multiset.
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551
+        //register(SqlStdOperatorTable.MULTISET_VALUE);
+        //register(SqlStdOperatorTable.MULTISET_QUERY);
+        //register(SqlStdOperatorTable.SLICE);
+        //register(SqlStdOperatorTable.ELEMENT);
+        //register(SqlStdOperatorTable.STRUCT_ACCESS);
+        //register(SqlStdOperatorTable.MEMBER_OF);
+        //register(SqlStdOperatorTable.IS_A_SET);
+        //register(SqlStdOperatorTable.IS_NOT_A_SET);
+        //register(SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT);
+        //register(SqlStdOperatorTable.MULTISET_INTERSECT);
+        //register(SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT);
+        //register(SqlStdOperatorTable.MULTISET_EXCEPT);
+        //register(SqlStdOperatorTable.MULTISET_UNION_DISTINCT);
+        //register(SqlStdOperatorTable.MULTISET_UNION);
+        //register(SqlStdOperatorTable.SUBMULTISET_OF);
+        //register(SqlStdOperatorTable.NOT_SUBMULTISET_OF);
 
         // Other fuctions and operators.
         register(SqlStdOperatorTable.ROW);
@@ -247,19 +249,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.LEAST);
         register(SqlLibraryOperators.GREATEST);
         register(SqlLibraryOperators.COMPRESS);
-/*
-        register(SqlStdOperatorTable.REINTERPRET);
-        register(SqlStdOperatorTable.DEFAULT);
-*/
-
-/*
-        // Sequences.
-        register(SqlStdOperatorTable.CURRENT_VALUE);
-        register(SqlStdOperatorTable.NEXT_VALUE);
-
-        // Compression Operators.
-        register(SqlLibraryOperators.COMPRESS);
-*/
 
         // XML Operators.
         register(SqlLibraryOperators.EXTRACT_VALUE);
@@ -289,15 +278,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.IS_NOT_JSON_OBJECT);
         register(SqlStdOperatorTable.IS_NOT_JSON_ARRAY);
         register(SqlStdOperatorTable.IS_NOT_JSON_SCALAR);
-
-        // System functions.
-        register(SqlStdOperatorTable.USER);
-        register(SqlStdOperatorTable.CURRENT_USER);
-        register(SqlStdOperatorTable.SESSION_USER);
-        register(SqlStdOperatorTable.SYSTEM_USER);
-        register(SqlStdOperatorTable.CURRENT_PATH);
-        register(SqlStdOperatorTable.CURRENT_ROLE);
-        register(SqlStdOperatorTable.CURRENT_CATALOG);
 
         // Current time functions.
         register(SqlStdOperatorTable.CURRENT_TIME);
