@@ -34,15 +34,11 @@ import java.util.function.Supplier;
  * Factory of {@link FileHandleManager}.
  */
 public class FileHandleManagerFactory {
-    /**
-     *
-     */
+    /**   */
     private final boolean walFsyncWithDedicatedWorker =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
-    /**
-     * Data storage configuration.
-     */
+    /** Data storage configuration. */
     private final DataStorageConfiguration dsConf;
 
     /**
@@ -53,10 +49,10 @@ public class FileHandleManagerFactory {
     }
 
     /**
-     * @param cctx               Cache context.
-     * @param metrics            Data storage metrics.
-     * @param mmap               Using mmap.
-     * @param serializer         Serializer.
+     * @param cctx Cache context.
+     * @param metrics Data storage metrics.
+     * @param mmap Using mmap.
+     * @param serializer Serializer.
      * @param currHandleSupplier Supplier of current handle.
      * @return One of implementation of {@link FileHandleManager}.
      */
@@ -67,7 +63,7 @@ public class FileHandleManagerFactory {
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currHandleSupplier
     ) {
-        if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker) {
+        if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
             return new FsyncFileHandleManagerImpl(
                 cctx,
                 metrics,
@@ -78,7 +74,7 @@ public class FileHandleManagerFactory {
                 dsConf.getWalFsyncDelayNanos(),
                 dsConf.getWalThreadLocalBufferSize()
             );
-        } else {
+        else
             return new FileHandleManagerImpl(
                 cctx,
                 metrics,
@@ -91,7 +87,6 @@ public class FileHandleManagerFactory {
                 dsConf.getWalFsyncDelayNanos(),
                 getFileWriteHandleService()
             );
-        }
     }
 
     @NotNull

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -53,7 +52,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.Segmen
 import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
 /**
- * Manager for {@link FileWriteHandle}.
+ * Manager for {@link FileWriteHandleImpl}.
  */
 public class FileHandleManagerImpl implements FileHandleManager {
     /** Default wal segment sync timeout. */
@@ -168,7 +167,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
         rbuf.init(position);
 
-        return fileWriteHandleService.Create(
+        return fileWriteHandleService.createFileWriteHandle(
             cctx, fileIO, rbuf, serializer, metrics, walWriter, position,
             mode, mmap, true, fsyncDelay, maxWalSegmentSize
         );
@@ -187,7 +186,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             rbuf = currentHandle().buf.reset();
 
         try {
-            return fileWriteHandleService.Create(
+            return fileWriteHandleService.createFileWriteHandle(
                 cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
                 mode, mmap, false, fsyncDelay, maxWalSegmentSize
             );
