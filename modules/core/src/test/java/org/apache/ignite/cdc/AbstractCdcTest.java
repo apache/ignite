@@ -24,9 +24,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -83,7 +84,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         int from,
         int to,
         long timeout
-    ) throws IgniteCheckedException {
+    ) throws Exception {
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         addData.apply(cache, from, to);
@@ -127,36 +128,42 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public long checkMetrics(CdcMain cdc, int expCnt) {
-        MetricRegistry mreg = getFieldValue(cdc, "mreg");
-
-        assertNotNull(mreg);
-
-        long committedSegIdx = mreg.<LongMetric>findMetric(COMMITTED_SEG_IDX).value();
-        long curSegIdx = mreg.<LongMetric>findMetric(CUR_SEG_IDX).value();
-
-        assertTrue(committedSegIdx <= curSegIdx);
-
-        assertTrue(mreg.<LongMetric>findMetric(COMMITTED_SEG_OFF).value() >= 0);
-        assertTrue(mreg.<LongMetric>findMetric(LAST_SEG_CONSUMPTION_TIME).value() > 0);
-
-        assertTrue(mreg.<LongMetric>findMetric(LAST_EVT_TIME).value() > 0);
-
-        if (expCnt != -1)
-            assertTrue(mreg.<LongMetric>findMetric(EVTS_CNT).value() >= expCnt);
-
+    public long checkMetrics(CdcMain cdc, int expCnt) throws Exception {
         if (metricExporters() != null) {
             IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
 
             DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
-            DynamicMBean jmxCdcConsumerReg =
-                metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "cdc", "consumer");
 
-            assertNotNull(jmxCdcReg);
-            assertNotNull(jmxCdcConsumerReg);
+            checkMetrics(m -> {
+                try {
+                    return ((Long)jmxCdcReg.getAttribute(m));
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            });
         }
 
-        return mreg.<LongMetric>findMetric(EVTS_CNT).value();
+        MetricRegistry mreg = getFieldValue(cdc, "mreg");
+
+        assertNotNull(mreg);
+
+        return checkMetrics(m -> mreg.<LongMetric>findMetric(m).value());
+    }
+
+    /** */
+    private long checkMetrics(Function<String, Long> metricVal) {
+        long committedSegIdx = metricVal.apply(COMMITTED_SEG_IDX);
+        long curSegIdx = metricVal.apply(CUR_SEG_IDX);
+
+        assertTrue(committedSegIdx <= curSegIdx);
+
+        assertTrue(metricVal.apply(COMMITTED_SEG_OFF) >= 0);
+        assertTrue(metricVal.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+
+        assertTrue(metricVal.apply(LAST_EVT_TIME) > 0);
+
+        return metricVal.apply(EVTS_CNT);
     }
 
     /** */
