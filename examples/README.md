@@ -25,6 +25,20 @@ Use 'Run' -> 'Edit Configuration' menu.
 
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vQFgjhrPsLPUmic8CA_s1YpjVwA2vQITxNsLrAKOecZxIQEZSb1Ps2XKh0QEn8z9vtYiUofnGek_cag/pub?w=960&h=720"/>
 
+## Running examples on JDK 17
+Follow the Java 9/10/11 instructions above, but use the following options
+
+``--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+--add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+--add-exports=java.base/sun.net.util=ALL-UNNAMED
+--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+--add-opens=java.base/java.nio=ALL-UNNAMED
+--add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+--add-opens=java.base/java.io=ALL-UNNAMED``
+
 ## Contributing to Examples
 *Notice* When updating classpath of examples and in case any modifications required in [pom.xml](pom.xml)
 please make sure that corresponding changes were applied to

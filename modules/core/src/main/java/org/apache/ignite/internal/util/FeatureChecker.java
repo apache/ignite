@@ -21,19 +21,22 @@ package org.apache.ignite.internal.util;
  * initialization effects.
  */
 public class FeatureChecker {
-    /** Required Options to Run on Java 9, 10, 11. */
-    public static final String JAVA_9_10_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
+    /** Required Options to Run on Java 17. Will also work for 9, 10, and 11. */
+    public static final String JAVA_17_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
         "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
         "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
+        "--add-exports=java.base/sun.net.util=ALL-UNNAMED\n" +
         "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
-        "--illegal-access=permit";
+        "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.io=ALL-UNNAMED";
 
     /** Java version specific warning to be added in case access failed */
     public static final String JAVA_VER_SPECIFIC_WARN =
         "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
-            JAVA_9_10_11_OPTIONS +
+            JAVA_17_OPTIONS +
             "\n}" +
             "\nSee https://apacheignite.readme.io/docs/getting-started#section-running-ignite-with-java-9-10-11 for more information.";
 }

@@ -424,7 +424,14 @@ abstract class FileWriteHandleImpl extends AbstractFileHandle implements FileWri
         }
     }
 
-    protected abstract void internalFsync(MappedByteBuffer buf, Object fieldObject, int off, int len) throws IllegalAccessException, InvocationTargetException;
+    /**
+     * @param buf Mapped byte buffer.
+     * @param fieldObject Value of the field.
+     * @param off Offset.
+     * @param len Length.
+     */
+    protected abstract void fsync(MappedByteBuffer buf, Object fieldObject, int off, int len)
+        throws IllegalAccessException, InvocationTargetException;
 
     /**
      * @param buf Mapped byte buffer.
@@ -433,7 +440,7 @@ abstract class FileWriteHandleImpl extends AbstractFileHandle implements FileWri
      */
     private void fsync(MappedByteBuffer buf, int off, int len) throws IgniteCheckedException {
         try {
-            internalFsync(buf, fd.get(buf), off, len);
+            fsync(buf, fd.get(buf), off, len);
         }
         catch (IllegalAccessException | InvocationTargetException e) {
             throw new IgniteCheckedException(e);

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
+import java.io.IOException;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -26,9 +28,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRing
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
-import java.util.function.Supplier;
 
 /**
  * Factory of {@link FileHandleManager}.
@@ -85,13 +84,14 @@ public class FileHandleManagerFactory {
                 dsConf.getWalBufferSize(),
                 dsConf.getWalSegmentSize(),
                 dsConf.getWalFsyncDelayNanos(),
-                getFileWriteHandleService()
+                fileWriteHandleFactory()
             );
     }
 
-    @NotNull
-    private FileWriteHandleService getFileWriteHandleService() {
-        final FileWriteHandleService fileWriteHandleService;
+    /**
+     * @return FileWriteHandleFactory, based on the version of java
+     */
+    @NotNull private static final FileWriteHandleFactory fileWriteHandleFactory() {
         String version = System.getProperty("java.version");
         if (version.startsWith("1.")) {
             version = version.substring(2, 3);
@@ -101,15 +101,60 @@ public class FileHandleManagerFactory {
                 version = version.substring(0, dot);
             }
         }
-        fileWriteHandleService = (Integer.parseInt(version) >= 15) ? FileHandleManagerFactory::createFileWriteHandleJDK15Plus : FileHandleManagerFactory::createFileWriteHandlePreJDK15;
-        return fileWriteHandleService;
+        return (Integer.parseInt(version) >= 15) ?
+            FileHandleManagerFactory::fileWriteHandleFactoryJava15Plus :
+            FileHandleManagerFactory::fileWriteHandleFactoryPreJava15;
     }
 
-    private static FileWriteHandle createFileWriteHandlePreJDK15(GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer, DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
-        return new FileWriteHandlePreJDK15(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay, maxWalSegmentSize);
+    /**
+     * @param cctx              Context.
+     * @param fileIO            I/O file interface to use
+     * @param rbuf
+     * @param serializer        Serializer.
+     * @param metrics           Data storage metrics.
+     * @param writer            WAL writer.
+     * @param pos               Initial position.
+     * @param mode              WAL mode.
+     * @param mmap              Mmap.
+     * @param resume            Created on resume logging flag.
+     * @param fsyncDelay        Fsync delay.
+     * @param maxWalSegmentSize Max WAL segment size.
+     * @return FileWriteHandle
+     * @throws IOException If failed.
+     */
+    private static final FileWriteHandle fileWriteHandleFactoryPreJava15(GridCacheSharedContext cctx, SegmentIO fileIO,
+                                                                         SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
+                                                                         DataStorageMetricsImpl metrics,
+                                                                         FileHandleManagerImpl.WALWriter writer, long pos,
+                                                                         WALMode mode, boolean mmap, boolean resume, long fsyncDelay,
+                                                                         long maxWalSegmentSize) throws IOException {
+        return new FileWriteHandlePreJDK15(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay,
+            maxWalSegmentSize);
     }
 
-    private static FileWriteHandle createFileWriteHandleJDK15Plus(GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer, DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
-        return new FileWriteHandleJDK15Plus(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay, maxWalSegmentSize);
+    /**
+     * @param cctx              Context.
+     * @param fileIO            I/O file interface to use
+     * @param rbuf
+     * @param serializer        Serializer.
+     * @param metrics           Data storage metrics.
+     * @param writer            WAL writer.
+     * @param pos               Initial position.
+     * @param mode              WAL mode.
+     * @param mmap              Mmap.
+     * @param resume            Created on resume logging flag.
+     * @param fsyncDelay        Fsync delay.
+     * @param maxWalSegmentSize Max WAL segment size.
+     * @return FileWriteHandle
+     * @throws IOException If failed.
+     */
+    private static final FileWriteHandle fileWriteHandleFactoryJava15Plus(GridCacheSharedContext cctx, SegmentIO fileIO,
+                                                                          SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
+                                                                          DataStorageMetricsImpl metrics,
+                                                                          FileHandleManagerImpl.WALWriter writer, long pos,
+                                                                          WALMode mode, boolean mmap, boolean resume, long fsyncDelay,
+                                                                          long maxWalSegmentSize) throws IOException {
+        return new FileWriteHandleJDK15Plus(cctx, fileIO, rbuf, serializer, metrics, writer, pos, mode, mmap, resume, fsyncDelay,
+            maxWalSegmentSize);
     }
 }

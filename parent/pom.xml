@@ -1151,7 +1151,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
                             <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
-                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
+                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/java.nio=ALL-UNNAMED</additionalOptions>
                             <detectJavaApiLink>false</detectJavaApiLink>
                         </configuration>
                     </plugin>
