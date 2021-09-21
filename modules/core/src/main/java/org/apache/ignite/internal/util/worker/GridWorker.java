@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.worker;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -56,10 +55,6 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
     private volatile long heartbeatTs;
-
-    /** Atomic field updater to change heartbeat. */
-    private static final AtomicLongFieldUpdater<GridWorker> HEARTBEAT_UPDATER =
-        AtomicLongFieldUpdater.newUpdater(GridWorker.class, "heartbeatTs");
 
     /** Mutex for finish awaiting. */
     private final Object mux = new Object();
@@ -278,16 +273,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** {@inheritDoc} */
     @Override public void updateHeartbeat() {
-        long curTs = U.currentTimeMillis();
-        long hbTs = heartbeatTs;
-
-        // Avoid heartbeat update while in the blocking section.
-        while (hbTs < curTs) {
-            if (HEARTBEAT_UPDATER.compareAndSet(this, hbTs, curTs))
-                return;
-
-            hbTs = heartbeatTs;
-        }
+        heartbeatTs = U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */
@@ -297,7 +283,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** {@inheritDoc} */
     @Override public void blockingSectionEnd() {
-        heartbeatTs = U.currentTimeMillis();
+        updateHeartbeat();
     }
 
     /** Can be called from {@link #runner()} thread to perform idleness handling. */
