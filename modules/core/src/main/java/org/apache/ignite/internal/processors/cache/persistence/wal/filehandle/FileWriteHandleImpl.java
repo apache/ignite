@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.List;
@@ -57,36 +56,22 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
-import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 
 /**
  * File handle for one log segment.
  */
 @SuppressWarnings("SignalWithoutCorrespondingAwait")
-class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle {
-    /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
-    private static final Method force0 = findNonPublicMethod(
-        MappedByteBuffer.class, "force0",
-        java.io.FileDescriptor.class, long.class, long.class
-    );
+abstract class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle {
 
     /** {@link FileWriteHandleImpl#written} atomic field updater. */
     private static final AtomicLongFieldUpdater<FileWriteHandleImpl> WRITTEN_UPD =
         AtomicLongFieldUpdater.newUpdater(FileWriteHandleImpl.class, "written");
 
-    /** {@link MappedByteBuffer#mappingOffset()}. */
-    private static final Method mappingOffset = findNonPublicMethod(MappedByteBuffer.class, "mappingOffset");
-
-    /** {@link MappedByteBuffer#mappingAddress(long)}. */
-    private static final Method mappingAddress = findNonPublicMethod(
-        MappedByteBuffer.class, "mappingAddress", long.class
-    );
-
     /** {@link MappedByteBuffer#fd} */
     private static final Field fd = findField(MappedByteBuffer.class, "fd");
 
     /** Page size. */
-    private static final int PAGE_SIZE = GridUnsafe.pageSize();
+    protected static final int PAGE_SIZE = GridUnsafe.pageSize();
 
     /** Serializer latest version to use. */
     private final int serializerVer =
@@ -439,6 +424,8 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         }
     }
 
+    protected abstract void internalFsync(MappedByteBuffer buf, Object fieldObject, int off, int len) throws IllegalAccessException, InvocationTargetException;
+
     /**
      * @param buf Mapped byte buffer.
      * @param off Offset.
@@ -446,17 +433,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      */
     private void fsync(MappedByteBuffer buf, int off, int len) throws IgniteCheckedException {
         try {
-            long mappedOff = (Long)mappingOffset.invoke(buf);
-
-            assert mappedOff == 0 : mappedOff;
-
-            long addr = (Long)mappingAddress.invoke(buf, mappedOff);
-
-            long delta = (addr + off) % PAGE_SIZE;
-
-            long alignedAddr = (addr + off) - delta;
-
-            force0.invoke(buf, fd.get(buf), alignedAddr, len + delta);
+            internalFsync(buf, fd.get(buf), off, len);
         }
         catch (IllegalAccessException | InvocationTargetException e) {
             throw new IgniteCheckedException(e);

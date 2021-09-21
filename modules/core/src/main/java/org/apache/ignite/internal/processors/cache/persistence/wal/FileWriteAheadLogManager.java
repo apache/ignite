@@ -535,6 +535,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
+
             fileHandleManager = fileHandleManagerFactory.build(
                 cctx, metrics, mmap, serializer, this::currentHandle
             );

@@ -69,7 +69,20 @@ public class FileHandleManagerFactory {
                 dsConf.getWalFsyncDelayNanos(),
                 dsConf.getWalThreadLocalBufferSize()
             );
-        else
+        else {
+            final FileWriteHandleService fileWriteHandleService;
+            {
+                String version = System.getProperty("java.version");
+                if(version.startsWith("1.")) {
+                    version = version.substring(2, 3);
+                } else {
+                    int dot = version.indexOf(".");
+                    if(dot != -1) { version = version.substring(0, dot); }
+                }
+                final int javaVersion = Integer.parseInt(version);
+                fileWriteHandleService = (javaVersion >= 15) ? new FileWriteHandleServiceJDK15Plus() : new FileWriteHandleServicePreJDK15();
+            }
+
             return new FileHandleManagerImpl(
                 cctx,
                 metrics,
@@ -79,7 +92,9 @@ public class FileHandleManagerFactory {
                 dsConf.getWalMode(),
                 dsConf.getWalBufferSize(),
                 dsConf.getWalSegmentSize(),
-                dsConf.getWalFsyncDelayNanos()
+                dsConf.getWalFsyncDelayNanos(),
+                fileWriteHandleService
             );
+        }
     }
 }

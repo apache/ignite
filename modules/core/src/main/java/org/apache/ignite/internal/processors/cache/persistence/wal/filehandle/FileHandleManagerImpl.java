@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -52,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.Segmen
 import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
 /**
- * Manager for {@link FileWriteHandleImpl}.
+ * Manager for {@link FileWriteHandle}.
  */
 public class FileHandleManagerImpl implements FileHandleManager {
     /** Default wal segment sync timeout. */
@@ -94,6 +95,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /** Fsync delay. */
     private final long fsyncDelay;
 
+    private final FileWriteHandleService fileWriteHandleService;
+
     /**
      * @param cctx Context.
      * @param metrics Data storage metrics.
@@ -114,7 +117,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
         WALMode mode,
         int walBufferSize,
         long maxWalSegmentSize,
-        long fsyncDelay
+        long fsyncDelay,
+        FileWriteHandleService fileWriteHandleService
     ) {
         this.cctx = cctx;
         log = cctx.logger(FileHandleManagerImpl.class);
@@ -126,6 +130,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.walBufferSize = walBufferSize;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
+        this.fileWriteHandleService = fileWriteHandleService;
         walWriter = new WALWriter(log);
 
         if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
@@ -163,7 +168,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
         rbuf.init(position);
 
-        return new FileWriteHandleImpl(
+        return fileWriteHandleService.Create(
             cctx, fileIO, rbuf, serializer, metrics, walWriter, position,
             mode, mmap, true, fsyncDelay, maxWalSegmentSize
         );
@@ -182,7 +187,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             rbuf = currentHandle().buf.reset();
 
         try {
-            return new FileWriteHandleImpl(
+            return fileWriteHandleService.Create(
                 cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
                 mode, mmap, false, fsyncDelay, maxWalSegmentSize
             );
