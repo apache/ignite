@@ -113,6 +113,8 @@ public class SqlCdcTest extends AbstractCdcTest {
         assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, getTestTimeout(), cnsmr));
         assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, getTestTimeout(), cnsmr));
 
+        checkMetrics(false, cdc, KEYS_CNT * 2);
+
         fut.cancel();
 
         assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(USER)).size());
@@ -123,9 +125,13 @@ public class SqlCdcTest extends AbstractCdcTest {
         for (int i = 0; i < KEYS_CNT; i++)
             executeSql(ign, "DELETE FROM USER WHERE id = ?", i);
 
+        cdc = new CdcMain(cfg, null, cdcCfg);
+
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
         assertTrue(waitForSize(KEYS_CNT, USER, DELETE, getTestTimeout(), cnsmr));
+
+        checkMetrics(false, cdc, KEYS_CNT);
 
         rmvFut.cancel();
 

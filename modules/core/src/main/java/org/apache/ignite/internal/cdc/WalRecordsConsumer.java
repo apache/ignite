@@ -47,10 +47,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class WalRecordsConsumer<K, V> {
     /** Events count metric name. */
-    public static final String EVENTS_COUNT = "EventsCount";
+    public static final String EVTS_CNT = "EventsCount";
 
     /** Last event time metric name. */
-    public static final String LAST_EVENT_TIME = "LastEventTime";
+    public static final String LAST_EVT_TIME = "LastEventTime";
 
     /** Ignite logger. */
     private final IgniteLogger log;
@@ -167,8 +167,8 @@ public class WalRecordsConsumer<K, V> {
     public void start(MetricRegistry cdcReg, MetricRegistry cdcConsumerReg) throws IgniteCheckedException {
         consumer.start(cdcConsumerReg);
 
-        evtsCnt = cdcReg.longMetric(EVENTS_COUNT, "Count of events processed by the consumer");
-        lastEvtTs = cdcReg.longMetric(LAST_EVENT_TIME, "Time of the last event process");
+        evtsCnt = cdcReg.longMetric(EVTS_CNT, "Count of events processed by the consumer");
+        lastEvtTs = cdcReg.longMetric(LAST_EVT_TIME, "Time of the last event process");
 
         if (log.isDebugEnabled())
             log.debug("WalRecordsConsumer started [consumer=" + consumer.getClass() + ']');

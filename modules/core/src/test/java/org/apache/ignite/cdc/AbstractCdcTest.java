@@ -33,11 +33,19 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFF;
+import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
+import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -85,6 +93,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         if (txCache != null)
             assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, timeout, cnsmr));
 
+        checkMetrics(false, cdc, txCache == null ? to : to * 2);
+
         fut.cancel();
 
         List<Integer> keys = cnsmr.data(UPDATE, cacheId(cache.getName()));
@@ -111,6 +121,28 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 return sum == expSz;
             },
             timeout);
+    }
+
+    /** @param jmxEnabled JMX enabled param */
+    public long checkMetrics(boolean jmxEnabled, CdcMain cdc, int expCnt) {
+        MetricRegistry mreg = GridTestUtils.getFieldValue(cdc, "mreg");
+
+        assertNotNull(mreg);
+
+        long committedSegIdx = mreg.<LongMetric>findMetric(COMMITTED_SEG_IDX).value();
+        long curSegIdx = mreg.<LongMetric>findMetric(CUR_SEG_IDX).value();
+
+        assertTrue(committedSegIdx <= curSegIdx);
+
+        assertTrue(mreg.<LongMetric>findMetric(COMMITTED_SEG_OFF).value() >= 0);
+        assertTrue(mreg.<LongMetric>findMetric(LAST_SEG_CONSUMPTION_TIME).value() > 0);
+
+        assertTrue(mreg.<LongMetric>findMetric(LAST_EVT_TIME).value() > 0);
+
+        if (expCnt != -1)
+            assertTrue(mreg.<LongMetric>findMetric(EVTS_CNT).value() >= expCnt);
+
+        return mreg.<LongMetric>findMetric(EVTS_CNT).value();
     }
 
     /** */

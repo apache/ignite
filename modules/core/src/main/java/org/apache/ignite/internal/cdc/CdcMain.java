@@ -116,16 +116,16 @@ public class CdcMain implements Runnable {
     public static final String STATE_DIR = "state";
 
     /** Current segment index metric name. */
-    public static final String CURRENT_SEGMENT_INDEX = "CurrentSegmentIndex";
+    public static final String CUR_SEG_IDX = "CurrentSegmentIndex";
 
     /** Committed segment index metric name. */
-    public static final String COMMITTED_SEGMENT_INDEX = "CommittedSegmentIndex";
+    public static final String COMMITTED_SEG_IDX = "CommittedSegmentIndex";
 
     /** Committed segment offset metric name. */
-    public static final String COMMITTED_SEGMENT_OFFSET = "CommittedSegmentOffset";
+    public static final String COMMITTED_SEG_OFF = "CommittedSegmentOffset";
 
     /** Last segment consumption time. */
-    public static final String LAST_SEGMENT_CONSUMPTION_TIME = "LastSegmentConsumptionTime";
+    public static final String LAST_SEG_CONSUMPTION_TIME = "LastSegmentConsumptionTime";
 
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
@@ -320,11 +320,11 @@ public class CdcMain implements Runnable {
         mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
         mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
 
-        curSegmentIdx = mreg.longMetric(CURRENT_SEGMENT_INDEX, "Current segment index");
-        committedSegmentIdx = mreg.longMetric(COMMITTED_SEGMENT_INDEX, "Committed segment index");
-        committedSegmentOffset = mreg.longMetric(COMMITTED_SEGMENT_OFFSET, "Committed segment offset");
+        curSegmentIdx = mreg.longMetric(CUR_SEG_IDX, "Current segment index");
+        committedSegmentIdx = mreg.longMetric(COMMITTED_SEG_IDX, "Committed segment index");
+        committedSegmentOffset = mreg.longMetric(COMMITTED_SEG_OFF, "Committed segment offset");
         lastSegmentConsumptionTs =
-            mreg.longMetric(LAST_SEGMENT_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
+            mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
     }
 
     /**
@@ -455,12 +455,14 @@ public class CdcMain implements Runnable {
 
                 boolean commit = consumer.onRecords(iter);
 
-                if (commit) {
+                while (commit) {
                     assert it.lastRead().isPresent();
 
                     WALPointer ptr = it.lastRead().get();
 
                     state.save(ptr);
+
+                    commit = false;
 
                     committedSegmentIdx.value(ptr.index());
                     committedSegmentOffset.value(ptr.fileOffset());
