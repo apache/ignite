@@ -737,6 +737,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         }
     }
 
+    /**
+     * Method used to retrieve class based on classname
+     *
+     * @param clsName
+     * @return class based on clsname
+     */
     private Class<?> getClass(String clsName) {
         try {
             return Class.forName(clsName);
