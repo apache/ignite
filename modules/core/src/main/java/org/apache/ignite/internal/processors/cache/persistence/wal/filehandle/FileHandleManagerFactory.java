@@ -106,7 +106,7 @@ public class FileHandleManagerFactory {
                 version = version.substring(0, dot);
             }
         }
-        fileWriteHandleService = (Integer.parseInt(version) >= 15) ? FileHandleManagerFactory::createFileWriteHandlePreJDK15 : FileHandleManagerFactory::createFileWriteHandleJDK15Plus;
+        fileWriteHandleService = (Integer.parseInt(version) >= 15) ? FileHandleManagerFactory::createFileWriteHandleJDK15Plus : FileHandleManagerFactory::createFileWriteHandlePreJDK15;
         return fileWriteHandleService;
     }
 
