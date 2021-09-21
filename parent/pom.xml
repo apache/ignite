@@ -1029,9 +1029,9 @@
         </profile>
 
         <profile>
-            <id>java-9+</id>
+            <id>java-9-to-14</id>
             <activation>
-                <jdk>[1.9,)</jdk>
+                <jdk>[1.9,15)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
@@ -1063,6 +1063,86 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED --illegal-access=permit</argLine>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
+                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
+                            <detectJavaApiLink>false</detectJavaApiLink>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <exclusions>
+                            <exclusion>
+                                <!-- This dependency is not available with java 9.-->
+                                <groupId>jdk.tools</groupId>
+                                <artifactId>jdk.tools</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <type>test-jar</type>
+                        <exclusions>
+                            <exclusion>
+                                <!-- This dependency is not available with java 9.-->
+                                <groupId>jdk.tools</groupId>
+                                <artifactId>jdk.tools</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+
+        </profile>
+
+        <profile>
+            <id>java-15+</id>
+            <activation>
+                <jdk>[15,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.source>11</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+            </properties>
+            <dependencies/>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.7.0</version>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED</argLine>
                         </configuration>
                     </plugin>
 
