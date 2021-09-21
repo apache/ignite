@@ -19,15 +19,15 @@ package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
-import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 
 /**
  * Operator table that contains subset of Calcite's library operators supported by Ignite.
  *
  * @see RexImpTable for functions and operators implementors.
- * @see StandardConvertletTable for functions and operators convertlets.
+ * @see IgniteConvertletTable for functions and operators convertlets.
  * @see Accumulators for aggregates implementors.
  *
  * Note: Actialy we don't use reflective capabilities of ReflectiveSqlOperatorTable (init method never called), but
