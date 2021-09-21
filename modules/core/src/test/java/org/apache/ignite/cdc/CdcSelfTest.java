@@ -170,7 +170,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr));
 
-        checkMetrics(false, cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
+        checkMetrics(cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
 
         rmvFut.cancel();
 
@@ -229,7 +229,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
         assertTrue(waitForCondition(cnsmr::stopped, getTestTimeout()));
 
-        checkMetrics(false, cdc, KEYS_CNT);
+        checkMetrics(cdc, KEYS_CNT);
 
         List<Integer> keys = cnsmr.data(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
@@ -276,8 +276,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr1, cnsmr2));
 
-        long evtsCnt1 = checkMetrics(false, cdc1, -1);
-        long evtsCnt2 = checkMetrics(false, cdc2, -1);
+        long evtsCnt1 = checkMetrics(cdc1, -1);
+        long evtsCnt2 = checkMetrics(cdc2, -1);
 
         assertEquals(KEYS_CNT * 2, evtsCnt1 + evtsCnt2);
 
@@ -300,8 +300,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr1, cnsmr2));
 
-        evtsCnt1 = checkMetrics(false, cdc1, -1);
-        evtsCnt2 = checkMetrics(false, cdc2, -1);
+        evtsCnt1 = checkMetrics(cdc1, -1);
+        evtsCnt2 = checkMetrics(cdc2, -1);
 
         assertEquals(KEYS_CNT * 2, evtsCnt1 + evtsCnt2);
 
@@ -365,7 +365,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
             assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
 
-            checkMetrics(false, cdc, KEYS_CNT);
+            checkMetrics(cdc, KEYS_CNT);
 
             fut.cancel();
 
@@ -411,7 +411,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         waitForSize(half, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
 
-        checkMetrics(false, cdc, half);
+        checkMetrics(cdc, half);
 
         waitForCondition(halfCommitted::get, getTestTimeout());
 
@@ -430,7 +430,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr);
 
-        checkMetrics(false, cdc, KEYS_CNT * 2 - half);
+        checkMetrics(cdc, KEYS_CNT * 2 - half);
 
         fut.cancel();
 

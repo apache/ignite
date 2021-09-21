@@ -93,7 +93,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         if (txCache != null)
             assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, timeout, cnsmr));
 
-        checkMetrics(false, cdc, txCache == null ? to : to * 2);
+        checkMetrics(cdc, txCache == null ? to : to * 2);
 
         fut.cancel();
 
@@ -123,8 +123,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             timeout);
     }
 
-    /** @param jmxEnabled JMX enabled param */
-    public long checkMetrics(boolean jmxEnabled, CdcMain cdc, int expCnt) {
+    /** */
+    public long checkMetrics(CdcMain cdc, int expCnt) {
         MetricRegistry mreg = GridTestUtils.getFieldValue(cdc, "mreg");
 
         assertNotNull(mreg);

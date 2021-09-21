@@ -113,7 +113,7 @@ public class SqlCdcTest extends AbstractCdcTest {
         assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, getTestTimeout(), cnsmr));
         assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, getTestTimeout(), cnsmr));
 
-        checkMetrics(false, cdc, KEYS_CNT * 2);
+        checkMetrics(cdc, KEYS_CNT * 2);
 
         fut.cancel();
 
@@ -131,7 +131,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         assertTrue(waitForSize(KEYS_CNT, USER, DELETE, getTestTimeout(), cnsmr));
 
-        checkMetrics(false, cdc, KEYS_CNT);
+        checkMetrics(cdc, KEYS_CNT);
 
         rmvFut.cancel();
 
