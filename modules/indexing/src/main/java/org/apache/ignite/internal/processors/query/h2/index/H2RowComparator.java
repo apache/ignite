@@ -114,6 +114,21 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         return Integer.signum(c);
     }
 
+    /** {@inheritDoc} */
+    @Override public int compareSearchKey(IndexKey left, IndexKey right) throws IgniteCheckedException {
+        int cmp = super.compareSearchKey(left, right);
+
+        if (cmp != COMPARE_UNSUPPORTED)
+            return cmp;
+
+        int ltype = DataType.getTypeFromClass(left.key().getClass());
+        int rtype = DataType.getTypeFromClass(right.key().getClass());
+
+        int c = compareValues(wrap(left.key(), ltype), wrap(right.key(), rtype));
+
+        return Integer.signum(c);
+    }
+
     /** */
     private Value wrap(Object val, int type) throws IgniteCheckedException {
         return H2Utils.wrap(coctx, val, type);

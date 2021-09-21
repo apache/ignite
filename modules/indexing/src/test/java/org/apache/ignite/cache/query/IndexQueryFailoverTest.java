@@ -110,14 +110,6 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
                 return cache.query(qryNullCriteria);
             },
             NullPointerException.class, "Ouch! Argument cannot be null: field");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryDuplicateField = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(lt("id", 12), lt("id", 32));
-
-                return cache.query(qryDuplicateField);
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid");
     }
 
     /** */
