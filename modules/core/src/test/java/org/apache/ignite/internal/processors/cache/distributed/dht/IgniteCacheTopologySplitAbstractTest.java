@@ -108,13 +108,6 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         // Trigger segmentation.
         segmented = true;
 
-        for (Ignite ignite : G.allGrids()) {
-            TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)
-                ignite.configuration().getCommunicationSpi();
-
-            comm.blockMessages(new SegmentBlocker(ignite.cluster().localNode()));
-        }
-
         Collection<Ignite> seg0 = F.view(G.allGrids(), new IgnitePredicate<Ignite>() {
             @Override public boolean apply(Ignite ignite) {
                 return segment(ignite.cluster().localNode()) == 0;
@@ -258,14 +251,14 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
     }
 
     /**  */
-    protected class SegmentBlocker implements IgniteBiPredicate<ClusterNode, Message> {
+    public class SegmentBlocker implements IgniteBiPredicate<ClusterNode, Message> {
         /**  */
         private final ClusterNode locNode;
 
         /**
          * @param locNode Local node.
          */
-        SegmentBlocker(ClusterNode locNode) {
+        public SegmentBlocker(ClusterNode locNode) {
             assert locNode != null;
 
             this.locNode = locNode;
@@ -273,6 +266,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node, Message message) {
+            if (!segmented)
+                return false;
+
             return segment(locNode) != segment(node);
         }
     }
