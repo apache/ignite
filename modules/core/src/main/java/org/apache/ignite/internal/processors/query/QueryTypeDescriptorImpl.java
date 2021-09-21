@@ -721,7 +721,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
                 else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
-                    //check for enums implementing interfaces
+                    // Check for classes/enums implementing interfaces
                     final Class<?> cls = getClass(((BinaryObject) propVal).type().typeName());
                     if (U.box(propType).isAssignableFrom(U.box(cls))) {
                         continue;
