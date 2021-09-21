@@ -50,20 +50,22 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
     @Override public void visitAll(AttributeVisitor v) {
         v.accept(0, "snapshotName", String.class);
         v.accept(1, "nodeId", String.class);
-        v.accept(2, "cacheGroup", String.class);
-        v.accept(3, "localPartitions", String.class);
+        v.accept(2, "baselineNodeId", String.class);
+        v.accept(3, "cacheGroup", String.class);
+        v.accept(4, "localPartitions", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(SnapshotView row, AttributeWithValueVisitor v) {
         v.accept(0, "snapshotName", String.class, row.snapshotName());
-        v.accept(1, "nodeId", String.class, row.consistentId());
-        v.accept(2, "cacheGroup", String.class, row.cacheGroup());
-        v.accept(3, "localPartitions", String.class, row.localPartitions());
+        v.accept(1, "nodeId", String.class, row.nodeId());
+        v.accept(2, "baselineNodeId", String.class, row.baselineNodeId());
+        v.accept(3, "cacheGroup", String.class, row.cacheGroup());
+        v.accept(4, "localPartitions", String.class, row.localPartitions());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 4;
+        return 5;
     }
 }

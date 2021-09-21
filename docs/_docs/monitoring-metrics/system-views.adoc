@@ -908,8 +908,9 @@ The SNAPSHOTS view exposes information about local snapshots.
 |===
 | Column | Data Type | Description
 | SNAPSHOT_NAME | VARCHAR | Snapshot name.
-| NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
+| NODE_ID | VARCHAR | Node consistent ID.
+| BASELINE_NODE_ID | VARCHAR | Baseline node consistent ID.
 | CACHE_GROUP | VARCHAR | Name of cache group.
-| LOCAL_PARTITIONS | VARCHAR | Numbers of local partitions for cache group.
+| LOCAL_PARTITIONS | VARCHAR | Partition numbers of the cache group stored in the snapshot.
 
 |===

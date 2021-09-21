@@ -1072,60 +1072,48 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testSnapshotsViews() throws Exception {
         cleanPersistenceDir();
 
+        String node0 = "node0";
+        String node1 = "node1";
+
         String testSnapname = "testSnapshot";
         String testSnapname0 = "testSnapshot0";
-        String testCache0 = "testCache0";
-        String testCache1 = "testCache1";
+        String testCache = "testCache";
 
-        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
-        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1"));
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration(node0));
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration(node1));
 
         ignite.cluster().active(true);
         ignite.snapshot().createSnapshot(testSnapname).get();
 
         List<List<?>> res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS");
 
-        assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class);
+        assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class, String.class);
+
+        assertEquals(4, res.size());
+
+        assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
+
+        res = execSql("SELECT BASELINE_NODE_ID FROM " + systemSchemaName() + ".SNAPSHOTS WHERE NODE_ID = ?", node0);
 
         assertEquals(2, res.size());
 
-        assertEquals(testSnapname, res.get(0).get(0));
-        assertEquals(testSnapname, res.get(1).get(0));
-
-        assertEquals("node0", res.get(0).get(1));
-        assertEquals("node1", res.get(1).get(1));
-
-        assertEquals(DEFAULT_CACHE_NAME, res.get(0).get(2));
-        assertEquals(DEFAULT_CACHE_NAME, res.get(1).get(2));
-
-        ignite.createCache(testCache0);
-        ignite.createCache(testCache1);
+        ignite.createCache(testCache);
 
         ignite.snapshot().createSnapshot(testSnapname0).get();
 
-        res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS WHERE CACHE_GROUP = ?", testCache0);
+        res = execSql("SELECT DISTINCT SNAPSHOT_NAME FROM " + systemSchemaName() + ".SNAPSHOTS WHERE CACHE_GROUP = ?", testCache);
 
-        assertEquals(2, res.size());
+        assertEquals(1, res.size());
 
-        assertEquals(testSnapname0, res.get(0).get(0));
-        assertEquals(testSnapname0, res.get(1).get(0));
-
-        assertEquals("node0", res.get(0).get(1));
-        assertEquals("node1", res.get(1).get(1));
-
-        assertEquals(testCache0, res.get(0).get(2));
-        assertEquals(testCache0, res.get(1).get(2));
+        assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname0::equals));
 
         res = execSql("SELECT SNAPSHOT_NAME, CACHE_GROUP FROM " + systemSchemaName() + ".SNAPSHOTS " +
             "WHERE SNAPSHOT_NAME = ? ORDER BY CACHE_GROUP", testSnapname0);
 
-        assertEquals(6, res.size());
-        assertEquals(DEFAULT_CACHE_NAME, res.get(0).get(1));
-        assertEquals(DEFAULT_CACHE_NAME, res.get(1).get(1));
-        assertEquals(testCache0, res.get(2).get(1));
-        assertEquals(testCache0, res.get(3).get(1));
-        assertEquals(testCache1, res.get(4).get(1));
-        assertEquals(testCache1, res.get(5).get(1));
+        assertEquals(8, res.size());
+
+        assertTrue(res.subList(0, 3).stream().map(l -> l.get(1)).allMatch(DEFAULT_CACHE_NAME::equals));
+        assertTrue(res.subList(4, 7).stream().map(l -> l.get(1)).allMatch(testCache::equals));
     }
 
     /** {@inheritDoc} */

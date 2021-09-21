@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -171,8 +172,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
@@ -1784,23 +1783,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return Collections.emptyList();
 
                 return F.flat(F.iterator(readSnapshotMetadatas(snpName), meta -> {
-                        if (nodeConsistentId != null && !nodeConsistentId.equals(meta.consistentId()))
-                            return Collections.emptyList();
+                    if (nodeConsistentId != null && !nodeConsistentId.equals(meta.consistentId()))
+                        return Collections.emptyList();
 
-                    List<String> cacheCrps = snapshotCacheDirectories(snpName, meta.folderName()).stream()
-                        .map(File::getName)
-                        .filter(name -> name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX))
-                        .map(name -> name.startsWith(CACHE_DIR_PREFIX)
-                            ? name.substring(CACHE_DIR_PREFIX.length())
-                            : name.substring(CACHE_GRP_DIR_PREFIX.length()))
-                        .collect(Collectors.toList());
+                    return F.flat(F.iterator(meta.baselineNodes(), bltNodeId -> {
+                        Collection<String> cacheGrps = F.viewReadOnly(snapshotCacheDirectories(snpName, meta.folderName(),
+                                name -> !MetaStorage.METASTORAGE_CACHE_NAME.equals(name)),
+                            FilePageStoreManager::cacheGroupName);
 
-                    return F.iterator(cacheCrps, cacheGrp -> new SnapshotView(
-                        meta.snapshotName(),
-                        meta.consistentId(),
-                        cacheGrp,
-                        meta.partitions().get(CU.cacheId(cacheGrp))
-                    ), true);
+                        return F.iterator(cacheGrps, cacheGrp -> new SnapshotView(
+                            meta.snapshotName(),
+                            meta.consistentId(),
+                            bltNodeId,
+                            cacheGrp,
+                            meta.partitions().get(CU.cacheId(cacheGrp))
+                            ), true);
+                        }, true));
                     }, true));
             }, true));
     }
