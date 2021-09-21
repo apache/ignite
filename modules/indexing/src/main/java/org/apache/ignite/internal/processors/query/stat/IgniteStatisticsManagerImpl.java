@@ -388,34 +388,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
             statProc.updateKeyAsync(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
                 null);
-//            if (objTask.getValue().isEmpty()) {
-//                // Just save or totally remove obsolescence info, no additional operations needed.
-//                statProc.updateKeyAsync(true, tbl, objTask.getKey(), Collections.emptySet(), null);
-//            }
-//            else {
-//                // Schedule full gathering.
-//                GridCacheContext<?, ?> cctx = (tbl == null) ? null : tbl.cacheContext();
-//
-//                AffinityTopologyVersion topVer = null;
-//
-//                if (!cctx.gate().enterIfNotStopped())
-//                    continue;
-//
-//                try {
-//                    topVer = cctx.affinity().affinityTopologyVersion();
-//                    cctx.affinity().affinityReadyFuture(topVer).get();
-//                }
-//                catch (IgniteCheckedException e) {
-//                    log.warning("Unable to get topology ready.", e);
-//                }
-//                finally {
-//                    cctx.gate().leave();
-//                }
-//
-//                statProc.updateKeyAsync(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
-//                    topVer);
-//
-//            }
         }
     }
 
