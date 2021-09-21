@@ -76,7 +76,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
     }
 
     @Override public void onDisappeared(ClusterNode member) {
-        readyAddresses.remove(member.address());
+        readyAddresses.remove(member.address().toString());
     }
 
     protected void configRpcClient(final RpcClient rpcClient) {
@@ -91,7 +91,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
         // TODO asch should the client be created lazily? A client doesn't make sence without a server IGNITE-14832
         this.rpcClient.init(null);
 
-        this.rpcExecutor = ((RpcOptions)rpcOptions).getClientExecutor();
+        this.rpcExecutor = rpcOptions.getClientExecutor();
 
         return true;
     }
