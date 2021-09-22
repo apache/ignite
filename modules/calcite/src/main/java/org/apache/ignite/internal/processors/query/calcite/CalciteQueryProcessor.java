@@ -349,6 +349,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 if (qry.isCancelled())
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
+                else
+                    throw e;
             }
         }
 
