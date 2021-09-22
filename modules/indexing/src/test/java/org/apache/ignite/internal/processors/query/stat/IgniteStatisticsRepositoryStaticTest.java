@@ -73,7 +73,7 @@ public class IgniteStatisticsRepositoryStaticTest extends StatisticsAbstractTest
         ObjectStatisticsImpl os1 = new ObjectStatisticsImpl(100, colStat1);
         ObjectStatisticsImpl os2 = new ObjectStatisticsImpl(101, colStat2);
 
-        ObjectStatisticsImpl sumStat1 = IgniteStatisticsRepository.add(os1, os2);
+        ObjectStatisticsImpl sumStat1 = IgniteStatisticsRepository.merge(os1, os2);
 
         assertEquals(101, sumStat1.rowCount());
         assertEquals(3, sumStat1.columnsStatistics().size());
@@ -82,7 +82,7 @@ public class IgniteStatisticsRepositoryStaticTest extends StatisticsAbstractTest
         // 2) Add statistics with new columns.
         ObjectStatisticsImpl os3 = new ObjectStatisticsImpl(101, Collections.singletonMap("col3", cs3));
 
-        ObjectStatisticsImpl sumStat2 = IgniteStatisticsRepository.add(os1, os3);
+        ObjectStatisticsImpl sumStat2 = IgniteStatisticsRepository.merge(os1, os3);
 
         assertEquals(3, sumStat2.columnsStatistics().size());
 
@@ -93,7 +93,7 @@ public class IgniteStatisticsRepositoryStaticTest extends StatisticsAbstractTest
 
         ObjectStatisticsImpl os4 = new ObjectStatisticsImpl(99, colStat3);
 
-        ObjectStatisticsImpl sumStat3 = IgniteStatisticsRepository.add(os1, os4);
+        ObjectStatisticsImpl sumStat3 = IgniteStatisticsRepository.merge(os1, os4);
 
         assertEquals(99, sumStat3.rowCount());
         assertEquals(2, sumStat3.columnsStatistics().size());

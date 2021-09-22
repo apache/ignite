@@ -109,8 +109,8 @@ public class IgniteStatisticsConfigurationManager {
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
         new DistributedMetastorageLifecycleListener() {
-        @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-            distrMetaStorage = (DistributedMetaStorage)metastorage;
+        @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+            distrMetaStorage = metastorage;
 
             distrMetaStorage.listen(
                 (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
@@ -125,7 +125,7 @@ public class IgniteStatisticsConfigurationManager {
                         try {
                             StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
-                            updateKey(newStatCfg);
+                            updateLocalStatistics(newStatCfg);
                         }
                         catch (Throwable e) {
                             log.warning("Unexpected exception on change statistic configuration [old="
@@ -158,7 +158,7 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             mgmtPool.submit(() -> {
-                updateFullCfg();
+                updateAllLocalStatistics();
             });
         }
     };
@@ -215,16 +215,21 @@ public class IgniteStatisticsConfigurationManager {
      *
      * @param cfg Statistics object configuration to update statistics by.
      */
-    private void updateKey(StatisticsObjectConfiguration cfg) {
+    private void updateLocalStatistics(StatisticsObjectConfiguration cfg) {
 
         GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
 
         if (tbl == null || cfg.columns().isEmpty()) {
             // Can be drop table event, need to ensure that there is no stored data left for this table.
-            if (tbl == null && log.isDebugEnabled())
-                log.debug("Can't find table by key " + cfg.key() + ". Check statistics empty.");
+            if (log.isDebugEnabled()) {
+                if (tbl == null)
+                    log.debug("Can't find table by key " + cfg.key() + ". Check statistics empty.");
+                else if (cfg == null)
+                    log.debug("Tombstone configuration by key " + cfg.key() + ". Check statistics empty.");
+            }
 
-            statProc.updateKeyAsync(false, tbl, cfg, Collections.emptySet(), topVer);
+            // Ensure to clean local metastorage.
+            statProc.updateLocalStatistics(false, tbl, cfg, Collections.emptySet(), topVer);
 
             return;
         }
@@ -243,7 +248,7 @@ public class IgniteStatisticsConfigurationManager {
 
             final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
-            statProc.updateKeyAsync(false, tbl, cfg, parts, topVer0);
+            statProc.updateLocalStatistics(false, tbl, cfg, parts, topVer0);
         }
         catch (IgniteCheckedException e) {
             log.warning("Unexpected error during statistics collection: " + e.getMessage(), e);
@@ -323,18 +328,18 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager started.");
 
         if (distrMetaStorage != null)
-            mgmtPool.submit(() -> updateFullCfg());
+            mgmtPool.submit(() -> updateAllLocalStatistics());
     }
 
     /**
      * Scan statistics configuration and update each key it contains.
      */
-    public void updateFullCfg() {
+    public void updateAllLocalStatistics() {
         try {
             distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {
                 StatisticsObjectConfiguration cfg = (StatisticsObjectConfiguration)v;
 
-                updateKey(cfg);
+                updateLocalStatistics(cfg);
             });
         }
         catch (IgniteCheckedException e) {

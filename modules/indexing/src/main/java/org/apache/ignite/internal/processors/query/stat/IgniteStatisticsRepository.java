@@ -180,7 +180,7 @@ public class IgniteStatisticsRepository {
         if (oldPartStat == null)
             store.saveLocalPartitionStatistics(key, statistics);
         else {
-            ObjectPartitionStatisticsImpl combinedStats = add(oldPartStat, statistics);
+            ObjectPartitionStatisticsImpl combinedStats = merge(oldPartStat, statistics);
             store.saveLocalPartitionStatistics(key, combinedStats);
         }
     }
@@ -342,14 +342,14 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Add new statistics into base one (with overlapping of existing data).
+     * Merge new statistics into base one (with overlapping of existing data).
      *
      * @param base Old statistics.
      * @param add Updated statistics.
      * @param <T> Statistics type (partition or object one).
      * @return Combined statistics.
      */
-    public static <T extends ObjectStatisticsImpl> T add(T base, T add) {
+    public static <T extends ObjectStatisticsImpl> T merge(T base, T add) {
         T res = (T)add.clone();
 
         for (Map.Entry<String, ColumnStatistics> entry : base.columnsStatistics().entrySet())
@@ -491,12 +491,13 @@ public class IgniteStatisticsRepository {
     ) {
         Map<StatisticsKey, Set<Integer>> res = new HashMap<>();
 
-        Set<StatisticsKey> keys = targetCfg.keySet().stream().map(StatisticsObjectConfiguration::key).collect(Collectors.toSet());
+        Set<StatisticsKey> targetKeys = targetCfg.keySet().stream().map(StatisticsObjectConfiguration::key)
+            .collect(Collectors.toSet());
 
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : obsolescence.entrySet()) {
             StatisticsKey key = objObs.getKey();
 
-            if (!keys.contains(key)) {
+            if (!targetKeys.contains(key)) {
                 IntMap<ObjectPartitionStatisticsObsolescence> rmv = obsolescence.remove(key);
 
                 res.put(key, IntStream.of(rmv.keys()).boxed().collect(Collectors.toSet()));
@@ -538,7 +539,7 @@ public class IgniteStatisticsRepository {
      * @param partId Partition id.
      * @param changedKey Changed key bytes.
      */
-    public void addRowsModified(StatisticsKey key, int partId, byte[] changedKey) {
+    public void onRowModified(StatisticsKey key, int partId, byte[] changedKey) {
         IntMap<ObjectPartitionStatisticsObsolescence> objObs = statObs.get(key);
 
         if (objObs == null)
@@ -549,7 +550,7 @@ public class IgniteStatisticsRepository {
         if (objPartObs == null)
             return;
 
-        objPartObs.modify(changedKey);
+        objPartObs.onModified(changedKey);
     }
 
     /**

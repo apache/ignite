@@ -104,7 +104,7 @@ public class StatisticsProcessor {
      * @param partsToProcess Partitions to update, if !byObsolescence - all primary partitions for the given topology.
      * @param topVer Topology version, can be {@code null} if tbl is null.
      */
-    public void updateKeyAsync(
+    public void updateLocalStatistics(
         boolean byObsolescence,
         GridH2Table tbl,
         StatisticsObjectConfiguration cfg,

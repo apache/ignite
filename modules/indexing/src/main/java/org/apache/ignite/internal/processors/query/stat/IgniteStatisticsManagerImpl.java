@@ -259,7 +259,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void collectStatistics(StatisticsObjectConfiguration... targets) throws IgniteCheckedException {
-        checkStatisticsState("collect statistics");
+        ensureUsageState("collect statistics");
 
         if (usageState() == OFF)
             throw new IgniteException("Can't gather statistics while statistics usage state is OFF.");
@@ -269,7 +269,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
-        checkStatisticsState("drop statistics");
+        ensureUsageState("drop statistics");
 
         if (usageState() == OFF)
             throw new IgniteException("Can't drop statistics while statistics usage state is OFF.");
@@ -279,7 +279,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void refreshStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
-        checkStatisticsState("refresh statistics");
+        ensureUsageState("refresh statistics");
 
         if (usageState() == OFF)
             throw new IgniteException("Can't refresh statistics while statistics usage state is OFF.");
@@ -289,7 +289,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropAll() throws IgniteCheckedException {
-        checkStatisticsState("drop all statistics");
+        ensureUsageState("drop all statistics");
 
         statCfgMgr.dropAll();
     }
@@ -320,7 +320,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void usageState(StatisticsUsageState state) throws IgniteCheckedException {
-        checkStatisticsState("change usage state of statistics");
+        ensureUsageState("change usage state of statistics");
 
         try {
             usageState.propagate(state);
@@ -337,7 +337,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void onRowUpdated(String schemaName, String objName, int partId, byte[] keyBytes) {
-        statsRepos.addRowsModified(new StatisticsKey(schemaName, objName), partId, keyBytes);
+        statsRepos.onRowModified(new StatisticsKey(schemaName, objName), partId, keyBytes);
     }
 
     /**
@@ -349,9 +349,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * 4) Submit tasks. Actually obsolescence info will be stored during task processing.
      */
     public synchronized void processObsolescence() {
-        StatisticsUsageState state = usageState();
+        StatisticsUsageState usageState = usageState();
 
-        if (state != ON || ctx.isStopping()) {
+        if (usageState != ON || ctx.isStopping()) {
             if (log.isDebugEnabled())
                 log.debug("Skipping obsolescence processing.");
 
@@ -374,7 +374,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 log.trace(String.format("Scheduling obsolescence savings for %d targets", dirty.size()));
         }
 
-        Map<StatisticsObjectConfiguration, List<Integer>> tasks = calculateObsolescenceRefreshTasks(dirty);
+        Map<StatisticsObjectConfiguration, List<Integer>> tasks = calculateObsolescencedPartitions(dirty);
 
         for (Map.Entry<StatisticsObjectConfiguration, List<Integer>> objTask : tasks.entrySet()) {
             StatisticsKey key = objTask.getKey().key();
@@ -386,7 +386,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     log.debug(String.format("Got obsolescence statistics for unknown table %s", objTask.getKey()));
             }
 
-            statProc.updateKeyAsync(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
+            statProc.updateLocalStatistics(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
                 null);
         }
     }
@@ -398,7 +398,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * @param dirty Map of statistics key to list of it's "dirty" paritions.
      * @return Map of statistics cfg to partition to refresh statistics.
      */
-    private Map<StatisticsObjectConfiguration, List<Integer>> calculateObsolescenceRefreshTasks(
+    private Map<StatisticsObjectConfiguration, List<Integer>> calculateObsolescencedPartitions(
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty
     ) {
         Map<StatisticsObjectConfiguration, List<Integer>> res = new HashMap<>();
@@ -440,7 +440,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      *
      * @param op Operation name.
      */
-    public void checkStatisticsState(String op) {
+    public void ensureUsageState(String op) {
         if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
             throw new IgniteException(String.format(
                 "Unable to perform %s due to cluster state [state=%s]", op, ctx.state().clusterState().state()));
