@@ -464,14 +464,12 @@ public class CdcMain implements Runnable {
 
                 boolean commit = consumer.onRecords(iter);
 
-                while (commit) {
+                if (commit) {
                     assert it.lastRead().isPresent();
 
                     WALPointer ptr = it.lastRead().get();
 
                     state.save(ptr);
-
-                    commit = false;
 
                     committedSegmentIdx.value(ptr.index());
                     committedSegmentOffset.value(ptr.fileOffset());
