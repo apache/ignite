@@ -385,7 +385,6 @@ public class SqlScriptRunner {
         /** {@inheritDoc} */
         @Override void execute() {
             for (String qry : queries) {
-
                 String[] toks = qry.split("\\s+");
 
                 if (ignoredStmts.contains(toks[0])) {
@@ -612,6 +611,9 @@ public class SqlScriptRunner {
 
         /** */
         private void checkEquals(String msg, String expectedStr, Object actual) {
+            if (actual == null && String.valueOf(actual).equalsIgnoreCase(expectedStr))
+                return;
+
             if (actual != null ^ expectedStr != null)
                 throw new AssertionError(msg);
 

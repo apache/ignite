@@ -12,7 +12,7 @@ statement ok
 INSERT INTO integers SELECT CAST(NULL AS VARCHAR)
 
 query I
-SELECT * FROM integers
+SELECT * FROM integers ORDER BY i NULLS LAST
 ----
 42
 NULL

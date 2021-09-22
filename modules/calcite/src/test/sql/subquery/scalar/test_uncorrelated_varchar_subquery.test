@@ -27,7 +27,7 @@ NULL
 query T
 SELECT 'hello' IN (SELECT * FROM strings)
 ----
-1
+true
 
 query T
 SELECT 'bla' IN (SELECT * FROM strings)
@@ -37,11 +37,11 @@ NULL
 query T
 SELECT 'bla' IN (SELECT * FROM strings WHERE v IS NOT NULL)
 ----
-0
+false
 
 # EXISTS
 query T
-SELECT * FROM strings WHERE EXISTS(SELECT NULL)
+SELECT * FROM strings WHERE EXISTS(SELECT NULL) ORDER BY 1 NULLS LAST
 ----
 hello
 world
@@ -65,4 +65,3 @@ SELECT (SELECT v FROM strings WHERE v='bla') FROM strings
 NULL
 NULL
 NULL
-

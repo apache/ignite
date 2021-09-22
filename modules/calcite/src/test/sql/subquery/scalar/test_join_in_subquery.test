@@ -27,7 +27,7 @@ statement ok
 INSERT INTO test2 VALUES (2, 42)
 
 query IIII
-SELECT * FROM test, test2 WHERE test.id=test2.id AND test_value*test2_value=(SELECT MIN(test_value*test2_value) FROM test AS a, test2 WHERE a.id=test.id AND a.id=test2.id)
+SELECT * FROM test, test2 WHERE test.id=test2.id AND test_value*test2_value=(SELECT MIN(test_value*test2_value) FROM test AS a, test2 WHERE a.id=test.id AND a.id=test2.id) ORDER BY 1;
 ----
 1	21	1	44
 2	22	2	42

@@ -19,14 +19,14 @@ INSERT INTO test VALUES (2, 22)
 
 # correlated subquery with one correlated expression
 query II
-SELECT * FROM test WHERE b=(SELECT MIN(b) FROM test AS a WHERE a.id=test.id)
+SELECT * FROM test WHERE b=(SELECT MIN(b) FROM test AS a WHERE a.id=test.id) ORDER BY 1;
 ----
 1	21
 2	22
 
 # correlated subquery with two correlated expressions
 query II
-SELECT * FROM test WHERE b=(SELECT MIN(b) FROM test AS a WHERE a.id=test.id AND a.id < test.b)
+SELECT * FROM test WHERE b=(SELECT MIN(b) FROM test AS a WHERE a.id=test.id AND a.id < test.b) ORDER BY 1;
 ----
 1	21
 2	22

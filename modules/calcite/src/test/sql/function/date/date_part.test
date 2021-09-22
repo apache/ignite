@@ -120,6 +120,18 @@ SELECT EXTRACT(second FROM d) as s FROM dates ORDER BY s;
 0
 
 query I
+SELECT EXTRACT(microsecond FROM d) FROM dates;
+----
+0
+0
+
+query I
+SELECT EXTRACT(millisecond FROM d) FROM dates;
+----
+0
+0
+
+query I
 SELECT EXTRACT(minute FROM d) as m FROM dates ORDER BY m;
 ----
 0
@@ -160,7 +172,6 @@ SELECT EXTRACT(quarter FROM d) as q FROM dates ORDER BY q;
 ----
 1
 4
-
 
 query I
 SELECT DAYOFMONTH(d) as d FROM dates ORDER BY d;

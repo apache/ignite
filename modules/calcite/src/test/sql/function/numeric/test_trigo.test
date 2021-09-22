@@ -9,7 +9,7 @@ statement ok
 INSERT INTO numbers VALUES (-42),(-1),(0), (1), (42), (NULL)
 
 query I
-SELECT cast(SIN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(SIN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 916
 -841
@@ -19,7 +19,7 @@ SELECT cast(SIN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(SIN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(SIN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 916
 -841
@@ -29,7 +29,7 @@ SELECT cast(SIN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(SIN(n::integer)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(SIN(n::integer)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 916
 -841
@@ -39,7 +39,7 @@ SELECT cast(SIN(n::integer)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(SIN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(SIN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 916
 -841
@@ -49,7 +49,7 @@ SELECT cast(SIN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(SIN(n::float)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(SIN(n::float)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 916
 -841
@@ -59,7 +59,7 @@ SELECT cast(SIN(n::float)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(SIN(n::double)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(SIN(n::double)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 916
 -841
@@ -69,7 +69,7 @@ SELECT cast(SIN(n::double)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(COS(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(COS(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -399
 540
@@ -79,7 +79,7 @@ SELECT cast(COS(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(COS(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(COS(n::smallint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -399
 540
@@ -89,7 +89,7 @@ SELECT cast(COS(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(COS(n::integer)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(COS(n::integer)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -399
 540
@@ -99,7 +99,7 @@ SELECT cast(COS(n::integer)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(COS(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(COS(n::bigint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -399
 540
@@ -109,7 +109,7 @@ SELECT cast(COS(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(COS(n::float)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(COS(n::float)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -399
 540
@@ -119,7 +119,7 @@ SELECT cast(COS(n::float)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(COS(n::double)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(COS(n::double)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -399
 540
@@ -129,7 +129,7 @@ SELECT cast(COS(n::double)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(TAN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(TAN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -2291
 -1557
@@ -139,7 +139,7 @@ SELECT cast(TAN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(TAN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(TAN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -2291
 -1557
@@ -149,7 +149,7 @@ SELECT cast(TAN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(TAN(n::integer)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(TAN(n::integer)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -2291
 -1557
@@ -159,7 +159,7 @@ SELECT cast(TAN(n::integer)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(TAN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(TAN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -2291
 -1557
@@ -169,7 +169,7 @@ SELECT cast(TAN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(TAN(n::float)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(TAN(n::float)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -2291
 -1557
@@ -179,7 +179,7 @@ SELECT cast(TAN(n::float)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(TAN(n::double)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(TAN(n::double)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -2291
 -1557
@@ -189,7 +189,7 @@ SELECT cast(TAN(n::double)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -1546
 -785
@@ -199,7 +199,7 @@ SELECT cast(ATAN(n::tinyint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -1546
 -785
@@ -209,7 +209,7 @@ SELECT cast(ATAN(n::smallint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN(n::integer)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN(n::integer)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -1546
 -785
@@ -219,7 +219,7 @@ SELECT cast(ATAN(n::integer)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -1546
 -785
@@ -229,7 +229,7 @@ SELECT cast(ATAN(n::bigint)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN(n::float)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN(n::float)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -1546
 -785
@@ -239,7 +239,7 @@ SELECT cast(ATAN(n::float)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN(n::double)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN(n::double)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -1546
 -785
@@ -384,7 +384,7 @@ SELECT cast(COT(n::double)*1000 as bigint) FROM numbers  WHERE n > 0.1 OR N < -0
 436
 
 query I
-SELECT cast(ATAN2(n::tinyint, 42)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN2(n::tinyint, 42)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -785
 -23
@@ -394,7 +394,7 @@ SELECT cast(ATAN2(n::tinyint, 42)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN2(n::smallint, 42)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN2(n::smallint, 42)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -785
 -23
@@ -404,7 +404,7 @@ SELECT cast(ATAN2(n::smallint, 42)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN2(n::integer, 42)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN2(n::integer, 42)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -785
 -23
@@ -414,7 +414,7 @@ SELECT cast(ATAN2(n::integer, 42)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN2(n::bigint, 42)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN2(n::bigint, 42)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -785
 -23
@@ -424,7 +424,7 @@ SELECT cast(ATAN2(n::bigint, 42)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN2(n::float, 42)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN2(n::float, 42)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -785
 -23
@@ -434,7 +434,7 @@ SELECT cast(ATAN2(n::float, 42)*1000 as bigint) FROM numbers ORDER BY n
 NULL
 
 query I
-SELECT cast(ATAN2(n::double, 42)*1000 as bigint) FROM numbers ORDER BY n
+SELECT cast(ATAN2(n::double, 42)*1000 as bigint) FROM numbers ORDER BY n NULLS LAST
 ----
 -785
 -23

@@ -42,7 +42,7 @@ statement ok
 INSERT INTO test VALUES (11, 22), (NULL, 21), (13, 22), (12, NULL), (16, NULL)
 
 query IIRII
-SELECT b, COUNT(a), SUM(a), MIN(a), MAX(a) FROM test GROUP BY b ORDER BY b
+SELECT b, COUNT(a), SUM(a), MIN(a), MAX(a) FROM test GROUP BY b ORDER BY b NULLS LAST;
 ----
 21	0	NULL	NULL	NULL
 22	2	24.000000	11	13

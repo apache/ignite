@@ -108,19 +108,6 @@ SELECT 'asdf' ~ '.*SD.*'
 ----
 false
 
-# newlines
-query T
-SELECT 'hello
-world' ~ '.*'
-----
-true
-
-query T
-SELECT 'hello
-world' ~ '^.*$'
-----
-true
-
 # this also works with tables
 statement ok
 CREATE TABLE test(v VARCHAR);
