@@ -427,7 +427,7 @@ You can use the control script to destroy specific user-created caches.
 
 [source, shell]
 ----
-control.sh|bat --cache destroy [cacheName1,...,cacheNameN] [--destroy-all-caches] [--skip-existence-check]
+control.sh|bat --cache destroy [cacheName1,...,cacheNameN] [--destroy-all-caches]
 ----
 
 Parameters:
@@ -437,7 +437,6 @@ Parameters:
 | Parameter | Description
 | `cacheName1,...,cacheNameN`| The names of the caches to be destroyed.
 | `--destroy-all-caches` | Permanently destroy all user-created caches.
-| `--skip-existence-check`| Disable check for cache existence, otherwise, the command will fail if at least one of the specified caches does not exist.
 |===
 
 Examples:
@@ -448,9 +447,6 @@ control.sh|bat --cache destroy cache1,cache2
 
 # Destroy all user-created caches.
 control.sh|bat --cache destroy --destroy-all-caches
-
-# Execute destroy command for cache1 and cache2 even if one of these caches doesn't exist.
-control.sh|bat --cache destroy cache1,cache2 --skip-existence-check
 ----
 
 == Resetting Lost Partitions

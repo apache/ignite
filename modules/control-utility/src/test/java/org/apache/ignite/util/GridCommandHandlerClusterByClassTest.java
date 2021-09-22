@@ -1154,10 +1154,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.SKIP_EXISTENCE_ARG, CacheDestroy.DESTROY_ALL_ARG));
-        assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
-        assertNotContains(log, testOut.toString(), warningMsgPrefix);
-
         // Invalid arguments.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX", CacheDestroy.DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), "Unexpected argument \"" + CacheDestroy.DESTROY_ALL_ARG + "\"");
@@ -1185,20 +1181,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), expConfirmation);
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
-        cacheNames = createCaches(20, 2, "shared3");
-        String invalidCacheNamesStr = F.concat(cacheNames, ", ") + ", shared3";
-
-        // Cache existence check.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), invalidCacheNamesStr));
-        assertContains(log, testOut.toString(), String.format(CacheDestroy.NOT_EXISTS_MSG, "shared3"));
-        assertNotContains(log, testOut.toString(), warningMsgPrefix);
-
         autoConfirmation = true;
-
-        // Skip cache existence check.
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), invalidCacheNamesStr, CacheDestroy.SKIP_EXISTENCE_ARG));
-        assertContains(log, testOut.toString(), "following caches have been stopped");
-        assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
         // Sql-cache.
         String qry = "CREATE TABLE Person (id LONG PRIMARY KEY, name VARCHAR) WITH \"CACHE_NAME=sql-cache\";";

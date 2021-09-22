@@ -44,9 +44,6 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     /** Command argument to destroy all user-created caches. */
     public static final String DESTROY_ALL_ARG = "--destroy-all-caches";
 
-    /** Command argument to disable checking for the existence of caches. */
-    public static final String SKIP_EXISTENCE_ARG = "--skip-existence-check";
-
     /** Confirmation message format. */
     public static final String CONFIRM_MSG = "Warning! The command will destroy %d caches: %s.\n" +
         "If you continue, the cache data will be impossible to recover.";
@@ -56,9 +53,6 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
 
     /** Result message. */
     public static final String RESULT_MSG = "The following caches have been stopped: %s.";
-
-    /** Cache does not exists message. */
-    public static final String NOT_EXISTS_MSG = "Specified caches does not exists: %s.";
 
     /** Command arguments. */
     private Arguments args;
@@ -74,29 +68,19 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
             log,
             DESTROY,
             "Permanently destroy specified caches.",
-            F.asMap(DESTROY_ALL_ARG, "permanently destroy all user-created caches.",
-                SKIP_EXISTENCE_ARG, "disable check for cache existence, otherwise, the command will fail " +
-                                    "if at least one of the specified caches does not exist."),
+            F.asMap(DESTROY_ALL_ARG, "permanently destroy all user-created caches."),
             optional("cacheName1,...,cacheNameN"),
-            optional(DESTROY_ALL_ARG),
-            optional(SKIP_EXISTENCE_ARG)
+            optional(DESTROY_ALL_ARG)
         );
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        boolean checkExisting = true;
         boolean destroyAll = false;
         Set<String> caches = null;
 
         do {
             String cmdArg = argIter.nextArg("At least one argument is expected.");
-
-            if (SKIP_EXISTENCE_ARG.equals(cmdArg)) {
-                checkExisting = false;
-
-                continue;
-            }
 
             if (caches != null) {
                 throw new IllegalArgumentException("Unexpected argument \"" + cmdArg +
@@ -117,12 +101,12 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
             caches = argIter.parseStringSet(cmdArg);
         } while (argIter.hasNextSubArg());
 
-        args = new Arguments(caches, destroyAll, checkExisting);
+        args = new Arguments(caches, destroyAll);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
-        args.checkExistingCachesIfNeeded(clientCfg);
+        args.collectClusterCachesIfNeeded(clientCfg);
     }
 
     /** {@inheritDoc} */
@@ -136,7 +120,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        args.checkExistingCachesIfNeeded(clientCfg);
+        args.collectClusterCachesIfNeeded(clientCfg);
 
         if (args.cacheNames().isEmpty()) {
             log.info(NOOP_MSG);
@@ -163,9 +147,6 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         /** Flag to destroy all user-created caches. */
         private final boolean destroyAll;
 
-        /** Flag to check the existence of caches. */
-        private final boolean checkExisting;
-
         /** Caches to destroy. */
         private final Set<String> rmvCaches;
 
@@ -175,11 +156,11 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         /**
          * @param rmvCaches Caches to destroy.
          * @param destroyAll Flag to destroy all user-created caches.
-         * @param checkExisting Flag to check the existence of caches.
          */
-        public Arguments(Set<String> rmvCaches, boolean destroyAll, boolean checkExisting) {
+        public Arguments(Set<String> rmvCaches, boolean destroyAll) {
+            assert destroyAll || !F.isEmpty(rmvCaches);
+
             this.destroyAll = destroyAll;
-            this.checkExisting = checkExisting;
             this.rmvCaches = rmvCaches;
         }
 
@@ -192,25 +173,16 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
          * @param clientCfg Client configuration.
          * @throws Exception If failed.
          */
-        public void checkExistingCachesIfNeeded(GridClientConfiguration clientCfg) throws Exception {
-            if (clusterCaches == null) {
-                try (GridClient client = Command.startClient(clientCfg)) {
-                    clusterCaches = new HashSet<>();
-
-                    for (GridClientNode node : client.compute().nodes(GridClientNode::connectable))
-                        clusterCaches.addAll(node.caches().keySet());
-                }
-            }
-
-            if (destroyAll || !checkExisting)
+        public void collectClusterCachesIfNeeded(GridClientConfiguration clientCfg) throws Exception {
+            if (!destroyAll || clusterCaches != null)
                 return;
 
-            Set<String> unknownCaches = new HashSet<>(rmvCaches);
+            try (GridClient client = Command.startClient(clientCfg)) {
+                clusterCaches = new HashSet<>();
 
-            unknownCaches.removeAll(clusterCaches);
-
-            if (!unknownCaches.isEmpty())
-                throw new IllegalArgumentException(String.format(NOT_EXISTS_MSG, F.concat(unknownCaches, ", ")));
+                for (GridClientNode node : client.compute().nodes(GridClientNode::connectable))
+                    clusterCaches.addAll(node.caches().keySet());
+            }
         }
     }
 }
