@@ -427,7 +427,7 @@ You can use the control script to destroy specific caches.
 
 [source, shell]
 ----
-control.sh|bat --cache destroy [cacheName1,...,cacheNameN] [--destroy-all-caches]
+control.sh|bat --cache destroy cacheName1,...,cacheNameN|--destroy-all-caches
 ----
 
 Parameters:

@@ -29,7 +29,7 @@ Arguments: --cache help --yes
       --groups                    - print information about groups.
       --seq                       - print information about sequences.
 
-  --cache destroy [cacheName1,...,cacheNameN] [--destroy-all-caches]
+  --cache destroy cacheName1,...,cacheNameN|--destroy-all-caches
     Permanently destroy specified caches.
 
     Parameters:

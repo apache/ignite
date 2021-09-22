@@ -35,6 +35,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 
 /**
@@ -72,8 +73,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
             DESTROY,
             "Permanently destroy specified caches.",
             F.asMap(DESTROY_ALL_ARG, "permanently destroy all user-created caches."),
-            optional("cacheName1,...,cacheNameN"),
-            optional(DESTROY_ALL_ARG)
+            or("cacheName1,...,cacheNameN", DESTROY_ALL_ARG)
         );
     }
 
