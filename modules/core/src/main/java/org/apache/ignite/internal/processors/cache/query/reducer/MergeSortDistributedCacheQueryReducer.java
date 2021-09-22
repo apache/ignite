@@ -35,25 +35,21 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAda
  */
 public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistributedCacheQueryReducer<R> {
     /**
-     * Queue of pages from all nodes. Order of streams is set with {@link #pageCmp}.
+     * Queue of pages from all nodes. Order of streams controls with order of head items of pages.
      */
     private final PriorityQueue<NodePage<R>> nodePages;
-
-    /**
-     * Compares head pages from all nodes to get the lowest value at the moment.
-     */
-    private final Comparator<NodePage<R>> pageCmp;
 
     /**
      * @param rowCmp Comparator to sort query results from different nodes.
      */
     public MergeSortDistributedCacheQueryReducer(
-        GridCacheQueryFutureAdapter fut, long reqId, CacheQueryPageRequester pageRequester,
+        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, CacheQueryPageRequester pageRequester,
         Object queueLock, Collection<ClusterNode> nodes, Comparator<R> rowCmp
     ) {
         super(fut, reqId, pageRequester, queueLock, nodes);
 
-        pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());
+        // Compares head pages from all nodes to get the lowest value at the moment.
+        Comparator<NodePage<R>> pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());
 
         nodePages = new PriorityQueue<>(nodes.size(), pageCmp);
     }
