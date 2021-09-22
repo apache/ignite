@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -38,14 +39,18 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
+import static org.apache.ignite.internal.cdc.CdcMain.BINARY_META;
+import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFF;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER;
 import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
@@ -134,36 +139,44 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
             DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
 
-            checkMetrics(m -> {
+            Function<String, ?> jmxVal = m -> {
                 try {
-                    return ((Long)jmxCdcReg.getAttribute(m));
+                    return jmxCdcReg.getAttribute(m);
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);
                 }
-            });
+            };
+
+            checkMetrics((Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
         }
 
         MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
         assertNotNull(mreg);
 
-        return checkMetrics(m -> mreg.<LongMetric>findMetric(m).value());
+        return checkMetrics(
+            m -> mreg.<LongMetric>findMetric(m).value(),
+            m -> mreg.<ObjectMetric<String>>findMetric(m).value()
+        );
     }
 
     /** */
-    private long checkMetrics(Function<String, Long> metricVal) {
-        long committedSegIdx = metricVal.apply(COMMITTED_SEG_IDX);
-        long curSegIdx = metricVal.apply(CUR_SEG_IDX);
+    private long checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric) {
+        long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
+        long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
         assertTrue(committedSegIdx <= curSegIdx);
 
-        assertTrue(metricVal.apply(COMMITTED_SEG_OFF) >= 0);
-        assertTrue(metricVal.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+        assertTrue(longMetric.apply(COMMITTED_SEG_OFF) >= 0);
+        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
 
-        assertTrue(metricVal.apply(LAST_EVT_TIME) > 0);
+        assertTrue(longMetric.apply(LAST_EVT_TIME) > 0);
 
-        return metricVal.apply(EVTS_CNT);
+        for (String m : new String[] {BINARY_META, MARSHALLER, CDC_DIR})
+            assertTrue(new File(strMetric.apply(m)).exists());
+
+        return longMetric.apply(EVTS_CNT);
     }
 
     /** */

@@ -127,6 +127,15 @@ public class CdcMain implements Runnable {
     /** Last segment consumption time. */
     public static final String LAST_SEG_CONSUMPTION_TIME = "LastSegmentConsumptionTime";
 
+    /** Binary metadata metric name. */
+    public static final String BINARY_META = "BinaryMeta";
+
+    /** Marshaller metric name. */
+    public static final String MARSHALLER = "Marshaller";
+
+    /** Cdc directory metric name. */
+    public static final String CDC_DIR = "CdcDir";
+
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
 
@@ -316,9 +325,9 @@ public class CdcMain implements Runnable {
 
     /** Initialize metrics. */
     private void initMetrics() {
-        mreg.objectMetric("binaryMeta", String.class, binaryMeta.getAbsolutePath());
-        mreg.objectMetric("marshaller", String.class, marshaller.getAbsolutePath());
-        mreg.objectMetric("cdcDir", String.class, cdcDir.toFile().getAbsolutePath());
+        mreg.objectMetric(BINARY_META, String.class, "Binary meta directory").value(binaryMeta.getAbsolutePath());
+        mreg.objectMetric(MARSHALLER, String.class, "Marshaller directory").value(marshaller.getAbsolutePath());
+        mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(cdcDir.toFile().getAbsolutePath());
 
         curSegmentIdx = mreg.longMetric(CUR_SEG_IDX, "Current segment index");
         committedSegmentIdx = mreg.longMetric(COMMITTED_SEG_IDX, "Committed segment index");
