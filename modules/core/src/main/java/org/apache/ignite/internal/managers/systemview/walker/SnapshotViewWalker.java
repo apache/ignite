@@ -38,7 +38,7 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
 
     /** List of filtrable attributes. */
     private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
-        "snapshotName", "nodeId", "cacheGroup", "localPartitions"
+        "snapshotName", "nodeId"
     ));
 
     /** {@inheritDoc} */
@@ -50,22 +50,20 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
     @Override public void visitAll(AttributeVisitor v) {
         v.accept(0, "snapshotName", String.class);
         v.accept(1, "nodeId", String.class);
-        v.accept(2, "baselineNodeId", String.class);
-        v.accept(3, "cacheGroup", String.class);
-        v.accept(4, "localPartitions", String.class);
+        v.accept(2, "baselineNodes", String.class);
+        v.accept(3, "cacheGroups", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(SnapshotView row, AttributeWithValueVisitor v) {
         v.accept(0, "snapshotName", String.class, row.snapshotName());
         v.accept(1, "nodeId", String.class, row.nodeId());
-        v.accept(2, "baselineNodeId", String.class, row.baselineNodeId());
-        v.accept(3, "cacheGroup", String.class, row.cacheGroup());
-        v.accept(4, "localPartitions", String.class, row.localPartitions());
+        v.accept(2, "baselineNodes", String.class, row.baselineNodes());
+        v.accept(3, "cacheGroups", String.class, row.cacheGroups());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 5;
+        return 4;
     }
 }

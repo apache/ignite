@@ -17,11 +17,9 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import java.util.Set;
+import java.util.Objects;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot representation for a {@link SystemView}.
@@ -33,34 +31,28 @@ public class SnapshotView {
     /** Node consistent id. */
     private final String nodeId;
 
-    /** Baseline node consistent id. */
-    private final String baselineNodeId;
+    /** Baseline nodes affected by snapshots. */
+    private final String baselineNodes;
 
-    /** Cache group name. */
-    private final String cacheGrp;
-
-    /** Partition numbers of the cache group stored in the snapshot. */
-    private final String locPartitions;
+    /** The cache groups names which were included into snapshot. */
+    private final String cacheGrps;
 
     /**
      * @param name Snapshot name.
      * @param nodeId Node consistent id.
-     * @param baselineNodeId Baseline node consistent id.
-     * @param cacheGrp Cache group name.
-     * @param locPartitions Partition numbers of the cache group stored in the snapshot.
+     * @param baselineNodes Baseline nodes affected by snapshots.
+     * @param cacheGrps The cache groups names which were included into snapshot.
      */
     public SnapshotView(
         String name,
         String nodeId,
-        String baselineNodeId,
-        String cacheGrp,
-        @Nullable Set<Integer> locPartitions
+        String baselineNodes,
+        String cacheGrps
     ) {
         this.name = name;
         this.nodeId = nodeId;
-        this.baselineNodeId = baselineNodeId;
-        this.cacheGrp = cacheGrp;
-        this.locPartitions = locPartitions != null ? S.compact(locPartitions) : "[]";
+        this.baselineNodes = baselineNodes;
+        this.cacheGrps = cacheGrps;
     }
 
     /**
@@ -82,27 +74,39 @@ public class SnapshotView {
     }
 
     /**
-     * @return Baseline node consistent id.
+     * @return Baseline nodes affected by snapshots.
      */
     @Order(2)
     @Filtrable
-    public String baselineNodeId() {
-        return baselineNodeId;
+    public String baselineNodes() {
+        return baselineNodes;
     }
 
     /**
-     * @return Cache group name.
+     * @return The cache groups names which were included into snapshot.
      */
     @Order(3)
-    public String cacheGroup() {
-        return cacheGrp;
+    public String cacheGroups() {
+        return cacheGrps;
     }
 
-    /**
-     * @return Partition numbers of the cache group stored in the snapshot.
-     */
-    @Order(4)
-    public String localPartitions() {
-        return locPartitions;
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SnapshotView view = (SnapshotView)o;
+        return name.equals(view.name)
+            && nodeId.equals(view.nodeId)
+            && baselineNodes.equals(view.baselineNodes)
+            && cacheGrps.equals(view.cacheGrps);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(name, nodeId, baselineNodes, cacheGrps);
     }
 }

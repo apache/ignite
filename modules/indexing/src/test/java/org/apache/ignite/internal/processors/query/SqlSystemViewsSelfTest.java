@@ -85,6 +85,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
@@ -1087,33 +1088,42 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         List<List<?>> res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS");
 
-        assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class, String.class);
+        assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class);
 
-        assertEquals(4, res.size());
+        assertEquals(2, res.size());
 
         assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
 
-        res = execSql("SELECT BASELINE_NODE_ID FROM " + systemSchemaName() + ".SNAPSHOTS WHERE NODE_ID = ?", node0);
+        res = execSql("SELECT BASELINE_NODES FROM " + systemSchemaName() + ".SNAPSHOTS WHERE NODE_ID = ?", node0);
 
-        assertEquals(2, res.size());
+        assertEquals(1, res.size());
 
         ignite.createCache(testCache);
 
         ignite.snapshot().createSnapshot(testSnapname0).get();
 
-        res = execSql("SELECT DISTINCT SNAPSHOT_NAME FROM " + systemSchemaName() + ".SNAPSHOTS WHERE CACHE_GROUP = ?", testCache);
+        res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS");
 
-        assertEquals(1, res.size());
+        assertEquals(4, res.size());
+
+        String expBltNodes = String.valueOf(asList(node0, node1));
+
+        assertTrue(res.stream().map(l -> l.get(2)).allMatch(expBltNodes::equals));
+
+        res = execSql("SELECT SNAPSHOT_NAME FROM " + systemSchemaName() + ".SNAPSHOTS WHERE NODE_ID = ?", node0);
+
+        assertEquals(2, res.size());
+
+        res = execSql("SELECT SNAPSHOT_NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOTS " +
+            "WHERE SNAPSHOT_NAME = ? ORDER BY CACHE_GROUPS", testSnapname0);
+
+        assertEquals(2, res.size());
 
         assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname0::equals));
 
-        res = execSql("SELECT SNAPSHOT_NAME, CACHE_GROUP FROM " + systemSchemaName() + ".SNAPSHOTS " +
-            "WHERE SNAPSHOT_NAME = ? ORDER BY CACHE_GROUP", testSnapname0);
+        String expCacheGrps = String.valueOf(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME));
 
-        assertEquals(8, res.size());
-
-        assertTrue(res.subList(0, 3).stream().map(l -> l.get(1)).allMatch(DEFAULT_CACHE_NAME::equals));
-        assertTrue(res.subList(4, 7).stream().map(l -> l.get(1)).allMatch(testCache::equals));
+        assertTrue(res.stream().map(l -> l.get(1)).allMatch(expCacheGrps::equals));
     }
 
     /** {@inheritDoc} */

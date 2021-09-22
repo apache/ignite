@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,7 +41,6 @@ import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
@@ -80,8 +78,6 @@ import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttribu
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -90,7 +86,6 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -150,6 +145,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOTS_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODES_SYS_VIEW;
@@ -2084,26 +2080,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(testSnap0, view.snapshotName());
             assertEquals(toStringSafe(ignite.localNode().consistentId()), view.nodeId());
-            assertEquals(dfltCacheGrp, view.cacheGroup());
 
-            IgnitePageStoreManager pageStoreMgr = ignite.context().cache().context().pageStore();
+            List<?> collect = ignite.cluster().nodes().stream().map(ClusterNode::consistentId).collect(Collectors.toList());
 
-            Collection<Integer> locParts = ignite.cachex(DEFAULT_CACHE_NAME).context().topology().localPartitions().stream()
-                .map(GridDhtLocalPartition::id)
-                .filter(p -> {
-                    try {
-                        return pageStoreMgr.exists(CU.cacheId(dfltCacheGrp), p);
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail();
-                        return false;
-                    }
-                })
-                .collect(Collectors.toList());
-
-            assertFalse(locParts.isEmpty());
-
-            assertEquals(S.compact(locParts), view.localPartitions());
+            assertEquals(toStringSafe(collect), view.baselineNodes());
+            assertEquals(toStringSafe(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME)), view.cacheGroups());
 
             ignite.createCache("testCache");
 
@@ -2111,7 +2092,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
 
-            assertEquals(3, F.size(views.iterator()));
+            assertEquals(2, F.size(views.iterator()));
 
             // Test filtering.
             assertTrue(views instanceof FiltrableSystemView);
@@ -2119,7 +2100,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             Iterator<SnapshotView> iter = ((FiltrableSystemView<SnapshotView>)views)
                 .iterator(F.asMap(SnapshotViewWalker.SNAPSHOT_NAME_FILTER, testSnap1));
 
-            assertEquals(2, F.size(iter));
+            assertEquals(1, F.size(iter));
         }
     }
 

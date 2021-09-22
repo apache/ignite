@@ -66,7 +66,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -77,6 +79,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -99,7 +102,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -136,6 +138,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -188,6 +193,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
@@ -1773,34 +1779,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param filter Filter.
      */
     private Iterable<SnapshotView> snapshotViewSupplier(Map<String, Object> filter) {
-        List<String> snapshotNames = localSnapshotNames();
-
         String snapshotName = (String)filter.get(SnapshotViewWalker.SNAPSHOT_NAME_FILTER);
         String nodeConsistentId = (String)filter.get(SnapshotViewWalker.NODE_CONSISTENT_ID_FILTER);
 
-        return F.flat(F.iterator(snapshotNames, snpName -> {
-                if (snapshotName != null && !snapshotName.equals(snpName))
-                    return Collections.emptyList();
+        Collection<ClusterNode> nodes = cctx.kernalContext().discovery().aliveServerNodes();
 
-                return F.flat(F.iterator(readSnapshotMetadatas(snpName), meta -> {
-                    if (nodeConsistentId != null && !nodeConsistentId.equals(meta.consistentId()))
-                        return Collections.emptyList();
+        if (nodeConsistentId != null)
+             nodes = nodes.stream()
+                 .filter(n -> toStringSafe(n.consistentId()).equals(nodeConsistentId))
+                 .collect(Collectors.toSet());
 
-                    return F.flat(F.iterator(meta.baselineNodes(), bltNodeId -> {
-                        Collection<String> cacheGrps = F.viewReadOnly(snapshotCacheDirectories(snpName, meta.folderName(),
-                                name -> !MetaStorage.METASTORAGE_CACHE_NAME.equals(name)),
-                            FilePageStoreManager::cacheGroupName);
+        List<UUID> ids = nodes.stream().map(ClusterNode::id).collect(Collectors.toList());
 
-                        return F.iterator(cacheGrps, cacheGrp -> new SnapshotView(
-                            meta.snapshotName(),
-                            meta.consistentId(),
-                            bltNodeId,
-                            cacheGrp,
-                            meta.partitions().get(CU.cacheId(cacheGrp))
-                            ), true);
-                        }, true));
-                    }, true));
-            }, true));
+        ComputeTaskFuture<Set<SnapshotView>> fut = ((ClusterGroupAdapter)cctx.kernalContext().cluster().get().forServers()).compute()
+            .executeAsync(new SnapshotViewTask(), new VisorTaskArgument<String>(ids, snapshotName, false));
+
+        return fut.get();
     }
 
     /** @return Snapshot handlers. */
@@ -2519,6 +2513,69 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteException("Client disconnected. Snapshot result is unknown", U.convertException(e));
             else
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
+        }
+    }
+
+    /** Get the snapshot view of a cluster. */
+    @GridInternal
+    private static class SnapshotViewTask extends VisorMultiNodeTask<String, Set<SnapshotView>, List<SnapshotView>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override protected SnapshotViewJob job(String arg) {
+            return new SnapshotViewJob(arg, debug);
+        }
+
+        /**  */
+        private static class SnapshotViewJob extends VisorJob<String, List<SnapshotView>> {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            /**
+             * Create job without specified argument.
+             *
+             * @param arg Job argument.
+             * @param debug Flag indicating whether debug information should be printed into node log.
+             */
+            protected SnapshotViewJob(@Nullable String arg, boolean debug) {
+                super(arg, debug);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected List<SnapshotView> run(@Nullable String snapName) {
+                IgniteSnapshotManager snapMngr = (IgniteSnapshotManager)ignite.snapshot();
+
+                List<SnapshotMetadata> metas;
+
+                if (snapName != null)
+                    metas = snapMngr.readSnapshotMetadatas(snapName);
+                else
+                    metas = snapMngr.localSnapshotNames().stream()
+                        .map(snapMngr::readSnapshotMetadatas)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+
+                return metas.stream().map(meta -> {
+                    Collection<String> cacheGrps = F.viewReadOnly(snapMngr.snapshotCacheDirectories(meta.snapshotName(), meta.folderName()),
+                        FilePageStoreManager::cacheGroupName);
+
+                    return new SnapshotView(meta.snapshotName(),
+                        meta.consistentId(),
+                        String.valueOf(meta.baselineNodes()),
+                        String.valueOf(cacheGrps));
+                }).collect(Collectors.toList());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Set<SnapshotView> reduce0(List<ComputeJobResult> results)
+            throws IgniteException {
+            return results.stream()
+                .map(ComputeJobResult::getData)
+                .map(d -> (List<SnapshotView>)d)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
         }
     }
 }
