@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
 
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 
@@ -44,6 +42,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DEST
 public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     /** Command argument to destroy all user-created caches. */
     public static final String DESTROY_ALL_ARG = "--destroy-all-caches";
+
+    /** Command argument to specify a comma-separated list of cache names to be destroyed. */
+    public static final String CACHE_NAMES_ARG = "--caches";
 
     /** Confirmation message format. */
     public static final String CONFIRM_MSG = "Warning! The command will destroy %d caches: %s.\n" +
@@ -68,12 +69,15 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
+        String cacheNamesArgFull = CACHE_NAMES_ARG + " cache1,...,cacheN";
+
         usageCache(
             log,
             DESTROY,
             "Permanently destroy specified caches.",
-            F.asMap(DESTROY_ALL_ARG, "permanently destroy all user-created caches."),
-            or("cacheName1,...,cacheNameN", DESTROY_ALL_ARG)
+            F.asMap(cacheNamesArgFull, "specifies a comma-separated list of cache names to be destroyed.",
+                DESTROY_ALL_ARG, "permanently destroy all user-created caches."),
+            or(cacheNamesArgFull, DESTROY_ALL_ARG)
         );
     }
 
@@ -82,27 +86,21 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         cacheNames = null;
         destroyAll = false;
 
-        do {
-            String cmdArg = argIter.nextArg("At least one argument is expected.");
+        String requiredArgsMsg = "One of \"" + CACHE_NAMES_ARG + "\" or \"" + DESTROY_ALL_ARG + "\" is expected.";
 
-            if (cacheNames != null) {
-                throw new IllegalArgumentException("Unexpected argument \"" + cmdArg +
-                    "\". The cache names have already been specified: " + F.concat(cacheNames, ",") + '.');
-            }
+        String cmdArg = argIter.nextArg(requiredArgsMsg);
 
-            if (DESTROY_ALL_ARG.equals(cmdArg)) {
-                destroyAll = true;
+        if (DESTROY_ALL_ARG.equals(cmdArg))
+            destroyAll = true;
+        else if (CACHE_NAMES_ARG.equals(cmdArg))
+            cacheNames = new TreeSet<>(argIter.nextStringSet("cache names"));
+        else
+            throw new IllegalArgumentException("Invalid argument \"" + cmdArg + "\". " + requiredArgsMsg);
 
-                continue;
-            }
-
-            if (destroyAll) {
-                throw new IllegalArgumentException(
-                    "Unexpected argument \"" + cmdArg + "\". The flag for deleting all caches is already set.");
-            }
-
-            cacheNames = new TreeSet<>(argIter.parseStringSet(cmdArg));
-        } while (argIter.hasNextSubArg());
+        if (argIter.hasNextSubArg()) {
+            throw new IllegalArgumentException(
+                "Invalid argument \"" + argIter.peekNextArg() + "\", no more arguments is expected.");
+        }
     }
 
     /** {@inheritDoc} */

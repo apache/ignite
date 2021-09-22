@@ -108,6 +108,8 @@ import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.cache.CacheDestroy.CACHE_NAMES_ARG;
+import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_ALL_ARG;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -1134,6 +1136,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     public void testCacheDestroy() throws IgniteCheckedException {
         String warningMsgPrefix = "Warning! The command will destroy";
+        String requiredArgsMsg =
+            "One of \"" + CACHE_NAMES_ARG + "\" or \"" + DESTROY_ALL_ARG + "\" is expected.";
 
         // Create some internal caches.
         CacheConfiguration<Object, Object> internalCfg = new CacheConfiguration<>("temp-internal-cache");
@@ -1148,22 +1152,32 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         autoConfirmation = false;
         injectTestSystemOut();
 
-        // No user caches.
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG));
-        assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
+        // No arguments.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text()));
+        assertContains(log, testOut.toString(), requiredArgsMsg);
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        // No required argument.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX"));
+        assertContains(log, testOut.toString(), "Invalid argument \"cacheX\". " + requiredArgsMsg);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Invalid arguments.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX", CacheDestroy.DESTROY_ALL_ARG));
-        assertContains(log, testOut.toString(), "Unexpected argument \"" + CacheDestroy.DESTROY_ALL_ARG + "\"");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "cacheX", DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), "Invalid argument \"" + DESTROY_ALL_ARG);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG, "cacheX"));
-        assertContains(log, testOut.toString(), "Unexpected argument \"cacheX\"");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "cacheX"));
+        assertContains(log, testOut.toString(), "Invalid argument \"cacheX\"");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX,cacheY", "cacheZ"));
-        assertContains(log, testOut.toString(), "Unexpected argument \"cacheZ\"");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "cacheX,cacheY", "cacheZ"));
+        assertContains(log, testOut.toString(), "Invalid argument \"cacheZ\"");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        // No user caches.
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Create user caches.
@@ -1178,7 +1192,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         injectTestSystemIn(CONFIRM_MSG);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), expConfirmation);
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
@@ -1188,7 +1202,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String qry = "CREATE TABLE Person (id LONG PRIMARY KEY, name VARCHAR) WITH \"CACHE_NAME=sql-cache\";";
         crd.context().query().querySqlFields(new SqlFieldsQuery(qry).setSchema("PUBLIC"), false, false);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CacheDestroy.DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), String.format(CacheDestroy.RESULT_MSG, "sql-cache"));
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
     }
