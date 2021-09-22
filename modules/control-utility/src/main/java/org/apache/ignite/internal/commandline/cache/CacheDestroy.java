@@ -101,7 +101,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
                     "Unexpected argument \"" + cmdArg + "\". The flag for deleting all caches is already set.");
             }
 
-            cacheNames = argIter.parseStringSet(cmdArg);
+            cacheNames = new TreeSet<>(argIter.parseStringSet(cmdArg));
         } while (argIter.hasNextSubArg());
     }
 
@@ -113,19 +113,19 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
 
     /**
      * @param clientCfg Client configuration.
+     * @return Names of user-created caches that exist in the cluster.
      * @throws Exception If failed.
      */
     public Set<String> collectClusterCaches(GridClientConfiguration clientCfg) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Set<String> clusterCaches = new HashSet<>();
+            Set<String> caches = new TreeSet<>();
 
             for (GridClientNode node : client.compute().nodes(GridClientNode::connectable))
-                clusterCaches.addAll(node.caches().keySet());
+                caches.addAll(node.caches().keySet());
 
-            return clusterCaches;
+            return caches;
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
