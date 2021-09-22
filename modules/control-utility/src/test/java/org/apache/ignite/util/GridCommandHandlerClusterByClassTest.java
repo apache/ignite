@@ -1163,16 +1163,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Invalid arguments.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "cacheX", DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X", DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), "Invalid argument \"" + DESTROY_ALL_ARG);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "cacheX"));
-        assertContains(log, testOut.toString(), "Invalid argument \"cacheX\"");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "X"));
+        assertContains(log, testOut.toString(), "Invalid argument \"X\"");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "cacheX,cacheY", "cacheZ"));
-        assertContains(log, testOut.toString(), "Invalid argument \"cacheZ\"");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X,Y", "Z"));
+        assertContains(log, testOut.toString(), "Invalid argument \"Z\"");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // No user caches.
@@ -1209,25 +1209,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /**
      * @param off Name index offset.
-     * @param cnt Count,
+     * @param cnt Count.
      * @param grpName Group name.
      * @return List of cache names.
      */
     @SuppressWarnings("rawtypes")
-    private List<String> createCaches(int off, int cnt, String grpName) {
+    private Collection<String> createCaches(int off, int cnt, String grpName) {
         Collection<CacheConfiguration> cfgs = new ArrayList<>(cnt);
 
-        for (int i = off; i < off + cnt; i++) {
-            cfgs.add(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setBackups(1)
-                .setGroupName(grpName)
-                .setName("temp-user-cache-" + String.format("%02d", i)));
-        }
+        for (int i = off; i < off + cnt; i++)
+            cfgs.add(new CacheConfiguration<>().setGroupName(grpName).setName("tmp-cache-" + String.format("%02d", i)));
 
         crd.createCaches(cfgs);
 
-        return new ArrayList<>(F.viewReadOnly(cfgs, CacheConfiguration::getName));
+        return F.viewReadOnly(cfgs, CacheConfiguration::getName);
     }
 
     /** */
