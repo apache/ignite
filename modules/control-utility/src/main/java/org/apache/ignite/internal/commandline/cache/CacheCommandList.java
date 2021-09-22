@@ -40,7 +40,7 @@ public enum CacheCommandList {
     LIST("list", new CacheViewer()),
 
     /**
-     * Destroy user-created caches.
+     * Destroy caches.
      */
     DESTROY("destroy", new CacheDestroy()),
 

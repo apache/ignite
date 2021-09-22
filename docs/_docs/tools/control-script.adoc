@@ -423,7 +423,7 @@ control.sh|bat --cache list counter-.* --seq
 
 == Destroying Caches
 
-You can use the control script to destroy specific user-created caches.
+You can use the control script to destroy specific caches.
 
 [source, shell]
 ----
