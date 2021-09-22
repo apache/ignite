@@ -509,7 +509,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         isLocDaemon = ctx.isDaemon();
 
-        hasRslvrs = !ctx.config().isClientMode() && !F.isEmpty(ctx.config().getSegmentationResolvers());
+        hasRslvrs = true;
 
         segChkFreq = ctx.config().getSegmentCheckFrequency();
 

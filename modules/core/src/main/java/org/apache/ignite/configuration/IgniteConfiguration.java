@@ -92,6 +92,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
@@ -199,7 +200,7 @@ public class IgniteConfiguration {
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
     /** Default segmentation policy. */
-    public static final SegmentationPolicy DFLT_SEG_PLC = STOP;
+    public static final SegmentationPolicy DFLT_SEG_PLC = NOOP;
 
     /** Default value for wait for segment on startup flag. */
     public static final boolean DFLT_WAIT_FOR_SEG_ON_START = true;

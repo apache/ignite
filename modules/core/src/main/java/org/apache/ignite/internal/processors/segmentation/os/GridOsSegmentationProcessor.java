@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.segmentation.os;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -25,6 +27,12 @@ import org.apache.ignite.internal.processors.segmentation.GridSegmentationProces
  * No-op implementation for {@link GridSegmentationProcessor}.
  */
 public class GridOsSegmentationProcessor extends GridProcessorAdapter implements GridSegmentationProcessor {
+    /** */
+    public final AtomicBoolean isValid = new AtomicBoolean(true);
+
+    /** */
+    public static final AtomicBoolean started = new AtomicBoolean(false);
+
     /**
      * @param ctx Kernal context.
      */
@@ -34,6 +42,9 @@ public class GridOsSegmentationProcessor extends GridProcessorAdapter implements
 
     /** {@inheritDoc} */
     @Override public boolean isValidSegment() {
-        return true;
+        if (!started.get())
+            return true;
+
+        return ctx.discovery().discoCache().aliveServerNodes().size() == 4;
     }
 }

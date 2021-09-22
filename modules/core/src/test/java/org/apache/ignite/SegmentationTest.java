@@ -26,13 +26,17 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitAbstractTest;
+import org.apache.ignite.internal.processors.segmentation.os.GridOsSegmentationProcessor;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.transactions.Transaction;
@@ -40,8 +44,11 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -70,6 +77,7 @@ public class SegmentationTest extends IgniteCacheTopologySplitAbstractTest {
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setClusterStateOnStart(INACTIVE)
             .setUserAttributes(Collections.singletonMap(IDX_ATTR, getTestIgniteInstanceIndex(igniteInstanceName)));
     }
 
@@ -91,12 +99,19 @@ public class SegmentationTest extends IgniteCacheTopologySplitAbstractTest {
 
         startGrids(NODES_CNT);
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+        grid(0).cluster().state(ACTIVE);
+
+//        GridOsSegmentationProcessor.started.set(true);
+
         for (Ignite ignite : G.allGrids()) {
             TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)
                 ignite.configuration().getCommunicationSpi();
 
             comm.blockMessages(new SegmentBlocker(ignite.cluster().localNode()));
         }
+
+        CU.affinityNodes()
 
         grid(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setBackups(NODES_CNT / 2)
@@ -105,7 +120,10 @@ public class SegmentationTest extends IgniteCacheTopologySplitAbstractTest {
             .setAtomicityMode(TRANSACTIONAL)
             .setAffinity(new GridCacheModuloAffinityFunction(64, 2))
             .setPartitionLossPolicy(READ_ONLY_SAFE)
-            .setCacheMode(PARTITIONED));
+            .setCacheMode(PARTITIONED)
+            .setReadFromBackup(false)
+//            .setCacheMode(REPLICATED)
+        );
 
         CyclicBarrier barrier = new CyclicBarrier(3);
 
