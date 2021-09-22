@@ -276,14 +276,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Override public IgniteEx grid() {
         final IgniteEx kernal = new IgniteKernal();
         try {
-            Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
-            fieldCfg.setAccessible(true);
-            fieldCfg.set(kernal, cfg);
+            setField(kernal, "cfg", cfg);
+            setField(kernal, "igniteInstanceName", cfg.getIgniteInstanceName());
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             log.error("", e);
         }
         return kernal;
+    }
+
+    /** */
+    private void setField(IgniteEx kernal, String name, Object val) throws NoSuchFieldException, IllegalAccessException {
+        Field field = kernal.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(kernal, val);
     }
 
     /** {@inheritDoc} */
