@@ -1182,7 +1182,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Create user caches.
         Set<String> cacheNames = new TreeSet<>();
-
         cacheNames.addAll(createCaches(0, 10, null));
         cacheNames.addAll(createCaches(10, 5, "shared1"));
         cacheNames.addAll(createCaches(15, 5, "shared2"));
@@ -1190,8 +1189,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String expConfirmation = String.format(CacheDestroy.CONFIRM_MSG,
             cacheNames.size(), S.joinToString(cacheNames, ", ", "..", 80, 0));
 
+        // Ensure we cannot delete a cache groups.
         injectTestSystemIn(CONFIRM_MSG);
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "shared1,shared2"));
+        assertTrue(crd.cacheNames().containsAll(cacheNames));
 
+        // Destroy all user-created caches.
+        injectTestSystemIn(CONFIRM_MSG);
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), expConfirmation);
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
