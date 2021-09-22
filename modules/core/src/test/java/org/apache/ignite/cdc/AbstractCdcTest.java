@@ -44,13 +44,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
-import static org.apache.ignite.internal.cdc.CdcMain.BINARY_META;
+import static org.apache.ignite.internal.cdc.CdcMain.BINARY_META_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
-import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFF;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
-import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER;
+import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
@@ -148,7 +148,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 }
             };
 
-            checkMetrics((Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
+            checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
         }
 
         MetricRegistry mreg = getFieldValue(cdc, "mreg");
@@ -156,25 +156,28 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         assertNotNull(mreg);
 
         return checkMetrics(
+            expCnt,
             m -> mreg.<LongMetric>findMetric(m).value(),
             m -> mreg.<ObjectMetric<String>>findMetric(m).value()
         );
     }
 
     /** */
-    private long checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric) {
+    private long checkMetrics(long expCnt, Function<String, Long> longMetric, Function<String, String> strMetric) {
         long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
         long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
         assertTrue(committedSegIdx <= curSegIdx);
 
-        assertTrue(longMetric.apply(COMMITTED_SEG_OFF) >= 0);
+        assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
         assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
 
         assertTrue(longMetric.apply(LAST_EVT_TIME) > 0);
 
-        for (String m : new String[] {BINARY_META, MARSHALLER, CDC_DIR})
+        for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
             assertTrue(new File(strMetric.apply(m)).exists());
+
+        assertTrue(longMetric.apply(EVTS_CNT) >= expCnt);
 
         return longMetric.apply(EVTS_CNT);
     }

@@ -122,16 +122,16 @@ public class CdcMain implements Runnable {
     public static final String COMMITTED_SEG_IDX = "CommittedSegmentIndex";
 
     /** Committed segment offset metric name. */
-    public static final String COMMITTED_SEG_OFF = "CommittedSegmentOffset";
+    public static final String COMMITTED_SEG_OFFSET = "CommittedSegmentOffset";
 
     /** Last segment consumption time. */
     public static final String LAST_SEG_CONSUMPTION_TIME = "LastSegmentConsumptionTime";
 
     /** Binary metadata metric name. */
-    public static final String BINARY_META = "BinaryMeta";
+    public static final String BINARY_META_DIR = "BinaryMetaDir";
 
     /** Marshaller metric name. */
-    public static final String MARSHALLER = "Marshaller";
+    public static final String MARSHALLER_DIR = "MarshallerDir";
 
     /** Cdc directory metric name. */
     public static final String CDC_DIR = "CdcDir";
@@ -325,13 +325,13 @@ public class CdcMain implements Runnable {
 
     /** Initialize metrics. */
     private void initMetrics() {
-        mreg.objectMetric(BINARY_META, String.class, "Binary meta directory").value(binaryMeta.getAbsolutePath());
-        mreg.objectMetric(MARSHALLER, String.class, "Marshaller directory").value(marshaller.getAbsolutePath());
+        mreg.objectMetric(BINARY_META_DIR, String.class, "Binary meta directory").value(binaryMeta.getAbsolutePath());
+        mreg.objectMetric(MARSHALLER_DIR, String.class, "Marshaller directory").value(marshaller.getAbsolutePath());
         mreg.objectMetric(CDC_DIR, String.class, "CDC directory").value(cdcDir.toFile().getAbsolutePath());
 
         curSegmentIdx = mreg.longMetric(CUR_SEG_IDX, "Current segment index");
         committedSegmentIdx = mreg.longMetric(COMMITTED_SEG_IDX, "Committed segment index");
-        committedSegmentOffset = mreg.longMetric(COMMITTED_SEG_OFF, "Committed segment offset");
+        committedSegmentOffset = mreg.longMetric(COMMITTED_SEG_OFFSET, "Committed segment offset");
         lastSegmentConsumptionTs =
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
     }

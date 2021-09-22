@@ -113,6 +113,10 @@ public class WalRecordsConsumer<K, V> {
                 if (!hasCurrent())
                     throw new NoSuchElementException();
 
+                evtsCnt.increment();
+
+                lastEvtTs.value(System.currentTimeMillis());
+
                 return entries.next();
             }
 
@@ -137,10 +141,6 @@ public class WalRecordsConsumer<K, V> {
 
             /** */
             private CdcEvent transform(DataEntry e) {
-                evtsCnt.increment();
-
-                lastEvtTs.value(System.currentTimeMillis());
-
                 UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
                 return new CdcEventImpl(
