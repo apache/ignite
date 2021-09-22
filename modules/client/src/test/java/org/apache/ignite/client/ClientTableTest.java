@@ -39,14 +39,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class ClientTableTest extends AbstractClientTableTest {
     @Test
-    public void testGetWithNullInNotNullableKeyColumnThrowsException() {
+    public void testGetWithMissedKeyColumnThrowsException() {
         var table = defaultTable();
 
         var key = Tuple.create().set("name", "123");
 
         var ex = assertThrows(CompletionException.class, () -> table.get(key));
 
-        assertTrue(ex.getMessage().contains("Failed to set column (null was passed, but column is not nullable)"),
+        assertTrue(ex.getMessage().contains("Missed key column: id"),
                 ex.getMessage());
     }
 

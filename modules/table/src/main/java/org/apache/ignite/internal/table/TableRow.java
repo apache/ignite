@@ -56,7 +56,7 @@ public class TableRow extends MutableRowTupleAdapter {
      * @param row Row.
      * @return Tuple.
      */
-    public static @Nullable Tuple tuple(Row row) {
+    public static @NotNull Tuple tuple(@NotNull Row row) {
         return new TableRow(row);
     }
 
@@ -110,7 +110,7 @@ public class TableRow extends MutableRowTupleAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override protected Column rowColumnByIndex(@NotNull int columnIndex) {
+        @Override protected Column rowColumnByIndex(int columnIndex) {
             Objects.checkIndex(columnIndex, schema().keyColumns().length());
 
             return schema().column(columnIndex);
@@ -159,7 +159,7 @@ public class TableRow extends MutableRowTupleAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override protected Column rowColumnByIndex(@NotNull int columnIndex) {
+        @Override protected Column rowColumnByIndex(int columnIndex) {
             Objects.checkIndex(columnIndex, schema().valueColumns().length());
 
             return schema().column(columnIndex + schema().keyColumns().length());

@@ -80,9 +80,7 @@ namespace Apache.Ignite.Tests.Table
             var ex = Assert.ThrowsAsync<IgniteClientException>(async () => await Table.UpsertAsync(new IgniteTuple()));
 
             Assert.AreEqual(
-                "Failed to set column (null was passed, but column is not nullable):" +
-                " [col=Column [schemaIndex=0, name=key, type=NativeType [name=INT32, sizeInBytes=4, fixed=true]," +
-                " nullable=false]]",
+                "Missed key column: key",
                 ex!.Message);
         }
 

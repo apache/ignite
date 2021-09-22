@@ -21,6 +21,7 @@ import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.internal.table.impl.TestTupleBuilder;
@@ -304,7 +305,7 @@ public class TableBinaryViewOperationsTest {
         final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[] {0, 1, 2, 3}).set("val", 22L);
 
         assertThrows(InvalidTypeException.class, () -> tbl.get(keyTuple0));
-        assertThrows(IllegalArgumentException.class, () -> tbl.get(keyTuple1));
+        assertThrows(SchemaMismatchException.class, () -> tbl.get(keyTuple1));
 
         assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple0));
         assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple1));

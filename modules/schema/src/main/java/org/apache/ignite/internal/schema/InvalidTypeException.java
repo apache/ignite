@@ -20,7 +20,7 @@ package org.apache.ignite.internal.schema;
 /**
  * An exception thrown when an attempt to read an invalid type from a row is performed.
  */
-public class InvalidTypeException extends SchemaException {
+public class InvalidTypeException extends SchemaMismatchException {
     /**
      * @param msg Error message.
      */

@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
-
-import org.apache.ignite.lang.IgniteException;
+package org.apache.ignite.internal.schema;
 
 /**
  * Invalid tuple invocation exception is thrown when tuple doesn't match the table schema.
  */
-public class SchemaMismatchException extends IgniteException {
+public class SchemaMismatchException extends SchemaException {
     /**
      * Creates a new exception with the given error message.
      *
