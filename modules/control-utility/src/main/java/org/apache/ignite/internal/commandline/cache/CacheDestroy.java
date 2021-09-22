@@ -132,7 +132,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
         if (F.isEmpty(cacheNames))
             return null;
 
-        return String.format(CONFIRM_MSG, cacheNames.size(), S.joinToString(new TreeSet<>(cacheNames), ", ", "..", 80, 0));
+        return String.format(CONFIRM_MSG, cacheNames.size(), S.joinToString(cacheNames, ", ", "..", 80, 0));
     }
 
     /** {@inheritDoc} */

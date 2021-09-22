@@ -1134,7 +1134,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     public void testCacheDestroy() throws IgniteCheckedException {
         String warningMsgPrefix = "Warning! The command will destroy";
-        List<String> cacheNames = new ArrayList<>();
+        Set<String> cacheNames = new HashSet<>();
 
         // Create some internal caches.
         CacheConfiguration<Object, Object> internalCfg = new CacheConfiguration<>("temp-internal-cache");
@@ -1173,7 +1173,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cacheNames.addAll(createCaches(15, 5, "shared2"));
 
         String expConfirmation = String.format(CacheDestroy.CONFIRM_MSG,
-            cacheNames.size(), S.joinToString(new TreeSet<>(cacheNames), ", ", "..", 80, 0));
+            cacheNames.size(), S.joinToString(cacheNames, ", ", "..", 80, 0));
 
         injectTestSystemIn(CONFIRM_MSG);
 
