@@ -878,6 +878,8 @@ public class SegmentAwareTest {
         SegmentAware aware = segmentAware(1, false, 50, 100);
         SegmentReservationStorage reservationStorage = reservationStorage(aware);
 
+        aware.startAutoReleaseSegments();
+
         for (int i = 0; i < 9; i++)
             aware.addSize(i, 10);
 
@@ -927,6 +929,52 @@ public class SegmentAwareTest {
         assertTrue(aware.reserve(0));
         assertTrue(aware.reserve(1));
         assertTrue(aware.reserve(8));
+    }
+
+    /**
+     * Checking that when the {@code SegmentArchiveSizeStorage#maxWalArchiveSize} is reached
+     * and after calling the {@link SegmentAware#startAutoReleaseSegments()}
+     * the segments will be released to the {@code SegmentArchiveSizeStorage#minWalArchiveSize},
+     * and it will also not be possible to reserve them.
+     */
+    @Test
+    public void testReleaseSegmentsOnExceedMaxWalArchiveSizeAfterStartAutoReleaseSegments() {
+        SegmentAware aware = segmentAware(1, false, 50, 100);
+        SegmentReservationStorage reservationStorage = reservationStorage(aware);
+
+        for (int i = 0; i < 9; i++)
+            aware.addSize(i, 10);
+
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+        assertTrue(aware.reserve(8));
+
+        aware.addSize(9, 10);
+
+        assertTrue(aware.reserved(0));
+        assertTrue(aware.reserved(1));
+        assertTrue(aware.reserved(8));
+        assertEquals(-1, reservationStorage.minReserveIdx());
+
+        aware.startAutoReleaseSegments();
+
+        assertFalse(aware.reserved(0));
+        assertFalse(aware.reserved(1));
+        assertTrue(aware.reserved(8));
+        assertEquals(5, reservationStorage.minReserveIdx());
+
+        for (int i = 0; i <= 5; i++) {
+            assertFalse(aware.reserve(i));
+            assertFalse(aware.reserved(i));
+
+            assertTrue(aware.minReserveIndex(i));
+        }
+
+        for (int i = 6; i < 10; i++) {
+            assertTrue(aware.reserve(i));
+
+            assertFalse(aware.minReserveIndex(i));
+        }
     }
 
     /**

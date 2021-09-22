@@ -88,7 +88,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(PlanningContext ctx) {
+    @Override public void init(MappingQueryContext ctx) {
         executionPlan = queryTemplate.map(ctx);
     }
 

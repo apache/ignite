@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -247,10 +248,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             boolean descending = idxDesc.descending(idxField);
             int fieldIdx = fieldDesc.fieldIndex();
 
-            RelFieldCollation collation = new RelFieldCollation(fieldIdx,
-                descending ? RelFieldCollation.Direction.DESCENDING : RelFieldCollation.Direction.ASCENDING);
-
-            collations.add(collation);
+            collations.add(
+                createFieldCollation(fieldIdx, !descending)
+            );
         }
 
         return RelCollations.of(collations);
@@ -275,5 +275,12 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         igniteSchemas.forEach(newCalciteSchema::add);
         calciteSchema = newCalciteSchema;
+    }
+
+    /** */
+    private static RelFieldCollation createFieldCollation(int fieldIdx, boolean asc) {
+        return asc
+            ? new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.FIRST)
+            : new RelFieldCollation(fieldIdx, RelFieldCollation.Direction.DESCENDING, RelFieldCollation.NullDirection.LAST);
     }
 }

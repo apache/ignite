@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -146,13 +147,11 @@ public class TaskEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this task event, if available. This property
-     * is not available for GridEventType#EVT_TASK_SESSION_ATTR_SET task event.
-     * <p>
-     * Subject ID will be set either to node ID or client ID initiated
-     * task execution.
+     * Gets security subject ID initiated this task event, if security is enabled. This property is not available for
+     * {@link EventType#EVT_TASK_SESSION_ATTR_SET} task event.
      *
-     * @return Subject ID.
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
      */
     @Nullable public UUID subjectId() {
         return subjId;

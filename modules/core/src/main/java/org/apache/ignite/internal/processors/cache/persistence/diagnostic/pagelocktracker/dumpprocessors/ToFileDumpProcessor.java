@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerDump;
 
-import static java.nio.channels.FileChannel.open;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper.toStringDump;
 
 /**
  *
  */
 public class ToFileDumpProcessor {
     /** Date format. */
-    public static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS");
+    public static final DateTimeFormatter DATE_FMT = DateTimeFormatter
+        .ofPattern("yyyy_MM_dd_HH_mm_ss_SSS")
+        .withZone(ZoneId.systemDefault());
 
     /** File name prefix. */
     public static final String PREFIX_NAME = "page_lock_dump_";
@@ -44,41 +45,20 @@ public class ToFileDumpProcessor {
      * @param pageLockDump Dump.
      * @param dir Directory to save.
      */
-    public static String toFileDump(SharedPageLockTrackerDump pageLockDump, File dir, String name) throws IgniteCheckedException {
+    public static String toFileDump(SharedPageLockTrackerDump pageLockDump, Path dir, String name) throws IgniteCheckedException {
         try {
-            if (!dir.exists())
-                dir.mkdirs();
+            Files.createDirectories(dir);
 
-            File file = new File(dir, PREFIX_NAME + name + "_" + DATE_FMT.format(new Date(pageLockDump.time)));
+            String dumpName = PREFIX_NAME + name + "_" + DATE_FMT.format(Instant.ofEpochMilli(pageLockDump.time));
 
-            return saveToFile(ToStringDumpHelper.toStringDump(pageLockDump), file);
+            Path file = dir.resolve(dumpName);
+
+            Files.write(file, toStringDump(pageLockDump).getBytes(StandardCharsets.UTF_8));
+
+            return file.toAbsolutePath().toString();
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
-    }
-
-    /**
-     * @param dump Dump.
-     * @param file File to save.
-     */
-    private static String saveToFile(String dump, File file) throws IOException {
-        assert dump != null;
-        assert file != null;
-        assert !dump.isEmpty();
-
-        try (FileChannel ch = open(file.toPath(), CREATE_NEW, WRITE)) {
-            ByteBuffer buf = ByteBuffer.wrap(dump.getBytes());
-
-            assert buf.position() == 0;
-            assert buf.limit() > 0;
-
-            while (buf.position() != buf.limit())
-                ch.write(buf);
-
-            ch.force(true);
-        }
-
-        return file.getAbsolutePath();
     }
 }

@@ -78,7 +78,7 @@ public class IgniteIndex {
         Supplier<Row> upperIdxConditions,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns) {
-        UUID localNodeId = execCtx.planningContext().localNodeId();
+        UUID localNodeId = execCtx.localNodeId();
         if (group.nodeIds().contains(localNodeId) && idx != null) {
             return new IndexScan<>(execCtx, table().descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
                 group.partitions(localNodeId), filters, lowerIdxConditions, upperIdxConditions, rowTransformer,

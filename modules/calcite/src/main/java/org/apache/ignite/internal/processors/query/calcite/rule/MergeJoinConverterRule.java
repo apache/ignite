@@ -61,8 +61,7 @@ public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJ
 
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RelCollations.of(joinInfo.leftKeys));
-        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RelCollations.of(joinInfo.leftKeys)); // preserve collation of the left input
+        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RelCollations.of(joinInfo.rightKeys));
 

@@ -129,7 +129,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         coCtx = cctx.cacheObjectContext();
 
         factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
-        topVer = ectx.planningContext().topologyVersion();
+        topVer = ectx.topologyVersion();
         this.parts = parts;
         mvccSnapshot = ectx.mvccSnapshot();
         this.requiredColumns = requiredColumns;

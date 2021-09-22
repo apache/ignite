@@ -42,19 +42,26 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(3);
+        startGrids(nodeCount());
 
         client = startClientGrid("client");
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws Exception {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
         }
 
+        awaitPartitionMapExchange();
+
         cleanQueryPlanCache();
+    }
+
+    /** */
+    protected int nodeCount() {
+        return 3;
     }
 
     /** */
@@ -86,6 +93,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         );
 
         int idx = 0;
+
         person.put(idx++, new Employer("Igor", 10d));
         person.put(idx++, new Employer(null, 15d));
         person.put(idx++, new Employer("Ilya", 15d));

@@ -96,7 +96,7 @@ public class HashAggregateConverterRule {
 
             RelNode map = new IgniteMapHashAggregate(
                 cluster,
-                outTrait,
+                outTrait.replace(IgniteDistributions.random()),
                 input,
                 agg.getGroupSet(),
                 agg.getGroupSets(),

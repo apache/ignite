@@ -23,7 +23,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.requireNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 /** Validator. */
@@ -198,32 +196,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         super.validateNamespace(namespace, targetRowType);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
-        requireNonNull(node, "node");
-
-        // Type inference for NULL literal is ommitted here to avoid validation problem later
-        // since NULL type could be easilly cast to any other type. Otherwise the
-        // validation error could be raised in case VALUES node contains several tuples
-        // with differen values of different types (still compatible through the cast) and NULL literal.
-        // I.e:
-        //      CREATE TABLE ... (d DATE);
-        //      INSERT INTO ... VALUES ('2000-10-10'), (NULL);
-        //
-        // In this case the field's type of the first tuple is CHAR, field's type of the second
-        // tuple is DATE (derived from table's row type), and the problem is that both types
-        // belong to the different type families, thus validation will fail.
-        if (SqlUtil.isNullLiteral(node, false)) {
-            RelDataType nullType = typeFactory.createSqlType(SqlTypeName.NULL);
-
-            setValidatedNodeType(node, nullType);
-
-            return;
-        }
-
-        super.inferUnknownTypes(inferredType, scope, node);
-    }
-
     /**
      * @param n Node to check limit.
      * @param nodeName Node name.
@@ -312,6 +284,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case AVG:
             case MIN:
             case MAX:
+            case ANY_VALUE:
 
                 return;
             default:

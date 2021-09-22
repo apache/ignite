@@ -2,6 +2,13 @@
 # description: UPPER/LOWER test
 # group: [string]
 
+# test NULL constant
+query TT
+select UPPER(NULL), LOWER(NULL)
+----
+NULL
+NULL
+
 # unicode
 query TTTT
 select UPPER('áaaá'), UPPER('ö'), LOWER('S̈'), UPPER('ω')

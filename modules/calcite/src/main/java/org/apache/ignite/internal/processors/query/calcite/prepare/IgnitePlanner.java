@@ -43,7 +43,6 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlKind;
@@ -66,6 +65,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Query planer.
@@ -98,9 +98,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     private final SqlRexConvertletTable convertletTbl;
-
-    /** */
-    private final RexBuilder rexBuilder;
 
     /** */
     private final RexExecutor rexExecutor;
@@ -138,8 +135,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();
         traitDefs = frameworkCfg.getTraitDefs();
-
-        rexBuilder = new RexBuilder(typeFactory);
     }
 
     /** {@inheritDoc} */
@@ -161,7 +156,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public SqlNode parse(Reader reader) throws SqlParseException {
-        SqlNodeList sqlNodes = SqlParser.create(reader, parserCfg).parseStmtList();
+        SqlNodeList sqlNodes = Commons.parse(reader, parserCfg);
 
         return sqlNodes.size() == 1 ? sqlNodes.get(0) : sqlNodes;
     }
@@ -215,11 +210,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
-        RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
 
-        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
-
-        return trimUnusedFields(root);
+        return sqlToRelConverter.convertQuery(sql, false, true);
     }
 
     /** {@inheritDoc} */
@@ -303,7 +295,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** Creates a cluster. */
     RelOptCluster cluster() {
         if (cluster == null) {
-            cluster = RelOptCluster.create(planner(), rexBuilder);
+            cluster = RelOptCluster.create(planner(), ctx.rexBuilder());
             cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
             cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
         }
@@ -333,7 +325,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
      */
-    protected RelRoot trimUnusedFields(RelRoot root) {
+    public RelRoot trimUnusedFields(RelRoot root) {
         // For now, don't trim if there are more than 3 joins. The projects
         // near the leaves created by trim migrate past joins and seem to
         // prevent join-reordering.

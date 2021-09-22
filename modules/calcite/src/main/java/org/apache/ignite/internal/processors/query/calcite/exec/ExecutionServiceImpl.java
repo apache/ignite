@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,21 +28,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
@@ -81,6 +77,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDesc
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
@@ -88,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadat
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
@@ -103,9 +101,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlComman
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -116,7 +111,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
@@ -390,31 +384,28 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String qry,
         Object[] params
     ) {
-        PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params);
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(getDefaultSchema(schema).getName(), qry));
+        if (plan != null) {
+            PlanningContext pctx = createContext(ctx, schema, qry, params);
 
-        List<QueryPlan> qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareQuery);
+            return Collections.singletonList(executePlan(UUID.randomUUID(), pctx, plan));
+        }
 
-        return executePlans(qryPlans, pctx);
-    }
+        SqlNodeList qryList = Commons.parse(qry, FRAMEWORK_CONFIG.getParserConfig());
+        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
 
-    /**
-     * Executes prepared plans.
-     * @param qryPlans Query plans.
-     * @param pctx Query context.
-     * @return List of query result cursors.
-     */
-    @NotNull public List<FieldsQueryCursor<List<?>>> executePlans(
-        Collection<QueryPlan> qryPlans,
-        PlanningContext pctx
-    ) {
-        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
+        for (final SqlNode qry0: qryList) {
+            final PlanningContext pctx = createContext(ctx, schema, qry0.toString(), params);
 
-        for (QueryPlan plan : qryPlans) {
-            UUID qryId = UUID.randomUUID();
+            if (qryList.size() == 1) {
+                plan = queryPlanCache().queryPlan(
+                    new CacheKey(pctx.schemaName(), pctx.query()),
+                    () -> prepareSingle(qry0, pctx));
+            }
+            else
+                plan = prepareSingle(qry0, pctx);
 
-            FieldsQueryCursor<List<?>> cur = executePlan(qryId, pctx, plan);
-
-            cursors.add(cur);
+            cursors.add(executePlan(UUID.randomUUID(), pctx, plan));
         }
 
         return cursors;
@@ -477,104 +468,78 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
-        @Nullable String schema, String qry, Object[] params) {
-        RelTraitDef<?>[] traitDefs = {
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            DistributionTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE,
-        };
+    private PlanningContext createContext(QueryContext ctx, @Nullable String schema, String qry, Object[] params) {
+        return createContext(Commons.convert(ctx), schema, qry, params);
+    }
 
-        return PlanningContext.builder()
-            .localNodeId(localNodeId())
-            .originatingNodeId(originator)
+    /** */
+    private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
+        return BaseQueryContext.builder()
             .parentContext(parent)
-            .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema != null
-                    ? schemaHolder().schema().getSubSchema(schema)
-                    : schemaHolder().schema())
-                .traitDefs(traitDefs)
-                .build())
-            .query(qry)
-            .parameters(params)
-            .topologyVersion(topVer)
+            .frameworkConfig(
+                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(getDefaultSchema(schema))
+                    .build()
+            )
             .logger(log)
             .build();
     }
 
     /** */
-    private List<QueryPlan> prepareQuery(PlanningContext ctx) {
+    private PlanningContext createContext(Context parent, @Nullable String schema, String qry, Object[] params) {
+        return PlanningContext.builder()
+            .parentContext(createQueryContext(parent, schema))
+            .query(qry)
+            .parameters(params)
+            .build();
+    }
+
+    /** */
+    private SchemaPlus getDefaultSchema(String schema) {
+        return schema != null ? schemaHolder().schema().getSubSchema(schema) : schemaHolder().schema();
+    }
+
+    /** */
+    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
+        return new FragmentPlan(fromJson(ctx, jsonFragment));
+    }
+
+    /** */
+    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) {
         try {
-            String qry = ctx.query();
+            assert single(sqlNode);
 
-            assert qry != null;
+            ctx.planner().reset();
 
-            // Parse query.
-            SqlNode sqlNode = ctx.planner().parse(qry);
+            if (SqlKind.DDL.contains(sqlNode.getKind()))
+                return prepareDdl(sqlNode, ctx);
 
-            if (single(sqlNode))
-                return singletonList(prepareSingle(sqlNode, ctx));
+            switch (sqlNode.getKind()) {
+                case SELECT:
+                case ORDER_BY:
+                case WITH:
+                case VALUES:
+                case UNION:
+                case EXCEPT:
+                case INTERSECT:
+                    return prepareQuery(sqlNode, ctx);
 
-            List<SqlNode> nodes = ((SqlNodeList) sqlNode).getList();
-            List<QueryPlan> res = new ArrayList<>(nodes.size());
+                case INSERT:
+                case DELETE:
+                case UPDATE:
+                    return prepareDml(sqlNode, ctx);
 
-            for (SqlNode node : nodes)
-                res.add(prepareSingle(node, ctx));
+                case EXPLAIN:
+                    return prepareExplain(sqlNode, ctx);
 
-            return res;
-        }
-        catch (IgniteSQLException e) {
-            throw e;
-        }
-        catch (SqlParseException e) {
-            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
+                default:
+                    throw new IgniteSQLException("Unsupported operation [" +
+                        "sqlNodeKind=" + sqlNode.getKind() + "; " +
+                        "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
         }
         catch (ValidationException e) {
             throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
-        }
-        catch (Exception e) {
-            throw new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
-        }
-    }
-
-    /** */
-    private List<QueryPlan> prepareFragment(PlanningContext ctx) {
-        return ImmutableList.of(new FragmentPlan(fromJson(ctx, ctx.query())));
-    }
-
-    /** */
-    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
-        assert single(sqlNode);
-
-        ctx.planner().reset();
-
-        if (SqlKind.DDL.contains(sqlNode.getKind()))
-            return prepareDdl(sqlNode, ctx);
-
-        switch (sqlNode.getKind()) {
-            case SELECT:
-            case ORDER_BY:
-            case WITH:
-            case VALUES:
-            case UNION:
-            case EXCEPT:
-            case INTERSECT:
-                return prepareQuery(sqlNode, ctx);
-
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return prepareDml(sqlNode, ctx);
-
-            case EXPLAIN:
-                return prepareExplain(sqlNode, ctx);
-
-            default:
-                throw new IgniteSQLException("Unsupported operation [" +
-                    "sqlNodeKind=" + sqlNode.getKind() + "; " +
-                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }
 
@@ -660,14 +625,35 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
+    private FieldsQueryCursor<List<?>> executePlan(
+        UUID qryId,
+        PlanningContext pctx,
+        QueryPlan plan
+    ) {
         switch (plan.type()) {
             case DML:
-                // TODO a barrier between previous operation and this one
+                ListFieldsQueryCursor<?> cur = mapAndExecutePlan(
+                    qryId,
+                    (MultiStepPlan)plan,
+                    pctx.unwrap(BaseQueryContext.class),
+                    pctx.parameters()
+                );
+
+                cur.iterator().hasNext();
+
+                return cur;
+
             case QUERY:
-                return executeQuery(qryId, (MultiStepPlan) plan, pctx);
+                return mapAndExecutePlan(
+                    qryId,
+                    (MultiStepPlan)plan,
+                    pctx.unwrap(BaseQueryContext.class),
+                    pctx.parameters()
+                );
+
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
+
             case DDL:
                 return executeDdl(qryId, (MultiStepDdlPlan)plan, pctx);
 
@@ -705,8 +691,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
-        plan.init(pctx);
+    private ListFieldsQueryCursor<?> mapAndExecutePlan(
+        UUID qryId,
+        MultiStepPlan plan,
+        BaseQueryContext qctx,
+        Object[] params
+    ) {
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion());
+        plan.init(mapCtx);
 
         List<Fragment> fragments = plan.fragments();
 
@@ -722,7 +714,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
         }
 
         FragmentDescription fragmentDesc = new FragmentDescription(
@@ -732,12 +724,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             plan.remotes(fragment));
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
+            qctx,
             taskExecutor(),
-            pctx,
             qryId,
+            locNodeId,
+            locNodeId,
+            mapCtx.topologyVersion(),
             fragmentDesc,
             handler,
-            Commons.parametersMap(pctx.parameters()));
+            Commons.parametersMap(params));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -764,11 +759,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     try {
                         QueryStartRequest req = new QueryStartRequest(
                             qryId,
-                            pctx.schemaName(),
+                            qctx.schemaName(),
                             fragment.serialized(),
-                            pctx.topologyVersion(),
+                            ectx.topologyVersion(),
                             fragmentDesc,
-                            pctx.parameters());
+                            params);
 
                         messageService().send(nodeId, req);
                     }
@@ -791,12 +786,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void executeFragment(UUID qryId, FragmentPlan plan, PlanningContext pctx, FragmentDescription fragmentDesc) {
-        ExecutionContext<Row> ectx = new ExecutionContext<>(taskExecutor(), pctx, qryId,
-            fragmentDesc, handler, Commons.parametersMap(pctx.parameters()));
-
-        long frId = fragmentDesc.fragmentId();
-        UUID origNodeId = pctx.originatingNodeId();
+    private void executeFragment(UUID qryId, FragmentPlan plan, ExecutionContext<Row> ectx) {
+        UUID origNodeId = ectx.originatingNodeId();
 
         Outbox<Row> node = new LogicalRelImplementor<>(
                 ectx,
@@ -807,7 +798,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 .go(plan.root());
 
         try {
-            messageService().send(origNodeId, new QueryStartResponse(qryId, frId));
+            messageService().send(origNodeId, new QueryStartResponse(qryId, ectx.fragmentId()));
         }
         catch (IgniteCheckedException e) {
             IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
@@ -821,11 +812,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private void register(QueryInfo info) {
         UUID qryId = info.ctx.queryId();
-        PlanningContext pctx = info.ctx.planningContext();
 
         running.put(qryId, info);
 
-        GridQueryCancel qryCancel = pctx.queryCancel();
+        GridQueryCancel qryCancel = info.ctx.queryCancel();
 
         if (qryCancel == null)
             return;
@@ -854,24 +844,32 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void onMessage(UUID nodeId, QueryStartRequest msg) {
+    private void onMessage(UUID nodeId, final QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
         try {
-            PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(),
-                msg.root(), msg.parameters());
+            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
-            List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
-                pctx,
-                new CacheKey(pctx.schemaName(), pctx.query()),
-                this::prepareFragment
+            QueryPlan qryPlan = queryPlanCache().queryPlan(
+                new CacheKey(msg.schema(), msg.root()),
+                () -> prepareFragment(qctx, msg.root())
             );
 
-            assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
+            assert qryPlan.type() == QueryPlan.Type.FRAGMENT;
 
-            FragmentPlan plan = (FragmentPlan)qryPlans.get(0);
+            ExecutionContext<Row> ectx = new ExecutionContext<>(
+                qctx,
+                taskExecutor(),
+                msg.queryId(),
+                locNodeId,
+                nodeId,
+                msg.topologyVersion(),
+                msg.fragmentDescription(),
+                handler,
+                Commons.parametersMap(msg.parameters())
+            );
 
-            executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
+            executeFragment(msg.queryId(), (FragmentPlan)qryPlan, ectx);
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);

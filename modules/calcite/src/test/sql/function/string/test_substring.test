@@ -66,6 +66,63 @@ ell
 h
 el
 
+# test substrings with constant nulls in different places
+query T
+SELECT substring(NULL from off for length) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring('hello' from NULL::int for length) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring('hello' from off for NULL::int) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring(NULL from NULL::int for length) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring('hello' from NULL::int for NULL::int) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring(NULL from off for NULL::int) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring(NULL from NULL::int for NULL::int) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
 # Negative from
 query T
 SELECT substring(s from -2 for 2) FROM strings ORDER BY id
