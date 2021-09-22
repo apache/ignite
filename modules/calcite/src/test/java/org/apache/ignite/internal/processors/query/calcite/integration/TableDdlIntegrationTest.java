@@ -296,7 +296,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectWithColumns() {
-        executeSql("create table my_table(i integer, s varchar) as select 1, 'test'");
+        executeSql("create table my_table(i, s) as select 1, 'test'");
         List<List<?>> res = executeSql("select * from my_table");
 
         assertEquals(1, res.size());
@@ -308,30 +308,31 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
-     * Creates table with cast of query columns to table columns.
+     * Creates table with options as select.
      */
+    @SuppressWarnings("unchecked")
     @Test
-    public void createTableAsSelectWithTypeCast() {
-        executeSql("create table my_table(i integer, s varchar) as select '1', 1");
+    public void createTableAsSelectWithOptions() {
+        executeSql("create table my_table(s, i) with cache_name=\"CacheWithOpts\", cache_group=\"CacheGroup\" as select '1', 1");
         List<List<?>> res = executeSql("select * from my_table");
 
         assertEquals(1, res.size());
 
         List<?> row = res.get(0);
 
-        assertEquals(1, row.get(0));
-        assertEquals("1", row.get(1));
+        assertEquals("1", row.get(0));
+        assertEquals(1, row.get(1));
 
-        GridTestUtils.assertThrowsAnyCause(log,
-            () -> executeSql("create table my_table2(i integer) as select 'test'"),
-            NumberFormatException.class, null);
+        IgniteCache<?, ?> cache = client.cache("CacheWithOpts");
+        assertNotNull(cache);
+        assertEquals("CacheGroup", cache.getConfiguration(CacheConfiguration.class).getGroupName());
     }
 
     /** */
     @Test
     public void createTableAsSelectWrongColumnsCount() {
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> executeSql("create table my_table(i integer, s1 varchar, s2 varchar) as select 1, 'test'"),
+            () -> executeSql("create table my_table(i, s1, s2) as select 1, 'test'"),
             IgniteSQLException.class, "Number of columns");
     }
 
@@ -340,21 +341,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectFromDistributedTable() {
-        executeSql("create table my_table1(i int) as select x from table(system_range(1, 100))");
+        executeSql("create table my_table1(i) as select x from table(system_range(1, 100))");
 
         assertEquals(100L, executeSql("select count(*) from my_table1").get(0).get(0));
 
-        executeSql("create table my_table2(i int) as select * from my_table1");
+        executeSql("create table my_table2(i) as select * from my_table1");
 
         assertEquals(100L, executeSql("select count(*) from my_table2").get(0).get(0));
-    }
-
-    /** */
-    @Test
-    public void createTableWithoutColumnsOrQuery() {
-        GridTestUtils.assertThrowsAnyCause(log,
-            () -> executeSql("create table my_table"),
-            IgniteSQLException.class, "Column list or query");
     }
 
     /**

@@ -27,6 +27,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -75,25 +76,29 @@ public class IgniteSqlCreateTable extends SqlCreate {
             writer.keyword("IF NOT EXISTS");
 
         name.unparse(writer, leftPrec, rightPrec);
+
         if (columnList != null) {
             SqlWriter.Frame frame = writer.startList("(", ")");
             for (SqlNode c : columnList) {
                 writer.sep(",");
-                c.unparse(writer, 0, 0);
+                if (qry == null)
+                    c.unparse(writer, 0, 0);
+                else  // For CREATE AS SELECT only aliases is possible in the column list.
+                    ((SqlColumnDeclaration)c).name.unparse(writer, 0, 0);
             }
             writer.endList(frame);
-        }
-
-        if (qry != null) {
-            writer.keyword("AS");
-            writer.newlineAndIndent();
-            qry.unparse(writer, 0, 0);
         }
 
         if (createOptionList != null) {
             writer.keyword("WITH");
 
             createOptionList.unparse(writer, 0, 0);
+        }
+
+        if (qry != null) {
+            writer.keyword("AS");
+            writer.newlineAndIndent();
+            qry.unparse(writer, 0, 0);
         }
     }
 

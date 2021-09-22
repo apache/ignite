@@ -167,7 +167,7 @@ public class DdlSqlToCommandConverter {
 
         IgnitePlanner planner = ctx.planner();
 
-        if (createTblNode.columnList() != null) {
+        if (createTblNode.query() == null) {
             List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList().getList().stream()
                 .filter(SqlColumnDeclaration.class::isInstance)
                 .map(SqlColumnDeclaration.class::cast)
@@ -218,26 +218,43 @@ public class DdlSqlToCommandConverter {
                 createTblCmd.primaryKeyColumns(pkCols);
             }
         }
-
-        if (createTblNode.query() != null) {
+        else { // CREATE AS SELECT.
             ValidationResult res = planner.validateAndGetTypeMetadata(createTblNode.query());
 
             createTblCmd.query(res.sqlNode());
 
-            if (createTblCmd.columns() != null) {
-                if (res.dataType().getFieldCount() != createTblCmd.columns().size()) {
+            List<RelDataTypeField> fields = res.dataType().getFieldList();
+            List<ColumnDefinition> cols = new ArrayList<>(fields.size());
+
+            if (createTblNode.columnList() != null) {
+                // Derive column names from the CREATE TABLE clause and column types from the query.
+                List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList().getList().stream()
+                    .map(SqlColumnDeclaration.class::cast)
+                    .collect(Collectors.toList());
+
+                if (fields.size() != colDeclarations.size()) {
                     throw new IgniteSQLException("Number of columns must match number of query columns",
                         IgniteQueryErrorCode.PARSING);
                 }
+
+                for (int i = 0; i < colDeclarations.size(); i++) {
+                    SqlColumnDeclaration col = colDeclarations.get(i);
+
+                    assert col.name.isSimple();
+
+                    String name = col.name.getSimple();
+                    RelDataType type = fields.get(i).getType();
+
+                    cols.add(new ColumnDefinition(name, type, null));
+                }
             }
             else {
-                List<ColumnDefinition> cols = new ArrayList<>();
-
-                for (RelDataTypeField field : res.dataType().getFieldList())
+                // Derive column names and column types from the query.
+                for (RelDataTypeField field : fields)
                     cols.add(new ColumnDefinition(field.getName(), field.getType(), null));
-
-                createTblCmd.columns(cols);
             }
+
+            createTblCmd.columns(cols);
         }
 
         if (createTblCmd.columns() == null) {

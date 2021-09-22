@@ -24,19 +24,23 @@ boolean IfNotExistsOpt() :
     { return false; }
 }
 
-SqlNodeList CreateTableOptionList() :
+SqlNodeList WithCreateTableOptionList() :
 {
     List<SqlNode> list = new ArrayList<SqlNode>();
-    final Span s = Span.of();
+    final Span s;
 }
 {
-    CreateTableOption(list)
-    (
-        <COMMA> { s.add(this); } CreateTableOption(list)
-    )*
-    {
-        return new SqlNodeList(list, s.end(this));
-    }
+    [
+        <WITH> { s = span(); }
+        CreateTableOption(list)
+        (
+            <COMMA> { s.add(this); } CreateTableOption(list)
+        )*
+        {
+            return new SqlNodeList(list, s.end(this));
+        }
+    ]
+    { return null; }
 }
 
 SqlLiteral CreateTableOptionKey() :
@@ -142,6 +146,27 @@ SqlNodeList TableElementList() :
     }
 }
 
+SqlNodeList TableSimpleColumnList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlIdentifier id;
+}
+{
+    <LPAREN> { s = span(); }
+    id = SimpleIdentifier() {
+        list.add(SqlDdlNodes.column(s.add(id).end(this), id, null, null, null));
+    }
+    (
+        <COMMA> id = SimpleIdentifier() {
+            list.add(SqlDdlNodes.column(s.add(id).end(this), id, null, null, null));
+        }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
 SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -155,19 +180,18 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
     (
+        LOOKAHEAD(3)
         columnList = TableElementList()
-    |
-        { columnList = null; }
-    )
-    (
-        <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
-    |
+        optionList = WithCreateTableOptionList()
         { query = null; }
-    )
-    (
-        <WITH> { s.add(this); } optionList = CreateTableOptionList()
     |
-        { optionList = null; }
+        (
+            columnList = TableSimpleColumnList()
+        |
+            { columnList = null; }
+        )
+        optionList = WithCreateTableOptionList()
+        <AS> { s.add(this); } query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     )
     {
         return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, query, optionList);
