@@ -35,8 +35,8 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     private static final String CACHE_NAME = "my_cache";
 
     /** {@inheritDoc} */
-    @Override public void init() {
-        super.init();
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
         sql("create table my_table(id int, val_int int, val_str varchar) with cache_name=\"" + CACHE_NAME + "\"");
     }

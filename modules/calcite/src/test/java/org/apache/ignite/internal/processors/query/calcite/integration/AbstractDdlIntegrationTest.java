@@ -16,9 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -31,22 +28,19 @@ import org.junit.Before;
 /** */
 public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final String CLIENT_NODE_NAME = "client";
-
-    /** */
     protected static final String DATA_REGION_NAME = "test_data_region";
 
     /** */
     protected static final String PERSISTENT_DATA_REGION = "pds_data_region";
 
-    /** */
-    protected IgniteEx client;
+    /** {@inheritDoc} */
+    @Override protected int nodeCount() {
+        return 1;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
-
-        client = startClientGrid(CLIENT_NODE_NAME);
+        super.beforeTestsStarted();
 
         client.cluster().state(ClusterState.ACTIVE);
     }
@@ -62,12 +56,6 @@ public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
                     .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME),
                         new DataRegionConfiguration().setName(PERSISTENT_DATA_REGION).setPersistenceEnabled(true))
             );
-    }
-
-    /** */
-    @Before
-    public void init() {
-        client = grid(CLIENT_NODE_NAME);
     }
 
     /** */

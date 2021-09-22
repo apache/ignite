@@ -75,21 +75,21 @@ public class UserDdlIntegrationTest extends AbstractDdlIntegrationTest {
         for (Ignite ignite : G.allGrids()) {
             IgniteEx igniteEx = (IgniteEx)ignite;
 
-            executeSql(igniteEx, "CREATE USER test WITH PASSWORD 'test'");
+            sql(igniteEx, "CREATE USER test WITH PASSWORD 'test'");
 
             SecurityContext secCtx = authenticate(igniteEx, "TEST", "test");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
-            executeSql(igniteEx, "ALTER USER test WITH PASSWORD 'newpasswd'");
+            sql(igniteEx, "ALTER USER test WITH PASSWORD 'newpasswd'");
 
             secCtx = authenticate(igniteEx, "TEST", "newpasswd");
 
             assertNotNull(secCtx);
             assertEquals("TEST", secCtx.subject().login());
 
-            executeSql(igniteEx, "DROP USER test");
+            sql(igniteEx, "DROP USER test");
 
             GridTestUtils.assertThrowsWithCause(() -> authenticate(igniteEx, "TEST", "newpasswd"),
                 IgniteAccessControlException.class);
