@@ -109,22 +109,6 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
             cacheNames = collectClusterCaches(clientCfg);
     }
 
-    /**
-     * @param clientCfg Client configuration.
-     * @return Names of user-created caches that exist in the cluster.
-     * @throws Exception If failed.
-     */
-    public Set<String> collectClusterCaches(GridClientConfiguration clientCfg) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Set<String> caches = new TreeSet<>();
-
-            for (GridClientNode node : client.compute().nodes(GridClientNode::connectable))
-                caches.addAll(node.caches().keySet());
-
-            return caches;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
         if (F.isEmpty(cacheNames))
@@ -158,5 +142,21 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     /** {@inheritDoc} */
     @Override public String name() {
         return DESTROY.text().toUpperCase();
+    }
+
+    /**
+     * @param clientCfg Client configuration.
+     * @return Names of user-created caches that exist in the cluster.
+     * @throws Exception If failed.
+     */
+    private Set<String> collectClusterCaches(GridClientConfiguration clientCfg) throws Exception {
+        try (GridClient client = Command.startClient(clientCfg)) {
+            Set<String> caches = new TreeSet<>();
+
+            for (GridClientNode node : client.compute().nodes(GridClientNode::connectable))
+                caches.addAll(node.caches().keySet());
+
+            return caches;
+        }
     }
 }
