@@ -239,17 +239,22 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
             handler = context().rowHandler();
 
-            reset();
+            init();
+        }
+
+        /** */
+        private void init() {
+            // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
+            // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
+            if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE))
+                groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
         }
 
         /** */
         private void reset() {
             groups.clear();
 
-            // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
-            // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
-            if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE))
-                groups.put(GroupKey.EMPTY_GRP_KEY, create(GroupKey.EMPTY_GRP_KEY));
+            init();
         }
 
         /** */

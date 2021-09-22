@@ -183,11 +183,6 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
         for (int i = 0; i < 2; i++) {
             RootNode<Object[]> root = new RootNode<Object[]>(ctx, aggRowType) {
                 /** {@inheritDoc} */
-                @Override protected void rewindInternal() {
-                    // NO-OP
-                }
-
-                /** {@inheritDoc} */
                 @Override public void close() {
                     // NO-OP
                 }
