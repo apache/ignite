@@ -271,8 +271,13 @@ public class CdcMain implements Runnable {
 
                 initState = state.load();
 
-                if (initState != null && log.isInfoEnabled())
-                    log.info("Initial state loaded [state=" + initState + ']');
+                if (initState != null) {
+                    committedSegmentIdx.value(initState.index());
+                    committedSegmentOffset.value(initState.fileOffset());
+
+                    if (log.isInfoEnabled())
+                        log.info("Initial state loaded [state=" + initState + ']');
+                }
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
 
@@ -425,9 +430,6 @@ public class CdcMain implements Runnable {
         curSegmentIdx.value(segmentIdx);
 
         if (initState != null) {
-            committedSegmentIdx.value(initState.index());
-            committedSegmentOffset.value(initState.fileOffset());
-
             if (segmentIdx > initState.index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
                     "[state=" + initState + ", segment=" + segmentIdx + ']');
