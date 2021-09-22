@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
@@ -46,7 +45,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -672,20 +670,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ", err=" + e.getMessage() + ']', e);
         }
 
-        if (plan.hasQuery()) {
-            AffinityTopologyVersion topVer = topologyVersion();
-
-            if (topVer.topologyVersion() != pctx.topologyVersion().topologyVersion())
-                throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
-
-            if (topVer.minorTopologyVersion() != pctx.topologyVersion().minorTopologyVersion()) {
-                // Minor topology version can be changed by create table command.
-                pctx = createContext(pctx, topVer, pctx.originatingNodeId(), pctx.schemaName(), pctx.query(),
-                    pctx.parameters());
-            }
-
-            return executeQuery(qryId, plan, pctx);
-        }
+        if (plan.hasQuery())
+            return mapAndExecutePlan(qryId, plan, pctx.unwrap(BaseQueryContext.class), pctx.parameters());
         else
             return H2Utils.zeroCursor();
     }

@@ -130,8 +130,12 @@ public class PlannerHelper {
     /**
      * Creates physical plan for "INSERT INTO table SELECT ..." based on "CREATE TABLE table AS SELECT ..." statement.
      */
-    public static IgniteRel makeCreateTableAsSelectPlan(CreateTableCommand createTableCmd, PlanningContext ctx,
-        IgniteLogger log, SchemaHolder schemaHolder) {
+    public static IgniteRel makeCreateTableAsSelectPlan(
+        CreateTableCommand createTableCmd,
+        PlanningContext ctx,
+        IgniteLogger log,
+        SchemaHolder schemaHolder
+    ) {
         assert createTableCmd.query() != null;
 
         // query() - already validated SqlNode.
