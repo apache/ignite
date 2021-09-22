@@ -356,3 +356,167 @@ SqlNode SqlAlterTable() :
         }
     )
 }
+
+SqlCreate SqlCreateUser(Span s, boolean replace) :
+{
+    final SqlIdentifier user;
+    final SqlNode password;
+}
+{
+    <USER> user = SimpleIdentifier()
+    <WITH> <PASSWORD> password = StringLiteral() {
+        return new IgniteSqlCreateUser(s.end(this), user, SqlLiteral.unchain(password));
+    }
+}
+
+SqlNode SqlAlterUser() :
+{
+    final Span s;
+    final SqlIdentifier user;
+    final SqlNode password;
+}
+{
+    <ALTER> { s = span(); } <USER> user = SimpleIdentifier()
+    <WITH> <PASSWORD> password = StringLiteral() {
+        return new IgniteSqlAlterUser(s.end(this), user, SqlLiteral.unchain(password));
+    }
+}
+
+SqlDrop SqlDropUser(Span s, boolean replace) :
+{
+    final SqlIdentifier user;
+}
+{
+    <USER> user = SimpleIdentifier() {
+        return new IgniteSqlDropUser(s.end(this), user);
+    }
+}
+
+<DEFAULT, DQID, BTID> TOKEN :
+{
+    < NEGATE: "!" >
+|   < TILDE: "~" >
+}
+
+SqlNumericLiteral SignedIntegerLiteral() :
+{
+    final Span s;
+}
+{
+    <PLUS> <UNSIGNED_INTEGER_LITERAL> {
+        return SqlLiteral.createExactNumeric(token.image, getPos());
+    }
+|
+    <MINUS> { s = span(); } <UNSIGNED_INTEGER_LITERAL> {
+        return SqlLiteral.createNegative(SqlLiteral.createExactNumeric(token.image, getPos()), s.end(this));
+    }
+|
+    <UNSIGNED_INTEGER_LITERAL> {
+        return SqlLiteral.createExactNumeric(token.image, getPos());
+    }
+}
+
+SqlCharStringLiteral UuidLiteral():
+{
+    final Span s;
+    final String rawUuuid;
+}
+{
+    <QUOTED_STRING> {
+        String rawUuid = SqlParserUtil.parseString(token.image);
+        try {
+            UUID.fromString(rawUuid);
+            return SqlLiteral.createCharString(rawUuid, getPos());
+        }
+        catch (Exception e) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalUuid(rawUuid));
+        }
+    }
+}
+
+SqlCharStringLiteral IgniteUuidLiteral():
+{
+    final Span s;
+    final String rawUuuid;
+}
+{
+    <QUOTED_STRING> {
+        String rawUuid = SqlParserUtil.parseString(token.image);
+        try {
+            IgniteUuid.fromString(rawUuid);
+            return SqlLiteral.createCharString(rawUuid, getPos());
+        }
+        catch (Exception e) {
+            throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.illegalIgniteUuid(rawUuid));
+        }
+    }
+}
+
+SqlNode SqlKillScanQuery():
+{
+    final Span s;
+    final SqlCharStringLiteral originNodeId;
+    final SqlCharStringLiteral cacheName;
+    final SqlNumericLiteral queryId;
+}
+{
+    <KILL> { s = span(); } <SCAN>
+    originNodeId = UuidLiteral()
+    <QUOTED_STRING> {
+        cacheName = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
+    }
+    queryId = SignedIntegerLiteral() {
+        return IgniteSqlKill.createScanQueryKill(s.end(this), originNodeId, cacheName, queryId);
+    }
+}
+
+SqlNode SqlKillContinuousQuery():
+{
+    final Span s;
+    final SqlCharStringLiteral originNodeId;
+    final SqlCharStringLiteral routineId;
+}
+{
+    <KILL> { s = span(); } <CONTINUOUS>
+    originNodeId = UuidLiteral()
+    routineId = UuidLiteral() {
+        return IgniteSqlKill.createContinuousQueryKill(s.end(this), originNodeId, routineId);
+    }
+}
+
+SqlNode SqlKillTransaction():
+{
+    final Span s;
+    final SqlCharStringLiteral xid;
+}
+{
+    <KILL> { s = span(); } <TRANSACTION>
+    xid = IgniteUuidLiteral() {
+        return IgniteSqlKill.createTransactionKill(s.end(this), xid);
+    }
+}
+
+SqlNode SqlKillService():
+{
+    final Span s;
+    final SqlCharStringLiteral srvName;
+}
+{
+    <KILL> { s = span(); } <SERVICE>
+    <QUOTED_STRING> {
+        srvName = SqlLiteral.createCharString(SqlParserUtil.parseString(token.image), getPos());
+        return IgniteSqlKill.createServiceKill(s.end(this), srvName);
+    }
+}
+
+SqlNode SqlKillComputeTask():
+{
+    final Span s;
+    final SqlCharStringLiteral sesId;
+}
+{
+    <KILL> { s = span(); } <COMPUTE>
+    sesId = IgniteUuidLiteral() {
+        return IgniteSqlKill.createComputeTaskKill(s.end(this), sesId);
+    }
+}

@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
@@ -32,6 +33,12 @@ import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
@@ -508,6 +515,166 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertParserThrows("alter table my_table add column (a.b int)", SqlParseException.class);
 
         assertParserThrows("alter table my_table drop column (a.b)", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing of CREATE USER command
+     */
+    @Test
+    public void createUser() throws Exception {
+        IgniteSqlCreateUser createUser;
+
+        createUser = parse("create user test with password 'asd'");
+
+        assertEquals("TEST", createUser.user().getSimple());
+        assertEquals("asd", createUser.password());
+
+        createUser = parse("create user \"test\" with password 'asd'");
+
+        assertEquals("test", createUser.user().getSimple());
+        assertEquals("asd", createUser.password());
+
+        assertParserThrows("create user test", SqlParseException.class);
+        assertParserThrows("create user test with password", SqlParseException.class);
+        assertParserThrows("create user test with password asd", SqlParseException.class);
+        assertParserThrows("create user 'test' with password 'asd'", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing of ALTER USER command
+     */
+    @Test
+    public void alterUser() throws Exception {
+        IgniteSqlAlterUser alterUser;
+
+        alterUser = parse("alter user test with password 'asd'");
+
+        assertEquals("TEST", alterUser.user().getSimple());
+        assertEquals("asd", alterUser.password());
+
+        alterUser = parse("alter user \"test\" with password 'asd'");
+
+        assertEquals("test", alterUser.user().getSimple());
+        assertEquals("asd", alterUser.password());
+
+        assertParserThrows("alter user test", SqlParseException.class);
+        assertParserThrows("alter user test with password", SqlParseException.class);
+        assertParserThrows("alter user test with password asd", SqlParseException.class);
+        assertParserThrows("alter user 'test' with password 'asd'", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing of DROP USER command
+     */
+    @Test
+    public void dropUser() throws Exception {
+        IgniteSqlDropUser dropUser;
+
+        dropUser = parse("drop user test");
+
+        assertEquals("TEST", dropUser.user().getSimple());
+
+        dropUser = parse("drop user \"test\"");
+
+        assertEquals("test", dropUser.user().getSimple());
+
+        assertParserThrows("drop user test with password 'asd'", SqlParseException.class);
+    }
+
+    /**
+     * Test kill scan query parsing.
+     */
+    @Test
+    public void killScan() throws Exception {
+        IgniteSqlKill killScan;
+
+        UUID nodeId = UUID.randomUUID();
+        killScan = parse("kill scan '" + nodeId + "' 'cache-name' 100500");
+
+        assertTrue(killScan instanceof IgniteSqlKillScanQuery);
+        assertEquals("cache-name", stringValue(((IgniteSqlKillScanQuery)killScan).cacheName()));
+        assertEquals(nodeId.toString(), stringValue(((IgniteSqlKillScanQuery)killScan).nodeId()));
+        assertEquals(100500L, ((IgniteSqlKillScanQuery)killScan).queryId().longValue(true));
+
+        assertParserThrows("kill scan", SqlParseException.class);
+        assertParserThrows("kill scan '1234' 'test' 10", SqlParseException.class);
+        assertParserThrows("kill scan '" + UUID.randomUUID() + "' 'test'", SqlParseException.class);
+        assertParserThrows("kill scan '" + UUID.randomUUID() + "' 'test' 1.0", SqlParseException.class);
+    }
+
+    /**
+     * Test kill service query parsing.
+     */
+    @Test
+    public void killService() throws Exception {
+        IgniteSqlKill killService;
+
+        killService = parse("kill service 'my-service'");
+        assertTrue(killService instanceof IgniteSqlKillService);
+        assertEquals("my-service", stringValue(((IgniteSqlKillService)killService).serviceName()));
+
+        assertParserThrows("kill service 'my-service' 'test'", SqlParseException.class);
+        assertParserThrows("kill service 10000", SqlParseException.class);
+        assertParserThrows("kill service", SqlParseException.class);
+    }
+
+    /**
+     * Test kill transaction query parsing.
+     */
+    @Test
+    public void killTransaction() throws Exception {
+        IgniteSqlKill killTx;
+
+        String txId = IgniteUuid.randomUuid().toString();
+        killTx = parse("kill transaction '" + txId + "'");
+        assertTrue(killTx instanceof IgniteSqlKillTransaction);
+        assertEquals(txId, stringValue(((IgniteSqlKillTransaction)killTx).xid()));
+
+        assertParserThrows("kill transaction '1233415' '1'", SqlParseException.class);
+        assertParserThrows("kill transaction 10000", SqlParseException.class);
+        assertParserThrows("kill transaction", SqlParseException.class);
+    }
+
+    /**
+     * Test kill compute task query parsing.
+     */
+    @Test
+    public void killComputeTask() throws Exception {
+        IgniteSqlKill killTask;
+
+        IgniteUuid sesId = IgniteUuid.randomUuid();
+        killTask = parse("kill compute '" + sesId + "'");
+        assertTrue(killTask instanceof IgniteSqlKillComputeTask);
+        assertEquals(sesId.toString(), stringValue(((IgniteSqlKillComputeTask)killTask).sessionId()));
+
+        assertParserThrows("kill compute '1233415'", SqlParseException.class);
+        assertParserThrows("kill compute 10000", SqlParseException.class);
+        assertParserThrows("kill compute", SqlParseException.class);
+    }
+
+    /**
+     * Test kill continuous query parsing.
+     */
+    @Test
+    public void killContinuousQuery() throws Exception {
+        IgniteSqlKill killTask;
+
+        UUID routineId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+
+        killTask = parse("kill continuous '" + nodeId + "' '" + routineId + "'");
+        assertTrue(killTask instanceof IgniteSqlKillContinuousQuery);
+        assertEquals(nodeId.toString(), stringValue(((IgniteSqlKillContinuousQuery)killTask).nodeId()));
+        assertEquals(routineId.toString(), stringValue(((IgniteSqlKillContinuousQuery)killTask).routineId()));
+
+        assertParserThrows("kill continuous '1233415'", SqlParseException.class);
+        assertParserThrows("kill continuous '1233415' 1000", SqlParseException.class);
+        assertParserThrows("kill continuous '123' '123'", SqlParseException.class);
+        assertParserThrows("kill continuous", SqlParseException.class);
+    }
+
+    private static String stringValue(SqlLiteral literal) {
+        return literal != null ? literal.getValueAs(String.class) : null;
     }
 
     /** */

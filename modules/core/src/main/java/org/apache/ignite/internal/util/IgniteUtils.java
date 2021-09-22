@@ -4076,12 +4076,23 @@ public abstract class IgniteUtils {
      * @return Hex string.
      */
     public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
         StringBuilder sb = new StringBuilder(arr.length << 1);
 
         for (byte b : arr)
             addByteAsHex(sb, b);
 
-        return sb.toString().toUpperCase();
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
     }
 
     /**

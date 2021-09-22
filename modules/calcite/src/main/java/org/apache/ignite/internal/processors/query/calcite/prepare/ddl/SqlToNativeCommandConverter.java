@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -29,13 +30,31 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropUser;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlKill;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
+import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveSchemaName;
@@ -50,7 +69,11 @@ public class SqlToNativeCommandConverter {
     public static boolean isSupported(SqlNode sqlCmd) {
         return sqlCmd instanceof IgniteSqlCreateIndex
             || sqlCmd instanceof IgniteSqlDropIndex
-            || sqlCmd instanceof IgniteSqlAlterTable;
+            || sqlCmd instanceof IgniteSqlAlterTable
+            || sqlCmd instanceof IgniteSqlCreateUser
+            || sqlCmd instanceof IgniteSqlAlterUser
+            || sqlCmd instanceof IgniteSqlDropUser
+            || sqlCmd instanceof IgniteSqlKill;
     }
 
     /**
@@ -73,6 +96,14 @@ public class SqlToNativeCommandConverter {
             return convertDropIndex((IgniteSqlDropIndex)cmd, pctx);
         else if (cmd instanceof IgniteSqlAlterTable)
             return convertAlterTable((IgniteSqlAlterTable)cmd, pctx);
+        else if (cmd instanceof IgniteSqlCreateUser)
+            return convertCreateUser((IgniteSqlCreateUser)cmd, pctx);
+        else if (cmd instanceof IgniteSqlAlterUser)
+            return convertAlterUser((IgniteSqlAlterUser)cmd, pctx);
+        else if (cmd instanceof IgniteSqlDropUser)
+            return convertDropUser((IgniteSqlDropUser)cmd, pctx);
+        else if (cmd instanceof IgniteSqlKill)
+            return convertKill((IgniteSqlKill)cmd, pctx);
 
         throw new IgniteSQLException("Unsupported native operation [" +
             "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
@@ -128,5 +159,65 @@ public class SqlToNativeCommandConverter {
         String tblName = deriveObjectName(sqlCmd.name(), ctx, "table name");
 
         return new SqlAlterTableCommand(schemaName, tblName, sqlCmd.ifExists(), sqlCmd.logging());
+    }
+
+    /**
+     * Converts CREATE USER ... command.
+     */
+    private static SqlCreateUserCommand convertCreateUser(IgniteSqlCreateUser sqlCmd, PlanningContext ctx) {
+        return new SqlCreateUserCommand(sqlCmd.user().getSimple(), sqlCmd.password());
+    }
+
+    /**
+     * Converts ALTER USER ... command.
+     */
+    private static SqlAlterUserCommand convertAlterUser(IgniteSqlAlterUser sqlCmd, PlanningContext ctx) {
+        return new SqlAlterUserCommand(sqlCmd.user().getSimple(), sqlCmd.password());
+    }
+
+    /**
+     * Converts DROP USER ... command.
+     */
+    private static SqlDropUserCommand convertDropUser(IgniteSqlDropUser sqlCmd, PlanningContext ctx) {
+        return new SqlDropUserCommand(sqlCmd.user().getSimple());
+    }
+
+    /**
+     * Converts KILL ... command.
+     */
+    private static SqlCommand convertKill(IgniteSqlKill cmd, PlanningContext pctx) {
+        if (cmd instanceof IgniteSqlKillScanQuery) {
+            IgniteSqlKillScanQuery cmd0 = (IgniteSqlKillScanQuery)cmd;
+            return new SqlKillScanQueryCommand(
+                UUID.fromString(cmd0.nodeId().getValueAs(String.class)),
+                cmd0.cacheName().getValueAs(String.class),
+                cmd0.queryId().longValue(true)
+            );
+        }
+        else if (cmd instanceof IgniteSqlKillContinuousQuery) {
+            IgniteSqlKillContinuousQuery cmd0 = (IgniteSqlKillContinuousQuery)cmd;
+            return new SqlKillContinuousQueryCommand(
+                UUID.fromString(cmd0.nodeId().getValueAs(String.class)),
+                UUID.fromString(cmd0.routineId().getValueAs(String.class))
+            );
+        }
+        else if (cmd instanceof IgniteSqlKillService) {
+            IgniteSqlKillService cmd0 = (IgniteSqlKillService)cmd;
+            return new SqlKillServiceCommand(cmd0.serviceName().getValueAs(String.class));
+        }
+        else if (cmd instanceof IgniteSqlKillTransaction) {
+            IgniteSqlKillTransaction cmd0 = (IgniteSqlKillTransaction)cmd;
+            return new SqlKillTransactionCommand(cmd0.xid().getValueAs(String.class));
+        }
+        else if (cmd instanceof IgniteSqlKillComputeTask) {
+            IgniteSqlKillComputeTask cmd0 = ( IgniteSqlKillComputeTask)cmd;
+            IgniteUuid sessId = IgniteUuid.fromString(cmd0.sessionId().getValueAs(String.class));
+            return new SqlKillComputeTaskCommand(sessId);
+        }
+        else {
+            throw new IgniteSQLException("Unsupported native operation [" +
+                "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
+                "querySql=\"" + pctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
     }
 }
