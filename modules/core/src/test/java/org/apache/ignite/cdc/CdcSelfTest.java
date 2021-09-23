@@ -301,7 +301,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         evtsCnt1 = checkMetrics(cdc1, -1);
         evtsCnt2 = checkMetrics(cdc2, -1);
 
-        assertEquals(KEYS_CNT * 2, evtsCnt1 + evtsCnt2);
+        assertTrue(KEYS_CNT * 2 <= evtsCnt1 + evtsCnt2);
 
         rmvFut1.cancel();
         rmvFut2.cancel();
