@@ -42,6 +42,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCheckedException;
@@ -133,6 +134,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** */
     private static final String TEMPLATE_NAME_PARAM = "templateName";
+
+    /** */
+    private static final String USER_ATTRS = "userAttributes";
 
     /** */
     private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
@@ -445,6 +449,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             if (log.isDebugEnabled())
                 log.debug("Initialized command request: " + cmdReq);
+
+            if (params.get(USER_ATTRS) != null && cmdReq != null)
+                addUserAttributes(params, cmdReq);
 
             cmdRes = hnd.handle(cmdReq);
 
@@ -1039,6 +1046,27 @@ public class GridJettyRestHandler extends AbstractHandler {
             return ((String[])obj)[0];
 
         return null;
+    }
+
+    /**
+     * Add user attributes to the rest request.
+     *
+     * @param params Parameters.
+     * @param req Request
+     * @throws IgniteCheckedException If failed.
+     */
+    private void addUserAttributes(Map<String, String> params, GridRestRequest req) throws IgniteCheckedException {
+        try {
+            ObjectMapper objMapper = new ObjectMapper();
+
+            Map<String, String> userAttrs = objMapper.readValue(params.get(USER_ATTRS),
+                new TypeReference<Map<String, String>>() {});
+
+            req.userAttributes(userAttrs);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
