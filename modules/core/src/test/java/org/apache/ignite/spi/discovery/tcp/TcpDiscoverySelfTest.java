@@ -418,168 +418,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests a node having lost outgoing traffic can rejoin new cluster when the connection is fixed.
-     */
-    @Test
-    public void testLeftAloneNodeCanRejoinNewCluster() throws Exception {
-        try {
-            failureDetectionTimeout = 2000;
-
-            int nodes = 5;
-            int survNodeId = nodes - 1;
-
-            for (int i = 0; i < nodes; ++i) {
-                nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
-
-                startGrid(i);
-            }
-
-            TestFailureSimulatorTcpDiscoverySpi testSpi =
-                ((TestFailureSimulatorTcpDiscoverySpi)grid(survNodeId).configuration().getDiscoverySpi());
-
-            CountDownLatch proceed = new CountDownLatch(nodes - 1);
-
-            // Wait til all the nodes consdered failed.
-            grid(survNodeId).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    assert !((DiscoveryEvent)evt).eventNode().id().equals(grid(survNodeId).localNode().id());
-                    assert evt.node().id().equals(grid(survNodeId).localNode().id());
-
-                    proceed.countDown();
-
-                    return true;
-                }
-            }, EVT_NODE_FAILED);
-
-            // Avoid the test node receives ping which makes it segmented because left-alone node doesn't expect any ping or a message.
-            for (int i = 0; i < nodes - 1; ++i) {
-                ((TestFailureSimulatorTcpDiscoverySpi)grid(i).configuration().getDiscoverySpi()).
-                    simulateNetworkTimeout(1, failureDetectionTimeout);
-            }
-
-            // Primary simulation of cluster failure.
-            testSpi.simulateNetworkTimeout(1, 0);
-
-            proceed.await(failureDetectionTimeout * 4L, MILLISECONDS);
-
-            // Ensure the test node suspects rest of the clusted failed.
-            assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
-
-            for (int i = 0; i < nodes - 1; ++i)
-                stopGrid(i, true);
-
-            // Fix conenction.
-            testSpi.disableNetworkTimeoutSimalation();
-
-            // Esure new node do not segment left-alone.
-            startGrid(nodes);
-
-            // Ensure left-alone node won't fail.
-            assertEquals(2, grid(survNodeId).cluster().nodes().size());
-            assertEquals(2, grid(nodes).cluster().nodes().size());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * Tests a node having lost outgoing traffic segments and do not block the ring tven if previous node failed.
-     */
-    @Test
-    public void testLeftAloneSegmentsWithFailedPrevious() throws Exception {
-        try {
-            failureDetectionTimeout = 2000;
-
-            int nodes = 5;
-
-            int leftAloneIdx = nodes - 1;
-            int prevNodeIdx = leftAloneIdx - 1;
-
-            assert prevNodeIdx > 0;
-
-            startGrids(prevNodeIdx);
-
-            nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
-            startGrid(prevNodeIdx);
-
-            nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
-            startGrid(leftAloneIdx);
-
-            assert grid(prevNodeIdx).localNode().order() == grid(leftAloneIdx).localNode().order() - 1;
-
-            TestFailureSimulatorTcpDiscoverySpi testSpi =
-                ((TestFailureSimulatorTcpDiscoverySpi)grid(leftAloneIdx).configuration().getDiscoverySpi());
-
-            CountDownLatch leftAloneLatch = new CountDownLatch(nodes - 1);
-            CountDownLatch prevFailedLatch = new CountDownLatch(2);
-
-            // Wait til the ring is consdered failed on the test node.
-            grid(leftAloneIdx).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    assert !((DiscoveryEvent)evt).eventNode().id().equals(grid(leftAloneIdx).localNode().id());
-                    assert evt.node().id().equals(grid(leftAloneIdx).localNode().id());
-
-                    leftAloneLatch.countDown();
-
-                    return true;
-                }
-            }, EVT_NODE_FAILED);
-
-            // Wait till the previous node fails too.
-            grid(prevNodeIdx - 1).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    DiscoveryEvent de = (DiscoveryEvent)evt;
-
-                    if (de.eventNode().order() == prevNodeIdx + 1)
-                        prevFailedLatch.countDown();
-
-                    return true;
-                }
-            }, EVT_NODE_FAILED);
-
-            // Crush previous node.
-            ((TestFailureSimulatorTcpDiscoverySpi)grid(prevNodeIdx).configuration().getDiscoverySpi()).
-                simulateNetworkTimeout(0, failureDetectionTimeout);
-
-            // Make the test node left-alone.
-            testSpi.simulateNetworkTimeout(1, failureDetectionTimeout / nodes);
-
-            leftAloneLatch.await(failureDetectionTimeout * 4L, MILLISECONDS);
-
-            assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
-
-            prevFailedLatch.await(failureDetectionTimeout * 4L, MILLISECONDS);
-
-            for (int i = 0; i < prevNodeIdx; i++)
-                assertTrue(grid(i).cluster().nodes().size() == prevNodeIdx);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * Checks that node leaves the cluster after lose of outgoing connections.
-     *
-     * @throws Exception If any error occurs.
-     */
-    @Test
-    public void testOutgoingConnectionsFailure() throws Exception {
-        checkNodeGetSegmentedOnPartOfNetMalfunction(true);
-    }
-
-    /**
-     * Checks that node leaves the cluster after lose of incoming connections.
-     *
-     * @throws Exception If any error occurs.
-     */
-    @Test
-    public void testIncomingConnectionsFailure() throws Exception {
-        checkNodeGetSegmentedOnPartOfNetMalfunction(false);
-    }
-
-    /**
      * @throws Exception If any error occurs.
      */
     @Test
@@ -2435,6 +2273,215 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that node leaves the cluster after lose of outgoing connections.
+     *
+     * @throws Exception If any error occurs.
+     */
+    @Test
+    public void testOutgoingConnectionsFailure() throws Exception {
+        checkNodeGetSegmentedOnPartOfNetMalfunction(true);
+    }
+
+    /**
+     * Checks that node leaves the cluster after lose of incoming connections.
+     *
+     * @throws Exception If any error occurs.
+     */
+    @Test
+    public void testIncomingConnectionsFailure() throws Exception {
+        checkNodeGetSegmentedOnPartOfNetMalfunction(false);
+    }
+
+    /**
+     * Tests a node having lost outgoing traffic can rejoin new cluster when the connection is fixed.
+     */
+    @Test
+    public void testLeftAloneCanRejoinNewCluster() throws Exception {
+        try {
+            failureDetectionTimeout = 2000;
+
+            int nodes = 5;
+            int survNodeId = nodes - 1;
+
+            for (int i = 0; i < nodes; ++i) {
+                nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
+
+                startGrid(i);
+            }
+
+            TestFailureSimulatorTcpDiscoverySpi testSpi =
+                ((TestFailureSimulatorTcpDiscoverySpi)grid(survNodeId).configuration().getDiscoverySpi());
+
+            CountDownLatch proceed = new CountDownLatch(nodes - 1);
+
+            // Wait til all the nodes consdered failed.
+            grid(survNodeId).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert !((DiscoveryEvent)evt).eventNode().id().equals(grid(survNodeId).localNode().id());
+                    assert evt.node().id().equals(grid(survNodeId).localNode().id());
+
+                    proceed.countDown();
+
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            // Avoid the test node receives ping which makes it segmented because 'left-alone' node doesn't expect any message.
+            for (int i = 0; i < nodes - 1; ++i) {
+                ((TestFailureSimulatorTcpDiscoverySpi)grid(i).configuration().getDiscoverySpi()).
+                    simulateNetworkTimeout(1, failureDetectionTimeout);
+            }
+
+            // Primary simulation of cluster failure.
+            testSpi.simulateNetworkTimeout(1, 0);
+
+            proceed.await();
+
+            // Ensure the test node suspects rest of the clusted failed.
+            assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
+            assertEquals(testSpi.getSpiState(), "CONNECTED");
+
+            for (int i = 0; i < nodes - 1; ++i)
+                stopGrid(i, true);
+
+            // Fix conenction.
+            testSpi.disableNetworkTimeoutSimalation();
+
+            // Esure new node doesn't not segment 'left-alone'.
+            startGrid(nodes);
+
+            // Ensure 'left-alone' node won't fail.
+            assertEquals(2, grid(survNodeId).cluster().nodes().size());
+            assertEquals(2, grid(nodes).cluster().nodes().size());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Tests a node having lost outgoing traffic segments, doesn't not block the ring even if the previous node has failed.
+     */
+    @Test
+    public void testLeftAloneSegmentsWithFailedPrevious() throws Exception {
+        try {
+            failureDetectionTimeout = 2000;
+
+            int nodes = 5;
+
+            int leftAloneIdx = nodes - 1;
+            int prevNodeIdx = leftAloneIdx - 1;
+
+            assert prevNodeIdx > 0;
+
+            startGrids(prevNodeIdx);
+
+            nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
+            startGrid(prevNodeIdx);
+
+            nodeSpi.set(new TestFailureSimulatorTcpDiscoverySpi());
+            startGrid(leftAloneIdx);
+
+            assert grid(prevNodeIdx).localNode().order() == grid(leftAloneIdx).localNode().order() - 1;
+
+            TestFailureSimulatorTcpDiscoverySpi testSpi =
+                ((TestFailureSimulatorTcpDiscoverySpi)grid(leftAloneIdx).configuration().getDiscoverySpi());
+
+            CountDownLatch nodesFailedLatch = new CountDownLatch(2);
+
+            // Wait till both nodes failed.
+            grid(prevNodeIdx - 1).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    DiscoveryEvent de = (DiscoveryEvent)evt;
+
+                    if (de.eventNode().order() > prevNodeIdx)
+                        nodesFailedLatch.countDown();
+
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            // Crush previous node.
+            ((TestFailureSimulatorTcpDiscoverySpi)grid(prevNodeIdx).configuration().getDiscoverySpi()).
+                simulateNetworkTimeout(0, failureDetectionTimeout);
+
+            // Make the test node 'left-alone'.
+            testSpi.simulateNetworkTimeout(1, failureDetectionTimeout / nodes);
+
+            nodesFailedLatch.await();
+
+            assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
+
+            // Check only the rest of the ring left.
+            for (int i = 0; i < prevNodeIdx; i++)
+                assertEquals(grid(i).cluster().nodes().size(), prevNodeIdx);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Tests that 'left-alone' node is not segmented by its client.
+     */
+    @Test
+    public void testLeftAloneIsntSegmentsByClient() throws Exception {
+        try {
+            failureDetectionTimeout = 2000;
+
+            TestFailureSimulatorTcpDiscoverySpi testSpi = new TestFailureSimulatorTcpDiscoverySpi();
+
+            nodeSpi.set(testSpi);
+
+            Ignite leftAlone = startGrid(0);
+
+            Ignite client = startClientGrid();
+
+            TestFailureSimulatorTcpDiscoverySpi supportSpi = new TestFailureSimulatorTcpDiscoverySpi();
+
+            nodeSpi.set(supportSpi);
+
+            startGrid(1);
+
+            CountDownLatch becomeLeftAlone = new CountDownLatch(1);
+
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assertTrue(((DiscoveryEvent)evt).eventNode().order() > 1);
+
+                    // Block any traffic from the second node to avoid segmentation of the 'left-alone' node.
+                    supportSpi.simulateNetworkTimeout(1, failureDetectionTimeout);
+
+                    // Leave 'left-alone' with client only.
+                    stopGrid(1, true);
+
+                    becomeLeftAlone.countDown();
+
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            // Make the test node 'left-alone'.
+            testSpi.simulateNetworkTimeout(1, 0);
+
+            becomeLeftAlone.await();
+
+            assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
+            assertEquals(testSpi.getSpiState(), "CONNECTED");
+
+            // Send a message from client.
+            assertTrue(client.configuration().getDiscoverySpi().pingNode(leftAlone.cluster().localNode().id()));
+
+            // make sure the test node hasn't segmented.
+            assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
+            assertEquals(testSpi.getSpiState(), "CONNECTED");
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * Checks node correctly fails when only incoming or outgoing traffic is lost.
      *
      * @param outgoing {@code True} to simulate failure of outgoing traffic. {@code False} for incoming.
@@ -2477,7 +2524,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             failSpi.simulateNetworkTimeout(outgoing ? 1 : -1, (int)simulatedNetDelay);
 
-            latch.await(failureDetectionTimeout * 3L, MILLISECONDS);
+            latch.await();
 
             for (int i = 0; i < gridCnt - 1; i++) {
                 int aliveNodes = grid(i).cluster().nodes().size();

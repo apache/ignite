@@ -3965,9 +3965,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (spiState == CONNECTED && failedNodes.size() == ring.serverNodes().size() - 1) {
                             leftAlone = true;
 
-                            U.warn(log, "Current node has failed restoring connection to the cluster and entered the left-alone " +
-                                "state. An unexpected incoming message will stop this node because there is no recipient to resend the " +
-                                "message to. The ring could be blocked.");
+                            U.warn(log, "Current node has tried to connect to every other node in the ring and failed. Not it is in " +
+                                "the left-alone state. An unexpected incoming message will stop this node because there is no recipient " +
+                                "to resend the message to. The ring could be blocked.");
                         }
                     }
 
@@ -7414,13 +7414,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Update last ring message received timestamp.
+         *
+         * @param msg The message received.
          */
         private void ringMessageReceived(TcpDiscoveryAbstractMessage msg) {
             lastRingMsgReceivedTime = System.nanoTime();
 
-            if (leftAlone && !msg.client()) {
-                U.warn(log, "Received an unexpected message [" + msg + "] while current node is in the left-alone state. " +
-                    "The node sees no cluster and cannot resend any message. It segments to avoid traffic blocking.");
+            if (leftAlone && !clientMsgWorkers.containsKey(msg.creatorNodeId())) {
+                U.warn(log, "Received an unexpected message [" + msg + "] while current node is in the left-alone state meaning " +
+                    "lost connection to entyre cluster. Network malfunction is suspected. Probably this node can't resend any " +
+                    "message and would block the cluster ring. To avoid this the segmentation is engaged.");
 
                 segmentLocalNodeOnSendFail(null);
             }
