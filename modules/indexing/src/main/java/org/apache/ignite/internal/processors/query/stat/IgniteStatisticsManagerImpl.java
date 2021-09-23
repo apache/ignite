@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -361,77 +362,70 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (log.isTraceEnabled())
             log.trace("Process statistics obsolescence started.");
 
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty = statsRepos.getDirtyObsolescenceInfo();
+        List<StatisticsKey> keys = statsRepos.getObsolescenceKeys();
 
-        if (F.isEmpty(dirty)) {
+        if (F.isEmpty(keys)) {
             if (log.isTraceEnabled())
-                log.trace("No dirty obsolescence info found. Finish obsolescence processing.");
+                log.trace("No obsolescence info found. Finish obsolescence processing.");
 
             return;
         }
         else {
             if (log.isTraceEnabled())
-                log.trace(String.format("Scheduling obsolescence savings for %d targets", dirty.size()));
+                log.trace(String.format("Scheduling obsolescence savings for %d targets", keys.size()));
         }
 
-        Map<StatisticsObjectConfiguration, List<Integer>> tasks = calculateObsolescencedPartitions(dirty);
+        for (StatisticsKey key : keys) {
+            StatisticsObjectConfiguration cfg = null;
+            try {
+                 cfg = statCfgMgr.config(key);
+            }
+            catch (IgniteCheckedException e) {
+                // No-op/
+            }
+            Set<Integer> tasksParts = calculateObsolescencedPartitions(cfg, statsRepos.getObsolescence(key));
 
-        for (Map.Entry<StatisticsObjectConfiguration, List<Integer>> objTask : tasks.entrySet()) {
-            StatisticsKey key = objTask.getKey().key();
             GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
 
             if (tbl == null) {
                 // Table can be removed earlier, but not already processed. Or somethink goes wrong. Try to reschedule.
                 if (log.isDebugEnabled())
-                    log.debug(String.format("Got obsolescence statistics for unknown table %s", objTask.getKey()));
+                    log.debug(String.format("Got obsolescence statistics for unknown table %s", key));
             }
 
-            statProc.updateLocalStatistics(true, tbl, objTask.getKey(), new HashSet<>(objTask.getValue()),
-                null);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(true, tbl, cfg,
+                tasksParts, null);
+            statProc.updateLocalStatistics(ctx);
         }
     }
+
+
 
     /**
      * Calculate targets to refresh obsolescence statistics by map of dirty partitions and actual per partition
      * statistics.
      *
-     * @param dirty Map of statistics key to list of it's "dirty" paritions.
+     * @param cfg Statistics configuration
+     * @param parts  list of it's obsolescence info paritions.
      * @return Map of statistics cfg to partition to refresh statistics.
      */
-    private Map<StatisticsObjectConfiguration, List<Integer>> calculateObsolescencedPartitions(
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirty
+    private Set<Integer> calculateObsolescencedPartitions(
+        StatisticsObjectConfiguration cfg,
+        IntMap<ObjectPartitionStatisticsObsolescence> parts
     ) {
-        Map<StatisticsObjectConfiguration, List<Integer>> res = new HashMap<>();
+        Set<Integer> res = new HashSet<>();
 
-        for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : dirty.entrySet()) {
-            StatisticsKey key = objObs.getKey();
-            List<Integer> taskParts = new ArrayList<>();
+        StatisticsObjectConfiguration finalCfg = cfg;
 
-            StatisticsObjectConfiguration cfg = null;
-            try {
-                cfg = statCfgMgr.config(key);
-            }
-            catch (IgniteCheckedException e) {
-                log.warning("Unable to get configuration by key " + key + " due to " + e.getMessage()
-                    + ". Some statistics can be outdated.");
+        parts.forEach((k, v) -> {
+            ObjectPartitionStatisticsImpl partStat = statsRepos.getLocalPartitionStatistics(cfg.key(), k);
 
-                continue;
-            }
+            if (partStat == null || partStat.rowCount() == 0 ||
+                (double)v.modified() * 100 / partStat.rowCount() > finalCfg.maxPartitionObsolescencePercent())
+                res.add(k);
+        });
 
-            StatisticsObjectConfiguration finalCfg = cfg;
-
-            objObs.getValue().forEach((k, v) -> {
-                ObjectPartitionStatisticsImpl partStat = statsRepos.getLocalPartitionStatistics(key, k);
-
-                if (partStat == null || partStat.rowCount() == 0 ||
-                    (double)v.modified() * 100 / partStat.rowCount() > finalCfg.maxPartitionObsolescencePercent())
-                    taskParts.add(k);
-            });
-
-            // Will add even empty list of partitions to recollect just to force obsolescence info to be stored.
-            res.put(finalCfg, taskParts);
-        }
-
+        // Will add even empty list of partitions to recollect just to force obsolescence info to be stored.
         return res;
     }
 

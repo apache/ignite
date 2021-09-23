@@ -22,14 +22,13 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.task.GatherPartitionStatistics;
@@ -98,155 +97,121 @@ public class StatisticsProcessor {
      * if byObsolescence = {@code false} - aggregate all presented in store (because it should contains only actual ones)
      * 5) save aggregated local statistics
      *
-     * @param byObsolescence Update only obsolescence partitions.
-     * @param tbl Table to update. If {@code null} - just clear all partitions and obsolescence from the repo
-     * @param cfg Statistics configuration to use.
-     * @param partsToProcess Partitions to update, if !byObsolescence - all primary partitions for the given topology.
-     * @param topVer Topology version, can be {@code null} if tbl is null.
+     * @param ctx Statistics Gathering context.
      */
-    public void updateLocalStatistics(
-        boolean byObsolescence,
-        GridH2Table tbl,
-        StatisticsObjectConfiguration cfg,
-        Set<Integer> partsToProcess,
-        AffinityTopologyVersion topVer
-    ) {
-        if (!startJob("Updating key " + cfg.key()))
-            return;
+    public void updateLocalStatistics(LocalStatisticsGatheringContext ctx) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format(
+                "Start statistics processing: forceRecollect=%b, cfg=%s, partToProcess = %s, topVer=%s",
+                ctx.forceRecollect(), ctx.configuration(), ctx.allParts(), ctx.topologyVersion()));
+        }
 
-        try {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format(
-                    "Start statistics processing: byObsolescence=%b, cfg=%s, partToProcess = %s, topVer=%s",
-                    byObsolescence, cfg, partsToProcess, topVer));
-            }
+        if (registerNewTask(ctx)) {
+            try {
+                if (ctx.forceRecollect())
+                    // To save all obsolescence info even if there is no partitions to recollect.
+                    statRepo.saveObsolescenceInfo(ctx.configuration().key());
 
-            LocalStatisticsGatheringContext newCtx = new LocalStatisticsGatheringContext(byObsolescence, tbl, cfg,
-                partsToProcess, topVer);
-            LocalStatisticsGatheringContext registeredCtx = registerNewTask(newCtx);
+                if (ctx.table() == null || ctx.configuration() == null || ctx.configuration().columns().isEmpty()) {
+                    statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), null);
+                    ctx.future().complete(null);
 
-            if (registeredCtx != null) {
-
-                prepareTask(registeredCtx);
-
-                if (registeredCtx.table() != null && !registeredCtx.remainingParts().isEmpty() &&
-                    !registeredCtx.configuration().columns().isEmpty())
-                    submitTasks(registeredCtx);
-                else {
-                    gatheringInProgress.remove(registeredCtx.configuration().key(), registeredCtx);
-
-                    assert registeredCtx.remainingParts().isEmpty();
-                    assert registeredCtx.finished().getCount() == 0;
+                    return;
                 }
+
+                if (ctx.remainingParts().isEmpty())
+                    ctx.future().complete(null);
+                else
+                    submitTasks(ctx);
             }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Gathered by key " + cfg.key() + " were skipped due to previous one.");
+            catch (Throwable t) {
+                // Submit tasks can't fire an error, so no need to cancel and wait for tasks finished here.
+                ctx.future().completeExceptionally(t);
             }
         }
-        finally {
-            endJob();
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Gathered by key " + ctx.configuration().key() + " were skipped due to previous one.");
         }
     }
 
     /**
-     * Do preparation step before schedule any gathering.
-     *
-     * @param ctx Context to do preparations.
-     */
-    private void prepareTask(LocalStatisticsGatheringContext ctx) {
-        try {
-            if (ctx.byObsolescence())
-                statRepo.saveObsolescenceInfo(ctx.configuration().key());
-
-            if (ctx.table() == null || ctx.configuration().columns().isEmpty())
-                statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), null);
-        }
-        catch (Throwable t) {
-            ctx.future().cancel(true);
-        }
-        finally {
-            // Prepare phase done
-            ctx.finished().countDown();
-        }
-    }
-
-    /**
-     * Try to register new task.
+     * Try to register new task. Returned task will remove itself from gatheringInProgress after completion.
+     * If there are some other task for the given key - operation will be scheduled right after it if necessary
+     * (current task have never configuration or topology).
      *
      * @param ctx Task to register.
-     * @return Registered task.
+     * @return {@code true} if task was actually pushed as Gathering in progress task, {@code false} - othrewise.
      */
-    private LocalStatisticsGatheringContext registerNewTask(LocalStatisticsGatheringContext ctx) {
-        LocalStatisticsGatheringContext ctxToSubmit[] = new LocalStatisticsGatheringContext[1];
-        LocalStatisticsGatheringContext ctxToAwait[] = new LocalStatisticsGatheringContext[1];
+    private boolean registerNewTask(LocalStatisticsGatheringContext ctx) {
+        boolean res[] = new boolean[1];
 
         gatheringInProgress.compute(ctx.configuration().key(), (k, v) -> {
             if (v == null) {
                 // No old context - start new
-                ctxToSubmit[0] = ctx;
+                res[0] = true;
+
+                ctx.future().whenComplete((r, t) -> {
+                    if (t != null){
+                        if (t instanceof CancellationException || t instanceof NodeStoppingException) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got " + t.getClass() + " exception during statistics collection by key "
+                                    + ctx.configuration().key() + "." );
+                        }
+                        else
+                            log.warning("Unexpected error during statistics collection by key " +
+                                ctx.configuration().key() + " . " + t.getMessage(), t);
+                    }
+
+                    // Anyway - try to remove itself from gathering map.
+                    gatheringInProgress.remove(ctx.configuration().key(), ctx);
+                });
 
                 return ctx;
             }
 
-            if ((v.byObsolescence() && ctx.byObsolescence()) ||
-                (v.topologyVersion().before(ctx.topologyVersion()) ||
-                    !checkStatisticsCfg(v.configuration(), ctx.configuration()))) {
+            // If there are key - check if we can cancel it.
+            if (v.topologyVersion() == null ||
+                (ctx.topologyVersion() != null && v.topologyVersion().compareTo(ctx.topologyVersion()) < 0) ||
+                v.configuration().compareTo(ctx.configuration()) < 0) {
                 // Old context for older topology or config - cancel and start new
-                v.future().cancel(true);
-                ctxToAwait[0] = v;
+                v.cancel();
 
-                ctxToSubmit[0] = ctx;
 
-                return ctx;
+                v.future().whenComplete((r, t) -> {
+                    System.err.println("Calld on reschedule whenComplete");
+                    // Will be executed before original, so have to try to cancel previous context to add new one.
+                    gatheringInProgress.remove(ctx.configuration().key(), v);
+
+                    busyRun(() -> {
+                        updateLocalStatistics(ctx);
+                    });
+                });
+
+                res[0] = false;
+
+                return v;
             }
 
-            ctxToSubmit[0] = null;
+            res[0] = false;
 
             return v;
         });
 
         // Can't wait in map critical section (to allow task to try to remove itselves), but
         // have to wait here in busyLock to do gracefull shutdown.
-        if (ctxToAwait[0] != null) {
-            try {
-                ctxToAwait[0].finished().await();
-            }
-            catch (InterruptedException e) {
-                log.warning("Unable to wait statistics gathering task finished by key " +
-                    ctx.configuration().key(), e);
-            }
-        }
+        //if (ctxToAwait[0] != null) {
+//            try {
+//                // TODO ctxToAwait[0].finished().await();
+//            }
+//            catch (InterruptedException e) {
+//                log.warning("Unable to wait statistics gathering task finished by key " +
+//                    ctx.configuration().key(), e);
+//            }
+       // }
 
-        return ctxToSubmit[0];
-    }
 
-    /**
-     * Test if statistics configuration is fit to all required versions and doesn't
-     * contain any extra column configurations.
-     *
-     * @param existingCfg Statistics configuration to check.
-     * @param targetCfg Target configuration.
-     * @return {@code true} if it is, {@code false} otherwise.
-     */
-    private boolean checkStatisticsCfg(
-        StatisticsObjectConfiguration existingCfg,
-        StatisticsObjectConfiguration targetCfg
-    ) {
-        if (existingCfg == targetCfg)
-            return true;
-
-        if (existingCfg.columns().size() != targetCfg.columns().size())
-            return false;
-
-        for (Map.Entry<String, StatisticsColumnConfiguration> targetColCfgEntry : targetCfg.columns().entrySet()) {
-            StatisticsColumnConfiguration existingColCfg = existingCfg.columns().get(targetColCfgEntry.getKey());
-
-            if (existingColCfg == null || existingColCfg.version() < targetColCfgEntry.getValue().version())
-                return false;
-        }
-
-        return true;
+        return res[0];
     }
 
     /**
@@ -263,7 +228,7 @@ public class StatisticsProcessor {
                 log
             );
 
-            submitTask(ctx, task);
+            submitTask(task);
         }
     }
 
@@ -272,18 +237,14 @@ public class StatisticsProcessor {
      * @param ctx
      */
     private void aggregateStatistics(LocalStatisticsGatheringContext ctx) {
-        if (checkCancelled(ctx))
+        if (ctx.cancelled())
             return;
 
         StatisticsKey key = ctx.configuration().key();
         Collection<ObjectPartitionStatisticsImpl> allParts = statRepo.getLocalPartitionsStatistics(key);
 
-        if (ctx.byObsolescence()) {
-            if (ctx.configuration() == null)
-                return;
-
+        if (ctx.forceRecollect())
             statRepo.aggregatedLocalStatistics(allParts, ctx.configuration());
-        }
         else {
             Set<Integer> partsToRemove = new HashSet<>();
             Collection<ObjectPartitionStatisticsImpl> partsToAggregate = new ArrayList<>();
@@ -304,40 +265,22 @@ public class StatisticsProcessor {
     }
 
     /**
-     * Check if specified context cancelled. If so - log debug message and return {@code true}.
-     *
-     * @param ctx Gathering context to check.
-     * @return {@code true} if context was cancelled, {@code false} - otherwise.z
-     */
-    private boolean checkCancelled(LocalStatisticsGatheringContext ctx) {
-        if (ctx.future().isCancelled()) {
-            if (log.isDebugEnabled())
-                log.debug("Gathering context by key " + ctx.configuration().key() + " cancelled.");
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Try to get busyLock and check active state. Return success flag.
      * If unsuccess - release busyLock.
      *
-     * @param operation Text description of operation to log.
      * @return {@code true}
      */
-    private boolean startJob(String operation) {
+    private boolean startJob() {
         if (!busyLock.enterBusy()) {
             if (log.isDebugEnabled())
-                log.debug("Unable to start " + operation + " due to inactive state.");
+                log.debug("Unable to start statistics operation due to inactive state.");
 
             return false;
         }
 
         if (!active) {
             if (log.isDebugEnabled())
-                log.debug("Unable to start " + operation + " due to inactive state.");
+                log.debug("Unable to start statistics operation due to inactive state.");
 
             busyLock.leaveBusy();
 
@@ -362,103 +305,74 @@ public class StatisticsProcessor {
      * @param partId Partition id.
      */
     private void failPartTask(LocalStatisticsGatheringContext ctx, int partId) {
-        // Partition skipped
-        ctx.finished().countDown();
-
-        // No need to gather rest partitions.
-        ctx.future().cancel(true);
-
-        if (log.isDebugEnabled())
-            log.debug(String.format("Gathering failed for key %s.%d ", ctx.configuration().key(), partId));
-
-        if (ctx.partitionNotAvailable(partId)) {
-            gatheringInProgress.remove(ctx.configuration().key(), ctx);
-
-            assert ctx.finished().getCount() == 0;
-
-            if (log.isDebugEnabled())
-                log.debug(String.format("Gathering removed for key %s", ctx.configuration().key()));
-        }
     }
 
     /**
      * Submit partition gathering task.
      *
-     * @param ctx Gathering context to track state.
      * @param task Gathering task to proceed.
      */
-    private void submitTask(
-        final LocalStatisticsGatheringContext ctx,
-        final GatherPartitionStatistics task
-    ) {
+    private void submitTask(final GatherPartitionStatistics task) {
+        LocalStatisticsGatheringContext ctx = task.context();
+
         gatherPool.submit(() -> {
-            if (!startJob("Gathering partition statistics by key " + ctx.configuration().key())) {
-                failPartTask(ctx, task.partition());
+            if (!startJob()) {
+                if (log.isDebugEnabled())
+                    log.debug(String.format("Gathering failed for key %s.%d ", ctx.configuration().key(),
+                        task.partition()));
+
+                ctx.partitionNotAvailable(task.partition());
 
                 return;
             }
+
             try {
-                GatheredPartitionResult gatherRes = new GatheredPartitionResult();
+                task.call();
 
-                try {
-                    gatherCtxPartition(ctx, task, gatherRes);
+                if (ctx.partitionDone(task.partition())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Local partitions statistics successfully gathered by key " +
+                            ctx.configuration().key());
 
-                    completePartitionStatistic(gatherRes.newPart, ctx, task.partition(), gatherRes.partStats);
+                    aggregateStatistics(ctx);
+
+                    ctx.future().complete(null);
                 }
-                catch (Throwable t) {
-                    //failPartTask(ctx, task.partition());
-                    gatherRes.partStats = null;
 
-                    if (t instanceof GatherStatisticCancelException) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Collect statistics task was cancelled " +
-                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
-                        }
-                    }
-                    else if (t.getCause() instanceof NodeStoppingException) {
-                        if (log.isDebugEnabled())
-                            log.debug("Node stopping during statistics collection on " +
-                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
-                    }
-                    else
-                        log.warning("Unexpected error on statistic gathering", t);
-                }
-                finally {
-                    if (gatherRes.partStats == null)
-                        failPartTask(ctx, task.partition());
-                    else {
-                        // Finish partition task
-                        ctx.finished().countDown();
+            }
+            catch (Throwable t) {
+                ctx.partitionNotAvailable(task.partition());
 
-                        if (ctx.partitionDone(task.partition()))
-                            gatheringInProgress.remove(ctx.configuration().key(), ctx);
+                if (t instanceof GatherStatisticCancelException) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Collect statistics task was cancelled " +
+                            "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
                     }
                 }
+                else if (t.getCause() instanceof NodeStoppingException) {
+                    if (log.isDebugEnabled())
+                        log.debug("Node stopping during statistics collection on " +
+                            "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+                }
+                else
+                    log.warning("Unexpected error on statistic gathering", t);
             }
             finally {
+
+                // TODO
+//                    if (partStat == null)
+//                        failPartTask(ctx, task.partition());
+//                    else {
+//                        // Finish partition task
+//                        // TODO ctx.finished().countDown();
+//
+//                        if (ctx.partitionDone(task.partition()))
+//                            gatheringInProgress.remove(ctx.configuration().key(), ctx);
+//                    }
                 endJob();
             }
+
         });
-    }
-
-    private void gatherCtxPartition(
-        final LocalStatisticsGatheringContext ctx,
-        final GatherPartitionStatistics task,
-        GatheredPartitionResult result
-    ) {
-        if (!ctx.byObsolescence()) {
-            // Try to use existing partition statistics instead of gather new one
-            ObjectPartitionStatisticsImpl existingPartStat = statRepo.getLocalPartitionStatistics(
-                ctx.configuration().key(), task.partition());
-
-            if (existingPartStat != null && partStatFit(existingPartStat, ctx.configuration()))
-                result.partStats = existingPartStat;
-        }
-
-        result.newPart = result.partStats == null;
-
-        if (result.partStats == null)
-            result.partStats = task.call();
     }
 
     /**
@@ -469,7 +383,7 @@ public class StatisticsProcessor {
      * @return {@code true} if specified statistics fully meet to specified configuration requiremenrs,
      *         {@code false} - otherwise.
      */
-    private boolean partStatFit(ObjectStatisticsImpl stat, StatisticsObjectConfiguration cfg) {
+    private boolean partStatSuitToConfiguration(ObjectStatisticsImpl stat, StatisticsObjectConfiguration cfg) {
         if (stat == null)
             return false;
 
@@ -505,44 +419,6 @@ public class StatisticsProcessor {
             busyLock.leaveBusy();
         }
 
-    }
-
-    /**
-     * Complete gathering of partition statistics: save to repository and try to complete whole task.
-     *
-     * @param newStat If {@code true} - partition statitsics was just gathered and need to be saved to repo.
-     * @param ctx Gathering context.
-     * @param partId Partition id.
-     * @param partStat Collected statistics or {@code null} if it was impossible to gather current partition.
-     */
-    private void completePartitionStatistic(
-        boolean newStat,
-        LocalStatisticsGatheringContext ctx,
-        int partId,
-        ObjectPartitionStatisticsImpl partStat
-    ) {
-        if (ctx.future().isCancelled() || partStat == null)
-            return;
-
-        StatisticsKey key = ctx.configuration().key();
-
-        if (newStat) {
-            if (ctx.configuration().columns().size() == partStat.columnsStatistics().size())
-                statRepo.refreshObsolescence(key, partId);
-
-            statRepo.replaceLocalPartitionStatistics(key, partStat);
-            //statRepo.saveLocalPartitionStatistics(key, partStat);
-
-            if (log.isDebugEnabled())
-                log.debug("Local partitioned statistic saved [stat=" + partStat + ']');
-        }
-        if (ctx.partitionDone(partId)) {
-            if (log.isDebugEnabled())
-                log.debug("Local partitions statistics successfully gathered by key " +
-                    ctx.configuration().key());
-
-            aggregateStatistics(ctx);
-        }
     }
 
     /**

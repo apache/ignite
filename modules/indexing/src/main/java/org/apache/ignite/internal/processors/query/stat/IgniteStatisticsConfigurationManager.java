@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
@@ -122,15 +121,10 @@ public class IgniteStatisticsConfigurationManager {
                         return;
 
                     mgmtPool.submit(() -> {
-                        try {
-                            StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
+                        StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
-                            updateLocalStatistics(newStatCfg);
-                        }
-                        catch (Throwable e) {
-                            log.warning("Unexpected exception on change statistic configuration [old="
-                                + oldV + ", new=" + newV + ']', e);
-                        }
+                        statProc.busyRun(() -> updateLocalStatistics(newStatCfg));
+
                     });
                 }
             );
@@ -158,10 +152,12 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             mgmtPool.submit(() -> {
-                updateAllLocalStatistics();
+                statProc.busyRun(() -> updateAllLocalStatistics());
             });
         }
     };
+
+
 
     /** Drop columns listener to clean its statistics configuration. */
     private final BiConsumer<GridH2Table, List<String>> dropColsLsnr = new BiConsumer<GridH2Table, List<String>>() {
@@ -229,7 +225,9 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             // Ensure to clean local metastorage.
-            statProc.updateLocalStatistics(false, tbl, cfg, Collections.emptySet(), topVer);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
+                Collections.emptySet(), topVer);
+            statProc.updateLocalStatistics(ctx);
 
             return;
         }
@@ -248,7 +246,9 @@ public class IgniteStatisticsConfigurationManager {
 
             final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
-            statProc.updateLocalStatistics(false, tbl, cfg, parts, topVer0);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
+                parts, topVer0);
+            statProc.updateLocalStatistics(ctx);
         }
         catch (IgniteCheckedException e) {
             log.warning("Unexpected error during statistics collection: " + e.getMessage(), e);
@@ -328,7 +328,7 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager started.");
 
         if (distrMetaStorage != null)
-            mgmtPool.submit(() -> updateAllLocalStatistics());
+            mgmtPool.submit(() -> statProc.busyRun(() -> updateAllLocalStatistics()));
     }
 
     /**

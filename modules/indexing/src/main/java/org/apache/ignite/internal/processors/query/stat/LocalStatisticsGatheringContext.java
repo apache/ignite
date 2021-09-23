@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -36,8 +35,8 @@ public class LocalStatisticsGatheringContext {
      */
     private static final int ADDITIONAL_STEPS = 1;
 
-    /** Recollection flag to update obsolescence statistics. */
-    private final boolean byObsolescence;
+    /** Force recollect flag. */
+    private final boolean forceRecollect;
 
     /** Table to process. */
     private final GridH2Table tbl;
@@ -55,41 +54,40 @@ public class LocalStatisticsGatheringContext {
     private AffinityTopologyVersion topVer;
 
     /** Future with success status as a result. */
-    private final CompletableFuture<Boolean> future;
+    private CompletableFuture<Void> future;
 
-    /** Count douwn latch to wait till task finished (sucessfully or not). */
-    private final CountDownLatch finished;
+    /** Context cancelled flag. */
+    private volatile boolean cancelled;
 
     /**
      * Constructor.
      *
-     * @param byObsolescence Started by obsolescence, need to recollect data instead of using existing one.
+     * @param forceRecollect Force recollect flag.
      * @param tbl Table to process.
      * @param cfg Statistics configuration to use.
      * @param remainingParts Set of partition ids to collect.
      */
     public LocalStatisticsGatheringContext(
-        boolean byObsolescence,
+        boolean forceRecollect,
         GridH2Table tbl,
         StatisticsObjectConfiguration cfg,
         Set<Integer> remainingParts,
         AffinityTopologyVersion topVer
     ) {
-        this.byObsolescence = byObsolescence;
+        this.forceRecollect = forceRecollect;
         this.tbl = tbl;
         this.cfg = cfg;
         this.remainingParts = new HashSet<>(remainingParts);
-        this.allParts = (byObsolescence) ? null : new HashSet<>(remainingParts);
+        this.allParts = (forceRecollect) ? null : new HashSet<>(remainingParts);
         this.topVer = topVer;
         this.future = new CompletableFuture<>();
-        this.finished = new CountDownLatch(remainingParts.size() + ADDITIONAL_STEPS);
     }
 
     /**
-     * @return Gathering by obsolescence flag.
+     * @return Force recollect flag.
      */
-    public boolean byObsolescence() {
-        return byObsolescence;
+    public boolean forceRecollect() {
+        return forceRecollect;
     }
 
     /**
@@ -140,21 +138,37 @@ public class LocalStatisticsGatheringContext {
     public synchronized boolean partitionNotAvailable(int partId) {
         remainingParts.remove(partId);
 
-        return remainingParts.isEmpty();
+        cancel();
+
+        if (remainingParts.isEmpty()) {
+            future.cancel(true);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void cancel() {
+        cancelled = true;
+    }
+
+    public boolean cancelled() {
+        return cancelled;
     }
 
     /**
      * @return
      */
-    public CompletableFuture<Boolean> future() {
+    public CompletableFuture<Void> future() {
         return future;
     }
 
     /**
-     * @return
+     * @param future
      */
-    public CountDownLatch finished() {
-        return finished;
+    public void future(CompletableFuture<Void> future) {
+        this.future = future;
     }
 
     /**

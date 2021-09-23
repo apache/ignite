@@ -45,42 +45,62 @@ import org.apache.ignite.internal.util.typedef.F;
  * Statistics repository implementation.
  */
 public class IgniteStatisticsRepository {
-    /** */
+    /**
+     *
+     */
     public static final String STAT_PART_DATA_VIEW = "statisticsPartitionData";
 
-    /** */
+    /**
+     *
+     */
     public static final String STAT_PART_DATA_VIEW_DESC = "Statistics per partition data.";
 
-    /** */
+    /**
+     *
+     */
     public static final String STAT_LOCAL_DATA_VIEW = "statisticsLocalData";
 
-    /** */
+    /**
+     *
+     */
     public static final String STAT_LOCAL_DATA_VIEW_DESC = "Statistics local node data.";
 
-    /** Logger. */
+    /**
+     * Logger.
+     */
     private final IgniteLogger log;
 
-    /** Statistics store. */
+    /**
+     * Statistics store.
+     */
     private final IgniteStatisticsStore store;
 
-    /** Local (for current node) object statistics. */
+    /**
+     * Local (for current node) object statistics.
+     */
     private final Map<StatisticsKey, ObjectStatisticsImpl> locStats = new ConcurrentHashMap<>();
 
-    /** Obsolescence for each partition. */
+    /**
+     * Obsolescence for each partition.
+     */
     private final Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = new ConcurrentHashMap<>();
 
-    /** Statistics gathering. */
+    /**
+     * Statistics gathering.
+     */
     private final IgniteStatisticsHelper helper;
 
-    /** Started flag. */
+    /**
+     * Started flag.
+     */
     private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * Constructor.
      *
-     * @param store Ignite statistics store to use.
-     * @param sysViewMgr Grid system view manager.
-     * @param helper IgniteStatisticsHelper.
+     * @param store       Ignite statistics store to use.
+     * @param sysViewMgr  Grid system view manager.
+     * @param helper      IgniteStatisticsHelper.
      * @param logSupplier Ignite logger supplier to get logger from.
      */
     public IgniteStatisticsRepository(
@@ -121,7 +141,7 @@ public class IgniteStatisticsRepository {
     /**
      * Clear partition statistics and obsolescence info for specified object.
      *
-     * @param key Object to clear statistics and obsolescence by.
+     * @param key      Object to clear statistics and obsolescence by.
      * @param colNames if specified - only statistics by specified columns will be cleared.
      */
     public void clearLocalPartitionsStatistics(StatisticsKey key, Set<String> colNames) {
@@ -170,18 +190,24 @@ public class IgniteStatisticsRepository {
      *
      * @param key Object key.
      * @param statistics Statistics to save.
+     * @return Resulted statistics for the given key and partition.
      */
-    public void saveLocalPartitionStatistics(
+    public ObjectPartitionStatisticsImpl saveLocalPartitionStatistics(
         StatisticsKey key,
         ObjectPartitionStatisticsImpl statistics
     ) {
         ObjectPartitionStatisticsImpl oldPartStat = store.getLocalPartitionStatistics(key, statistics.partId());
 
-        if (oldPartStat == null)
-            store.saveLocalPartitionStatistics(key, statistics);
-        else {
+        if (oldPartStat == null) {
+            store.saveLocalPartitionStatistics(key,statistics);
+
+            return statistics;
+        } else {
             ObjectPartitionStatisticsImpl combinedStats = merge(oldPartStat, statistics);
+
             store.saveLocalPartitionStatistics(key, combinedStats);
+
+            return combinedStats;
         }
     }
 
@@ -551,6 +577,19 @@ public class IgniteStatisticsRepository {
             return;
 
         objPartObs.onModified(changedKey);
+    }
+
+    public synchronized List<StatisticsKey> getObsolescenceKeys() {
+        return new ArrayList<>(statObs.keySet());
+    }
+
+    public synchronized IntMap<ObjectPartitionStatisticsObsolescence> getObsolescence(StatisticsKey key) {
+        IntMap<ObjectPartitionStatisticsObsolescence> res = statObs.get(key);
+
+        if (res == null)
+            return new IntHashMap<>(0);
+        else
+            return new IntHashMap<>(res);
     }
 
     /**
