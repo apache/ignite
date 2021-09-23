@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
@@ -608,6 +609,25 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
+        throws IgniteException;
+
+    /**
+     * Gets a remote handle on the service with timeout. If service is available locally,
+     * then local instance is returned and timeout ignored, otherwise, a remote proxy is dynamically
+     * created and provided for the specified service.
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service.
+     * @param sticky Whether or not Ignite should always contact the same remote
+     *      service or try to load-balance between services.
+     * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
+     *  and will limit remote service invocation time.
+     * @param opCtx Service operation context.
+     * @param <T> Service type.
+     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @throws IgniteException If failed to create service proxy.
+     */
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, Map<String, Object> opCtx, long timeout)
         throws IgniteException;
 
     /** {@inheritDoc} */

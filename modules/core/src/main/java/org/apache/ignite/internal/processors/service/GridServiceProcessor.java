@@ -1021,7 +1021,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout)
+        Map<String, Object> execCtx, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -1042,7 +1042,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, execCtx).proxy();
     }
 
     /**

@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -374,8 +375,14 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
+        throws IgniteException {
+        return (T) serviceProxy(name, svcItf, sticky, timeout);
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
-        final long timeout) throws IgniteException {
+        final Map<String, Object> execCtx, final long timeout) throws IgniteException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
@@ -384,7 +391,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, execCtx, timeout);
         }
         finally {
             unguard();

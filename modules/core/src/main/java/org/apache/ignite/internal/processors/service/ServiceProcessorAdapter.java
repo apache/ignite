@@ -120,12 +120,13 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
+     * @param execCtx
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
     public abstract <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout) throws IgniteException;
+        Map<String, Object> execCtx, long timeout) throws IgniteException;
 
     /**
      * @param name Service name.
