@@ -57,8 +57,10 @@ public interface RowHandler<Row> {
         return factory(types);
     }
 
+    /** */
     RowFactory<Row> factory(Type... types);
 
+    /** */
     @SuppressWarnings("PublicInnerClass")
     interface RowFactory<Row> {
         /** */

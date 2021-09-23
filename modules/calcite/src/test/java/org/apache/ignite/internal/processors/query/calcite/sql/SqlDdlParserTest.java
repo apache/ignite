@@ -673,6 +673,7 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         assertParserThrows("kill continuous", SqlParseException.class);
     }
 
+    /** */
     private static String stringValue(SqlLiteral literal) {
         return literal != null ? literal.getValueAs(String.class) : null;
     }

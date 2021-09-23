@@ -26,17 +26,37 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
  *
  */
 public enum MessageType {
+    /** */
     QUERY_START_REQUEST(300, QueryStartRequest::new),
+
+    /** */
     QUERY_START_RESPONSE(301, QueryStartResponse::new),
+
+    /** */
     QUERY_ERROR_MESSAGE(302, ErrorMessage::new),
+
+    /** */
     QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
+
+    /** */
     QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
+
+    /** */
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
+
+    /** */
     QUERY_OUTBOX_CANCEL_MESSAGE(306, OutboxCloseMessage::new),
+
+    /** */
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
 
+    /** */
     FRAGMENT_MAPPING(350, FragmentMapping::new),
+
+    /** */
     COLOCATION_GROUP(351, ColocationGroup::new),
+
+    /** */
     FRAGMENT_DESCRIPTION(352, FragmentDescription::new);
 
     /** */

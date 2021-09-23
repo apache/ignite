@@ -464,4 +464,34 @@ BOOST_AUTO_TEST_CASE(CreateTableInsertSelect)
     CheckCursorEmpty(cursor);
 }
 
+
+/**
+ * Test that null value can be inserted using SQL query.
+ */
+BOOST_AUTO_TEST_CASE(TestInsertNull)
+{
+    const int64_t testKey(111);
+    SqlFieldsQuery insertPersonQry("INSERT INTO TestType(_key, strField, i32Field) VALUES(?, ?, ?)");
+
+    insertPersonQry.AddArgument<int64_t>(testKey);
+    insertPersonQry.AddArgument<std::string*>(0);
+    insertPersonQry.AddArgument<int32_t*>(0);
+
+    cacheAllFields.Query(insertPersonQry);
+
+    SqlFieldsQuery select("Select _key from TestType WHERE strField is NULL AND i32Field is NULL");
+
+    QueryFieldsCursor cursor = cacheAllFields.Query(select);
+
+    BOOST_CHECK(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_CHECK(row.HasNext());
+    BOOST_CHECK_EQUAL(row.GetNext<int64_t>(), testKey);
+    CheckRowCursorEmpty(row);
+
+    CheckCursorEmpty(cursor);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

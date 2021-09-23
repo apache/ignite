@@ -73,7 +73,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      * @param topVer Topology version.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
@@ -85,7 +84,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         @NotNull AffinityTopologyVersion topVer,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        @Nullable UUID subjId,
         int taskNameHash,
         byte flags,
         boolean addDepInfo
@@ -96,7 +94,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             topVer,
             syncMode,
             op,
-            subjId,
             taskNameHash,
             flags,
             addDepInfo
@@ -247,13 +244,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         }
 
         switch (writer.state()) {
-            case 11:
+            case 10:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -275,7 +272,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 10:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -283,7 +280,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -311,7 +308,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 12;
     }
 
     /** {@inheritDoc} */

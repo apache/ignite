@@ -54,4 +54,7 @@ public enum KillSubcommand {
 
     /** Kill snapshot operation. */
     SNAPSHOT,
+
+    /** Kill consistency tasks. */
+    CONSISTENCY,
 }

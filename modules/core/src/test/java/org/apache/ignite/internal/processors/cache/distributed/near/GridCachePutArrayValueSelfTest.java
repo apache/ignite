@@ -41,6 +41,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
         return 4;
     }
 
+    /** {@inheritDoc} */
     @Override protected void initStoreStrategy() throws IgniteCheckedException {
         if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
             return;
@@ -84,6 +85,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /** Test key without {@link GridCacheInternal} parent interface. */
     @SuppressWarnings("PublicInnerClass")
     public static class InternalKey implements Externalizable, GridCacheInternal {
+        /** */
         private long key;
 
         /**

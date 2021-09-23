@@ -710,8 +710,13 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
     /** */
     private enum PreloadMode {
-        /** Sync. */ SYNC,
-        /** Async. */ASYNC,
-        /** Local. */LOCAL;
+        /** Sync. */
+        SYNC,
+
+        /** Async. */
+        ASYNC,
+
+        /** Local. */
+        LOCAL;
     }
 }

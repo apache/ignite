@@ -83,6 +83,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     /** */
     private RelDataType tbl1rt;
 
+    /** */
     private Set<String> tbl1NumericFields = new HashSet<>();
 
     /** Base table with all types. */

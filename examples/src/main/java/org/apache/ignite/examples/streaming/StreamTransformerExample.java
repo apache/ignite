@@ -49,6 +49,7 @@ public class StreamTransformerExample {
     /** Cache name. */
     private static final String CACHE_NAME = "randomNumbers";
 
+    /** @param args Command line arguments. */
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);

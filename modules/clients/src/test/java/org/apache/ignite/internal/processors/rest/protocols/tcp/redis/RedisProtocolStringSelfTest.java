@@ -537,6 +537,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         });
     }
 
+    /** */
     private void testExpire(Expiration exp) throws Exception {
         try (Jedis jedis = pool.getResource()) {
             jedis.set("k1", "v1");
@@ -555,7 +556,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
+    /** */
     private interface Expiration {
+        /** */
         long expire(Jedis jedis, String key);
     }
 }

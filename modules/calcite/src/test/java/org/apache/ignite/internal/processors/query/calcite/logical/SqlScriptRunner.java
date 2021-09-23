@@ -415,6 +415,7 @@ public class SqlScriptRunner {
 
     /** */
     private class Query extends Command {
+        /** */
         @GridToStringInclude
         List<ColumnType> resTypes = new ArrayList<>();
 
@@ -674,21 +675,34 @@ public class SqlScriptRunner {
 
     /** */
     private enum ExpectedStatementStatus {
+        /** */
         OK,
+
+        /** */
         ERROR
     }
 
     /** */
     private enum ColumnType {
+        /** */
         I,
+
+        /** */
         T,
+
+        /** */
         R
     }
 
     /** */
     private enum SortType {
+        /** */
         ROWSORT,
+
+        /** */
         VALUESORT,
+
+        /** */
         NOSORT
     }
 }

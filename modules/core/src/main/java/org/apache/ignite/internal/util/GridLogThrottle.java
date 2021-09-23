@@ -265,6 +265,7 @@ public class GridLogThrottle {
     private enum LogLevel {
         /** Error level. */
         ERROR {
+            /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (e != null)
                     U.error(log, msg, e);
@@ -275,6 +276,7 @@ public class GridLogThrottle {
 
         /** Warn level. */
         WARN {
+            /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
                     U.quietAndWarn(log, msg, e);
@@ -285,6 +287,7 @@ public class GridLogThrottle {
 
         /** Info level. */
         INFO {
+            /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
                     U.quietAndInfo(log, msg);

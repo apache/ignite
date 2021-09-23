@@ -63,7 +63,7 @@ public class GetMasterKeyNameCommand extends AbstractCommand<Void> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Print the current master key name:", ENCRYPTION, GET_MASTER_KEY_NAME.toString());
+        usage(log, "Print the current master key name:", ENCRYPTION, GET_MASTER_KEY_NAME.toString());
     }
 
     /** {@inheritDoc} */

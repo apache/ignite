@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+/** */
 public class GridCacheDhtPreloadOnheapSelfTest extends GridCacheDhtPreloadSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {

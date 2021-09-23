@@ -22,7 +22,12 @@ package org.apache.ignite.platform;
  */
 public enum PlatformComputeEnum
 {
+    /** */
     FOO,
+
+    /** */
     BAR,
+
+    /** */
     BAZ
 }

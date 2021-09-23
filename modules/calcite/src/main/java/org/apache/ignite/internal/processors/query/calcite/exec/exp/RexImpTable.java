@@ -713,6 +713,7 @@ public class RexImpTable {
         /** Return true if result is not null, false if result is null. */
         IS_NOT_NULL;
 
+        /** */
         public static NullAs of(boolean nullable) {
             return nullable ? NULL : NOT_POSSIBLE;
         }
@@ -2502,6 +2503,7 @@ public class RexImpTable {
 
     /** Implementor for the {@code REGEXP_REPLACE} function. */
     private static class RegexpReplaceImplementor extends AbstractRexCallImplementor {
+        /** Implementors. */
         private final AbstractRexCallImplementor[] implementors = {
             new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE3.method, nullPolicy),
             new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE4.method, nullPolicy),
@@ -2514,6 +2516,7 @@ public class RexImpTable {
             super(NullPolicy.STRICT, false);
         }
 
+        /** {@inheritDoc} */
         @Override String getVariableName() {
             return "regexp_replace";
         }

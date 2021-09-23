@@ -189,6 +189,7 @@ public abstract class IgniteCollectionsClusterReadOnlyAbstractTest extends GridC
         }
     }
 
+    /** */
     private void commonChecks() {
         igniteCollections.forEach(c -> assertEquals(name(c), COLLECTION_SIZE, c.size()));
         igniteCollections.forEach(c -> assertTrue(name(c), c.containsAll(Arrays.asList(ELEM, name(c)))));

@@ -234,7 +234,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
             m.explicitLock(),
-            tx.subjectId(),
             tx.taskNameHash(),
             false,
             true,

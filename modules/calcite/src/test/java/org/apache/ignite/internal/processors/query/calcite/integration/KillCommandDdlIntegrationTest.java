@@ -68,7 +68,6 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -269,6 +268,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         executeSql(client, "KILL CONTINUOUS '" + grid(0).localNode().id() + "' '" + UUID.randomUUID() + "'");
     }
 
+    /** */
     private static List<Ignite> servers() {
         return G.allGrids().stream().filter(g -> !g.cluster().localNode().isClient()).collect(Collectors.toList());
     }

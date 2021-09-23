@@ -67,11 +67,11 @@ public class SecurityAwareStripedExecutor extends StripedExecutor {
 
     /** {@inheritDoc} */
     @Override public void execute(int idx, Runnable cmd) {
-        super.execute(idx, cmd == null ? null : new SecurityAwareRunnable(security, cmd));
+        super.execute(idx, SecurityAwareRunnable.of(security, cmd));
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(cmd == null ? null : new SecurityAwareRunnable(security, cmd));
+        super.execute(SecurityAwareRunnable.of(security, cmd));
     }
 }

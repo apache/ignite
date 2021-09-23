@@ -21,7 +21,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -149,12 +151,14 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException if IO failed.
      */
     public PdsFolderSettings<L> resolve() throws IgniteCheckedException {
-        final File pstStoreBasePath = resolvePersistentStoreBasePath();
+        boolean clientMode = cfg.isClientMode() == TRUE || cfg.isDaemon();
+
+        final File pstStoreBasePath = resolvePersistentStoreBasePath(clientMode);
 
         if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
-        if (cfg.isClientMode() == TRUE || cfg.isDaemon())
+        if (clientMode)
             return new PdsFolderSettings<>(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
@@ -215,7 +219,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException In case of error.
      */
     public PdsFolderSettings<L> generateNew() throws IgniteCheckedException {
-        final File pstStoreBasePath = resolvePersistentStoreBasePath();
+        final File pstStoreBasePath = resolvePersistentStoreBasePath(false);
 
         // was not able to find free slot, allocating new
         try (final L rootDirLock = lockRootDirectory(pstStoreBasePath)) {
@@ -270,9 +274,11 @@ public class PdsFolderResolver<L extends FileLockHolder> {
 
         res.a(params.size);
         res.a(" bytes, modified ");
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
 
-        res.a(simpleDateFormat.format(params.lastModified));
+        DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm a").withZone(ZoneId.systemDefault());
+
+        res.a(formatter.format(Instant.ofEpochMilli(params.lastModified)));
         res.a(" ");
 
         return res.toString();
@@ -415,15 +421,16 @@ public class PdsFolderResolver<L extends FileLockHolder> {
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
+     * @param clientMode {@code True} if client node.
      * @throws IgniteCheckedException if I/O failed.
      */
-    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+    @Nullable private File resolvePersistentStoreBasePath(boolean clientMode) throws IgniteCheckedException {
         final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (dsCfg == null)
             return null;
 
-        final String pstPath = dsCfg.getStoragePath();
+        final String pstPath = clientMode ? null : dsCfg.getStoragePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),
