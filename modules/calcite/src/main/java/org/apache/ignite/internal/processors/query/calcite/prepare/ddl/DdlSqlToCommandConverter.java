@@ -225,6 +225,7 @@ public class DdlSqlToCommandConverter {
         else { // CREATE AS SELECT.
             ValidationResult res = planner.validateAndGetTypeMetadata(createTblNode.query());
 
+            // Create INSERT node on top of AS SELECT node.
             SqlInsert sqlInsert = new SqlInsert(
                 createTblNode.query().getParserPosition(),
                 SqlNodeList.EMPTY,
@@ -233,7 +234,7 @@ public class DdlSqlToCommandConverter {
                 null
             );
 
-            createTblCmd.query(sqlInsert);
+            createTblCmd.insertStatement(sqlInsert);
 
             List<RelDataTypeField> fields = res.dataType().getFieldList();
             List<ColumnDefinition> cols = new ArrayList<>(fields.size());

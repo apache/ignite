@@ -660,16 +660,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ", err=" + e.getMessage() + ']', e);
         }
 
-        if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).query() != null) {
-            SqlNode qry = ((CreateTableCommand)plan.command()).query();
-
-            assert qry instanceof SqlInsert;
+        if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).insertStatement() != null) {
+            SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
             try {
                 // Create new planning context containing created table in the schema.
                 PlanningContext dmlCtx = createContext(pctx, pctx.schemaName(), pctx.query(), pctx.parameters());
 
-                QueryPlan dmlPlan = prepareDml(qry, dmlCtx);
+                QueryPlan dmlPlan = prepareDml(insertStmt, dmlCtx);
 
                 return executePlan(qryId, dmlCtx, dmlPlan);
             }

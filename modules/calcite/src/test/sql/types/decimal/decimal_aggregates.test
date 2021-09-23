@@ -70,6 +70,14 @@ NULL
 statement ok
 CREATE TABLE decimals AS SELECT x::DECIMAL(4,1) AS d1, (x * x)::DECIMAL(9,1) AS d2, (x * x * x)::DECIMAL(18,1) AS d3, (x * x * x * x)::DECIMAL(38,1) AS d4 FROM table(system_range(1, 999));
 
+query IIII
+SELECT SUM(d1)::VARCHAR, SUM(d2)::VARCHAR, SUM(d3)::VARCHAR, SUM(d4)::VARCHAR FROM decimals;
+----
+499500.0
+332833500.0
+249500250000.0
+199500333333300.0
+
 statement ok
 INSERT INTO decimals VALUES ('0.1', '0.1', '0.1', '0.1'), ('0.2', '0.2', '0.2', '0.2')
 
