@@ -86,6 +86,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
@@ -1106,7 +1107,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(4, res.size());
 
-        String expBltNodes = String.valueOf(asList(node0, node1));
+        String expBltNodes = toStringSafe(asList(node0, node1));
 
         assertTrue(res.stream().map(l -> l.get(2)).allMatch(expBltNodes::equals));
 
@@ -1121,7 +1122,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname0::equals));
 
-        String expCacheGrps = String.valueOf(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME));
+        String expCacheGrps = toStringSafe(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME));
 
         assertTrue(res.stream().map(l -> l.get(1)).allMatch(expCacheGrps::equals));
     }

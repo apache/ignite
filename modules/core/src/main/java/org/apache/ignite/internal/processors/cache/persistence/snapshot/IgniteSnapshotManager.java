@@ -2562,8 +2562,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     return new SnapshotView(meta.snapshotName(),
                         meta.consistentId(),
-                        String.valueOf(meta.baselineNodes()),
-                        String.valueOf(cacheGrps));
+                        toStringSafe(meta.baselineNodes()),
+                        toStringSafe(cacheGrps));
                 }).collect(Collectors.toList());
             }
         }
