@@ -65,7 +65,7 @@ public class SchemaUtils {
             final ColumnView newColView = newTbl.columns().get(s);
             final ColumnView oldColView = oldTbl.columns().get(s);
 
-            if (oldColView == null) {
+            if (oldColView == null && newColView != null) {
                 final Column newCol = newDesc.column(newColView.name());
 
                 assert !newDesc.isKeyColumn(newCol.schemaIndex());
@@ -75,7 +75,7 @@ public class SchemaUtils {
 
                 mapper.add(newCol); // New column added.
             }
-            else {
+            else if (newColView != null) {
                 final Column newCol = newDesc.column(newColView.name());
                 final Column oldCol = oldDesc.column(oldColView.name());
 

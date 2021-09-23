@@ -534,7 +534,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                             );
 
                                             descriptor.columnMapping(SchemaUtils.columnMapper(
-                                                tablesById.get(tblId).schemaRegistry().schema(currTableView.schemas().size() - 1),
+                                                tablesById.get(tblId).schemaRegistry().schema(currTableView.schemas().size()),
                                                 currTableView,
                                                 descriptor,
                                                 tblCh
