@@ -409,6 +409,61 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testGetAllView() throws Exception {
+        testGetTables(
+            new String[] {"VIEW"},
+            new HashSet<>(Arrays.asList(
+                "SYS.METRICS",
+                "SYS.SERVICES",
+                "SYS.CACHE_GROUPS",
+                "SYS.CACHES",
+                "SYS.TASKS",
+                "SYS.JOBS",
+                "SYS.SQL_QUERIES_HISTORY",
+                "SYS.NODES",
+                "SYS.SCHEMAS",
+                "SYS.NODE_METRICS",
+                "SYS.BASELINE_NODES",
+                "SYS.BASELINE_NODE_ATTRIBUTES",
+                "SYS.INDEXES",
+                "SYS.LOCAL_CACHE_GROUPS_IO",
+                "SYS.SQL_QUERIES",
+                "SYS.SCAN_QUERIES",
+                "SYS.NODE_ATTRIBUTES",
+                "SYS.TABLES",
+                "SYS.CLIENT_CONNECTIONS",
+                "SYS.TRANSACTIONS",
+                "SYS.VIEWS",
+                "SYS.TABLE_COLUMNS",
+                "SYS.VIEW_COLUMNS",
+                "SYS.CONTINUOUS_QUERIES",
+                "SYS.STRIPED_THREADPOOL_QUEUE",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE",
+                "SYS.CACHE_GROUP_PAGE_LISTS",
+                "SYS.DATA_REGION_PAGE_LISTS",
+                "SYS.PARTITION_STATES",
+                "SYS.BINARY_METADATA",
+                "SYS.DISTRIBUTED_METASTORAGE",
+                "SYS.DS_QUEUES",
+                "SYS.DS_SETS",
+                "SYS.DS_ATOMICSEQUENCES",
+                "SYS.DS_ATOMICLONGS",
+                "SYS.DS_ATOMICREFERENCES",
+                "SYS.DS_ATOMICSTAMPED",
+                "SYS.DS_COUNTDOWNLATCHES",
+                "SYS.DS_SEMAPHORES",
+                "SYS.DS_REENTRANTLOCKS",
+                "SYS.STATISTICS_LOCAL_DATA",
+                "SYS.STATISTICS_PARTITION_DATA",
+                "SYS.STATISTICS_CONFIGURATION"
+            ))
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void testGetTables(String[] tblTypes, Set<String> expTbls) throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();

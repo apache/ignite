@@ -263,10 +263,88 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) {
-        if (ctx.config().isDaemon() || !active)
+        if (ctx.config().isDaemon())
             return;
 
-        registerSystemViews();
+        ctx.systemView().registerView(
+            SEQUENCES_VIEW,
+            SEQUENCES_VIEW_DESC,
+            new AtomicSequenceViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
+            AtomicSequenceView::new
+        );
+
+        ctx.systemView().registerView(
+            LONGS_VIEW,
+            LONGS_VIEW_DESC,
+            new AtomicLongViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicLong),
+            AtomicLongView::new
+        );
+
+        ctx.systemView().registerView(
+            REFERENCES_VIEW,
+            REFERENCES_VIEW_DESC,
+            new AtomicReferenceViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicReference),
+            AtomicReferenceView::new
+        );
+
+        ctx.systemView().registerView(
+            STAMPED_VIEW,
+            STAMPED_VIEW_DESC,
+            new AtomicStampedViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
+            AtomicStampedView::new
+        );
+
+        ctx.systemView().registerView(
+            LATCHES_VIEW,
+            LATCHES_VIEW_DESC,
+            new CountDownLatchViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteCountDownLatch),
+            CountDownLatchView::new
+        );
+
+        ctx.systemView().registerView(
+            SEMAPHORES_VIEW,
+            SEMAPHORES_VIEW_DESC,
+            new SemaphoreViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteSemaphore),
+            SemaphoreView::new
+        );
+
+        ctx.systemView().registerView(
+            LOCKS_VIEW,
+            LOCKS_VIEW_DESC,
+            new ReentrantLockViewWalker(),
+            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteLock),
+            ReentrantLockView::new
+        );
+
+        ctx.systemView().registerInnerCollectionView(
+            QUEUES_VIEW,
+            QUEUES_VIEW_DESC,
+            new QueueViewWalker(),
+            new TransformCollectionView<>(
+                ctx.cache().cacheDescriptors().values(),
+                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
+                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
+            cctx -> cctx.queues().values(),
+            (cctx, queue) -> new QueueView(queue)
+        );
+
+        ctx.systemView().registerInnerCollectionView(
+            SETS_VIEW,
+            SETS_VIEW_DESC,
+            new SetViewWalker(),
+            F.viewReadOnly(
+                ctx.cache().cacheDescriptors().values(),
+                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
+                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
+            cctx -> cctx.sets().values(),
+            (cctx, set) -> new SetView(set)
+        );
 
         onKernalStart0();
     }
@@ -359,92 +437,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         restoreStructuresState(ctx);
 
-        registerSystemViews();
-
         onKernalStart0();
-    }
-
-    /** Registers system views. */
-    private void registerSystemViews() {
-        ctx.systemView().registerView(
-            SEQUENCES_VIEW,
-            SEQUENCES_VIEW_DESC,
-            new AtomicSequenceViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicSequence),
-            AtomicSequenceView::new
-        );
-
-        ctx.systemView().registerView(
-            LONGS_VIEW,
-            LONGS_VIEW_DESC,
-            new AtomicLongViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicLong),
-            AtomicLongView::new
-        );
-
-        ctx.systemView().registerView(
-            REFERENCES_VIEW,
-            REFERENCES_VIEW_DESC,
-            new AtomicReferenceViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicReference),
-            AtomicReferenceView::new
-        );
-
-        ctx.systemView().registerView(
-            STAMPED_VIEW,
-            STAMPED_VIEW_DESC,
-            new AtomicStampedViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteAtomicStamped),
-            AtomicStampedView::new
-        );
-
-        ctx.systemView().registerView(
-            LATCHES_VIEW,
-            LATCHES_VIEW_DESC,
-            new CountDownLatchViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteCountDownLatch),
-            CountDownLatchView::new
-        );
-
-        ctx.systemView().registerView(
-            SEMAPHORES_VIEW,
-            SEMAPHORES_VIEW_DESC,
-            new SemaphoreViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteSemaphore),
-            SemaphoreView::new
-        );
-
-        ctx.systemView().registerView(
-            LOCKS_VIEW,
-            LOCKS_VIEW_DESC,
-            new ReentrantLockViewWalker(),
-            new PredicateCollectionView<>(dsMap.values(), v -> v instanceof IgniteLock),
-            ReentrantLockView::new
-        );
-
-        ctx.systemView().registerInnerCollectionView(
-            QUEUES_VIEW,
-            QUEUES_VIEW_DESC,
-            new QueueViewWalker(),
-            new TransformCollectionView<>(
-                ctx.cache().cacheDescriptors().values(),
-                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
-                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
-            cctx -> cctx.queues().values(),
-            (cctx, queue) -> new QueueView(queue)
-        );
-
-        ctx.systemView().registerInnerCollectionView(
-            SETS_VIEW,
-            SETS_VIEW_DESC,
-            new SetViewWalker(),
-            F.viewReadOnly(
-                ctx.cache().cacheDescriptors().values(),
-                desc -> ctx.cache().cache(desc.cacheName()).context().dataStructures(),
-                desc -> desc.cacheType() == CacheType.DATA_STRUCTURES),
-            cctx -> cctx.sets().values(),
-            (cctx, set) -> new SetView(set)
-        );
     }
 
     /**
