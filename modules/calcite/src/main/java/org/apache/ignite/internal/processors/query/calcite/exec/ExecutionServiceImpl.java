@@ -35,6 +35,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
+import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
@@ -84,7 +86,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -95,7 +96,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -114,7 +114,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
-import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHelper.makeCreateTableAsSelectPlan;
 import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHelper.optimize;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
@@ -574,16 +573,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private QueryPlan prepareDdl(SqlNode sqlNode, PlanningContext ctx) {
         assert sqlNode instanceof SqlDdl : sqlNode == null ? "null" : sqlNode.getClass().getName();
 
-        DdlCommand cmd = ddlConverter.convert((SqlDdl)sqlNode, ctx);
-
-        if (cmd instanceof CreateTableCommand && ((CreateTableCommand)cmd).query() != null) {
-            IgniteRel igniteRel = makeCreateTableAsSelectPlan((CreateTableCommand)cmd, ctx, log, schemaHolder);
-
-            return new MultiStepDdlPlan(cmd, queryTemplate(igniteRel),
-                queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
-        }
-
-        return new MultiStepDdlPlan(cmd);
+        return new DdlPlan(ddlConverter.convert((SqlDdl)sqlNode, ctx));
     }
 
     /** */
@@ -653,7 +643,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return executeExplain((ExplainPlan)plan, pctx);
 
             case DDL:
-                return executeDdl(qryId, (MultiStepDdlPlan)plan, pctx);
+                return executeDdl(qryId, (DdlPlan)plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
@@ -661,7 +651,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeDdl(UUID qryId, MultiStepDdlPlan plan, PlanningContext pctx) {
+    private FieldsQueryCursor<List<?>> executeDdl(UUID qryId, DdlPlan plan, PlanningContext pctx) {
         try {
             ddlCmdHnd.handle(qryId, plan.command(), pctx);
         }
@@ -670,8 +660,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ", err=" + e.getMessage() + ']', e);
         }
 
-        if (plan.hasQuery())
-            return mapAndExecutePlan(qryId, plan, pctx.unwrap(BaseQueryContext.class), pctx.parameters());
+        if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).query() != null) {
+            SqlNode qry = ((CreateTableCommand)plan.command()).query();
+
+            assert qry instanceof SqlInsert;
+
+            try {
+                // Create new planning context containing created table in the schema.
+                PlanningContext dmlCtx = createContext(pctx, pctx.schemaName(), pctx.query(), pctx.parameters());
+
+                QueryPlan dmlPlan = prepareDml(qry, dmlCtx);
+
+                return executePlan(qryId, dmlCtx, dmlPlan);
+            }
+            catch (ValidationException e) {
+                throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
+            }
+        }
         else
             return H2Utils.zeroCursor();
     }

@@ -32,6 +32,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -152,8 +153,11 @@ public class DdlSqlToCommandConverter {
     private CreateTableCommand convertCreateTable(IgniteSqlCreateTable createTblNode, PlanningContext ctx) {
         CreateTableCommand createTblCmd = new CreateTableCommand();
 
-        createTblCmd.schemaName(deriveSchemaName(createTblNode.name(), ctx));
-        createTblCmd.tableName(deriveObjectName(createTblNode.name(), ctx, "tableName"));
+        String schemaName = deriveSchemaName(createTblNode.name(), ctx);
+        String tableName = deriveObjectName(createTblNode.name(), ctx, "tableName");
+
+        createTblCmd.schemaName(schemaName);
+        createTblCmd.tableName(tableName);
         createTblCmd.ifNotExists(createTblNode.ifNotExists());
         createTblCmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
 
@@ -221,7 +225,15 @@ public class DdlSqlToCommandConverter {
         else { // CREATE AS SELECT.
             ValidationResult res = planner.validateAndGetTypeMetadata(createTblNode.query());
 
-            createTblCmd.query(res.sqlNode());
+            SqlInsert sqlInsert = new SqlInsert(
+                createTblNode.query().getParserPosition(),
+                SqlNodeList.EMPTY,
+                createTblNode.name(),
+                res.sqlNode(),
+                null
+            );
+
+            createTblCmd.query(sqlInsert);
 
             List<RelDataTypeField> fields = res.dataType().getFieldList();
             List<ColumnDefinition> cols = new ArrayList<>(fields.size());
