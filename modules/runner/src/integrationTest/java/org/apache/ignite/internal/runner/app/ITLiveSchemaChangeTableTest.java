@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.table.SchemaMismatchException;
+import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.table.Table;

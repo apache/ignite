@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.ignite.app.Ignite;
-import org.apache.ignite.internal.table.SchemaMismatchException;
+import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.schema.Column;
 import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
