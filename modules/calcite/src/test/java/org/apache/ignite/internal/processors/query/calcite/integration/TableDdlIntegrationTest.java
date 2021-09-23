@@ -328,6 +328,22 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals("CacheGroup", cache.getConfiguration(CacheConfiguration.class).getGroupName());
     }
 
+    /**
+     * Creates table as select with dynamic parameters to query.
+     */
+    @Test
+    public void createTableAsSelectWithParameters() {
+        executeSql("create table my_table(s, i) as select cast(? as varchar), cast(? as int)", "a", 1);
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals("a", row.get(0));
+        assertEquals(1, row.get(1));
+    }
+
     /** */
     @Test
     public void createTableAsSelectWrongColumnsCount() {
