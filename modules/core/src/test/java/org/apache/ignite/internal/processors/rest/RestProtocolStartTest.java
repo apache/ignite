@@ -73,7 +73,9 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
                     .setPort(BINARY_PORT) : null);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void test() throws Exception {
         Ignite ignite = startGrids(2);

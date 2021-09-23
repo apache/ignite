@@ -54,7 +54,7 @@ public class TestFailureSimulatorTcpDiscoverySpi extends TcpDiscoverySpi {
      * @param delay     Milliseconds of awaiting before raising {@code SocketTimeoutException}.
      * @see SocketWrap#simulateTimeout(boolean)
      */
-    public synchronized void setNetworkTimeout(int direction, int delay) {
+    public synchronized void simulateNetworkTimeout(int direction, int delay) {
         if (timeout != null)
             throw new IllegalStateException("Failure simulation is already set.");
 
@@ -63,11 +63,16 @@ public class TestFailureSimulatorTcpDiscoverySpi extends TcpDiscoverySpi {
         this.direction = direction;
     }
 
+    /** TODO */
+    public synchronized void disableNetworkTimeoutSimalation() {
+        timeout = null;
+    }
+
     /**
      * If enabled and required, simulates network timeout and  raises {@code SocketTimeoutException}.
      *
      * @param read If {@code true}, the operation is considered as reading. Otherwise, as writting.
-     * @see #setNetworkTimeout(int, int)
+     * @see #simulateNetworkTimeout(int, int)
      */
     private void simulateTimeout(boolean read) throws SocketTimeoutException {
         if (timeout == null || read && direction > 0 || !read && direction < 0)

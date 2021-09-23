@@ -3630,6 +3630,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         }
                                     }
 
+                                    if (leftAlone) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Node has quit left-alone state due to a new connection established.");
+
+                                        leftAlone = false;
+                                    }
+
                                     updateLastSentMessageTime();
 
                                     if (log.isDebugEnabled())
@@ -3955,8 +3962,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert next == null : next;
 
                     synchronized (mux) {
-                        if (spiState == CONNECTED && failedNodes.size() == ring.serverNodes().size() - 1)
+                        if (spiState == CONNECTED && failedNodes.size() == ring.serverNodes().size() - 1) {
                             leftAlone = true;
+
+                            U.warn(log, "Current node has failed restoring connection to the cluster and entered the left-alone " +
+                                "state. An unexpected incoming message will stop this node because there is no recipient to resend the " +
+                                "message to. The ring could be blocked.");
+                        }
                     }
 
                     if (log.isDebugEnabled())
@@ -6573,8 +6585,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        leftAlone = false;
-
         lastRingMsgSentTime = System.nanoTime();
     }
 
@@ -7106,7 +7116,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             debugLog(msg, "Message has been received: " + msg);
 
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
-                            ringMessageReceived();
+                            ringMessageReceived(msg);
 
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
@@ -7295,7 +7305,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
                         else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
-                            ringMessageReceived();
+                            ringMessageReceived(msg);
 
                             if (log.isInfoEnabled())
                                 log.info("Latency check message has been read: " + msg.id());
@@ -7308,7 +7318,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
                             metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
                         else {
-                            ringMessageReceived();
+                            ringMessageReceived(msg);
 
                             msgWorker.addMessage(msg, false, true);
                         }
@@ -7405,14 +7415,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Update last ring message received timestamp.
          */
-        private void ringMessageReceived() {
+        private void ringMessageReceived(TcpDiscoveryAbstractMessage msg) {
             lastRingMsgReceivedTime = System.nanoTime();
 
-            if (leftAlone) {
-                synchronized (mux) {
-                    if (leftAlone)
-                        segmentLocalNodeOnSendFail(failedNodes.keySet());
-                }
+            if (leftAlone && !msg.client()) {
+                U.warn(log, "Received an unexpected message [" + msg + "] while current node is in the left-alone state. " +
+                    "The node sees no cluster and cannot resend any message. It segments to avoid traffic blocking.");
+
+                segmentLocalNodeOnSendFail(null);
             }
         }
 
