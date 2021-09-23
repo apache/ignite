@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +52,7 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -60,16 +62,20 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.commandline.cache.CacheDestroy;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -88,6 +94,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -101,6 +108,9 @@ import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.cache.CacheDestroy.CACHE_NAMES_ARG;
+import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_ALL_ARG;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -1120,6 +1130,103 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "--groups"));
 
         assertContains(log, testOut.toString(), "G100");
+    }
+
+    /** */
+    @Test
+    public void testCacheDestroy() throws IgniteCheckedException {
+        String warningMsgPrefix = "Warning! The command will destroy";
+        String requiredArgsMsg =
+            "One of \"" + CACHE_NAMES_ARG + "\" or \"" + DESTROY_ALL_ARG + "\" is expected.";
+
+        // Create some internal caches.
+        CacheConfiguration<Object, Object> internalCfg = new CacheConfiguration<>("temp-internal-cache");
+        crd.context().cache().dynamicStartCache(internalCfg, internalCfg.getName(), null, CacheType.INTERNAL, false,
+            true, true, false).get(getTestTimeout());
+        crd.countDownLatch("structure", 1, true, true);
+
+        long internalCachesCnt = crd.context().cache().cacheDescriptors().values().stream().filter(
+            desc -> desc.cacheType() == CacheType.INTERNAL || desc.cacheType() == CacheType.DATA_STRUCTURES).count();
+        assertTrue("Caches count: " + internalCachesCnt, internalCachesCnt >= 2);
+
+        autoConfirmation = false;
+        injectTestSystemOut();
+
+        // No arguments.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text()));
+        assertContains(log, testOut.toString(), requiredArgsMsg);
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        // No required argument.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX"));
+        assertContains(log, testOut.toString(), "Invalid argument \"cacheX\". " + requiredArgsMsg);
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        // Invalid arguments.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X", DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), "Invalid argument \"" + DESTROY_ALL_ARG);
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "X"));
+        assertContains(log, testOut.toString(), "Invalid argument \"X\"");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X,Y", "Z"));
+        assertContains(log, testOut.toString(), "Invalid argument \"Z\"");
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        // No user caches.
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), CacheDestroy.NOOP_MSG);
+        assertNotContains(log, testOut.toString(), warningMsgPrefix);
+
+        // Create user caches.
+        Set<String> cacheNames = new TreeSet<>();
+        cacheNames.addAll(createCaches(0, 10, null));
+        cacheNames.addAll(createCaches(10, 5, "shared1"));
+        cacheNames.addAll(createCaches(15, 5, "shared2"));
+
+        String expConfirmation = String.format(CacheDestroy.CONFIRM_MSG,
+            cacheNames.size(), S.joinToString(cacheNames, ", ", "..", 80, 0));
+
+        // Ensure we cannot delete a cache groups.
+        injectTestSystemIn(CONFIRM_MSG);
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "shared1,shared2"));
+        assertTrue(crd.cacheNames().containsAll(cacheNames));
+
+        // Destroy all user-created caches.
+        injectTestSystemIn(CONFIRM_MSG);
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), expConfirmation);
+        assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
+
+        autoConfirmation = true;
+
+        // Sql-cache.
+        String qry = "CREATE TABLE Person (id LONG PRIMARY KEY, name VARCHAR) WITH \"CACHE_NAME=sql-cache\";";
+        crd.context().query().querySqlFields(new SqlFieldsQuery(qry).setSchema("PUBLIC"), false, false);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), String.format(CacheDestroy.RESULT_MSG, "sql-cache"));
+        assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
+    }
+
+    /**
+     * @param off Name index offset.
+     * @param cnt Count.
+     * @param grpName Group name.
+     * @return List of cache names.
+     */
+    @SuppressWarnings("rawtypes")
+    private Collection<String> createCaches(int off, int cnt, String grpName) {
+        Collection<CacheConfiguration> cfgs = new ArrayList<>(cnt);
+
+        for (int i = off; i < off + cnt; i++)
+            cfgs.add(new CacheConfiguration<>().setGroupName(grpName).setName("tmp-cache-" + String.format("%02d", i)));
+
+        crd.createCaches(cfgs);
+
+        return F.viewReadOnly(cfgs, CacheConfiguration::getName);
     }
 
     /** */
