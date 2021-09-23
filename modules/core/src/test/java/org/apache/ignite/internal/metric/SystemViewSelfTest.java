@@ -68,6 +68,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
@@ -130,6 +131,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
+import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
@@ -2049,13 +2051,13 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testViewPds() throws Exception {
+    public void testViewsPds() throws Exception {
         testViews(true);
     }
 
     /** */
     @Test
-    public void testViewInMemory() throws Exception {
+    public void testViewsInMemory() throws Exception {
         testViews(false);
     }
 
@@ -2098,13 +2100,32 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             SEQUENCES_VIEW
         ));
 
+        if (INDEXING.inClassPath()) {
+            expViews.addAll(Arrays.asList(
+                "sql.queries",
+                "statistics.configuration",
+                "statisticsPartitionData",
+                "tables",
+                "indexes",
+                "views",
+                "view.columns",
+                "sql.queries.history",
+                "statisticsLocalData",
+                "table.columns",
+                "schemas")
+            );
+        }
+
         if (persistenceEnabled)
             expViews.add(METASTORE_VIEW);
 
         try (IgniteEx ignite = startGrid(getConfiguration()
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("pds")
-                    .setPersistenceEnabled(persistenceEnabled))))
+                    .setPersistenceEnabled(persistenceEnabled)))
+            .setSqlConfiguration(new SqlConfiguration()
+                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")))
+
         ) {
             if (persistenceEnabled) {
                 assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
