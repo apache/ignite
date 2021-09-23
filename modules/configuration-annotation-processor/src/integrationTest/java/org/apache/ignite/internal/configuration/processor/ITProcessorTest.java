@@ -18,9 +18,13 @@ package org.apache.ignite.internal.configuration.processor;
 
 import java.util.Arrays;
 import com.google.testing.compile.Compilation;
+import com.google.testing.compile.JavaFileObjects;
 import com.squareup.javapoet.ClassName;
+import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.junit.jupiter.api.Test;
 
+import static com.google.testing.compile.CompilationSubject.assertThat;
+import static com.google.testing.compile.Compiler.javac;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -122,13 +126,32 @@ public class ITProcessorTest extends AbstractProcessorTest {
     }
 
     /**
+     * Tests that placing the {@link DirectAccess} annotation on fields that represents sub-configurations results in
+     * an error.
+     */
+    @Test
+    void testDirectAccessConfiguration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.internal.";
+
+        String source = packageName.replace('.', '/') + "InvalidDirectAccessConfigurationSchema.java";
+
+        Compilation compilation = javac()
+            .withProcessors(new Processor())
+            .compile(JavaFileObjects.forResource(source));
+
+        assertThat(compilation).hadErrorContaining(
+            "@DirectAccess annotation must not be present on nested configuration fields"
+        );
+    }
+
+    /**
      * Compile set of classes.
      *
      * @param packageName Package names.
      * @param classNames Simple class names.
      * @return Result of batch compilation.
      */
-    private BatchCompilation batchCompile(String packageName, String... classNames) {
+    private static BatchCompilation batchCompile(String packageName, String... classNames) {
         ClassName[] classes = Arrays.stream(classNames)
             .map(clsName -> ClassName.get(packageName, clsName))
             .toArray(ClassName[]::new);

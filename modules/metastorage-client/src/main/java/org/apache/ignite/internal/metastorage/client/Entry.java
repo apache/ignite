@@ -42,7 +42,7 @@ public interface Entry {
      *
      * @return Value.
      */
-    @Nullable byte[] value();
+    byte @Nullable [] value();
 
     /**
      * Returns a revision.

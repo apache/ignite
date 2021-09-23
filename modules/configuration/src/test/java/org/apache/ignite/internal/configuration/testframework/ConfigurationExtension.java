@@ -183,10 +183,10 @@ public class ConfigurationExtension implements BeforeEachCallback, AfterEachCall
         var superRootRef = new AtomicReference<>(superRoot);
 
         // Reference that's required for notificator.
-        AtomicReference<DynamicConfiguration<?, ?>> cfgRef = new AtomicReference();
+        var cfgRef = new AtomicReference<DynamicConfiguration<?, ?>>();
 
         cfgRef.set(cgen.instantiateCfg(rootKey, new DynamicConfigurationChanger() {
-            private AtomicInteger storageRev = new AtomicInteger();
+            private final AtomicInteger storageRev = new AtomicInteger();
 
             /** {@inheritDoc} */
             @Override public CompletableFuture<Void> change(ConfigurationSource change) {
@@ -218,6 +218,11 @@ public class ConfigurationExtension implements BeforeEachCallback, AfterEachCall
             /** {@inheritDoc} */
             @Override public InnerNode getRootNode(RootKey<?, ?> rk) {
                 return superRootRef.get().getRoot(rk);
+            }
+
+            /** {@inheritDoc} */
+            @Override public <T> T getLatest(List<String> path) {
+                return ConfigurationUtil.find(path, superRootRef.get(), true);
             }
         }));
 

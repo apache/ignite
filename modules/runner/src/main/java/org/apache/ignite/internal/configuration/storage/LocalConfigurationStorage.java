@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.storage;
+package org.apache.ignite.internal.configuration.storage;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -23,10 +23,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
-import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
-import org.apache.ignite.internal.configuration.storage.ConfigurationStorageListener;
-import org.apache.ignite.internal.configuration.storage.Data;
-import org.apache.ignite.internal.configuration.storage.StorageException;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultEntry;
@@ -58,7 +54,7 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     private static final ByteArray LOC_KEYS_START_RANGE = ByteArray.fromString(LOC_PREFIX);
 
     /** End key in range for searching local configuration keys. */
-    private static final ByteArray LOC_KEYS_END_RANGE = ByteArray.fromString(LOC_PREFIX.substring(0, LOC_PREFIX.length() - 1) + (char)('.' + 1));
+    private static final ByteArray LOC_KEYS_END_RANGE = ByteArray.fromString(incrementLastChar(LOC_PREFIX));
 
     /**
      * Constructor.
@@ -70,12 +66,28 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public synchronized Map<String, ? extends Serializable> readAllLatest(String prefix) {
+        var rangeStart = new ByteArray(LOC_PREFIX + prefix);
+
+        var rangeEnd = new ByteArray(incrementLastChar(LOC_PREFIX + prefix));
+
+        return readAll(rangeStart, rangeEnd).values();
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized Data readAll() throws StorageException {
+        return readAll(LOC_KEYS_START_RANGE, LOC_KEYS_END_RANGE);
+    }
+
+    /**
+     * Retrieves all data, which keys lie in between {@code [rangeStart, rangeEnd)}.
+     */
+    private Data readAll(ByteArray rangeStart, ByteArray rangeEnd) {
         var data = new HashMap<String, Serializable>();
 
-        try (Cursor<VaultEntry> cursor = vaultMgr.range(LOC_KEYS_START_RANGE, LOC_KEYS_END_RANGE)) {
+        try (Cursor<VaultEntry> cursor = vaultMgr.range(rangeStart, rangeEnd)) {
             for (VaultEntry entry : cursor) {
-                String key = entry.key().toString().substring(LOC_KEYS_START_RANGE.toString().length());
+                String key = entry.key().toString().substring(LOC_PREFIX.length());
 
                 byte[] value = entry.value();
 
@@ -95,7 +107,9 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long sentVersion) {
+    @Override public synchronized CompletableFuture<Boolean> write(
+        Map<String, ? extends Serializable> newValues, long sentVersion
+    ) {
         assert lsnr != null : "Configuration listener must be initialized before write.";
 
         if (sentVersion != ver.get())
@@ -103,7 +117,7 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
 
         Map<ByteArray, byte[]> data = new HashMap<>();
 
-        for (Map.Entry<String, Serializable> e: newValues.entrySet()) {
+        for (Map.Entry<String, ? extends Serializable> e: newValues.entrySet()) {
             ByteArray key = ByteArray.fromString(LOC_PREFIX + e.getKey());
 
             data.put(key, e.getValue() == null ? null : ByteUtils.toBytes(e.getValue()));
@@ -111,8 +125,12 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
 
         Data entries = new Data(newValues, ver.incrementAndGet());
 
+        // read the 'lsnr' field into a local variable, just in case, to avoid possible race condition on reading
+        // it in a lambda below.
+        ConfigurationStorageListener localLsnr = lsnr;
+
         return vaultMgr.putAll(data)
-            .thenCompose(v -> lsnr.onEntriesChanged(entries))
+            .thenCompose(v -> localLsnr.onEntriesChanged(entries))
             .thenApply(v -> true);
     }
 
@@ -127,5 +145,14 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     /** {@inheritDoc} */
     @Override public ConfigurationType type() {
         return ConfigurationType.LOCAL;
+    }
+
+    /**
+     * Increments the last character of the given string.
+     */
+    private static String incrementLastChar(String str) {
+        char lastChar = str.charAt(str.length() - 1);
+
+        return str.substring(0, str.length() - 1) + (char)(lastChar + 1);
     }
 }

@@ -32,9 +32,9 @@ import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 /**
  * Super class for dynamic configuration tree nodes. Has all common data and value retrieving algorithm in it.
  */
-public abstract class ConfigurationNode<VIEW, CHANGE> implements ConfigurationProperty<VIEW, CHANGE> {
+public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<VIEW> {
     /** Listeners of property update. */
-    protected final List<ConfigurationListener<VIEW>> updateListeners = new CopyOnWriteArrayList<>();
+    private final List<ConfigurationListener<VIEW>> updateListeners = new CopyOnWriteArrayList<>();
 
     /** Full path to the current node. */
     protected final List<String> keys;
@@ -96,17 +96,18 @@ public abstract class ConfigurationNode<VIEW, CHANGE> implements ConfigurationPr
      * @throws NoSuchElementException If configuration is a part of already deleted named list configuration entry.
      */
     protected final VIEW refreshValue() throws NoSuchElementException {
-        if (invalid)
-            throw noSuchElementException();
-
         TraversableTreeNode newRootNode = changer.getRootNode(rootKey);
         TraversableTreeNode oldRootNode = cachedRootNode;
+
+        // 'invalid' and 'val' visibility is guaranteed by the 'cachedRootNode' volatile read
+        if (invalid)
+            throw noSuchElementException();
 
         if (oldRootNode == newRootNode)
             return val;
 
         try {
-            VIEW newVal = (VIEW)ConfigurationUtil.find(keys.subList(1, keys.size()), newRootNode, true);
+            VIEW newVal = ConfigurationUtil.find(keys.subList(1, keys.size()), newRootNode, true);
 
             synchronized (this) {
                 if (cachedRootNode == oldRootNode) {

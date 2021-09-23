@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  * @param <VIEW> Value type of the node.
  * @param <CHANGE> Type of the object that changes this node's value.
  */
-public interface ConfigurationTree<VIEW, CHANGE> extends ConfigurationProperty<VIEW, CHANGE> {
+public interface ConfigurationTree<VIEW, CHANGE> extends ConfigurationProperty<VIEW> {
     /**
      * Changes this configuration node value.
      *

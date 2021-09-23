@@ -326,7 +326,7 @@ public final class Condition {
     /**
      * Defines condition interface.
      */
-    private interface InnerCondition {
+    public interface InnerCondition {
         /**
          * Returns key which identifies an entry which condition will be applied to.
          *

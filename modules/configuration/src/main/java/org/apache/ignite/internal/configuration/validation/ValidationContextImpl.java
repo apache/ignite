@@ -96,7 +96,7 @@ class ValidationContextImpl<VIEW> implements ValidationContext<VIEW> {
     /** {@inheritDoc} */
     @Override public VIEW getOldValue() {
         try {
-            return (VIEW)find(currentPath, oldRoots, true);
+            return find(currentPath, oldRoots, true);
         }
         catch (KeyNotFoundException ignore) {
             return null;

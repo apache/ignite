@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.notifications.ConfigurationNamedListListe
 /**
  * Named configuration wrapper.
  */
-public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE extends VIEW>
+public class NamedListConfiguration<T extends ConfigurationProperty<VIEW>, VIEW, CHANGE extends VIEW>
     extends DynamicConfiguration<NamedListView<VIEW>, NamedListChange<VIEW, CHANGE>>
     implements NamedConfigurationTree<T, VIEW, CHANGE>
 {
@@ -74,11 +74,11 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
 
     /** {@inheritDoc} */
     @Override protected synchronized void beforeRefreshValue(NamedListView<VIEW> newValue) {
-        Map<String, ConfigurationProperty<?, ?>> oldValues = this.members;
-        Map<String, ConfigurationProperty<?, ?>> newValues = new LinkedHashMap<>();
+        Map<String, ConfigurationProperty<?>> oldValues = this.members;
+        Map<String, ConfigurationProperty<?>> newValues = new LinkedHashMap<>();
 
         for (String key : newValue.namedListKeys()) {
-            ConfigurationProperty<?, ?> oldElement = oldValues.get(key);
+            ConfigurationProperty<?> oldElement = oldValues.get(key);
 
             if (oldElement != null)
                 newValues.put(key, oldElement);
@@ -90,7 +90,7 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ConfigurationProperty<?, ?>> touchMembers() {
+    @Override public Map<String, ConfigurationProperty<?>> touchMembers() {
         Map<String, T> res = notificationCache;
 
         refreshValue();

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.storage;
+package org.apache.ignite.internal.configuration.storage;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -25,10 +25,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
-import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
-import org.apache.ignite.internal.configuration.storage.ConfigurationStorageListener;
-import org.apache.ignite.internal.configuration.storage.Data;
-import org.apache.ignite.internal.configuration.storage.StorageException;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.metastorage.client.Condition;
 import org.apache.ignite.internal.metastorage.client.Conditions;
@@ -54,7 +50,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     private static final IgniteLogger LOG = IgniteLogger.forClass(DistributedConfigurationStorage.class);
 
     /** Prefix added to configuration keys to distinguish them in the meta storage. Must end with a dot. */
-    public static final String DISTRIBUTED_PREFIX = "dst-cfg.";
+    private static final String DISTRIBUTED_PREFIX = "dst-cfg.";
 
     /**
      * Key for CAS-ing configuration keys to meta storage.
@@ -72,8 +68,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
      * possible because keys are in lexicographical order in meta storage and adding {@code (char)('.' + 1)} to the end
      * will produce all keys with prefix {@link DistributedConfigurationStorage#DISTRIBUTED_PREFIX}
      */
-    private static final ByteArray DST_KEYS_END_RANGE =
-            new ByteArray(DISTRIBUTED_PREFIX.substring(0, DISTRIBUTED_PREFIX.length() - 1) + (char)('.' + 1));
+    private static final ByteArray DST_KEYS_END_RANGE = new ByteArray(incrementLastChar(DISTRIBUTED_PREFIX));
 
     /** Meta storage manager. */
     private final MetaStorageManager metaStorageMgr;
@@ -88,10 +83,10 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
      * Currently known change id. Either matches or will soon match the Meta Storage revision of the latest
      * configuration update. It is possible that {@code changeId} is already updated but notifications are not yet
      * handled, thus revision is valid but not applied. This is fine.
-     * <p/>
+     * <p>
      * Given that {@link #MASTER_KEY} is updated on every configuration change, one could assume that {@code changeId}
      * matches the revision of {@link #MASTER_KEY}.
-     * <p/>
+     * <p>
      * This is true for all cases except for node restart. Key-specific revision values are lost on local vault copy
      * after restart, so stored {@link MetaStorageManager#APPLIED_REV} value is used instead. This fact has very
      * important side effect: it's no longer possible to use {@link Condition.RevisionCondition#eq} on
@@ -114,6 +109,37 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
         this.metaStorageMgr = metaStorageMgr;
 
         this.vaultMgr = vaultMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Serializable> readAllLatest(String prefix) {
+        var data = new HashMap<String, Serializable>();
+
+        var rangeStart = new ByteArray(DISTRIBUTED_PREFIX + prefix);
+
+        var rangeEnd = new ByteArray(incrementLastChar(DISTRIBUTED_PREFIX + prefix));
+
+        try (Cursor<Entry> entries = metaStorageMgr.range(rangeStart, rangeEnd)) {
+            for (Entry entry : entries) {
+                ByteArray key = entry.key();
+                byte[] value = entry.value();
+
+                // Meta Storage should not return nulls as values
+                assert value != null;
+
+                if (key.equals(MASTER_KEY))
+                    continue;
+
+                String dataKey = key.toString().substring(DISTRIBUTED_PREFIX.length());
+
+                data.put(dataKey, (Serializable)ByteUtils.fromBytes(value));
+            }
+        }
+        catch (Exception e) {
+            throw new StorageException("Exception when closing a Meta Storage cursor", e);
+        }
+
+        return data;
     }
 
     /** {@inheritDoc} */
@@ -152,7 +178,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long curChangeId) {
+    @Override public CompletableFuture<Boolean> write(Map<String, ? extends Serializable> newValues, long curChangeId) {
         assert curChangeId <= changeId.get();
         assert lsnr != null : "Configuration listener must be initialized before write.";
 
@@ -164,7 +190,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
         Set<Operation> operations = new HashSet<>();
 
-        for (Map.Entry<String, Serializable> entry : newValues.entrySet()) {
+        for (Map.Entry<String, ? extends Serializable> entry : newValues.entrySet()) {
             ByteArray key = new ByteArray(DISTRIBUTED_PREFIX + entry.getKey());
 
             if (entry.getValue() != null)
@@ -193,7 +219,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
         //       that the next received configuration update will have the MASTER_KEY revision strictly greater than
         //       current APPLIED_REV. This allows to conclude that "MASTER_KEY revision <= curChangeId" is a valid
         //       condition for update.
-        // Joing all of the above, it's concluded that the following condition must be used:
+        // Combining all of the above, it's concluded that the following condition must be used:
         Condition condition = curChangeId == 0L
             ? Conditions.notExists(MASTER_KEY)
             : Conditions.revision(MASTER_KEY).le(curChangeId);
@@ -273,5 +299,14 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
      */
     private @NotNull Cursor<VaultEntry> storedDistributedConfigKeys() {
         return vaultMgr.range(DST_KEYS_START_RANGE, DST_KEYS_END_RANGE);
+    }
+
+    /**
+     * Increments the last character of the given string.
+     */
+    private static String incrementLastChar(String str) {
+        char lastChar = str.charAt(str.length() - 1);
+
+        return str.substring(0, str.length() - 1) + (char)(lastChar + 1);
     }
 }

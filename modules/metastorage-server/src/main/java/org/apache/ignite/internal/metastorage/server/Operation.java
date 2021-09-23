@@ -59,7 +59,7 @@ public final class Operation {
      * @param key Key identifies an entry which operation will be applied to.
      * @param val Value will be associated with an entry identified by the {@code key}.
      */
-    public Operation(@NotNull OperationType type, @Nullable byte[] key, @Nullable byte[] val) {
+    public Operation(@NotNull OperationType type, byte @Nullable [] key, byte @Nullable [] val) {
         assert (type == OperationType.NO_OP && key == null && val == null)
                 || (type == OperationType.PUT && key != null && val != null)
                 || (type == OperationType.REMOVE && key != null && val == null)

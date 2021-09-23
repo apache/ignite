@@ -25,8 +25,7 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
  *
  * @param <VIEW> Type of the value.
  */
-public interface ConfigurationValue<VIEW> extends ConfigurationProperty<VIEW, VIEW> {
-
+public interface ConfigurationValue<VIEW> extends ConfigurationProperty<VIEW> {
     /**
      * Update this configuration node value.
      *

@@ -35,7 +35,7 @@ public abstract class AnyNodeConfigurationVisitor<T> implements ConfigurationVis
     }
 
     /** {@inheritDoc} */
-    @Override public final <N extends InnerNode> T visitNamedListNode(String key, NamedListNode<N> node) {
+    @Override public final T visitNamedListNode(String key, NamedListNode<?> node) {
         return visitNode(key, node);
     }
 

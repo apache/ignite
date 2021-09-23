@@ -73,7 +73,7 @@ public class ConfigurationNotificationsUtil {
             ConfigurationListener::onUpdate
         );
 
-        Map<String, ConfigurationProperty<?, ?>> cfgNodeMembers = cfgNode.members();
+        Map<String, ConfigurationProperty<?>> cfgNodeMembers = cfgNode.members();
 
         oldInnerNode.traverseChildren(new ConfigurationVisitor<Void>() {
             /** {@inheritDoc} */
@@ -108,7 +108,7 @@ public class ConfigurationNotificationsUtil {
             }
 
             /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> oldNamedList) {
+            @Override public Void visitNamedListNode(String key, NamedListNode<?> oldNamedList) {
                 var newNamedList = (NamedListNode<InnerNode>)newInnerNode.traverseChild(key, namedListNodeVisitor(), true);
 
                 if (newNamedList != oldNamedList) {
@@ -127,7 +127,7 @@ public class ConfigurationNotificationsUtil {
                     List<String> oldNames = oldNamedList.namedListKeys();
                     List<String> newNames = newNamedList.namedListKeys();
 
-                    Map<String, ConfigurationProperty<?, ?>> namedListCfgMembers = namedListCfg.touchMembers();
+                    Map<String, ConfigurationProperty<?>> namedListCfgMembers = namedListCfg.touchMembers();
 
                     Set<String> created = new HashSet<>(newNames);
                     created.removeAll(oldNames);
@@ -182,7 +182,7 @@ public class ConfigurationNotificationsUtil {
                             ConfigurationNamedListListener::onDelete
                         );
 
-                        var deletedProp = (ConfigurationNode<N, ?>)namedListCfgMembers.get(name);
+                        var deletedProp = (ConfigurationNode<InnerNode>)namedListCfgMembers.get(name);
 
                         notifyPublicListeners(
                             deletedProp.listeners(),
@@ -279,7 +279,7 @@ public class ConfigurationNotificationsUtil {
     public static void touch(DynamicConfiguration<?, ?> cfg) {
         cfg.touchMembers();
 
-        for (ConfigurationProperty<?, ?> value : cfg.members().values()) {
+        for (ConfigurationProperty<?> value : cfg.members().values()) {
             if (value instanceof DynamicConfiguration)
                 touch((DynamicConfiguration<?, ?>)value);
         }

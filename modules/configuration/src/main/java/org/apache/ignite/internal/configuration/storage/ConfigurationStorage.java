@@ -34,13 +34,23 @@ public interface ConfigurationStorage {
     Data readAll() throws StorageException;
 
     /**
+     * Retrieves the most recent values which keys start with the given prefix, regardless of the current storage
+     * version.
+     *
+     * @param prefix Key prefix.
+     * @return Storage data (keys and values).
+     * @throws StorageException If failed to retrieve data.
+     */
+    Map<String, ? extends Serializable> readAllLatest(String prefix) throws StorageException;
+
+    /**
      * Write key-value pairs into the storage with last known version.
      * @param newValues Key-value pairs.
      * @param ver Last known version.
      * @return Future that gives you {@code true} if successfully written, {@code false} if version of the storage is
      *      different from the passed argument and {@link StorageException} if failed to write data.
      */
-    CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long ver);
+    CompletableFuture<Boolean> write(Map<String, ? extends Serializable> newValues, long ver);
 
     /**
      * Add listener to the storage that notifies of data changes.

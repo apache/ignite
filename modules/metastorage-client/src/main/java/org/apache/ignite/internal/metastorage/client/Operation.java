@@ -109,7 +109,7 @@ public final class Operation {
     /**
      * Defines operation interface.
      */
-    private interface InnerOp {
+    public interface InnerOp {
         /**
          * Returns key.
          *

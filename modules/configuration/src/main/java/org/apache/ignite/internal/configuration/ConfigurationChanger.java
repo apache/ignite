@@ -18,14 +18,18 @@ package org.apache.ignite.internal.configuration;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.apache.ignite.configuration.ConfigurationChangeException;
 import org.apache.ignite.configuration.RootKey;
@@ -36,12 +40,18 @@ import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.configuration.storage.StorageException;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
+import org.apache.ignite.internal.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
+import org.apache.ignite.internal.configuration.tree.NamedListNode;
+import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
+import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 import org.apache.ignite.internal.configuration.validation.MemberKey;
 import org.apache.ignite.internal.configuration.validation.ValidationUtil;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.function.Function.identity;
@@ -215,7 +225,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                 }
             };
 
-            changeInternally(defaultsCfgSource).get();
+            changeInternally(defaultsCfgSource).get(5, TimeUnit.SECONDS);
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause();
@@ -230,7 +240,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                 "Failed to write default configuration values into the storage " + storage.getClass(), e
             );
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException | TimeoutException e) {
             throw new ConfigurationChangeException(
                 "Failed to initialize configuration storage " + storage.getClass(), e
             );
@@ -242,9 +252,89 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
         return changeInternally(source);
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T getLatest(List<String> path) {
+        assert !path.isEmpty();
+
+        var storagePath = new ArrayList<String>(path.size());
+
+        // we can't use the provided path as-is, because Named List elements are stored in a different way:
+        // while their path can be represented as "root.namedList.<elementName>.value", the corresponding path
+        // in the storage will look like "root.namedList.<internalId>.value". We also need to support the Named List
+        // guarantee, that different Named List nodes under the same name must be accessible by the same path. Therefore
+        // we manually traverse the configuration tree, re-reading the whole Named List subtrees in case they may
+        // contain not yet discovered nodes.
+        var visitor = new ConfigurationVisitor<Void>() {
+            /**
+             * Index of the current path element.
+             */
+            private int pathIndex;
+
+            @Override public @Nullable Void visitLeafNode(String key, Serializable val) {
+                assert path.get(pathIndex).equals(key);
+
+                if (pathIndex != path.size() - 1)
+                    throw new NoSuchElementException(ConfigurationUtil.join(path.subList(0, pathIndex + 2)));
+
+                storagePath.add(key);
+
+                return null;
+            }
+
+            @Override public @Nullable Void visitInnerNode(String key, InnerNode node) {
+                assert path.get(pathIndex).equals(key);
+
+                storagePath.add(key);
+
+                if (pathIndex == path.size() - 1)
+                    return null;
+
+                pathIndex++;
+
+                return node.traverseChild(path.get(pathIndex), this, true);
+            }
+
+            /**
+             * Visits a Named List node. This method ends the tree traversal even of the last key in the path has not
+             * been reached yet for the reasons described above.
+             */
+            @Override
+            public @Nullable Void visitNamedListNode(String key, NamedListNode<?> node) {
+                assert path.get(pathIndex).equals(key);
+
+                storagePath.add(key);
+
+                return null;
+            }
+        };
+
+        storageRoots.roots.traverseChild(path.get(0), visitor, true);
+
+        Map<String, ? extends Serializable> storageData = storage.readAllLatest(ConfigurationUtil.join(storagePath));
+
+        if (storageData.isEmpty())
+            throw new NoSuchElementException(ConfigurationUtil.join(path));
+
+        InnerNode rootNode = new SuperRoot(rootCreator());
+
+        fillFromPrefixMap(rootNode, toPrefixMap(storageData));
+
+        try {
+            T result = ConfigurationUtil.find(path, rootNode, true);
+
+            if (result == null)
+                throw new NoSuchElementException(ConfigurationUtil.join(path));
+
+            return result;
+        }
+        catch (KeyNotFoundException e) {
+            throw new NoSuchElementException(ConfigurationUtil.join(path));
+        }
+    }
+
     /** Stop component. */
     public void stop() {
-        pool.shutdownNow();
+        IgniteUtils.shutdownAndAwaitTermination(pool, 10, TimeUnit.SECONDS);
 
         StorageRoots roots = storageRoots;
 

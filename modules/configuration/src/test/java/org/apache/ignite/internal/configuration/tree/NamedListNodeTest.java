@@ -116,11 +116,11 @@ public class NamedListNodeTest {
         String xId = ((NamedListNode<?>)a.b().value()).internalId("X");
         String z0Id = ((NamedListNode<?>)a.b().get("X").b().value()).internalId("Z0");
 
-        Map<String, Serializable> storageValues = storage.readAll().values();
+        Map<String, ? extends Serializable> storageValues = storage.readAll().values();
 
         assertThat(
             storageValues,
-            is(Matchers.<Map<String, Serializable>>allOf(
+            is(Matchers.<Map<String, ? extends Serializable>>allOf(
                 aMapWithSize(6),
                 hasEntry(format("a.b.%s.c", xId), "foo"),
                 hasEntry(format("a.b.%s.<order>", xId), 0),
@@ -142,7 +142,7 @@ public class NamedListNodeTest {
 
         assertThat(
             storageValues,
-            is(Matchers.<Map<String, Serializable>>allOf(
+            is(Matchers.<Map<String, ? extends Serializable>>allOf(
                 aMapWithSize(9),
                 hasEntry(format("a.b.%s.c", xId), "foo"),
                 hasEntry(format("a.b.%s.<order>", xId), 0),
@@ -165,7 +165,7 @@ public class NamedListNodeTest {
 
         assertThat(
             storageValues,
-            is(Matchers.<Map<String, Serializable>>allOf(
+            is(Matchers.<Map<String, ? extends Serializable>>allOf(
                 aMapWithSize(12),
                 hasEntry(format("a.b.%s.c", xId), "foo"),
                 hasEntry(format("a.b.%s.<order>", xId), 0),
@@ -191,7 +191,7 @@ public class NamedListNodeTest {
 
         assertThat(
             storageValues,
-            is(Matchers.<Map<String, Serializable>>allOf(
+            is(Matchers.<Map<String, ? extends Serializable>>allOf(
                 aMapWithSize(15),
                 hasEntry(format("a.b.%s.c", xId), "foo"),
                 hasEntry(format("a.b.%s.<order>", xId), 0),
@@ -218,7 +218,7 @@ public class NamedListNodeTest {
 
         assertThat(
             storageValues,
-            is(Matchers.<Map<String, Serializable>>allOf(
+            is(Matchers.<Map<String, ? extends Serializable>>allOf(
                 aMapWithSize(9),
                 hasEntry(format("a.b.%s.c", xId), "foo"),
                 hasEntry(format("a.b.%s.<order>", xId), 0),
@@ -239,7 +239,7 @@ public class NamedListNodeTest {
 
         assertThat(
             storageValues,
-            is(Matchers.<Map<String, Serializable>>allOf(
+            is(Matchers.<Map<String, ? extends Serializable>>allOf(
                 aMapWithSize(9),
                 hasEntry(format("a.b.%s.c", xId), "foo"),
                 hasEntry(format("a.b.%s.<order>", xId), 0),

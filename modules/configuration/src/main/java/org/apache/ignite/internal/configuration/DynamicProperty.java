@@ -30,7 +30,7 @@ import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 /**
  * Holder for property value. Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.
  */
-public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T, T> implements ConfigurationValue<T> {
+public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T> implements ConfigurationValue<T> {
     /**
      * Constructor.
      * @param prefix Property prefix.

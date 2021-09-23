@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.notifications.ConfigurationNamedListListe
  * @param <VIEW> Value type of the underlying node.
  * @param <CHANGE> Type of the object that changes underlying nodes values.
  */
-public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE extends VIEW>
+public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW>, VIEW, CHANGE extends VIEW>
     extends ConfigurationTree<NamedListView<VIEW>, NamedListChange<VIEW, CHANGE>>
 {
     /**

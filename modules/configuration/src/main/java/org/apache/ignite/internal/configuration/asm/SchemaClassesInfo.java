@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.configuration.asm;
 
+import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.internal.configuration.DynamicConfiguration;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 
@@ -34,28 +35,31 @@ class SchemaClassesInfo {
     private static final String CHANGE_CLASS_POSTFIX = "Change";
 
     /** Configuration Schema class. */
-    public final Class<?> schemaClass;
+    final Class<?> schemaClass;
+
+    /** Flag indicating that this schema is annotated with {@link DirectAccess}. */
+    final boolean direct;
 
     /** Class name for the VIEW class. */
-    public final String viewClassName;
+    final String viewClassName;
 
     /** Class name for the CHANGE class. */
-    public final String changeClassName;
+    final String changeClassName;
 
     /** Class name for the Configuration class. */
-    public final String cfgClassName;
+    final String cfgClassName;
 
     /** Class name for the Node class. */
-    public final String nodeClassName;
+    final String nodeClassName;
 
     /** Class name for the Configuration Impl class. */
-    public final String cfgImplClassName;
+    final String cfgImplClassName;
 
     /** Node class instance. */
-    public Class<? extends InnerNode> nodeClass;
+    Class<? extends InnerNode> nodeClass;
 
     /** Configuration Impl class instance. */
-    public Class<? extends DynamicConfiguration<?, ?>> cfgImplClass;
+    Class<? extends DynamicConfiguration<?, ?>> cfgImplClass;
 
     /**
      * Constructor.
@@ -64,6 +68,7 @@ class SchemaClassesInfo {
      */
     SchemaClassesInfo(Class<?> schemaClass) {
         this.schemaClass = schemaClass;
+        this.direct = schemaClass.isAnnotationPresent(DirectAccess.class);
 
         String prefix = prefix(schemaClass);
 
@@ -77,13 +82,13 @@ class SchemaClassesInfo {
 
     /**
      * Get the prefix for inner classes.
-     * <p/>
+     * <p>
      * Example: org.apache.ignite.NodeConfigurationSchema -> org.apache.ignite.Node
      *
      * @param schemaClass Configuration schema class.
      * @return Prefix for inner classes.
      */
-    static String prefix(Class<?> schemaClass) {
+    private static String prefix(Class<?> schemaClass) {
         String schemaClassName = schemaClass.getPackageName() + "." + schemaClass.getSimpleName();
 
         return schemaClassName.replaceAll("ConfigurationSchema$", "");

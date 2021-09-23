@@ -33,11 +33,14 @@ import java.util.RandomAccess;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.configuration.ConfigurationProperty;
+import org.apache.ignite.configuration.DirectConfigurationProperty;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
@@ -114,29 +117,29 @@ public class ConfigurationUtil {
      * @return Either {@link TraversableTreeNode} or {@link Serializable} depending on the keys and schema.
      * @throws KeyNotFoundException If node is not found.
      */
-    public static Object find(
+    public static <T> T find(
         List<String> keys,
         TraversableTreeNode node,
         boolean includeInternal
     ) throws KeyNotFoundException {
         assert keys instanceof RandomAccess : keys.getClass();
 
-        var visitor = new ConfigurationVisitor<>() {
+        var visitor = new ConfigurationVisitor<T>() {
             /** Current index of the key in the {@code keys}. */
             private int i;
 
             /** {@inheritDoc} */
-            @Override public Object visitLeafNode(String key, Serializable val) {
+            @Override public T visitLeafNode(String key, Serializable val) {
                 if (i != keys.size())
                     throw new KeyNotFoundException("Configuration value '" + join(keys.subList(0, i)) + "' is a leaf");
                 else
-                    return val;
+                    return (T)val;
             }
 
             /** {@inheritDoc} */
-            @Override public Object visitInnerNode(String key, InnerNode node) {
+            @Override public T visitInnerNode(String key, InnerNode node) {
                 if (i == keys.size())
-                    return node;
+                    return (T)node;
                 else if (node == null)
                     throw new KeyNotFoundException("Configuration node '" + join(keys.subList(0, i)) + "' is null");
                 else {
@@ -145,16 +148,16 @@ public class ConfigurationUtil {
                     }
                     catch (NoSuchElementException e) {
                         throw new KeyNotFoundException(
-                            "Configuration '" + join(keys.subList(0, i)) + "' is not found"
+                            "Configuration value '" + join(keys.subList(0, i)) + "' has not been found"
                         );
                     }
                 }
             }
 
             /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> node) {
+            @Override public T visitNamedListNode(String key, NamedListNode<?> node) {
                 if (i == keys.size())
-                    return node;
+                    return (T)node;
                 else {
                     String name = keys.get(i++);
 
@@ -173,10 +176,10 @@ public class ConfigurationUtil {
      * @return Prefix map.
      * @see #split(String)
      */
-    public static Map<String, ?> toPrefixMap(Map<String, Serializable> rawConfig) {
+    public static Map<String, ?> toPrefixMap(Map<String, ? extends Serializable> rawConfig) {
         Map<String, Object> res = new HashMap<>();
 
-        for (Map.Entry<String, Serializable> entry : rawConfig.entrySet()) {
+        for (Map.Entry<String, ? extends Serializable> entry : rawConfig.entrySet()) {
             List<String> keys = split(entry.getKey());
 
             assert keys instanceof RandomAccess : keys.getClass();
@@ -451,11 +454,11 @@ public class ConfigurationUtil {
             }
 
             /** {@inheritDoc} */
-            @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> namedList) {
+            @Override public Object visitNamedListNode(String key, NamedListNode<?> namedList) {
                 // Copy internal map.
                 node.construct(key, EMPTY_CFG_SRC, true);
 
-                namedList = (NamedListNode<N>)node.traverseChild(key, namedListNodeVisitor(), true);
+                namedList = node.traverseChild(key, namedListNodeVisitor(), true);
 
                 for (String namedListKey : namedList.namedListKeys()) {
                     if (namedList.get(namedListKey) != null) {
@@ -484,9 +487,9 @@ public class ConfigurationUtil {
                 return null;
             }
 
-            @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> namedList) {
+            @Override public Object visitNamedListNode(String key, NamedListNode<?> namedList) {
                 for (String namedListKey : namedList.namedListKeys()) {
-                    N element = namedList.get(namedListKey);
+                    InnerNode element = namedList.get(namedListKey);
 
                     if (element == null)
                         namedList.forceDelete(namedListKey);
@@ -527,7 +530,7 @@ public class ConfigurationUtil {
     public static ConfigurationVisitor<NamedListNode<?>> namedListNodeVisitor() {
         return new ConfigurationVisitor<>() {
             /** {@inheritDoc} */
-            @Override public <N extends InnerNode> NamedListNode<?> visitNamedListNode(String key, NamedListNode<N> node) {
+            @Override public NamedListNode<?> visitNamedListNode(String key, NamedListNode<?> node) {
                 return node;
             }
         };
@@ -737,5 +740,19 @@ public class ConfigurationUtil {
      */
     public static List<String> classNames(Field... fields) {
         return Stream.of(fields).map(Field::getDeclaringClass).map(Class::getName).collect(toList());
+    }
+
+    /**
+     * Extracts the "direct" value from the given property.
+     *
+     * @param property Property to get the value from.
+     * @return "direct" value of the property.
+     * @throws ClassCastException if the property has not been annotated with {@link DirectAccess}.
+     *
+     * @see DirectAccess
+     * @see DirectConfigurationProperty
+     */
+    public static <T> T directValue(ConfigurationProperty<T> property) {
+        return ((DirectConfigurationProperty<T>)property).directValue();
     }
 }

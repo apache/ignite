@@ -199,12 +199,12 @@ public class HoconConverterTest {
 
         assertThrowsIllegalArgException(
             () -> HoconConverter.represent(registry, List.of("doot")),
-            "Configuration 'doot' is not found"
+            "Configuration value 'doot' has not been found"
         );
 
         assertThrowsIllegalArgException(
             () -> HoconConverter.represent(registry, List.of("root", "x")),
-            "Configuration 'root.x' is not found"
+            "Configuration value 'root.x' has not been found"
         );
 
         assertEquals("null", asHoconStr(List.of("root", "primitivesList", "foo")));

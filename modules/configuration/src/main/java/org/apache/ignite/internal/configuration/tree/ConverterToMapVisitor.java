@@ -80,7 +80,7 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public <N extends InnerNode> Object visitNamedListNode(String key, NamedListNode<N> node) {
+    @Override public Object visitNamedListNode(String key, NamedListNode<?> node) {
         List<Object> list = new ArrayList<>(node.size());
 
         deque.push(list);

@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Data {
     /** Values. */
-    private final Map<String, Serializable> values;
+    private final Map<String, ? extends Serializable> values;
 
     /** Configuration storage version. */
     private final long changeId;
@@ -34,7 +34,7 @@ public class Data {
      * @param values Values.
      * @param changeId Version.
      */
-    public Data(Map<String, Serializable> values, long changeId) {
+    public Data(Map<String, ? extends Serializable> values, long changeId) {
         this.values = values;
         this.changeId = changeId;
     }
@@ -43,7 +43,7 @@ public class Data {
      * Get values.
      * @return Values.
      */
-    public Map<String, Serializable> values() {
+    public Map<String, ? extends Serializable> values() {
         return values;
     }
 

@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -15,34 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.configuration.processor.internal;
 
-import org.apache.ignite.configuration.notifications.ConfigurationListener;
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.ConfigValue;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.DirectAccess;
 
-/**
- * Base interface for configuration.
- *
- * @param <VIEW> Type of the value.
- */
-public interface ConfigurationProperty<VIEW> {
-    /**
-     * Get key of this node.
-     *
-     * @return Key.
-     */
-    String key();
+@ConfigurationRoot(rootName = "invalidDirect")
+public class InvalidDirectAccessConfigurationSchema {
+    @ConfigValue
+    @DirectAccess
+    public DirectAccessConfigurationSchema nested;
+}
 
-    /**
-     * Get value of this property.
-     *
-     * @return Value of this property.
-     */
-    VIEW value();
-
-    /**
-     * Add configuration values listener.
-     *
-     * @param listener Listener.
-     */
-    void listen(ConfigurationListener<VIEW> listener);
+@Config
+class DirectAccessConfigurationSchema {
 }

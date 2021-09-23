@@ -52,6 +52,7 @@ import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.DirectAccess;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
@@ -152,6 +153,12 @@ public class Processor extends AbstractProcessor {
                                 clazz.getQualifiedName() + "." + field.getSimpleName()
                         );
                     }
+
+                    if (field.getAnnotation(DirectAccess.class) != null) {
+                        throw new ProcessorException(
+                            "@DirectAccess annotation must not be present on nested configuration fields"
+                        );
+                    }
                 }
 
                 NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
@@ -160,6 +167,12 @@ public class Processor extends AbstractProcessor {
                         throw new ProcessorException(
                             "Class for @NamedConfigValue field must be defined as @Config: " +
                                 clazz.getQualifiedName() + "." + field.getSimpleName()
+                        );
+                    }
+
+                    if (field.getAnnotation(DirectAccess.class) != null) {
+                        throw new ProcessorException(
+                            "@DirectAccess annotation must not be present on nested configuration fields"
                         );
                     }
                 }
@@ -199,7 +212,7 @@ public class Processor extends AbstractProcessor {
     }
 
     /** */
-    private void createRootKeyField(
+    private static void createRootKeyField(
         ClassName configInterface,
         TypeSpec.Builder configurationClassBuilder,
         ClassName schemaClassName,
@@ -227,7 +240,7 @@ public class Processor extends AbstractProcessor {
      * @param fieldName
      * @param interfaceGetMethodType
      */
-    private void createGetters(
+    private static void createGetters(
         TypeSpec.Builder configurationInterfaceBuilder,
         String fieldName,
         TypeName interfaceGetMethodType
@@ -245,15 +258,14 @@ public class Processor extends AbstractProcessor {
      * @param field
      * @return Bundle with all types for configuration
      */
-    private TypeName getInterfaceGetMethodType(VariableElement field) {
+    private static TypeName getInterfaceGetMethodType(VariableElement field) {
         TypeName interfaceGetMethodType = null;
 
         TypeName baseType = TypeName.get(field.asType());
 
         ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
-        if (confAnnotation != null) {
+        if (confAnnotation != null)
             interfaceGetMethodType = Utils.getConfigurationInterfaceName((ClassName) baseType);
-        }
 
         NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
         if (namedConfigAnnotation != null) {
@@ -273,9 +285,8 @@ public class Processor extends AbstractProcessor {
 
             TypeName genericType = baseType;
 
-            if (genericType.isPrimitive()) {
+            if (genericType.isPrimitive())
                 genericType = genericType.box();
-            }
 
             interfaceGetMethodType = ParameterizedTypeName.get(confValueClass, genericType);
         }
@@ -471,7 +482,7 @@ public class Processor extends AbstractProcessor {
      * @param type Class type.
      * @return Class fields.
      */
-    private Collection<VariableElement> fields(TypeElement type) {
+    private static Collection<VariableElement> fields(TypeElement type) {
         return type.getEnclosedElements().stream()
             .filter(el -> el.getKind() == ElementKind.FIELD)
             .map(VariableElement.class::cast)

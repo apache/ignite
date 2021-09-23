@@ -29,10 +29,10 @@ import org.apache.ignite.internal.configuration.tree.NamedListNode;
 /** Visitor that accumulates keys while descending. */
 public abstract class KeysTrackingConfigurationVisitor<T> implements ConfigurationVisitor<T> {
     /** Current key, aggregated by visitor. */
-    private StringBuilder currentKey = new StringBuilder();
+    private final StringBuilder currentKey = new StringBuilder();
 
     /** Current keys list, almost the same as {@link #currentKey}. */
-    private List<String> currentPath = new ArrayList<>();
+    private final List<String> currentPath = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public final T visitLeafNode(String key, Serializable val) {
@@ -59,7 +59,7 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     }
 
     /** {@inheritDoc} */
-    @Override public final <N extends InnerNode> T visitNamedListNode(String key, NamedListNode<N> node) {
+    @Override public final T visitNamedListNode(String key, NamedListNode<?> node) {
         int prevPos = startVisit(key, false, false);
 
         try {
@@ -173,9 +173,9 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
 
     /**
      * Puts {@link #currentKey} and {@link #currentPath} in the same state as they were before
-     * {@link #startVisit(String, boolean)}.
+     * {@link #startVisit}.
      *
-     * @param previousKeyLength Value return by corresponding {@link #startVisit(String, boolean)} invocation.
+     * @param previousKeyLength Value return by corresponding {@link #startVisit} invocation.
      */
     private void endVisit(int previousKeyLength) {
         currentKey.setLength(previousKeyLength);
