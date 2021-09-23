@@ -48,7 +48,9 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
 
@@ -66,7 +68,8 @@ public class IndexQueryProcessor {
 
     /** Run query on local node. */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocal(
-        GridCacheContext<K, V> cctx, IndexQueryDesc idxQryDesc, IndexQueryContext qryCtx, boolean keepBinary)
+        GridCacheContext<K, V> cctx, IndexQueryDesc idxQryDesc, @Nullable IgniteBiPredicate<K, V> filter,
+        IndexQueryContext qryCtx, boolean keepBinary)
         throws IgniteCheckedException {
 
         Index idx = index(cctx, idxQryDesc);
@@ -77,7 +80,7 @@ public class IndexQueryProcessor {
 
         // Map IndexRow to Cache Key-Value pair.
         return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
-            private IndexRow currVal;
+            private IgniteBiTuple<K, V> currVal;
 
             private final CacheObjectContext coctx = cctx.cacheObjectContext();
 
@@ -86,12 +89,19 @@ public class IndexQueryProcessor {
                 if (currVal != null)
                     return true;
 
-                if (!cursor.next())
-                    return false;
+                while (currVal == null && cursor.next()) {
+                    IndexRow r = cursor.get();
 
-                currVal = cursor.get();
+                    K k = (K) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().key(), keepBinary, false);
+                    V v = (V) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().value(), keepBinary, false);
 
-                return true;
+                    if (filter != null && !filter.apply(k, v))
+                        continue;
+
+                    currVal = new IgniteBiTuple<>(k, v);
+                }
+
+                return currVal != null;
             }
 
             /** {@inheritDoc} */
@@ -100,14 +110,11 @@ public class IndexQueryProcessor {
                     if (!hasNext())
                         throw new NoSuchElementException();
 
-                IndexRow row = currVal;
+                IgniteBiTuple<K, V> row = currVal;
 
                 currVal = null;
 
-                K k = (K) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, row.cacheDataRow().key(), keepBinary, false);
-                V v = (V) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, row.cacheDataRow().value(), keepBinary, false);
-
-                return new IgniteBiTuple<>(k, v);
+                return row;
             }
         };
     }

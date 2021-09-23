@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -43,6 +44,9 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** Index name. */
     private final String idxName;
+
+    /** Cache entries filter. Applies remotely to a query result cursor. */
+    private IgniteBiPredicate<K, V> filter;
 
     /**
      * Specify index with cache value class and index name.
@@ -117,6 +121,29 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public String getIndexName() {
         return idxName;
+    }
+
+    /**
+     * Sets remote cache entries filter.
+     *
+     * @param filter Predicate for remote filtering of query result cursor.
+     * @return {@code this} for chaining.
+     */
+    public IndexQuery<K, V> setFilter(IgniteBiPredicate<K, V> filter) {
+        A.notNull(filter, "filter");
+
+        this.filter = filter;
+
+        return this;
+    }
+
+    /**
+     * Gets remote cache entries filter.
+     *
+     * @return Filter.
+     */
+    public IgniteBiPredicate<K, V> getFilter() {
+        return filter;
     }
 
     /** */
