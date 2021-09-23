@@ -18,6 +18,8 @@
 package org.apache.ignite.cdc;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -32,7 +34,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,8 +91,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         IgniteCache<Integer, CdcSelfTest.User> txCache,
         CI3<IgniteCache<Integer, CdcSelfTest.User>, Integer, Integer> addData,
         int from,
-        int to,
-        long timeout
+        int to
     ) throws Exception {
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -97,10 +100,10 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         if (txCache != null)
             addData.apply(txCache, from, to);
 
-        assertTrue(waitForSize(to - from, cache.getName(), UPDATE, timeout, cnsmr));
+        assertTrue(waitForSize(to - from, cache.getName(), UPDATE, cnsmr));
 
         if (txCache != null)
-            assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, timeout, cnsmr));
+            assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, cnsmr));
 
         checkMetrics(cdc, txCache == null ? to : to * 2);
 
@@ -121,15 +124,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         int expSz,
         String cacheName,
         CdcSelfTest.ChangeEventType evtType,
-        long timeout,
         TestCdcConsumer<?>... cnsmrs
     ) throws IgniteInterruptedCheckedException {
-        return waitForCondition(
-            () -> {
-                int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
-                return sum == expSz;
-            },
-            timeout);
+        return waitForCondition(() -> {
+            int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
+            return sum == expSz;
+        }, getTestTimeout());
     }
 
     /** */
@@ -183,14 +183,32 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected CdcMain createCdc(CdcConsumer cnsmr, IgniteConfiguration cfg1) {
+        return new CdcMain(cfg1, null, cdcConfig(cnsmr)) {
+            @Override protected CdcConsumerState createState(Path stateDir) {
+                return new CdcConsumerState(stateDir) {
+                    @Override public void save(WALPointer ptr) throws IOException {
+                        super.save(ptr);
+                    }
+                };
+            }
+        };
+    }
+
+    /** */
     public CdcConfiguration cdcConfig(CdcConsumer cnsmr) {
         CdcConfiguration cdcCfg = new CdcConfiguration();
 
         cdcCfg.setConsumer(cnsmr);
-        cdcCfg.setKeepBinary(false);
+        cdcCfg.setKeepBinary(keepBinary());
         cdcCfg.setMetricExporterSpi(metricExporters());
 
         return cdcCfg;
+    }
+
+    /** */
+    protected boolean keepBinary() {
+        return false;
     }
 
     /** */

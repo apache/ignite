@@ -146,7 +146,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         ign.cluster().state(ACTIVE);
 
-        Supplier<CdcMain> cdc = () -> new CdcMain(cfg, null, cdcConfig(cnsmr));
+        Supplier<CdcMain> cdc = () -> createCdc(cnsmr, cfg);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
@@ -158,8 +158,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             txCache,
             CdcSelfTest::addData,
             0,
-            KEYS_CNT + 3,
-            getTestTimeout()
+            KEYS_CNT + 3
         );
 
         removeData(cache, 0, KEYS_CNT);
@@ -168,7 +167,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdcMain);
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr));
 
         checkMetrics(cdcMain, offsetCommit ? KEYS_CNT : ((KEYS_CNT + 3) * 2 + KEYS_CNT));
 
@@ -208,7 +207,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         runAsync(cdc);
 
@@ -226,7 +225,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         startProcEvts.countDown();
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
         assertTrue(waitForCondition(cnsmr::stopped, getTestTimeout()));
 
         List<Integer> keys = cnsmr.data(UPDATE, cacheId(DEFAULT_CACHE_NAME));
@@ -260,8 +259,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        CdcMain cdc1 = new CdcMain(cfg1, null, cdcConfig(cnsmr1));
-        CdcMain cdc2 = new CdcMain(cfg2, null, cdcConfig(cnsmr2));
+        CdcMain cdc1 = createCdc(cnsmr1, cfg1);
+        CdcMain cdc2 = createCdc(cnsmr2, cfg2);
 
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
         IgniteInternalFuture<?> fut2 = runAsync(cdc2);
@@ -272,7 +271,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addDataFut.get(getTestTimeout());
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr1, cnsmr2));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr1, cnsmr2));
 
         long evtsCnt1 = checkMetrics(cdc1, -1);
         long evtsCnt2 = checkMetrics(cdc2, -1);
@@ -290,13 +289,13 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         removeData(cache, 0, KEYS_CNT * 2);
 
-        cdc1 = new CdcMain(cfg1, null, cdcConfig(cnsmr1));
-        cdc2 = new CdcMain(cfg2, null, cdcConfig(cnsmr2));
+        cdc1 = createCdc(cnsmr1, cfg1);
+        cdc2 = createCdc(cnsmr2, cfg2);
 
         IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
         IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr1, cnsmr2));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, DELETE, cnsmr1, cnsmr2));
 
         evtsCnt1 = checkMetrics(cdc1, -1);
         evtsCnt2 = checkMetrics(cdc2, -1);
@@ -318,8 +317,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         UserCdcConsumer cnsmr1 = new UserCdcConsumer();
         UserCdcConsumer cnsmr2 = new UserCdcConsumer();
 
-        IgniteInternalFuture<?> fut1 = runAsync(new CdcMain(ign.configuration(), null, cdcConfig(cnsmr1)));
-        IgniteInternalFuture<?> fut2 = runAsync(new CdcMain(ign.configuration(), null, cdcConfig(cnsmr2)));
+        IgniteInternalFuture<?> fut1 = runAsync(createCdc(cnsmr1, ign.configuration()));
+        IgniteInternalFuture<?> fut2 = runAsync(createCdc(cnsmr2, ign.configuration()));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -357,11 +356,11 @@ public class CdcSelfTest extends AbstractCdcTest {
                 }
             };
 
-            CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+            CdcMain cdc = createCdc(cnsmr, cfg);
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
-            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
+            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
 
             checkMetrics(cdc, KEYS_CNT);
 
@@ -403,11 +402,11 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
-        waitForSize(half, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
+        waitForSize(half, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
         checkMetrics(cdc, half);
 
@@ -421,12 +420,12 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         consumeHalf.set(false);
 
-        cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        cdc = createCdc(cnsmr, cfg);
 
         fut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
 
         checkMetrics(cdc, KEYS_CNT * 2 - half);
 

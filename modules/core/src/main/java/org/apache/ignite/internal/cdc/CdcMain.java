@@ -158,7 +158,7 @@ public class CdcMain implements Runnable {
     private AtomicLongMetric lastSegmentConsumptionTs;
 
     /** Change Data Capture configuration. */
-    private final CdcConfiguration cdcCfg;
+    protected final CdcConfiguration cdcCfg;
 
     /** WAL iterator factory. */
     private final IgniteWalIteratorFactory factory;
@@ -267,7 +267,7 @@ public class CdcMain implements Runnable {
             try {
                 kctx.resource().injectGeneric(consumer.consumer());
 
-                state = new CdcConsumerState(cdcDir.resolve(STATE_DIR));
+                state = createState(cdcDir.resolve(STATE_DIR));
 
                 initState = state.load();
 
@@ -296,6 +296,11 @@ public class CdcMain implements Runnable {
                     comp.stop(false);
             }
         }
+    }
+
+    /** Creates consumer state. */
+    protected CdcConsumerState createState(Path stateDir) {
+        return new CdcConsumerState(stateDir);
     }
 
     /**

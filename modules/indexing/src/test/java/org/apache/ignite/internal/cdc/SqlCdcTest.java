@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractCdcTest;
-import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -76,11 +75,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         BinaryCdcConsumer cnsmr = new BinaryCdcConsumer();
 
-        CdcConfiguration cdcCfg = new CdcConfiguration();
-
-        cdcCfg.setConsumer(cnsmr);
-
-        CdcMain cdc = new CdcMain(cfg, null, cdcCfg);
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -110,8 +105,8 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
-        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, getTestTimeout(), cnsmr));
-        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, getTestTimeout(), cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, cnsmr));
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
@@ -125,11 +120,11 @@ public class SqlCdcTest extends AbstractCdcTest {
         for (int i = 0; i < KEYS_CNT; i++)
             executeSql(ign, "DELETE FROM USER WHERE id = ?", i);
 
-        cdc = new CdcMain(cfg, null, cdcCfg);
+        cdc = createCdc(cnsmr, cfg);
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        assertTrue(waitForSize(KEYS_CNT, USER, DELETE, getTestTimeout(), cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, USER, DELETE, cnsmr));
 
         checkMetrics(cdc, KEYS_CNT);
 
@@ -181,5 +176,10 @@ public class SqlCdcTest extends AbstractCdcTest {
     /** */
     private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean keepBinary() {
+        return true;
     }
 }

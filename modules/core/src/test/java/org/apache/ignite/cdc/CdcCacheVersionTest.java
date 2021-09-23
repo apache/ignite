@@ -119,11 +119,11 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
 
-        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT, getTestTimeout());
+        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT);
     }
 
     /** */
@@ -163,7 +163,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache("my-cache");
 
