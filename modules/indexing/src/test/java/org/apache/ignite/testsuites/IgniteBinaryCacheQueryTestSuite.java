@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistryTest;
 import org.apache.ignite.internal.cdc.SqlCdcTest;
+import org.apache.ignite.internal.metric.SystemViewExistSelfTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
@@ -663,6 +664,7 @@ import org.junit.runners.Suite;
 
     SqlViewExporterSpiTest.class,
     SystemViewSelfTest.class,
+    SystemViewExistSelfTest.class,
 
     IgniteCacheMergeSqlQuerySelfTest.class,
     SqlMergeTest.class,

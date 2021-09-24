@@ -68,13 +68,11 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
-import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
@@ -131,7 +129,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
-import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
@@ -140,7 +137,6 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_IO_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
-import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.PART_STATES_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
@@ -162,7 +158,6 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SETS_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
@@ -2047,118 +2042,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, F.size(iter));
         }
-    }
-
-    /** */
-    @Test
-    public void testViewsPds() throws Exception {
-        testViews(true);
-    }
-
-    /** */
-    @Test
-    public void testViewsInMemory() throws Exception {
-        testViews(false);
-    }
-
-    /** */
-    public void testViews(boolean persistenceEnabled) throws Exception {
-        cleanPersistenceDir();
-
-        Set<String> expViews = new HashSet<>(Arrays.asList(
-            BASELINE_NODE_ATTRIBUTES_SYS_VIEW,
-            BASELINE_NODES_SYS_VIEW,
-            BINARY_METADATA_VIEW,
-            CACHE_GRP_PAGE_LIST_VIEW,
-            CACHE_GRPS_VIEW,
-            CACHES_VIEW,
-            CLI_CONN_VIEW,
-            CQ_SYS_VIEW,
-            DATA_REGION_PAGE_LIST_VIEW,
-            STREAM_POOL_QUEUE_VIEW,
-            DISTRIBUTED_METASTORE_VIEW,
-            JOBS_VIEW,
-            CACHE_GRP_IO_VIEW,
-            NODE_ATTRIBUTES_SYS_VIEW,
-            NODE_METRICS_SYS_VIEW,
-            NODES_SYS_VIEW,
-            PART_STATES_VIEW,
-            SCAN_QRY_SYS_VIEW,
-            SVCS_VIEW,
-            SYS_POOL_QUEUE_VIEW,
-            TASKS_VIEW,
-            TXS_MON_LIST,
-            QUEUES_VIEW,
-            SETS_VIEW,
-            LOCKS_VIEW,
-            SEMAPHORES_VIEW,
-            LATCHES_VIEW,
-            LATCHES_VIEW,
-            STAMPED_VIEW,
-            REFERENCES_VIEW,
-            LONGS_VIEW,
-            SEQUENCES_VIEW
-        ));
-
-        if (INDEXING.inClassPath()) {
-            expViews.addAll(Arrays.asList(
-                "sql.queries",
-                "statistics.configuration",
-                "statisticsPartitionData",
-                "tables",
-                "indexes",
-                "views",
-                "view.columns",
-                "sql.queries.history",
-                "statisticsLocalData",
-                "table.columns",
-                "schemas")
-            );
-        }
-
-        if (persistenceEnabled)
-            expViews.add(METASTORE_VIEW);
-
-        try (IgniteEx ignite = startGrid(getConfiguration()
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("pds")
-                    .setPersistenceEnabled(persistenceEnabled)))
-            .setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")))
-
-        ) {
-            if (persistenceEnabled) {
-                assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
-
-                assertEquals(expViews, getAllViewNames(ignite));
-            }
-
-            ignite.cluster().state(ClusterState.ACTIVE);
-
-            assertEquals(expViews, getAllViewNames(ignite));
-
-            if (persistenceEnabled) {
-                ignite.cluster().state(ClusterState.INACTIVE);
-
-                assertEquals(expViews, getAllViewNames(ignite));
-            }
-        }
-    }
-
-    /**
-     * @param ignite Ignite.
-     */
-    private Set<String> getAllViewNames(IgniteEx ignite) {
-        GridSystemViewManager views = ignite.context().systemView();
-
-        Iterator<SystemView<?>> iter = views.iterator();
-
-        Set<String> actualViews = new HashSet<>();
-
-        while (iter.hasNext())
-            actualViews.add(iter.next().name());
-
-        return actualViews;
     }
 
     /** Test node filter. */
