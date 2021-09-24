@@ -24,27 +24,34 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Index query runs over internal index structure and returns cache entries for index rows that match specified criteria.
+ * Index query runs over internal index structure and returns cache entries for index rows.
+ *
+ * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is following:
+ * 1. If {@link #idxName} is set with constructor, then use it.
+ * 2. If {@link #idxName} is not set, but criteria on value fields with {@link #setCriteria(List)}, then try to find an
+ * index that matches criteria fields. Criteria fields have to be a prefix of an index. Order of fields in criteria doesn't matter.
+ * 3. If neither of {@link #idxName} or {@link #setCriteria(List)} used, then perform index scan over PK index for specified Value type.
  */
 @IgniteExperimental
 public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Index query criteria. */
-    private List<IndexQueryCriterion> criteria;
-
     /** Cache Value type. Describes a table within a cache that runs a query. */
     private final String valType;
 
-    /** Index name. If {@code null} then Ignite tries to find an index by {@link #criteria} fields. */
+    /** Index name. */
     private final @Nullable String idxName;
+
+    /** Index query criteria. */
+    private @Nullable List<IndexQueryCriterion> criteria;
 
     /**
      * Specify index with cache value class.
@@ -167,8 +174,8 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** */
     private void validateAndSetCriteria(List<IndexQueryCriterion> criteria) {
-        A.notEmpty(criteria, "criteria");
-        A.notNull(criteria.get(0), "criteria");
+        if (F.isEmpty(criteria))
+            return;
 
         Class<?> critCls = criteria.get(0).getClass();
 
