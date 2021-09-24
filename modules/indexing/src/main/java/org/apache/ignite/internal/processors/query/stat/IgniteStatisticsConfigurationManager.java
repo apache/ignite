@@ -38,9 +38,7 @@ import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnCon
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -102,9 +100,6 @@ public class IgniteStatisticsConfigurationManager {
     /** Cluster state processor. */
     private final GridClusterStateProcessor cluster;
 
-    /** Subsctiption processor. */
-    private final GridInternalSubscriptionProcessor subscriptionProcessor;
-
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
         new DistributedMetastorageLifecycleListener() {
@@ -131,33 +126,28 @@ public class IgniteStatisticsConfigurationManager {
         }
     };
 
-    /** Exchange listener to update all local statistics. */
-    private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
-        @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-            topVer = fut.topologyVersion();
+    public void afterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        topVer = fut.topologyVersion();
 
-            // Skip join/left client nodes.
-            if (fut.exchangeType() != GridDhtPartitionsExchangeFuture.ExchangeType.ALL ||
-                (persistence && cluster.clusterState().lastState() != ClusterState.ACTIVE))
+        // Skip join/left client nodes.
+        if (fut.exchangeType() != GridDhtPartitionsExchangeFuture.ExchangeType.ALL ||
+            (persistence && cluster.clusterState().lastState() != ClusterState.ACTIVE))
+            return;
+
+        DiscoveryEvent evt = fut.firstEvent();
+
+        // Skip create/destroy caches.
+        if (evt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
+
+            if (msg instanceof DynamicCacheChangeBatch)
                 return;
-
-            DiscoveryEvent evt = fut.firstEvent();
-
-            // Skip create/destroy caches.
-            if (evt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
-
-                if (msg instanceof DynamicCacheChangeBatch)
-                    return;
-            }
-
-            mgmtPool.submit(() -> {
-                statProc.busyRun(() -> updateAllLocalStatistics());
-            });
         }
-    };
 
-
+        mgmtPool.submit(() -> {
+            statProc.busyRun(() -> updateAllLocalStatistics());
+        });
+    }
 
     /** Drop columns listener to clean its statistics configuration. */
     private final BiConsumer<GridH2Table, List<String>> dropColsLsnr = new BiConsumer<GridH2Table, List<String>>() {
@@ -212,7 +202,6 @@ public class IgniteStatisticsConfigurationManager {
      * @param cfg Statistics object configuration to update statistics by.
      */
     private void updateLocalStatistics(StatisticsObjectConfiguration cfg) {
-
         GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
 
         if (tbl == null || cfg.columns().isEmpty()) {
@@ -273,7 +262,6 @@ public class IgniteStatisticsConfigurationManager {
      * @param subscriptionProcessor Subscription processor.
      * @param sysViewMgr System view manager.
      * @param cluster Cluster state processor.
-     * @param exchange Exchange manager.
      * @param statProc Staitistics processor.
      * @param persistence Persistence enabled flag.
      * @param mgmtPool Statistics management pool
@@ -284,7 +272,6 @@ public class IgniteStatisticsConfigurationManager {
         GridInternalSubscriptionProcessor subscriptionProcessor,
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
-        GridCachePartitionExchangeManager<?, ?> exchange,
         StatisticsProcessor statProc,
         boolean persistence,
         IgniteThreadPoolExecutor mgmtPool,
@@ -296,10 +283,7 @@ public class IgniteStatisticsConfigurationManager {
         this.mgmtPool = mgmtPool;
         this.statProc = statProc;
         this.cluster = cluster;
-        this.subscriptionProcessor = subscriptionProcessor;
-
-        this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
-        exchange.registerExchangeAwareComponent(exchAwareLsnr);
+        subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
         ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
             logSupplier);

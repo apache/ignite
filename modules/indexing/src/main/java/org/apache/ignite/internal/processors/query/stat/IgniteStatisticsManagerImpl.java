@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -105,7 +102,20 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
         @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-            stateChanged();
+            if (fut.exchangeType() != GridDhtPartitionsExchangeFuture.ExchangeType.ALL)
+                return;
+
+            ClusterState newState = ctx.state().clusterState().state();
+
+            if (newState.active() && !started)
+                tryStart();
+
+            if (!newState.active() && started)
+                tryStop();
+
+            if (started)
+                statCfgMgr.afterTopologyUnlock(fut);
+            //stateChanged();
         }
     };
 
@@ -169,7 +179,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.internalSubscriptionProcessor(),
             ctx.systemView(),
             ctx.state(),
-            ctx.cache().context().exchange(),
+            //ctx.cache().context().exchange(),
             statProc,
             db != null,
             mgmtPool,
@@ -186,13 +196,17 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                 if (oldVal == newVal)
                     return;
 
-                stateChanged();
+                if (newVal == ON || newVal == NO_UPDATE)
+                    tryStart();
+
+                if (newVal == OFF)
+                    tryStop();
             });
 
             dispatcher.registerProperty(usageState);
         });
 
-        stateChanged();
+        tryStart();
 
         if (!ctx.clientNode()) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
@@ -212,37 +226,57 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /**
-     * Check if statistics should be stopped or started and do it.
+     * Check all preconditions and stop if started and have reason to stop.
      */
-    private synchronized void stateChanged() {
+    private synchronized void tryStop() {
         StatisticsUsageState statUsageState = usageState();
-        // Statistics can be processed on: ACTIVE cluster, not stopping, with appropriate usageState
+
+        if (!(ClusterState.ACTIVE == ctx.state().clusterState().state()
+            && !ctx.isStopping()
+            && (statUsageState == ON || statUsageState == NO_UPDATE))
+            && started)
+            stopX();
+    }
+
+    /**
+     * Stop all statistics related components.
+     */
+    private void stopX() {
+        if (log.isDebugEnabled())
+            log.debug("Stopping statistics subsystem");
+
+        statCfgMgr.stop();
+        statProc.stop();
+        statsRepos.stop();
+
+        started = false;
+    }
+
+    /**
+     * Check all preconditions and start if stopped and all preconditions pass.
+     */
+    private synchronized void tryStart() {
+        StatisticsUsageState statUsageState = usageState();
+
         if (ClusterState.ACTIVE == ctx.state().clusterState().state()
             && !ctx.isStopping()
-            && (statUsageState == ON || statUsageState == NO_UPDATE)) {
-            if (!started) {
-                if (log.isDebugEnabled())
-                    log.debug("Starting statistics subsystem...");
+            && (statUsageState == ON || statUsageState == NO_UPDATE)
+            && !started)
+            startX();
+    }
 
-                statsRepos.start();
-                statProc.start();
-                statCfgMgr.start();
+    /**
+     * Start all statistics related components.
+     */
+    private void startX() {
+        if (log.isDebugEnabled())
+            log.debug("Starting statistics subsystem...");
 
-                started = true;
-            }
-        }
-        else {
-            if (started) {
-                if (log.isDebugEnabled())
-                    log.debug("Stopping statistics subsystem");
+        statsRepos.start();
+        statProc.start();
+        statCfgMgr.start();
 
-                statCfgMgr.stop();
-                statProc.stop();
-                statsRepos.stop();
-
-                started = false;
-            }
-        }
+        started = true;
     }
 
     /**
@@ -298,7 +332,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        stateChanged();
+        stopX();
 
         if (gatherPool != null) {
             List<Runnable> unfinishedTasks = gatherPool.shutdownNow();
@@ -416,13 +450,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     ) {
         Set<Integer> res = new HashSet<>();
 
-        StatisticsObjectConfiguration finalCfg = cfg;
-
         parts.forEach((k, v) -> {
             ObjectPartitionStatisticsImpl partStat = statsRepos.getLocalPartitionStatistics(cfg.key(), k);
 
             if (partStat == null || partStat.rowCount() == 0 ||
-                (double)v.modified() * 100 / partStat.rowCount() > finalCfg.maxPartitionObsolescencePercent())
+                (double)v.modified() * 100 / partStat.rowCount() > cfg.maxPartitionObsolescencePercent())
                 res.add(k);
         });
 

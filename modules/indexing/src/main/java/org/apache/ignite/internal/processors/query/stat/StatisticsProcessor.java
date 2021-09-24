@@ -196,19 +196,6 @@ public class StatisticsProcessor {
             return v;
         });
 
-        // Can't wait in map critical section (to allow task to try to remove itselves), but
-        // have to wait here in busyLock to do gracefull shutdown.
-        //if (ctxToAwait[0] != null) {
-//            try {
-//                // TODO ctxToAwait[0].finished().await();
-//            }
-//            catch (InterruptedException e) {
-//                log.warning("Unable to wait statistics gathering task finished by key " +
-//                    ctx.configuration().key(), e);
-//            }
-       // }
-
-
         return res[0];
     }
 
@@ -357,17 +344,6 @@ public class StatisticsProcessor {
                     log.warning("Unexpected error on statistic gathering", t);
             }
             finally {
-
-                // TODO
-//                    if (partStat == null)
-//                        failPartTask(ctx, task.partition());
-//                    else {
-//                        // Finish partition task
-//                        // TODO ctx.finished().countDown();
-//
-//                        if (ctx.partitionDone(task.partition()))
-//                            gatheringInProgress.remove(ctx.configuration().key(), ctx);
-//                    }
                 endJob();
             }
 

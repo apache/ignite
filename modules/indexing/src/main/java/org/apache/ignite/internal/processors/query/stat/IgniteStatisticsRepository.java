@@ -469,7 +469,7 @@ public class IgniteStatisticsRepository {
             else {
                 // Target key exists - check each partition id.
                 Set<Integer> targetKeyParts = targetCfg.get(targetKeyCfg);
-                
+
                 for (int objPartId : objObs.getValue().keys()) {
                     if (!targetKeyParts.contains(objPartId))
                         res.putIfAbsent(key, new HashSet<Integer>()).add(objPartId);

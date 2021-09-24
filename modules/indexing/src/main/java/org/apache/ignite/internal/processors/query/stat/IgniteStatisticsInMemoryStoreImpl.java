@@ -251,31 +251,29 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> loadObsolescenceMap(StatisticsKey key) {
-        Collection<Integer> res[] = new Collection[1];
-        res[0] = new ArrayList<>();
+        List<Integer> res = new ArrayList<>();
 
         obsStats.computeIfPresent(key, (k, v) -> {
             for (Integer partId : v.keys())
-                res[0].add(partId);
+                res.add(partId);
 
             return v;
         });
 
-        return res[0];
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> loadLocalPartitionMap(StatisticsKey key) {
-        Collection<Integer> res[] = new Collection[1];
-        res[0] = new ArrayList<>();
+        List<Integer> res = new ArrayList<>();
 
         partsStats.computeIfPresent(key, (k, v) -> {
             for (Integer partId : v.keys())
-                res[0].add(partId);
+                res.add(partId);
 
             return v;
         });
 
-        return res[0];
+        return res;
     }
 }
