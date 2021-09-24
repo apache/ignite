@@ -30,7 +30,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,17 +44,17 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * After the first mutation the {@link #tuple} becomes a full copy of {@link #row},
  * all data access methods delegate to a {@link #tuple}, and the {@link #row} one is no longer useful.
- * The adapter acts as simple schema-less tuple {@link TupleImpl} and {@link #schema()} return null.
+ * The adapter acts as simple schema-less tuple {@link Tuple} and {@link #schema()} return null.
  * <p>
  * Serialization.
  * Row access methods implicitly require a context (schema) for a binary data reading, The context may be huge
  * comparing to a row data, and its serialization is unwanted.
  * So, Row firstly is converted to Tuple.
  * <p>
- * Because of after that the adapter will act as underlying tuple {@link TupleImpl},
+ * Because of after that the adapter will act as underlying tuple {@link Tuple},
  * the adapter will be substituted unconditionally with the tuple itself during deserialization.
  *
- * @see TupleImpl
+ * @see Tuple
  * @see #unmarshalRow()
  * @see #writeReplace()
  */
@@ -64,7 +63,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter implements S
     // this object never get serialized, it's unconditionally substituted during serialization.
 
     /** Tuple with overwritten data. */
-    protected TupleImpl tuple;
+    protected Tuple tuple;
 
     /**
      * Creates mutable wrapper over row.
@@ -269,7 +268,7 @@ public class MutableRowTupleAdapter extends AbstractRowTupleAdapter implements S
      */
     private void unmarshalRow() {
         if (tuple == null) {
-            tuple = new TupleImpl(this);
+            tuple = Tuple.create(this);
 
             row = null;
         }

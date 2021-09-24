@@ -41,7 +41,6 @@ import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.schema.SchemaMode;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleImpl;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -209,7 +208,7 @@ public class MutableRowTupleAdapterTest {
             }
         );
 
-        Tuple original = new TupleImpl()
+        Tuple original = Tuple.create()
                              .set("id", 3L)
                              .set("name", "Shirt")
                              .set("price", 5.99d);
@@ -242,7 +241,7 @@ public class MutableRowTupleAdapterTest {
     public void testRowTupleMutability() {
         TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
 
-        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(new TupleImpl().set("id", 1L).set("name", "Shirt")).bytes()));
+        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
 
         Tuple tuple = TableRow.tuple(row);
         Tuple key = TableRow.keyTuple(row);
@@ -269,7 +268,7 @@ public class MutableRowTupleAdapterTest {
     public void testKeyValueTupleMutability() {
         TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
 
-        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(new TupleImpl().set("id", 1L).set("name", "Shirt")).bytes()));
+        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
 
         Tuple tuple = TableRow.tuple(row);
         Tuple key = TableRow.keyTuple(row);
@@ -298,7 +297,7 @@ public class MutableRowTupleAdapterTest {
     public void testRowTupleSchemaAwareness() {
         TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
 
-        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(new TupleImpl().set("id", 1L).set("name", "Shirt")).bytes()));
+        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
 
         Tuple tuple = TableRow.tuple(row);
         Tuple key = TableRow.keyTuple(row);
@@ -321,7 +320,7 @@ public class MutableRowTupleAdapterTest {
     public void testKeyValueTupleSchemaAwareness() {
         TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
 
-        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(new TupleImpl().set("id", 1L).set("name", "Shirt")).bytes()));
+        Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
 
         Tuple tuple = TableRow.tuple(row);
         Tuple key = TableRow.keyTuple(row);
@@ -348,7 +347,7 @@ public class MutableRowTupleAdapterTest {
 
         TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(fullSchema));
 
-        Tuple tuple = new TupleImpl()
+        Tuple tuple = Tuple.create()
                           .set("valByteCol", (byte)1)
                           .set("valShortCol", (short)2)
                           .set("valIntCol", 3)
@@ -380,7 +379,7 @@ public class MutableRowTupleAdapterTest {
     public void testSerialization() throws Exception {
         Random rnd = new Random();
 
-        Tuple tup1 = new TupleImpl()
+        Tuple tup1 = Tuple.create()
                          .set("valByteCol", (byte)1)
                          .set("valShortCol", (short)2)
                          .set("valIntCol", 3)
@@ -412,8 +411,8 @@ public class MutableRowTupleAdapterTest {
     public void testTupleEquality() throws Exception {
         Random rnd = new Random();
 
-        Tuple keyTuple = new TupleImpl().set("keyUuidCol", UUID.randomUUID());
-        Tuple valTuple = new TupleImpl()
+        Tuple keyTuple = Tuple.create().set("keyUuidCol", UUID.randomUUID());
+        Tuple valTuple = Tuple.create()
                              .set("valByteCol", (byte)1)
                              .set("valShortCol", (short)2)
                              .set("valIntCol", 3)
@@ -430,7 +429,7 @@ public class MutableRowTupleAdapterTest {
                              .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
                              .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
 
-        Tuple tuple = new TupleImpl(valTuple).set(keyTuple.columnName(0),keyTuple.value(0));
+        Tuple tuple = Tuple.create(valTuple).set(keyTuple.columnName(0),keyTuple.value(0));
 
         // Check tuples backed with Row.
         TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(fullSchema));
@@ -498,8 +497,8 @@ public class MutableRowTupleAdapterTest {
     public void testKeyValueSerialization() throws Exception {
         Random rnd = new Random();
 
-        Tuple key1 = new TupleImpl().set("keyUuidCol", UUID.randomUUID());
-        Tuple val1 = new TupleImpl()
+        Tuple key1 = Tuple.create().set("keyUuidCol", UUID.randomUUID());
+        Tuple val1 = Tuple.create()
                          .set("valByteCol", (byte)1)
                          .set("valShortCol", (short)2)
                          .set("valIntCol", 3)
@@ -558,7 +557,7 @@ public class MutableRowTupleAdapterTest {
     }
 
     private Tuple getTuple() {
-        Tuple original = new TupleImpl()
+        Tuple original = Tuple.create()
                              .set("id", 3L)
                              .set("name", "Shirt");
 

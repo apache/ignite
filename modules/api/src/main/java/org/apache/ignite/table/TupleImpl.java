@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Simple tuple implementation.
  */
-public class TupleImpl implements Tuple, Serializable {
+class TupleImpl implements Tuple, Serializable {
     /** Version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -46,18 +46,18 @@ public class TupleImpl implements Tuple, Serializable {
      * <p>
      * Note: Transient because it's recoverable from {@link #colNames}.
      */
-    private transient Map<String, Integer> colIdxMap;
+    private transient Map<String, Integer> colMapping;
 
     /** Columns names. */
     private final List<String> colNames;
 
     /** Columns values. */
-    private final List<Object> vals;
+    private final List<Object> colValues;
 
     /**
      * Creates tuple.
      */
-    public TupleImpl() {
+    TupleImpl() {
         this(new HashMap<>(), new ArrayList<>(), new ArrayList<>());
     }
 
@@ -66,21 +66,8 @@ public class TupleImpl implements Tuple, Serializable {
      *
      * @param capacity Initial capacity.
      */
-    public TupleImpl(int capacity) {
+    TupleImpl(int capacity) {
         this(new HashMap<>(capacity), new ArrayList<>(capacity), new ArrayList<>(capacity));
-    }
-
-    /**
-     * Private constructor.
-     *
-     * @param columnNameMapping Column name mapping.
-     * @param columnNames Column names.
-     * @param values Column values.
-     */
-    private TupleImpl(Map<String, Integer> columnNameMapping, List<String> columnNames, List<Object> values) {
-        this.colIdxMap = columnNameMapping;
-        this.colNames = columnNames;
-        this.vals = values;
     }
 
     /**
@@ -88,23 +75,36 @@ public class TupleImpl implements Tuple, Serializable {
      *
      * @param tuple Tuple.
      */
-    public TupleImpl(@NotNull Tuple tuple) {
+    TupleImpl(@NotNull Tuple tuple) {
         this(tuple.columnCount());
 
         for (int i = 0, len = tuple.columnCount(); i < len; i++)
             set(tuple.columnName(i), tuple.value(i));
     }
 
+    /**
+     * A private constructor.
+     *
+     * @param columnMapping Column name-to-idx mapping.
+     * @param columnNames List of columns names.
+     * @param columnValues List of columns values.
+     */
+    private TupleImpl(Map<String, Integer> columnMapping, List<String> columnNames, List<Object> columnValues) {
+        this.colMapping = columnMapping;
+        this.colNames = columnNames;
+        this.colValues = columnValues;
+    }
+
     /** {@inheritDoc} */
     @Override public Tuple set(@NotNull String columnName, Object val) {
-        int idx = colIdxMap.computeIfAbsent(Objects.requireNonNull(columnName), name -> colIdxMap.size());
+        int idx = colMapping.computeIfAbsent(Objects.requireNonNull(columnName), name -> colMapping.size());
 
         if (idx == colNames.size()) {
             colNames.add(idx, columnName);
-            vals.add(idx, val);
+            colValues.add(idx, val);
         } else {
             colNames.set(idx, columnName);
-            vals.set(idx, val);
+            colValues.set(idx, val);
         }
 
         return this;
@@ -112,7 +112,7 @@ public class TupleImpl implements Tuple, Serializable {
 
     /** {@inheritDoc} */
     @Override public String columnName(int columnIndex) {
-        Objects.checkIndex(columnIndex, vals.size());
+        Objects.checkIndex(columnIndex, colValues.size());
 
         return colNames.get(columnIndex);
     }
@@ -121,7 +121,7 @@ public class TupleImpl implements Tuple, Serializable {
     @Override public int columnIndex(@NotNull String columnName) {
         Objects.requireNonNull(columnName);
 
-        Integer idx = colIdxMap.get(columnName);
+        Integer idx = colMapping.get(columnName);
 
         return idx == null ? -1 : idx;
     }
@@ -135,7 +135,7 @@ public class TupleImpl implements Tuple, Serializable {
     @Override public <T> T valueOrDefault(@NotNull String columnName, T def) {
         int idx = columnIndex(columnName);
 
-        return (idx == -1) ? def : (T)vals.get(idx);
+        return (idx == -1) ? def : (T)colValues.get(idx);
     }
 
     /** {@inheritDoc} */
@@ -145,14 +145,14 @@ public class TupleImpl implements Tuple, Serializable {
         if (idx == -1)
             throw new IllegalArgumentException("Column not found: columnName=" + columnName);
 
-        return (T)vals.get(idx);
+        return (T)colValues.get(idx);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T value(int columnIndex) {
-        Objects.checkIndex(columnIndex, vals.size());
+        Objects.checkIndex(columnIndex, colValues.size());
 
-        return (T)vals.get(columnIndex);
+        return (T)colValues.get(columnIndex);
     }
 
     /** {@inheritDoc} */
@@ -303,12 +303,12 @@ public class TupleImpl implements Tuple, Serializable {
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                return cur < vals.size();
+                return cur < colValues.size();
             }
 
             /** {@inheritDoc} */
             @Override public Object next() {
-                return hasNext() ? vals.get(cur++) : null;
+                return hasNext() ? colValues.get(cur++) : null;
             }
         };
     }
@@ -340,9 +340,9 @@ public class TupleImpl implements Tuple, Serializable {
         in.defaultReadObject();
 
         // Recover column name->index mapping.
-        colIdxMap = new HashMap<>(colNames.size());
+        colMapping = new HashMap<>(colNames.size());
 
         for (int i = 0; i < colNames.size(); i++)
-            colIdxMap.put(colNames.get(i), i);
+            colMapping.put(colNames.get(i), i);
     }
 }

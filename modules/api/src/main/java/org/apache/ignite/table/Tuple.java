@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.BitSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
@@ -36,7 +37,7 @@ public interface Tuple extends Iterable<Object> {
     /**
      * Creates a tuple.
      *
-     * @return Tuple.
+     * @return A new tuple.
      */
     static Tuple create() {
         return new TupleImpl();
@@ -46,10 +47,35 @@ public interface Tuple extends Iterable<Object> {
      * Creates a tuple with specified initial capacity.
      *
      * @param capacity Initial capacity.
-     * @return Tuple.
+     * @return A new tuple.
      */
     static Tuple create(int capacity) {
         return new TupleImpl(capacity);
+    }
+
+    /**
+     * Creates a tuple from given mapping.
+     *
+     * @param map Column values.
+     * @return A new tuple.
+     */
+    static Tuple create(Map<String, Object> map) {
+        TupleImpl tuple = new TupleImpl(map.size());
+
+        for (Map.Entry<String, Object> entry : map.entrySet())
+            tuple.set(entry.getKey(), entry.getValue());
+
+        return tuple;
+    }
+
+    /**
+     * Creates a tuple copy.
+     *
+     * @param tuple Tuple to copy.
+     * @return A new tuple.
+     */
+    static Tuple create(Tuple tuple) {
+        return new TupleImpl(tuple);
     }
 
     /**

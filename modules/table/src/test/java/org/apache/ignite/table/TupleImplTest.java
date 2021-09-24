@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -285,6 +286,18 @@ public class TupleImplTest {
         }
 
         assertEquals(tup1, tup2);
+    }
+
+    @Test
+    void testTupleFactoryMethods() {
+        assertEquals(Tuple.create(), Tuple.create(10));
+        assertEquals(Tuple.create().set("id", 42L), Tuple.create(10).set("id", 42L));
+
+        assertEquals(Tuple.create().set("id", 42L).set("name", "universe"),
+            Tuple.create(Map.of("id", 42L, "name", "universe")));
+
+        assertEquals(Tuple.create().set("id", 42L).set("name", "universe"),
+            Tuple.create(Tuple.create().set("id", 42L).set("name", "universe")));
     }
 
     private static TupleImpl createTuple() {

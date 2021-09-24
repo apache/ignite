@@ -33,7 +33,6 @@ import org.apache.ignite.internal.client.table.ClientSchema;
 import org.apache.ignite.internal.client.table.ClientTuple;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.TupleImpl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -341,7 +340,7 @@ public class ClientTupleTest {
                               .set("datetime", datetime)
                               .set("timestamp", timestamp);
 
-        var tuple = new TupleImpl();
+        var tuple = Tuple.create();
 
         for (int i = 0; i < clientTuple.columnCount(); i++)
             tuple.set(clientTuple.columnName(i), clientTuple.value(i));
