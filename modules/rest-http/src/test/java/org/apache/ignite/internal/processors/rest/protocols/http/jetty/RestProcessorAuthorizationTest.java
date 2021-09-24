@@ -46,13 +46,17 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAuthorizationContextSecurityPluginProvider(name, null, ALLOW_ALL,
-            globalAuth, authorizationCtxList::add, clientData());
+        return new TestAuthorizationContextSecurityPluginProvider(
+            name, 
+            null, 
+            ALLOW_ALL,
+            globalAuth, 
+            authorizationCtxList::add, 
+            clientData()
+        );
     }
 
-    /**
-     * @throws Exception if failed.
-     */
+    /** @throws Exception if failed. */
     @Test
     public void cacheCreateDestroyPermissionTest() throws Exception {
         String login = "login";
