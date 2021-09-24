@@ -169,6 +169,9 @@ public class StatisticsColumnConfiguration implements Serializable {
      */
     public StatisticsColumnConfiguration createTombstone()
     {
+        if (tombstone)
+            return this;
+
         return new StatisticsColumnConfiguration(this, ver + 1, true, overrides);
     }
 

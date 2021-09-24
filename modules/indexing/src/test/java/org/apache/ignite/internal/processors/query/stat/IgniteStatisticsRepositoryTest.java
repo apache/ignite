@@ -122,9 +122,10 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
         assertTrue(repo.getLocalPartitionsStatistics(K1).isEmpty());
         assertTrue(repo.getLocalPartitionsStatistics(K2).isEmpty());
 
-        repo.saveLocalPartitionStatistics(K1, stat1);
-        repo.saveLocalPartitionStatistics(K1, stat10);
-        repo.saveLocalPartitionStatistics(K2, stat1_2);
+        IgniteStatisticsStore store = repo.statisticsStore();
+        store.saveLocalPartitionStatistics(K1, stat1);
+        store.saveLocalPartitionStatistics(K1, stat10);
+        store.saveLocalPartitionStatistics(K2, stat1_2);
 
         ObjectPartitionStatisticsImpl stat1Readed = repo.getLocalPartitionStatistics(K1, 1);
         assertNotNull(stat1Readed);
@@ -153,9 +154,10 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
         ObjectPartitionStatisticsImpl stat10 = getPartitionStatistics(10);
         ObjectPartitionStatisticsImpl stat100 = getPartitionStatistics(100);
 
-        repo.saveLocalPartitionStatistics(K1, stat1);
-        repo.saveLocalPartitionStatistics(K1, stat10);
-        repo.saveLocalPartitionStatistics(K1, stat100);
+        IgniteStatisticsStore store = repo.statisticsStore();
+        store.saveLocalPartitionStatistics(K1, stat1);
+        store.saveLocalPartitionStatistics(K1, stat10);
+        store.saveLocalPartitionStatistics(K1, stat100);
 
         assertNotNull(repo.getLocalPartitionStatistics(K1, 10));
 

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -113,7 +112,7 @@ public class StatisticsProcessor {
                     statRepo.saveObsolescenceInfo(ctx.configuration().key());
 
                 if (ctx.table() == null || ctx.configuration() == null || ctx.configuration().columns().isEmpty()) {
-                    statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), null);
+                    statRepo.clearLocalPartitionIdsStatistics(ctx.configuration().key(), null);
                     ctx.future().complete(null);
 
                     return;
@@ -179,7 +178,6 @@ public class StatisticsProcessor {
 
 
                 v.future().whenComplete((r, t) -> {
-                    System.err.println("Calld on reschedule whenComplete");
                     // Will be executed before original, so have to try to cancel previous context to add new one.
                     gatheringInProgress.remove(ctx.configuration().key(), v);
 
@@ -260,6 +258,7 @@ public class StatisticsProcessor {
                 statRepo.clearLocalPartitionIdsStatistics(ctx.configuration().key(), partsToRemove);
 
             if (!partsToAggregate.isEmpty())
+                // TODO: what if there are no more parts?
                 statRepo.aggregatedLocalStatistics(partsToAggregate, ctx.configuration());
         }
     }

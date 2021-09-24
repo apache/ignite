@@ -171,6 +171,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.state(),
             ctx.cache().context().exchange(),
             statProc,
+            db != null,
             mgmtPool,
             ctx::log
         );

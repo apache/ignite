@@ -87,6 +87,9 @@ public class IgniteStatisticsConfigurationManager {
     /** */
     private final IgniteThreadPoolExecutor mgmtPool;
 
+    /** Persistence enabled flag. */
+    private final boolean persistence;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -101,9 +104,6 @@ public class IgniteStatisticsConfigurationManager {
 
     /** Subsctiption processor. */
     private final GridInternalSubscriptionProcessor subscriptionProcessor;
-
-    /** Exchange manager. */
-    private final GridCachePartitionExchangeManager exchange;
 
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
@@ -138,7 +138,7 @@ public class IgniteStatisticsConfigurationManager {
 
             // Skip join/left client nodes.
             if (fut.exchangeType() != GridDhtPartitionsExchangeFuture.ExchangeType.ALL ||
-                cluster.clusterState().lastState() != ClusterState.ACTIVE)
+                (persistence && cluster.clusterState().lastState() != ClusterState.ACTIVE))
                 return;
 
             DiscoveryEvent evt = fut.firstEvent();
@@ -227,7 +227,15 @@ public class IgniteStatisticsConfigurationManager {
             // Ensure to clean local metastorage.
             LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
                 Collections.emptySet(), topVer);
+
             statProc.updateLocalStatistics(ctx);
+
+            if (tbl == null && !cfg.columns().isEmpty()) {
+                if (log.isDebugEnabled())
+                    log.debug("Removing config for non existing object " + cfg.key());
+
+                dropStatistics(Collections.singletonList(new StatisticsTarget(cfg.key())), false);
+            }
 
             return;
         }
@@ -267,6 +275,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param cluster Cluster state processor.
      * @param exchange Exchange manager.
      * @param statProc Staitistics processor.
+     * @param persistence Persistence enabled flag.
      * @param mgmtPool Statistics management pool
      * @param logSupplier Log supplier.
      */
@@ -277,16 +286,17 @@ public class IgniteStatisticsConfigurationManager {
         GridClusterStateProcessor cluster,
         GridCachePartitionExchangeManager<?, ?> exchange,
         StatisticsProcessor statProc,
+        boolean persistence,
         IgniteThreadPoolExecutor mgmtPool,
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
+        this.persistence = persistence;
         this.mgmtPool = mgmtPool;
         this.statProc = statProc;
         this.cluster = cluster;
         this.subscriptionProcessor = subscriptionProcessor;
-        this.exchange = exchange;
 
         this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
         exchange.registerExchangeAwareComponent(exchAwareLsnr);
@@ -436,6 +446,9 @@ public class IgniteStatisticsConfigurationManager {
                         Arrays.stream(target.columns()).collect(Collectors.toSet());
 
                     StatisticsObjectConfiguration newCfg = oldCfg.dropColumns(dropColNames);
+
+                    if (oldCfg.equals(newCfg))
+                        break;
 
                     if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg))
                         break;

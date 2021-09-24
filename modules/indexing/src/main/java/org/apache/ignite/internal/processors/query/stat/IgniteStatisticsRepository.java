@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,9 +39,11 @@ import org.apache.ignite.internal.processors.query.stat.view.ColumnPartitionData
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
+//import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Statistics repository implementation.
+ * Statistics repository implementation. Store all statistics data (except configuration) and offer high level
+ * operations to transform it.
  */
 public class IgniteStatisticsRepository {
     /**
@@ -89,11 +90,6 @@ public class IgniteStatisticsRepository {
      * Statistics gathering.
      */
     private final IgniteStatisticsHelper helper;
-
-    /**
-     * Started flag.
-     */
-    private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
      * Constructor.
@@ -144,72 +140,46 @@ public class IgniteStatisticsRepository {
      * @param key      Object to clear statistics and obsolescence by.
      * @param colNames if specified - only statistics by specified columns will be cleared.
      */
-    public void clearLocalPartitionsStatistics(StatisticsKey key, Set<String> colNames) {
-        if (F.isEmpty(colNames)) {
-            store.clearLocalPartitionsStatistics(key);
-            store.clearObsolescenceInfo(key, null);
-            locStats.remove(key);
-            statObs.remove(key);
-            return;
-        }
-
-        Collection<ObjectPartitionStatisticsImpl> oldStatistics = store.getLocalPartitionsStatistics(key);
-
-        if (oldStatistics.isEmpty())
-            return;
-
-        Collection<ObjectPartitionStatisticsImpl> newStatistics = new ArrayList<>(oldStatistics.size());
-        Collection<Integer> partitionsToRmv = new ArrayList<>();
-
-        for (ObjectPartitionStatisticsImpl oldStat : oldStatistics) {
-            ObjectPartitionStatisticsImpl newStat = subtract(oldStat, colNames);
-
-            if (!newStat.columnsStatistics().isEmpty())
-                newStatistics.add(newStat);
-            else
-                partitionsToRmv.add(oldStat.partId());
-        }
-
-        if (newStatistics.isEmpty()) {
-            store.clearLocalPartitionsStatistics(key);
-            store.clearObsolescenceInfo(key, null);
-
-            return;
-        }
-
-        if (!partitionsToRmv.isEmpty()) {
-            store.clearLocalPartitionsStatistics(key, partitionsToRmv);
-            store.clearObsolescenceInfo(key, partitionsToRmv);
-        }
-
-        store.replaceLocalPartitionsStatistics(key, newStatistics);
-    }
-
-    /**
-     * Save specified local partition statistics.
-     *
-     * @param key Object key.
-     * @param statistics Statistics to save.
-     * @return Resulted statistics for the given key and partition.
-     */
-    public ObjectPartitionStatisticsImpl saveLocalPartitionStatistics(
-        StatisticsKey key,
-        ObjectPartitionStatisticsImpl statistics
-    ) {
-        ObjectPartitionStatisticsImpl oldPartStat = store.getLocalPartitionStatistics(key, statistics.partId());
-
-        if (oldPartStat == null) {
-            store.saveLocalPartitionStatistics(key,statistics);
-
-            return statistics;
-        } else {
-            ObjectPartitionStatisticsImpl combinedStats = merge(oldPartStat, statistics);
-
-            store.saveLocalPartitionStatistics(key, combinedStats);
-
-            return combinedStats;
-        }
-    }
+//    public void clearLocalPartitionsStatistics(StatisticsKey key, Set<String> colNames) {
+//        if (F.isEmpty(colNames)) {
+//            store.clearLocalPartitionsStatistics(key);
+//            store.clearObsolescenceInfo(key, null);
+//            locStats.remove(key);
+//            statObs.remove(key);
+//            return;
+//        }
+//
+//        Collection<ObjectPartitionStatisticsImpl> oldStatistics = store.getLocalPartitionsStatistics(key);
+//
+//        if (oldStatistics.isEmpty())
+//            return;
+//
+//        Collection<ObjectPartitionStatisticsImpl> newStatistics = new ArrayList<>(oldStatistics.size());
+//        Collection<Integer> partitionsToRmv = new ArrayList<>();
+//
+//        for (ObjectPartitionStatisticsImpl oldStat : oldStatistics) {
+//            ObjectPartitionStatisticsImpl newStat = subtract(oldStat, colNames);
+//
+//            if (!newStat.columnsStatistics().isEmpty())
+//                newStatistics.add(newStat);
+//            else
+//                partitionsToRmv.add(oldStat.partId());
+//        }
+//
+//        if (newStatistics.isEmpty()) {
+//            store.clearLocalPartitionsStatistics(key);
+//            store.clearObsolescenceInfo(key, null);
+//
+//            return;
+//        }
+//
+//        if (!partitionsToRmv.isEmpty()) {
+//            store.clearLocalPartitionsStatistics(key, partitionsToRmv);
+//            store.clearObsolescenceInfo(key, partitionsToRmv);
+//        }
+//
+//        store.replaceLocalPartitionsStatistics(key, newStatistics);
+//    }
 
     /**
      * Refresh statistics obsolescence and save clear object to store, after partition gathering.
@@ -298,14 +268,23 @@ public class IgniteStatisticsRepository {
      * @param partsToRemove Set of parititon ids to remove.
      */
     public void clearLocalPartitionIdsStatistics(StatisticsKey key, Set<Integer> partsToRemove) {
-        store.clearLocalPartitionsStatistics(key, partsToRemove);
+        if (F.isEmpty(partsToRemove)) {
+            store.clearLocalPartitionsStatistics(key);
+            store.clearObsolescenceInfo(key, null);
+            locStats.remove(key);
+            statObs.remove(key);
+        }
+        else {
+            store.clearLocalPartitionsStatistics(key, partsToRemove);
+            store.clearObsolescenceInfo(key, partsToRemove);
 
-        statObs.computeIfPresent(key, (k, v) -> {
-            for (Integer partToRemove : partsToRemove)
-                v.remove(partToRemove);
+            statObs.computeIfPresent(key, (k, v) -> {
+                for (Integer partToRemove : partsToRemove)
+                    v.remove(partToRemove);
 
-            return (v.isEmpty()) ? null : v;
-        });
+                return (v.isEmpty()) ? null : v;
+            });
+        }
     }
 
     /**
@@ -429,7 +408,6 @@ public class IgniteStatisticsRepository {
      */
     public synchronized void stop() {
         locStats.clear();
-        started.set(false);
 
         if (log.isDebugEnabled())
             log.debug("Statistics repository started.");
@@ -461,49 +439,6 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Update obsolescence info cache to fit specified cfg. Remove the others from store to clean it.
-     *
-     * @param cfg Obsolescence configuration.
-     */
-    public void updateObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
-        Map<StatisticsKey, Set<Integer>> deleted = updateObsolescenceInfo(statObs, cfg);
-
-        for (Map.Entry<StatisticsKey, Set<Integer>> objDeleted : deleted.entrySet())
-            store.clearObsolescenceInfo(objDeleted.getKey(), objDeleted.getValue());
-
-        fitObsolescenceInfo(cfg);
-    }
-
-    /**
-     * Check store to clean unnecessary records.
-     *
-     * @param cfg Map object statistics configuration to primary partitions set.
-     */
-    private void fitObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
-        Map<StatisticsKey, Set<Integer>> keyPartCfg = new HashMap<>(cfg.size());
-        cfg.forEach((k, v) -> keyPartCfg.put(k.key(), v));
-
-        Map<StatisticsKey, Collection<Integer>> obsolescenceMap = store.loadObsolescenceMap();
-
-        for (Map.Entry<StatisticsKey, Collection<Integer>> objObs : obsolescenceMap.entrySet()) {
-            Set<Integer> cfgObs = keyPartCfg.get(objObs.getKey());
-
-            if (cfgObs == null)
-                store.clearObsolescenceInfo(objObs.getKey(), null);
-            else {
-                List<Integer> partToRemove = new ArrayList<>();
-
-                for (Integer objPartObsId :objObs.getValue()) {
-                    if (!cfgObs.contains(objPartObsId))
-                        partToRemove.add(objPartObsId);
-                }
-
-                store.clearObsolescenceInfo(objObs.getKey(), partToRemove);
-            }
-        }
-    }
-
-    /**
      * Make obsolescence map correlated with configuration and return removed elements map.
      * Save new obsolescence info if necessary.
      *
@@ -517,16 +452,28 @@ public class IgniteStatisticsRepository {
     ) {
         Map<StatisticsKey, Set<Integer>> res = new HashMap<>();
 
-        Set<StatisticsKey> targetKeys = targetCfg.keySet().stream().map(StatisticsObjectConfiguration::key)
-            .collect(Collectors.toSet());
+        Map<StatisticsKey, StatisticsObjectConfiguration> targetKeysMap = targetCfg.keySet().stream()
+            .collect(Collectors.toMap(StatisticsObjectConfiguration::key, c -> c));
 
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : obsolescence.entrySet()) {
             StatisticsKey key = objObs.getKey();
 
-            if (!targetKeys.contains(key)) {
+            StatisticsObjectConfiguration targetKeyCfg = targetKeysMap.get(key);
+
+            if (targetKeyCfg == null) {
+                // No target key at all - add all partitions to rmv map
                 IntMap<ObjectPartitionStatisticsObsolescence> rmv = obsolescence.remove(key);
 
                 res.put(key, IntStream.of(rmv.keys()).boxed().collect(Collectors.toSet()));
+            }
+            else {
+                // Target key exists - check each partition id.
+                Set<Integer> targetKeyParts = targetCfg.get(targetKeyCfg);
+                
+                for (int objPartId : objObs.getValue().keys()) {
+                    if (!targetKeyParts.contains(objPartId))
+                        res.putIfAbsent(key, new HashSet<Integer>()).add(objPartId);
+                }
             }
         }
 
