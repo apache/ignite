@@ -28,17 +28,20 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
-/**
- *
- */
+/** */
 public class TestAuthorizationContextSecurityPluginProvider extends TestSecurityPluginProvider {
     /** Authorization handler. */
     private final Consumer<TestAuthorizationContext> hndlr;
 
     /** */
-    public TestAuthorizationContextSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        boolean globalAuth, Consumer<TestAuthorizationContext> hndlr,
-        TestSecurityData... clientData) {
+    public TestAuthorizationContextSecurityPluginProvider(
+        String login, 
+        String pwd, 
+        SecurityPermissionSet perms,
+        boolean globalAuth, 
+        Consumer<TestAuthorizationContext> hndlr,
+        TestSecurityData... clientData
+    ) {
         super(login, pwd, perms, globalAuth, clientData);
 
         this.hndlr = hndlr;
@@ -46,16 +49,16 @@ public class TestAuthorizationContextSecurityPluginProvider extends TestSecurity
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-        return new TestAuthorizationContextSecurityProcessor(ctx,
+        return new TestAuthorizationContextSecurityProcessor(
+            ctx,
             new TestSecurityData(login, pwd, perms, new Permissions()),
             Arrays.asList(clientData),
             globalAuth,
-            hndlr);
+            hndlr
+        );
     }
 
-    /**
-     *
-     */
+    /** */
     public static class TestAuthorizationContext {
         /** */
         public final String name;
@@ -67,8 +70,7 @@ public class TestAuthorizationContextSecurityPluginProvider extends TestSecurity
         public final SecurityContext securityCtx;
 
         /** */
-        public TestAuthorizationContext(String name, SecurityPermission perm,
-            SecurityContext securityCtx) {
+        public TestAuthorizationContext(String name, SecurityPermission perm, SecurityContext securityCtx) {
             this.name = name;
             this.perm = perm;
             this.securityCtx = securityCtx;
@@ -83,17 +85,24 @@ public class TestAuthorizationContextSecurityPluginProvider extends TestSecurity
         private final Consumer<TestAuthorizationContext> hndlr;
 
         /** */
-        public TestAuthorizationContextSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
-            Collection<TestSecurityData> predefinedAuthData, boolean globalAuth,
-            Consumer<TestAuthorizationContext> hndlr) {
+        public TestAuthorizationContextSecurityProcessor(
+            GridKernalContext ctx, 
+            TestSecurityData nodeSecData,
+            Collection<TestSecurityData> predefinedAuthData, 
+            boolean globalAuth,
+            Consumer<TestAuthorizationContext> hndlr
+        ) {
             super(ctx, nodeSecData, predefinedAuthData, globalAuth);
 
             this.hndlr = hndlr;
         }
 
         /** {@inheritDoc} */
-        @Override public void authorize(String name, SecurityPermission perm,
-            SecurityContext securityCtx) throws SecurityException {
+        @Override public void authorize(
+            String name, 
+            SecurityPermission perm, 
+            SecurityContext securityCtx
+        ) throws SecurityException {
             hndlr.accept(new TestAuthorizationContext(name, perm, securityCtx));
 
             super.authorize(name, perm, securityCtx);
