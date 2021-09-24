@@ -910,6 +910,6 @@ The SNAPSHOTS view exposes information about local snapshots.
 | SNAPSHOT_NAME | VARCHAR | Snapshot name.
 | NODE_ID | VARCHAR | Consistent ID of a node to which snapshot data relates.
 | BASELINE_NODES | VARCHAR | Baseline nodes affected by snapshots.
-| CACHE_GROUS | VARCHAR | The cache groups names which were included into snapshot.
+| CACHE_GROUPS | VARCHAR | Cache group names that were included in the snapshot.
 
 |===
