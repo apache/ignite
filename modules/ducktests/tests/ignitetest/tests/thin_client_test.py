@@ -38,7 +38,7 @@ class ThinClientTest(IgniteTest):
     export GLOBALS='{"ssl":{"enabled":true}}' .
     """
 
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientConnectAndWaitClient"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTestApplication"
 
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH), str(LATEST), version_prefix="server_version")
@@ -66,7 +66,8 @@ class ThinClientTest(IgniteTest):
         thin_clients.run()
         ignite.stop()
 
-    @cluster(num_nodes=12)
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientContiniusApplication"
+    @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH))
     def test_thin_client_max_reconnect(self, ignite_version):
         """
@@ -94,14 +95,18 @@ class ThinClientTest(IgniteTest):
         ControlUtility(cluster=ignite).activate()
 
 
-        for i in range(2):
-            ignite.freeze_node(ignite.nodes[0])
-            thin_clients.start_async()
-            thin_clients.await_started()
-            thin_clients.stop()
-            ignite.unfreeze_node(ignite.nodes[0])
+        # for i in range(2):
+        #     ignite.freeze_node(ignite.nodes[0])
+        #     thin_clients.start_async()
+        #     thin_clients.await_started()
+        #     thin_clients.stop()
+        #     ignite.unfreeze_node(ignite.nodes[0])
 
         # time.sleep(3)
+
+        thin_clients.start_async()
+        thin_clients.await_started()
+        thin_clients.stop()
 
         # thin_clients.await_started()
 
