@@ -111,7 +111,10 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
     }
 
     /**
-     * @return
+     * Reuse or gather new partition statistics according to context and repository state.
+     * Save partition statistcs and obsolescence info back to repository if needed.
+     * 
+     * @return Partition statistics.
      */
     @Override public ObjectPartitionStatisticsImpl call() {
         time = U.currentTimeMillis();
