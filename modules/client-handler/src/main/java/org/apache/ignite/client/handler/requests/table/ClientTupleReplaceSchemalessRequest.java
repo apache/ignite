@@ -45,6 +45,6 @@ public class ClientTupleReplaceSchemalessRequest {
         var table = readTable(in, tables);
         var tuple = readTupleSchemaless(in);
 
-        return table.replaceAsync(tuple).thenAccept(out::packBoolean);
+        return table.recordView().replaceAsync(tuple).thenAccept(out::packBoolean);
     }
 }

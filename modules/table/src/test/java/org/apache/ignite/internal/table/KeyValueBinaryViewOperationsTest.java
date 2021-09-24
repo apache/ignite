@@ -22,7 +22,7 @@ import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
-import org.apache.ignite.table.KeyValueBinaryView;
+import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * TODO: IGNITE-14487 Check non-key fields in Tuple is ignored for keys.
  * TODO: IGNITE-14487 Check key fields in Tuple is ignored for value or exception is thrown?
  */
-public class KVBinaryViewOperationsTest {
+public class KeyValueBinaryViewOperationsTest {
     /**
      *
      */
@@ -52,8 +52,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -95,8 +95,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -128,8 +128,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -162,8 +162,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -205,8 +205,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        final KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        final KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -260,8 +260,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -306,8 +306,8 @@ public class KVBinaryViewOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, false)}
         );
 
-        KeyValueBinaryView tbl =
-            new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl =
+            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);

@@ -47,6 +47,6 @@ public class ClientTupleGetAndUpsertRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, false);
 
-        return table.getAndUpsertAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple, TuplePart.VAL));
+        return table.recordView().getAndUpsertAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple, TuplePart.VAL));
     }
 }

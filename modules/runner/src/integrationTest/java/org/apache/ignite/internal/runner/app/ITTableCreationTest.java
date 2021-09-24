@@ -27,7 +27,8 @@ import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.table.KeyValueBinaryView;
+import org.apache.ignite.table.KeyValueView;
+import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
@@ -182,21 +183,23 @@ class ITTableCreationTest {
 
         { /* Table 1. */
             Table tbl1 = clusterNodes.get(1).tables().table("tbl1");
-            KeyValueBinaryView kvView1 = tbl1.kvView();
+            RecordView<Tuple> recView = tbl1.recordView();
+            KeyValueView<Tuple, Tuple> kvView1 = tbl1.keyValueView();
 
-            tbl1.insert(Tuple.create().set("key", 1L).set("val", 111));
+            recView.insert(Tuple.create().set("key", 1L).set("val", 111));
             kvView1.put(Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
 
             Table tbl2 = clusterNodes.get(2).tables().table("tbl1");
-            KeyValueBinaryView kvView2 = tbl2.kvView();
+            RecordView<Tuple> recView2 = tbl2.recordView();
+            KeyValueView<Tuple, Tuple> kvView2 = tbl2.keyValueView();
 
             final Tuple keyTuple1 = Tuple.create().set("key", 1L);
             final Tuple keyTuple2 = Tuple.create().set("key", 2L);
 
-            assertEquals(111, (Integer)tbl2.get(keyTuple1).value("val"));
-            assertEquals(111, (Integer)kvView1.get(keyTuple1).value("val"));
-            assertEquals(222, (Integer)tbl2.get(keyTuple2).value("val"));
-            assertEquals(222, (Integer)kvView1.get(keyTuple2).value("val"));
+            assertEquals(111, (Integer)recView2.get(keyTuple1).value("val"));
+            assertEquals(111, (Integer)kvView2.get(keyTuple1).value("val"));
+            assertEquals(222, (Integer)recView2.get(keyTuple2).value("val"));
+            assertEquals(222, (Integer)kvView2.get(keyTuple2).value("val"));
         }
 
         { /* Table 2. */
@@ -205,9 +208,10 @@ class ITTableCreationTest {
 
             // Put data on node 1.
             Table tbl1 = clusterNodes.get(1).tables().table("tbl1");
-            KeyValueBinaryView kvView1 = tbl1.kvView();
+            RecordView<Tuple> recView = tbl1.recordView();
+            KeyValueView<Tuple, Tuple> kvView1 = tbl1.keyValueView();
 
-            tbl1.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
+            recView.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
                 .set("valStr", "String value").set("valInt", 73).set("valNullable", null));
 
             kvView1.put(Tuple.create().set("key", uuid2).set("affKey", 4242L),
@@ -215,22 +219,23 @@ class ITTableCreationTest {
 
             // Get data on node 2.
             Table tbl2 = clusterNodes.get(2).tables().table("tbl1");
-            KeyValueBinaryView kvView2 = tbl2.kvView();
+            RecordView<Tuple> recView2 = tbl2.recordView();
+            KeyValueView<Tuple, Tuple> kvView2 = tbl2.keyValueView();
 
             final Tuple keyTuple1 = Tuple.create().set("key", uuid).set("affKey", 42L);
             final Tuple keyTuple2 = Tuple.create().set("key", uuid2).set("affKey", 4242L);
 
-            assertEquals("String value", tbl2.get(keyTuple1).value("valStr"));
+            assertEquals("String value", recView2.get(keyTuple1).value("valStr"));
             assertEquals("String value", kvView2.get(keyTuple1).value("valStr"));
-            assertEquals("String value 2", tbl2.get(keyTuple2).value("valStr"));
+            assertEquals("String value 2", recView2.get(keyTuple2).value("valStr"));
             assertEquals("String value 2", kvView2.get(keyTuple2).value("valStr"));
-            assertEquals(73, (Integer)tbl2.get(keyTuple1).value("valInt"));
+            assertEquals(73, (Integer)recView2.get(keyTuple1).value("valInt"));
             assertEquals(73, (Integer)kvView2.get(keyTuple1).value("valInt"));
-            assertEquals(7373, (Integer)tbl2.get(keyTuple2).value("valInt"));
+            assertEquals(7373, (Integer)recView2.get(keyTuple2).value("valInt"));
             assertEquals(7373, (Integer)kvView2.get(keyTuple2).value("valInt"));
-            assertNull(tbl2.get(keyTuple1).value("valNullable"));
+            assertNull(recView2.get(keyTuple1).value("valNullable"));
             assertNull(kvView2.get(keyTuple1).value("valNullable"));
-            assertNull(tbl2.get(keyTuple2).value("valNullable"));
+            assertNull(recView2.get(keyTuple2).value("valNullable"));
             assertNull(kvView2.get(keyTuple2).value("valNullable"));
         }
     }

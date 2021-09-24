@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.fakes.FakeSchemaRegistry;
 import org.apache.ignite.internal.client.table.ClientTuple;
-import org.apache.ignite.table.Table;
+import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ClientTableTest extends AbstractClientTableTest {
     @Test
     public void testGetWithMissedKeyColumnThrowsException() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         var key = Tuple.create().set("name", "123");
 
@@ -52,7 +52,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testUpsertGet() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         var tuple = tuple();
 
         table.upsert(tuple);
@@ -87,7 +87,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testUpsertGetAsync() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         var tuple = tuple(42L, "Jack");
         var key = Tuple.create().set("id", 42L);
@@ -105,13 +105,14 @@ public class ClientTableTest extends AbstractClientTableTest {
         FakeSchemaRegistry.setLastVer(2);
 
         var table = defaultTable();
+        var recView = table.recordView();
         Tuple tuple = tuple();
-        table.upsert(tuple);
+        recView.upsert(tuple);
 
         FakeSchemaRegistry.setLastVer(1);
 
         try (var client2 = startClient()) {
-            Table table2 = client2.tables().table(table.tableName());
+            RecordView<Tuple> table2 = client2.tables().table(table.tableName()).recordView();
             var tuple2 = tuple();
             var resTuple = table2.get(tuple2);
 
@@ -125,7 +126,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testInsert() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         var tuple = tuple();
         var tuple2 = tuple(DEFAULT_ID, "abc");
@@ -140,7 +141,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testInsertCustomTuple() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         var tuple = new CustomTuple(25L, "Foo");
 
         assertTrue(table.insert(tuple));
@@ -153,7 +154,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAll() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         table.insert(tuple(1L, "1"));
         table.insert(tuple(2L, "2"));
         table.insert(tuple(3L, "3"));
@@ -172,7 +173,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testUpsertAll() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         List<Tuple> data = Arrays.asList(tuple(1L, "1"), tuple(2L, "2"));
         table.upsertAll(data);
@@ -190,7 +191,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testInsertAll() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         List<Tuple> data = Arrays.asList(tuple(1L, "1"), tuple(2L, "2"));
         var skippedTuples = table.insertAll(data);
@@ -211,7 +212,7 @@ public class ClientTableTest extends AbstractClientTableTest {
     
     @Test
     public void testReplace() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         table.insert(tuple(1L, "1"));
 
         assertFalse(table.replace(tuple(3L, "3")));
@@ -223,7 +224,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testReplaceExact() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         table.insert(tuple(1L, "1"));
 
         assertFalse(table.replace(tuple(3L, "3"), tuple(3L, "4")));
@@ -236,7 +237,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAndReplace() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         var tuple = tuple(1L, "1");
         table.insert(tuple);
 
@@ -250,7 +251,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testDelete() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         table.insert(tuple(1L, "1"));
 
         assertFalse(table.delete(tuple(2L)));
@@ -260,7 +261,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testDeleteExact() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         table.insert(tuple(1L, "1"));
         table.insert(tuple(2L, "2"));
 
@@ -276,7 +277,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAndDelete() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
         var tuple = tuple(1L, "1");
         table.insert(tuple);
 
@@ -289,7 +290,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testDeleteAll() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         List<Tuple> data = Arrays.asList(tuple(1L, "1"), tuple(2L, "2"));
         table.insertAll(data);
@@ -310,7 +311,7 @@ public class ClientTableTest extends AbstractClientTableTest {
 
     @Test
     public void testDeleteAllExact() {
-        var table = defaultTable();
+        var table = defaultTable().recordView();
 
         List<Tuple> data = Arrays.asList(tuple(1L, "1"), tuple(2L, "2"));
         table.insertAll(data);

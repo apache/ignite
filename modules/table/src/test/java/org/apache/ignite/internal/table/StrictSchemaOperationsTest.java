@@ -24,6 +24,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
+import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
@@ -45,9 +46,9 @@ public class StrictSchemaOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, true)}
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        RecordView<Tuple> recView = createTableImpl(schema).recordView();
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.insert(Tuple.create().set("id", 0L).set("invalidCol", 0)));
+        assertThrows(SchemaMismatchException.class, () -> recView.insert(Tuple.create().set("id", 0L).set("invalidCol", 0)));
     }
 
     /**
@@ -64,17 +65,17 @@ public class StrictSchemaOperationsTest {
             new Column[] {new Column("val", NativeTypes.INT64, true)}
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        Table tbl = createTableImpl(schema);
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
-        assertThrows(SchemaMismatchException.class, () -> tbl.get(Tuple.create().set("id", 0L)));
+        assertThrows(SchemaMismatchException.class, () -> tbl.recordView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
+        assertThrows(SchemaMismatchException.class, () -> tbl.recordView().get(Tuple.create().set("id", 0L)));
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.kvView().get(Tuple.create().set("id", 0L)));
-        assertThrows(SchemaMismatchException.class, () -> tbl.kvView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
+        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().get(Tuple.create().set("id", 0L)));
+        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.kvView().put(Tuple.create().set("id", 0L), Tuple.create()));
-        assertThrows(SchemaMismatchException.class, () -> tbl.kvView().put(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L), Tuple.create()));
-        assertThrows(SchemaMismatchException.class, () -> tbl.kvView().put(Tuple.create().set("id", 0L).set("affId", 1L),
+        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L), Tuple.create()));
+        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L), Tuple.create()));
+        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L),
             Tuple.create().set("id", 0L).set("val", 0L)));
     }
 
@@ -92,7 +93,7 @@ public class StrictSchemaOperationsTest {
             }
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        RecordView<Tuple> tbl = createTableImpl(schema).recordView();
 
         // Check not-nullable column.
         assertThrows(IllegalArgumentException.class, () -> tbl.insert(Tuple.create().set("id", null)));
@@ -117,7 +118,7 @@ public class StrictSchemaOperationsTest {
             }
         );
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        RecordView<Tuple> tbl = createTableImpl(schema).recordView();
 
         Tuple tuple = Tuple.create().set("id", 1L);
 
@@ -144,7 +145,7 @@ public class StrictSchemaOperationsTest {
                 new Column("valLimited", NativeTypes.blobOf(2), true)
             });
 
-        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        RecordView<Tuple> tbl = createTableImpl(schema).recordView();
 
         Tuple tuple = Tuple.create().set("id", 1L);
 
@@ -156,5 +157,9 @@ public class StrictSchemaOperationsTest {
 
         assertThrows(InvalidTypeException.class, () -> tbl.insert(tuple.set("valLimited", new byte[3])));
 
+    }
+
+    private TableImpl createTableImpl(SchemaDescriptor schema) {
+        return new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
     }
 }

@@ -39,6 +39,6 @@ public class ClientTupleUpsertSchemalessRequest {
         var table = readTable(in, tables);
         var tuple = readTupleSchemaless(in);
 
-        return table.upsertAsync(tuple);
+        return table.recordView().upsertAsync(tuple);
     }
 }

@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.client.table;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
 import org.apache.ignite.client.IgniteClientException;
 import org.apache.ignite.internal.client.ReliableChannel;
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
@@ -39,8 +35,6 @@ import org.apache.ignite.internal.client.proto.ClientOp;
 import org.apache.ignite.internal.tostring.IgniteToStringBuilder;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.table.InvokeProcessor;
-import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
@@ -48,7 +42,6 @@ import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.mapper.KeyMapper;
 import org.apache.ignite.table.mapper.RecordMapper;
 import org.apache.ignite.table.mapper.ValueMapper;
-import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
@@ -75,9 +68,6 @@ public class ClientTable implements Table {
     /** */
     private final Object latestSchemaLock = new Object();
 
-    /** */
-    private final KeyValueBinaryView kvView;
-
     /**
      * Constructor.
      *
@@ -93,7 +83,6 @@ public class ClientTable implements Table {
         this.ch = ch;
         this.id = id;
         this.name = name;
-        this.kvView = new ClientKeyValueBinaryView(this);
     }
 
     /**
@@ -112,284 +101,21 @@ public class ClientTable implements Table {
 
     /** {@inheritDoc} */
     @Override public <R> RecordView<R> recordView(RecordMapper<R> recMapper) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KeyValueView<K, V> kvView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        throw new UnsupportedOperationException();
+    @Override public <K, V> KeyValueView<K, V> keyValueView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
+    @Override public RecordView<Tuple> recordView() {
+        return new ClientRecordBinaryView(this);
     }
 
     /** {@inheritDoc} */
-    @Override public KeyValueBinaryView kvView() {
-        return kvView;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Table withTransaction(Transaction tx) {
-        // TODO: Transactions IGNITE-15240
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tuple get(@NotNull Tuple keyRec) {
-        return getAsync(keyRec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAsync(@NotNull Tuple keyRec) {
-        Objects.requireNonNull(keyRec);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_GET,
-                (schema, out) -> writeTuple(keyRec, schema, out, true),
-                (inSchema, in) -> readValueTuple(inSchema, in, keyRec));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Tuple> getAll(@NotNull Collection<Tuple> keyRecs) {
-        return getAllAsync(keyRecs).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<Tuple>> getAllAsync(@NotNull Collection<Tuple> keyRecs) {
-        Objects.requireNonNull(keyRecs);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_GET_ALL,
-                (s, w) -> writeTuples(keyRecs, s, w, true),
-                this::readTuples,
-                Collections.emptyList());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void upsert(@NotNull Tuple rec) {
-        upsertAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> upsertAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        // TODO IGNITE-15194: Convert Tuple to a schema-order Array as a first step.
-        // If it does not match the latest schema, then request latest and convert again.
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_UPSERT,
-                (s, w) -> writeTuple(rec, s, w),
-                r -> null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void upsertAll(@NotNull Collection<Tuple> recs) {
-        upsertAllAsync(recs).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> upsertAllAsync(@NotNull Collection<Tuple> recs) {
-        Objects.requireNonNull(recs);
-
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_UPSERT_ALL,
-                (s, w) -> writeTuples(recs, s, w, false),
-                r -> null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tuple getAndUpsert(@NotNull Tuple rec) {
-        return getAndUpsertAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAndUpsertAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_GET_AND_UPSERT,
-                (s, w) -> writeTuple(rec, s, w, false),
-                (schema, in) -> readValueTuple(schema, in, rec));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean insert(@NotNull Tuple rec) {
-        return insertAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> insertAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_INSERT,
-                (s, w) -> writeTuple(rec, s, w, false),
-                ClientMessageUnpacker::unpackBoolean);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Tuple> insertAll(@NotNull Collection<Tuple> recs) {
-        return insertAllAsync(recs).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<Tuple>> insertAllAsync(@NotNull Collection<Tuple> recs) {
-        Objects.requireNonNull(recs);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_INSERT_ALL,
-                (s, w) -> writeTuples(recs, s, w, false),
-                this::readTuples,
-                Collections.emptyList());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(@NotNull Tuple rec) {
-        return replaceAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_REPLACE,
-                (s, w) -> writeTuple(rec, s, w, false),
-                ClientMessageUnpacker::unpackBoolean);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(@NotNull Tuple oldRec, @NotNull Tuple newRec) {
-        return replaceAsync(oldRec, newRec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple oldRec, @NotNull Tuple newRec) {
-        Objects.requireNonNull(oldRec);
-        Objects.requireNonNull(newRec);
-
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_REPLACE_EXACT,
-                (s, w) -> {
-                    writeTuple(oldRec, s, w, false, false);
-                    writeTuple(newRec, s, w, false, true);
-                },
-                ClientMessageUnpacker::unpackBoolean);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tuple getAndReplace(@NotNull Tuple rec) {
-        return getAndReplaceAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_GET_AND_REPLACE,
-                (s, w) -> writeTuple(rec, s, w, false),
-                (schema, in) -> readValueTuple(schema, in, rec));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean delete(@NotNull Tuple keyRec) {
-        return deleteAsync(keyRec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> deleteAsync(@NotNull Tuple keyRec) {
-        Objects.requireNonNull(keyRec);
-
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_DELETE,
-                (s, w) -> writeTuple(keyRec, s, w, true),
-                ClientMessageUnpacker::unpackBoolean);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean deleteExact(@NotNull Tuple rec) {
-        return deleteExactAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> deleteExactAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        return doSchemaOutOpAsync(
-                ClientOp.TUPLE_DELETE_EXACT,
-                (s, w) -> writeTuple(rec, s, w, false),
-                ClientMessageUnpacker::unpackBoolean);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tuple getAndDelete(@NotNull Tuple rec) {
-        return getAndDeleteAsync(rec).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAndDeleteAsync(@NotNull Tuple rec) {
-        Objects.requireNonNull(rec);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_GET_AND_DELETE,
-                (s, w) -> writeTuple(rec, s, w, false),
-                (schema, in) -> readValueTuple(schema, in, rec));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Tuple> deleteAll(@NotNull Collection<Tuple> recs) {
-        return deleteAllAsync(recs).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<Tuple>> deleteAllAsync(@NotNull Collection<Tuple> recs) {
-        Objects.requireNonNull(recs);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_DELETE_ALL,
-                (s, w) -> writeTuples(recs, s, w, true),
-                (schema, in) -> readTuples(schema, in, true),
-                Collections.emptyList());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Tuple> deleteAllExact(@NotNull Collection<Tuple> recs) {
-        return deleteAllExactAsync(recs).join();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<Tuple>> deleteAllExactAsync(@NotNull Collection<Tuple> recs) {
-        Objects.requireNonNull(recs);
-
-        return doSchemaOutInOpAsync(
-                ClientOp.TUPLE_DELETE_ALL_EXACT,
-                (s, w) -> writeTuples(recs, s, w, false),
-                this::readTuples,
-                Collections.emptyList());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T extends Serializable> T invoke(@NotNull Tuple keyRec, InvokeProcessor<Tuple, Tuple, T> proc) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(@NotNull Tuple keyRec, InvokeProcessor<Tuple, Tuple, T> proc) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T extends Serializable> Map<Tuple, T> invokeAll(@NotNull Collection<Tuple> keyRecs, InvokeProcessor<Tuple, Tuple, T> proc) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull <T extends Serializable> CompletableFuture<Map<Tuple, T>> invokeAllAsync(@NotNull Collection<Tuple> keyRecs, InvokeProcessor<Tuple, Tuple, T> proc) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable Transaction transaction() {
-        // TODO: Transactions IGNITE-15240
-        throw new UnsupportedOperationException();
+    @Override public KeyValueView<Tuple, Tuple> keyValueView() {
+        return new ClientKeyValueBinaryView(this);
     }
 
     private CompletableFuture<ClientSchema> getLatestSchema() {
@@ -584,10 +310,6 @@ public class ClientTable implements Table {
             writeTuple(tuple, schema, out, keyOnly, true);
     }
 
-    public static Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in) {
-        return readTuple(schema, in, false);
-    }
-
     private static Tuple readTuple(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
         var tuple = new ClientTuple(schema);
 
@@ -599,7 +321,7 @@ public class ClientTable implements Table {
         return tuple;
     }
 
-    public static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in, Tuple keyTuple) {
+    static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in, Tuple keyTuple) {
         var tuple = new ClientTuple(schema);
 
         for (var i = 0; i < schema.columns().length; i++) {
@@ -615,7 +337,7 @@ public class ClientTable implements Table {
         return tuple;
     }
 
-    public static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in) {
+    static Tuple readValueTuple(ClientSchema schema, ClientMessageUnpacker in) {
         var keyColCnt = schema.keyColumnCount();
         var colCnt = schema.columns().length;
 
@@ -631,7 +353,7 @@ public class ClientTable implements Table {
         return valTuple;
     }
 
-    public static IgniteBiTuple<Tuple, Tuple> readKvTuple(ClientSchema schema, ClientMessageUnpacker in) {
+    static IgniteBiTuple<Tuple, Tuple> readKvTuple(ClientSchema schema, ClientMessageUnpacker in) {
         var keyColCnt = schema.keyColumnCount();
         var colCnt = schema.columns().length;
 
@@ -663,11 +385,11 @@ public class ClientTable implements Table {
         return res;
     }
 
-    public Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in) {
+    Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in) {
         return readTuples(schema, in, false);
     }
 
-    private Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
+    Collection<Tuple> readTuples(ClientSchema schema, ClientMessageUnpacker in, boolean keyOnly) {
         var cnt = in.unpackInt();
         var res = new ArrayList<Tuple>(cnt);
 
@@ -677,7 +399,7 @@ public class ClientTable implements Table {
         return res;
     }
 
-    public <T> CompletableFuture<T> doSchemaOutInOpAsync(
+    <T> CompletableFuture<T> doSchemaOutInOpAsync(
             int opCode,
             BiConsumer<ClientSchema, ClientMessagePacker> writer,
             BiFunction<ClientSchema, ClientMessageUnpacker, T> reader
@@ -685,7 +407,7 @@ public class ClientTable implements Table {
         return doSchemaOutInOpAsync(opCode, writer, reader, null);
     }
 
-    public <T> CompletableFuture<T> doSchemaOutInOpAsync(
+    <T> CompletableFuture<T> doSchemaOutInOpAsync(
             int opCode,
             BiConsumer<ClientSchema, ClientMessagePacker> writer,
             BiFunction<ClientSchema, ClientMessageUnpacker, T> reader,
@@ -699,7 +421,7 @@ public class ClientTable implements Table {
                 .thenCompose(t -> loadSchemaAndReadData(t, reader));
     }
 
-    protected <T> CompletableFuture<T> doSchemaOutOpAsync(
+    <T> CompletableFuture<T> doSchemaOutOpAsync(
             int opCode,
             BiConsumer<ClientSchema, ClientMessagePacker> writer,
             Function<ClientMessageUnpacker, T> reader) {
