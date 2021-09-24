@@ -61,10 +61,10 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
         return new TestSecurityPluginProvider(
-            name, 
-            null, 
+            name,
+            null,
             ALLOW_ALL,
-            globalAuth, 
+            globalAuth,
             clientData()
         ) {
             /** {@inheritDoc} */
