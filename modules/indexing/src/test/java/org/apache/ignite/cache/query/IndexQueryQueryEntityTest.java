@@ -38,11 +38,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
+@RunWith(Parameterized.class)
 public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -71,7 +73,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     public String qryDescIdx;
 
     /** */
-    @Parameterized.Parameters(name = "qryIdx={0}")
+    @Parameterized.Parameters(name = "qryIdx={0}, qryDescIdx={1}")
     public static List<Object[]> params() {
         return F.asList(
             new Object[] {null, null},

@@ -65,7 +65,7 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
     public String qryDescIdx;
 
     /** */
-    @Parameterized.Parameters(name = "qryIdx={0}")
+    @Parameterized.Parameters(name = "qryIdx={0}, qryDescIdx={1}")
     public static List<Object[]> params() {
         return F.asList(
             new Object[] {null, null},

@@ -173,14 +173,14 @@ public class IndexQueryProcessor {
             .flatMap(f -> Stream.of(f, QueryUtils.normalizeObjectName(f, false)))
             .collect(Collectors.toSet());
 
-        for (Index i: idxs) {
-            IndexDefinition idxDef = idxProc.indexDefinition(i.id());
+        for (Index idx: idxs) {
+            IndexDefinition idxDef = idxProc.indexDefinition(idx.id());
 
             if (!tableName.equals(idxDef.idxName().tableName()))
                 continue;
 
             if (checkIndex(idxDef, idxQryDesc.criteria().size(), critFields))
-                return i;
+                return idx;
         }
 
         return null;
