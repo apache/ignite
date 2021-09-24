@@ -21,16 +21,25 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.Permissions;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.client.CommonSecurityCheckTest;
-import org.apache.ignite.internal.processors.security.impl.TestAuthorizationContextSecurityPluginProvider;
-import org.apache.ignite.internal.processors.security.impl.TestAuthorizationContextSecurityPluginProvider.TestAuthorizationContext;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
 
@@ -42,18 +51,38 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  */
 public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
     /** */
-    private final List<TestAuthorizationContext> authorizationCtxList = new ArrayList<>();
+    private final List<GridTuple3<String, SecurityPermission, SecurityContext>> authorizationCtxList = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAuthorizationContextSecurityPluginProvider(
+        return new TestSecurityPluginProvider(
             name, 
             null, 
             ALLOW_ALL,
             globalAuth, 
-            authorizationCtxList::add, 
             clientData()
-        );
+        ) {
+            /** {@inheritDoc} */
+            @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
+                return new TestSecurityProcessor(
+                    ctx,
+                    new TestSecurityData(login, pwd, perms, new Permissions()),
+                    Arrays.asList(clientData),
+                    globalAuth
+                ) {
+                    /** {@inheritDoc} */
+                    @Override public void authorize(
+                        String name,
+                        SecurityPermission perm,
+                        SecurityContext securityCtx
+                    ) throws SecurityException {
+                        authorizationCtxList.add(F.t(name, perm, securityCtx));
+
+                        super.authorize(name, perm, securityCtx);
+                    }
+                };
+            }
+        };
     }
 
     /** @throws Exception if failed. */
@@ -72,11 +101,11 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         executeCommand(GridRestCommand.GET_OR_CREATE_CACHE, login, pwd);
 
-        TestAuthorizationContext ctx = authorizationCtxList.get(0);
+        GridTuple3<String, SecurityPermission, SecurityContext> ctx = authorizationCtxList.get(0);
 
-        assertEquals(TEST_CACHE, ctx.name);
-        assertEquals(SecurityPermission.CACHE_CREATE, ctx.perm);
-        assertEquals(login, ctx.securityCtx.subject().login());
+        assertEquals(TEST_CACHE, ctx.get1());
+        assertEquals(SecurityPermission.CACHE_CREATE, ctx.get2());
+        assertEquals(login, ctx.get3().subject().login());
 
         assertNotNull(ignite.cache(TEST_CACHE));
 
@@ -86,9 +115,9 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         ctx = authorizationCtxList.get(0);
 
-        assertEquals(TEST_CACHE, ctx.name);
-        assertEquals(SecurityPermission.CACHE_DESTROY, ctx.perm);
-        assertEquals(login, ctx.securityCtx.subject().login());
+        assertEquals(TEST_CACHE, ctx.get1());
+        assertEquals(SecurityPermission.CACHE_DESTROY, ctx.get2());
+        assertEquals(login, ctx.get3().subject().login());
 
         assertNull(ignite.cache(TEST_CACHE));
     }
