@@ -175,7 +175,9 @@ public class CheckpointManager {
             (pageMemEx, fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
-            pageMemoryGroupResolver
+            pageMemoryGroupResolver,
+            workersRegistry,
+            igniteInstanceName
         );
 
         checkpointerProvider = () -> new Checkpointer(

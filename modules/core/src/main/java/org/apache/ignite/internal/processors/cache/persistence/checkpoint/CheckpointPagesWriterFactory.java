@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
@@ -68,6 +69,12 @@ public class CheckpointPagesWriterFactory {
     /** Writer which writes pages to page store during the checkpoint. */
     private final CheckpointPagesWriter.CheckpointPageWriter checkpointPageWriter;
 
+    /** Workers registry */
+    private final GridWorkerListener lsnr;
+
+    /** Name of the Ignite instance this runnable is used in. */
+    private final String igniteInstanceName;
+
     /**
      * @param logger Logger.
      * @param snapshotMgr Snapshot manager.
@@ -76,6 +83,8 @@ public class CheckpointPagesWriterFactory {
      * @param throttlingPolicy Throttling policy.
      * @param threadBuf Thread write buffer.
      * @param pageMemoryGroupResolver Page memory resolver.
+     * @param lsnr Workers registry
+     * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
      */
     CheckpointPagesWriterFactory(
         Function<Class<?>, IgniteLogger> logger,
@@ -84,7 +93,9 @@ public class CheckpointPagesWriterFactory {
         DataStorageMetricsImpl persStoreMetrics,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
         ThreadLocal<ByteBuffer> threadBuf,
-        IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver
+        IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
+        GridWorkerListener lsnr,
+        String igniteInstanceName
     ) {
         this.snapshotMgr = snapshotMgr;
         this.log = logger.apply(getClass());
@@ -93,6 +104,8 @@ public class CheckpointPagesWriterFactory {
         this.throttlingPolicy = throttlingPolicy;
         this.pageMemoryGroupResolver = pageMemoryGroupResolver;
         this.checkpointPageWriter = checkpointPageWriter;
+        this.lsnr = lsnr;
+        this.igniteInstanceName = igniteInstanceName;
     }
 
     /**
@@ -104,6 +117,9 @@ public class CheckpointPagesWriterFactory {
      * @param curCpProgress Current checkpoint data.
      * @param shutdownNow Checker of stop operation.
      * @return Instance of page checkpint writer.
+     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
+     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
+     * the two.
      */
     CheckpointPagesWriter build(
         CheckpointMetricsTracker tracker,
@@ -112,7 +128,8 @@ public class CheckpointPagesWriterFactory {
         CountDownFuture doneWriteFut,
         Runnable beforePageWrite,
         CheckpointProgressImpl curCpProgress,
-        BooleanSupplier shutdownNow
+        BooleanSupplier shutdownNow,
+        String name
     ) {
         return new CheckpointPagesWriter(
             tracker,
@@ -128,7 +145,10 @@ public class CheckpointPagesWriterFactory {
             pageMemoryGroupResolver,
             curCpProgress,
             checkpointPageWriter,
-            shutdownNow
+            shutdownNow,
+            igniteInstanceName,
+            name,
+            lsnr
         );
     }
 

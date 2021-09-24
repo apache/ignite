@@ -542,7 +542,8 @@ public class Checkpointer extends GridWorker {
                 doneWriteFut,
                 workProgressDispatcher::updateHeartbeat,
                 curCpProgress,
-                shutdownNow
+                shutdownNow,
+                "checkpoint-pages-writer-worker-" + i
             );
 
             if (pageWritePool == null)

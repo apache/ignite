@@ -141,7 +141,9 @@ public class LightweightCheckpointManager {
             persStoreMetrics,
             throttlingPolicy,
             threadBuf,
-            pageMemoryGroupResolver
+            pageMemoryGroupResolver,
+            workersRegistry,
+            igniteInstanceName
         );
 
         checkpointerProvider = () -> new Checkpointer(
