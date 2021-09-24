@@ -159,13 +159,14 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         if (txCache != null)
             addData.apply(txCache, from, to);
 
-        assertTrue(waitForCondition(cachePredicate, getTestTimeout()));
-
-        if (txCache != null)
-            assertTrue(waitForCondition(txPredicate, getTestTimeout()));
-
         if (waitForCommit)
             latch.await(getTestTimeout(), MILLISECONDS);
+        else {
+            assertTrue(waitForCondition(cachePredicate, getTestTimeout()));
+
+            if (txCache != null)
+                assertTrue(waitForCondition(txPredicate, getTestTimeout()));
+        }
 
         checkMetrics(cdc, txCache == null ? to : to * 2);
 
