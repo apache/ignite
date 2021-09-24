@@ -51,10 +51,10 @@ public class LocalStatisticsGatheringContext {
     private final Set<Integer> allParts;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    private final AffinityTopologyVersion topVer;
 
     /** Future with success status as a result. */
-    private CompletableFuture<Void> future;
+    private final CompletableFuture<Void> future;
 
     /** Context cancelled flag. */
     private volatile boolean cancelled;
@@ -116,7 +116,7 @@ public class LocalStatisticsGatheringContext {
     }
 
     /**
-     * @return
+     * @return Set of remaining partitions.
      */
     public synchronized Set<Integer> remainingParts() {
         return new HashSet<>(remainingParts);
@@ -149,30 +149,29 @@ public class LocalStatisticsGatheringContext {
         return false;
     }
 
+    /**
+     * Cancel gathering.
+     */
     public void cancel() {
         cancelled = true;
     }
 
+    /**
+     * @return Cancelled flag.
+     */
     public boolean cancelled() {
         return cancelled;
     }
 
     /**
-     * @return
+     * @return Gathering completable future.
      */
     public CompletableFuture<Void> future() {
         return future;
     }
 
     /**
-     * @param future
-     */
-    public void future(CompletableFuture<Void> future) {
-        this.future = future;
-    }
-
-    /**
-     * @return
+     * @return Gathering topology version or {@code null} if it's just an obsolescence processing.
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
