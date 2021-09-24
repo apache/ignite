@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cdc;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractCdcTest;
@@ -27,8 +28,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -75,7 +78,12 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         BinaryCdcConsumer cnsmr = new BinaryCdcConsumer();
 
-        CdcMain cdc = createCdc(cnsmr, cfg);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        GridAbsPredicate userPredicate = sizePredicate(KEYS_CNT, USER, UPDATE, cnsmr);
+        GridAbsPredicate cityPredicate = sizePredicate(KEYS_CNT, CITY, UPDATE, cnsmr);
+
+        CdcMain cdc = createCdc(cnsmr, cfg, latch, userPredicate, cityPredicate);
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -105,8 +113,8 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
-        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, cnsmr));
-        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, cnsmr));
+        // Wait while both predicte will become true and state saved on the disk.
+        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));;
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
@@ -124,7 +132,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        assertTrue(waitForSize(KEYS_CNT, USER, DELETE, cnsmr));
+        waitForSize(KEYS_CNT, USER, DELETE, cnsmr);
 
         checkMetrics(cdc, KEYS_CNT);
 
