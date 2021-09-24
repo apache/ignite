@@ -234,7 +234,7 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() -> {
             ObjectStatisticsImpl stat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-            return stat != null && stat.rowCount() == 8 ;
+            return stat != null && stat.rowCount() == 8;
         }, TIMEOUT));
 
         smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);

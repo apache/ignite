@@ -135,53 +135,6 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Clear partition statistics and obsolescence info for specified object.
-     *
-     * @param key      Object to clear statistics and obsolescence by.
-     * @param colNames if specified - only statistics by specified columns will be cleared.
-     */
-//    public void clearLocalPartitionsStatistics(StatisticsKey key, Set<String> colNames) {
-//        if (F.isEmpty(colNames)) {
-//            store.clearLocalPartitionsStatistics(key);
-//            store.clearObsolescenceInfo(key, null);
-//            locStats.remove(key);
-//            statObs.remove(key);
-//            return;
-//        }
-//
-//        Collection<ObjectPartitionStatisticsImpl> oldStatistics = store.getLocalPartitionsStatistics(key);
-//
-//        if (oldStatistics.isEmpty())
-//            return;
-//
-//        Collection<ObjectPartitionStatisticsImpl> newStatistics = new ArrayList<>(oldStatistics.size());
-//        Collection<Integer> partitionsToRmv = new ArrayList<>();
-//
-//        for (ObjectPartitionStatisticsImpl oldStat : oldStatistics) {
-//            ObjectPartitionStatisticsImpl newStat = subtract(oldStat, colNames);
-//
-//            if (!newStat.columnsStatistics().isEmpty())
-//                newStatistics.add(newStat);
-//            else
-//                partitionsToRmv.add(oldStat.partId());
-//        }
-//
-//        if (newStatistics.isEmpty()) {
-//            store.clearLocalPartitionsStatistics(key);
-//            store.clearObsolescenceInfo(key, null);
-//
-//            return;
-//        }
-//
-//        if (!partitionsToRmv.isEmpty()) {
-//            store.clearLocalPartitionsStatistics(key, partitionsToRmv);
-//            store.clearObsolescenceInfo(key, partitionsToRmv);
-//        }
-//
-//        store.replaceLocalPartitionsStatistics(key, newStatistics);
-//    }
-
-    /**
      * Refresh statistics obsolescence and save clear object to store, after partition gathering.
      *
      * @param key Statistics key.
@@ -302,7 +255,7 @@ public class IgniteStatisticsRepository {
      *
      * @return Local (for current node) object statistics.
      */
-    public Map<StatisticsKey, ObjectStatisticsImpl> getAllLocalStatisticsInt() {
+    public Map<StatisticsKey, ObjectStatisticsImpl> localStatisticsMap() {
         return locStats;
     }
 

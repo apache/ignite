@@ -434,8 +434,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         }
     }
 
-
-
     /**
      * Calculate targets to refresh obsolescence statistics by map of dirty partitions and actual per partition
      * statistics.

@@ -75,7 +75,7 @@ public class ColumnLocalDataViewSupplier {
             locStatsMap = Collections.singletonMap(key, objLocStat);
         }
         else
-            locStatsMap = repo.getAllLocalStatisticsInt().entrySet().stream()
+            locStatsMap = repo.localStatisticsMap().entrySet().stream()
                 .filter(e -> F.isEmpty(schema) || schema.equals(e.getKey().schema()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

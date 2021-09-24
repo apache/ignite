@@ -151,7 +151,7 @@ public class StatisticsProcessor {
                 res[0] = true;
 
                 ctx.future().whenComplete((r, t) -> {
-                    if (t != null){
+                    if (t != null) {
                         if (t instanceof CancellationException || t instanceof NodeStoppingException) {
                             if (log.isDebugEnabled())
                                 log.debug("Got " + t.getClass() + " exception during statistics collection by key "
@@ -175,7 +175,6 @@ public class StatisticsProcessor {
                 v.configuration().compareTo(ctx.configuration()) < 0) {
                 // Old context for older topology or config - cancel and start new
                 v.cancel();
-
 
                 v.future().whenComplete((r, t) -> {
                     // Will be executed before original, so have to try to cancel previous context to add new one.
