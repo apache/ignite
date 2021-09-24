@@ -3965,7 +3965,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (spiState == CONNECTED && failedNodes.size() == ring.serverNodes().size() - 1) {
                             leftAlone = true;
 
-                            U.warn(log, "Current node has tried to connect to every other node in the ring and failed. Not it is in " +
+                            U.warn(log, "Current node has tried to connect to every other node in the ring and failed. Now it is in " +
                                 "the left-alone state. An unexpected incoming message will stop this node because there is no recipient " +
                                 "to resend the message to. The ring could be blocked.");
                         }

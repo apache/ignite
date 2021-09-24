@@ -77,6 +77,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -2339,7 +2340,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             // Ensure the test node suspects rest of the clusted failed.
             assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
-            assertEquals(testSpi.getSpiState(), "CONNECTED");
+            assertEquals(testSpi.getSpiState(), TcpDiscoverySpiState.CONNECTED.name());
 
             for (int i = 0; i < nodes - 1; ++i)
                 stopGrid(i, true);
@@ -2467,14 +2468,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             becomeLeftAlone.await();
 
             assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
-            assertEquals(testSpi.getSpiState(), "CONNECTED");
+            assertEquals(testSpi.getSpiState(), TcpDiscoverySpiState.CONNECTED.name());
 
             // Send a message from client.
             assertTrue(client.configuration().getDiscoverySpi().pingNode(leftAlone.cluster().localNode().id()));
 
             // make sure the test node hasn't segmented.
             assertTrue(U.field((Object)U.field(testSpi, "impl"), "leftAlone"));
-            assertEquals(testSpi.getSpiState(), "CONNECTED");
+            assertEquals(testSpi.getSpiState(), TcpDiscoverySpiState.CONNECTED.name());
         }
         finally {
             stopAllGrids();
