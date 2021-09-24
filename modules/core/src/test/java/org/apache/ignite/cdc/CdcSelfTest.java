@@ -150,24 +150,23 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         ign.cluster().state(ACTIVE);
 
-        Supplier<CdcMain> cdc = () -> createCdc(cnsmr, cfg);
-
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
         addAndWaitForConsumption(
             cnsmr,
-            cdc.get(),
+            cfg,
             cache,
             txCache,
             CdcSelfTest::addData,
             0,
-            KEYS_CNT + 3
+            KEYS_CNT + 3,
+            offsetCommit
         );
 
         removeData(cache, 0, KEYS_CNT);
 
-        CdcMain cdcMain = cdc.get();
+        CdcMain cdcMain = createCdc(cnsmr, cfg);
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdcMain);
 

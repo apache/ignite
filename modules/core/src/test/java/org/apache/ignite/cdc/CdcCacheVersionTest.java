@@ -119,11 +119,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = createCdc(cnsmr, cfg);
-
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
 
-        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT);
+        addAndWaitForConsumption(cnsmr, cfg, cache, null, this::addConflictData, 0, KEYS_CNT, true);
     }
 
     /** */

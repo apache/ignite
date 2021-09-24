@@ -48,6 +48,7 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.internal.cdc.CdcMain.BINARY_META_DIR;
@@ -126,13 +127,31 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     /** */
     protected void addAndWaitForConsumption(
         UserCdcConsumer cnsmr,
-        CdcMain cdc,
+        IgniteConfiguration cfg,
         IgniteCache<Integer, CdcSelfTest.User> cache,
         IgniteCache<Integer, CdcSelfTest.User> txCache,
         CI3<IgniteCache<Integer, CdcSelfTest.User>, Integer, Integer> addData,
         int from,
-        int to
+        int to,
+        boolean waitForCommit
     ) throws Exception {
+        GridAbsPredicate cachePredicate = sizePredicate(to - from, cache.getName(), UPDATE, cnsmr);
+        GridAbsPredicate txPredicate = txCache == null
+            ? null
+            : sizePredicate(to - from, txCache.getName(), UPDATE, cnsmr);
+
+        CdcMain cdc;
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        if (waitForCommit) {
+            cdc = txCache == null
+                ? createCdc(cnsmr, cfg, latch, cachePredicate)
+                : createCdc(cnsmr, cfg, latch, cachePredicate, txPredicate);
+        }
+        else
+            cdc = createCdc(cnsmr, cfg);
+
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         addData.apply(cache, from, to);
@@ -140,10 +159,13 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         if (txCache != null)
             addData.apply(txCache, from, to);
 
-        waitForSize(to - from, cache.getName(), UPDATE, cnsmr);
+        assertTrue(waitForCondition(cachePredicate, getTestTimeout()));
 
         if (txCache != null)
-            waitForSize(to - from, txCache.getName(), UPDATE, cnsmr);
+            assertTrue(waitForCondition(txPredicate, getTestTimeout()));
+
+        if (waitForCommit)
+            latch.await(getTestTimeout(), MILLISECONDS);
 
         checkMetrics(cdc, txCache == null ? to : to * 2);
 
