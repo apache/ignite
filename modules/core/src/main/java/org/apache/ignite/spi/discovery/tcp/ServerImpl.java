@@ -7420,7 +7420,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void ringMessageReceived(TcpDiscoveryAbstractMessage msg) {
             lastRingMsgReceivedTime = System.nanoTime();
 
-            if (leftAlone && !clientMsgWorkers.containsKey(msg.creatorNodeId())) {
+            if (leftAlone && !clientMsgWorkers.containsKey(msg.senderNodeId())) {
                 U.warn(log, "Received an unexpected message [" + msg + "] while current node is in the left-alone state meaning " +
                     "lost connection to entyre cluster. Network malfunction is suspected. Probably this node can't resend any " +
                     "message and would block the cluster ring. To avoid this the segmentation is engaged.");
