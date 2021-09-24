@@ -1784,17 +1784,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Collection<ClusterNode> nodes = cctx.kernalContext().discovery().aliveServerNodes();
 
-        if (nodeConsistentId != null)
-             nodes = nodes.stream()
-                 .filter(n -> toStringSafe(n.consistentId()).equals(nodeConsistentId))
-                 .collect(Collectors.toSet());
+        if (nodeConsistentId != null) {
+            nodes = nodes.stream()
+                .filter(n -> toStringSafe(n.consistentId()).equals(nodeConsistentId))
+                .collect(Collectors.toSet());
+        }
 
         List<UUID> ids = nodes.stream().map(ClusterNode::id).collect(Collectors.toList());
 
-        ComputeTaskFuture<Set<SnapshotView>> fut = ((ClusterGroupAdapter)cctx.kernalContext().cluster().get().forServers()).compute()
-            .executeAsync(new SnapshotViewTask(), new VisorTaskArgument<String>(ids, snapshotName, false));
-
-        return fut.get();
+        return ((ClusterGroupAdapter)cctx.kernalContext().cluster().get().forServers()).compute()
+            .execute(new SnapshotViewTask(), new VisorTaskArgument<>(ids, snapshotName, false));
     }
 
     /** @return Snapshot handlers. */
@@ -2550,11 +2549,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (snapName != null)
                     metas = snapMngr.readSnapshotMetadatas(snapName);
-                else
+                else {
                     metas = snapMngr.localSnapshotNames().stream()
                         .map(snapMngr::readSnapshotMetadatas)
                         .flatMap(Collection::stream)
                         .collect(Collectors.toList());
+                }
 
                 return metas.stream().map(meta -> {
                     Collection<String> cacheGrps = F.viewReadOnly(snapMngr.snapshotCacheDirectories(meta.snapshotName(), meta.folderName()),
@@ -2573,6 +2573,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throws IgniteException {
             return results.stream()
                 .map(ComputeJobResult::getData)
+                .filter(Objects::nonNull)
                 .map(d -> (List<SnapshotView>)d)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());

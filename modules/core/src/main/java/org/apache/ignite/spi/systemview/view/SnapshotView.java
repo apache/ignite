@@ -34,14 +34,14 @@ public class SnapshotView {
     /** Baseline nodes affected by snapshots. */
     private final String baselineNodes;
 
-    /** The cache groups names which were included into snapshot. */
+    /** Cache group names that were included in the snapshot. */
     private final String cacheGrps;
 
     /**
      * @param name Snapshot name.
      * @param nodeId Node consistent id.
      * @param baselineNodes Baseline nodes affected by snapshots.
-     * @param cacheGrps The cache groups names which were included into snapshot.
+     * @param cacheGrps Cache group names that were included in the snapshot.
      */
     public SnapshotView(
         String name,
@@ -83,7 +83,7 @@ public class SnapshotView {
     }
 
     /**
-     * @return The cache groups names which were included into snapshot.
+     * @return Cache group names that were included in the snapshot.
      */
     @Order(3)
     public String cacheGroups() {
