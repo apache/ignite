@@ -370,12 +370,12 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     }
 
     /** {@inheritDoc} */
-    @Override public Table getOrCreateTable(String name, Consumer<TableChange> tableInitChange) {
-        return getOrCreateTableAsync(name, tableInitChange).join();
+    @Override public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
+        return createTableIfNotExistsAsync(name, tableInitChange).join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> getOrCreateTableAsync(String name, Consumer<TableChange> tableInitChange) {
+    @Override public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
         return createTableAsync(name, tableInitChange, false);
     }
 

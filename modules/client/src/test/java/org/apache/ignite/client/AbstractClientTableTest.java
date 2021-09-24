@@ -70,7 +70,7 @@ public class AbstractClientTableTest extends AbstractClientTest {
     }
 
     protected Table defaultTable() {
-        server.tables().getOrCreateTable(DEFAULT_TABLE, tbl -> tbl.changeReplicas(1));
+        server.tables().createTableIfNotExists(DEFAULT_TABLE, tbl -> tbl.changeReplicas(1));
 
         return client.tables().table(DEFAULT_TABLE);
     }

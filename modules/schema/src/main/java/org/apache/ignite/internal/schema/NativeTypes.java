@@ -20,7 +20,7 @@ package org.apache.ignite.internal.schema;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.BitSet;
-import org.apache.ignite.schema.ColumnType;
+import org.apache.ignite.schema.definition.ColumnType;
 
 /**
  * A thin wrapper over {@link NativeTypeSpec} to instantiate parameterized constrained types.

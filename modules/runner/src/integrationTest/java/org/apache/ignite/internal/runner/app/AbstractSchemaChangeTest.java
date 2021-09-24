@@ -30,10 +30,10 @@ import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.schema.Column;
-import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
-import org.apache.ignite.schema.SchemaTable;
+import org.apache.ignite.schema.definition.ColumnDefinition;
+import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -199,10 +199,10 @@ abstract class AbstractSchemaChangeTest {
      */
     protected void createTable(List<Ignite> nodes) {
         // Create table on node 0.
-        SchemaTable schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
+        TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
             SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
             SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
-            SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValue("default").build()
+            SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
         ).withPrimaryKey("key").build();
 
         nodes.get(0).tables().createTable(
@@ -215,7 +215,7 @@ abstract class AbstractSchemaChangeTest {
      * @param nodes Cluster nodes.
      * @param columnToAdd Column to add.
      */
-    protected void addColumn(List<Ignite> nodes, Column columnToAdd) {
+    protected void addColumn(List<Ignite> nodes, ColumnDefinition columnToAdd) {
         nodes.get(0).tables().alterTable(TABLE,
             chng -> chng.changeColumns(cols -> {
                 int colIdx = chng.columns().namedListKeys().stream().mapToInt(Integer::parseInt).max().getAsInt() + 1;

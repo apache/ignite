@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.schema;
 
 import java.util.Map;
-import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
-import org.apache.ignite.schema.SchemaTable;
-import org.apache.ignite.schema.builder.SchemaTableBuilder;
+import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.SchemaObject;
+import org.apache.ignite.schema.definition.TableDefinition;
+import org.apache.ignite.schema.definition.builder.TableSchemaBuilder;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,23 +34,21 @@ public class SchemaConfigurationTest {
      */
     @Test
     public void testInitialSchema() {
-        final SchemaTableBuilder builder = SchemaBuilders.tableBuilder(SchemaTable.DEFAULT_SCHEMA_NAME, "table1");
+        final TableSchemaBuilder builder = SchemaBuilders.tableBuilder(SchemaObject.DEFAULT_DATABASE_SCHEMA_NAME, "table1");
 
         builder
             .columns(
                 // Declaring columns in user order.
                 SchemaBuilders.column("id", ColumnType.INT64).build(),
-                SchemaBuilders.column("label", ColumnType.stringOf(2)).withDefaultValue("AI").build(),
+                SchemaBuilders.column("label", ColumnType.stringOf(2)).withDefaultValueExpression("AI").build(),
                 SchemaBuilders.column("name", ColumnType.string()).asNonNull().build(),
                 SchemaBuilders.column("data", ColumnType.blobOf(255)).asNullable().build(),
                 SchemaBuilders.column("affId", ColumnType.INT32).build()
             )
 
-            .withIndex(
-                SchemaBuilders.pkIndex()  // Declare index column in order.
-                    .addIndexColumn("id").desc().done()
-                    .addIndexColumn("affId").asc().done()
-                    .addIndexColumn("name").asc().done()
+            .withPrimaryKey(
+                SchemaBuilders.primaryKey()  // Declare index column in order.
+                    .withColumns("id", "affId", "name")
                     .withAffinityColumns("affId") // Optional affinity declaration. If not set, all columns will be affinity cols.
                     .build()
             )
@@ -87,7 +86,7 @@ public class SchemaConfigurationTest {
      */
     @Test
     public void testSchemaModification() {
-        final SchemaTable table = SchemaBuilders.tableBuilder("PUBLIC", "table1")
+        final TableDefinition table = SchemaBuilders.tableBuilder("PUBLIC", "table1")
             .columns(
                 // Declaring columns in user order.
                 SchemaBuilders.column("id", ColumnType.INT64).build(),

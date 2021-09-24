@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.schema.modification;
 
-import org.apache.ignite.internal.schema.SchemaTableImpl;
-import org.apache.ignite.schema.Column;
-import org.apache.ignite.schema.PrimaryIndex;
-import org.apache.ignite.schema.TableIndex;
+import org.apache.ignite.internal.schema.definition.TableDefinitionImpl;
+import org.apache.ignite.schema.definition.ColumnDefinition;
+import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
+import org.apache.ignite.schema.definition.index.IndexDefinition;
 import org.apache.ignite.schema.modification.AlterColumnBuilder;
 import org.apache.ignite.schema.modification.TableModificationBuilder;
 
@@ -29,19 +29,19 @@ import org.apache.ignite.schema.modification.TableModificationBuilder;
  */
 public class TableModificationBuilderImpl implements TableModificationBuilder {
     /** Table. */
-    private final SchemaTableImpl table;
+    private final TableDefinitionImpl table;
 
     /**
      * Constructor.
      *
      * @param table Table.
      */
-    public TableModificationBuilderImpl(SchemaTableImpl table) {
+    public TableModificationBuilderImpl(TableDefinitionImpl table) {
         this.table = table;
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder addColumn(Column column) {
+    @Override public TableModificationBuilder addColumn(ColumnDefinition column) {
         if (table.hasColumn(column.name()))
             throw new IllegalArgumentException("Duplicate column: name='" + column.name() + '\'');
 
@@ -49,7 +49,7 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder addKeyColumn(Column column) {
+    @Override public TableModificationBuilder addKeyColumn(ColumnDefinition column) {
         if (table.hasColumn(column.name()))
             throw new IllegalArgumentException("Duplicate column: name=" + column.name() + '\'');
 
@@ -70,18 +70,18 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder addIndex(TableIndex index) {
-        assert !PrimaryIndex.PRIMARY_KEY_INDEX_NAME.equals(index.name());
+    @Override public TableModificationBuilder addIndex(IndexDefinition indexDefinition) {
+        assert !PrimaryKeyDefinition.PRIMARY_KEY_NAME.equals(indexDefinition.name());
 
-        if (table.indices().stream().anyMatch(i -> i.name().equals(index.name())))
-            throw new IllegalArgumentException("Index already exists: name=" + index.name() + '\'');
+        if (table.indices().stream().anyMatch(i -> i.name().equals(indexDefinition.name())))
+            throw new IllegalArgumentException("Index already exists: name=" + indexDefinition.name() + '\'');
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public TableModificationBuilder dropIndex(String indexName) {
-        if (PrimaryIndex.PRIMARY_KEY_INDEX_NAME.equals(indexName))
+        if (PrimaryKeyDefinition.PRIMARY_KEY_NAME.equals(indexName))
             throw new IllegalArgumentException("Can't drop primary key index: name=" + indexName);
 
         return this;

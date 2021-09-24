@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.schema.SchemaMode;
+import org.apache.ignite.schema.definition.SchemaManagementMode;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,12 +50,12 @@ public interface InternalTable {
      *
      * @return Schema mode.
      */
-    @NotNull SchemaMode schemaMode();
+    @NotNull SchemaManagementMode schemaMode();
 
     /**
      * Sets schema mode for the table.
      */
-    void schema(SchemaMode schemaMode);
+    void schema(SchemaManagementMode schemaMode);
 
     /**
      * Asynchronously gets a row with same key columns values as given one from the table.

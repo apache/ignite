@@ -39,7 +39,7 @@ import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
-import org.apache.ignite.schema.SchemaMode;
+import org.apache.ignite.schema.definition.SchemaManagementMode;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class MutableRowTupleAdapterTest {
     /** Mocked table. */
-    private InternalTable tbl = Mockito.when(Mockito.mock(InternalTable.class).schemaMode()).thenReturn(SchemaMode.STRICT_SCHEMA).getMock();
+    private InternalTable tbl = Mockito.when(Mockito.mock(InternalTable.class).schemaMode()).thenReturn(SchemaManagementMode.STRICT).getMock();
 
     /** Schema descriptor. */
     private SchemaDescriptor schema = new SchemaDescriptor(

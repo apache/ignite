@@ -25,7 +25,7 @@ import org.apache.ignite.internal.schema.configuration.SchemaDescriptorConverter
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.mapping.ColumnMapping;
 import org.apache.ignite.lang.LoggerMessageHelper;
-import org.apache.ignite.schema.SchemaTable;
+import org.apache.ignite.schema.definition.TableDefinition;
 
 /**
  * Stateless schema utils that produces helper methods for schema preparation.
@@ -39,9 +39,9 @@ public class SchemaUtils {
      * @return Schema descriptor.
      */
     public static SchemaDescriptor prepareSchemaDescriptor(int schemaVer, TableView tblCfg) {
-        SchemaTable schemaTbl = SchemaConfigurationConverter.convert(tblCfg);
+        TableDefinition tableDef = SchemaConfigurationConverter.convert(tblCfg);
 
-        return SchemaDescriptorConverter.convert(schemaVer, schemaTbl);
+        return SchemaDescriptorConverter.convert(schemaVer, tableDef);
     }
 
     /**

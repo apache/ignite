@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
-import org.apache.ignite.schema.Column;
-import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.definition.ColumnDefinition;
+import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
@@ -97,7 +97,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
             );
         }
 
-        addColumn(grid, SchemaBuilders.column("valStrNew", ColumnType.string()).asNullable().withDefaultValue("default").build());
+        addColumn(grid, SchemaBuilders.column("valStrNew", ColumnType.string()).asNullable().withDefaultValueExpression("default").build());
 
         // Check old row conversion.
         Tuple keyTuple1 = Tuple.create().set("key", 1L);
@@ -181,7 +181,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         }
 
         renameColumn(grid, "valInt", "val2");
-        addColumn(grid, SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().withDefaultValue(-1).build());
+        addColumn(grid, SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().withDefaultValueExpression(-1).build());
 
         {
             // Check old row conversion.
@@ -214,7 +214,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
 
         createTable(grid);
 
-        final Column column = SchemaBuilders.column("val", ColumnType.string()).asNullable().withDefaultValue("default").build();
+        final ColumnDefinition column = SchemaBuilders.column("val", ColumnType.string()).asNullable().withDefaultValueExpression("default").build();
 
         Table tbl = grid.get(0).tables().table(TABLE);
 
@@ -246,7 +246,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
             );
         }
 
-        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValue("default").build());
+        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValueExpression("default").build());
 
         {
             tbl.insert(Tuple.create().set("key", 5L).set("valInt", 555));
@@ -297,7 +297,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         }
 
         changeDefault(grid, colName, (Supplier<Object> & Serializable)() -> "newDefault");
-        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValue("newDefault").build());
+        addColumn(grid, SchemaBuilders.column("val", ColumnType.string()).withDefaultValueExpression("newDefault").build());
 
         {
             tbl.insert(Tuple.create().set("key", 2L).set("valInt", 222));

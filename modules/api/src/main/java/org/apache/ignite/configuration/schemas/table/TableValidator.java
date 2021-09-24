@@ -27,7 +27,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Annotation to validate whole table configuration.
  *
- * Activate SchemaTableValidatorImpl in configuration engine for {@link TablesConfigurationSchema#tables}.
+ * Activate TableValidatorImpl in configuration engine for {@link TablesConfigurationSchema#tables}.
  */
 @Target({ FIELD, PARAMETER })
 @Retention(RUNTIME)

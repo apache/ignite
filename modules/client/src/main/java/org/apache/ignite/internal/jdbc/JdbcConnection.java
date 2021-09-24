@@ -49,7 +49,7 @@ import org.apache.ignite.client.proto.query.SqlStateCode;
 import org.apache.ignite.internal.client.HostAndPortRange;
 import org.apache.ignite.internal.client.TcpIgniteClient;
 import org.apache.ignite.internal.client.query.JdbcClientQueryEventHandler;
-import org.apache.ignite.schema.SchemaTable;
+import org.apache.ignite.schema.definition.TableDefinition;
 import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -124,7 +124,7 @@ public class JdbcConnection implements Connection {
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
 
-        schema = SchemaTable.DEFAULT_SCHEMA_NAME;
+        schema = TableDefinition.DEFAULT_DATABASE_SCHEMA_NAME;
 
         client = null;
     }
@@ -760,7 +760,7 @@ public class JdbcConnection implements Connection {
      */
     public static String normalizeSchema(String schemaName) {
         if (schemaName == null || schemaName.isEmpty())
-            return SchemaTable.DEFAULT_SCHEMA_NAME;
+            return TableDefinition.DEFAULT_DATABASE_SCHEMA_NAME;
 
         String res;
 

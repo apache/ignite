@@ -17,7 +17,7 @@
 
 package org.apache.ignite.schema.modification;
 
-import org.apache.ignite.schema.ColumnType;
+import org.apache.ignite.schema.definition.ColumnType;
 
 /**
  * Alter column builder.

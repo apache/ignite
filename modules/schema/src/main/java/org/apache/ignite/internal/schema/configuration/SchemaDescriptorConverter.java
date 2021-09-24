@@ -36,8 +36,9 @@ import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaException;
-import org.apache.ignite.schema.ColumnType;
-import org.apache.ignite.schema.SchemaTable;
+import org.apache.ignite.schema.definition.ColumnDefinition;
+import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.TableDefinition;
 
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
@@ -48,7 +49,7 @@ import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
 
 /**
- * Build SchemaDescriptor from SchemaTable internal configuration.
+ * Build SchemaDescriptor from Table internal configuration.
  */
 public class SchemaDescriptorConverter {
     /**
@@ -148,7 +149,7 @@ public class SchemaDescriptorConverter {
      * @param colCfg Column to confvert.
      * @return Internal Column.
      */
-    private static Column convert(org.apache.ignite.schema.Column colCfg) {
+    private static Column convert(ColumnDefinition colCfg) {
         NativeType type = convert(colCfg.type());
 
         return new Column(colCfg.name(), type, colCfg.nullable(), new ConstantSupplier(convertDefault(type, (String)colCfg.defaultValue())));
@@ -202,25 +203,24 @@ public class SchemaDescriptorConverter {
     }
 
     /**
-     * Build schema descriptor by SchemaTable.
+     * Build schema descriptor by table schema.
      *
-     * @param tblId Table id.
      * @param schemaVer Schema version.
-     * @param tblCfg SchemaTable.
+     * @param tblCfg Table schema.
      * @return SchemaDescriptor.
      */
-    public static SchemaDescriptor convert(int schemaVer, SchemaTable tblCfg) {
-        List<org.apache.ignite.schema.Column> keyColsCfg = new ArrayList<>(tblCfg.keyColumns());
+    public static SchemaDescriptor convert(int schemaVer, TableDefinition tblCfg) {
+        List<ColumnDefinition> keyColsCfg = new ArrayList<>(tblCfg.keyColumns());
 
         Column[] keyCols = new Column[keyColsCfg.size()];
 
         for (int i = 0; i < keyCols.length; i++)
             keyCols[i] = convert(keyColsCfg.get(i));
 
-        String[] affCols = tblCfg.affinityColumns().stream().map(org.apache.ignite.schema.Column::name)
+        String[] affCols = tblCfg.affinityColumns().stream().map(ColumnDefinition::name)
             .toArray(String[]::new);
 
-        List<org.apache.ignite.schema.Column> valColsCfg = new ArrayList<>(tblCfg.valueColumns());
+        List<ColumnDefinition> valColsCfg = new ArrayList<>(tblCfg.valueColumns());
 
         Column[] valCols = new Column[valColsCfg.size()];
 

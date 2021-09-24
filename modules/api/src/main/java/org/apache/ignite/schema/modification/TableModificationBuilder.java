@@ -17,8 +17,8 @@
 
 package org.apache.ignite.schema.modification;
 
-import org.apache.ignite.schema.Column;
-import org.apache.ignite.schema.TableIndex;
+import org.apache.ignite.schema.definition.ColumnDefinition;
+import org.apache.ignite.schema.definition.index.IndexDefinition;
 
 /**
  * Collect schema modification commands and pass them to manager to create a schema upgrade script.
@@ -30,7 +30,7 @@ public interface TableModificationBuilder {
      * @param column Column.
      * @return {@code this} for chaining.
      */
-    TableModificationBuilder addColumn(Column column);
+    TableModificationBuilder addColumn(ColumnDefinition column);
 
     /**
      * Adds new non-affinity key column.
@@ -38,7 +38,7 @@ public interface TableModificationBuilder {
      * @param column Column.
      * @return {@code this} for chaining.
      */
-    TableModificationBuilder addKeyColumn(Column column);
+    TableModificationBuilder addKeyColumn(ColumnDefinition column);
 
     /**
      * Creates alter column builder..
@@ -61,10 +61,10 @@ public interface TableModificationBuilder {
     /**
      * Adds new table index.
      *
-     * @param index Table index.
+     * @param indexDefinition Table index.
      * @return {@code this} for chaining.
      */
-    TableModificationBuilder addIndex(TableIndex index);
+    TableModificationBuilder addIndex(IndexDefinition indexDefinition);
 
     /**
      * Drops table index.

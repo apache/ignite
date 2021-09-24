@@ -52,7 +52,7 @@ public class TableIndexConfigurationSchema {
     @Value(hasDefault = true)
     public String expr = "";
 
-    /** Affinity column names for PrimaryIndex. */
+    /** Affinity column names for PrimaryKey. */
     @Value(hasDefault = true)
     public String[] affinityColumns = new String[0];
 }

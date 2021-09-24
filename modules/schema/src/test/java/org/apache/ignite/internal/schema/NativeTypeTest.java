@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
-import org.apache.ignite.schema.ColumnType;
+import org.apache.ignite.schema.definition.ColumnType;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;

@@ -34,9 +34,9 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
-import org.apache.ignite.schema.ColumnType;
 import org.apache.ignite.schema.SchemaBuilders;
-import org.apache.ignite.schema.SchemaTable;
+import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.BeforeAll;
@@ -65,13 +65,13 @@ public class ITJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
     public static void createTables() {
         assert !clusterNodes.isEmpty();
 
-        SchemaTable perTbl = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
+        TableDefinition perTbl = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
             SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
             SchemaBuilders.column("AGE", ColumnType.INT32).asNullable().build(),
             SchemaBuilders.column("ORGID", ColumnType.INT32).asNonNull().build()
         ).withPrimaryKey("ORGID").build();
 
-        SchemaTable orgTbl = SchemaBuilders.tableBuilder("PUBLIC", "ORGANIZATION").columns(
+        TableDefinition orgTbl = SchemaBuilders.tableBuilder("PUBLIC", "ORGANIZATION").columns(
             SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
             SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
             SchemaBuilders.column("BIGDATA", ColumnType.decimalOf(20, 10)).asNullable().build()
@@ -575,13 +575,10 @@ public class ITJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
      * @throws SQLException on error.
      */
     private static void assertIsEmpty(ResultSet rs) throws SQLException {
-        try {
+        try (rs) {
             boolean empty = !rs.next();
 
             assertTrue(empty, "Result should be empty because invalid catalog is specified.");
-        }
-        finally {
-            rs.close();
         }
     }
 }

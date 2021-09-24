@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.schemas.table.TableChange;
+import org.apache.ignite.lang.TableAlreadyExistsException;
 import org.apache.ignite.table.Table;
 
 /**
@@ -34,18 +35,42 @@ public interface IgniteTables {
      * @param name Table name.
      * @param tableInitChange Table changer.
      * @return Newly created table.
+     * @throws TableAlreadyExistsException If table with given name already exists.
      */
     Table createTable(String name, Consumer<TableChange> tableInitChange);
 
     /**
-     * Creates a new table with the given {@code name}.
-     * If a table with the same name already exists, an exception will be thrown.
+     * Creates a new table with the given {@code name} asynchronously.
+     * If a table with the same name already exists, a future will be completed with exception.
+     *
+     * @param name Table name.
+     * @param tableInitChange Table changer.
+     * @return Future representing pending completion of the operation.
+     * @see TableAlreadyExistsException
+     */
+    CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange);
+
+    /**
+     * Creates a new table with the given {@code name} or returns an existing one with the same {@code name}.
+     *
+     * Note: the configuration of the existed table will NOT be validated against the given {@code tableInitChange}.
+     *
+     * @param name Table name.
+     * @param tableInitChange Table changer.
+     * @return Existing or newly created table.
+     */
+    Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange);
+
+    /**
+     * Creates a new table with the given {@code name} or returns an existing one with the same {@code name}.
+     *
+     * Note: the configuration of the existed table will NOT be validated against the given {@code tableInitChange}.
      *
      * @param name Table name.
      * @param tableInitChange Table changer.
      * @return Future representing pending completion of the operation.
      */
-    CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange);
+    CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange);
 
     /**
      * Alter a cluster table.
@@ -63,24 +88,6 @@ public interface IgniteTables {
      * @return Future representing pending completion of the operation.
      */
     CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange);
-
-    /**
-     * Creates a new table with the given {@code name} or returns an existing one with the same {@code name}.
-     *
-     * @param name Table name.
-     * @param tableInitChange Table changer.
-     * @return Existing or newly created table.
-     */
-    Table getOrCreateTable(String name, Consumer<TableChange> tableInitChange);
-
-    /**
-     * Creates a new table with the given {@code name} or returns an existing one with the same {@code name}.
-     *
-     * @param name Table name.
-     * @param tableInitChange Table changer.
-     * @return Future representing pending completion of the operation.
-     */
-    CompletableFuture<Table> getOrCreateTableAsync(String name, Consumer<TableChange> tableInitChange);
 
     /**
      * Drops a table with the name specified.

@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.schema.SchemaMode;
+import org.apache.ignite.schema.definition.SchemaManagementMode;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 
@@ -91,12 +91,12 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull SchemaMode schemaMode() {
-        return SchemaMode.STRICT_SCHEMA;
+    @Override public @NotNull SchemaManagementMode schemaMode() {
+        return SchemaManagementMode.STRICT;
     }
 
     /** {@inheritDoc} */
-    @Override public void schema(SchemaMode schemaMode) {
+    @Override public void schema(SchemaManagementMode schemaMode) {
     }
 
     /** {@inheritDoc} */
