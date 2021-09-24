@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.client.CommonSecurityCheckTest;
@@ -50,6 +49,12 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Tests REST processor authorization commands GET_OR_CREATE_CACHE / DESTROY_CACHE.
  */
 public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
+    /** */
+    private static final String LOGIN = "login";
+
+    /** */
+    private static final String PWD = "pwd";
+
     /** */
     private final List<GridTuple3<String, SecurityPermission, SecurityContext>> authorizationCtxList = new ArrayList<>();
 
@@ -87,44 +92,39 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
     /** @throws Exception if failed. */
     @Test
-    public void cacheCreateDestroyPermissionTest() throws Exception {
-        String login = "login";
-        String pwd = "pwd";
-
+    public void testCacheCreateDestroyPermission() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        assertEquals(ignite.context().rest().getClass(), GridRestProcessor.class);
-
         assertNull(ignite.cache(TEST_CACHE));
 
-        executeCommand(GridRestCommand.GET_OR_CREATE_CACHE, login, pwd);
+        executeCommand(GridRestCommand.GET_OR_CREATE_CACHE, LOGIN, PWD);
 
         GridTuple3<String, SecurityPermission, SecurityContext> ctx = authorizationCtxList.get(0);
 
         assertEquals(TEST_CACHE, ctx.get1());
         assertEquals(SecurityPermission.CACHE_CREATE, ctx.get2());
-        assertEquals(login, ctx.get3().subject().login());
+        assertEquals(LOGIN, ctx.get3().subject().login());
 
         assertNotNull(ignite.cache(TEST_CACHE));
 
         authorizationCtxList.clear();
 
-        executeCommand(GridRestCommand.DESTROY_CACHE, login, pwd);
+        executeCommand(GridRestCommand.DESTROY_CACHE, LOGIN, PWD);
 
         ctx = authorizationCtxList.get(0);
 
         assertEquals(TEST_CACHE, ctx.get1());
         assertEquals(SecurityPermission.CACHE_DESTROY, ctx.get2());
-        assertEquals(login, ctx.get3().subject().login());
+        assertEquals(LOGIN, ctx.get3().subject().login());
 
         assertNull(ignite.cache(TEST_CACHE));
     }
 
     /** */
     private void executeCommand(GridRestCommand cmd, String login, String pwd) throws IOException {
-        String addr = "http://127.0.0.1:8080/ignite?cmd=" + cmd.key()
+        String addr = "http://localhost:8080/ignite?cmd=" + cmd.key()
             + "&cacheName=" + TEST_CACHE
             + "&ignite.login=" + login + "&ignite.password=" + pwd;
 
