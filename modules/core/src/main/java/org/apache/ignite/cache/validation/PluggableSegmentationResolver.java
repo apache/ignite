@@ -21,7 +21,7 @@ import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
 
 /** Represents {@link SegmentationResolver} that can be obtained through Ignite plugin extensions. */
-public interface PluggableSegmentationResolver extends SegmentationResolver, Extension {
-    /** {@inheritDoc} */
-    @Override public boolean isValidSegment();
+public interface PluggableSegmentationResolver extends Extension {
+    /** @return Whether current segment is valid. */
+    public boolean validateSegment();
 }

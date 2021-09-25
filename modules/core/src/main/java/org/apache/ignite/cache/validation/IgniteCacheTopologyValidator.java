@@ -37,7 +37,7 @@ public class IgniteCacheTopologyValidator implements TopologyValidator, Lifecycl
     @IgniteInstanceResource
     private transient IgniteEx ignite;
 
-    /** Name of the cache current validator belongs to. */
+    /** Name of the cache current topology validator belongs to. */
     @CacheNameResource
     private transient String cacheName;
 
@@ -49,12 +49,12 @@ public class IgniteCacheTopologyValidator implements TopologyValidator, Lifecycl
         if (ignite.cluster().localNode().isClient())
             return true;
 
-        boolean isValid = segResolver.isValidSegment();
+        boolean isValid = segResolver.validateSegment();
 
         if (!isValid)
             U.warn(ignite.log(), "Cache validation failed - current node belongs to segmented part of the cluster." +
                 " Cache operation are limited to read-only. To manually perform cache revalidation, change cluster" +
-                " state to ACTIVE [cacheName=" + cacheName + ", nodeId=" + ignite.localNode().id() + ']');
+                " state to ACTIVE [cacheName=" + cacheName + ", localNodeId=" + ignite.localNode().id() + ']');
 
         return isValid;
     }

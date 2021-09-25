@@ -24,13 +24,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -45,15 +44,15 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
  * makes an attempt to changes state of segmented part of the cluster to read-only. Current implementation assumes that
  * {@link #isValidSegment()} will be called at the end of each PME future execution.
  */
-public class ClusterStateChangeSegmentationResolver implements PluggableSegmentationResolver {
+public class ClusterStateChangeSegmentationResolver implements PluggableSegmentationResolver, PartitionsExchangeAware {
     /** Ignite kernal context. */
     private final GridKernalContext ctx;
 
     /** Ignite logger. */
     private final IgniteLogger log;
 
-    /** The executor that waits for the state change process and logs any errors, if any. */
-    private final IgniteThreadPoolExecutor stateChangeCompletionChecker;
+    /** The executor that asynchronously performs cluster state change procedure. */
+    private final IgniteThreadPoolExecutor stateChangeExecutor;
 
     /** State of the current segment.*/
     private boolean isValid;
@@ -72,8 +71,8 @@ public class ClusterStateChangeSegmentationResolver implements PluggableSegmenta
 
         isValid = true;
 
-        stateChangeCompletionChecker = new IgniteThreadPoolExecutor(
-            "state-change-completion-check-executor",
+        stateChangeExecutor = new IgniteThreadPoolExecutor(
+            "segmentation-resolver-state-change-executor",
             ctx.igniteInstanceName(),
             1,
             1,
@@ -82,11 +81,11 @@ public class ClusterStateChangeSegmentationResolver implements PluggableSegmenta
             GridIoPolicy.UNDEFINED,
             new OomExceptionHandler(ctx));
 
-        stateChangeCompletionChecker.allowCoreThreadTimeOut(true);
+        stateChangeExecutor.allowCoreThreadTimeOut(true);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isValidSegment() {
+    @Override public boolean validateSegment() {
         GridDhtPartitionsExchangeFuture exchFut = ctx.cache().context().exchange().lastTopologyFuture();
 
         if (lastCheckedExchangeFut == exchFut)
@@ -94,30 +93,30 @@ public class ClusterStateChangeSegmentationResolver implements PluggableSegmenta
 
         lastCheckedExchangeFut = exchFut;
 
-        Collection<ClusterNode> curBaselineNodes = baselineNodes(exchFut);
+        Collection<ClusterNode> topNodes = exchFut.events().lastEvent().topologyNodes();
 
         if (isValid) {
-            if (hasServerFailed(exchFut) && curBaselineNodes.size() <= prevBaselineNodesCnt / 2) {
+            if (hasServerFailed(exchFut) && baselineNodesCount(exchFut) <= prevBaselineNodesCnt / 2) {
                 isValid = false;
 
-                U.warn(log, "Cluster segmentation was detected. An attempt will be made to put the segmented cluster" +
-                    " state in an read-only mode [segmentedNodeIds=" + toString(curBaselineNodes) + "]. Segmentation" +
-                    " flag can be cleared manually by changing cluster state to ACTIVE.");
+                U.warn(log, "Cluster segmentation was detected. An attempt will be made to put the state of segmented" +
+                    " cluster nodes in read-only mode. Segmentation flag can be cleared manually by changing cluster" +
+                    " state to the ACTIVE mode [segmentedNodeIds=" + toString(topNodes) + "].");
 
                 if (U.isLocalNodeCoordinator(ctx.discovery())) {
-                    IgniteInternalFuture<?> changeStateFut = ctx.state().changeGlobalState(
-                        ACTIVE_READ_ONLY,
-                        false,
-                        null,
-                        false
-                    );
-
-                    stateChangeCompletionChecker.submit(() -> {
+                    stateChangeExecutor.submit(() -> {
                         try {
-                            changeStateFut.get();
+                            ctx.state().changeGlobalState(
+                                ACTIVE_READ_ONLY,
+                                false,
+                                null,
+                                false
+                            ).get();
                         }
                         catch (Throwable e) {
-                            U.error(log, "Failed to switch segmented cluster state to read-only mode.", e);
+                            U.error(log, "Failed to switch state of the segmented cluster nodes to the read-only mode." +
+                                " If the current state has not been previously changed to read-only mode, please retry" +
+                                " this operation manually.", e);
                         }
                     });
                 }
@@ -132,32 +131,40 @@ public class ClusterStateChangeSegmentationResolver implements PluggableSegmenta
                 isValid = true;
 
                 if (log.isInfoEnabled()) {
-                    log.info("State of the previously segmented cluster was manually changed to ACTIVE. Segmentation flag" +
-                        " cleared [clusterNodeIds=" + toString(curBaselineNodes) + ']');
+                    log.info("State of the previously segmented cluster nodes was manually changed to ACTIVE mode." +
+                        " Segmentation flag cleared [topNodeIds=" + toString(topNodes) + ']');
                 }
             }
         }
 
-        prevBaselineNodesCnt = curBaselineNodes.size();
-
         return isValid;
     }
 
-    /** @param data Discovery data. */
-    public void onLocalJoin(DiscoveryLocalJoinData data) {
-        prevBaselineNodesCnt = data.discoCache().aliveBaselineNodes().size();
+    /** {@inheritDoc} */
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        prevBaselineNodesCnt = baselineNodesCount(fut);
+    }
+
+    /** @return Whether current segment is valid. */
+    public boolean isValidSegment() {
+        return isValid;
     }
 
     /**
      * @param fut PME future.
-     * @return Baseline nodes in current topology.
+     * @return Count of baseline nodes in current topology.
      */
-    private Collection<ClusterNode> baselineNodes(GridDhtPartitionsExchangeFuture fut) {
+    private int baselineNodesCount(GridDhtPartitionsExchangeFuture fut) {
+        int res = 0;
+
         DiscoCache discoCache = fut.events().discoveryCache();
 
-        Collection<ClusterNode> baselineNodes = discoCache.aliveBaselineNodes();
+        for (ClusterNode node : fut.events().lastEvent().topologyNodes()) {
+            if (!node.isClient() && discoCache.baselineNode(node))
+                ++res;
+        }
 
-        return baselineNodes == null ? discoCache.aliveServerNodes() : baselineNodes;
+        return res;
     }
 
     /**
@@ -180,6 +187,6 @@ public class ClusterStateChangeSegmentationResolver implements PluggableSegmenta
      * @return String representation of specified node IDs.
      */
     private String toString(Collection<ClusterNode> nodes) {
-        return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
+        return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", ", "[", "]"));
     }
 }

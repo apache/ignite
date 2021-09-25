@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -97,15 +96,7 @@ public class SegmentationResolverPluginProvider implements PluginProvider<Plugin
     @Override public void start(PluginContext pluginCtx) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_SEG_RESOLVE_ENABLED, true);
 
-        ctx.discovery().localJoinFuture().listen(fut -> {
-            try {
-                segResolver.onLocalJoin(fut.get());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(pluginCtx.log(getClass()), e);
-            }
-        });
-
+        ctx.cache().context().exchange().registerExchangeAwareComponent(segResolver);
     }
 
     /** {@inheritDoc} */
@@ -142,12 +133,19 @@ public class SegmentationResolverPluginProvider implements PluginProvider<Plugin
 
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
+        String errMsg = null;
+
         if (!node.isClient() && !TRUE.equals(node.attribute(ATTR_SEG_RESOLVE_ENABLED))) {
-            String errMsg = "The segmentation resolver plugin is not configured for the server node that is " +
+            errMsg = "The segmentation resolver plugin is not configured for the server node that is " +
                 "trying to join the cluster. Since the segmentation resolver is only applicable if all server nodes in" +
                 " the cluster have one, node join request will be rejected [nodeId=" + node.id() + ']';
-
-            throw new PluginValidationException(errMsg, errMsg, node.id());
         }
+
+        if (!segResolver.isValidSegment())
+            errMsg = "The node cannot join the cluster because the cluster was marked as segmented. Resolve" +
+                " segmentation and retry join attempt [nodeId=" + node.id() + ']';
+
+        if (errMsg != null)
+            throw new PluginValidationException(errMsg, errMsg, node.id());
     }
 }
