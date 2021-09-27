@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.internal.util.typedef.T2;
+
 /**
- * Marker interface to distinguish exceptions that were caused by broken persistence datastructures invariants.
+ * Interface to distinguish exceptions that were caused by broken persistence datastructures invariants.
  */
 public interface CorruptedPersistenceException {
+    /**
+     * @return (groupId, pageId) pairs for pages that might be corrupted.
+     */
+    public T2<Integer, Long>[] pages();
 }

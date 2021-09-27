@@ -109,7 +109,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /**
      *
      */
-    private static class TestSecuritySubject implements SecuritySubject {
+    public static class TestSecuritySubject implements SecuritySubject {
 
         /** Id. */
         private final UUID id;
@@ -150,7 +150,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /**
      *
      */
-    private static class TestSecurityContext implements SecurityContext, Serializable {
+    public static class TestSecurityContext implements SecurityContext, Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

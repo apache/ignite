@@ -226,6 +226,7 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         return sslCtxFactory;
     }
 
+    /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
         return V2;
     }

@@ -44,6 +44,6 @@ public class SecurityAwareStripedThreadPoolExecutor extends IgniteStripedThreadP
 
     /** {@inheritDoc} */
     @Override public void execute(Runnable task, int idx) {
-        super.execute(task == null ? null : new SecurityAwareRunnable(security, task), idx);
+        super.execute(SecurityAwareRunnable.of(security, task), idx);
     }
 }

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import java.util.List;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+
 /**
  * Basic interface for index description required to create or destroy index.
  */
@@ -25,4 +28,9 @@ public interface IndexDefinition {
      * @return Index name.
      */
     public IndexName idxName();
+
+    /**
+     * @return List of index key definitions.
+     */
+    public List<IndexKeyDefinition> indexKeyDefinitions();
 }

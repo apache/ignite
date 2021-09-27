@@ -50,9 +50,11 @@ namespace ignite
                  * Get handler.
                  *
                  * @param typeName Type name.
+                 * @param affFieldName Affinity field name.
                  * @param typeId Type ID.
                  */
-                common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName, int32_t typeId);
+                common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName,
+                    const std::string& affFieldName, int32_t typeId);
 
                 /**
                  * Submit handler for processing.

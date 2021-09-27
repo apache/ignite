@@ -45,9 +45,11 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
     /** */
     public static final StatisticsKey T2_KEY = new StatisticsKey(SCHEMA, "t2");
 
+    /** Persistence enabled flag. */
     @Parameterized.Parameter(value = 0)
     public boolean persist;
 
+    /** Repository to test. */
     @Parameterized.Parameter(value = 1)
     public IgniteStatisticsRepository repo;
 

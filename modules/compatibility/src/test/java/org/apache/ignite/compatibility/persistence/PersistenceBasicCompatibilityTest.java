@@ -321,7 +321,14 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
 
     /** Enum for cover binaryObject enum save/load. */
     public enum TestEnum {
-        /** */A, /** */B, /** */C
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C
     }
 
     /** Special class to test WAL reader resistance to Serializable interface. */

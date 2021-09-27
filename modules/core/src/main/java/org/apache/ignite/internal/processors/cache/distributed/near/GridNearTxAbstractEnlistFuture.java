@@ -415,14 +415,17 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
     }

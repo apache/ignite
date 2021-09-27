@@ -103,5 +103,6 @@ public abstract class AbstractIgniteKarafTest {
         );
     }
 
+    /** */
     protected abstract List<String> featuresToInstall();
 }

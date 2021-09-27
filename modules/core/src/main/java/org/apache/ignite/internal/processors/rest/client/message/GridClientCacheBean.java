@@ -42,9 +42,11 @@ public class GridClientCacheBean implements Serializable {
      */
     private String sqlSchema;
 
+    /** */
     public GridClientCacheBean() {
     }
 
+    /** */
     public GridClientCacheBean(String name, GridClientCacheMode mode, String sqlSchema) {
         this.name = name;
         this.mode = mode;

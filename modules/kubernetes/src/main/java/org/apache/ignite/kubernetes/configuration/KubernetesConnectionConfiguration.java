@@ -53,7 +53,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes service name.
+     * @return Kubernetes service name.
      */
     public String getServiceName() {
         return srvcName;
@@ -73,7 +73,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes namespace.
+     * @return Kubernetes namespace.
      */
     public String getNamespace() {
         return namespace;
@@ -93,7 +93,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes master url.
+     * @return Kubernetes master url.
      */
     public String getMaster() {
         return master;
@@ -113,7 +113,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes account token.
+     * @return Kubernetes account token.
      */
     public String getAccountToken() {
         return accountToken;
@@ -132,7 +132,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get flag include not ready addresses.
+     * @return Flag include not ready addresses.
      */
     public boolean getIncludeNotReadyAddresses() {
         return includeNotReadyAddresses;

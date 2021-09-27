@@ -28,6 +28,7 @@ import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.nio.ch.FileChannelImpl;
 
+/** */
 public class MappedFile implements Closeable, DirectMemoryRegion {
     /** */
     private static final Method map0 = U.findNonPublicMethod(FileChannelImpl.class, "map0", int.class, long.class, long.class);
