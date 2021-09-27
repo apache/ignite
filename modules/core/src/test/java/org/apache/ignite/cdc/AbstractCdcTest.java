@@ -206,7 +206,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected long checkMetrics(CdcMain cdc, int expCnt) throws Exception {
+    protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
         if (metricExporters() != null) {
             IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
 
@@ -228,7 +228,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         assertNotNull(mreg);
 
-        return checkMetrics(
+        checkMetrics(
             expCnt,
             m -> mreg.<LongMetric>findMetric(m).value(),
             m -> mreg.<ObjectMetric<String>>findMetric(m).value()
@@ -236,7 +236,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private long checkMetrics(long expCnt, Function<String, Long> longMetric, Function<String, String> strMetric) {
+    private void checkMetrics(long expCnt, Function<String, Long> longMetric, Function<String, String> strMetric) {
         long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
         long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
@@ -250,10 +250,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
             assertTrue(new File(strMetric.apply(m)).exists());
 
-        if (expCnt != -1)
-            assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
-
-        return longMetric.apply(EVTS_CNT);
+        assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
     }
 
     /** */

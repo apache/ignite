@@ -299,10 +299,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Wait while predicate will become true and state saved on the disk for both cdc.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
 
-        long evtsCnt1 = checkMetrics(cdc1, -1);
-        long evtsCnt2 = checkMetrics(cdc2, -1);
-
-        assertEquals(KEYS_CNT * 2, evtsCnt1 + evtsCnt2);
+        checkMetrics(cdc1, keysCnt[0]);
+        checkMetrics(cdc2, keysCnt[1]);
 
         assertFalse(cnsmr1.stopped());
         assertFalse(cnsmr2.stopped());
@@ -323,10 +321,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, DELETE, cnsmr1, cnsmr2);
 
-        evtsCnt1 = checkMetrics(cdc1, -1);
-        evtsCnt2 = checkMetrics(cdc2, -1);
-
-        assertEquals(KEYS_CNT * 2, evtsCnt1 + evtsCnt2);
+        checkMetrics(cdc1, keysCnt[0]);
+        checkMetrics(cdc2, keysCnt[1]);
 
         rmvFut1.cancel();
         rmvFut2.cancel();
