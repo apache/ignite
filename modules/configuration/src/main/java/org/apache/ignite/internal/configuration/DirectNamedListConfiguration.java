@@ -32,19 +32,34 @@ import org.apache.ignite.configuration.annotation.DirectAccess;
 public class DirectNamedListConfiguration<T extends ConfigurationProperty<VIEW>, VIEW, CHANGE extends VIEW>
     extends NamedListConfiguration<T, VIEW, CHANGE>
     implements DirectConfigurationProperty<VIEW> {
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param prefix Configuration prefix.
+     * @param key Configuration key.
+     * @param rootKey Root key.
+     * @param changer Configuration changer.
+     * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
+     * @param creator Underlying configuration creator function.
+     * @param anyConfig Placeholder to add listeners for any configuration.
+     */
     public DirectNamedListConfiguration(
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
         DynamicConfigurationChanger changer,
-        BiFunction<List<String>, String, T> creator
+        boolean listenOnly,
+        BiFunction<List<String>, String, T> creator,
+        T anyConfig
     ) {
-        super(prefix, key, rootKey, changer, creator);
+        super(prefix, key, rootKey, changer, listenOnly, creator, anyConfig);
     }
 
     /** {@inheritDoc} */
     @Override public VIEW directValue() {
-         return changer.getLatest(keys);
+        if (listenOnly)
+            throw listenOnlyException();
+
+        return changer.getLatest(keys);
     }
 }

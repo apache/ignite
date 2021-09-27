@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.configuration;
 
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.ignite.configuration.ConfigurationListenOnlyException;
 import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
+
+import static java.util.Collections.unmodifiableCollection;
 
 /**
  * Super class for dynamic configuration tree nodes. Has all common data and value retrieving algorithm in it.
@@ -47,6 +50,9 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
 
     /** Configuration changer instance to get latest value of the root. */
     protected final DynamicConfigurationChanger changer;
+
+    /** Only adding listeners mode, without the ability to get or update the property value. */
+    protected final boolean listenOnly;
 
     /**
      * Cached value of current trees root. Useful to determine whether you have the latest configuration value or not.
@@ -69,12 +75,20 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
      * @param key Configuration key.
      * @param rootKey Root key.
      * @param changer Configuration changer.
+     * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      */
-    protected ConfigurationNode(List<String> prefix, String key, RootKey<?, ?> rootKey, DynamicConfigurationChanger changer) {
+    protected ConfigurationNode(
+        List<String> prefix,
+        String key,
+        RootKey<?, ?> rootKey,
+        DynamicConfigurationChanger changer,
+        boolean listenOnly
+    ) {
         this.keys = ConfigurationUtil.appendKey(prefix, key);
         this.key = key;
         this.rootKey = rootKey;
         this.changer = changer;
+        this.listenOnly = listenOnly;
 
         assert Objects.equals(rootKey.key(), keys.get(0));
     }
@@ -84,9 +98,14 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
         updateListeners.add(listener);
     }
 
+    /** {@inheritDoc} */
+    @Override public void stopListen(ConfigurationListener<VIEW> listener) {
+        updateListeners.remove(listener);
+    }
+
     /** @return List of update listeners. */
-    public List<ConfigurationListener<VIEW>> listeners() {
-        return Collections.unmodifiableList(updateListeners);
+    public Collection<ConfigurationListener<VIEW>> listeners() {
+        return unmodifiableCollection(updateListeners);
     }
 
     /**
@@ -94,6 +113,8 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
      *
      * @return Latest configuration value.
      * @throws NoSuchElementException If configuration is a part of already deleted named list configuration entry.
+     * @throws ConfigurationListenOnlyException If there was an attempt to get or update a property value in
+     *      {@link #listenOnly listen-only} mode.
      */
     protected final VIEW refreshValue() throws NoSuchElementException {
         TraversableTreeNode newRootNode = changer.getRootNode(rootKey);
@@ -102,6 +123,8 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
         // 'invalid' and 'val' visibility is guaranteed by the 'cachedRootNode' volatile read
         if (invalid)
             throw noSuchElementException();
+        else if (listenOnly)
+            throw listenOnlyException();
 
         if (oldRootNode == newRootNode)
             return val;
@@ -152,5 +175,13 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
      */
     protected void beforeRefreshValue(VIEW newValue) {
         // No-op.
+    }
+
+    /**
+     * @return Exception if there was an attempt to get or update a property value in
+     *      {@link #listenOnly listen-only} mode.
+     */
+    protected ConfigurationListenOnlyException listenOnlyException() {
+        throw new ConfigurationListenOnlyException("Adding only listeners mode: " + keys);
     }
 }

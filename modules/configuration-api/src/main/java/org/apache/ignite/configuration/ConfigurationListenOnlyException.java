@@ -17,39 +17,16 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.configuration.notifications.ConfigurationListener;
-
 /**
- * Base interface for configuration.
- *
- * @param <VIEW> Type of the value.
+ * This exception is used if an attempt was made to get/update a configuration value in listen-only mode.
  */
-public interface ConfigurationProperty<VIEW> {
+public class ConfigurationListenOnlyException extends RuntimeException {
     /**
-     * Get key of this node.
+     * Constructor.
      *
-     * @return Key.
+     * @param message Error message.
      */
-    String key();
-
-    /**
-     * Get value of this property.
-     *
-     * @return Value of this property.
-     */
-    VIEW value();
-
-    /**
-     * Add configuration values listener.
-     *
-     * @param listener Listener.
-     */
-    void listen(ConfigurationListener<VIEW> listener);
-
-    /**
-     * Remove configuration values listener.
-     *
-     * @param listener Listener.
-     */
-    void stopListen(ConfigurationListener<VIEW> listener);
+    public ConfigurationListenOnlyException(String message) {
+        super(message);
+    }
 }

@@ -28,23 +28,27 @@ import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 
 /**
- * Holder for property value. Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.
+ * Holder for property value.
+ * Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.
  */
 public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T> implements ConfigurationValue<T> {
     /**
      * Constructor.
+     *
      * @param prefix Property prefix.
      * @param key Property name.
      * @param rootKey Root key.
      * @param changer Configuration changer.
+     * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      */
     public DynamicProperty(
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer
+        DynamicConfigurationChanger changer,
+        boolean listenOnly
     ) {
-        super(prefix, key, rootKey, changer);
+        super(prefix, key, rootKey, changer, listenOnly);
     }
 
     /** {@inheritDoc} */
@@ -55,6 +59,9 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     /** {@inheritDoc} */
     @Override public CompletableFuture<Void> update(T newValue) {
         Objects.requireNonNull(newValue, "Configuration value cannot be null.");
+
+        if (listenOnly)
+            throw listenOnlyException();
 
         assert keys instanceof RandomAccess;
         assert !keys.isEmpty();

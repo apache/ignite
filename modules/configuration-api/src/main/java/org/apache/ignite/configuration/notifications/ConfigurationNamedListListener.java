@@ -20,6 +20,8 @@ package org.apache.ignite.configuration.notifications;
 import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.NotNull;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 /**
  * Configuration property change listener for named list configurations.
  *
@@ -32,7 +34,9 @@ public interface ConfigurationNamedListListener<VIEW> extends ConfigurationListe
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+    @NotNull default CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<VIEW> ctx) {
+        return completedFuture(null);
+    }
 
     /**
      * Called when a named list element is renamed. Semantically equivalent to
@@ -45,10 +49,13 @@ public interface ConfigurationNamedListListener<VIEW> extends ConfigurationListe
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull CompletableFuture<?> onRename(
+    @NotNull default CompletableFuture<?> onRename(
         @NotNull String oldName,
         @NotNull String newName,
-        @NotNull ConfigurationNotificationEvent<VIEW> ctx);
+        @NotNull ConfigurationNotificationEvent<VIEW> ctx
+    ) {
+        return completedFuture(null);
+    }
 
     /**
      * Called when named list element is deleted.
@@ -56,5 +63,12 @@ public interface ConfigurationNamedListListener<VIEW> extends ConfigurationListe
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+    @NotNull default CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<VIEW> ctx) {
+        return completedFuture(null);
+    }
+
+    /** {@inheritDoc} */
+    @Override @NotNull default CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx) {
+        return completedFuture(null);
+    }
 }

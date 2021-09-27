@@ -43,18 +43,21 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
 
     /**
      * Constructor.
+     *
      * @param prefix Configuration prefix.
      * @param key Configuration key.
      * @param rootKey Root key.
      * @param changer Configuration changer.
+     * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      */
     public DynamicConfiguration(
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer
+        DynamicConfigurationChanger changer,
+        boolean listenOnly
     ) {
-        super(prefix, key, rootKey, changer);
+        super(prefix, key, rootKey, changer, listenOnly);
     }
 
     /**
@@ -69,6 +72,9 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
     /** {@inheritDoc} */
     @Override public final CompletableFuture<Void> change(Consumer<CHANGE> change) {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
+
+        if (listenOnly)
+            throw listenOnlyException();
 
         assert keys instanceof RandomAccess;
 
@@ -107,10 +113,11 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
     /**
      * Returns all child nodes of the current configuration tree node.
      *
-     * @return Map from childs keys to a corresponding {@link ConfigurationProperty}.
+     * @return Map from child keys to a corresponding {@link ConfigurationProperty}.
      */
     public Map<String, ConfigurationProperty<?>> members() {
-        refreshValue();
+        if (!listenOnly)
+            refreshValue();
 
         return Collections.unmodifiableMap(members);
     }
@@ -133,4 +140,10 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
     public Map<String, ConfigurationProperty<?>> touchMembers() {
         return members();
     }
+
+    /**
+     * @return Configuration interface, for example {@code RootConfiguration}.
+     * @throws UnsupportedOperationException In the case of a named list.
+     */
+    public abstract Class<? extends ConfigurationProperty<VIEW>> configType();
 }

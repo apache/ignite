@@ -17,20 +17,45 @@
 
 package org.apache.ignite.internal.configuration.util;
 
+import java.util.Map;
+import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Implementation of the {@link ConfigurationNotificationEvent}.
+ */
 class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificationEvent<VIEW> {
+    /** Previous value of the updated configuration. */
     private final VIEW oldValue;
 
+    /** Updated value of the configuration. */
     private final VIEW newValue;
 
+    /** Storage revision. */
     private final long storageRevision;
 
-    ConfigurationNotificationEventImpl(VIEW oldValue, VIEW newValue, long storageRevision) {
+    /** Configuration containers. */
+    private final Map<Class<? extends ConfigurationProperty>, ConfigurationContainer> configs;
+
+    /**
+     * Constructor.
+     *
+     * @param oldValue Previous value of the updated configuration.
+     * @param newValue Updated value of the configuration.
+     * @param storageRevision Storage revision.
+     * @param configs Configuration containers.
+     */
+    ConfigurationNotificationEventImpl(
+        VIEW oldValue,
+        VIEW newValue,
+        long storageRevision,
+        Map<Class<? extends ConfigurationProperty>, ConfigurationContainer> configs
+    ) {
         this.oldValue = oldValue;
         this.newValue = newValue;
         this.storageRevision = storageRevision;
+        this.configs = configs;
     }
 
     /** {@inheritDoc} */
@@ -46,5 +71,23 @@ class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificat
     /** {@inheritDoc} */
     @Override public long storageRevision() {
         return storageRevision;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends ConfigurationProperty> @Nullable T config(
+        Class<? extends ConfigurationProperty> configClass
+    ) {
+        ConfigurationContainer container = configs.get(configClass);
+
+        return container == null ? null : (T)container.config;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable <T extends ConfigurationProperty> String name(
+        Class<? extends ConfigurationProperty> configClass
+    ) {
+        ConfigurationContainer container = configs.get(configClass);
+
+        return container == null ? null : container.keyNamedConfig;
     }
 }

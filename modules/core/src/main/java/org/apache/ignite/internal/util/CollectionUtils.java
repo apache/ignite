@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.addAll;
@@ -112,7 +114,7 @@ public final class CollectionUtils {
      * @return Concatenation of iterables.
      */
     @SafeVarargs
-    public static <T> Iterable<? extends T> concat(@Nullable Iterable<? extends T>... iterables) {
+    public static <T> Iterable<T> concat(@Nullable Iterable<? extends T>... iterables) {
         if (iterables == null || iterables.length == 0)
             return Collections::emptyIterator;
         else {
@@ -137,6 +139,55 @@ public final class CollectionUtils {
                         throw new NoSuchElementException();
                     else
                         return curr.next();
+                }
+            };
+        }
+    }
+
+    /**
+     * Create a collection view that can only be read.
+     *
+     * @param collection Basic collection.
+     * @param mapper Conversion function.
+     * @param <T1> Base type of the collection.
+     * @param <T2> Type for view.
+     * @return Read-only collection view.
+     */
+    public static <T1, T2> Collection<T2> viewReadOnly(
+        @Nullable Collection<? extends T1> collection,
+        @Nullable Function<? super T1, ? extends T2> mapper
+    ) {
+        if (nullOrEmpty(collection))
+            return Collections.emptyList();
+        else if (mapper == null)
+            return (Collection<T2>)collection;
+        else {
+            return new AbstractCollection<>() {
+                /** {@inheritDoc} */
+                @Override public Iterator<T2> iterator() {
+                    Iterator<? extends T1> iterator = collection.iterator();
+
+                    return new Iterator<>() {
+                        /** {@inheritDoc} */
+                        @Override public boolean hasNext() {
+                            return iterator.hasNext();
+                        }
+
+                        /** {@inheritDoc} */
+                        @Override public T2 next() {
+                            return mapper.apply(iterator.next());
+                        }
+                    };
+                }
+
+                /** {@inheritDoc} */
+                @Override public int size() {
+                    return collection.size();
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean isEmpty() {
+                    return collection.isEmpty();
                 }
             };
         }

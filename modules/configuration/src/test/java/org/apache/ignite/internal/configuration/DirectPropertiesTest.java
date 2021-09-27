@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.configuration.ConfigurationListenOnlyException;
 import org.apache.ignite.configuration.DirectConfigurationProperty;
+import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
@@ -76,6 +78,24 @@ public class DirectPropertiesTest {
     @Config
     @DirectAccess
     public static class DirectNestedConfigurationSchema {
+        /** */
+        @Value(hasDefault = true)
+        @DirectAccess
+        public String str = "bar";
+
+        /** */
+        @Value(hasDefault = true)
+        public String nonDirectStr = "bar";
+
+        /** */
+        @NamedConfigValue
+        public DirectNested2ConfigurationSchema childrenList2;
+    }
+
+    /** */
+    @Config
+    @DirectAccess
+    public static class DirectNested2ConfigurationSchema {
         /** */
         @Value(hasDefault = true)
         @DirectAccess
@@ -188,5 +208,16 @@ public class DirectPropertiesTest {
 
         assertThrows(NoSuchElementException.class, () -> childCfg.str().value());
         assertThat(directValue(childCfg.str()), is("bar"));
+    }
+
+    /** */
+    @Test
+    void testDirectAccessForAny() {
+        NamedConfigurationTree<DirectNestedConfiguration, DirectNestedView, DirectNestedChange> childrenList =
+            registry.getConfiguration(DirectConfiguration.KEY).childrenList();
+
+        assertThrows(ConfigurationListenOnlyException.class, () -> directValue(childrenList.any()));
+        assertThrows(ConfigurationListenOnlyException.class, () -> directValue(childrenList.any().str()));
+        assertThrows(ConfigurationListenOnlyException.class, () -> directValue(childrenList.any().childrenList2()));
     }
 }
