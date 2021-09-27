@@ -126,6 +126,11 @@ public class IgniteStatisticsConfigurationManager {
         }
     };
 
+    /**
+     * Update statistics after topology change, if necessary.
+     *
+     * @param fut Topology change future.
+     */
     public void afterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         topVer = fut.topologyVersion();
 

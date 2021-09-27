@@ -62,7 +62,7 @@ public class StatisticsProcessor {
     /** Active flag (used to skip commands in inactive cluster.) */
     private volatile boolean active;
 
-    /* Lock protection of started gathering during deactivation. */
+    /** Lock protection of started gathering during deactivation. */
     private static final GridBusyLock busyLock = new GridBusyLock();
 
     /**
