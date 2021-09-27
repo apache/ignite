@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -723,9 +722,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
                     // Check for classes/enums implementing indexed interfaces
-                    final Class<?> cls = getClass(((BinaryObject) propVal).type().typeName());
-                    if (U.box(propType).isAssignableFrom(U.box(cls))) {
-                        continue;
+                    String clsName = ((BinaryObject) propVal).type().typeName();
+                    try {
+                        final Class<?> cls = Class.forName(clsName);
+                        if (U.box(propType).isAssignableFrom(U.box(cls))) {
+                            continue;
+                        }
+                    } catch (ClassNotFoundException ignored) {
                     }
 
                     throw new IgniteSQLException("Type for a column '" + idxField +
@@ -734,20 +737,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         ((BinaryObject)propVal).type().typeName() + "'");
                 }
             }
-        }
-    }
-
-    /**
-     * Method used to retrieve class based on classname
-     *
-     * @param clsName
-     * @return class based on clsname
-     */
-    private Class<?> getClass(String clsName) {
-        try {
-            return Class.forName(clsName);
-        } catch (ClassNotFoundException e) {
-            throw new IgniteException("Failed to find class: " + clsName, e);
         }
     }
 
