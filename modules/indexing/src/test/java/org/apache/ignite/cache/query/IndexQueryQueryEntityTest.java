@@ -29,13 +29,11 @@ import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -142,16 +140,6 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
-
-        if (qryIdx != null) {
-            // Wrong fields in query.
-            GridTestUtils.assertThrows(null, () -> {
-                IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
-                    .setCriteria(lt("id", Integer.MAX_VALUE));
-
-                cache.query(wrongQry).getAll();
-            }, IgniteException.class, null);
-        }
     }
 
     /** */
