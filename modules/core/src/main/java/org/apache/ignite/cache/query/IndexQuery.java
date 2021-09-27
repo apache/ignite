@@ -26,6 +26,7 @@ import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Index query runs over internal index structure and returns cache entries for index rows that match specified criteria.
@@ -41,8 +42,26 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Cache Value type. Describes a table within a cache that runs a query. */
     private final String valType;
 
-    /** Index name. */
-    private final String idxName;
+    /** Index name. If {@code null} then Ignite tries to find an index by {@link #criteria} fields. */
+    private final @Nullable String idxName;
+
+    /**
+     * Specify index with cache value class.
+     *
+     * @param valCls Cache value class.
+     */
+    public IndexQuery(Class<?> valCls) {
+        this(valCls, null);
+    }
+
+    /**
+     * Specify index with cache value type.
+     *
+     * @param valType Cache value type.
+     */
+    public IndexQuery(String valType) {
+        this(valType, null);
+    }
 
     /**
      * Specify index with cache value class and index name.
@@ -50,7 +69,7 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param valCls Cache value class.
      * @param idxName Index name.
      */
-    public IndexQuery(Class<?> valCls, String idxName) {
+    public IndexQuery(Class<?> valCls, @Nullable String idxName) {
         this(valCls.getName(), idxName);
     }
 
@@ -60,9 +79,9 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param valType Cache value type.
      * @param idxName Index name.
      */
-    public IndexQuery(String valType, String idxName) {
+    public IndexQuery(String valType, @Nullable String idxName) {
         A.notEmpty(valType, "valType");
-        A.notEmpty(idxName, "idxName");
+        A.nullableNotEmpty(idxName, "idxName");
 
         this.valType = valType;
         this.idxName = idxName;

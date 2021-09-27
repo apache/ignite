@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +43,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1943,6 +1945,47 @@ public class GridToStringBuilder {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Creates a string from the elements separated using <code>separator</code>.
+     *
+     * @param list Elements.
+     * @param separator Separator.
+     * @param truncSuffix String suffix in case of string truncation.
+     * @param maxLen Max length of the output string at which it will be truncated (<code>0</code> - unlimited).
+     * @param maxCnt Max number of added elements at which the string will be truncated (<code>0</code> - unlimited).
+     * @return Result string.
+     */
+    public static <T> String joinToString(
+        @Nullable Iterable<T> list,
+        @Nullable String separator,
+        @Nullable String truncSuffix,
+        int maxLen,
+        int maxCnt
+    ) {
+        if (F.isEmpty(list))
+            return "";
+
+        SB buf = new SB();
+
+        for (Iterator<T> itr = list.iterator(); itr.hasNext(); ) {
+            T obj = itr.next();
+
+            if (separator != null && buf.length() > 0)
+                buf.a(separator);
+
+            buf.a(obj);
+
+            if (itr.hasNext() && (--maxCnt == 0 || maxLen > 0 && buf.length() >= maxLen)) {
+                if (truncSuffix != null)
+                    buf.a(truncSuffix);
+
+                break;
+            }
+        }
+
+        return buf.toString();
     }
 
     /**

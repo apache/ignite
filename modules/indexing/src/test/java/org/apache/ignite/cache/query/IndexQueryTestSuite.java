@@ -33,6 +33,7 @@ import org.junit.runners.Suite;
     IndexQueryAliasTest.class,
     IndexQuerySqlIndexTest.class,
     IndexQueryRangeTest.class,
+    IndexQueryWrongIndexTest.class,
     MultifieldIndexQueryTest.class,
     MultiTableIndexQuery.class
 })
