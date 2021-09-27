@@ -53,6 +53,7 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
     /** Intercept of the linear regression model. */
     private double intercept;
 
+    /** */
     public SVMLinearClassificationModel() {
     }
 

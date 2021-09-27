@@ -54,7 +54,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     private static final byte CLIENT_NODE_MASK = 0x01;
 
     /** */
-    private UUID id;
+    private volatile UUID id;
 
     /** */
     private Serializable consistentId;

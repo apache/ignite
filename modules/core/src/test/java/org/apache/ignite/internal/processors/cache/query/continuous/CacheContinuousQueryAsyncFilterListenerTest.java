@@ -865,6 +865,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     private static class CacheInvokeListener implements CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>,
         CacheEntryCreatedListener<QueryTestKey, QueryTestValue>, Serializable {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 

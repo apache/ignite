@@ -1732,7 +1732,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** Enum for cover binaryObject enum save/load. */
     enum TestEnum {
-        /** */A, /** */B, /** */C
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C
     }
 
     /** Special class to test WAL reader resistance to Serializable interface. */

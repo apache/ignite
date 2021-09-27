@@ -39,7 +39,6 @@ import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
 import org.apache.ignite.internal.visor.cache.index.IndexListTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg.CACHE_NAME;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg.GRP_NAME;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg.IDX_NAME;

@@ -52,6 +52,29 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** Client channel on first query page. */
     private ClientChannel clientCh;
 
+    /** Cache ID, required only for affinity node calculation. */
+    private final int cacheId;
+
+    /** Partition filter (-1 for all partitions), required only for affinity node calculation. */
+    private final int part;
+
+    /** Constructor. */
+    GenericQueryPager(
+        ReliableChannel ch,
+        ClientOperation qryOp,
+        ClientOperation pageQryOp,
+        Consumer<PayloadOutputChannel> qryWriter,
+        int cacheId,
+        int part
+    ) {
+        this.ch = ch;
+        this.qryOp = qryOp;
+        this.pageQryOp = pageQryOp;
+        this.qryWriter = qryWriter;
+        this.cacheId = cacheId;
+        this.part = part;
+    }
+
     /** Constructor. */
     GenericQueryPager(
         ReliableChannel ch,
@@ -59,10 +82,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter
     ) {
-        this.ch = ch;
-        this.qryOp = qryOp;
-        this.pageQryOp = pageQryOp;
-        this.qryWriter = qryWriter;
+        this(ch, qryOp, pageQryOp, qryWriter, 0, -1);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +90,8 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         if (!hasNext)
             throw new IllegalStateException("No more query results");
 
-        return hasFirstPage ? queryPage() : ch.service(qryOp, qryWriter, this::readResult);
+        return hasFirstPage ? queryPage() : part == -1 ? ch.service(qryOp, qryWriter, this::readResult) :
+            ch.affinityService(cacheId, part, qryOp, qryWriter, this::readResult);
     }
 
     /** {@inheritDoc} */

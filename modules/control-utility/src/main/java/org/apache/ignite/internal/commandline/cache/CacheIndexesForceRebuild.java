@@ -41,7 +41,6 @@ import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContai
 
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg.CACHE_NAMES;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg.GROUP_NAMES;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg.NODE_ID;

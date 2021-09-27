@@ -113,6 +113,7 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
      *
      */
     private static class Value implements Serializable {
+        /** */
         private int val;
     }
 }

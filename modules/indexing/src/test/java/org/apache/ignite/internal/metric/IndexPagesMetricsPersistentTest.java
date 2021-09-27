@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+/** */
 public class IndexPagesMetricsPersistentTest extends AbstractIndexPageMetricsTest {
     /** {@inheritDoc} */
     @Override boolean isPersistenceEnabled() {

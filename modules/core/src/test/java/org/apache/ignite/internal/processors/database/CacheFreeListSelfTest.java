@@ -719,6 +719,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             return value(ctx, cpy, null);
         }
 
+        /** {@inheritDoc} */
         @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
             return (T)data;
         }

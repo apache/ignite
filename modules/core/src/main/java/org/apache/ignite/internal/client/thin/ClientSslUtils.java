@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
+/** */
 public class ClientSslUtils {
     /** */
     public static final char[] EMPTY_CHARS = new char[0];
