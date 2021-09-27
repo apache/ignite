@@ -330,7 +330,10 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         cctx.time().removeTimeoutObject(this);
 
         // Must release the latch after onDone() in order for a waiting thread to see an exception, if any.
-        reducer().onFinish();
+        CacheQueryReducer<?> reducer = reducer();
+
+        if (reducer != null)
+            reducer.onFinish();
 
         return done;
     }
