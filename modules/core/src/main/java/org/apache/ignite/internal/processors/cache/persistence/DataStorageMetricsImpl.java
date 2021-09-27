@@ -256,7 +256,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.");
 
         lastCpTotalPages = mreg.longMetric("LastCheckpointTotalPagesNumber",
-            "Total number of pages written during the last competed checkpoint.");
+            "Total number of pages written during the last completed checkpoint.");
 
         lastCpDataPages = mreg.longMetric("LastCheckpointDataPagesNumber",
             "Total number of data pages written during the last completed checkpoint.");
