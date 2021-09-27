@@ -580,47 +580,6 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
         return res;
     }
 
-    @Override public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap() {
-        Map<StatisticsKey, Collection<Integer>> res = new HashMap<>();
-
-        try {
-            iterateMeta(STAT_OBS_PREFIX, (k, v) -> {
-                StatisticsKey key = getObsolescenceStatsKey(k);
-                Integer partId = getObsolescenceStatsPartId(k);
-
-                res.computeIfAbsent(key, key1 -> new ArrayList<>()).add(partId);
-            }, false);
-        }
-        catch (IgniteCheckedException e) {
-            if (log.isInfoEnabled())
-                log.info(String.format("Unable to load statistics obsolescence keys due to %s", e.getMessage()));
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> loadObsolescenceMap(StatisticsKey key) {
-        List<Integer> res = new ArrayList<>();
-        String prefix = getObsolescencePartKeyPrefix(key);
-
-        try {
-            iterateMeta(prefix, (k, v) -> {
-                int partId = getObsolescenceStatsPartId(k);
-
-                res.add(partId);
-            }, false);
-        }
-        catch (IgniteCheckedException e) {
-            if (log.isInfoEnabled()) {
-                log.info(String.format("Unable to load statistics obsolescence %s.%s due to %s",
-                    key.schema(), key.obj(), e.getMessage()));
-            }
-        }
-
-        return res;
-    }
-
     /** {@inheritDoc} */
     @Override public Collection<Integer> loadLocalPartitionMap(StatisticsKey key) {
         List<Integer> res = new ArrayList<>();

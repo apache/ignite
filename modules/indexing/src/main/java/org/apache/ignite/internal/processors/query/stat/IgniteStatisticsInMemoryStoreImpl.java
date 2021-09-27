@@ -178,23 +178,6 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap() {
-        Map<StatisticsKey, Collection<Integer>> res = new HashMap<>();
-
-        obsStats.forEach((k, v) -> {
-            int[] keys = v.keys();
-            List<Integer> partIds = new ArrayList<>(keys.length);
-
-            for (int i = 0; i < keys.length; i++)
-                partIds.add(keys[i]);
-
-            res.put(k, partIds);
-        });
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
     @Override public ObjectPartitionStatisticsImpl getLocalPartitionStatistics(StatisticsKey key, int partId) {
         ObjectPartitionStatisticsImpl[] res = new ObjectPartitionStatisticsImpl[1];
 
@@ -247,20 +230,6 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
         }
 
         return statisticsMap;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> loadObsolescenceMap(StatisticsKey key) {
-        List<Integer> res = new ArrayList<>();
-
-        obsStats.computeIfPresent(key, (k, v) -> {
-            for (Integer partId : v.keys())
-                res.add(partId);
-
-            return v;
-        });
-
-        return res;
     }
 
     /** {@inheritDoc} */

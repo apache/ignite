@@ -136,16 +136,6 @@ public class IgniteStatisticsDummyStoreImpl implements IgniteStatisticsStore {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<StatisticsKey, Collection<Integer>> loadObsolescenceMap() {
-        return Collections.emptyMap();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> loadObsolescenceMap(StatisticsKey key) {
-        return Collections.emptySet();
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<Integer> loadLocalPartitionMap(StatisticsKey key) {
         return Collections.emptySet();
     }
