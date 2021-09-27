@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.services.Service;
 
@@ -47,6 +48,9 @@ public interface PlatformService extends Service {
      */
     public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
             throws IgniteCheckedException;
+
+    public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args, Map<String, Object> invokeCtx)
+        throws IgniteCheckedException;
 
     /**
      * Gets native pointer.

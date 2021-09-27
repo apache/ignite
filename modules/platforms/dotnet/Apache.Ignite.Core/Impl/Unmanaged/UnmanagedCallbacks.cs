@@ -1023,8 +1023,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var svc = reader.ReadObject<IService>();
 
                     ResourceProcessor.Inject(svc, _ignite);
+                    
+                    var ptr = _handleRegistry.Allocate(svc);
 
-                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    var svcCtx = new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary), (Services) _ignite.GetServices(), ptr);
+
+                    svc.Init(svcCtx);
 
                     stream.Reset();
 
@@ -1032,7 +1036,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     stream.SynchronizeOutput();
 
-                    return _handleRegistry.Allocate(svc);
+                    return ptr;
                 }
                 catch (Exception e)
                 {
@@ -1055,7 +1059,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var svc = _handleRegistry.Get<IService>(stream.ReadLong());
+                long ptr = stream.ReadLong();
+
+                var svc = _handleRegistry.Get<IService>(ptr);
 
                 // Ignite does not guarantee that Cancel is called after Execute exits
                 // So missing handle is a valid situation
@@ -1066,7 +1072,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 bool srvKeepBinary = reader.ReadBoolean();
 
-                svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary), (Services) _ignite.GetServices(), ptr));
 
                 return 0;
             }
@@ -1074,6 +1080,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long ServiceCancel(long memPtr)
         {
+            var svcs = (Services) _ignite.GetServices();
+
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 long svcPtr = stream.ReadLong();
@@ -1086,13 +1094,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     bool srvKeepBinary = reader.ReadBoolean();
 
-                    svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary), svcs, svcPtr));
 
                     return 0;
                 }
                 finally
                 {
                     _ignite.HandleRegistry.Release(svcPtr);
+
+                    Services.RemoveExecutionContext(svcPtr);
                 }
             }
         }
@@ -1101,20 +1111,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var svc = _handleRegistry.Get<IService>(stream.ReadLong(), true);
+                var svcPtr = stream.ReadLong();
+                var svc = _handleRegistry.Get<IService>(svcPtr, true);
 
                 string mthdName;
                 object[] mthdArgs;
+                Dictionary<string, object> dict;
 
-                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out dict);
+                
+                if (dict != null)
+                    Services.SetExecutionContext(svcPtr, dict);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
 
-                stream.Reset();
+                var svcs = _ignite.GetServices();
 
-                ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+                svcs.Equals(null);
 
-                stream.SynchronizeOutput();
+                try
+                {
+                    var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
+
+                    stream.Reset();
+
+                    ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+
+                    stream.SynchronizeOutput();
+                }
+                finally
+                {
+                    if (dict != null)
+                        Services.SetExecutionContext(svcPtr, null);
+                }
 
                 return 0;
             }

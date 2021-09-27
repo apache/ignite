@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -42,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="arguments">Arguments.</param>
         /// <param name="platformType">The platform.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, PlatformType platformType)
+            object[] arguments, PlatformType platformType, Dictionary<string, object> invokeCtx)
         {
             Debug.Assert(writer != null);
 
@@ -76,6 +77,8 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else
                 writer.WriteBoolean(false);
+
+            writer.WriteDictionary(invokeCtx);
         }
 
         /// <summary>
@@ -86,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
         public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh, 
-            out string mthdName, out object[] mthdArgs)
+            out string mthdName, out object[] mthdArgs, out Dictionary<string, object> dict)
         {
             var reader = marsh.StartUnmarshal(stream);
 
@@ -106,6 +109,12 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else
                 mthdArgs = null;
+
+            // todo
+            var table = reader.ReadObject<Hashtable>();
+
+            dict = table?.Cast<DictionaryEntry> ()
+                .ToDictionary (kvp => (string)kvp.Key, kvp => kvp.Value);
         }
 
         /// <summary>

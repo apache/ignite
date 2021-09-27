@@ -21,6 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -181,15 +183,24 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
     /** {@inheritDoc} */
     @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
-            throws IgniteCheckedException {
+        throws IgniteCheckedException {
         return invokeMethod(mthdName, srvKeepBinary, false, args);
     }
 
     /** {@inheritDoc} */
     @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
         throws IgniteCheckedException {
+        return invokeMethod(mthdName, srvKeepBinary, deserializeResult, args, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args, Map<String, Object> invokeCtx)
+        throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
+
+//        if (true)
+//            throw new RuntimeException(Objects.toString(invokeCtx));
 
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
@@ -208,6 +219,8 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
                 for (Object arg : args)
                     writer.writeObjectDetached(arg);
             }
+
+            writer.writeMap(invokeCtx);
 
             out.synchronize();
 

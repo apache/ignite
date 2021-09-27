@@ -166,7 +166,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @return Result.
      */
     @SuppressWarnings("BusyWait")
-    public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
+    public Object invokeMethod(final Method mtd, final Object[] args, final Map<String, Object> execCtx) throws Throwable {
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -188,7 +188,7 @@ public class GridServiceProxy<T> implements Serializable {
                     if (node == null)
                         throw new IgniteException("Failed to find deployed service: " + name);
 
-                    ProxyInvocationHandler hnd = (ProxyInvocationHandler)Proxy.getInvocationHandler(proxy);
+//                    ProxyInvocationHandler hnd = (ProxyInvocationHandler)Proxy.getInvocationHandler(proxy);
 
                     // If service is deployed locally, then execute locally.
                     if (node.isLocal()) {
@@ -198,7 +198,7 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null)
-                                return callServiceLocally(svc, mtd, args, svcCtx, hnd.execCtx);
+                                return callServiceLocally(svc, mtd, args, svcCtx, execCtx);
                         }
                     }
                     else {
@@ -207,7 +207,7 @@ public class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, hnd.execCtx),
+                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, execCtx),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
@@ -422,7 +422,7 @@ public class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
-            return invokeMethod(mtd, args);
+            return invokeMethod(mtd, args, execCtx);
         }
     }
 

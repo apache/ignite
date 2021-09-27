@@ -270,6 +270,9 @@ namespace Apache.Ignite.Core.Services
         /// service or try to load-balance between services.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
         T GetServiceProxy<T>(string name, bool sticky) where T : class;
+        
+        
+        T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> invokeCtx) where T : class;
 
         /// <summary>
         /// Gets a remote handle on the service as a dynamic object. If service is available locally,

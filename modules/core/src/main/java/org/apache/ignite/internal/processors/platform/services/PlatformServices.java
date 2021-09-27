@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -285,8 +286,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
+                Map<String, Object> invokeCtx = reader.readMap();
+
                 try {
-                    Object result = svc.invoke(mthdName, srvKeepBinary, args);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args, invokeCtx);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -609,9 +612,9 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws IgniteCheckedException On error.
          * @throws NoSuchMethodException On error.
          */
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args, Map<String, Object> invokeCtx) throws Throwable {
             if (isPlatformService())
-                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
+                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, false, args, invokeCtx);
             else {
                 assert proxy instanceof GridServiceProxy;
 
@@ -622,7 +625,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Method mtd = getMethod(serviceClass, mthdName, args);
                 convertArrayArgs(args, mtd);
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args, invokeCtx);
             }
         }
 

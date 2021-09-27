@@ -17,10 +17,13 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
@@ -91,6 +94,9 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** Server binary flag. */
         private readonly bool _srvKeepBinary;
+        
+        private static readonly ConcurrentDictionary<long, ThreadLocal<Dictionary<string, object>>> SvcExecAttrs = 
+            new ConcurrentDictionary<long, ThreadLocal<Dictionary<string, object>>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -362,20 +368,29 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return GetServiceProxy<T>(name, false);
         }
-
+        
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
+        {
+            return GetServiceProxy<T>(name, sticky, null);
+        }
+
+
+        /** <inheritDoc /> */
+        public T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> invokeCtx) where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
 
-            // In local scenario try to return service instance itself instead of a proxy
-            // Get as object because proxy interface may be different from real interface
-            var locInst = GetService<object>(name) as T;
+            if (invokeCtx == null) {
+                // In local scenario try to return service instance itself instead of a proxy
+                // Get as object because proxy interface may be different from real interface
+                var locInst = GetService<object>(name) as T;
 
-            if (locInst != null)
-                return locInst;
+                if (locInst != null)
+                    return locInst;
+            }
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
@@ -386,7 +401,7 @@ namespace Apache.Ignite.Core.Impl.Services
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
-                InvokeProxyMethod(javaProxy, method.Name, method, args, platform));
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, invokeCtx));
         }
 
         /** <inheritDoc /> */
@@ -416,8 +431,9 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
+            // todo
             return new DynamicServiceProxy((methodName, args) =>
-                InvokeProxyMethod(javaProxy, methodName, null, args, platform));
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, null));
         }
 
         /// <summary>
@@ -432,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType)
+            MethodBase method, object[] args, PlatformType platformType, Dictionary<string, object> invokeCtx)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
@@ -444,7 +460,7 @@ namespace Apache.Ignite.Core.Impl.Services
             try
             {
                 return DoOutInOp(OpInvokeMethod,
-                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType),
+                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, invokeCtx),
                     (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
                     proxy);
             }
@@ -511,6 +527,33 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.Ensure(cnt > 0, "configurations", "empty collection");
 
             writer.Stream.WriteInt(pos, cnt);
+        }
+        
+        public object Attr(long svcPtr, string key)
+        {
+            ThreadLocal<Dictionary<string, object>> dict;
+
+            if (!SvcExecAttrs.TryGetValue(svcPtr, out dict))
+                return null;
+
+            object value;
+
+            Dictionary<string, object> execCtx = dict.Value;
+
+            if (execCtx != null && execCtx.TryGetValue(key, out value))
+                return value;
+
+            return null;
+        }
+        
+        public static void SetExecutionContext(long srvPtr, Dictionary<string, object> attrs)
+        {
+            SvcExecAttrs.GetOrAdd(srvPtr, new ThreadLocal<Dictionary<string, object>>()).Value = attrs;
+        }
+
+        public static void RemoveExecutionContext(long srvPtr)
+        {
+            ((IDictionary)SvcExecAttrs).Remove(srvPtr);
         }
     }
 }
