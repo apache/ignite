@@ -47,6 +47,6 @@ public class ClientTupleGetRequest {
         var table = readTable(in, tables);
         var keyTuple = readTuple(in, table, true);
 
-        return table.recordView().getAsync(keyTuple).thenAccept(t -> writeTuple(out, t, TuplePart.VAL));
+        return table.getAsync(keyTuple).thenAccept(t -> writeTuple(out, t, TuplePart.VAL));
     }
 }

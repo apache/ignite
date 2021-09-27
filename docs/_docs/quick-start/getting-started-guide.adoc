@@ -187,7 +187,7 @@ Ignite 3.0 alpha 2 comes with examples that are configured as a separate Maven p
 The project includes the following examples:
 
 * `TableExample` demonstrates the usage of the `org.apache.ignite.table.Table` API to create a table. It also shows how to get data from a table, or insert a line into a table.
-* `KeyValueBinaryViewExample` - demonstrates the usage of the `org.apache.ignite.table.KeyValueView` API to insert a line into a table.
+* `KeyValueBinaryViewExample` - demonstrates the usage of the `org.apache.ignite.table.KeyValueBinaryView` API to insert a line into a table.
 
 To run an example:
 

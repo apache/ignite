@@ -164,7 +164,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         @Override public @NotNull CompletableFuture<?> onCreate(
                             @NotNull ConfigurationNotificationEvent<SchemaView> schemasCtx) {
                             try {
-                                ((SchemaRegistryImpl)tables.get(ctx.newValue().name()).schemaView()).
+                                ((SchemaRegistryImpl)tables.get(ctx.newValue().name()).schemaRegistry()).
                                     onSchemaRegistered((SchemaDescriptor)ByteUtils.
                                         fromBytes(schemasCtx.newValue().schema()));
 
@@ -305,7 +305,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 var table = new TableImpl(
                     internalTable,
                     schemaRegistry,
-                    TableManager.this
+                    TableManager.this,
+                    null
                 );
 
                 tables.put(name, table);
@@ -533,7 +534,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                             );
 
                                             descriptor.columnMapping(SchemaUtils.columnMapper(
-                                                tablesById.get(tblId).schemaView().schema(currTableView.schemas().size()),
+                                                tablesById.get(tblId).schemaRegistry().schema(currTableView.schemas().size()),
                                                 currTableView,
                                                 descriptor,
                                                 tblCh

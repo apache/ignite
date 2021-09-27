@@ -134,6 +134,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
         return new TableImpl(
             new FakeInternalTable(name, new IgniteUuid(UUID.randomUUID(), 0)),
             new FakeSchemaRegistry(this::getSchema),
+            null,
             null
         );
     }

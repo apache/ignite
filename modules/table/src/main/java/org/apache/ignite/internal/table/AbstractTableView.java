@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.tx.Transaction;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,7 +33,7 @@ abstract class AbstractTableView {
     protected final InternalTable tbl;
 
     /** Schema registry. */
-    protected final SchemaRegistry schemaReg;
+    final SchemaRegistry schemaReg;
 
     /** The transaction */
     protected final @Nullable Transaction tx;
@@ -48,6 +49,26 @@ abstract class AbstractTableView {
         this.schemaReg = schemaReg;
         this.tx = tx;
     }
+
+    /**
+     * @return Schema registry for the table.
+     */
+    public @NotNull SchemaRegistry schemaRegistry() {
+        return schemaReg;
+    }
+
+    /**
+     * @return Current transaction.
+     */
+    public @Nullable Transaction transaction() {
+        return tx;
+    }
+
+    /**
+     * @param tx The transaction.
+     * @return Transactional view.
+     */
+    public abstract AbstractTableView withTransaction(Transaction tx);
 
     /**
      * Waits for operation completion.
@@ -70,12 +91,5 @@ abstract class AbstractTableView {
             //TODO: IGNITE-14500 Replace with public exception with an error code (or unwrap?).
             throw new IgniteInternalException(e);
         }
-    }
-
-    /**
-     * @return Current transaction.
-     */
-    public @Nullable Transaction transaction() {
-        return tx;
     }
 }

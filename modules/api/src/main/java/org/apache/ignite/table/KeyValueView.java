@@ -399,7 +399,7 @@ public interface KeyValueView<K, V> {
     @Nullable Transaction transaction();
 
     /**
-     * Enlists a view into the transaction.
+     * Enslists a view into the transaction.
      *
      * @param tx The transaction.
      * @return Transactional view.

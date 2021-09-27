@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
-import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
@@ -125,15 +124,13 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
                 var tuple = Tuple.create().set(keyCol, 1).set(valCol, "Hello");
                 var keyTuple = Tuple.create().set(keyCol, 1);
 
-                RecordView<Tuple> recView = table.recordView();
+                table.upsert(tuple);
+                assertEquals("Hello", table.get(keyTuple).stringValue(valCol));
 
-                recView.upsert(tuple);
-                assertEquals("Hello", recView.get(keyTuple).stringValue(valCol));
-
-                var kvView = table.keyValueView();
+                var kvView = table.kvView();
                 assertEquals("Hello", kvView.get(keyTuple).stringValue(valCol));
 
-                assertTrue(recView.delete(keyTuple));
+                assertTrue(table.delete(keyTuple));
             }
         }
     }

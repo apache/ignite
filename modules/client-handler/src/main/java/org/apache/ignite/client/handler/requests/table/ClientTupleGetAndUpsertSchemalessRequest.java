@@ -46,6 +46,6 @@ public class ClientTupleGetAndUpsertSchemalessRequest {
         var table = readTable(in, tables);
         var tuple = readTupleSchemaless(in);
 
-        return table.recordView().getAndUpsertAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple));
+        return table.getAndUpsertAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple));
     }
 }

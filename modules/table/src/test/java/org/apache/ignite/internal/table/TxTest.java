@@ -25,8 +25,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.internal.util.Pair;
-import org.apache.ignite.table.KeyValueView;
-import org.apache.ignite.table.RecordView;
+import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.tx.IgniteTransactions;
@@ -78,12 +77,12 @@ public class TxTest {
             new Column[]{new Column("balance", NativeTypes.DOUBLE, false)}
         );
 
-        accounts = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
+        accounts = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
         Tuple r1 = Tuple.create().set("accountNumber", 1L).set("balance", BALANCE_1);
         Tuple r2 = Tuple.create().set("accountNumber", 2L).set("balance", BALANCE_2);
 
-        accounts.recordView().insert(r1);
-        accounts.recordView().insert(r2);
+        accounts.insert(r1);
+        accounts.insert(r2);
 
         Mockito.doAnswer(invocation -> {
             Consumer<Transaction> argument = invocation.getArgument(0);
@@ -102,7 +101,7 @@ public class TxTest {
     @Test
     public void testTxSync() {
         igniteTransactions.runInTransaction(tx -> {
-            RecordView<Tuple> txAcc = accounts.recordView().withTransaction(tx);
+            Table txAcc = accounts.withTransaction(tx);
 
             CompletableFuture<Tuple> read1 = txAcc.getAsync(makeKey(1));
             CompletableFuture<Tuple> read2 = txAcc.getAsync(makeKey(2));
@@ -115,8 +114,8 @@ public class TxTest {
 
         Mockito.verify(tx).commit();
 
-        assertEquals(BALANCE_1 - DELTA, accounts.recordView().get(makeKey(1)).doubleValue("balance"));
-        assertEquals(BALANCE_2 + DELTA, accounts.recordView().get(makeKey(2)).doubleValue("balance"));
+        assertEquals(BALANCE_1 - DELTA, accounts.get(makeKey(1)).doubleValue("balance"));
+        assertEquals(BALANCE_2 + DELTA, accounts.get(makeKey(2)).doubleValue("balance"));
     }
 
     /**
@@ -125,7 +124,7 @@ public class TxTest {
     @Test
     public void testTxSyncKeyValue() {
         igniteTransactions.runInTransaction(tx -> {
-            KeyValueView<Tuple, Tuple> txAcc = accounts.keyValueView().withTransaction(tx);
+            KeyValueBinaryView txAcc = accounts.kvView().withTransaction(tx);
 
             CompletableFuture<Tuple> read1 = txAcc.getAsync(makeKey(1));
             CompletableFuture<Tuple> read2 = txAcc.getAsync(makeKey(2));
@@ -138,8 +137,8 @@ public class TxTest {
 
         Mockito.verify(tx).commit();
 
-        assertEquals(BALANCE_1 - DELTA, accounts.recordView().get(makeKey(1)).doubleValue("balance"));
-        assertEquals(BALANCE_2 + DELTA, accounts.recordView().get(makeKey(2)).doubleValue("balance"));
+        assertEquals(BALANCE_1 - DELTA, accounts.get(makeKey(1)).doubleValue("balance"));
+        assertEquals(BALANCE_2 + DELTA, accounts.get(makeKey(2)).doubleValue("balance"));
     }
 
     /**
@@ -147,9 +146,9 @@ public class TxTest {
      */
     @Test
     public void testTxAsync() {
-        igniteTransactions.beginAsync().thenApply(tx -> accounts.recordView().withTransaction(tx)).
+        igniteTransactions.beginAsync().thenApply(tx -> accounts.withTransaction(tx)).
             thenCompose(txAcc -> txAcc.getAsync(makeKey(1))
-            .thenCombine(txAcc.getAsync(makeKey(2)), Pair::new)
+            .thenCombine(txAcc.getAsync(makeKey(2)), (v1, v2) -> new Pair<>(v1, v2))
             .thenCompose(pair -> allOf(
                 txAcc.upsertAsync(makeRecord(1, pair.getFirst().doubleValue("balance") - DELTA)),
                 txAcc.upsertAsync(makeRecord(2, pair.getSecond().doubleValue("balance") + DELTA))
@@ -160,8 +159,8 @@ public class TxTest {
 
         Mockito.verify(tx).commitAsync();
 
-        assertEquals(BALANCE_1 - DELTA, accounts.recordView().get(makeKey(1)).doubleValue("balance"));
-        assertEquals(BALANCE_2 + DELTA, accounts.recordView().get(makeKey(2)).doubleValue("balance"));
+        assertEquals(BALANCE_1 - DELTA, accounts.get(makeKey(1)).doubleValue("balance"));
+        assertEquals(BALANCE_2 + DELTA, accounts.get(makeKey(2)).doubleValue("balance"));
     }
 
     /**
@@ -169,9 +168,9 @@ public class TxTest {
      */
     @Test
     public void testTxAsyncKeyValue() {
-        igniteTransactions.beginAsync().thenApply(tx -> accounts.keyValueView().withTransaction(tx)).
+        igniteTransactions.beginAsync().thenApply(tx -> accounts.kvView().withTransaction(tx)).
             thenCompose(txAcc -> txAcc.getAsync(makeKey(1))
-            .thenCombine(txAcc.getAsync(makeKey(2)), Pair::new)
+            .thenCombine(txAcc.getAsync(makeKey(2)), (v1, v2) -> new Pair<>(v1, v2))
             .thenCompose(pair -> allOf(
                 txAcc.putAsync(makeKey(1), makeValue(pair.getFirst().doubleValue("balance") - DELTA)),
                 txAcc.putAsync(makeKey(2), makeValue(pair.getSecond().doubleValue("balance") + DELTA))
@@ -182,8 +181,8 @@ public class TxTest {
 
         Mockito.verify(tx).commitAsync();
 
-        assertEquals(BALANCE_1 - DELTA, accounts.recordView().get(makeKey(1)).doubleValue("balance"));
-        assertEquals(BALANCE_2 + DELTA, accounts.recordView().get(makeKey(2)).doubleValue("balance"));
+        assertEquals(BALANCE_1 - DELTA, accounts.get(makeKey(1)).doubleValue("balance"));
+        assertEquals(BALANCE_2 + DELTA, accounts.get(makeKey(2)).doubleValue("balance"));
     }
 
     /**

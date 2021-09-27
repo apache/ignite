@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
-import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 
@@ -62,7 +61,7 @@ public class TableExample {
         //
         //---------------------------------------------------------------------------------
 
-        RecordView<Tuple> accounts = ignite.tables().createTable("PUBLIC.accounts", tbl -> tbl
+        Table accounts = ignite.tables().createTable("PUBLIC.accounts", tbl -> tbl
             .changeName("PUBLIC.accounts")
             .changeColumns(cols -> cols
                 .create("0", c -> c.changeName("accountNumber").changeType(t -> t.changeType("int32")).changeNullable(false))
@@ -77,7 +76,7 @@ public class TableExample {
                     .changeColumns(cols -> cols.create("0", c -> c.changeName("accountNumber").changeAsc(true)))
                 )
             )
-        ).recordView();
+        );
 
         //---------------------------------------------------------------------------------
         //

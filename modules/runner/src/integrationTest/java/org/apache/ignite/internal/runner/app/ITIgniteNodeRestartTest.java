@@ -175,7 +175,7 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
             Tuple key = Tuple.create().set("id", i);
             Tuple val = Tuple.create().set("name", "name " + i);
 
-            table.keyValueView().put(key, val);
+            table.kvView().put(key, val);
         }
 
         IgnitionManager.stop(NODE_NAME);
@@ -185,7 +185,7 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
         assertNotNull(ignite.tables().table(TABLE_NAME));
 
         for (int i = 0; i < 100; i++) {
-            assertEquals("name " + i, table.keyValueView().get(Tuple.create()
+            assertEquals("name " + i, table.kvView().get(Tuple.create()
                 .set("id", i))
                 .stringValue("name"));
         }

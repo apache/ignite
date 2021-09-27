@@ -92,8 +92,8 @@ public class ITJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         Table tbl1 = clusterNodes.get(0).tables().table(perTbl.canonicalName());
         Table tbl2 = clusterNodes.get(0).tables().table(orgTbl.canonicalName());
 
-        tbl1.recordView().insert(Tuple.create().set("ORGID", 1).set("NAME", "111").set("AGE", 111));
-        tbl2.recordView().insert(Tuple.create().set("ID", 1).set("NAME", "AAA").set("BIGDATA", BigDecimal.valueOf(10)));
+        tbl1.insert(Tuple.create().set("ORGID", 1).set("NAME", "111").set("AGE", 111));
+        tbl2.insert(Tuple.create().set("ID", 1).set("NAME", "AAA").set("BIGDATA", BigDecimal.valueOf(10)));
     }
 
     /**

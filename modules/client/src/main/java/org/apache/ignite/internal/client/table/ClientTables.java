@@ -54,7 +54,7 @@ public class ClientTables implements IgniteTables {
         Objects.requireNonNull(name);
         Objects.requireNonNull(tableInitChange);
 
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -67,7 +67,7 @@ public class ClientTables implements IgniteTables {
         Objects.requireNonNull(name);
         Objects.requireNonNull(tableChange);
 
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public class ClientTables implements IgniteTables {
         Objects.requireNonNull(name);
         Objects.requireNonNull(tableInitChange);
 
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

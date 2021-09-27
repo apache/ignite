@@ -63,8 +63,7 @@ import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
-import org.apache.ignite.table.KeyValueView;
-import org.apache.ignite.table.RecordView;
+import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
@@ -301,11 +300,11 @@ public class ITDistributedTableTest {
             @Override public Row resolve(BinaryRow row) {
                 return new Row(SCHEMA, row);
             }
-        }, null);
+        }, null, null);
 
-        partitionedTableRecordView(tbl.recordView(), PARTS * 10);
+        partitionedTableView(tbl, PARTS * 10);
 
-        partitionedTableKeyValueView(tbl.keyValueView(), PARTS * 10);
+        partitionedTableKVBinaryView(tbl.kvView(), PARTS * 10);
     }
 
     /**
@@ -314,7 +313,7 @@ public class ITDistributedTableTest {
      * @param view Table view.
      * @param keysCnt Count of keys.
      */
-    public void partitionedTableRecordView(RecordView<Tuple> view, int keysCnt) {
+    public void partitionedTableView(Table view, int keysCnt) {
         LOG.info("Test for Table view [keys={}]", keysCnt);
 
         for (int i = 0; i < keysCnt; i++) {
@@ -405,7 +404,7 @@ public class ITDistributedTableTest {
      * @param view Table view.
      * @param keysCnt Count of keys.
      */
-    public void partitionedTableKeyValueView(KeyValueView<Tuple, Tuple> view, int keysCnt) {
+    public void partitionedTableKVBinaryView(KeyValueBinaryView view, int keysCnt) {
         LOG.info("Tes for Key-Value binary view [keys={}]", keysCnt);
 
         for (int i = 0; i < keysCnt; i++) {

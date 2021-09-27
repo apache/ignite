@@ -21,12 +21,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
-import org.apache.ignite.table.KeyValueView;
+import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 
 /**
- * This example demonstrates the usage of the {@link KeyValueView} API.
+ * This example demonstrates the usage of the {@link KeyValueBinaryView} API.
  * <p>
  * To run the example, do the following:
  * <ol>
@@ -79,7 +79,7 @@ public class KeyValueBinaryViewExample {
             )
         );
 
-        KeyValueView<Tuple, Tuple> kvView = accounts.keyValueView();
+        KeyValueBinaryView kvView = accounts.kvView();
 
         //---------------------------------------------------------------------------------
         //
@@ -103,7 +103,7 @@ public class KeyValueBinaryViewExample {
         //
         //---------------------------------------------------------------------------------
 
-        value = accounts.recordView().get(key);
+        value = accounts.get(key);
 
         System.out.println(
             "Retrieved using Key-Value API\n" +

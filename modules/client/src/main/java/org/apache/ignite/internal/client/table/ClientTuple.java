@@ -135,12 +135,12 @@ public final class ClientTuple implements Tuple {
 
     /** {@inheritDoc} */
     @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObject binaryObjectValue(int columnIndex) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

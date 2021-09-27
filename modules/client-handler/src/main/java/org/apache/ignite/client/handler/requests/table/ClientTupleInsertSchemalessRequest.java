@@ -45,6 +45,6 @@ public class ClientTupleInsertSchemalessRequest {
         var table = readTable(in, tables);
         var tuple = readTupleSchemaless(in);
 
-        return table.recordView().insertAsync(tuple).thenAccept(out::packBoolean);
+        return table.insertAsync(tuple).thenAccept(out::packBoolean);
     }
 }

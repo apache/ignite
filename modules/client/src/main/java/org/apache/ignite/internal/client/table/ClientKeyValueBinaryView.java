@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.client.proto.ClientOp;
 import org.apache.ignite.table.InvokeProcessor;
-import org.apache.ignite.table.KeyValueView;
+import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Client key-value view implementation for binary user-object representation.
  */
-public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
+public class ClientKeyValueBinaryView implements KeyValueBinaryView {
     /** Underlying table. */
     private final ClientTable tbl;
 
@@ -161,12 +161,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> removeAsync(@NotNull Tuple key) {
-        Objects.requireNonNull(key);
-
-        return tbl.doSchemaOutOpAsync(
-            ClientOp.TUPLE_DELETE,
-            (s, w) -> tbl.writeTuple(key, s, w, true),
-            ClientMessageUnpacker::unpackBoolean);
+        return tbl.deleteAsync(key);
     }
 
     /** {@inheritDoc} */
@@ -192,13 +187,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Collection<Tuple>> removeAllAsync(@NotNull Collection<Tuple> keys) {
-        Objects.requireNonNull(keys);
-
-        return tbl.doSchemaOutInOpAsync(
-            ClientOp.TUPLE_DELETE_ALL,
-            (s, w) -> tbl.writeTuples(keys, s, w, true),
-            (schema, in) -> tbl.readTuples(schema, in, true),
-            Collections.emptyList());
+        return tbl.deleteAllAsync(keys);
     }
 
     /** {@inheritDoc} */
@@ -268,7 +257,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
     ) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -277,7 +266,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
     ) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -286,7 +275,7 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
     ) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -295,18 +284,18 @@ public class ClientKeyValueBinaryView implements KeyValueView<Tuple, Tuple> {
             InvokeProcessor<Tuple, Tuple, R> proc,
             Serializable... args
     ) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable Transaction transaction() {
         // TODO: Transactions IGNITE-15240
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public KeyValueView<Tuple, Tuple> withTransaction(Transaction tx) {
+    @Override public KeyValueBinaryView withTransaction(Transaction tx) {
         // TODO: Transactions IGNITE-15240
-        throw new UnsupportedOperationException("Not implemented yet.");
+        throw new UnsupportedOperationException();
     }
 }

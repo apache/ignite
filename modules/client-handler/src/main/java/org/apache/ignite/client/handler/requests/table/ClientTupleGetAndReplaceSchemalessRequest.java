@@ -46,6 +46,6 @@ public class ClientTupleGetAndReplaceSchemalessRequest {
         var table = readTable(in, tables);
         var tuple = readTupleSchemaless(in);
 
-        return table.recordView().getAndReplaceAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple));
+        return table.getAndReplaceAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple));
     }
 }

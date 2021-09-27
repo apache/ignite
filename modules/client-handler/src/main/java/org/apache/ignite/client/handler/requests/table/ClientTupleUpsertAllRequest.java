@@ -39,6 +39,6 @@ public class ClientTupleUpsertAllRequest {
         var table = readTable(in, tables);
         var tuples = readTuples(in, table, false);
 
-        return table.recordView().upsertAllAsync(tuples);
+        return table.upsertAllAsync(tuples);
     }
 }
