@@ -60,10 +60,11 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     /** Columns to check.*/
     private static final String[] COLUMNS = {"A", "B", "C"};
 
-    /** */
+    /** Listener which catches client-side statistics store warning. */
     private LogListener obsolescenceLsnr = LogListener
         .matches("Unable to save statistics obsolescence info on non server node.").build();
 
+    /** Logger which tries to catch client-side statistics store warning. */
     private final ListeningTestLogger obsolescenceAwareLog = new ListeningTestLogger(log(), obsolescenceLsnr);
 
     /** Lazy mode. */
@@ -250,8 +251,6 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         client.cluster().state(ClusterState.ACTIVE);
 
         assertFalse(obsolescenceLsnr.check(TIMEOUT));
-
-
     }
 
     /**

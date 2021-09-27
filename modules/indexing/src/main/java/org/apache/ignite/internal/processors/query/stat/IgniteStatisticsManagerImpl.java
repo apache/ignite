@@ -146,7 +146,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         statsRepos = new IgniteStatisticsRepository(store, ctx.systemView(), helper, ctx::log);
 
-        gatherer = serverNode? new StatisticsGatherer(
+        gatherer = serverNode ? new StatisticsGatherer(
             statsRepos,
             gatherPool,
             ctx::log
