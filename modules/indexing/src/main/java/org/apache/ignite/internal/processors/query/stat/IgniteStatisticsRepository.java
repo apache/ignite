@@ -20,14 +20,11 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -45,49 +42,31 @@ import org.apache.ignite.internal.util.typedef.F;
  * operations to transform it.
  */
 public class IgniteStatisticsRepository {
-    /**
-     *
-     */
+    /** Statistics partition data view name. */
     public static final String STAT_PART_DATA_VIEW = "statisticsPartitionData";
 
-    /**
-     *
-     */
+    /** Statistics partition data view description. */
     public static final String STAT_PART_DATA_VIEW_DESC = "Statistics per partition data.";
 
-    /**
-     *
-     */
+    /** Statistics local data view name. */
     public static final String STAT_LOCAL_DATA_VIEW = "statisticsLocalData";
 
-    /**
-     *
-     */
+    /** Statistics local data view description. */
     public static final String STAT_LOCAL_DATA_VIEW_DESC = "Statistics local node data.";
 
-    /**
-     * Logger.
-     */
+    /** Logger. */
     private final IgniteLogger log;
 
-    /**
-     * Statistics store.
-     */
+    /** Statistics store. */
     private final IgniteStatisticsStore store;
 
-    /**
-     * Local (for current node) object statistics.
-     */
+    /** Local (for current node) object statistics. */
     private final Map<StatisticsKey, ObjectStatisticsImpl> locStats = new ConcurrentHashMap<>();
 
-    /**
-     * Obsolescence for each partition.
-     */
+    /** Obsolescence for each partition. */
     private final Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = new ConcurrentHashMap<>();
 
-    /**
-     * Statistics gathering.
-     */
+    /** Statistics helper (msg converter). */
     private final IgniteStatisticsHelper helper;
 
     /**
@@ -394,10 +373,21 @@ public class IgniteStatisticsRepository {
         objPartObs.onModified(changedKey);
     }
 
+    /**
+     * Get list of all obsolescence keys.
+     *
+     * @return List of all obsolescence keys.
+     */
     public synchronized List<StatisticsKey> getObsolescenceKeys() {
         return new ArrayList<>(statObs.keySet());
     }
 
+    /**
+     * Get map partitionId to partition obsolescence by key.
+     *
+     * @param key Statistics key to get obsolescence info by.
+     * @return Obsolescence map.
+     */
     public synchronized IntMap<ObjectPartitionStatisticsObsolescence> getObsolescence(StatisticsKey key) {
         IntMap<ObjectPartitionStatisticsObsolescence> res = statObs.get(key);
 

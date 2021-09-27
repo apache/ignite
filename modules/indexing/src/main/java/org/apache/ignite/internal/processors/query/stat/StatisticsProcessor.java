@@ -450,15 +450,4 @@ public class StatisticsProcessor {
     public IgniteThreadPoolExecutor gatheringPool() {
         return gatherPool;
     }
-
-    /**
-     * Gathering result.
-     */
-    private static class GatheredPartitionResult {
-        /** Partition statistics was gathered, not just read. */
-        public boolean newPart;
-
-        /** Partition statistics. */
-        public ObjectPartitionStatisticsImpl partStats;
-    }
 }

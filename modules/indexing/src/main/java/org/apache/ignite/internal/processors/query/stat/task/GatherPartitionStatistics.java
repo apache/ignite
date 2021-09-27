@@ -83,7 +83,14 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
     /** Collection time. */
     private long time;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param statRepo Statistics repository.
+     * @param gathCtx Gathering context.
+     * @param partId Target partition id in context.
+     * @param log Logger.
+     */
     public GatherPartitionStatistics(
         IgniteStatisticsRepository statRepo,
         LocalStatisticsGatheringContext gathCtx,

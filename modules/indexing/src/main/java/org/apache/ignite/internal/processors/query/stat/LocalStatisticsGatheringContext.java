@@ -30,11 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Statistics gathering context.
  */
 public class LocalStatisticsGatheringContext {
-    /** Additional steps count: prepare to prevent cancellation if some service tasks
-     * (save obsolescense or drop table).
-     */
-    private static final int ADDITIONAL_STEPS = 1;
-
     /** Force recollect flag. */
     private final boolean forceRecollect;
 

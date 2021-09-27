@@ -67,6 +67,7 @@ public class ColumnConfigurationViewSupplier {
         String name = (String)filter.get(StatisticsColumnConfigurationViewWalker.NAME_FILTER);
 
         Collection<StatisticsObjectConfiguration> configs;
+
         try {
             if (!F.isEmpty(schema) && !F.isEmpty(name)) {
                 StatisticsKey key = new StatisticsKey(schema, name);
