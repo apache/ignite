@@ -115,7 +115,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
             if (started)
                 statCfgMgr.afterTopologyUnlock(fut);
-            //stateChanged();
         }
     };
 
@@ -179,7 +178,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.internalSubscriptionProcessor(),
             ctx.systemView(),
             ctx.state(),
-            //ctx.cache().context().exchange(),
             statProc,
             db != null,
             mgmtPool,
@@ -295,7 +293,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void collectStatistics(StatisticsObjectConfiguration... targets) throws IgniteCheckedException {
-        ensureUsageState("collect statistics");
+        ensureActive("collect statistics");
 
         if (usageState() == OFF)
             throw new IgniteException("Can't gather statistics while statistics usage state is OFF.");
@@ -305,7 +303,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
-        ensureUsageState("drop statistics");
+        ensureActive("drop statistics");
 
         if (usageState() == OFF)
             throw new IgniteException("Can't drop statistics while statistics usage state is OFF.");
@@ -315,7 +313,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void refreshStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
-        ensureUsageState("refresh statistics");
+        ensureActive("refresh statistics");
 
         if (usageState() == OFF)
             throw new IgniteException("Can't refresh statistics while statistics usage state is OFF.");
@@ -325,7 +323,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropAll() throws IgniteCheckedException {
-        ensureUsageState("drop all statistics");
+        ensureActive("drop all statistics");
 
         statCfgMgr.dropAll();
     }
@@ -356,7 +354,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void usageState(StatisticsUsageState state) throws IgniteCheckedException {
-        ensureUsageState("change usage state of statistics");
+        ensureActive("change usage state of statistics");
 
         try {
             usageState.propagate(state);
@@ -461,11 +459,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /**
-     * Check that cluster statistics usage state is not OFF and cluster is active.
+     * Check that cluster is active.
      *
      * @param op Operation name.
      */
-    public void ensureUsageState(String op) {
+    public void ensureActive(String op) {
         if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
             throw new IgniteException(String.format(
                 "Unable to perform %s due to cluster state [state=%s]", op, ctx.state().clusterState().state()));

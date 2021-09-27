@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.query.stat.view.ColumnPartitionData
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
-//import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Statistics repository implementation. Store all statistics data (except configuration) and offer high level
@@ -94,9 +93,9 @@ public class IgniteStatisticsRepository {
     /**
      * Constructor.
      *
-     * @param store       Ignite statistics store to use.
-     * @param sysViewMgr  Grid system view manager.
-     * @param helper      IgniteStatisticsHelper.
+     * @param store Ignite statistics store to use.
+     * @param sysViewMgr Grid system view manager.
+     * @param helper IgniteStatisticsHelper.
      * @param logSupplier Ignite logger supplier to get logger from.
      */
     public IgniteStatisticsRepository(
@@ -220,7 +219,7 @@ public class IgniteStatisticsRepository {
      * @param key Key to remove statistics by.
      * @param partsToRemove Set of parititon ids to remove.
      */
-    public void clearLocalPartitionIdsStatistics(StatisticsKey key, Set<Integer> partsToRemove) {
+    public void clearLocalPartitionsStatistics(StatisticsKey key, Set<Integer> partsToRemove) {
         if (F.isEmpty(partsToRemove)) {
             store.clearLocalPartitionsStatistics(key);
             store.clearObsolescenceInfo(key, null);
@@ -375,90 +374,6 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Load obsolescence info from local metastorage and cache it. Remove parts, that doesn't match configuration.
-     * Create missing partitions info.
-     *
-     * @param cfg Partitions configuration.
-     */
-    public void loadObsolescenceInfo(Map<StatisticsObjectConfiguration, Set<Integer>> cfg) {
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> obsolescence = store.loadAllObsolescence();
-
-        Map<StatisticsKey, Set<Integer>> deleted = updateObsolescenceInfo(obsolescence, cfg);
-
-        statObs.putAll(obsolescence);
-
-        for (Map.Entry<StatisticsKey, Set<Integer>> objDeleted : deleted.entrySet())
-            store.clearObsolescenceInfo(objDeleted.getKey(), objDeleted.getValue());
-    }
-
-    /**
-     * Make obsolescence map correlated with configuration and return removed elements map.
-     * Save new obsolescence info if necessary.
-     *
-     * @param obsolescence Obsolescence info map.
-     * @param targetCfg Obsolescence configuration.
-     * @return Removed from obsolescence info map partitions.
-     */
-    private static Map<StatisticsKey, Set<Integer>> updateObsolescenceInfo(
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> obsolescence,
-        Map<StatisticsObjectConfiguration, Set<Integer>> targetCfg
-    ) {
-        Map<StatisticsKey, Set<Integer>> res = new HashMap<>();
-
-        Map<StatisticsKey, StatisticsObjectConfiguration> targetKeysMap = targetCfg.keySet().stream()
-            .collect(Collectors.toMap(StatisticsObjectConfiguration::key, c -> c));
-
-        for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : obsolescence.entrySet()) {
-            StatisticsKey key = objObs.getKey();
-
-            StatisticsObjectConfiguration targetKeyCfg = targetKeysMap.get(key);
-
-            if (targetKeyCfg == null) {
-                // No target key at all - add all partitions to rmv map
-                IntMap<ObjectPartitionStatisticsObsolescence> rmv = obsolescence.remove(key);
-
-                res.put(key, IntStream.of(rmv.keys()).boxed().collect(Collectors.toSet()));
-            }
-            else {
-                // Target key exists - check each partition id.
-                Set<Integer> targetKeyParts = targetCfg.get(targetKeyCfg);
-
-                for (int objPartId : objObs.getValue().keys()) {
-                    if (!targetKeyParts.contains(objPartId))
-                        res.putIfAbsent(key, new HashSet<Integer>()).add(objPartId);
-                }
-            }
-        }
-
-        for (Map.Entry<StatisticsObjectConfiguration, Set<Integer>> objObsCfg : targetCfg.entrySet()) {
-            StatisticsKey key = objObsCfg.getKey().key();
-            IntMap<ObjectPartitionStatisticsObsolescence> objObs = obsolescence.get(key);
-
-            if (objObs == null) {
-                objObs = new IntHashMap<>();
-
-                obsolescence.put(key, objObs);
-            }
-
-            IntMap<ObjectPartitionStatisticsObsolescence> objObsFinal = objObs;
-
-            Set<Integer> partIds = new HashSet<>(objObsCfg.getValue());
-
-            objObs.forEach((partId, v) -> {
-                if (!partIds.remove(partId)) {
-                    objObsFinal.remove(partId);
-
-                    res.computeIfAbsent(key, k -> new HashSet<>()).add(partId);
-                }
-            });
-
-            partIds.forEach(partId -> objObsFinal.put(partId, new ObjectPartitionStatisticsObsolescence()));
-        }
-
-        return res;
-    }
-
-    /**
      * Try to count modified to specified object and partition.
      *
      * @param key Statistics key.
@@ -503,7 +418,7 @@ public class IgniteStatisticsRepository {
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : statObs.entrySet()) {
             objObs.getValue().forEach((k, v) -> {
                 if (v.dirty())
-                    dirtyObs.computeIfAbsent(objObs.getKey(), k2 -> new IntHashMap()).put(k, v);
+                    dirtyObs.computeIfAbsent(objObs.getKey(), k2 -> new IntHashMap<>()).put(k, v);
 
             });
         }

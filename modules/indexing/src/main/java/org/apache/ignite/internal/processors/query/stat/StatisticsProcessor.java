@@ -112,7 +112,7 @@ public class StatisticsProcessor {
                     statRepo.saveObsolescenceInfo(ctx.configuration().key());
 
                 if (ctx.table() == null || ctx.configuration() == null || ctx.configuration().columns().isEmpty()) {
-                    statRepo.clearLocalPartitionIdsStatistics(ctx.configuration().key(), null);
+                    statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), null);
                     ctx.future().complete(null);
 
                     return;
@@ -217,8 +217,8 @@ public class StatisticsProcessor {
     }
 
     /**
-     *
-     * @param ctx
+     * Aggregate partition statistics to local one.
+     * @param ctx Context to use in aggregation.
      */
     private void aggregateStatistics(LocalStatisticsGatheringContext ctx) {
         if (ctx.cancelled())
@@ -241,10 +241,9 @@ public class StatisticsProcessor {
             }
 
             if (!partsToRemove.isEmpty())
-                statRepo.clearLocalPartitionIdsStatistics(ctx.configuration().key(), partsToRemove);
+                statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), partsToRemove);
 
             if (!partsToAggregate.isEmpty())
-                // TODO: what if there are no more parts?
                 statRepo.aggregatedLocalStatistics(partsToAggregate, ctx.configuration());
         }
     }

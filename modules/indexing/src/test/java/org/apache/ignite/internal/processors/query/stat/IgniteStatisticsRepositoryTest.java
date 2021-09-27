@@ -161,7 +161,7 @@ public class IgniteStatisticsRepositoryTest extends IgniteStatisticsRepositorySt
 
         assertNotNull(repo.getLocalPartitionStatistics(K1, 10));
 
-        repo.clearLocalPartitionIdsStatistics(K1, setOf(1, 2, 10));
+        repo.clearLocalPartitionsStatistics(K1, setOf(1, 2, 10));
 
         assertNull(repo.getLocalPartitionStatistics(K1, 10));
         assertNotNull(repo.getLocalPartitionStatistics(K1, 100));
