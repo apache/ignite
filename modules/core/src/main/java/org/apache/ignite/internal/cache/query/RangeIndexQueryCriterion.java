@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.cache.query;
 
 import org.apache.ignite.cache.query.IndexQueryCriterion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Range index criterion that applies to BPlusTree based indexes.
@@ -30,9 +32,11 @@ public final class RangeIndexQueryCriterion implements IndexQueryCriterion {
     private final String field;
 
     /** Lower bound. */
+    @GridToStringInclude
     private final Object lower;
 
     /** Upper bound. */
+    @GridToStringInclude
     private final Object upper;
 
     /** Should include lower value. */
@@ -119,5 +123,10 @@ public final class RangeIndexQueryCriterion implements IndexQueryCriterion {
     /** {@inheritDoc} */
     @Override public String field() {
         return field;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RangeIndexQueryCriterion.class, this);
     }
 }

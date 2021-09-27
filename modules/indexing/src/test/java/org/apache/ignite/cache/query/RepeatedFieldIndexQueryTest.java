@@ -17,18 +17,22 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -105,412 +109,20 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         int lower = new Random().nextInt(CNT / 2);
         int upper = CNT / 2 + new Random().nextInt(CNT / 2 - 1);
 
-        // Lt.
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, upper), lt(fldName, lower));
-
-        check(cache.query(qry), 0, lower);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, upper), lte(fldName, lower));
-
-        check(cache.query(qry), 0, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, upper), eq(fldName, lower));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, upper), gt(fldName, lower));
-
-        check(cache.query(qry), lower + 1, upper);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, upper), gte(fldName, lower));
-
-        check(cache.query(qry), lower, upper);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, upper), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, upper);
-
-        // Lt, reverse order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), lt(fldName, upper));
-
-        check(cache.query(qry), 0, lower);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), lte(fldName, upper));
-
-        check(cache.query(qry), 0, lower);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), eq(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), gte(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), between(fldName, lower, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        // Lte.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, upper), lt(fldName, lower));
-
-        check(cache.query(qry), 0, lower);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, upper), lte(fldName, lower));
-
-        check(cache.query(qry), 0, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, upper), eq(fldName, lower));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, upper), gt(fldName, lower));
-
-        check(cache.query(qry), lower + 1, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, upper), gte(fldName, lower));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, upper), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        // Lte, reverse order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), lt(fldName, upper));
-
-        check(cache.query(qry), 0, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), lte(fldName, upper));
-
-        check(cache.query(qry), 0, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), eq(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), gte(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        // Gt.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, upper), lt(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, upper), lte(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, upper), eq(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, upper), gt(fldName, lower));
-
-        check(cache.query(qry), upper + 1, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, upper), gte(fldName, lower));
-
-        check(cache.query(qry), upper + 1, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, upper), between(fldName, lower, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        // Gt, reverse order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, lower), lt(fldName, upper));
-
-        check(cache.query(qry), lower + 1, upper);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, lower), lte(fldName, upper));
-
-        check(cache.query(qry), lower + 1, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, lower), eq(fldName, upper));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, lower), gt(fldName, upper));
-
-        check(cache.query(qry), upper + 1, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, lower), gte(fldName, upper));
-
-        check(cache.query(qry), upper, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gt(fldName, lower), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower + 1, upper + 1);
-
-        // Gte.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, upper), lt(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, upper), lte(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, upper), eq(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, upper), gt(fldName, lower));
-
-        check(cache.query(qry), upper, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, upper), gte(fldName, lower));
-
-        check(cache.query(qry), upper, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, upper), between(fldName, lower, upper));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        // Gte, reverse order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, lower), lt(fldName, upper));
-
-        check(cache.query(qry), lower, upper);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, lower), lte(fldName, upper));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, lower), eq(fldName, upper));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, lower), gt(fldName, upper));
-
-        check(cache.query(qry), upper + 1, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, lower), gte(fldName, upper));
-
-        check(cache.query(qry), upper, CNT);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(gte(fldName, lower), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        // Eq.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), lt(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), lte(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), eq(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), gt(fldName, lower));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), gte(fldName, lower));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), between(fldName, lower, upper));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        // Eq, reverse order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), lt(fldName, upper));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), lte(fldName, upper));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), eq(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), gte(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        // Between.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), lt(fldName, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), lte(fldName, lower));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), eq(fldName, lower));
-
-        check(cache.query(qry), lower, lower + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), gt(fldName, lower));
-
-        check(cache.query(qry), lower + 1, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), gte(fldName, lower));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        // Between, reverse order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), lt(fldName, upper));
-
-        check(cache.query(qry), lower, upper);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), lte(fldName, upper));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), eq(fldName, upper));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), gte(fldName, upper));
-
-        check(cache.query(qry), upper, upper + 1);
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, lower, upper), between(fldName, lower, upper));
-
-        check(cache.query(qry), lower, upper + 1);
-
-        // Between, wrong order.
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), lt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), lte(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), eq(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), gte(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), between(fldName, lower, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, upper, lower), between(fldName, upper, lower));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
+        List<T2<RangeIndexQueryCriterion, RangeIndexQueryCriterion>> cc = new ArrayList<>();
+
+        Stream.of(new T2<>(lower, upper), new T2<>(upper, lower)).forEach(pair -> {
+            for (int i = 0; i < 6; i++) {
+                for (int j = 0; j < 6; j++) {
+                    RangeIndexQueryCriterion c1 = (RangeIndexQueryCriterion)criterion(i, fldName, pair.get1(), pair.get2());
+                    RangeIndexQueryCriterion c2 = (RangeIndexQueryCriterion)criterion(j, fldName, pair.get2(), pair.get1());
+
+                    cc.add(new T2<>(c1, c2));
+                }
+            }
+        });
+
+        cc.forEach(c -> checkTwoCriteria(c.get1(), c.get2()));
     }
 
     /** */
@@ -563,12 +175,12 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lte(fldName, lower), gte(fldName, upper));
 
-        check(cache.query(qry), lower, upper + 1);
+        check(null, cache.query(qry), lower, upper + 1);
 
         qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(between(fldName, 0, lower), between(fldName, upper, CNT));
 
-        check(cache.query(qry), lower, upper + 1);
+        check(null, cache.query(qry), lower, upper + 1);
     }
 
     /** */
@@ -595,32 +207,32 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(ltCriteria);
 
-        check(cache.query(qry), 0, min);
+        check(null, cache.query(qry), 0, min);
 
         qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(gtCriteria);
 
-        check(cache.query(qry), max + 1, CNT);
+        check(null, cache.query(qry), max + 1, CNT);
     }
 
     /**
      * @param left  First cache key, inclusive.
      * @param right Last cache key, exclusive.
      */
-    private <T> void check(QueryCursor<Cache.Entry<Integer, Person>> cursor, int left, int right) {
+    private <T> void check(String errMsg, QueryCursor<Cache.Entry<Integer, Person>> cursor, int left, int right) {
         List<Cache.Entry<Integer, Person>> all = cursor.getAll();
 
-        assertEquals(right - left, all.size());
+        assertEquals(errMsg, right - left, all.size());
 
         Set<Integer> expKeys = IntStream.range(left, right).boxed().collect(Collectors.toSet());
 
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Integer, Person> entry = all.get(i);
 
-            assertTrue(expKeys.remove(entry.getKey()));
+            assertTrue(errMsg, expKeys.remove(entry.getKey()));
         }
 
-        assertTrue(expKeys.isEmpty());
+        assertTrue(errMsg, expKeys.isEmpty());
     }
 
     /** */
@@ -637,6 +249,99 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         Person(int id) {
             this.id = id;
             descId = id;
+        }
+    }
+
+    /** */
+    private IndexQueryCriterion criterion(int idx, String fld, int val1, int val2) {
+        switch (idx) {
+            case 0: return eq(fld, val1);
+            case 1: return lt(fld, val1);
+            case 2: return lte(fld, val1);
+            case 3: return gt(fld, val1);
+            case 4: return gte(fld, val1);
+            case 5: return between(fld, val1, val2);
+            default:
+                throw new RuntimeException("Unknown criteria operation");
+        }
+    }
+
+    /** */
+    private void checkTwoCriteria(RangeIndexQueryCriterion c1, RangeIndexQueryCriterion c2) {
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+            .setCriteria(c1, c2);
+
+        Range expRange = mergeRange(
+            new Range(c1.lower() == null ? 0 : (int)c1.lower(), c1.upper() == null ? CNT : (int)c1.upper(),
+                c1.lowerIncl(), c1.upperIncl()),
+
+            new Range(c2.lower() == null ? 0 : (int)c2.lower(), c2.upper() == null ? CNT : (int)c2.upper(),
+                c2.lowerIncl(), c2.upperIncl()));
+
+        int lower = expRange.lower();
+        int upper = expRange.upper();
+
+        String errMsg = "Fail crit pair: " + c1 + ", " + c2 + ". Lower=" + lower + ", upper=" + upper;
+
+        if (lower >= upper)
+            assertTrue(errMsg, cache.query(qry).getAll().isEmpty());
+        else
+            check(errMsg, cache.query(qry), lower, upper);
+    }
+
+    /** */
+    private Range mergeRange(Range range1, Range range2) {
+        int left = range1.left;
+        boolean leftIncl = range1.leftIncl;
+
+        if (range2.left > left) {
+            left = range2.left;
+            leftIncl = range2.leftIncl;
+        } else if (range2.left == left)
+            leftIncl = leftIncl && range2.leftIncl;
+
+        int right = range1.right;
+        boolean rightIncl = range1.rightIncl;
+
+        if (range2.right < right) {
+            right = range2.right;
+            rightIncl = range2.rightIncl;
+        } else if (range2.right == right)
+            rightIncl = rightIncl && range2.rightIncl;
+
+        return new Range(left, right, leftIncl, rightIncl);
+    }
+
+    /** */
+    private static class Range {
+        /** */
+        final int left;
+
+        /** */
+        final int right;
+
+        /** */
+        final boolean leftIncl;
+
+        /** */
+        final boolean rightIncl;
+
+        /** */
+        Range(int left, int right, boolean leftIncl, boolean rightIncl) {
+            this.left = left;
+            this.right = right;
+            this.leftIncl = leftIncl;
+            this.rightIncl = rightIncl;
+        }
+
+        /** */
+        int lower() {
+            return leftIncl ? left : left + 1;
+        }
+
+        /** */
+        int upper() {
+            return rightIncl ? right == CNT ? CNT : right + 1 : right;
         }
     }
 }
