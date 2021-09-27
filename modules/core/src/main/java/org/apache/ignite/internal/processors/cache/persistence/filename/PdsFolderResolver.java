@@ -162,7 +162,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
             return new PdsFolderSettings<>(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
-            return compatibleResolve(pstStoreBasePath, consistentId != null ? consistentId : cfg.getConsistentId());
+            return compatibleResolve(pstStoreBasePath, consistentId);
 
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {

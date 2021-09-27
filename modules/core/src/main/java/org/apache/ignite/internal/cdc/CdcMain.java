@@ -352,7 +352,7 @@ public class CdcMain implements Runnable {
      */
     private CdcFileLockHolder lockPds() throws IgniteCheckedException {
         PdsFolderSettings<CdcFileLockHolder> settings =
-            new PdsFolderResolver<>(igniteCfg, log, null, this::tryLock).resolve();
+            new PdsFolderResolver<>(igniteCfg, log, igniteCfg.getConsistentId(), this::tryLock).resolve();
 
         if (settings == null) {
             throw new IgniteException("Can't find folder to read WAL segments from based on provided configuration! " +
