@@ -67,6 +67,7 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -876,12 +878,39 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return Snapshot name if snapshot operation is in progress or {@code null}.
+     */
+    public @Nullable String getSnapshotCreatingName() {
+        if (clusterSnpReq != null)
+            return clusterSnpReq.snapshotName();
+
+        synchronized (snpOpMux) {
+            if (clusterSnpReq != null)
+                return clusterSnpReq.snapshotName();
+
+            if (clusterSnpFut != null)
+                return clusterSnpFut.name;
+
+            return null;
+        }
+    }
+
+    /**
      * Check if snapshot restore process is currently running.
      *
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
         return restoreCacheGrpProc.restoringSnapshotName() != null;
+    }
+
+    /**
+     * Check if snapshot restore process is currently running.
+     *
+     * @return Snapshot name if the snapshot restore operation is in progress or {@code null}.
+     */
+    public @Nullable String getRestoringSnapshotName() {
+        return restoreCacheGrpProc.restoringSnapshotName();
     }
 
     /**
@@ -962,6 +991,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         return new IgniteFutureImpl<>(fut0);
     }
+
+//    /** {@inheritDoc} */
+//    @Override public ComputeTaskFuture<Map<Object, String>> statusSnapshot() {
+//        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+//
+//        return ((ClusterGroupAdapter) cctx.kernalContext().cluster().get().forServers()).compute()
+//                .executeAsync(new StatusSnapshotTask(), new VisorTaskArgument<>());
+//    }
 
     /**
      * @param name Snapshot name to cancel operation on local node.

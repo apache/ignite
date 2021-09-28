@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -81,8 +84,36 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             mxBean::cancelSnapshot);
     }
 
-    /**
+//    /** @throws Exception If fails. */
+//    @Test
+//    public void testStatusSnapshot() throws Exception {
+//        IgniteEx ignite = startGridsWithCache(2, new CacheConfiguration<>("TEST_CACHE"), CACHE_KEYS_RANGE);
+//
+//        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
+//
+//        SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+//
+//        Collection<String> values = mxBean.statusSnapshot().values();
+//
+//        assertTrue(values.stream().allMatch(String::isEmpty));
+//
+//        mxBean.createSnapshot(SNAPSHOT_NAME);
+//
+//        assertTrue("Waiting for snapshot operation started on all nodes.",
+//                GridTestUtils.waitForCondition(() ->
+//                        mxBean.statusSnapshot().values().stream().noneMatch(String::isEmpty),
+//                        10_000));
+//
+//        assertTrue("Waiting for snapshot operation failed.",
+//                GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, 10_000));
+//
+//        assertTrue(mxBean.statusSnapshot().values().stream().allMatch(String::isEmpty));
+//
+//        mxBean.createSnapshot(SNAPSHOT_NAME);
+//
+//    }
 
+    /**
      * @param mBean Ignite snapshot MBean.
      * @return Value of snapshot end time.
      */

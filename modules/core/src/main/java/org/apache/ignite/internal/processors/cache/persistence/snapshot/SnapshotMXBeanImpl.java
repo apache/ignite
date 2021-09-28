@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -47,4 +48,9 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     @Override public void cancelSnapshot(String snpName) {
         mgr.cancelSnapshot(snpName).get();
     }
+
+//    /** {@inheritDoc} */
+//    @Override public Map<Object, String> statusSnapshot() {
+//        return mgr.statusSnapshot().get();
+//    }
 }

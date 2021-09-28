@@ -39,8 +39,8 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /** Cache group names. */
     private Collection<String> grpNames;
 
-    /** Snapshot restore operation management action. */
-    private VisorSnapshotRestoreTaskAction action;
+    /** Snapshot operation management action. */
+    private VisorSnapshotTaskAction action;
 
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
@@ -53,7 +53,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
      * @param grpNames Cache group names.
      */
     public VisorSnapshotRestoreTaskArg(
-        VisorSnapshotRestoreTaskAction action,
+        VisorSnapshotTaskAction action,
         String snpName,
         @Nullable Collection<String> grpNames
     ) {
@@ -73,7 +73,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     }
 
     /** @return Snapshot restore operation management action. */
-    public VisorSnapshotRestoreTaskAction jobAction() {
+    public VisorSnapshotTaskAction jobAction() {
         return action;
     }
 
@@ -86,7 +86,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
+        action = U.readEnum(in, VisorSnapshotTaskAction.class);
         snpName = U.readString(in);
         grpNames = U.readCollection(in);
     }
