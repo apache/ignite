@@ -547,6 +547,136 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Case with alias in subqueries in union.
+     */
+    @Test
+    public void testOptimizationAliasUnion() {
+        String outerSqlTemplate = "SELECT d FROM (%s) u union all SELECT d FROM (%s) z;";
+        String subSql = "SELECT id + id * id as d FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with alias in subquery.
+     */
+    @Test
+    public void testOptimizationAlias1() {
+        String outerSqlTemplate = "SELECT d FROM (%s) u;";
+        String subSql = "SELECT id + id * id as d FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with the same alias as column name in subquery.
+     */
+    @Test
+    public void testOptimizationAlias2() {
+        String outerSqlTemplate = "SELECT i FROM (%s) u;";
+        String subSql = "SELECT id + id * id as i FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with constants in subquery without aliases.
+     */
+    @Test
+    public void testOptimizationConstant1() {
+        String outerSqlTemplate = "SELECT * FROM (%s) u;";
+        String subSql = "SELECT 2 + 2, '1+1', 3.14::DECIMAL, extract(year from CURRENT_DATE()) FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with constant as column name.
+     */
+    @Test
+    public void testOptimizationConstant2() {
+        String outerSqlTemplate = "SELECT \"42\" as p FROM (%s) u;";
+        String subSql = "SELECT 42 FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with WHEN-THEN-ELSE construction in subquery.
+     */
+    @Test
+    public void testOptimizationCaseWhen() {
+        String outerSqlTemplate = "SELECT * FROM (%s) u;";
+        String subSql = "SELECT Case id When 1 Then 4 Else 3 End as A, Case id When 1 Then 3 Else 4 End as B FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with CAST function with alias in subquery.
+     */
+    @Test
+    public void testOptimizationCastFunction() {
+        String outerSqlTemplate = "SELECT z FROM (%s) u;";
+        String subSql = "SELECT CAST(3.14 as DECIMAL) z FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with jeft join with WHERE FALSE condition inside.
+     */
+    @Test
+    public void testOptimizationLeftJoinWhereFalse() {
+        String outerSqlTemplate = "SELECT * FROM dep AS t1 LEFT JOIN (%s) AS t2 ON t1.id = t2.id;";
+        String subSql = "SELECT * FROM dep2 WHERE false";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with jeft join with false where condition inside.
+     */
+    @Test
+    public void testOptimizationLeftJoinWhereFalse2() {
+        String outerSqlTemplate = "SELECT * FROM dep AS t1 LEFT JOIN (%s) AS t2 ON t1.id = t2.id;";
+        String subSql = "SELECT * FROM dep2 WHERE dep2.id IS NULL";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with jeft join with false where condition inside.
+     */
+    @Test
+    public void testOptimizationLeftJoinWhereFalse3() {
+        String outerSqlTemplate = "SELECT * FROM dep AS t1 LEFT JOIN (%s) AS t2 ON t1.id = true;";
+        String subSql = "SELECT * FROM dep2 WHERE dep2.id IS NULL";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
      * Test should verify all cases where subquery should not be rewrited.
      */
     @Test
