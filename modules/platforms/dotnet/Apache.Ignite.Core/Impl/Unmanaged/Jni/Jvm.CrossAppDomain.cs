@@ -40,6 +40,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             // In some cases default AppDomain is not able to locate Apache.Ignite.Core assembly.
             // First, use CreateInstanceFrom to set up the AssemblyResolve handler.
             var resHelpType = typeof(AssemblyResolver);
+
+            // TODO: Call with Reflection
             var resHelp = (AssemblyResolver)defDomain.CreateInstanceFrom(resHelpType.Assembly.Location, resHelpType.FullName)
                 .Unwrap();
             resHelp.TrackResolve(resHelpType.Assembly.FullName, resHelpType.Assembly.Location);

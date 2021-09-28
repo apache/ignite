@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Default SSL protocols.
         /// </summary>
-        public const SslProtocols DefaultSslProtocols = SslProtocols.Tls;
+        public const SslProtocols DefaultSslProtocols = SslProtocols.Tls12;
 #endif
 
         /// <summary>

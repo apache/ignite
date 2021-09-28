@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the default application domain.
         /// </summary>
-        public static _AppDomain GetDefaultAppDomain()
+        public static object GetDefaultAppDomain()
         {
             if (Os.IsMono)
             {
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                 Debug.Assert(prop != null);
 
-                return (_AppDomain) prop.GetValue(null, null);
+                return prop.GetValue(null, null);
             }
 
             object objHost;
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             var rtHost = (ICorRuntimeHost) runtime.GetInterface(ref CLSID_CorRuntimeHost, ref IID_CorRuntimeHost);
 
-            _AppDomain domain;
+            object domain;
             rtHost.GetDefaultDomain(out domain);
 
             return domain;
@@ -131,8 +131,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             void GetConfiguration(out IntPtr config);
             void Start();
             void Stop();
-            void CreateDomain(string name, object identity, out _AppDomain domain);
-            void GetDefaultDomain(out _AppDomain domain);
+            void CreateDomain(string name, object identity, out object domain);
+            void GetDefaultDomain(out object domain);
         }
 
         private static class NativeMethods
