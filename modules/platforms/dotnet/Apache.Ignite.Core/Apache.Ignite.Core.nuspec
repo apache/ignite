@@ -54,6 +54,9 @@ More info: https://ignite.apache.org/
             <group targetFramework=".NETFramework4.0" />
             <group targetFramework=".NETStandard2.0">
                 <dependency id="System.Configuration.ConfigurationManager" version="[4.4.0, 7.0.0)" />
+                <dependency id="System.Reflection.Emit" version="[4.4.0, 7.0.0)" />
+                <dependency id="System.Reflection.Emit.Lightweight" version="[4.4.0, 7.0.0)" />
+                <dependency id="Microsoft.Win32.Registry" version="[4.4.0, 7.0.0)" />
             </group>
         </dependencies>
     </metadata>
