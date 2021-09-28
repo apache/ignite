@@ -5539,8 +5539,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         GroupPartitionId grpPartId = new GroupPartitionId(grpCtx.groupId(), partId);
 
                         try {
-                            long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(),
-                                partStates.get(grpPartId));
+                            long time = grpCtx.offheap().restoreStateOfPartition(partId, partStates.get(grpPartId));
 
                             if (log.isInfoEnabled()) {
                                 T3<Long, Long, GroupPartitionId> curPart = new T3<>(time, U.currentTimeMillis(), grpPartId);
@@ -5552,25 +5551,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                 Comparator<T3<Long, Long, GroupPartitionId>> cmp = processedPartitionComparator();
 
-                                threadCtx.topPartRef.updateAndGet(top0 -> {
-                                    if (threadCtx.topPartRef.get() == null ||
-                                        cmp.compare(threadCtx.topPartRef.get().last(), curPart) < 0) {
+                                threadCtx.topPartRef.updateAndGet(prev -> {
+                                    if (prev == null ||
+                                        cmp.compare(prev.last(), curPart) < 0) {
                                         SortedSet<T3<Long, Long, GroupPartitionId>> top = new TreeSet<>(cmp);
 
                                         top.add(curPart);
 
-                                        if (top0 != null)
-                                            top.addAll(top0);
+                                        if (prev != null)
+                                            top.addAll(prev);
 
                                         trimToSize(top, topPartRefLimit);
 
                                         return top;
                                     }
                                     else
-                                        return top0;
+                                        return prev;
                                 });
 
-                                RestorePartitionStateThreadContext.PROCESSED_CNT_UPD.incrementAndGet(threadCtx);
+                                threadCtx.incrementProcessedCnt();
                             }
                         }
                         catch (IgniteCheckedException | RuntimeException | Error e) {
@@ -6006,5 +6005,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** Processed partitions count. It is always updated from the same thread. */
         volatile long processedCnt = 0;
+
+        /**
+         * Increment {@code processedCnt} field.
+         */
+        void incrementProcessedCnt() {
+            PROCESSED_CNT_UPD.incrementAndGet(this);
+        }
     }
 }
