@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -88,8 +87,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
+        /// todo
         public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh, 
-            out string mthdName, out object[] mthdArgs, out Dictionary<string, object> dict)
+            out string mthdName, out object[] mthdArgs, out Hashtable invCtx)
         {
             var reader = marsh.StartUnmarshal(stream);
 
@@ -110,11 +110,7 @@ namespace Apache.Ignite.Core.Impl.Services
             else
                 mthdArgs = null;
 
-            // todo
-            var table = reader.ReadObject<Hashtable>();
-
-            dict = table?.Cast<DictionaryEntry> ()
-                .ToDictionary (kvp => (string)kvp.Key, kvp => kvp.Value);
+            invCtx = reader.ReadObject<Hashtable>();
         }
 
         /// <summary>

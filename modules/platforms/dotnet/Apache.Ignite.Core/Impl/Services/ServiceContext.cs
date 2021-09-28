@@ -35,8 +35,10 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
 
@@ -45,11 +47,9 @@ namespace Apache.Ignite.Core.Impl.Services
     /// </summary>
     internal class ServiceContext : IServiceContext
     {
-        private readonly Services _svcs;
+        private readonly ThreadLocal<Hashtable> _invCtx;
 
-        private readonly long _svcPtr;
-
-        public ServiceContext(IBinaryRawReader reader, Services svcs, long svcPtr)
+        public ServiceContext(IBinaryRawReader reader, ThreadLocal<Hashtable> invCtx)
         {
             Debug.Assert(reader != null);
 
@@ -59,8 +59,7 @@ namespace Apache.Ignite.Core.Impl.Services
             CacheName = reader.ReadString();
             AffinityKey = reader.ReadObject<object>();
 
-            _svcs = svcs;
-            _svcPtr = svcPtr;
+            _invCtx = invCtx;
         }
 
         /** <inheritdoc /> */
@@ -78,9 +77,11 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritdoc /> */
         public object AffinityKey { get; private set; }
 
-        public object Attr(string key)
+        public object Attribute(string key)
         {
-            return _svcs.Attr(_svcPtr, key);
+            var currCtx = _invCtx?.Value;
+
+            return currCtx?[key];
         }
     }
 }

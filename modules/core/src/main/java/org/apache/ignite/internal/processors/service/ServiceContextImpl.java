@@ -171,7 +171,7 @@ public class ServiceContextImpl implements ServiceContext {
             this.execCtx.set(execCtx);
     }
 
-    @Override public <T> T attr(String key) {
+    @Override public <T> T attribute(String key) {
         Map<String, Object> attrs = execCtx.get();
 
         return attrs == null ? null : (T)attrs.get(key);

@@ -2,19 +2,8 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Reflection;
-    using System.Runtime.Serialization.Formatters.Binary;
-    using System.Threading;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
-    using Apache.Ignite.Platform.Model;
 
     public class ServiceProxyContextTest
     {
@@ -22,25 +11,17 @@ namespace Apache.Ignite.Core.Tests.Services
         private const string SvcName = "Service1";
 
         /** */
-        private const string CacheName = "cache1";
+        private IIgnite Grid1;
 
         /** */
-        private const int AffKey = 25;
+        private IIgnite Grid2;
 
-        /** */
-        protected IIgnite Grid1;
-
-//        /** */
-//        protected IIgnite Grid2;
-//
-//        /** */
-//        protected IIgnite Grid3;
 //
 //        /** */
 //        private IIgnite _client;
 //
-//        /** */
-//        protected IIgnite[] Grids;
+        /** */
+        private IIgnite[] Grids;
 
         [TearDown]
         public void FixtureTearDown()
@@ -64,28 +45,9 @@ namespace Apache.Ignite.Core.Tests.Services
 //            if (Grid1 != null)
 //                return;
 
-//            var path = Path.Combine("Config", "Compute", "compute-grid");
-
             Grid1 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid1")));
-//            {
-////                BinaryConfiguration = new BinaryConfiguration(typeof(Data)),
-//                AutoGenerateIgniteInstanceName = true,
-////                DataStorageConfiguration = new DataStorageConfiguration
-////                {
-////                    DefaultDataRegionConfiguration = new DataRegionConfiguration
-////                    {
-////                        PersistenceEnabled = _enableSecurity,
-////                        Name = DataStorageConfiguration.DefaultDataRegionName,
-////                    }
-////                },
-////                AuthenticationEnabled = _enableSecurity,
-////                Logger = _logger,
-////                IsActiveOnStart = false
-//            }
+            Grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid2")));
 
-//            Grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid2")));
-//
-//            Grid3 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid3")));
 //
 //            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "client"));
 //
@@ -94,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Services
 //
 //            _client = Ignition.Start(cfg);
 //
-//            Grids = new[] { Grid1, Grid2, Grid3, _client };
+            Grids = new[] { Grid1, Grid2 };
         }
 
         /// <summary>
@@ -110,64 +72,47 @@ namespace Apache.Ignite.Core.Tests.Services
         
         
         /// <summary>
-        /// Tests deployment.
+        /// Tests proxy custom invocation context.
         /// </summary>
         [Test]
-        public void TestProxyContext() // [Values(true, false)] bool binarizable
+        public void TestProxyContext()
         {
-//            var cfg = new ServiceConfiguration
-//            {
-//                Name = SvcName,
-//                MaxPerNodeCount = 3,
-//                TotalCount = 3,
-//                NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
-//                Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
-//            };
+            // todo test cases
+            CheckProxyContext(Grid1, false, false);
+            CheckProxyContext(Grid1, false, true);
+            CheckProxyContext(Grid2, false, false);
+            CheckProxyContext(Grid2, false, true);
+            CheckProxyContext(Grid1, true, false);
+            CheckProxyContext(Grid1, true, true);
+            CheckProxyContext(Grid2, true, false);
+            CheckProxyContext(Grid2, true, true);
+        }
 
-            Console.Out.WriteLine(">xxx> MyService");
+        private void CheckProxyContext(IIgnite ignite, bool nodeSingleton, bool sticky)
+        {
+            if (nodeSingleton)
+                ignite.GetServices().DeployNodeSingleton(SvcName, new MyService());
+            else
+                ignite.GetServices().DeployClusterSingleton(SvcName, new MyService());
 
-            var svc = new MyService();
-            
-//            svc.GetType().GetFields(BindingFlags.Public | 
-//                                         BindingFlags.NonPublic | 
-//                                         BindingFlags.Instance);
+            try {
+                foreach (var grid in Grids)
+                {
+                    var svcs0 = grid.GetServices();
+                    
+                    var svcProxy0 =
+                        svcs0.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 123}});
+                    var svcProxy1 =
+                        svcs0.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 12345}});
 
-            var filedInfo = svc.GetType().GetField("headers");
-
-            
-
-//            ThreadLocal<Dictionary<object, object>> headers = (ThreadLocal<Dictionary<object, object>>)filedInfo.GetValue(svc);
-            
-                        
-            Dictionary<string, object> dict = new Dictionary<string, object>();
-            
-            dict.Add("id", "12345");
-            dict.Add("id2", "2131231");
-            dict.Add("id3", "Adasdas");
-
-//            headers.Value = dict;
-            
-            
-//            Assert.AreEqual("12345", svc.headers.Value["id"]);
-            
-
-            Services.DeployClusterSingleton(SvcName, svc);
-
-            Console.WriteLine(">xxx> get proxy");
-
-            var svcProxy = Services.GetServiceProxy<IMyService>(SvcName, false, dict);
-            
-            Console.WriteLine(">xxx> invoke method");
-
-            var res = svcProxy.Method("id");
-            
-            Console.WriteLine(">xxx> all done");
-
-            Thread.Sleep(1_000);
-            
-            Assert.AreEqual("12345", res);
-
-//            CheckServiceStarted(Grid1, 3);
+                    Assert.AreEqual(123, svcProxy0.Method("id"));
+                    Assert.AreEqual(12345, svcProxy1.Method("id"));
+                }
+            }
+            finally
+            {
+                ignite.GetServices().Cancel(SvcName);
+            }
         }
 
         public interface IMyService : IService
@@ -178,71 +123,27 @@ namespace Apache.Ignite.Core.Tests.Services
         [Serializable]
         public class MyService : IMyService
         {
-//            public ThreadLocal<Dictionary<object, object>> headers = new ThreadLocal<Dictionary<object, object>>();
-
             public object Method(string arg)
             {
-                return context.Attr(arg);
-//                object value;
-//
-//                var hdrs = context.headers();
-//
-//                if (hdrs != null && hdrs.TryGetValue("id", out value))
-//                    return value;
-
-//                try
-//                {
-//                    if (context.headers().TryGetValue("id", out value))
-//                        return value;
-//                }
-//                catch (NullReferenceException e)
-//                {
-//                    Console.WriteLine("NPE: " + e.Message);
-//                }
-//                return null;
+                return context.Attribute(arg);
             }
 
             private IServiceContext context;
 
             public void Init(IServiceContext context)
             {
-//                throw new NotImplementedException();
-                Console.Out.WriteLine(">xxx> init");
-                
-                if (this.context != null)
-                    Assert.AreSame(this.context,context);
-
                 this.context = context;
             }
 
             public void Execute(IServiceContext context)
             {
-                Console.Out.WriteLine(">xxx> Execute");
-
-                if (this.context != null)
-                    Assert.AreSame(this.context,context);
-                
-                this.context = context;
-                
-                
+                // No-op.
             }
 
             public void Cancel(IServiceContext context)
             {
-                Console.Out.WriteLine(">xxx> cancel");
-//                if (this.context != null)
-//                    Assert.AreEqual(this.context,context);
-//                
-//                this.context = context;
+                // No-op.
             }
-        }
-        
-        /// <summary>
-        /// Gets the services.
-        /// </summary>
-        protected virtual IServices Services
-        {
-            get { return Grid1.GetServices(); }
         }
     }
 }

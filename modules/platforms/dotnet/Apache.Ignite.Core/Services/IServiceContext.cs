@@ -66,6 +66,6 @@ namespace Apache.Ignite.Core.Services
         /// </value>
         object AffinityKey { get; }
 
-        object Attr(string key);
+        object Attribute(string key);
     }
 }

@@ -199,9 +199,6 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         assert ptr != 0;
         assert platformCtx != null;
 
-//        if (true)
-//            throw new RuntimeException(Objects.toString(invokeCtx));
-
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = platformCtx.writer(out);

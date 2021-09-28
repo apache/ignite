@@ -17,13 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
@@ -94,9 +91,6 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** Server binary flag. */
         private readonly bool _srvKeepBinary;
-        
-        private static readonly ConcurrentDictionary<long, ThreadLocal<Dictionary<string, object>>> SvcExecAttrs = 
-            new ConcurrentDictionary<long, ThreadLocal<Dictionary<string, object>>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -527,33 +521,6 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.Ensure(cnt > 0, "configurations", "empty collection");
 
             writer.Stream.WriteInt(pos, cnt);
-        }
-        
-        public object Attr(long svcPtr, string key)
-        {
-            ThreadLocal<Dictionary<string, object>> dict;
-
-            if (!SvcExecAttrs.TryGetValue(svcPtr, out dict))
-                return null;
-
-            object value;
-
-            Dictionary<string, object> execCtx = dict.Value;
-
-            if (execCtx != null && execCtx.TryGetValue(key, out value))
-                return value;
-
-            return null;
-        }
-        
-        public static void SetExecutionContext(long srvPtr, Dictionary<string, object> attrs)
-        {
-            SvcExecAttrs.GetOrAdd(srvPtr, new ThreadLocal<Dictionary<string, object>>()).Value = attrs;
-        }
-
-        public static void RemoveExecutionContext(long srvPtr)
-        {
-            ((IDictionary)SvcExecAttrs).Remove(srvPtr);
         }
     }
 }

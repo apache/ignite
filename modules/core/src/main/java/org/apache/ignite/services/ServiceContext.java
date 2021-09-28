@@ -67,5 +67,5 @@ public interface ServiceContext extends Serializable {
      */
     @Nullable public <K> K affinityKey();
 
-    @Nullable public <T> T attr(String name);
+    @Nullable public <V> V attribute(String name);
 }

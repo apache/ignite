@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,7 +62,7 @@ public class ServiceExecutionContextTest extends GridCommonAbstractTest {
         @Override public Object attribute() {
             assert ctx != null;
 
-            return ctx.attr(ATTR_NAME);
+            return ctx.attribute(ATTR_NAME);
         }
 
         @Override public void cancel(ServiceContext ctx) {
