@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
+/** */
 public class IgnitePdsWithTtlTest2 extends GridCommonAbstractTest {
     /** */
     public static AtomicBoolean handleFired = new AtomicBoolean(false);
@@ -129,6 +130,7 @@ public class IgnitePdsWithTtlTest2 extends GridCommonAbstractTest {
         assertFalse(handleFired.get());
     }
 
+    /** */
     private class CustomStopNodeOrHaltFailureHandler extends NoOpFailureHandler {
         /** {@inheritDoc} */
         @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {

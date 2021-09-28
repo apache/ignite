@@ -529,7 +529,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (log.isDebugEnabled())
                     log.debug("Found class in local deployment [cls=" + name + ", dep=" + dep + ']');
 
-                return dep.deployedClass(name);
+                return dep.deployedClass(name).get1();
             }
         }
 
@@ -541,12 +541,12 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             Class<?> cls = findLoadedClass(name);
 
             if (cls == null) {
-                if (byteMap != null)
-                    byteMap.put(path, byteSrc.array());
-
                 cls = ctx.security().sandbox().enabled()
                     ? defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN)
                     : defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
+
+                if (byteMap != null)
+                    byteMap.put(path, byteSrc.array());
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');

@@ -43,6 +43,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
     /** */
     private ClosableIteratorsHolder holder;
 
+    /** */
     @Before
     public void setup() throws Exception {
         iterators = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -50,6 +51,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
         holder.init();
     }
 
+    /** */
     @After
     public void tearDown() throws Exception {
         holder.tearDown();
@@ -58,6 +60,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
         iterators = null;
     }
 
+    /** */
     @Test
     public void iterator() throws Exception {
         for (int i = 0; i < GENERATED; i++)
@@ -82,6 +85,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
         /** */
         public final byte[] data;
 
+        /** */
         private ClosableIterator() {
             data = new byte[4096];
         }

@@ -65,6 +65,9 @@ public class IgniteSender extends SingleRel implements IgniteRel {
         this.distribution = distribution;
     }
 
+    /**
+     * @param input Input.
+     */
     public IgniteSender(RelInput input) {
         this(
             input.getCluster(),

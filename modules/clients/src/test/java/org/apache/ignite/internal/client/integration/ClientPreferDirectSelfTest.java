@@ -141,6 +141,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
      * Test task. Returns Id of the node that has split the task,
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Object, String> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 

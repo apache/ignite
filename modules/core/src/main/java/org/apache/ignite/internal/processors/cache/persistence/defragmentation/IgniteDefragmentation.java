@@ -134,6 +134,7 @@ public interface IgniteDefragmentation {
         /** */
         private final long totalElapsedTime;
 
+        /** */
         public DefragmentationStatus(
                 Map<String, CompletedDefragmentationInfo> completedCaches,
                 Map<String, InProgressDefragmentationInfo> inProgressCaches,
@@ -233,6 +234,7 @@ public interface IgniteDefragmentation {
         /** */
         long elapsedTime;
 
+        /** */
         public DefragmentationInfo(long elapsedTime) {
             this.elapsedTime = elapsedTime;
         }
@@ -267,6 +269,7 @@ public interface IgniteDefragmentation {
         /** */
         long sizeAfter;
 
+        /** */
         public CompletedDefragmentationInfo(long elapsedTime, long sizeBefore, long sizeAfter) {
             super(elapsedTime);
             this.sizeBefore = sizeBefore;
@@ -308,6 +311,7 @@ public interface IgniteDefragmentation {
         /** */
         int totalPartitions;
 
+        /** */
         public InProgressDefragmentationInfo(long elapsedTime, int processedPartitions, int totalPartitions) {
             super(elapsedTime);
             this.processedPartitions = processedPartitions;

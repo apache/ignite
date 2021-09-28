@@ -117,6 +117,11 @@ SELECT '0.1'::DECIMAL * '10.0'::DECIMAL
 1.0
 
 query I
+SELECT typeof('0.1'::DECIMAL(2,1) * '10.0'::DECIMAL(3,1))
+----
+DECIMAL(5, 2)
+
+query I
 SELECT '0.1'::DECIMAL * '0.1'::DECIMAL
 ----
 0.01

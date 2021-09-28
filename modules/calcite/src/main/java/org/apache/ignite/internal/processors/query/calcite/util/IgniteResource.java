@@ -44,6 +44,15 @@ public interface IgniteResource {
         "(" + Integer.MAX_VALUE + ")." )
     Resources.ExInst<SqlValidatorException> correctIntegerLimit(String a0);
 
+    /** */
     @Resources.BaseMessage("Option ''{0}'' has already been defined")
     Resources.ExInst<SqlValidatorException> optionAlreadyDefined(String optName);
+
+    /** */
+    @Resources.BaseMessage("Illegal value ''{0}''. The value must be UUID")
+    Resources.ExInst<SqlValidatorException> illegalUuid(String value);
+
+    /** */
+    @Resources.BaseMessage("Illegal value ''{0}''. The value must be IgniteUuid")
+    Resources.ExInst<SqlValidatorException> illegalIgniteUuid(String value);
 }

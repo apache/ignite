@@ -56,7 +56,8 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
         List<RexNode> sourceExpressionList,
         boolean flattened
     ) {
-        super(cluster, traitSet, table, Commons.context(cluster).catalogReader(), input, operation, updateColumnList,
+        super(cluster, traitSet, table, Commons.context(cluster).catalogReader(),
+            input, operation, updateColumnList,
             sourceExpressionList, flattened);
     }
 

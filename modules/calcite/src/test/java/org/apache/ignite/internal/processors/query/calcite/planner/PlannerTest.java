@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
@@ -52,8 +51,10 @@ import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
@@ -101,7 +102,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -122,7 +123,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -151,16 +152,14 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.id = p.id0";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
+            .parentContext(BaseQueryContext.builder()
+                .logger(log)
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build())
                 .build())
-            .logger(log)
             .query(sql)
             .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         assertNotNull(ctx);
@@ -174,7 +173,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -209,7 +208,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -237,7 +236,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -261,17 +260,17 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
+        BaseQueryContext qctx = BaseQueryContext.builder()
+            .logger(log)
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
                 .build())
-            .logger(log)
+            .build();
+
+        PlanningContext ctx = PlanningContext.builder()
+            .parentContext(qctx)
             .query(sql)
             .parameters(-10)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -283,7 +282,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -334,16 +333,21 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.mailboxRegistry(mailboxRegistry);
         exchangeSvc.init();
 
-        ectx = new ExecutionContext<>(taskExecutor,
-            ctx,
+        ectx = new ExecutionContext<>(
+            qctx,
+            taskExecutor,
             qryId,
+            F.first(nodes),
+            F.first(nodes),
+            AffinityTopologyVersion.NONE,
             new FragmentDescription(
                 fragment.fragmentId(),
                 fragment.mapping(),
                 plan.target(fragment),
                 plan.remotes(fragment)),
             ArrayRowHandler.INSTANCE,
-            Commons.parametersMap(ctx.parameters()));
+            Commons.parametersMap(ctx.parameters())
+        );
 
         exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
             new TestFailureProcessor(kernal)).go(fragment.root());
@@ -387,17 +391,12 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
+            qctx,
             taskExecutor,
-            PlanningContext.builder()
-                .localNodeId(nodes.get(1))
-                .originatingNodeId(nodes.get(0))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .logger(log)
-                .build(),
             qryId,
+            nodes.get(1),
+            F.first(nodes),
+            AffinityTopologyVersion.NONE,
             new FragmentDescription(
                 fragment.fragmentId(),
                 fragment.mapping(),
@@ -469,7 +468,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 return checkRes0;
             }
 
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -487,17 +486,17 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
+        BaseQueryContext qctx = BaseQueryContext.builder()
+            .logger(log)
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
                 .build())
-            .logger(log)
+            .build();
+
+        PlanningContext ctx = PlanningContext.builder()
+            .parentContext(qctx)
             .query(sql)
             .parameters(-10)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -509,7 +508,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -560,9 +559,13 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.mailboxRegistry(mailboxRegistry);
         exchangeSvc.init();
 
-        ectx = new ExecutionContext<>(taskExecutor,
-            ctx,
+        ectx = new ExecutionContext<>(
+            qctx,
+            taskExecutor,
             qryId,
+            F.first(nodes),
+            F.first(nodes),
+            AffinityTopologyVersion.NONE,
             new FragmentDescription(
                 fragment.fragmentId(),
                 fragment.mapping(),
@@ -613,17 +616,12 @@ public class PlannerTest extends AbstractPlannerTest {
         exchangeSvc.init();
 
         ectx = new ExecutionContext<>(
+            qctx,
             taskExecutor,
-            PlanningContext.builder()
-                .localNodeId(nodes.get(1))
-                .originatingNodeId(nodes.get(0))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .logger(log)
-                .build(),
             qryId,
+            nodes.get(1),
+            F.first(nodes),
+            AffinityTopologyVersion.NONE,
             new FragmentDescription(
                 fragment.fragmentId(),
                 fragment.mapping(),
@@ -669,7 +667,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 0, 1, 2, 3));
             }
 
@@ -684,7 +682,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 0, 1, 2, 3));
             }
 
@@ -709,16 +707,14 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build())
+                .logger(log)
                 .build())
-            .logger(log)
             .query(sql)
             .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -730,7 +726,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -750,7 +746,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 0));
             }
 
@@ -765,7 +761,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1, 2),
                     select(nodes, 2, 3),
@@ -795,16 +791,14 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build())
+                .logger(log)
                 .build())
-            .logger(log)
             .query(sql)
             .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -816,7 +810,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -834,7 +828,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 1, 2, 3));
             }
 
@@ -849,7 +843,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0),
                     select(nodes, 1),
@@ -878,16 +872,14 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build())
+                .logger(log)
                 .build())
-            .logger(log)
             .query(sql)
             .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -899,7 +891,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -919,7 +911,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 0));
             }
 
@@ -934,7 +926,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1),
                     select(nodes, 2),
@@ -963,16 +955,14 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build())
+                .logger(log)
                 .build())
-            .logger(log)
             .query(sql)
             .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -984,7 +974,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -1002,7 +992,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 2));
             }
 
@@ -1017,7 +1007,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(nodes, 0, 1));
             }
 
@@ -1042,16 +1032,14 @@ public class PlannerTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
+            .parentContext(BaseQueryContext.builder()
+                .logger(log)
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .build())
                 .build())
-            .logger(log)
             .query(sql)
             .parameters(2)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         IgniteRel phys = physicalPlan(sql, ctx);
@@ -1063,7 +1051,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
 
         assertNotNull(plan);
 
@@ -1168,16 +1156,15 @@ public class PlannerTest extends AbstractPlannerTest {
             "where d.deptno + e.deptno = 2";
 
         PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .costFactory(new IgniteCostFactory(1, 100, 1, 1))
-                .build())
-            .logger(log)
+            .parentContext(BaseQueryContext.builder()
+                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                    .defaultSchema(schema)
+                    .costFactory(new IgniteCostFactory(1, 100, 1, 1))
+                    .build())
+                .logger(log)
+                .build()
+            )
             .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         RelRoot relRoot;
@@ -1202,11 +1189,10 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertNotNull(rel);
             assertEquals("" +
-                    "LogicalFilter(condition=[=(CAST(+($0, $1)):INTEGER, 2)])\n" +
-                    "  LogicalJoin(condition=[true], joinType=[inner])\n" +
-                    "    LogicalProject(DEPTNO=[$0])\n" +
+                    "LogicalProject(DEPTNO=[$0], DEPTNO0=[$4])\n" +
+                    "  LogicalFilter(condition=[=(CAST(+($0, $4)):INTEGER, 2)])\n" +
+                    "    LogicalJoin(condition=[true], joinType=[inner])\n" +
                     "      IgniteLogicalTableScan(table=[[PUBLIC, DEPT]])\n" +
-                    "    LogicalProject(DEPTNO=[$2])\n" +
                     "      IgniteLogicalTableScan(table=[[PUBLIC, EMP]])\n",
                 RelOptUtil.toString(rel));
 
@@ -1222,10 +1208,11 @@ public class PlannerTest extends AbstractPlannerTest {
             assertNotNull(phys);
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], " +
-                    "correlationVariables=[[$cor1]])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
+                "IgniteProject(DEPTNO=[$3], DEPTNO0=[$2])\n" +
+                    "  IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($3, $2)):INTEGER, 2)], joinType=[inner], " +
+                    "correlationVariables=[[$cor2]])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
+                    "    IgniteTableScan(table=[[PUBLIC, DEPT]], filters=[=(CAST(+($t0, $cor2.DEPTNO)):INTEGER, 2)])\n",
                 RelOptUtil.toString(phys));
 
             checkSplitAndSerialization(phys, publicSchema);

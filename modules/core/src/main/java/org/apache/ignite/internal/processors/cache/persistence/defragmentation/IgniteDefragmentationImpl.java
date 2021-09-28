@@ -42,6 +42,7 @@ public class IgniteDefragmentationImpl implements IgniteDefragmentation {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
+    /** */
     public IgniteDefragmentationImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }

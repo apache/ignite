@@ -27,7 +27,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 
 /**
  * Factory fot client index.
@@ -46,11 +45,11 @@ public class ClientIndexFactory implements IndexFactory {
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
-        List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(def.getTable(), def.getColumns()).keyDefinitions();
+        List<IndexKeyDefinition> keyDefs = definition.indexKeyDefinitions();
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
 
-        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, def.getCfgInlineSize(), def.getMaxInlineSize());
+        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, keyDefs, def.getCfgInlineSize(), def.getMaxInlineSize());
 
         return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
     }

@@ -21,7 +21,10 @@ import org.apache.calcite.plan.RelOptCost;
 
 /** */
 public class VolcanoUtils {
-    /** */
+    /**
+     * @param relSubset Subset.
+     * @return Cost of best known plan.
+     */
     public static RelOptCost bestCost(RelSubset relSubset) {
         return relSubset.bestCost;
     }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -107,7 +108,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @SuppressWarnings("ThrowableNotThrown")
     @Test
-    public void testMultipleRowsFromSingleAggr() throws Exception {
+    public void testMultipleRowsFromSingleAggr() throws IgniteCheckedException {
         createAndPopulateTable();
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT (SELECT name FROM person)").check(),

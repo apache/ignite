@@ -242,6 +242,7 @@ public interface MessageReader {
      * Reads nested message.
      *
      * @param name Field name.
+     * @param <T> Type of the message.
      * @return Message.
      */
     public <T extends Message> T readMessage(String name);
@@ -252,6 +253,7 @@ public interface MessageReader {
      * @param name Field name.
      * @param itemType Array component type.
      * @param itemCls Array component class.
+     * @param <T> Type of the red object .
      * @return Array of objects.
      */
     public <T> T[] readObjectArray(String name, MessageCollectionItemType itemType, Class<T> itemCls);
@@ -261,6 +263,7 @@ public interface MessageReader {
      *
      * @param name Field name.
      * @param itemType Collection item type.
+     * @param <C> Type of the red collection.
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType);
@@ -272,6 +275,7 @@ public interface MessageReader {
      * @param keyType Map key type.
      * @param valType Map value type.
      * @param linked Whether {@link LinkedHashMap} should be created.
+     * @param <M> Type of the red map.
      * @return Map.
      */
     public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,

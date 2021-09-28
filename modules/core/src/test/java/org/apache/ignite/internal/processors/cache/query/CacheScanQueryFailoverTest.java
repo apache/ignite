@@ -172,7 +172,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         // Force checkpoint to destroy evicted partitions store.
         forceCheckpoint(grid0);
 
-        GridTestUtils.assertThrowsAnyCause(log, iter1::next, IgniteException.class, "Failed to get next data row");
+        assertFalse(iter1.hasNext());
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             while (iter2.hasNext())

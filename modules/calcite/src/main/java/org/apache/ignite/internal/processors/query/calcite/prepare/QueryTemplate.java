@@ -51,21 +51,23 @@ public class QueryTemplate {
 
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
         for (Fragment fragment : fragments)
-            b.add(fragment.detach());
+            b.add(fragment.copy());
 
         this.fragments = b.build();
     }
 
     /** */
-    public ExecutionPlan map(PlanningContext ctx) {
+    public ExecutionPlan map(MappingQueryContext ctx) {
         ExecutionPlan executionPlan = this.executionPlan.get();
+
         if (executionPlan != null && Objects.equals(executionPlan.topologyVersion(), ctx.topologyVersion()))
             return executionPlan;
 
-        List<Fragment> fragments = Commons.transform(this.fragments, f -> f.attach(ctx));
+        List<Fragment> fragments = Commons.transform(this.fragments, Fragment::copy);
 
         Exception ex = null;
         RelMetadataQuery mq = F.first(fragments).root().getCluster().getMetadataQuery();
+
         for (int i = 0; i < 3; i++) {
             try {
                 ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(fragments, ctx, mq));
@@ -89,10 +91,11 @@ public class QueryTemplate {
     }
 
     /** */
-    @NotNull private List<Fragment> map(List<Fragment> fragments, PlanningContext ctx, RelMetadataQuery mq) {
+    @NotNull private List<Fragment> map(List<Fragment> fragments, MappingQueryContext ctx, RelMetadataQuery mq) {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
+
         for (Fragment fragment : fragments)
-            b.add(fragment.map(mappingService, ctx, mq).detach());
+            b.add(fragment.map(mappingService, ctx, mq));
 
         return b.build();
     }
@@ -102,12 +105,14 @@ public class QueryTemplate {
         assert !F.isEmpty(replacement);
 
         Map<Long, Long> newTargets = new HashMap<>();
+
         for (Fragment fragment0 : replacement) {
             for (IgniteReceiver remote : fragment0.remotes())
                 newTargets.put(remote.exchangeId(), fragment0.fragmentId());
         }
 
         List<Fragment> fragments0 = new ArrayList<>(fragments.size() + replacement.size() - 1);
+
         for (Fragment fragment0 : fragments) {
             if (fragment0 == fragment)
                 fragment0 = F.first(replacement);

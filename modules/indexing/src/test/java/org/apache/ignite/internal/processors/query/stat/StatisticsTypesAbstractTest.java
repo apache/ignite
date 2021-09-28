@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-
 import org.apache.ignite.Ignite;
 
 /**
@@ -40,34 +39,20 @@ public abstract class StatisticsTypesAbstractTest extends StatisticsAbstractTest
     private static final String START_DATE = "1970.01.01 12:00:00 UTC";
 
     /** Start time. */
-    protected static final long TIMESTART;
+    protected static final Instant TIMESTART = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss z")
+        .parse(START_DATE, Instant::from);
 
     /** Time format. */
-    private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss");
+    private static final DateTimeFormatter TIME_FORMATTER =
+        DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.of("UTC"));
 
     /** Date format. */
-    private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
+    private static final DateTimeFormatter DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
 
-    /** Timestam format. */
-    private static final SimpleDateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    static {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss z");
-        SDF.setTimeZone(tz);
-        Calendar cal = Calendar.getInstance();
-        try {
-            cal.setTime(SDF.parse(START_DATE));
-        }
-        catch (ParseException e) {
-            // No-op.
-        }
-        TIMESTART = cal.getTimeInMillis();
-
-        TIME_FORMATTER.setTimeZone(tz);
-        DATE_FORMATTER.setTimeZone(tz);
-        TIMESTAMP_FORMATTER.setTimeZone(tz);
-    }
+    /** Timestamp format. */
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -132,22 +117,13 @@ public abstract class StatisticsTypesAbstractTest extends StatisticsAbstractTest
                 return String.valueOf((double) cntr / 100);
 
             case "TIME":
-                Calendar timeCalendar = Calendar.getInstance();
-                timeCalendar.setTimeInMillis(TIMESTART);
-                timeCalendar.add(Calendar.SECOND, (int) cntr);
-                return "'" + TIME_FORMATTER.format(timeCalendar.getTime()) + "'";
+                return "'" + TIME_FORMATTER.format(TIMESTART.plus(cntr, ChronoUnit.SECONDS)) + "'";
 
             case "DATE":
-                Calendar dateCalendar = Calendar.getInstance();
-                dateCalendar.setTimeInMillis(TIMESTART);
-                dateCalendar.add(Calendar.DATE, (int) cntr);
-                return "'" + DATE_FORMATTER.format(dateCalendar.getTime()) + "'";
+                return "'" + DATE_FORMATTER.format(TIMESTART.plus(cntr, ChronoUnit.DAYS)) + "'";
 
             case "TIMESTAMP":
-                Calendar tsCalendar = Calendar.getInstance();
-                tsCalendar.setTimeInMillis(TIMESTART);
-                tsCalendar.add(Calendar.SECOND, (int) cntr);
-                return "'" + TIMESTAMP_FORMATTER.format(tsCalendar.getTime()) + "'";
+                return "'" + TIMESTAMP_FORMATTER.format(TIMESTART.plus(cntr, ChronoUnit.SECONDS)) + "'";
 
             case "VARCHAR":
                 return "'varchar" + cntr + "'";

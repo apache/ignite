@@ -3,10 +3,7 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE integers(i INTEGER, j INTEGER);
-
-statement ok
-INSERT INTO integers SELECT x, 1 FROM table(system_range(0, 9999, 1)) UNION ALL SELECT x, 2 FROM table(system_range(0, 9999, 1));
+CREATE TABLE integers AS SELECT x AS i, 1 AS j FROM table(system_range(0, 9999, 1)) UNION ALL SELECT x AS i, 2 j FROM table(system_range(0, 9999, 1));
 
 
 query RR
