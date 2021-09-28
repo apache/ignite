@@ -17,6 +17,7 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" /> <!-- TODO: nuspec update -->
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
 
     <!--
     NOTE: Microsoft.CodeAnalysis.NetAnalyzers is the new replacement for FxCopAnalyzers,
