@@ -241,24 +241,23 @@ public class DdlSqlToCommandConverter {
 
             if (createTblNode.columnList() != null) {
                 // Derive column names from the CREATE TABLE clause and column types from the query.
-                List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList().getList().stream()
-                    .map(SqlColumnDeclaration.class::cast)
+                List<SqlIdentifier> colNames = createTblNode.columnList().getList().stream()
+                    .map(SqlIdentifier.class::cast)
                     .collect(Collectors.toList());
 
-                if (fields.size() != colDeclarations.size()) {
+                if (fields.size() != colNames.size()) {
                     throw new IgniteSQLException("Number of columns must match number of query columns",
                         IgniteQueryErrorCode.PARSING);
                 }
 
-                for (int i = 0; i < colDeclarations.size(); i++) {
-                    SqlColumnDeclaration col = colDeclarations.get(i);
+                for (int i = 0; i < colNames.size(); i++) {
+                    SqlIdentifier colName = colNames.get(i);
 
-                    assert col.name.isSimple();
+                    assert colName.isSimple();
 
-                    String name = col.name.getSimple();
                     RelDataType type = fields.get(i).getType();
 
-                    cols.add(new ColumnDefinition(name, type, null));
+                    cols.add(new ColumnDefinition(colName.getSimple(), type, null));
                 }
             }
             else {

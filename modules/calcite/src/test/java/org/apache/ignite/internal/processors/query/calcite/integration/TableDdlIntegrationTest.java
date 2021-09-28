@@ -296,8 +296,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectWithColumns() {
-        executeSql("create table my_table(i, s) as select 1, 'test'");
-        List<List<?>> res = executeSql("select * from my_table");
+        executeSql("create table my_table(i, s) as select 1 as a, 'test' as b");
+        List<List<?>> res = executeSql("select i, s from my_table");
 
         assertEquals(1, res.size());
 
@@ -305,6 +305,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         assertEquals(1, row.get(0));
         assertEquals("test", row.get(1));
+
+        assertThrows("select a from my_table", IgniteSQLException.class, "Column 'A' not found in any table");
     }
 
     /**

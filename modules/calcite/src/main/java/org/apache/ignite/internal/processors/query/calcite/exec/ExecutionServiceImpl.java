@@ -31,6 +31,7 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
@@ -535,8 +536,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                         "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
         }
-        catch (ValidationException e) {
-            throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
+        catch (ValidationException | CalciteContextException e) {
+            throw new IgniteSQLException("Failed to validate query: " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
 

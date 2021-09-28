@@ -146,27 +146,6 @@ SqlNodeList TableElementList() :
     }
 }
 
-SqlNodeList TableSimpleColumnList() :
-{
-    final Span s;
-    final List<SqlNode> list = new ArrayList<SqlNode>();
-    SqlIdentifier id;
-}
-{
-    <LPAREN> { s = span(); }
-    id = SimpleIdentifier() {
-        list.add(SqlDdlNodes.column(s.add(id).end(this), id, null, null, null));
-    }
-    (
-        <COMMA> id = SimpleIdentifier() {
-            list.add(SqlDdlNodes.column(s.add(id).end(this), id, null, null, null));
-        }
-    )*
-    <RPAREN> {
-        return new SqlNodeList(list, s.end(this));
-    }
-}
-
 SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -186,7 +165,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
         { query = null; }
     |
         (
-            columnList = TableSimpleColumnList()
+            columnList = ParenthesizedSimpleIdentifierList()
         |
             { columnList = null; }
         )

@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -27,7 +26,6 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
-import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -81,10 +79,7 @@ public class IgniteSqlCreateTable extends SqlCreate {
             SqlWriter.Frame frame = writer.startList("(", ")");
             for (SqlNode c : columnList) {
                 writer.sep(",");
-                if (qry == null)
-                    c.unparse(writer, 0, 0);
-                else  // For CREATE AS SELECT only aliases is possible in the column list.
-                    ((SqlColumnDeclaration)c).name.unparse(writer, 0, 0);
+                c.unparse(writer, 0, 0);
             }
             writer.endList(frame);
         }
