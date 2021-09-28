@@ -25,10 +25,7 @@ NULL	1	1	1
 # many small columns each having only the values 0 and 1
 # total possible combinations is 2^10, but there are only 2 groups
 statement ok
-create table manycolumns(a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER);
-
-statement ok
-insert into manycolumns select x a, x b, x c, x d, x e from table(system_range(0,1));
+create table manycolumns as select x a, x b, x c, x d, x e from table(system_range(0,1));
 
 query IIIII
 select a, b, c, d, e FROM manycolumns GROUP BY a, b, c, d, e ORDER BY 1
@@ -40,10 +37,7 @@ select a, b, c, d, e FROM manycolumns GROUP BY a, b, c, d, e ORDER BY 1
 # create a table of tinyints [-127, 127] stored as varchar
 # by forcing a varchar to tinyint cast we lose statistics
 statement ok
-CREATE TABLE tinyints (t TINYINT);
-
-statement ok
-INSERT INTO tinyints SELECT x::TINYINT::VARCHAR AS t FROM table(system_range(-127, 127));
+CREATE TABLE tinyints AS SELECT x::TINYINT::VARCHAR AS t FROM table(system_range(-127, 127));
 
 query IIII
 SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINYINT i FROM tinyints GROUP BY t)
@@ -52,10 +46,7 @@ SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINY
 
 # now do the same with a single smallint column
 statement ok
-CREATE TABLE smallints (t SMALLINT)
-
-statement ok
-INSERT INTO smallints SELECT x::SMALLINT::VARCHAR AS t FROM table(system_range(-32767, 32767));
+CREATE TABLE smallints AS SELECT x::SMALLINT::VARCHAR AS t FROM table(system_range(-32767, 32767));
 
 query IIII
 SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMALLINT i FROM smallints GROUP BY t)

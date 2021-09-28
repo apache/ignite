@@ -24,19 +24,23 @@ boolean IfNotExistsOpt() :
     { return false; }
 }
 
-SqlNodeList CreateTableOptionList() :
+SqlNodeList WithCreateTableOptionList() :
 {
     List<SqlNode> list = new ArrayList<SqlNode>();
-    final Span s = Span.of();
+    final Span s;
 }
 {
-    CreateTableOption(list)
-    (
-        <COMMA> { s.add(this); } CreateTableOption(list)
-    )*
-    {
-        return new SqlNodeList(list, s.end(this));
-    }
+    [
+        <WITH> { s = span(); }
+        CreateTableOption(list)
+        (
+            <COMMA> { s.add(this); } CreateTableOption(list)
+        )*
+        {
+            return new SqlNodeList(list, s.end(this));
+        }
+    ]
+    { return null; }
 }
 
 SqlLiteral CreateTableOptionKey() :
@@ -148,19 +152,28 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlIdentifier id;
     final SqlNodeList columnList;
     final SqlNodeList optionList;
+    final SqlNode query;
 }
 {
     <TABLE>
     ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    columnList = TableElementList()
     (
-        <WITH> { s.add(this); } optionList = CreateTableOptionList()
+        LOOKAHEAD(3)
+        columnList = TableElementList()
+        optionList = WithCreateTableOptionList()
+        { query = null; }
     |
-        { optionList = null; }
+        (
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            { columnList = null; }
+        )
+        optionList = WithCreateTableOptionList()
+        <AS> { s.add(this); } query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     )
     {
-        return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, optionList);
+        return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, query, optionList);
     }
 }
 

@@ -276,6 +276,99 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Creates table as select.
+     */
+    @Test
+    public void createTableAsSelectSimpleCase() {
+        executeSql("create table my_table as select 1 as i, 'test' as s");
+        List<List<?>> res = executeSql("select i, s from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(1, row.get(0));
+        assertEquals("test", row.get(1));
+    }
+
+    /**
+     * Creates table with specified columns as select.
+     */
+    @Test
+    public void createTableAsSelectWithColumns() {
+        executeSql("create table my_table(i, s) as select 1 as a, 'test' as b");
+        List<List<?>> res = executeSql("select i, s from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(1, row.get(0));
+        assertEquals("test", row.get(1));
+
+        assertThrows("select a from my_table", IgniteSQLException.class, "Column 'A' not found in any table");
+    }
+
+    /**
+     * Creates table with options as select.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void createTableAsSelectWithOptions() {
+        executeSql("create table my_table(s, i) with cache_name=\"CacheWithOpts\", cache_group=\"CacheGroup\" as select '1', 1");
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals("1", row.get(0));
+        assertEquals(1, row.get(1));
+
+        IgniteCache<?, ?> cache = client.cache("CacheWithOpts");
+        assertNotNull(cache);
+        assertEquals("CacheGroup", cache.getConfiguration(CacheConfiguration.class).getGroupName());
+    }
+
+    /**
+     * Creates table as select with dynamic parameters to query.
+     */
+    @Test
+    public void createTableAsSelectWithParameters() {
+        executeSql("create table my_table(s, i) as select cast(? as varchar), cast(? as int)", "a", 1);
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals("a", row.get(0));
+        assertEquals(1, row.get(1));
+    }
+
+    /** */
+    @Test
+    public void createTableAsSelectWrongColumnsCount() {
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> executeSql("create table my_table(i, s1, s2) as select 1, 'test'"),
+            IgniteSQLException.class, "Number of columns");
+    }
+
+    /**
+     * Creates table as select from another table.
+     */
+    @Test
+    public void createTableAsSelectFromDistributedTable() {
+        executeSql("create table my_table1(i) as select x from table(system_range(1, 100))");
+
+        assertEquals(100L, executeSql("select count(*) from my_table1").get(0).get(0));
+
+        executeSql("create table my_table2(i) as select * from my_table1");
+
+        assertEquals(100L, executeSql("select count(*) from my_table2").get(0).get(0));
+    }
+
+    /**
      * Drops a table created in a default schema.
      */
     @Test

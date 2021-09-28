@@ -27,15 +27,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -95,6 +96,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -534,8 +536,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                         "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
         }
-        catch (ValidationException e) {
-            throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
+        catch (ValidationException | CalciteContextException e) {
+            throw new IgniteSQLException("Failed to validate query: " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
 
@@ -550,12 +552,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
-        // Split query plan to query fragments.
-        List<Fragment> fragments = new Splitter().go(igniteRel);
-
-        QueryTemplate template = new QueryTemplate(mappingSvc, fragments);
-
-        return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
+        return new MultiStepQueryPlan(queryTemplate(igniteRel),
+            queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
     }
 
     /** */
@@ -568,12 +566,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
-        // Split query plan to query fragments.
-        List<Fragment> fragments = new Splitter().go(igniteRel);
-
-        QueryTemplate template = new QueryTemplate(mappingSvc, fragments);
-
-        return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
+        return new MultiStepDmlPlan(queryTemplate(igniteRel),
+            queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
     }
 
     /** */
@@ -598,6 +592,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
         return new ExplainPlan(plan, explainFieldsMetadata(ctx));
+    }
+
+    /** */
+    private QueryTemplate queryTemplate(IgniteRel rel) {
+        // Split query plan to query fragments.
+        List<Fragment> fragments = new Splitter().go(rel);
+
+        return new QueryTemplate(mappingSvc, fragments);
     }
 
     /** */
@@ -659,7 +661,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 ", err=" + e.getMessage() + ']', e);
         }
 
-        return H2Utils.zeroCursor();
+        if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).insertStatement() != null) {
+            SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
+
+            try {
+                // Create new planning context containing created table in the schema.
+                PlanningContext dmlCtx = createContext(pctx, pctx.schemaName(), pctx.query(), pctx.parameters());
+
+                QueryPlan dmlPlan = prepareDml(insertStmt, dmlCtx);
+
+                return executePlan(qryId, dmlCtx, dmlPlan);
+            }
+            catch (ValidationException e) {
+                throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
+            }
+        }
+        else
+            return H2Utils.zeroCursor();
     }
 
     /** */

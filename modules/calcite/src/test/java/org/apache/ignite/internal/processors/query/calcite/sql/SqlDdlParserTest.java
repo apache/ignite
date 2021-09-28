@@ -248,6 +248,38 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Parsing of CREATE TABLE AS SELECT.
+     */
+    @Test
+    public void createTableAsSelect() throws SqlParseException {
+        IgniteSqlCreateTable createTable = parse("create table my_table(id) as select 1");
+
+        assertEquals(1, createTable.columnList().size());
+        assertNotNull(createTable.query());
+
+        createTable = parse("create table my_table(id, name) as select 1, 'a'");
+
+        assertEquals(2, createTable.columnList().size());
+        assertNotNull(createTable.query());
+
+        createTable = parse("create table my_table as select 1, 'a'");
+
+        assertNull(createTable.columnList());
+        assertNull(createTable.createOptionList());
+        assertNotNull(createTable.query());
+
+        createTable = parse("create table my_table with cache_name=a, cache_group=b as select 1");
+
+        assertNull(createTable.columnList());
+        assertNotNull(createTable.createOptionList());
+        assertNotNull(createTable.query());
+
+        assertParserThrows("create table my_table(id int) as select 1", SqlParseException.class);
+        assertParserThrows("create table my_table(id.a) as select 1", SqlParseException.class);
+        assertParserThrows("create table my_table(id) as select 1 with cache_name=a", SqlParseException.class);
+    }
+
+    /**
      * Create index with list of indexed columns.
      */
     @Test
