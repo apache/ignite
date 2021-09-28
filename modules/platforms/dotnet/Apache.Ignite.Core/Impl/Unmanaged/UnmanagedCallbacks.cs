@@ -1012,10 +1012,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User processor can throw any exception")]
+        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope",
+            Justification = "Context is disposed when the service is canceled")]
         private long ServiceInit(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
+                ServiceContext svcCtx = null;
+
                 try
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
@@ -1025,9 +1029,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     ResourceProcessor.Inject(svc, _ignite);
 
-                    ThreadLocal<Hashtable> threadInvCtx = new ThreadLocal<Hashtable>();
-
-                    var svcCtx = new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary), threadInvCtx);
+                    svcCtx = new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary), svc);
 
                     svc.Init(svcCtx);
 
@@ -1037,7 +1039,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     stream.SynchronizeOutput();
 
-                    return _handleRegistry.Allocate(new ServiceInvokeContextTuple(svc, threadInvCtx));
+                    return _handleRegistry.Allocate(svcCtx);
                 }
                 catch (Exception e)
                 {
@@ -1050,6 +1052,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     _ignite.Marshaller.FinishMarshal(writer);
 
                     stream.SynchronizeOutput();
+                    
+                    svcCtx?.Dispose();
 
                     return 0;
                 }
@@ -1060,19 +1064,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var svcInvokeCtx = _handleRegistry.Get<ServiceInvokeContextTuple>(stream.ReadLong());
+                var svcCtx = _handleRegistry.Get<ServiceContext>(stream.ReadLong());
 
                 // Ignite does not guarantee that Cancel is called after Execute exits
                 // So missing handle is a valid situation
-                if (svcInvokeCtx == null)
+                if (svcCtx == null)
                     return 0;
 
                 var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                 bool srvKeepBinary = reader.ReadBoolean();
+                
+                svcCtx.Update(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary));
 
-                svcInvokeCtx.Svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary),
-                    svcInvokeCtx.InvokeCtx));
+                svcCtx.Service.Execute(svcCtx);
 
                 return 0;
             }
@@ -1086,20 +1091,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    var svcInvokeCtx = _handleRegistry.Get<ServiceInvokeContextTuple>(svcPtr, true);
+                    ServiceContext svcCtx = _handleRegistry.Get<ServiceContext>(svcPtr, true);
 
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     bool srvKeepBinary = reader.ReadBoolean();
+                    
+                    svcCtx.Update(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary));
 
-                    svcInvokeCtx.Svc.Cancel(
-                        new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary), svcInvokeCtx.InvokeCtx));
+                    svcCtx.Service.Cancel(svcCtx);
 
                     return 0;
                 }
                 finally
                 {
-                    _ignite.HandleRegistry.Release(svcPtr);
+                    ((ServiceContext)_ignite.HandleRegistry.Release(svcPtr))?.Dispose();
                 }
             }
         }
@@ -1109,7 +1115,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 var svcPtr = stream.ReadLong();
-                var svcInvokeCtx = _handleRegistry.Get<ServiceInvokeContextTuple>(svcPtr, true);
+                var svcCtx = _handleRegistry.Get<ServiceContext>(svcPtr, true);
 
                 string mthdName;
                 object[] mthdArgs;
@@ -1118,7 +1124,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out invokeCtx);
                 
                 if (invokeCtx != null)
-                    svcInvokeCtx.InvokeCtx.Value = invokeCtx;
+                    svcCtx.InvocationContext(invokeCtx);
 
                 var svcs = _ignite.GetServices();
 
@@ -1126,7 +1132,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    var result = ServiceProxyInvoker.InvokeServiceMethod(svcInvokeCtx.Svc, mthdName, mthdArgs);
+                    var result = ServiceProxyInvoker.InvokeServiceMethod(svcCtx.Service, mthdName, mthdArgs);
 
                     stream.Reset();
 
@@ -1137,7 +1143,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 finally
                 {
                     if (invokeCtx != null)
-                        svcInvokeCtx.InvokeCtx.Value = null;
+                        svcCtx.InvocationContext(null);
                 }
 
                 return 0;
@@ -1500,19 +1506,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Handler = handler;
                 AllowUninitialized = allowUninitialized;
-            }
-        }
-        
-        private class ServiceInvokeContextTuple : Tuple<IService, object>
-        {
-            public readonly IService Svc;
-
-            public readonly ThreadLocal<Hashtable> InvokeCtx;
-
-            public ServiceInvokeContextTuple(IService svc, ThreadLocal<Hashtable> invokeCtx) : base(svc, invokeCtx)
-            {
-                Svc = svc;
-                InvokeCtx = invokeCtx;
             }
         }
     }

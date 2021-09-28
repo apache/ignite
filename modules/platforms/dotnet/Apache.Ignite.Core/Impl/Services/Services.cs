@@ -352,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<Tuple<IService, object>>(r.ReadLong()).Item1);
+                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<ServiceContext>(r.ReadLong()).Service);
 
                     return res;
                 });

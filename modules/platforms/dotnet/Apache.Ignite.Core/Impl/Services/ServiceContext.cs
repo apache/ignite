@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
@@ -45,11 +44,18 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <summary>
     /// Service context.
     /// </summary>
-    internal class ServiceContext : IServiceContext
+    internal class ServiceContext : IServiceContext, IDisposable
     {
-        private readonly ThreadLocal<Hashtable> _invCtx;
+        private readonly ThreadLocal<Hashtable> _invCtx = new ThreadLocal<Hashtable>();
 
-        public ServiceContext(IBinaryRawReader reader, ThreadLocal<Hashtable> invCtx)
+        public ServiceContext(IBinaryRawReader reader, IService svc)
+        {
+            Update(reader);
+
+            Service = svc;
+        }
+
+        public void Update(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -58,8 +64,6 @@ namespace Apache.Ignite.Core.Impl.Services
             IsCancelled = reader.ReadBoolean();
             CacheName = reader.ReadString();
             AffinityKey = reader.ReadObject<object>();
-
-            _invCtx = invCtx;
         }
 
         /** <inheritdoc /> */
@@ -76,12 +80,24 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** <inheritdoc /> */
         public object AffinityKey { get; private set; }
+        
+        public IService Service { get; }
+
+        public void InvocationContext(Hashtable invokeCtx)
+        {
+            _invCtx.Value = invokeCtx;
+        }
 
         public object Attribute(string key)
         {
-            var currCtx = _invCtx?.Value;
+            var currCtx = _invCtx.Value;
 
             return currCtx?[key];
+        }
+
+        public void Dispose()
+        {
+            _invCtx.Dispose();
         }
     }
 }
