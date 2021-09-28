@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#if !NETCOREAPP
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
@@ -143,4 +142,3 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
     }
 }
-#endif

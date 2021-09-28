@@ -67,11 +67,9 @@ namespace Apache.Ignite.Linq.Impl
             GetParameterizedTrimMethod("Trim", "trim"),
             GetParameterizedTrimMethod("TrimStart", "ltrim"),
             GetParameterizedTrimMethod("TrimEnd", "rtrim"),
-#if NETCOREAPP
             GetCharTrimMethod("Trim", "trim"),
             GetCharTrimMethod("TrimStart", "ltrim"),
             GetCharTrimMethod("TrimEnd", "rtrim"),
-#endif
             GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
             GetStringMethod("PadLeft", "lpad", typeof (int)),
             GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
@@ -431,7 +429,6 @@ namespace Apache.Ignite.Linq.Impl
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 
-#if NETCOREAPP
         /// <summary>
         /// Gets string parameterized Trim(TrimStart, TrimEnd) method that takes a single char.
         /// </summary>
@@ -441,7 +438,6 @@ namespace Apache.Ignite.Linq.Impl
             return GetMethod(typeof(string), name, new[] {typeof(char)},
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
-#endif
 
         /// <summary>
         /// Gets the math method.
