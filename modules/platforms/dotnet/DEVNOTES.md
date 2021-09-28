@@ -28,3 +28,11 @@ Static code analysis (Roslyn-based) runs as part of the build and includes code 
 * Analysis rules are defined in `Apache.Ignite.ruleset` and `Apache.Ignite.Tests.ruleset` (relaxed rule set for test projects).
 * License header is defined in `stylecop.json`
 * Warnings As Errors behavior is enabled in `Directory.Build.props` (can be disabled locally for rapid prototyping so that builds are faster and warnings don't distract)
+
+## Release Procedure
+
+### Build Binaries
+`dotnet publish Apache.Ignite --configuration Release --output release/bin`
+
+### Pack NuGet
+`dotnet pack Apache.Ignite --configuration Release --include-source --output release/nupkg`

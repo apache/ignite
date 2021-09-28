@@ -22,15 +22,31 @@
         <LangVersion>9</LangVersion>
         <Nullable>enable</Nullable>
         <Version>3.0.0-alpha3</Version>
+
+        <Company>Apache Software Foundation</Company>
+        <Authors>Apache Ignite</Authors>
+        <Copyright>© Apache Software Foundation</Copyright>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/apache/ignite-3</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://ignite.apache.org/</PackageProjectUrl>
+        <PackageIcon>Apache_Ignite_logo_128x128.png</PackageIcon>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PackageTags>Apache;Ignite;In-Memory;Distributed;Computing;SQL;NoSQL;Database;</PackageTags>
+        <Description>.NET client for Apache Ignite. Ignite is a distributed database for high-performance computing with in-memory speed.</Description>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.1"/>
-        <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.261"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.1" PrivateAssets="all"/>
+        <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.261" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
         <AdditionalFiles Include="$(MSBuildThisFileDirectory)\stylecop.json" Link="stylecop.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)\Apache_Ignite_logo_128x128.png" Pack="true" PackagePath=""/>
     </ItemGroup>
 
 </Project>
