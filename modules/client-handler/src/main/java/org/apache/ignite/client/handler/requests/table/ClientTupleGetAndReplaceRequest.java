@@ -47,6 +47,6 @@ public class ClientTupleGetAndReplaceRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, false);
 
-        return table.getAndReplaceAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple, TuplePart.VAL));
+        return table.recordView().getAndReplaceAsync(tuple).thenAccept(resTuple -> writeTuple(out, resTuple, TuplePart.VAL));
     }
 }

@@ -45,6 +45,6 @@ public class ClientTupleContainsKeyRequest {
         var table = readTable(in, tables);
         var keyTuple = readTuple(in, table, true);
 
-        return table.getAsync(keyTuple).thenAccept(t -> out.packBoolean(t != null));
+        return table.recordView().getAsync(keyTuple).thenAccept(t -> out.packBoolean(t != null));
     }
 }

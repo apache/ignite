@@ -45,6 +45,6 @@ public class ClientTupleInsertRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, false);
 
-        return table.insertAsync(tuple).thenAccept(out::packBoolean);
+        return table.recordView().insertAsync(tuple).thenAccept(out::packBoolean);
     }
 }

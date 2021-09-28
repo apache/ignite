@@ -33,7 +33,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
-import org.apache.ignite.table.KeyValueBinaryView;
+import org.apache.ignite.table.KeyValueView;
+import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
@@ -120,26 +121,28 @@ class ITDynamicTableCreationTest {
 
         // Put data on node 1.
         Table tbl1 = clusterNodes.get(1).tables().table(schTbl1.canonicalName());
-        KeyValueBinaryView kvView1 = tbl1.kvView();
+        RecordView<Tuple> recView1 = tbl1.recordView();
+        KeyValueView<Tuple, Tuple> kvView1 = tbl1.keyValueView();
 
-        tbl1.insert(Tuple.create().set("key", 1L).set("val", 111));
+        recView1.insert(Tuple.create().set("key", 1L).set("val", 111));
         kvView1.put(Tuple.create().set("key", 2L), Tuple.create().set("val", 222));
 
         // Get data on node 2.
         Table tbl2 = clusterNodes.get(2).tables().table(schTbl1.canonicalName());
-        KeyValueBinaryView kvView2 = tbl2.kvView();
+        RecordView<Tuple> recView2 = tbl2.recordView();
+        KeyValueView<Tuple, Tuple> kvView2 = tbl2.keyValueView();
 
         final Tuple keyTuple1 = Tuple.create().set("key", 1L);
         final Tuple keyTuple2 = Tuple.create().set("key", 2L);
 
         assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("key"));
         assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("key"));
-        assertEquals(1, (Long)tbl2.get(keyTuple1).value("key"));
-        assertEquals(2, (Long)tbl2.get(keyTuple2).value("key"));
+        assertEquals(1, (Long)recView2.get(keyTuple1).value("key"));
+        assertEquals(2, (Long)recView2.get(keyTuple2).value("key"));
 
-        assertEquals(111, (Integer)tbl2.get(keyTuple1).value("val"));
+        assertEquals(111, (Integer)recView2.get(keyTuple1).value("val"));
         assertEquals(111, (Integer)kvView2.get(keyTuple1).value("val"));
-        assertEquals(222, (Integer)tbl2.get(keyTuple2).value("val"));
+        assertEquals(222, (Integer)recView2.get(keyTuple2).value("val"));
         assertEquals(222, (Integer)kvView2.get(keyTuple2).value("val"));
 
         assertThrows(IllegalArgumentException.class, () -> kvView1.get(keyTuple1).value("key"));
@@ -181,9 +184,10 @@ class ITDynamicTableCreationTest {
 
         // Put data on node 1.
         Table tbl1 = clusterNodes.get(1).tables().table(scmTbl1.canonicalName());
-        KeyValueBinaryView kvView1 = tbl1.kvView();
+        RecordView<Tuple> recView1 = tbl1.recordView();
+        KeyValueView<Tuple, Tuple> kvView1 = tbl1.keyValueView();
 
-        tbl1.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
+        recView1.insert(Tuple.create().set("key", uuid).set("affKey", 42L)
             .set("valStr", "String value").set("valInt", 73).set("valNull", null));
 
         kvView1.put(Tuple.create().set("key", uuid2).set("affKey", 4242L),
@@ -191,7 +195,8 @@ class ITDynamicTableCreationTest {
 
         // Get data on node 2.
         Table tbl2 = clusterNodes.get(2).tables().table(scmTbl1.canonicalName());
-        KeyValueBinaryView kvView2 = tbl2.kvView();
+        RecordView<Tuple> recView2 = tbl2.recordView();
+        KeyValueView<Tuple, Tuple> kvView2 = tbl2.keyValueView();
 
         final Tuple keyTuple1 = Tuple.create().set("key", uuid).set("affKey", 42L);
         final Tuple keyTuple2 = Tuple.create().set("key", uuid2).set("affKey", 4242L);
@@ -203,18 +208,18 @@ class ITDynamicTableCreationTest {
         assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("affKey"));
 
         // Record binary view MUST return key columns in value.
-        assertEquals(uuid, tbl2.get(keyTuple1).value("key"));
-        assertEquals(42L, (Long)tbl2.get(keyTuple1).value("affKey"));
-        assertEquals(uuid2, tbl2.get(keyTuple2).value("key"));
-        assertEquals(4242L, (Long)tbl2.get(keyTuple2).value("affKey"));
+        assertEquals(uuid, recView2.get(keyTuple1).value("key"));
+        assertEquals(42L, (Long)recView2.get(keyTuple1).value("affKey"));
+        assertEquals(uuid2, recView2.get(keyTuple2).value("key"));
+        assertEquals(4242L, (Long)recView2.get(keyTuple2).value("affKey"));
 
-        assertEquals("String value", tbl2.get(keyTuple1).value("valStr"));
-        assertEquals(73, (Integer)tbl2.get(keyTuple1).value("valInt"));
-        assertNull(tbl2.get(keyTuple1).value("valNull"));
+        assertEquals("String value", recView2.get(keyTuple1).value("valStr"));
+        assertEquals(73, (Integer)recView2.get(keyTuple1).value("valInt"));
+        assertNull(recView2.get(keyTuple1).value("valNull"));
 
-        assertEquals("String value 2", tbl2.get(keyTuple2).value("valStr"));
-        assertEquals(7373, (Integer)tbl2.get(keyTuple2).value("valInt"));
-        assertNull(tbl2.get(keyTuple2).value("valNull"));
+        assertEquals("String value 2", recView2.get(keyTuple2).value("valStr"));
+        assertEquals(7373, (Integer)recView2.get(keyTuple2).value("valInt"));
+        assertNull(recView2.get(keyTuple2).value("valNull"));
 
         assertEquals("String value", kvView2.get(keyTuple1).value("valStr"));
         assertEquals(73, (Integer)kvView2.get(keyTuple1).value("valInt"));

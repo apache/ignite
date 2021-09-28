@@ -50,24 +50,6 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
     }
 
     /** {@inheritDoc} */
-    @Override public R fill(R recObjToFill) {
-        return sync(fillAsync(recObjToFill));
-    }
-
-    /** {@inheritDoc} */
-    @Override public CompletableFuture<R> fillAsync(R recObjToFill) {
-        Objects.requireNonNull(recObjToFill);
-
-        RecordSerializer<R> marsh = serializer();
-
-        Row kRow = marsh.serialize(recObjToFill);  // Convert to portable format to pass TX/storage layer.
-
-        return tbl.get(kRow, tx)  // Load async.
-            .thenApply(this::wrap) // Binary -> schema-aware row
-            .thenApply(r -> marsh.deserialize(r, recObjToFill)); // Deserialize and fill record.
-    }
-
-    /** {@inheritDoc} */
     @Override public R get(@NotNull R keyRec) {
         return sync(getAsync(keyRec));
     }

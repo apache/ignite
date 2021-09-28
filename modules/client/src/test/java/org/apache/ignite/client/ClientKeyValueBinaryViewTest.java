@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
-import org.apache.ignite.table.KeyValueBinaryView;
+import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
@@ -34,23 +34,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * KeyValueBinaryView tests.
+ * Binary KeyValueView tests.
  */
 public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
     @Test
     public void testGetMissingRowReturnsNull() {
         Table table = defaultTable();
-        KeyValueBinaryView kvView = table.kvView();
+        KeyValueView<Tuple, Tuple> kvView = table.keyValueView();
 
         assertNull(kvView.get(defaultTupleKey()));
     }
 
     @Test
-    public void testTableUpsertKvGet() {
+    public void testRecordUpsertKvGet() {
         Table table = defaultTable();
-        table.upsert(tuple());
+        table.recordView().upsert(tuple());
 
-        KeyValueBinaryView kvView = table.kvView();
+        KeyValueView<Tuple, Tuple> kvView = table.keyValueView();
 
         Tuple key = defaultTupleKey();
         Tuple val = kvView.get(key);
@@ -61,15 +61,15 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
     }
 
     @Test
-    public void testKvPutTableGet() {
+    public void testKvPutRecordGet() {
         Table table = defaultTable();
-        KeyValueBinaryView kvView = table.kvView();
+        KeyValueView<Tuple, Tuple> kvView = table.keyValueView();
 
         Tuple key = defaultTupleKey();
         Tuple val = Tuple.create().set("name", "bar");
 
         kvView.put(key, val);
-        Tuple res = table.get(key);
+        Tuple res = table.recordView().get(key);
 
         assertEquals("bar", res.stringValue("name"));
         assertEquals(DEFAULT_ID, res.longValue("id"));
@@ -78,7 +78,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
     @Test
     public void testPutGet() {
         Table table = defaultTable();
-        KeyValueBinaryView kvView = table.kvView();
+        KeyValueView<Tuple, Tuple> kvView = table.keyValueView();
 
         Tuple key = defaultTupleKey();
         Tuple val = Tuple.create().set("name", DEFAULT_NAME);
@@ -92,7 +92,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
     @Test
     public void testGetUpdatePut() {
         Table table = defaultTable();
-        KeyValueBinaryView kvView = table.kvView();
+        KeyValueView<Tuple, Tuple> kvView = table.keyValueView();
 
         Tuple key = defaultTupleKey();
         Tuple val = Tuple.create().set("name", DEFAULT_NAME);
@@ -109,7 +109,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAll() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
 
         kvView.put(tupleKey(1L), tupleVal("1"));
         kvView.put(tupleKey(2L), tupleVal("2"));
@@ -130,7 +130,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAllEmptyKeysReturnsEmptyMap() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         Map<Tuple, Tuple> res = kvView.getAll(List.of());
@@ -139,7 +139,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAllNonExistentKeysReturnsEmptyMap() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         Map<Tuple, Tuple> res = kvView.getAll(List.of(tupleKey(-1L)));
@@ -148,7 +148,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testContains() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         assertTrue(kvView.contains(tupleKey(1L)));
@@ -157,7 +157,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testContainsThrowsOnEmptyKey() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
 
         var ex = assertThrows(CompletionException.class, () -> kvView.contains(Tuple.create()));
         assertTrue(ex.getMessage().contains("Missed key column: id"), ex.getMessage());
@@ -165,7 +165,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testPutAll() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.putAll(Map.of(tupleKey(1L), tupleVal("1"), tupleKey(2L), tupleVal("2")));
 
         assertEquals("1", kvView.get(tupleKey(1L)).stringValue("name"));
@@ -174,7 +174,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testPutIfAbsent() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
 
         assertTrue(kvView.putIfAbsent(tupleKey(1L), tupleVal("1")));
         assertFalse(kvView.putIfAbsent(tupleKey(1L), tupleVal("1")));
@@ -184,7 +184,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testRemove() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         assertFalse(kvView.remove(tupleKey(2L)));
@@ -195,7 +195,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testRemoveExact() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         assertFalse(kvView.remove(tupleKey(1L), tupleVal("2")));
@@ -208,7 +208,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testRemoveAll() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.putAll(Map.of(tupleKey(1L), tupleVal("1"), tupleKey(2L), tupleVal("2")));
 
         Collection<Tuple> res = kvView.removeAll(List.of(tupleKey(2L), tupleKey(3L)));
@@ -222,7 +222,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testReplace() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         assertFalse(kvView.replace(tupleKey(3L), tupleVal("3")));
@@ -232,7 +232,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testReplaceExact() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         assertFalse(kvView.replace(tupleKey(1L), tupleVal("2"), tupleVal("3")));
@@ -242,7 +242,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAndReplace() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         assertNull(kvView.getAndReplace(tupleKey(2L), tupleVal("2")));
@@ -254,7 +254,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAndRemove() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         Tuple removed = kvView.getAndRemove(tupleKey(1L));
@@ -270,7 +270,7 @@ public class ClientKeyValueBinaryViewTest extends AbstractClientTableTest {
 
     @Test
     public void testGetAndPut() {
-        KeyValueBinaryView kvView = defaultTable().kvView();
+        KeyValueView<Tuple, Tuple> kvView = defaultTable().keyValueView();
         kvView.put(tupleKey(1L), tupleVal("1"));
 
         Tuple res1 = kvView.getAndPut(tupleKey(2L), tupleVal("2"));

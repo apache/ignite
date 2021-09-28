@@ -45,6 +45,6 @@ public class ClientTupleReplaceRequest {
         var table = readTable(in, tables);
         var tuple = readTuple(in, table, false);
 
-        return table.replaceAsync(tuple).thenAccept(out::packBoolean);
+        return table.recordView().replaceAsync(tuple).thenAccept(out::packBoolean);
     }
 }

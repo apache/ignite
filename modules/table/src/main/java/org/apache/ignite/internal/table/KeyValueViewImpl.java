@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Key-value view implementation.
  */
-public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<K, V> {
+public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValueView<K, V> {
     /**
      * Constructor.
      * @param tbl Table storage.
@@ -47,8 +47,8 @@ public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<
      * @param valueMapper Value class mapper.
      * @param tx The transaction.
      */
-    public KVViewImpl(InternalTable tbl, SchemaRegistry schemaReg, KeyMapper<K> keyMapper,
-        ValueMapper<V> valueMapper, @Nullable Transaction tx) {
+    public KeyValueViewImpl(InternalTable tbl, SchemaRegistry schemaReg, KeyMapper<K> keyMapper,
+                            ValueMapper<V> valueMapper, @Nullable Transaction tx) {
         super(tbl, schemaReg, tx);
     }
 
@@ -232,7 +232,7 @@ public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<
     }
 
     /** {@inheritDoc} */
-    @Override public KVViewImpl<K, V> withTransaction(Transaction tx) {
+    @Override public KeyValueViewImpl<K, V> withTransaction(Transaction tx) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
