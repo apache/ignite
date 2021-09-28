@@ -1503,13 +1503,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
         
-        private class ServiceInvokeContextTuple
+        private class ServiceInvokeContextTuple : Tuple<IService, object>
         {
             public readonly IService Svc;
 
             public readonly ThreadLocal<Hashtable> InvokeCtx;
 
-            public ServiceInvokeContextTuple(IService svc, ThreadLocal<Hashtable> invokeCtx)
+            public ServiceInvokeContextTuple(IService svc, ThreadLocal<Hashtable> invokeCtx) : base(svc, invokeCtx)
             {
                 Svc = svc;
                 InvokeCtx = invokeCtx;

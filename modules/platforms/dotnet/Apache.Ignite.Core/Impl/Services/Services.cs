@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -351,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<Tuple<IService, object>>(r.ReadLong()).Item1);
 
                     return res;
                 });
