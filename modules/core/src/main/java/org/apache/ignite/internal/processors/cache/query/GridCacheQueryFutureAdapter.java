@@ -122,6 +122,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         return qry;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteLogger logger() {
+        return log;
+    }
+
     /**
      * @return If fields query.
      */
@@ -164,6 +169,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @return Cache query results reducer.
      */
     protected abstract CacheQueryReducer<R> reducer();
+
+    /**
+     * @return Cache context.
+     */
+    public GridCacheContext<K, V> cacheContext() {
+        return cctx;
+    }
 
     /**
      * Waits for the first item is available to return.

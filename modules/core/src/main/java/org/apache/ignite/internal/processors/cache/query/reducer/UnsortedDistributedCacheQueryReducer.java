@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
+import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
 
 /**
@@ -34,13 +34,13 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     /**
      * @param fut Cache query future.
      * @param reqId Cache query request ID.
-     * @param pageRequester Provides a functionality to request pages from remote nodes.
+     * @param qryMgr Provides a functionality to request pages from remote nodes.
      * @param nodes Collection of nodes this query applies to.
      */
     public UnsortedDistributedCacheQueryReducer(
-        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, CacheQueryPageRequester pageRequester,
+        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, GridCacheDistributedQueryManager<?, ?> qryMgr,
         Collection<ClusterNode> nodes) {
-        super(fut, reqId, pageRequester, nodes);
+        super(fut, reqId, qryMgr, nodes);
     }
 
     /** {@inheritDoc} */

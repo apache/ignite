@@ -104,26 +104,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** Event listener. */
     private GridLocalEventListener lsnr;
 
-    /** Requester of cache query result pages. */
-    private CacheQueryPageRequester pageRequester;
-
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
 
         assert cctx.config().getCacheMode() != LOCAL;
-
-        pageRequester = new CacheQueryPageRequester(cctx, (req) ->
-            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                @Override public Object call() throws Exception {
-                    req.beforeLocalExecution(cctx);
-
-                    processQueryRequest(cctx.localNodeId(), req);
-
-                    return null;
-                }
-            }, GridIoPolicy.QUERY_POOL)
-        );
 
         cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
@@ -552,7 +537,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 reducer.onError(err);
             }
 
-            pageRequester.initRequestPages(reqId, fut, nodes);
+            startQuery(reqId, fut, nodes);
         }
         catch (IgniteCheckedException e) {
             reducer.onError(e);
@@ -721,9 +706,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
 
         if (qryType == TEXT)
-            return new MergeSortDistributedCacheQueryReducer(fut, reqId, pageRequester, nodes, textResultComparator);
+            return new MergeSortDistributedCacheQueryReducer(fut, reqId, this, nodes, textResultComparator);
         else
-            return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, nodes);
+            return new UnsortedDistributedCacheQueryReducer(fut, reqId, this, nodes);
     }
 
     /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
@@ -739,6 +724,103 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     private Object topic(UUID nodeId, long reqId) {
         return TOPIC_CACHE.topic(TOPIC_PREFIX, nodeId, reqId);
+    }
+
+    /**
+     * Send initial query request to specified nodes.
+     *
+     * @param reqId Request (cache query) ID.
+     * @param fut Cache query future, contains query info.
+     */
+    private void startQuery(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut, Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, fut);
+
+        List<UUID> sendNodes = new ArrayList<>();
+
+        for (ClusterNode n: nodes)
+            sendNodes.add(n.id());
+
+        sendRequest(fut, req, sendNodes);
+    }
+
+    /**
+     * Sends query request.
+     *
+     * @param fut Cache query future. {@code null} in case of cancel request.
+     * @param req Request.
+     * @param nodes Nodes.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void sendRequest(
+        @Nullable GridCacheQueryFutureAdapter<?, ?, ?> fut,
+        GridCacheQueryRequest req,
+        Collection<UUID> nodes
+    ) throws IgniteCheckedException {
+        assert req != null;
+        assert nodes != null;
+
+        UUID locNodeId = cctx.localNodeId();
+
+        boolean loc = false;
+
+        for (UUID nodeId : nodes) {
+            if (nodeId.equals(locNodeId))
+                loc = true;
+            else {
+                if (req.cancel())
+                    sendNodeCancelRequest(nodeId, req);
+                else if (!sendNodePageRequest(nodeId, req, fut))
+                    return;
+            }
+        }
+
+        if (loc) {
+            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    req.beforeLocalExecution(cctx);
+
+                    processQueryRequest(cctx.localNodeId(), req);
+
+                    return null;
+                }
+            }, GridIoPolicy.QUERY_POOL);
+        }
+    }
+
+    /** */
+    private void sendNodeCancelRequest(UUID nodeId, GridCacheQueryRequest req) throws IgniteCheckedException {
+        try {
+            cctx.io().send(nodeId, req, GridIoPolicy.QUERY_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            if (cctx.io().checkNodeLeft(nodeId, e, false)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send cancel request, node failed: " + nodeId);
+            }
+            else
+                U.error(log, "Failed to send cancel request [node=" + nodeId + ']', e);
+        }
+    }
+
+    /**
+     * @return {@code true} if succeed to send request, {@code false} otherwise.
+     */
+    private boolean sendNodePageRequest(UUID nodeId, GridCacheQueryRequest req, GridCacheQueryFutureAdapter<?, ?, ?> fut)
+        throws IgniteCheckedException {
+        try {
+            cctx.io().send(nodeId, req, GridIoPolicy.QUERY_POOL);
+
+            return true;
+        }
+        catch (IgniteCheckedException e) {
+            if (cctx.io().checkNodeLeft(nodeId, e, true)) {
+                fut.onNodeLeft(nodeId);
+
+                return false;
+            }
+            else
+                throw e;
+        }
     }
 
     /**

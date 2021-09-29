@@ -33,9 +33,10 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
 import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -57,8 +58,8 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     /** Query future. */
     private final GridCacheQueryFutureAdapter<?, ?, ?> fut;
 
-    /** Cache query page requester. */
-    private final CacheQueryPageRequester pageRequester;
+    /** Helps to send cache query requests to other nodes. */
+    private final GridCacheDistributedQueryManager<?, ?> qryMgr;
 
     /**
      * Count down this latch when every node responses on initial cache query request.
@@ -75,14 +76,14 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     /**
      * @param fut Cache query future.
      * @param reqId Cache query request ID.
-     * @param pageRequester Provides a functionality to request pages from remote nodes.
+     * @param qryMgr Distributed cache query manager.
      * @param nodes Collection of nodes this query applies to.
      */
     protected AbstractDistributedCacheQueryReducer(GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId,
-        CacheQueryPageRequester pageRequester, Collection<ClusterNode> nodes) {
+        GridCacheDistributedQueryManager<?, ?> qryMgr, Collection<ClusterNode> nodes) {
         this.fut = fut;
         this.reqId = reqId;
-        this.pageRequester = pageRequester;
+        this.qryMgr = qryMgr;
 
         streams = new HashMap<>(nodes.size());
 
@@ -132,7 +133,14 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
      * @param all Whether page will contain all data from node.
      */
     private void requestPages(Collection<UUID> nodes, boolean all) {
-        pageRequester.requestPages(reqId, fut, nodes, all);
+        try {
+            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(fut.cacheContext(), reqId, fut, all);
+
+            qryMgr.sendRequest(null, req, nodes);
+
+        } catch (IgniteCheckedException e) {
+            onError(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -159,7 +167,15 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
 
         remoteStreams.clear();
 
-        pageRequester.cancelQuery(reqId, nodes, fut.fields());
+        try {
+            GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(fut.cacheContext(), reqId, fut.fields());
+
+            qryMgr.sendRequest(null, req, nodes);
+        }
+        catch (IgniteCheckedException e) {
+            if (fut.logger() != null)
+                U.error(fut.logger(), "Failed to send cancel request (will cancel query in any case).", e);
+        }
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
+import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
 
 /**
@@ -43,10 +43,10 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
      * @param rowCmp Comparator to sort query results from different nodes.
      */
     public MergeSortDistributedCacheQueryReducer(
-        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, CacheQueryPageRequester pageRequester,
+        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, GridCacheDistributedQueryManager<?, ?> qryMgr,
         Collection<ClusterNode> nodes, Comparator<R> rowCmp
     ) {
-        super(fut, reqId, pageRequester, nodes);
+        super(fut, reqId, qryMgr, nodes);
 
         // Compares head pages from all nodes to get the lowest value at the moment.
         Comparator<NodePage<R>> pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());
