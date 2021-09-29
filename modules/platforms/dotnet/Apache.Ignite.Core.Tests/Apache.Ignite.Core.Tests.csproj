@@ -11,7 +11,7 @@
 
     <OutputType>Exe</OutputType>
     <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
-
+    <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <PropertyGroup>
