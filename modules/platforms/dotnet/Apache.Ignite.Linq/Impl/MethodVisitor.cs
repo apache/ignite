@@ -126,7 +126,9 @@ namespace Apache.Ignite.Linq.Impl
             GetMathMethod("Tanh", typeof (double)),
             GetMathMethod("Truncate", typeof (double)),
             GetMathMethod("Truncate", typeof (decimal)),
-        }.ToDictionary(x => x.Key, x => x.Value);
+        }
+            .Where(x => x.Key != null)
+            .ToDictionary(x => x.Key, x => x.Value);
 
         /// <summary> RegexOptions transformations. </summary>
         private static readonly Dictionary<RegexOptions, string> RegexOptionFlags = new Dictionary<RegexOptions, string>
