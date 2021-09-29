@@ -196,11 +196,7 @@ namespace Apache.Ignite.Core.Tests.Client
                         CertificatePassword = "123456",
                         SkipServerCertificateValidation = true,
                         CheckCertificateRevocation = true,
-#if !NETCOREAPP
-                        SslProtocols = SslProtocols.Tls
-#else
                         SslProtocols = SslProtocols.Tls12
-#endif
                     }
                     : null,
                 EnablePartitionAwareness = _enablePartitionAwareness
