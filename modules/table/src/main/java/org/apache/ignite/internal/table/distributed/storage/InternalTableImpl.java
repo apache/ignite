@@ -23,8 +23,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Flow.Publisher;
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.internal.table.distributed.command.DeleteAllCommand;
@@ -44,16 +51,29 @@ import org.apache.ignite.internal.table.distributed.command.UpsertAllCommand;
 import org.apache.ignite.internal.table.distributed.command.UpsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.MultiRowsResponse;
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
+import org.apache.ignite.internal.table.distributed.command.scan.ScanCloseCommand;
+import org.apache.ignite.internal.table.distributed.command.scan.ScanInitCommand;
+import org.apache.ignite.internal.table.distributed.command.scan.ScanRetrieveBatchCommand;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.IgniteUuidGenerator;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.schema.definition.SchemaManagementMode;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Storage of table rows.
  */
 public class InternalTableImpl implements InternalTable {
+    /** Log. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(InternalTableImpl.class);
+
+    /** IgniteUuid generator. */
+    private static final IgniteUuidGenerator UUID_GENERATOR = new IgniteUuidGenerator(UUID.randomUUID(), 0);
+
     //TODO: IGNITE-15443 Use IntMap structure instead of HashMap.
     /** Partition map. */
     private Map<Integer, RaftGroupService> partitionMap;
@@ -253,6 +273,22 @@ public class InternalTableImpl implements InternalTable {
         return collectMultiRowsResponses(futures);
     }
 
+    /** {@inheritDoc} */
+    @Override public @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx) {
+        if (p < 0 || p >= partitions) {
+            throw new IllegalArgumentException(
+                LoggerMessageHelper.format(
+                    "Invalid partition [partition={}, minValue={}, maxValue={}].",
+                    p,
+                    0,
+                    partitions - 1
+                )
+            );
+        }
+
+        return new PartitionScanPublisher(partitionMap.get(p));
+    }
+
     /**
      * Map rows to partitions.
      *
@@ -301,5 +337,152 @@ public class InternalTableImpl implements InternalTable {
 
                     return list;
                 });
+    }
+
+    /** Partition scan publisher. */
+    private class PartitionScanPublisher implements Publisher<BinaryRow> {
+        /** {@link Publisher<BinaryRow>} that relatively notifies about partition rows.  */
+        private final RaftGroupService raftGrpSvc;
+
+        /** */
+        private AtomicBoolean subscribed;
+
+        /**
+         * The constructor.
+         *
+         * @param raftGrpSvc {@link RaftGroupService} to run corresponding raft commands.
+         */
+        PartitionScanPublisher(RaftGroupService raftGrpSvc) {
+            this.raftGrpSvc = raftGrpSvc;
+            this.subscribed = new AtomicBoolean(false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void subscribe(Subscriber<? super BinaryRow> subscriber) {
+            if (subscriber == null)
+                throw new NullPointerException("Subscriber is null");
+
+            if (!subscribed.compareAndSet(false, true))
+                subscriber.onError(new IllegalStateException("Scan publisher does not support multiple subscriptions."));
+
+            PartitionScanSubscription subscription = new PartitionScanSubscription(subscriber);
+
+            subscriber.onSubscribe(subscription);
+        }
+
+        /**
+         * Partition Scan Subscription.
+         */
+        private class PartitionScanSubscription implements Subscription {
+            /** */
+            private final Subscriber<? super BinaryRow> subscriber;
+
+            /** */
+            private final AtomicBoolean canceled;
+
+            /** Scan id to uniquely identify it on server side. */
+            private final IgniteUuid scanId;
+
+            /** Scan initial operation that created server cursor. */
+            private final CompletableFuture<Void> scanInitOp;
+
+            /**
+             * The constructor.
+             * @param subscriber The subscriber.
+             */
+            private PartitionScanSubscription(Subscriber<? super BinaryRow> subscriber) {
+                this.subscriber = subscriber;
+                this.canceled = new AtomicBoolean(false);
+                this.scanId = UUID_GENERATOR.randomUuid();
+                // TODO: IGNITE-15544 Close partition scans on node left.
+                this.scanInitOp = raftGrpSvc.run(new ScanInitCommand("", scanId));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void request(long n) {
+                if (n <= 0) {
+                    cancel();
+
+                    subscriber.onError(new IllegalArgumentException(LoggerMessageHelper.
+                        format("Invalid requested amount of items [requested={}, minValue=1]", n))
+                    );
+                }
+
+                if (canceled.get())
+                    return;
+
+                final int internalBatchSize = Integer.MAX_VALUE;
+
+                for (int intBatchCnr = 0; intBatchCnr < (n / internalBatchSize); intBatchCnr++)
+                    scanBatch(internalBatchSize);
+
+                scanBatch((int)(n % internalBatchSize));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                cancel(true);
+            }
+
+            /**
+             * Cancels given subscription and closes cursor if necessary.
+             *
+             * @param closeCursor If {@code true} closes inner storage scan.
+             */
+            private void cancel(boolean closeCursor) {
+                if (!canceled.compareAndSet(false, true))
+                    return;
+
+                if (closeCursor) {
+                    scanInitOp.thenRun(() -> raftGrpSvc.run(new ScanCloseCommand(scanId))).exceptionally(closeT -> {
+                        LOG.warn("Unable to close scan.", closeT);
+
+                        return null;
+                    });
+                }
+            }
+
+            /**
+             * Requests and processes n requested elements where n is an integer.
+             *
+             * @param n Requested amount of items.
+             */
+            private void scanBatch(int n) {
+                if (canceled.get())
+                    return;
+
+                scanInitOp.thenCompose((none) -> raftGrpSvc.<MultiRowsResponse>run(new ScanRetrieveBatchCommand(n, scanId)))
+                    .thenAccept(
+                        res -> {
+                            if (res.getValues() == null) {
+                                cancel();
+
+                                subscriber.onComplete();
+
+                                return;
+                            }
+                            else
+                                res.getValues().forEach(subscriber::onNext);
+
+                            if (res.getValues().size() < n) {
+                                cancel();
+
+                                subscriber.onComplete();
+                            }
+                        })
+                    .exceptionally(
+                        t -> {
+                            if (t instanceof NoSuchElementException ||
+                                t instanceof CompletionException && t.getCause() instanceof NoSuchElementException)
+                                return null;
+
+                            cancel(!scanInitOp.isCompletedExceptionally());
+
+                            subscriber.onError(t);
+
+                            return null;
+                        });
+            }
+        }
     }
 }

@@ -281,7 +281,7 @@ public class MetaStorageListener implements RaftGroupListener {
             else if (clo.command() instanceof CursorCloseCommand) {
                 CursorCloseCommand cursorCloseCmd = (CursorCloseCommand) clo.command();
 
-                CursorMeta cursorDesc = cursors.get(cursorCloseCmd.cursorId());
+                CursorMeta cursorDesc = cursors.remove(cursorCloseCmd.cursorId());
 
                 if (cursorDesc == null) {
                     clo.result(null);

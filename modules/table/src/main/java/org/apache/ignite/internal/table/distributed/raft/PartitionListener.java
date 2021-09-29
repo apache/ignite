@@ -19,9 +19,13 @@ package org.apache.ignite.internal.table.distributed.raft;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -29,6 +33,7 @@ import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.SearchRow;
 import org.apache.ignite.internal.storage.Storage;
+import org.apache.ignite.internal.storage.StorageException;
 import org.apache.ignite.internal.storage.basic.DeleteExactInvokeClosure;
 import org.apache.ignite.internal.storage.basic.GetAndRemoveInvokeClosure;
 import org.apache.ignite.internal.storage.basic.GetAndReplaceInvokeClosure;
@@ -52,7 +57,12 @@ import org.apache.ignite.internal.table.distributed.command.UpsertAllCommand;
 import org.apache.ignite.internal.table.distributed.command.UpsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.MultiRowsResponse;
 import org.apache.ignite.internal.table.distributed.command.response.SingleRowResponse;
+import org.apache.ignite.internal.table.distributed.command.scan.ScanCloseCommand;
+import org.apache.ignite.internal.table.distributed.command.scan.ScanInitCommand;
+import org.apache.ignite.internal.table.distributed.command.scan.ScanRetrieveBatchCommand;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
@@ -68,6 +78,9 @@ public class PartitionListener implements RaftGroupListener {
     /** Partition storage. */
     private final Storage storage;
 
+    /** Cursors map. */
+    private final Map<IgniteUuid, CursorMeta> cursors;
+
     /**
      * Constructor.
      *
@@ -75,6 +88,7 @@ public class PartitionListener implements RaftGroupListener {
      */
     public PartitionListener(Storage storage) {
         this.storage = storage;
+        this.cursors = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -120,6 +134,12 @@ public class PartitionListener implements RaftGroupListener {
                 handleGetAndReplaceCommand((CommandClosure<GetAndReplaceCommand>) clo);
             else if (command instanceof GetAndUpsertCommand)
                 handleGetAndUpsertCommand((CommandClosure<GetAndUpsertCommand>) clo);
+            else if (command instanceof ScanInitCommand)
+                handleScanInitCommand((CommandClosure<ScanInitCommand>) clo);
+            else if (command instanceof ScanRetrieveBatchCommand)
+                handleScanRetrieveBatchCommand((CommandClosure<ScanRetrieveBatchCommand>) clo);
+            else if (command instanceof ScanCloseCommand)
+                handleScanCloseCommand((CommandClosure<ScanCloseCommand>) clo);
             else
                 assert false : "Command was not found [cmd=" + command + ']';
         });
@@ -417,6 +437,82 @@ public class PartitionListener implements RaftGroupListener {
         clo.result(new SingleRowResponse(response));
     }
 
+    /**
+     * Handler for the {@link ScanInitCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleScanInitCommand(CommandClosure<ScanInitCommand> clo) {
+        ScanInitCommand rangeCmd = clo.command();
+
+        IgniteUuid cursorId = rangeCmd.scanId();
+
+        try {
+            Cursor<DataRow> cursor = storage.scan(key -> true);
+
+            cursors.put(
+                cursorId,
+                new CursorMeta(
+                    cursor,
+                    rangeCmd.requesterNodeId()
+                )
+            );
+        }
+        catch (StorageException e) {
+            clo.result(e);
+        }
+
+        clo.result(null);
+    }
+
+    /**
+     * Handler for the {@link ScanRetrieveBatchCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleScanRetrieveBatchCommand(CommandClosure<ScanRetrieveBatchCommand> clo) {
+        CursorMeta cursorDesc = cursors.get(clo.command().scanId());
+
+        if (cursorDesc == null)
+            clo.result(new NoSuchElementException("Corresponding cursor on server side not found."));
+
+        List<BinaryRow> res = new ArrayList<>();
+
+        try {
+            for (int i = 0; i < clo.command().itemsToRetrieveCount() && cursorDesc.cursor().hasNext(); i++)
+                res.add(new ByteBufferRow(cursorDesc.cursor().next().valueBytes()));
+        }
+        catch (Exception e) {
+            clo.result(e);
+        }
+
+        clo.result(new MultiRowsResponse(res));
+    }
+
+    /**
+     * Handler for the {@link ScanCloseCommand}.
+     *
+     * @param clo Command closure.
+     */
+    private void handleScanCloseCommand(CommandClosure<ScanCloseCommand> clo) {
+        CursorMeta cursorDesc = cursors.remove(clo.command().scanId());
+
+        if (cursorDesc == null) {
+            clo.result(null);
+
+            return;
+        }
+
+        try {
+            cursorDesc.cursor().close();
+        }
+        catch (Exception e) {
+            throw new IgniteInternalException(e);
+        }
+
+        clo.result(null);
+    }
+
     /** {@inheritDoc} */
     @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
         storage.snapshot(path).whenComplete((unused, throwable) -> {
@@ -493,5 +589,44 @@ public class PartitionListener implements RaftGroupListener {
     @TestOnly
     public Storage getStorage() {
         return storage;
+    }
+
+    /**
+     * Cursor meta information: origin node id and type.
+     */
+    private class CursorMeta {
+        /** Cursor. */
+        private final Cursor<DataRow> cursor;
+
+        /** Id of the node that creates cursor. */
+        private final String requesterNodeId;
+
+        /**
+         * The constructor.
+         *
+         * @param cursor Cursor.
+         * @param requesterNodeId Id of the node that creates cursor.
+         */
+        CursorMeta(
+            Cursor<DataRow> cursor,
+            String requesterNodeId
+        ) {
+            this.cursor = cursor;
+            this.requesterNodeId = requesterNodeId;
+        }
+
+        /**
+         * @return Cursor.
+         */
+        public Cursor<DataRow> cursor() {
+            return cursor;
+        }
+
+        /**
+         * @return Id of the node that creates cursor.
+         */
+        public String requesterNodeId() {
+            return requesterNodeId;
+        }
     }
 }
