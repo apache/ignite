@@ -3026,6 +3026,46 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If failed. */
     @Test
+    public void testClusterSnapshotStatus() throws Exception {
+        int keysCnt = 100;
+        String snpName = "snapshot_02052020";
+
+        IgniteEx ig = startGrid(0);
+        startGrid(1);
+
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, keysCnt);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        assertTrue(h.getLastOperationResult().toString().contains("No snapshot operations."));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        assertTrue(h.getLastOperationResult().toString()
+                .contains("Creating the snapshot with name"));
+
+        assertTrue(h.getLastOperationResult().toString()
+                .contains(ig.context().discovery().localNode().consistentId().toString()));
+
+        assertTrue("Waiting for snapshot operation end failed.",
+                waitForCondition(() ->
+                                ig.context().metric().registry(SNAPSHOT_METRICS)
+                                        .<LongMetric>findMetric("LastSnapshotEndTime").value() > 0,
+                        getTestTimeout()));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        assertTrue(h.getLastOperationResult().toString().contains("No snapshot operations."));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testClusterSnapshotOnInactive() throws Exception {
         injectTestSystemOut();
 

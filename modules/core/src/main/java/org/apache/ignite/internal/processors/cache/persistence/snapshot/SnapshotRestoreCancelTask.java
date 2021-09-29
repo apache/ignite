@@ -28,7 +28,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Snapshot restore cancel task.
  */
 @GridInternal
-class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask {
+class SnapshotRestoreCancelTask extends SnapshotManagementTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

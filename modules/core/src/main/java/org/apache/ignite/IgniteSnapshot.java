@@ -74,12 +74,11 @@ public interface IgniteSnapshot {
      */
     public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
 
-//    /**
-//     * Status snapshot operation.
-//     * Checks if running snapshot operations exist on nodes.
-//     *
-//     * @return Future which Map from Consistent ID's to status of the snapshot operation.
-//     * If True then snapshot operation is in progress.
-//     */
-//    public ComputeTaskFuture<Map<Object, String>> statusSnapshot();
+    /**
+     * Status snapshot operation.
+     * Checks if running snapshot operations exist on nodes.
+     *
+     * @return Future which Map contains Consistent ID's and description snapshot operation if operation is in progress.
+     */
+    public IgniteFuture<Map<Object, String>> statusSnapshot();
 }

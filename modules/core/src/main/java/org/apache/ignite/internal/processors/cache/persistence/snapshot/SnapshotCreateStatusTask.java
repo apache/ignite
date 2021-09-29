@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * Snapshot create status task.
  */
 @GridInternal
-class SnapshotCreateStatusTask extends SnapshotRestoreManagementTask {
+class SnapshotCreateStatusTask extends SnapshotManagementTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

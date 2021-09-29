@@ -21,6 +21,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.jetbrains.annotations.Nullable;
 
 /**

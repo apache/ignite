@@ -27,44 +27,44 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Task that collects nodes that have snapshot operation in progress.
  */
 @GridInternal
-public class VisorSnapshotStatusTask extends VisorOneNodeTask<Void, String> {
+public class VisorSnapshotStatusTask extends VisorOneNodeTask<String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, String> job(Void arg) {
+    @Override protected VisorJob<String, String> job(@Nullable String arg) {
         return new VisorSnapshotStatusJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotStatusJob extends VisorJob<Void, String> {
+    private static class VisorSnapshotStatusJob extends VisorJob<String, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotStatusJob(Void arg, boolean debug) {
+        protected VisorSnapshotStatusJob(@Nullable String arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(Void arg) throws IgniteException {
+        @Override protected String run(@Nullable String arg) throws IgniteException {
             Map<Object, String> statusMap = new SnapshotMXBeanImpl(ignite.context()).statusSnapshot();
+
+            if (statusMap.isEmpty())
+                return "No snapshot operations.";
 
             Set<Object> ids = statusMap.entrySet()
                 .stream()
-                .filter(e -> !e.getValue().isEmpty())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-
-            if (ids.isEmpty())
-                return "No snapshot operations.";
 
             String msg = statusMap.get(ids.iterator().next());
 
@@ -72,7 +72,7 @@ public class VisorSnapshotStatusTask extends VisorOneNodeTask<Void, String> {
 
             ids.stream()
                     .map(String::valueOf)
-                    .forEach(s -> sb.append(IgniteUtils.nl()).append(s));
+                    .forEach(s -> sb.append(IgniteUtils.nl()).append(" - ").append(s));
 
             return sb.toString();
         }
