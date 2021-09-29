@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Default SSL protocols.
         /// </summary>
-        public const SslProtocols DefaultSslProtocols = SslProtocols.Tls12;
+        public const SslProtocols DefaultSslProtocols = SslProtocols.None;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SslStreamFactory"/> class.
