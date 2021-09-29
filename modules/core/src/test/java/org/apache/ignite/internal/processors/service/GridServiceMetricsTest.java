@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,8 +41,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.methodMetricName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.sumHistogramEntries;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
@@ -54,7 +53,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     private static final int INVOKE_CNT = 50;
 
     /** Service name used in the tests. */
-    private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName() + "_service";
+    private static final String SRVC_NAME = "TestService";
 
     /** Error message of created metrics. */
     private static final String METRICS_MUST_NOT_BE_CREATED = "Service metric registry must not be created.";
@@ -171,13 +170,15 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         List<IgniteEx> servers = startGrids(3, false);
 
         // 2 services per node.
-        servers.get(0).services().deploy(serviceCfg( MyServiceFactory.create(), servers.size(), 2));
+        servers.get(0).services().deploy(serviceCfg(MyServiceFactory.create(), servers.size(), 2));
 
         awaitPartitionMapExchange();
 
+        int expectedCnt = Arrays.stream(MyService.class.getDeclaredMethods()).map(Method::getName).collect(Collectors.toSet()).size();
+
         // Make sure metrics are registered.
         for (IgniteEx ignite : servers)
-            assertEquals(metricsCnt(ignite, SRVC_NAME), MyService.class.getDeclaredMethods().length);
+            assertEquals(metricsCnt(ignite, SRVC_NAME), expectedCnt);
 
         servers.get(0).services().cancel(SRVC_NAME);
 
@@ -199,18 +200,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         List<Metric> metricsFound = new ArrayList<>();
 
         for (Method mtd : NamingService.class.getDeclaredMethods()) {
-            Metric curMetric = null;
+            Metric curMetric;
 
-            for (int i = 0; i <= MAX_ABBREVIATE_NAME_LVL; ++i) {
-                String metricName = methodMetricName(mtd, i);
-
-                if ((curMetric = registry.findMetric(metricName)) instanceof HistogramMetric
-                    && !metricsFound.contains(curMetric)) {
-                    metricsFound.add(curMetric);
-
-                    break;
-                }
-            }
+            if ((curMetric = registry.findMetric(mtd.getName())) instanceof HistogramMetric
+                && !metricsFound.contains(curMetric))
+                metricsFound.add(curMetric);
 
             assertNotNull("No metric found for method " + mtd, curMetric);
         }

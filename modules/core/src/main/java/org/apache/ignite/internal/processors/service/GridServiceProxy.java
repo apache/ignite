@@ -194,8 +194,8 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null)
-                                return svcCtx.statisticsEnabled() ? measureCall(ctx.service(),
-                                    () -> callServiceLocally(svc, mtd, args), name, mtd.getName(), mtd.getParameterTypes()) :
+                                return svcCtx.statisticsEnabled() ?
+                                    measureCall(ctx.service(), () -> callServiceLocally(svc, mtd, args), name, mtd.getName()) :
                                     callServiceLocally(svc, mtd, args);
                         }
                     }
@@ -407,14 +407,12 @@ public class GridServiceProxy<T> implements Serializable {
      * @param target   Target to call and measure.
      * @param srvcName Related service name.
      * @param mtdName  Related method name.
-     * @param argTypes Agrument types of the related method.
      */
     private static Object measureCall(
         ServiceProcessorAdapter srvcProc,
         Callable<Object> target,
         String srvcName,
-        String mtdName,
-        Class<?>[] argTypes
+        String mtdName
     ) throws Exception {
         long startTime = System.nanoTime();
 
@@ -425,7 +423,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (srvcProc instanceof IgniteServiceProcessor) {
                 long duration = System.nanoTime() - startTime;
 
-                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtdName, argTypes);
+                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtdName);
 
                 if (histogram != null)
                     histogram.value(duration);
@@ -509,7 +507,7 @@ public class GridServiceProxy<T> implements Serializable {
             try {
                 if (svcCtx.statisticsEnabled())
                     return measureCall(ignite.context().service(),
-                        () -> srv.invokeMethod(mtdName, false, true, args), svcName, mtdName, argTypes);
+                        () -> srv.invokeMethod(mtdName, false, true, args), svcName, mtdName);
                 else
                     return srv.invokeMethod(mtdName, false, true, args);
             }
@@ -527,10 +525,8 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                if (svcCtx.statisticsEnabled()) {
-                    return measureCall(ignite.context().service(), () -> mtd.invoke(svcCtx.service(), args),
-                        svcCtx.name(), mtd.getName(), mtd.getParameterTypes());
-                }
+                if (svcCtx.statisticsEnabled())
+                    return measureCall(ignite.context().service(), () -> mtd.invoke(svcCtx.service(), args), svcCtx.name(), mtd.getName());
                 else
                     return mtd.invoke(svcCtx.service(), args);
             }

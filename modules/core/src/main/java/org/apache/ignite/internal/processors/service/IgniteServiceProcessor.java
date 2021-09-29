@@ -101,8 +101,6 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.methodMetricName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 
@@ -132,7 +130,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Duration of service method in milliseconds.";
 
-    /** Default bounds of invocation histogram in nanoseconds. See {@link #createHistogram(String, Method)}. */
+    /** Default bounds of invocation histogram in nanoseconds. */
     public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
         NANOSECONDS.convert(1, MILLISECONDS),
         NANOSECONDS.convert(10, MILLISECONDS),
@@ -217,8 +215,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private volatile boolean disconnected;
 
     /** Keeps histograms to measure durations of service methods. */
-    private final Map<String, Map<GridServiceMethodReflectKey, HistogramMetricImpl>> invocationHistograms
-        = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, HistogramMetricImpl>> invocationHistograms = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -1871,7 +1868,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcName Name of {@code srvc}.
      */
     private void cacheServiceMetrics(Service srvc, String srvcName) {
-        Map<GridServiceMethodReflectKey, HistogramMetricImpl> srvcHistograms = invocationHistograms.get(srvcName);
+        Map<String, HistogramMetricImpl> srvcHistograms = invocationHistograms.get(srvcName);
 
         // The histogms might be already created by multipile-deploy.
         if (srvcHistograms != null)
@@ -1884,9 +1881,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 if (metricIgnored(mtd.getDeclaringClass()))
                     continue;
 
-                HistogramMetricImpl histogram = createHistogram(srvcName, mtd);
+                MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcName));
 
-                srvcHistograms.put(new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes()), histogram);
+                if (metricRegistry.findMetric(mtd.getName()) != null)
+                    continue;
+
+                srvcHistograms.put(mtd.getName(), metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS,
+                    DESCRIPTION_OF_INVOCATION_METRIC));
             }
         }
 
@@ -1905,35 +1906,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Creates histogram for service method. If exists, considers one or several argument types has same name but
-     * different package and tries to extend metric name with abbreviation of java package name.
-     *
-     * @param srvcName Service name.
-     * @param method Method to measure.
-     * @return Histogram of service method timings.
-     */
-    HistogramMetricImpl createHistogram(String srvcName, Method method) {
-        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcName));
-
-        HistogramMetricImpl histogram = null;
-
-        // Find/create histogram.
-        for (int i = 0; i <= MAX_ABBREVIATE_NAME_LVL; ++i) {
-            String methodMetricName = methodMetricName(method, i);
-
-            // If the metric exists skip and try extending metric name in next cycle.
-            if (metricRegistry.findMetric(methodMetricName) == null) {
-                histogram = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
-                    DESCRIPTION_OF_INVOCATION_METRIC);
-
-                break;
-            }
-        }
-
-        return histogram;
-    }
-
-    /**
      * @return {@code True} if metrics should not be created for this class or interface.
      */
     private static boolean metricIgnored(Class<?> cls) {
@@ -1946,14 +1918,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param srvcName Service name.
      * @param mtdName  Method name.
-     * @param argTypes Argument types of the method.
      * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
      */
-    HistogramMetricImpl histogram(String srvcName, String mtdName, Class<?>[] argTypes) {
-        Map<GridServiceMethodReflectKey, HistogramMetricImpl> srvcMap = invocationHistograms.get(srvcName);
+    HistogramMetricImpl histogram(String srvcName, String mtdName) {
+        Map<String, HistogramMetricImpl> srvcMap = invocationHistograms.get(srvcName);
 
-        return srvcMap == null ?
-            null :
-            srvcMap.get(new GridServiceMethodReflectKey(mtdName, argTypes));
+        if (srvcMap != null)
+            return srvcMap.get(mtdName);
+
+        return null;
     }
 }

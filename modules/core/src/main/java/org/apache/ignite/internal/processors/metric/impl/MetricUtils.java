@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.lang.reflect.Method;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -44,9 +41,6 @@ public class MetricUtils {
 
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
-
-    /** Max entirety of type name in {@link #abbreviateName(Class, int)}. */
-    public static final int MAX_ABBREVIATE_NAME_LVL = 2;
 
     /**
      * Builds metric name. Each parameter will separated by '.' char.
@@ -178,78 +172,6 @@ public class MetricUtils {
         names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
         return names;
-    }
-
-    /**
-     * @param method Method to create metric name for.
-     * @param pkgNameDepth Level of package name abbreviation. See {@link #abbreviateName(Class, int)}.
-     * @return Metric name for {@code method}.
-     */
-    public static String methodMetricName(Method method, int pkgNameDepth) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
-        sb.append(" ");
-        sb.append(method.getName());
-        sb.append("(");
-        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
-            .collect(Collectors.joining(", ")));
-        sb.append(")");
-
-        return sb.toString();
-    }
-
-    /**
-     * Abbreviates package name for metric naming purposes.
-     *
-     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
-     *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
-     *                     <pre>
-     *                         0 or negative - wont add package name;
-     *                         1 - add first, middle and last char of each name in java package;
-     *                         2 or bigger - add full name of java package.
-     *                     </pre>
-     * @return Abbreviated name of {@code cls}.
-     */
-    public static String abbreviateName(Class<?> cls, int pkgNameDepth) {
-        if (pkgNameDepth < 1)
-            return cls.getSimpleName();
-
-        if (pkgNameDepth >= MAX_ABBREVIATE_NAME_LVL)
-            return cls.getName();
-
-        String[] pkgNameParts = cls.getName().split("\\.");
-
-        // No package like 'void' or 'int'.
-        if (pkgNameParts.length == 1)
-            return pkgNameParts[0];
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < pkgNameParts.length - 1; ++i) {
-            // Add whole package part in case its length is exactly 3.
-            if (pkgNameParts[i].length() == 3)
-                sb.append(pkgNameParts[i]);
-            else {
-                // Add first char.
-                sb.append(pkgNameParts[i].charAt(0));
-
-                // Add middle char.
-                if (pkgNameParts[i].length() > 3)
-                    sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() / 2));
-
-                // Add last char.
-                if (pkgNameParts[i].length() > 1)
-                    sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
-            }
-
-            sb.append('.');
-        }
-
-        // Add name to the class.
-        sb.append(pkgNameParts[pkgNameParts.length - 1]);
-
-        return sb.toString();
     }
 
     /**
