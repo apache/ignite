@@ -12,16 +12,16 @@ CREATE TABLE test (i INTEGER, j INTEGER)
 statement ok
 INSERT INTO test VALUES (3, 4), (4, 5), (5, 6);
 
-query II
-SELECT * FROM (SELECT i, j AS d FROM test ORDER BY i) AS b ORDER BY 1;
+query II rowsort
+SELECT * FROM (SELECT i, j AS d FROM test ORDER BY i) AS b
 ----
 3	4
 4	5
 5	6
 
 # check column names for simple projections and aliases
-query I
-SELECT b.d FROM (SELECT i * 2 + j AS d FROM test) AS b ORDER BY 1;
+query I rowsort
+SELECT b.d FROM (SELECT i * 2 + j AS d FROM test) AS b
 ----
 10
 13

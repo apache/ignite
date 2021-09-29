@@ -32,11 +32,11 @@ SELECT EXTRACT(millennium FROM d) FROM dates;
 ----
 
 query I
-SELECT EXTRACT(microseconds FROM d) FROM dates;
+SELECT EXTRACT(microsecond FROM d) FROM dates;
 ----
 
 query I
-SELECT EXTRACT(milliseconds FROM d) FROM dates;
+SELECT EXTRACT(millisecond FROM d) FROM dates;
 ----
 
 query I
@@ -132,6 +132,18 @@ SELECT EXTRACT(millennium FROM d) as m FROM dates ORDER BY m;
 
 query I
 SELECT EXTRACT(second FROM d) as s FROM dates ORDER BY s;
+----
+0
+0
+
+query I
+SELECT EXTRACT(microsecond FROM d) FROM dates;
+----
+0
+0
+
+query I
+SELECT EXTRACT(millisecond FROM d) FROM dates;
 ----
 0
 0

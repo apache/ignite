@@ -14,12 +14,12 @@ SELECT 1+(WITH cte AS (SELECT 1) SELECT * FROM cte)
 query T
 SELECT 1=(WITH cte AS (SELECT 1) SELECT * FROM cte)
 ----
-1
+true
 
 query T
 SELECT 1<>(WITH cte AS (SELECT 1) SELECT * FROM cte)
 ----
-0
+false
 
 query T
 SELECT 1=(WITH cte AS (SELECT NULL) SELECT * FROM cte)
@@ -72,7 +72,7 @@ statement ok
 INSERT INTO test VALUES (13, 22)
 
 # operations on subquery
-query I
+query I rowsort
 SELECT a*(WITH cte AS (SELECT 42) SELECT * FROM cte) FROM test
 ----
 462
@@ -88,20 +88,20 @@ INSERT INTO t1(e,c,b,d,a) VALUES(103,102,100,101,104)
 statement ok
 INSERT INTO t1(a,c,d,e,b) VALUES(107,106,108,109,105)
 
-query R
+query R rowsort
 SELECT c-(WITH cte AS (SELECT sum(c) FROM t1) SELECT * FROM cte) FROM t1
 ----
 -106.000000
 -102.000000
 
-query I
+query I rowsort
 SELECT CASE WHEN c>(WITH cte AS (SELECT sum(c)/count(*) FROM t1) SELECT * FROM cte) THEN a*2 ELSE b*10 END FROM t1
 ----
 1000
 214
 
 # correlated subqueries
-query IR
+query IR rowsort
 SELECT a, (WITH cte AS (SELECT SUM(b) FROM test tsub WHERE test.a=tsub.a) SELECT * FROM cte) FROM test
 ----
 11	22.000000

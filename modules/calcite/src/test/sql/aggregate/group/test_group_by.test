@@ -153,7 +153,7 @@ statement error
 SELECT 1 AS k, SUM(i) FROM integers GROUP BY k+1 ORDER BY 2;
 
 # group by column refs should be recognized, even if one uses an explicit table specifier and the other does not
-query IR
+query II
 SELECT test.b, SUM(a) FROM test GROUP BY b ORDER BY COUNT(a) DESC;
 ----
 21	48

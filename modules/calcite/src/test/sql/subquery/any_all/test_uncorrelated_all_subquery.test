@@ -17,7 +17,7 @@ SELECT i FROM integers WHERE i >= ALL(SELECT i FROM integers)
 ----
 
 query IT
-SELECT i, i >= ALL(SELECT i FROM integers) FROM integers ORDER BY i NULLS FIRST
+SELECT i, i >= ALL(SELECT i FROM integers) FROM integers ORDER BY i
 ----
 NULL	NULL
 1	false
@@ -30,7 +30,7 @@ SELECT i FROM integers WHERE i >= ALL(SELECT i FROM integers WHERE i IS NOT NULL
 3
 
 query IT
-SELECT i, i >= ALL(SELECT i FROM integers WHERE i IS NOT NULL) FROM integers ORDER BY i NULLS FIRST
+SELECT i, i >= ALL(SELECT i FROM integers WHERE i IS NOT NULL) FROM integers ORDER BY i
 ----
 NULL	NULL
 1	false
@@ -42,14 +42,14 @@ SELECT i FROM integers WHERE i >= ALL(SELECT i FROM integers WHERE i IS NOT NULL
 ----
 3
 
-query I
-SELECT i FROM integers WHERE i > ALL(SELECT MIN(i) FROM integers) ORDER BY i;
+query I rowsort
+SELECT i FROM integers WHERE i > ALL(SELECT MIN(i) FROM integers);
 ----
 2
 3
 
-query I
-SELECT i FROM integers WHERE i < ALL(SELECT MAX(i) FROM integers) ORDER BY i;
+query I rowsort
+SELECT i FROM integers WHERE i < ALL(SELECT MAX(i) FROM integers);
 ----
 1
 2
@@ -63,8 +63,8 @@ SELECT i FROM integers WHERE i <= ALL(SELECT i FROM integers WHERE i IS NOT NULL
 ----
 1
 
-query I
-SELECT i FROM integers WHERE i <> ALL(SELECT i FROM integers WHERE i=1) ORDER BY i;
+query I rowsort
+SELECT i FROM integers WHERE i <> ALL(SELECT i FROM integers WHERE i=1)
 ----
 2
 3
@@ -75,7 +75,7 @@ SELECT i FROM integers WHERE i <> ALL(SELECT i FROM integers WHERE i IS NOT NULL
 
 # zero results always results in TRUE for ALL, even if "i" is NULL
 query I
-SELECT i FROM integers WHERE i <> ALL(SELECT i FROM integers WHERE i>10) ORDER BY i NULLS FIRST;
+SELECT i FROM integers WHERE i <> ALL(SELECT i FROM integers WHERE i>10) ORDER BY i NULLS FIRST
 ----
 NULL
 1

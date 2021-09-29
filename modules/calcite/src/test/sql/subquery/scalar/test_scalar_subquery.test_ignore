@@ -66,8 +66,8 @@ statement ok
 INSERT INTO test VALUES (13, 22)
 
 # operations on subquery
-query I
-SELECT a*(SELECT 42) FROM test ORDER BY 1
+query I rowsort
+SELECT a*(SELECT 42) FROM test
 ----
 462
 504
@@ -82,21 +82,21 @@ INSERT INTO t1(e,c,b,d,a) VALUES(103,102,100,101,104)
 statement ok
 INSERT INTO t1(a,c,d,e,b) VALUES(107,106,108,109,105)
 
-query R
-SELECT c-(SELECT sum(c) FROM t1) FROM t1 ORDER BY 1
+query R rowsort
+SELECT c-(SELECT sum(c) FROM t1) FROM t1
 ----
 -106.000000
 -102.000000
 
-query I
-SELECT CASE WHEN c>(SELECT sum(c)/count(*) FROM t1) THEN a*2 ELSE b*10 END FROM t1 ORDER BY 1 DESC
+query I rowsort
+SELECT CASE WHEN c>(SELECT sum(c)/count(*) FROM t1) THEN a*2 ELSE b*10 END FROM t1
 ----
 1000
 214
 
 # correlated subqueries
-query IR
-SELECT a, (SELECT SUM(b) FROM test tsub WHERE test.a=tsub.a) FROM test ORDER BY 1
+query IR rowsort
+SELECT a, (SELECT SUM(b) FROM test tsub WHERE test.a=tsub.a) FROM test
 ----
 11	22.000000
 12	21.000000

@@ -4,7 +4,7 @@
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15565
 
 statement ok
-CREATE TABLE strings(v VARCHAR)
+CREATE TABLE strings(a VARCHAR)
 
 statement ok
 CREATE TABLE integers(i INTEGER)
@@ -16,7 +16,7 @@ statement ok
 INSERT INTO strings SELECT * FROM integers
 
 query T
-SELECT * FROM strings ORDER BY v NULLS LAST
+SELECT * FROM strings
 ----
 3
 4

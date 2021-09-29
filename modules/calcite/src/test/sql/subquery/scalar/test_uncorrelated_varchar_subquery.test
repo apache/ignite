@@ -40,8 +40,8 @@ SELECT 'bla' IN (SELECT * FROM strings WHERE v IS NOT NULL)
 false
 
 # EXISTS
-query T
-SELECT * FROM strings WHERE EXISTS(SELECT NULL) ORDER BY 1 NULLS LAST
+query T rowsort
+SELECT * FROM strings WHERE EXISTS(SELECT NULL)
 ----
 hello
 world

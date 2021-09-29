@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -66,6 +67,21 @@ public class SqlScriptRunner {
 
     /** Default schema. */
     private static final String schemaPublic = "PUBLIC";
+
+    /** Comparator for "rowsort" sort mode. */
+    private static final Comparator<List<?>> ROW_COMPARATOR = (r1, r2) -> {
+        int rows = r1.size();
+
+        for (int i = 0; i < rows; ++i) {
+            String s1 = String.valueOf(r1.get(i));
+            String s2 = String.valueOf(r2.get(i));
+
+            if (!s1.equals(s2))
+                return s1.compareTo(s2);
+        }
+
+        return 0;
+    };
 
     /** Test script path. */
     private final Path test;
@@ -563,19 +579,10 @@ public class SqlScriptRunner {
         /** */
         void checkResult(List<List<?>> res) {
             if (sortType == SortType.ROWSORT) {
-                res.sort((l1, l2) -> {
-                    int rows = l1.size();
+                res.sort(ROW_COMPARATOR);
 
-                    for (int i = 0; i < rows; ++i) {
-                        String s1 = String.valueOf(l1.get(i));
-                        String s2 = String.valueOf(l2.get(i));
-
-                        if (!s1.equals(s2))
-                            return s1.compareTo(s2);
-                    }
-
-                    return 0;
-                });
+                if (expectedRes != null)
+                    expectedRes.sort(ROW_COMPARATOR);
             }
 
             if (expectedHash != null)

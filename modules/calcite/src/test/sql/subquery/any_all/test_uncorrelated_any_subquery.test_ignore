@@ -12,15 +12,15 @@ statement ok
 INSERT INTO integers VALUES (1), (2), (3), (NULL)
 
 # uncorrelated ANY
-query I
-SELECT i FROM integers WHERE i <= ANY(SELECT i FROM integers) ORDER BY i;
+query I rowsort
+SELECT i FROM integers WHERE i <= ANY(SELECT i FROM integers);
 ----
 1
 2
 3
 
-query I
-SELECT i FROM integers WHERE i > ANY(SELECT i FROM integers) ORDER BY i;
+query I rowsort
+SELECT i FROM integers WHERE i > ANY(SELECT i FROM integers);
 ----
 2
 3
@@ -57,8 +57,8 @@ NULL	NULL
 2	NULL
 3	NULL
 
-query I
-SELECT i FROM integers WHERE i = ANY(SELECT i FROM integers) ORDER BY i
+query I rowsort
+SELECT i FROM integers WHERE i = ANY(SELECT i FROM integers)
 ----
 1
 2
