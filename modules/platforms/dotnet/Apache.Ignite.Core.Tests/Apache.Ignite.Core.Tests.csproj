@@ -28,10 +28,18 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.5" />
     <PackageReference Include="NLog" Version="4.3.7" />
-    <PackageReference Include="NUnit.Runners" Version="2.6.3" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj" />
+
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ServiceProcess" />
   </ItemGroup>
 
   <ItemGroup>

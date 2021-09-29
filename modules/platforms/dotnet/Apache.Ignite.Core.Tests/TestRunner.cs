@@ -15,7 +15,6 @@
 * limitations under the License.
 */
 
-#if (!NETCOREAPP)
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -28,7 +27,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
-    using NUnit.ConsoleRunner;
 
     /// <summary>
     /// Console test runner.
@@ -98,7 +96,7 @@ namespace Apache.Ignite.Core.Tests
                 Assembly.GetAssembly(testClass).Location
             };
 
-            return Runner.Main(args);
+            throw new Exception("TODO" + args);
         }
 
         /// <summary>
@@ -114,7 +112,7 @@ namespace Apache.Ignite.Core.Tests
                 Assembly.GetAssembly(typeof(TestRunner)).Location
             };
 
-            return Runner.Main(args.ToArray());
+            throw new Exception("TODO" + args);
         }
 
         /// <summary>
@@ -129,25 +127,7 @@ namespace Apache.Ignite.Core.Tests
                 Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
             };
 
-            return Runner.Main(args);
+            throw new Exception("TODO" + args);
         }
     }
 }
-#else
-namespace Apache.Ignite.Core.Tests
-{
-    /// <summary>
-    /// Test runner.
-    /// </summary>
-    internal static class TestRunner
-    {
-        /// <summary>
-        /// Console entry point.
-        /// </summary>
-        private static void Main()
-        {
-            new IgniteStartStopTest().TestStartDefault();
-        }
-    }
-}
-#endif
