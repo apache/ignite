@@ -35,6 +35,7 @@
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj" />
     <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Log4Net\Apache.Ignite.Log4Net.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll2\Apache.Ignite.Core.Tests.TestDll2.csproj" >
       <Aliases>TestDll2</Aliases>
