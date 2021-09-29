@@ -44,22 +44,13 @@ public interface CacheQueryReducer<T> {
      * @param nodeId Node ID that sent this page.
      * @param data Page data rows.
      * @param last Whether this page is last for specified {@code nodeId}.
-     * @return {@code true} if this page is final page for query and no more pages are waited, otherwise {@code false}.
      */
-    public boolean onPage(UUID nodeId, Collection<T> data, boolean last);
+    public void onPage(UUID nodeId, Collection<T> data, boolean last);
 
     /**
-     * Callback in case of page with error.
+     * Callback in case of receiving page with error.
+     *
+     * @param err Received error
      */
-    public void onError();
-
-    /**
-     * Callback that invokes after a query future is done.
-     */
-    public void onFinish();
-
-    /**
-     * Cancel cache query and stop reduce pages.
-     */
-    public void cancel();
+    public void onError(Throwable err);
 }

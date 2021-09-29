@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -70,9 +68,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     private boolean limitDisabled;
 
-    /** Set of received keys used to deduplicate query result set. */
-    private final Collection<K> keys;
-
     /** */
     private int cnt;
 
@@ -85,13 +80,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected boolean loc;
 
-    /** Lock on all future operations. */
-    protected final Object lock = new Object();
-
     /** */
     protected GridCacheQueryFutureAdapter() {
         qry = null;
-        keys = null;
     }
 
     /**
@@ -122,8 +113,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             cctx.time().addTimeoutObject(this);
         }
-
-        keys = qry.query().enableDedup() ? new HashSet<K>() : null;
     }
 
     /**
@@ -204,26 +193,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @param col Query data collection.
-     * @return If dedup flag is {@code true} deduplicated collection (considering keys), otherwise passed in collection
-     * without any modifications.
-     */
-    private Collection<?> dedupIfRequired(Collection<?> col) {
-        if (!qry.query().enableDedup())
-            return col;
-
-        Collection<Object> dedupCol = new ArrayList<>(col.size());
-
-        synchronized (lock) {
-            for (Object o : col)
-                if (!(o instanceof Map.Entry) || keys.add(((Map.Entry<K, V>)o).getKey()))
-                    dedupCol.add(o);
-        }
-
-        return dedupCol;
-    }
-
-    /**
      * Entrypoint for handling query result page from remote node.
      *
      * @param nodeId Sender node.
@@ -243,28 +212,22 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 "finished", lastPage, false));
 
         try {
-            if (err != null)
-                synchronized (lock) {
-                    reducer().onError();
-
-                    if (err instanceof IgniteCheckedException)
-                        onDone(err);
-                    else
-                        onDone(new IgniteCheckedException(nodeId != null ?
-                            S.toString("Failed to execute query on node",
-                                "query", qry, true,
-                                "nodeId", nodeId, false) :
-                            S.toString("Failed to execute query locally",
-                                "query", qry, true),
-                            err));
-
-                    lock.notifyAll();
+            if (err != null) {
+                if (!(err instanceof IgniteCheckedException)) {
+                    err = new IgniteCheckedException(nodeId != null ?
+                        S.toString("Failed to execute query on node",
+                            "query", qry, true,
+                            "nodeId", nodeId, false) :
+                        S.toString("Failed to execute query locally",
+                            "query", qry, true),
+                        err);
                 }
+
+                reducer().onError(err);
+            }
             else {
                 if (data == null)
                     data = Collections.emptyList();
-
-                data = dedupIfRequired(data);
 
                 if (qry.query().type() == GridCacheQueryType.TEXT) {
                     ArrayList unwrapped = new ArrayList();
@@ -289,37 +252,17 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 } else
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
-                synchronized (lock) {
-                    boolean lastPageRcvd = reducer().onPage(nodeId, (Collection<R>) data, lastPage);
+                reducer().onPage(nodeId, (Collection<R>) data, lastPage);
 
-                    if (lastPageRcvd) {
-                        onDone(/* data */);
-
-                        clear();
-                    }
-
-                    lock.notifyAll();
-                }
+                if (isDone())
+                    clear();
             }
         }
         catch (Throwable e) {
-            onPageError(e);
+            reducer().onError(e);
 
             if (e instanceof Error)
                 throw (Error)e;
-        }
-    }
-
-    /**
-     * @param e Error.
-     */
-    private void onPageError(Throwable e) {
-        synchronized (lock) {
-            reducer().onError();
-
-            onDone(e);
-
-            lock.notifyAll();
         }
     }
 
@@ -328,12 +271,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         boolean done = super.onDone(res, err);
 
         cctx.time().removeTimeoutObject(this);
-
-        // Must release the latch after onDone() in order for a waiting thread to see an exception, if any.
-        CacheQueryReducer<?> reducer = reducer();
-
-        if (reducer != null)
-            reducer.onFinish();
 
         return done;
     }

@@ -53,7 +53,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         run = new LocalQueryRunnable();
 
-        reducer = new LocalCacheQueryReducer<>(qry.query(), lock, endTime());
+        reducer = new LocalCacheQueryReducer<>(this);
     }
 
     /**

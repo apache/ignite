@@ -18,59 +18,76 @@
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryReducer;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
+import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Simple reducer for local queries. */
 public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
-    /** Stream of local pages. */
-    private final NodePageStream<R> pageStream;
+    /** Iterator provides access to result data. Local query returns all data in single page. */
+    private volatile Iterator<R> page;
 
     /** */
-    private NodePage<R> page;
+    private final GridCacheLocalQueryFuture<?, ?, R> fut;
+
+    /** Guards page. */
+    private final Object pagesLock = new Object();
 
     /** */
-    public LocalCacheQueryReducer(GridCacheQueryAdapter qry, Object queueLock, long timeoutTime) {
-        pageStream = new NodePageStream<>(qry, queueLock, timeoutTime, null, (ns, all) -> {});
+    public LocalCacheQueryReducer(GridCacheLocalQueryFuture<?, ?, R> fut) {
+        this.fut = fut;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() throws IgniteCheckedException {
-        if (page == null)
-            page = pageStream.nextPage();
+        Iterator<R> p = page;
+
+        if (p != null)
+            return p.hasNext();
+
+        while (page == null) {
+            long timeout = fut.query().query().timeout();
+
+            long waitTime = timeout == 0 ? Long.MAX_VALUE : fut.endTime() - U.currentTimeMillis();
+
+            if (waitTime <= 0)
+                return false;
+
+            synchronized (pagesLock) {
+                try {
+                    if (page == null)
+                        pagesLock.wait(waitTime);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    throw new IgniteCheckedException("Query was interrupted: " + fut.query().query(), e);
+                }
+            }
+        }
 
         return page.hasNext();
     }
 
     /** {@inheritDoc} */
     @Override public R next() throws IgniteCheckedException {
-        R o = page.next();
-
-        if (!page.hasNext())
-            page = null;
-
-        return o;
+        return page.next();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onPage(UUID nodeId, Collection<R> data, boolean last) {
-        return pageStream.addPage(nodeId, data, last);
+    @Override public void onPage(UUID nodeId, Collection<R> data, boolean last) {
+        synchronized (pagesLock) {
+            page = data.iterator();
+
+            pagesLock.notifyAll();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void onFinish() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        page = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError() {
-        pageStream.onError();
+    @Override public void onError(Throwable err) {
+        fut.onDone(err);
     }
 }

@@ -35,13 +35,12 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
      * @param fut Cache query future.
      * @param reqId Cache query request ID.
      * @param pageRequester Provides a functionality to request pages from remote nodes.
-     * @param queueLock Lock object that is shared between GridCacheQueryFuture and reducer.
      * @param nodes Collection of nodes this query applies to.
      */
     public UnsortedDistributedCacheQueryReducer(
         GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, CacheQueryPageRequester pageRequester,
-        Object queueLock, Collection<ClusterNode> nodes) {
-        super(fut, reqId, pageRequester, queueLock, nodes);
+        Collection<ClusterNode> nodes) {
+        super(fut, reqId, pageRequester, nodes);
     }
 
     /** {@inheritDoc} */
@@ -49,7 +48,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
         if (page != null && page.hasNext())
             return true;
 
-        Iterator<NodePageStream<R>> it = streams.values().iterator();
+        Iterator<NodePageStream> it = streams.values().iterator();
 
         while (it.hasNext()) {
             page = it.next().nextPage();

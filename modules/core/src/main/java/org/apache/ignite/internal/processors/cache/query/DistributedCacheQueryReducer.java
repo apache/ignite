@@ -37,4 +37,9 @@ public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
      * Blocks current thread until reducer will be ready to return the very first result item for the query.
      */
     public void awaitInitialization() throws IgniteInterruptedCheckedException;
+
+    /**
+     * Cancel cache query and stop reduce pages.
+     */
+    public void cancel();
 }

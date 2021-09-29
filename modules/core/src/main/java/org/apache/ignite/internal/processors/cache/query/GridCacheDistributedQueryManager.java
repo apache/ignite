@@ -176,24 +176,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * Removes query future from futures map.
      *
      * @param reqId Request id.
-     * @param fut Query future.
-     */
-    protected void addQueryFuture(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut) {
-        futs.put(reqId, fut);
-
-        if (cctx.kernalContext().clientDisconnected()) {
-            IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
-                cctx.kernalContext().cluster().clientReconnectFuture(),
-                "Query was cancelled, client node disconnected.");
-
-            fut.onDone(err);
-        }
-    }
-
-    /**
-     * Removes query future from futures map.
-     *
-     * @param reqId Request id.
      */
     protected void removeQueryFuture(long reqId) {
         futs.remove(reqId);
@@ -538,15 +520,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
+        // Cache query future completes within reducer.
         final GridCacheDistributedQueryFuture fut = fields ?
             new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry) :
             new GridCacheDistributedQueryFuture(cctx, reqId, qry);
 
+        DistributedCacheQueryReducer<?> reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
+
+        fut.reducer(reducer);
+
         try {
-            DistributedCacheQueryReducer reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
-
-            fut.reducer(reducer);
-
             fut.qry.query().validate();
 
             final Object topic = topic(cctx.nodeId(), reqId);
@@ -559,12 +542,20 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             });
 
-            addQueryFuture(reqId, fut);
+            futs.put(reqId, fut);
+
+            if (cctx.kernalContext().clientDisconnected()) {
+                IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
+                    cctx.kernalContext().cluster().clientReconnectFuture(),
+                    "Query was cancelled, client node disconnected.");
+
+                reducer.onError(err);
+            }
 
             pageRequester.initRequestPages(reqId, fut, nodes);
         }
         catch (IgniteCheckedException e) {
-            fut.onDone(e);
+            reducer.onError(e);
         }
 
         return fut;
@@ -730,9 +721,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
 
         if (qryType == TEXT)
-            return new MergeSortDistributedCacheQueryReducer(fut, reqId, pageRequester, fut.lock, nodes, textResultComparator);
+            return new MergeSortDistributedCacheQueryReducer(fut, reqId, pageRequester, nodes, textResultComparator);
         else
-            return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, fut.lock, nodes);
+            return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, nodes);
     }
 
     /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */

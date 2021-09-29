@@ -44,9 +44,9 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
      */
     public MergeSortDistributedCacheQueryReducer(
         GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, CacheQueryPageRequester pageRequester,
-        Object queueLock, Collection<ClusterNode> nodes, Comparator<R> rowCmp
+        Collection<ClusterNode> nodes, Comparator<R> rowCmp
     ) {
-        super(fut, reqId, pageRequester, queueLock, nodes);
+        super(fut, reqId, pageRequester, nodes);
 
         // Compares head pages from all nodes to get the lowest value at the moment.
         Comparator<NodePage<R>> pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());

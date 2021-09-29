@@ -19,14 +19,18 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
@@ -39,13 +43,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCacheQueryReducer<R> {
     /** Collection of streams that don't deliver all pages yet. */
-    private final Map<UUID, NodePageStream<R>> remoteStreams;
+    private final Map<UUID, NodePageStream> remoteStreams;
 
     /** Set of nodes that deliver their first page. */
     private Set<UUID> rcvdFirstPage = new HashSet<>();
 
     /** Collection of streams. */
-    protected final Map<UUID, NodePageStream<R>> streams;
+    protected final Map<UUID, NodePageStream> streams;
 
     /** Query request ID. */
     private final long reqId;
@@ -61,29 +65,29 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
      */
     private final CountDownLatch firstPageLatch = new CountDownLatch(1);
 
-    /** Guards {@link #rcvdFirstPage}. */
-    private final Object pagesLock;
+    /**
+     * This lock guards:
+     * 1. Order of invocation query future {@code onDone} and while loop over {@link #streams} queues.
+     * 2. Consistency of local and remote pages.
+     */
+    private final Object pagesLock = new Object();
 
     /**
      * @param fut Cache query future.
      * @param reqId Cache query request ID.
      * @param pageRequester Provides a functionality to request pages from remote nodes.
-     * @param queueLock Lock object that is shared between GridCacheQueryFuture and reducer.
      * @param nodes Collection of nodes this query applies to.
      */
     protected AbstractDistributedCacheQueryReducer(GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId,
-        CacheQueryPageRequester pageRequester, Object queueLock, Collection<ClusterNode> nodes) {
+        CacheQueryPageRequester pageRequester, Collection<ClusterNode> nodes) {
         this.fut = fut;
         this.reqId = reqId;
         this.pageRequester = pageRequester;
 
-        pagesLock = queueLock;
-
         streams = new HashMap<>(nodes.size());
 
         for (ClusterNode node: nodes) {
-            NodePageStream<R> s = new NodePageStream<>(
-                fut.query().query(), queueLock, fut.endTime(), node.id(), this::requestPages);
+            NodePageStream s = new NodePageStream(node.id());
 
             streams.put(node.id(), s);
         }
@@ -91,8 +95,21 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
         remoteStreams = new ConcurrentHashMap<>(streams);
     }
 
-    /** {@inheritDoc} */
-    @Override public void onFinish() {
+    /**
+     * Releases owned resources.
+     *
+     * @param complete Whether to complete future.
+     * @param err Error.
+     */
+    private void release(boolean complete, Throwable err) {
+        if (complete) {
+            if (err != null)
+                fut.onDone(err);
+            else
+                fut.onDone();
+        }
+
+        // Must release the latch after onDone() in order for a waiting thread to see an exception, if any.
         firstPageLatch.countDown();
     }
 
@@ -119,16 +136,22 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     }
 
     /** {@inheritDoc} */
-    @Override public void onError() {
-        for (NodePageStream<R> s: remoteStreams.values())
-            s.onError();
+    @Override public void onError(Throwable err) {
+        synchronized (pagesLock) {
+            for (NodePageStream s: remoteStreams.values())
+                s.onError();
+
+            release(true, err);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+        release(false, null);
+
         List<UUID> nodes = new ArrayList<>();
 
-        for (NodePageStream<R> s: remoteStreams.values()) {
+        for (NodePageStream s: remoteStreams.values()) {
             s.cancel();
 
             nodes.add(s.nodeId());
@@ -140,32 +163,189 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onPage(UUID nodeId, Collection<R> data, boolean last) {
-        assert Thread.holdsLock(pagesLock);
+    @Override public void onPage(UUID nodeId, Collection<R> data, boolean last) {
+        synchronized (pagesLock) {
+            if (rcvdFirstPage != null) {
+                rcvdFirstPage.add(nodeId);
 
-        if (rcvdFirstPage != null) {
-            rcvdFirstPage.add(nodeId);
+                if (rcvdFirstPage.size() == streams.size()) {
+                    onFirstItemReady();
 
-            if (rcvdFirstPage.size() == streams.size()) {
-                onFirstItemReady();
-
-                rcvdFirstPage.clear();
-                rcvdFirstPage = null;
+                    rcvdFirstPage.clear();
+                    rcvdFirstPage = null;
+                }
             }
+
+            NodePageStream stream = remoteStreams.get(nodeId);
+
+            if (stream == null)
+                return;
+
+            stream.addPage(nodeId, data, last);
+
+            if (last && (remoteStreams.remove(nodeId) != null) && remoteStreams.isEmpty())
+                release(true, null);
+
+            pagesLock.notifyAll();
         }
-
-        NodePageStream<R> stream = remoteStreams.get(nodeId);
-
-        if (stream == null)
-            return remoteStreams.isEmpty();
-
-        stream.addPage(nodeId, data, last);
-
-        return last && (remoteStreams.remove(nodeId) != null) && remoteStreams.isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public boolean remoteQueryNode(UUID nodeId) {
         return remoteStreams.containsKey(nodeId);
+    }
+
+    /**
+     * This class provides an interface {@link #nextPage()} that returns a {@link NodePage} of cache query result
+     * from single node. Pages are stored in a queue, after polling a queue it tries to load a new page.
+     */
+    protected class NodePageStream {
+        /** Queue of data of results pages. */
+        private final Queue<NodePage<R>> queue = new LinkedList<>();
+
+        /** Node ID to stream pages */
+        private final UUID nodeId;
+
+        /**
+         * List of nodes that respons with cache query result pages. This collection should be cleaned before sending new
+         * cache query request.
+         */
+        private volatile boolean rcvd;
+
+        /** Flags shows whether there are no available pages on query nodes. */
+        private boolean noMorePages;
+
+        /** */
+        NodePageStream(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        /**
+         * Returns query result page. Load new pages after polling a queue.
+         * Wait for new page if currently there is no available any.
+         *
+         * @return Query result page.
+         * @throws IgniteCheckedException In case of error.
+         */
+        NodePage<R> nextPage() throws IgniteCheckedException {
+            NodePage<R> page = null;
+
+            while (page == null || !page.hasNext()) {
+                // Check current page iterator.
+                synchronized (pagesLock) {
+                    page = queue.poll();
+
+                    // If all pages are ready, then skip loading new pages.
+                    if (noMorePages && queue.peek() == null) {
+                        if (page == null)
+                            page = new NodePage<>(nodeId, Collections.emptyList());
+
+                        return page;
+                    }
+                }
+
+                // Trigger loads next pages after polling queue.
+                loadPage();
+
+                // Wait for a page after triggering page loading.
+                if (page == null) {
+                    long timeout = fut.query().query().timeout();
+
+                    long waitTime = timeout == 0 ? Long.MAX_VALUE : fut.endTime() - U.currentTimeMillis();
+
+                    if (waitTime <= 0) {
+                        page = new NodePage<>(nodeId, Collections.emptyList());
+
+                        return page;
+                    }
+
+                    synchronized (pagesLock) {
+                        try {
+                            if (queue.isEmpty() && !noMorePages)
+                                pagesLock.wait(waitTime);
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
+                            throw new IgniteCheckedException("Query was interrupted: " + fut.query().query(), e);
+                        }
+                    }
+                }
+            }
+
+            if (page == null)
+                page = new NodePage<>(nodeId, Collections.emptyList());
+
+            return page;
+        }
+
+        /**
+         * @return Node ID.
+         */
+        UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * Add new query result page of data.
+         */
+        boolean addPage(UUID nodeId, Collection<R> data, boolean last) {
+            assert Thread.holdsLock(pagesLock);
+
+            queue.add(new NodePage<>(nodeId, data));
+
+            if (nodeId != null)
+                rcvd = true;
+
+            if (last)
+                noMorePages = true;
+
+            return last;
+        }
+
+        /** Callback on receiving page error. */
+        void onError() {
+            synchronized (pagesLock) {
+                queue.add(new NodePage<>(nodeId, Collections.emptyList()));
+
+                noMorePages = true;
+            }
+        }
+
+        /** Clear structures on cancel. */
+        void cancel() {
+            synchronized (pagesLock) {
+                rcvd = false;
+                queue.clear();
+
+                noMorePages = true;
+            }
+        }
+
+        /**
+         * Trigger load new pages from all nodes that still have data.
+         */
+        private void loadPage() {
+            Collection<UUID> nodes = null;
+
+            synchronized (pagesLock) {
+                if (noMorePages)
+                    return;
+
+                // Loads only queue is empty to avoid memory consumption on additional pages.
+                if (!queue.isEmpty())
+                    return;
+
+                // Rcvd has to contain all nodes from subgrid, otherwise there are requested pages. So let's wait it first.
+                if (rcvd) {
+                    rcvd = false;
+
+                    nodes = Collections.singletonList(nodeId);
+                }
+            }
+
+            if (nodes != null)
+                requestPages(nodes, false);
+        }
     }
 }
