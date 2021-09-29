@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.metric.Metric;
@@ -1432,17 +1434,23 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetricImpl m = metric("GetTime");
+        HistogramMetricImpl getTime = metric("GetTime");
+        HistogramMetricImpl getAllTime = metric("GetAllTime");
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
-
-        cache.put(1, 1);
-
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(getTime.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(getAllTime.value()).allMatch(v -> v == 0));
 
         cache.get(1);
+        cache.getAsync(1).get();
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+        assertEquals(2, Arrays.stream(getTime.value()).sum());
+        assertEquals(0, Arrays.stream(getAllTime.value()).sum());
+
+        cache.getAll(Collections.singleton(1));
+        cache.getAllAsync(Collections.singleton(1)).get();
+
+        assertEquals(2, Arrays.stream(getTime.value()).sum());
+        assertEquals(2, Arrays.stream(getAllTime.value()).sum());
     }
 
     /** */
@@ -1450,13 +1458,23 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testPutTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetricImpl m = metric("PutTime");
+        HistogramMetricImpl putTime = metric("PutTime");
+        HistogramMetricImpl putAllTime = metric("PutAllTime");
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(putTime.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(putAllTime.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
+        cache.putAsync(2, 2).get();
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+        assertEquals(2, Arrays.stream(putTime.value()).sum());
+        assertEquals(0, Arrays.stream(putAllTime.value()).sum());
+
+        cache.putAll(F.asMap(3, 3));
+        cache.putAllAsync(F.asMap(4, 4)).get();
+
+        assertEquals(2, Arrays.stream(putTime.value()).sum());
+        assertEquals(2, Arrays.stream(putAllTime.value()).sum());
     }
 
     /** */
@@ -1464,17 +1482,29 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testRemoveTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetricImpl m = metric("RemoveTime");
+        HistogramMetricImpl removeTime = metric("RemoveTime");
+        HistogramMetricImpl removeAllTime = metric("RemoveAllTime");
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(removeTime.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(removeAllTime.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
+        cache.put(2, 2);
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertEquals(0, Arrays.stream(removeTime.value()).sum());
+        assertEquals(0, Arrays.stream(removeAllTime.value()).sum());
 
         cache.remove(1);
+        cache.removeAsync(2).get();
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+        assertEquals(2, Arrays.stream(removeTime.value()).sum());
+        assertEquals(0, Arrays.stream(removeAllTime.value()).sum());
+
+        cache.removeAll(Collections.singleton(3));
+        cache.removeAllAsync(Collections.singleton(4)).get();
+
+        assertEquals(2, Arrays.stream(removeTime.value()).sum());
+        assertEquals(2, Arrays.stream(removeAllTime.value()).sum());
     }
 
     /**
