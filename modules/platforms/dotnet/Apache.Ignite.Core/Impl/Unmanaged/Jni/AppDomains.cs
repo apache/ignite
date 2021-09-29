@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         [ComVisible(true)]
         public interface _AppDomain
         {
-            object CreateInstance(string assemblyName, string typeName);
+            // No-op.
         }
 
         private static class NativeMethods
