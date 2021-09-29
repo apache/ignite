@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -105,8 +104,7 @@ public class InlineRecommender {
                     break;
             }
 
-            String cols = def.indexKeyDefinitions().stream()
-                .map(IndexKeyDefinition::name)
+            String cols = def.indexKeyDefinitions().keySet().stream()
                 .collect(Collectors.joining(", ", "(", ")"));
 
             String type = def.primary() ? "PRIMARY KEY" : def.affinity() ? "AFFINITY KEY (implicit)" : "SECONDARY";

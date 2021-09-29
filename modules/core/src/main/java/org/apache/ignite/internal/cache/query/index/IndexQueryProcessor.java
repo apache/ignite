@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
@@ -195,10 +193,8 @@ public class IndexQueryProcessor {
 
         int matches = 0;
 
-        for (int i = 0; i < idxDef.indexKeyDefinitions().size(); i++) {
-            String fld = idxDef.indexKeyDefinitions().get(i).name();
-
-            if (!criteriaFlds.contains(fld))
+        for (String idxFldName: idxDef.indexKeyDefinitions().keySet()) {
+            if (!criteriaFlds.contains(idxFldName))
                 return false;
 
             if (++matches == critLen)
@@ -226,13 +222,9 @@ public class IndexQueryProcessor {
     /** Merges multiple criteria for the same field into single criterion. */
     private Map<String, RangeIndexQueryCriterion> mergeIndexQueryCriteria(InlineIndexImpl idx, SortedIndexDefinition idxDef,
         IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
-        Map<String, IndexKeyDefinition> idxFlds = new HashMap<>();
-
-        for (IndexKeyDefinition d: idxDef.indexKeyDefinitions())
-            idxFlds.put(d.name(), d);
-
         Map<String, RangeIndexQueryCriterion> mergedCriteria = new HashMap<>();
 
+        Map<String, IndexKeyDefinition> idxFlds = idxDef.indexKeyDefinitions();
         IndexKeyTypeSettings keyTypeSettings = idx.segment(0).rowHandler().indexKeyTypeSettings();
         CacheObjectContext coctx = idx.segment(0).cacheGroupContext().cacheObjectContext();
 
@@ -241,10 +233,10 @@ public class IndexQueryProcessor {
         for (IndexQueryCriterion c: idxQryDesc.criteria()) {
             RangeIndexQueryCriterion crit = (RangeIndexQueryCriterion) c;
 
-            String fld = crit.field();
-            String normFld = QueryUtils.normalizeObjectName(crit.field(), false);
+            String fldName = idxFlds.containsKey(crit.field()) ? crit.field()
+                : QueryUtils.normalizeObjectName(crit.field(), false);
 
-            IndexKeyDefinition keyDef = idxFlds.getOrDefault(fld, idxFlds.get(normFld));
+            IndexKeyDefinition keyDef = idxFlds.get(fldName);
 
             if (keyDef == null)
                 throw failIndexQueryCriteria(idxDef, idxQryDesc);
@@ -258,8 +250,8 @@ public class IndexQueryProcessor {
             boolean lowNull = crit.lowerNull();
             boolean upNull = crit.upperNull();
 
-            if (mergedCriteria.containsKey(keyDef.name())) {
-                RangeIndexQueryCriterion prev = mergedCriteria.get(keyDef.name());
+            if (mergedCriteria.containsKey(fldName)) {
+                RangeIndexQueryCriterion prev = mergedCriteria.get(fldName);
 
                 int lowCmp = 0;
 
@@ -280,13 +272,13 @@ public class IndexQueryProcessor {
                 }
             }
 
-            RangeIndexQueryCriterion idxKeyCrit = new RangeIndexQueryCriterion(keyDef.name(), l, u);
+            RangeIndexQueryCriterion idxKeyCrit = new RangeIndexQueryCriterion(fldName, l, u);
             idxKeyCrit.lowerIncl(lowIncl);
             idxKeyCrit.upperIncl(upIncl);
             idxKeyCrit.lowerNull(lowNull);
             idxKeyCrit.upperNull(upNull);
 
-            mergedCriteria.put(keyDef.name(), idxKeyCrit);
+            mergedCriteria.put(fldName, idxKeyCrit);
         }
 
         return mergedCriteria;
@@ -302,21 +294,21 @@ public class IndexQueryProcessor {
         boolean lowerAllNulls = true;
         boolean upperAllNulls = true;
 
-        IndexRangeQuery qry = new IndexRangeQuery();
+        IndexRangeQuery qry = new IndexRangeQuery(criteria.size());
 
         // Checks that users criteria matches a prefix subset of index fields.
-        for (int i = 0; i < idxDef.indexKeyDefinitions().size(); i++) {
-            IndexKeyDefinition d = idxDef.indexKeyDefinitions().get(i);
+        int i = 0;
 
-            RangeIndexQueryCriterion criterion = criteria.remove(d.name());
+        for (Map.Entry<String, IndexKeyDefinition> keyDef: idxDef.indexKeyDefinitions().entrySet()) {
+            RangeIndexQueryCriterion criterion = criteria.remove(keyDef.getKey());
 
             if (criterion == null)
                 throw failIndexQueryCriteria(idxDef, idxQryDesc);
 
-            if (d.order().sortOrder() == DESC)
+            if (keyDef.getValue().order().sortOrder() == DESC)
                 criterion = criterion.swap();
 
-            qry.criteria.add(criterion);
+            qry.criteria[i] = criterion;
 
             IndexKey l = (IndexKey) criterion.lower();
             IndexKey u = (IndexKey) criterion.upper();
@@ -328,7 +320,7 @@ public class IndexQueryProcessor {
                 upperAllNulls = false;
 
             lowerBounds[i] = l;
-            upperBounds[i] = u;
+            upperBounds[i++] = u;
 
             if (criteria.isEmpty())
                 break;
@@ -367,9 +359,7 @@ public class IndexQueryProcessor {
      * @return Result cursor over segment.
      */
     private GridCursor<IndexRow> querySortedIndex(GridCacheContext<?, ?> cctx, InlineIndexImpl idx, IndexQueryDesc idxQryDesc,
-        IndexQueryContext qryCtx)
-        throws IgniteCheckedException {
-
+        IndexQueryContext qryCtx) throws IgniteCheckedException {
         SortedIndexDefinition idxDef = (SortedIndexDefinition) idxProc.indexDefinition(idx.id());
 
         Map<String, RangeIndexQueryCriterion> merged = mergeIndexQueryCriteria(idx, idxDef, idxQryDesc);
@@ -441,10 +431,10 @@ public class IndexQueryProcessor {
                 if (low == null && high == null)
                     return true;  // Unbounded search, include all.
 
-                int criteriaKeysCnt = qry.criteria.size();
+                int criteriaKeysCnt = qry.criteria.length;
 
                 for (int i = 0; i < criteriaKeysCnt; i++) {
-                    RangeIndexQueryCriterion c = qry.criteria.get(i);
+                    RangeIndexQueryCriterion c = qry.criteria[i];
 
                     boolean descOrder = hnd.indexKeyDefinitions().get(i).order().sortOrder() == DESC;
 
@@ -544,7 +534,12 @@ public class IndexQueryProcessor {
     /** */
     private static class IndexRangeQuery {
         /** Ordered list of criteria. Order matches index fields order. */
-        private final List<RangeIndexQueryCriterion> criteria = new ArrayList<>();
+        private final RangeIndexQueryCriterion[] criteria;
+
+        /** */
+        private IndexRangeQuery(int critSize) {
+            criteria = new RangeIndexQueryCriterion[critSize];
+        }
 
         /** */
         private IndexRow lower;
