@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.Do
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apache.Ignite.NLog\Apache.Ignite.NLog.csproj", "{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.AspNet", "Apache.Ignite.AspNet\Apache.Ignite.AspNet.csproj", "{13EA96FC-CC83-4164-A7C0-4F30ED797460}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13EA96FC-CC83-4164-A7C0-4F30ED797460}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13EA96FC-CC83-4164-A7C0-4F30ED797460}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13EA96FC-CC83-4164-A7C0-4F30ED797460}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13EA96FC-CC83-4164-A7C0-4F30ED797460}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
