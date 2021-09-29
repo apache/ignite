@@ -37,7 +37,7 @@
     <dependencies>
         <!-- Ignite dependencies -->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>

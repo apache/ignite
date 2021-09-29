@@ -36,14 +36,14 @@
 
     <properties>
         <osgi.export.package>
-            org.apache.ignite.internal.processors.rest.protocols.http.jetty,
+            ${project.groupId}.internal.processors.rest.protocols.http.jetty,
             {local-packages}
         </osgi.export.package>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -132,7 +132,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -140,7 +140,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
