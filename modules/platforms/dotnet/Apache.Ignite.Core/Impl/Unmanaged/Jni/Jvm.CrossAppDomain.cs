@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             return o.GetType().InvokeMember(
                 name,
-                BindingFlags.Instance | BindingFlags.Public,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.InvokeMethod,
                 null,
                 o,
                 args,
