@@ -53,7 +53,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.raft.jraft.core.State.STATE_ERROR;
@@ -128,13 +127,13 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
     /** */
     @BeforeEach
-    void before(TestInfo testInfo) {
+    void before() {
         LOG.info(">>>>>>>>>>>>>>> Start test method: {}", testInfo.getTestMethod().orElseThrow().getName());
     }
 
     /** */
     @AfterEach
-    @Override protected void after(TestInfo testInfo) throws Exception {
+    @Override protected void after() throws Exception {
         LOG.info("Start client shutdown");
 
         Iterator<RaftGroupService> iterClients = clients.iterator();
@@ -159,7 +158,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
             server.stop();
         }
 
-        super.after(testInfo);
+        super.after();
 
         LOG.info(">>>>>>>>>>>>>>> End test method: {}", testInfo.getTestMethod().orElseThrow().getName());
     }
@@ -171,7 +170,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     private JRaftServerImpl startServer(int idx, Consumer<RaftServer> clo) {
         var addr = new NetworkAddress(getLocalAddress(), PORT);
 
-        ClusterService service = clusterService("server" + idx, PORT + idx, List.of(addr), true);
+        ClusterService service = clusterService(PORT + idx, List.of(addr), true);
 
         JRaftServerImpl server = new JRaftServerImpl(service, dataPath) {
             @Override public void stop() {
@@ -202,8 +201,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     private RaftGroupService startClient(String groupId) throws Exception {
         var addr = new NetworkAddress(getLocalAddress(), PORT);
 
-        ClusterService clientNode = clusterService(
-            "client_" + groupId + "_", CLIENT_PORT + clients.size(), List.of(addr), true);
+        ClusterService clientNode = clusterService(CLIENT_PORT + clients.size(), List.of(addr), true);
 
         RaftGroupService client = RaftGroupServiceImpl.start(groupId, clientNode, FACTORY, 10_000,
             List.of(new Peer(addr)), false, 200).get(3, TimeUnit.SECONDS);

@@ -42,6 +42,7 @@ import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -153,13 +154,14 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
      * Tests that a joining raft node successfully restores a snapshot.
      *
      * @param testData Test parameters.
+     * @param testInfo Test info.
      * @throws Exception If failed.
      */
     @ParameterizedTest
     @MethodSource("testSnapshotData")
-    public void testSnapshot(TestData testData) throws Exception {
+    public void testSnapshot(TestData testData, TestInfo testInfo) throws Exception {
         // Set up a raft group service
-        RaftGroupService service = prepareRaftGroup();
+        RaftGroupService service = prepareRaftGroup(testInfo);
 
         beforeFollowerStop(service);
 
@@ -205,7 +207,7 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
         }
 
         // Restart the node
-        JRaftServerImpl restarted = startServer(stopIdx);
+        JRaftServerImpl restarted = startServer(testInfo, stopIdx);
 
         assertTrue(waitForTopology(cluster.get(0), servers.size(), 3_000));
 
@@ -310,11 +312,11 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
     /**
      * Creates a cluster service.
      */
-    private ClusterService clusterService(String name, int port, NetworkAddress otherPeer) {
+    private ClusterService clusterService(TestInfo testInfo, int port, NetworkAddress otherPeer) {
         var nodeFinder = new StaticNodeFinder(List.of(otherPeer));
 
         var network = ClusterServiceTestUtils.clusterService(
-            name,
+            testInfo,
             port,
             nodeFinder,
             SERIALIZATION_REGISTRY,
@@ -331,13 +333,14 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
     /**
      * Starts a raft server.
      *
+     * @param testInfo Test info.
      * @param idx Server index (affects port of the server).
      * @return Server.
      */
-    private JRaftServerImpl startServer(int idx) {
+    private JRaftServerImpl startServer(TestInfo testInfo, int idx) {
         var addr = new NetworkAddress(getLocalAddress(), PORT);
 
-        ClusterService service = clusterService("server" + idx, PORT + idx, addr);
+        ClusterService service = clusterService(testInfo, PORT + idx, addr);
 
         Path jraft = workDir.resolve("jraft" + idx);
 
@@ -367,20 +370,20 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
      *
      * @return Raft group service instance.
      */
-    private RaftGroupService prepareRaftGroup() throws Exception {
+    private RaftGroupService prepareRaftGroup(TestInfo testInfo) throws Exception {
         for (int i = 0; i < INITIAL_CONF.size(); i++)
-            startServer(i);
+            startServer(testInfo, i);
 
         assertTrue(waitForTopology(cluster.get(0), servers.size(), 3_000));
 
-        return startClient(raftGroupId(), new NetworkAddress(getLocalAddress(), PORT));
+        return startClient(testInfo, raftGroupId(), new NetworkAddress(getLocalAddress(), PORT));
     }
 
     /**
      * Starts a client with a specific address.
      */
-    private RaftGroupService startClient(String groupId, NetworkAddress addr) throws Exception {
-        ClusterService clientNode = clusterService("client_" + groupId + "_", CLIENT_PORT + clients.size(), addr);
+    private RaftGroupService startClient(TestInfo testInfo, String groupId, NetworkAddress addr) throws Exception {
+        ClusterService clientNode = clusterService(testInfo, CLIENT_PORT + clients.size(), addr);
 
         RaftGroupService client = RaftGroupServiceImpl.start(groupId, clientNode, FACTORY, 10_000,
             List.of(new Peer(addr)), false, 200).get(3, TimeUnit.SECONDS);

@@ -30,6 +30,7 @@ import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -60,13 +61,13 @@ class ITNodeRestartsTest {
      * Tests that restarting nodes get discovered in an established topology.
      */
     @Test
-    public void testRestarts() {
+    public void testRestarts(TestInfo testInfo) {
         final int initPort = 3344;
 
         var nodeFinder = new LocalPortRangeNodeFinder(initPort, initPort + 5);
 
         services = nodeFinder.findNodes().stream()
-            .map(addr -> startNetwork(addr, nodeFinder))
+            .map(addr -> startNetwork(testInfo, addr, nodeFinder))
             .collect(Collectors.toCollection(ArrayList::new)); // ensure mutability
 
         for (ClusterService service : services) {
@@ -86,11 +87,11 @@ class ITNodeRestartsTest {
         services.get(idx1).stop();
 
         LOG.info("Starting {}", addresses.get(idx0));
-        ClusterService svc0 = startNetwork(addresses.get(idx0), nodeFinder);
+        ClusterService svc0 = startNetwork(testInfo, addresses.get(idx0), nodeFinder);
         services.set(idx0, svc0);
 
         LOG.info("Starting {}", addresses.get(idx1));
-        ClusterService svc2 = startNetwork(addresses.get(idx1), nodeFinder);
+        ClusterService svc2 = startNetwork(testInfo, addresses.get(idx1), nodeFinder);
         services.set(idx1, svc2);
 
         for (ClusterService service : services) {
@@ -104,13 +105,14 @@ class ITNodeRestartsTest {
     /**
      * Creates a {@link ClusterService} using the given local address and the node finder.
      *
+     * @param testInfo Test info.
      * @param addr Node address.
      * @param nodeFinder Node finder.
      * @return Created Cluster Service.
      */
-    private ClusterService startNetwork(NetworkAddress addr, NodeFinder nodeFinder) {
+    private ClusterService startNetwork(TestInfo testInfo, NetworkAddress addr, NodeFinder nodeFinder) {
         ClusterService clusterService = ClusterServiceTestUtils.clusterService(
-            addr.toString(),
+            testInfo,
             addr.port(),
             nodeFinder,
             serializationRegistry,

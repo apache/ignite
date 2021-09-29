@@ -26,9 +26,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
-import org.apache.ignite.internal.configuration.storage.Data;
-import org.apache.ignite.internal.configuration.storage.DistributedConfigurationStorage;
-import org.apache.ignite.internal.configuration.storage.LocalConfigurationStorage;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.metastorage.server.SimpleInMemoryKeyValueStorage;
@@ -44,10 +41,12 @@ import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.apache.ignite.internal.metastorage.MetaStorageManager.APPLIED_REV;
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.waitForCondition;
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +62,7 @@ public class ITDistributedConfigurationStorageTest {
      */
     private static class Node {
         /** */
-        private final NetworkAddress addr = new NetworkAddress("localhost", 10000);
+        private final String name;
 
         /** */
         private final VaultManager vaultManager;
@@ -86,11 +85,15 @@ public class ITDistributedConfigurationStorageTest {
         /**
          * Constructor that simply creates a subset of components of this node.
          */
-        Node(Path workDir) {
+        Node(TestInfo testInfo, Path workDir) {
+            var addr = new NetworkAddress("localhost", 10000);
+
+            name = testNodeName(testInfo, addr.port());
+
             vaultManager = new VaultManager(new PersistentVaultService(workDir.resolve("vault")));
 
             clusterService = ClusterServiceTestUtils.clusterService(
-                addr.toString(),
+                testInfo,
                 addr.port(),
                 new StaticNodeFinder(List.of(addr)),
                 new MessageSerializationRegistryImpl(),
@@ -128,7 +131,7 @@ public class ITDistributedConfigurationStorageTest {
             cfgManager.start();
 
             // metastorage configuration
-            var config = String.format("{\"node\": {\"metastorageNodes\": [ \"%s\" ]}}", addr);
+            var config = String.format("{\"node\": {\"metastorageNodes\": [ \"%s\" ]}}", name);
 
             cfgManager.bootstrap(config);
 
@@ -164,8 +167,8 @@ public class ITDistributedConfigurationStorageTest {
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-15213">IGNITE-15213</a>
      */
     @Test
-    void testRestartWithPds(@WorkDirectory Path workDir) throws Exception {
-        var node = new Node(workDir);
+    void testRestartWithPds(@WorkDirectory Path workDir, TestInfo testInfo) throws Exception {
+        var node = new Node(testInfo, workDir);
 
         Map<String, Serializable> data = Map.of("foo", "bar");
 
@@ -180,7 +183,7 @@ public class ITDistributedConfigurationStorageTest {
             node.stop();
         }
 
-        var node2 = new Node(workDir);
+        var node2 = new Node(testInfo, workDir);
 
         try {
             node2.start();

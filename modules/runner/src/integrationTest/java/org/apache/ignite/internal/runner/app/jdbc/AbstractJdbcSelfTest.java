@@ -21,31 +21,22 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.jdbc.IgniteJdbcDriver;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AbstractJdbcSelfTest {
     /** URL. */
     protected static final String URL = "jdbc:ignite:thin://127.0.1.1:10800";
-
-    /** Nodes bootstrap configuration. */
-    private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-        put("node0", "{\n" +
-            "  \"node\": {\n" +
-            "    \"metastorageNodes\":[ \"node0\" ]\n" +
-            "  }\n" +
-            "}");
-    }};
 
     /** Cluster nodes. */
     protected static final List<Ignite> clusterNodes = new ArrayList<>();
@@ -56,12 +47,14 @@ public class AbstractJdbcSelfTest {
      * @param temp Temporal directory.
      */
     @BeforeAll
-    public static void beforeAll(@TempDir Path temp) {
+    public static void beforeAll(@TempDir Path temp, TestInfo testInfo) {
         IgniteJdbcDriver.register();
 
-        nodesBootstrapCfg.forEach((nodeName, configStr) ->
-            clusterNodes.add(IgnitionManager.start(nodeName, configStr, temp.resolve(nodeName)))
-        );
+        String nodeName = testNodeName(testInfo, 47500);
+
+        String configStr = "node.metastorageNodes: [ \"" + nodeName + "\" ]";
+
+        clusterNodes.add(IgnitionManager.start(nodeName, configStr, temp.resolve(nodeName)));
     }
 
     /**

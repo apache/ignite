@@ -51,11 +51,13 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.directValue;
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.waitForCondition;
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,7 +85,7 @@ public class ITDistributedConfigurationPropertiesTest {
      */
     private static class Node {
         /** */
-        private final List<NetworkAddress> metaStorageAddrs;
+        private final List<String> metaStorageNodes;
 
         /** */
         private final VaultManager vaultManager;
@@ -110,17 +112,18 @@ public class ITDistributedConfigurationPropertiesTest {
          * Constructor that simply creates a subset of components of this node.
          */
         Node(
+            TestInfo testInfo,
             Path workDir,
             NetworkAddress addr,
             List<NetworkAddress> memberAddrs,
-            List<NetworkAddress> metaStorageAddrs
+            List<String> metaStorageNodes
         ) {
-            this.metaStorageAddrs = metaStorageAddrs;
+            this.metaStorageNodes = metaStorageNodes;
 
             vaultManager = new VaultManager(new InMemoryVaultService());
 
             clusterService = ClusterServiceTestUtils.clusterService(
-                addr.toString(),
+                testInfo,
                 addr.port(),
                 new StaticNodeFinder(memberAddrs),
                 new MessageSerializationRegistryImpl(),
@@ -175,7 +178,7 @@ public class ITDistributedConfigurationPropertiesTest {
             cfgManager.start();
 
             // metastorage configuration
-            String metaStorageCfg = metaStorageAddrs.stream()
+            String metaStorageCfg = metaStorageNodes.stream()
                 .map(Object::toString)
                 .collect(joining("\", \"", "\"", "\""));
 
@@ -225,22 +228,27 @@ public class ITDistributedConfigurationPropertiesTest {
 
     /** */
     @BeforeEach
-    void setUp(@WorkDirectory Path workDir) throws Exception {
+    void setUp(@WorkDirectory Path workDir, TestInfo testInfo) throws Exception {
         var firstNodeAddr = new NetworkAddress("localhost", 10000);
+
+        String firstNodeName = testNodeName(testInfo, firstNodeAddr.port());
+
         var secondNodeAddr = new NetworkAddress("localhost", 10001);
 
         firstNode = new Node(
+            testInfo,
             workDir.resolve("firstNode"),
             firstNodeAddr,
             List.of(firstNodeAddr, secondNodeAddr),
-            List.of(firstNodeAddr)
+            List.of(firstNodeName)
         );
 
         secondNode = new Node(
+            testInfo,
             workDir.resolve("secondNode"),
             secondNodeAddr,
             List.of(firstNodeAddr, secondNodeAddr),
-            List.of(firstNodeAddr)
+            List.of(firstNodeName)
         );
 
         firstNode.start();

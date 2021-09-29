@@ -58,6 +58,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -194,13 +195,13 @@ public class ITMetaStorageServiceTest {
      * Run {@code NODES} cluster nodes.
      */
     @BeforeEach
-    public void beforeTest() throws Exception {
+    public void beforeTest(TestInfo testInfo) throws Exception {
         var nodeFinder = new LocalPortRangeNodeFinder(NODE_PORT_BASE, NODE_PORT_BASE + NODES);
 
         nodeFinder.findNodes().stream()
             .map(
                 addr -> ClusterServiceTestUtils.clusterService(
-                    addr.toString(),
+                    testInfo,
                     addr.port(),
                     nodeFinder,
                     SERIALIZATION_REGISTRY,

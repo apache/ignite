@@ -25,6 +25,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.TestInfo;
 
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -256,5 +257,19 @@ public final class IgniteTestUtils {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Creates a unique Ignite node name for the given test.
+     */
+    public static String testNodeName(TestInfo testInfo, int port) {
+        return testInfo.getTestClass()
+            .map(Class::getCanonicalName)
+            .map(name -> testInfo.getTestMethod()
+                .map(method -> name + '#' + method.getName())
+                .orElse(name)
+            )
+            .map(name -> name + ':' + port)
+            .orElseThrow();
     }
 }

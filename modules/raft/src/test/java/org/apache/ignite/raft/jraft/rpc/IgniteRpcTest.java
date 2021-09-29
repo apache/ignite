@@ -33,6 +33,7 @@ import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.ExecutorServiceHelper;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
 
@@ -46,6 +47,14 @@ public class IgniteRpcTest extends AbstractRpcTest {
     /** Requests executor. */
     private ExecutorService requestExecutor;
 
+    /** Test info. */
+    private final TestInfo testInfo;
+
+    /** */
+    public IgniteRpcTest(TestInfo testInfo) {
+        this.testInfo = testInfo;
+    }
+
     /** {@inheritDoc} */
     @AfterEach
     @Override public void tearDown() {
@@ -57,7 +66,7 @@ public class IgniteRpcTest extends AbstractRpcTest {
     /** {@inheritDoc} */
     @Override public RpcServer<?> createServer(Endpoint endpoint) {
         ClusterService service = ClusterServiceTestUtils.clusterService(
-            endpoint.toString(),
+            testInfo,
             endpoint.getPort(),
             new StaticNodeFinder(Collections.emptyList()),
             new MessageSerializationRegistryImpl(),
@@ -86,7 +95,7 @@ public class IgniteRpcTest extends AbstractRpcTest {
         int i = cntr.incrementAndGet();
 
         ClusterService service = ClusterServiceTestUtils.clusterService(
-            "client" + i,
+            testInfo,
             endpoint.getPort() - i,
             new StaticNodeFinder(List.of(addressFromEndpoint(endpoint))),
             new MessageSerializationRegistryImpl(),

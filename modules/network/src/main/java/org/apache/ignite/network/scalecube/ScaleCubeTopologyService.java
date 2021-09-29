@@ -70,21 +70,29 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
             fireAppearedEvent(member);
         }
         else if (event.isRemoved()) {
-            members.compute(member.address(), // Ignore stale remove event.
-                (k, v) -> v.id().equals(member.id()) ? null : v);
+            members.compute(member.address(), (addr, node) -> {
+                // Ignore stale remove event.
+                if (node == null || node.id().equals(member.id()))
+                    return null;
+                else
+                    return node;
+            });
 
             LOG.info("Node left: " + member);
 
             fireDisappearedEvent(member);
         }
 
-        StringBuilder snapshotMsg = new StringBuilder("Topology snapshot [nodes=").append(members.size()).append("]\n");
+        if (LOG.isInfoEnabled()) {
+            StringBuilder snapshotMsg = new StringBuilder("Topology snapshot [nodes=")
+                .append(members.size())
+                .append("]\n");
 
-        for (ClusterNode node : members.values()) {
-            snapshotMsg.append("  ^-- ").append(node).append('\n');
+            for (ClusterNode node : members.values())
+                snapshotMsg.append("  ^-- ").append(node).append('\n');
+
+            LOG.info(snapshotMsg.toString().trim());
         }
-
-        LOG.info(snapshotMsg.toString().trim());
     }
 
     /**

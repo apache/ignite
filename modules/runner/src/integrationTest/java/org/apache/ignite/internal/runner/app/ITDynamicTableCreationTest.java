@@ -38,9 +38,12 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,38 +53,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 class ITDynamicTableCreationTest {
+    /** Network ports of the test nodes. */
+    private static final int[] PORTS = { 3344, 3345, 3346 };
+
     /** Nodes bootstrap configuration. */
-    private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-        put("node0", "{\n" +
-            "  \"node\": {\n" +
-            "    \"metastorageNodes\":[ \"node0\" ]\n" +
-            "  },\n" +
-            "  \"network\": {\n" +
-            "    \"port\":3344,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-            "  }\n" +
-            "}");
-
-        put("node1", "{\n" +
-            "  \"node\": {\n" +
-            "    \"metastorageNodes\":[ \"node0\" ]\n" +
-            "  },\n" +
-            "  \"network\": {\n" +
-            "    \"port\":3345,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-            "  }\n" +
-            "}");
-
-        put("node2", "{\n" +
-            "  \"node\": {\n" +
-            "    \"metastorageNodes\":[ \"node0\"]\n" +
-            "  },\n" +
-            "  \"network\": {\n" +
-            "    \"port\":3346,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-            "  }\n" +
-            "}");
-    }};
+    private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
 
     /** */
     private final List<Ignite> clusterNodes = new ArrayList<>();
@@ -89,6 +65,47 @@ class ITDynamicTableCreationTest {
     /** */
     @WorkDirectory
     private Path workDir;
+
+    /** */
+    @BeforeEach
+    void setUp(TestInfo testInfo) {
+        String node0Name = testNodeName(testInfo, PORTS[0]);
+        String node1Name = testNodeName(testInfo, PORTS[1]);
+        String node2Name = testNodeName(testInfo, PORTS[2]);
+
+        nodesBootstrapCfg.put(
+            node0Name,
+            "{\n" +
+                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+                "  network: {\n" +
+                "    port: " + PORTS[0] + "\n" +
+                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+                "  }\n" +
+                "}"
+        );
+
+        nodesBootstrapCfg.put(
+            node1Name,
+            "{\n" +
+                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+                "  network: {\n" +
+                "    port: " + PORTS[1] + "\n" +
+                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+                "  }\n" +
+                "}"
+        );
+
+        nodesBootstrapCfg.put(
+            node2Name,
+            "{\n" +
+                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+                "  network: {\n" +
+                "    port: " + PORTS[2] + "\n" +
+                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+                "  }\n" +
+                "}"
+        );
+    }
 
     /** */
     @AfterEach

@@ -103,7 +103,7 @@ public class ITCliServiceTest {
         for (int i = 0; i < 2; i++)
             learners.add(new PeerId(TestUtils.getLocalAddress(), TestUtils.INIT_PORT + LEARNER_PORT_STEP + i));
 
-        cluster = new TestCluster(groupId, dataPath.toString(), peers, learners, 300);
+        cluster = new TestCluster(groupId, dataPath.toString(), peers, learners, 300, testInfo);
         for (PeerId peer : peers)
             cluster.start(peer.getEndpoint());
 
@@ -128,7 +128,7 @@ public class ITCliServiceTest {
         var registry = new MessageSerializationRegistryImpl();
 
         ClusterService clientSvc = ClusterServiceTestUtils.clusterService(
-            "client",
+            testInfo,
             TestUtils.INIT_PORT - 1,
             nodeFinder,
             registry,

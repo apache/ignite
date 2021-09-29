@@ -33,7 +33,6 @@ import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.raft.jraft.test.TestUtils.waitForTopology;
@@ -77,16 +76,15 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
     private Path dataPath;
 
     /**
-     * @param testInfo Test info.
      * @throws Exception If failed.
      */
     @BeforeEach
-    void before(TestInfo testInfo) throws Exception {
+    void before() throws Exception {
         LOG.info(">>>> Starting test {}", testInfo.getTestMethod().orElseThrow().getName());
 
         var addr = new NetworkAddress("localhost", PORT);
 
-        ClusterService service = clusterService(addr.toString(), PORT, List.of(), true);
+        ClusterService service = clusterService(PORT, List.of(), true);
 
         server = new JRaftServerImpl(service, dataPath) {
             @Override public synchronized void stop() {
@@ -103,12 +101,12 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
         server.startRaftGroup(COUNTER_GROUP_ID_0, new CounterListener(), List.of(new Peer(serverNode.address())));
         server.startRaftGroup(COUNTER_GROUP_ID_1, new CounterListener(), List.of(new Peer(serverNode.address())));
 
-        ClusterService clientNode1 = clusterService("localhost:" + (PORT + 1), PORT + 1, List.of(addr), true);
+        ClusterService clientNode1 = clusterService(PORT + 1, List.of(addr), true);
 
         client1 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_0, clientNode1, FACTORY, 1000,
             List.of(new Peer(serverNode.address())), false, 200).get(3, TimeUnit.SECONDS);
 
-        ClusterService clientNode2 = clusterService("localhost:" + (PORT + 2), PORT + 2, List.of(addr), true);
+        ClusterService clientNode2 = clusterService(PORT + 2, List.of(addr), true);
 
         client2 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_1, clientNode2, FACTORY, 1000,
             List.of(new Peer(serverNode.address())), false, 200).get(3, TimeUnit.SECONDS);
@@ -122,12 +120,12 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
      * @throws Exception If failed.
      */
     @AfterEach
-    @Override public void after(TestInfo testInfo) throws Exception {
+    @Override public void after() throws Exception {
         server.stop();
         client1.shutdown();
         client2.shutdown();
 
-        super.after(testInfo);
+        super.after();
     }
 
     /**

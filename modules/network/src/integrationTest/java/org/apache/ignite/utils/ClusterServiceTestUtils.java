@@ -31,6 +31,9 @@ import org.apache.ignite.network.MessagingService;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.TopologyService;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.junit.jupiter.api.TestInfo;
+
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 
 /**
  * Test utils that provide sort of cluster service mock that manages required node configuration internally.
@@ -42,20 +45,20 @@ public class ClusterServiceTestUtils {
      * Manages configuration manager lifecycle: on cluster service start starts node configuration manager,
      * on cluster service stop - stops node configuration manager.
      *
-     * @param nodeName Local name.
+     * @param testInfo Test info.
      * @param port Local port.
      * @param nodeFinder Node finder for discovering the initial cluster members.
      * @param msgSerializationRegistry Message serialization registry.
      * @param clusterSvcFactory Cluster service factory.
      */
     public static ClusterService clusterService(
-        String nodeName,
+        TestInfo testInfo,
         int port,
         NodeFinder nodeFinder,
         MessageSerializationRegistry msgSerializationRegistry,
         ClusterServiceFactory clusterSvcFactory
     ) {
-        var ctx = new ClusterLocalConfiguration(nodeName, msgSerializationRegistry);
+        var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), msgSerializationRegistry);
 
         ConfigurationManager nodeConfigurationMgr = new ConfigurationManager(
             Collections.singleton(NetworkConfiguration.KEY),

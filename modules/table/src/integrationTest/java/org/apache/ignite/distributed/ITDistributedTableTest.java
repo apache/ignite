@@ -72,6 +72,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -126,11 +127,11 @@ public class ITDistributedTableTest {
      * Start all cluster nodes before each test.
      */
     @BeforeEach
-    public void beforeTest() {
+    public void beforeTest(TestInfo testInfo) {
         var nodeFinder = new LocalPortRangeNodeFinder(NODE_PORT_BASE, NODE_PORT_BASE + NODES);
 
         nodeFinder.findNodes().stream()
-            .map(addr -> startClient(addr.toString(), addr.port(), nodeFinder))
+            .map(addr -> startClient(testInfo, addr.port(), nodeFinder))
             .forEach(cluster::add);
 
         for (ClusterService node : cluster)
@@ -138,7 +139,7 @@ public class ITDistributedTableTest {
 
         LOG.info("Cluster started.");
 
-        client = startClient("client", NODE_PORT_BASE + NODES, nodeFinder);
+        client = startClient(testInfo, NODE_PORT_BASE + NODES, nodeFinder);
 
         assertTrue(waitForTopology(client, NODES + 1, 1000));
 
@@ -491,14 +492,14 @@ public class ITDistributedTableTest {
     }
 
     /**
-     * @param name Node name.
+     * @param testInfo Test info.
      * @param port Local port.
      * @param nodeFinder Node finder.
      * @return The client cluster view.
      */
-    private static ClusterService startClient(String name, int port, NodeFinder nodeFinder) {
+    private static ClusterService startClient(TestInfo testInfo, int port, NodeFinder nodeFinder) {
         var network = ClusterServiceTestUtils.clusterService(
-            name,
+            testInfo,
             port,
             nodeFinder,
             SERIALIZATION_REGISTRY,

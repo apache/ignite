@@ -29,6 +29,7 @@ import org.apache.ignite.cli.spec.IgniteCliSpec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
@@ -58,7 +59,7 @@ public class ITConfigCommandTest extends AbstractCliTest {
 
     /** */
     @BeforeEach
-    private void setup(@TempDir Path workDir) throws IOException {
+    void setup(@TempDir Path workDir, TestInfo testInfo) throws IOException {
         // TODO: IGNITE-15131 Must be replaced by receiving the actual port configs from the started node.
         // This approach still can produce the port, which will be unavailable at the moment of node start.
         restPort = getAvailablePort();
@@ -69,7 +70,7 @@ public class ITConfigCommandTest extends AbstractCliTest {
             "rest.port=" + restPort + "\n" + "rest.portRange=0" + "\n" +
             "clientConnector.port=" + clientPort + "\n" + "clientConnector.portRange=0";
 
-        IgnitionManager.start("node1", configStr, workDir);
+        IgnitionManager.start(testNodeName(testInfo, networkPort), configStr, workDir);
 
         ctx = ApplicationContext.run(Environment.TEST);
 
@@ -77,10 +78,22 @@ public class ITConfigCommandTest extends AbstractCliTest {
         out = new ByteArrayOutputStream();
     }
 
+    /** */
     @AfterEach
-    private void tearDown() {
-        IgnitionManager.stop("node1");
+    void tearDown(TestInfo testInfo) {
+        IgnitionManager.stop(testNodeName(testInfo, networkPort));
         ctx.stop();
+    }
+
+    /**
+     * Creates a unique Ignite node name for the given test.
+     */
+    private static String testNodeName(TestInfo testInfo, int port) {
+        return testInfo.getTestClass()
+            .map(Class::getCanonicalName)
+            .flatMap(clsName -> testInfo.getTestMethod().map(method -> clsName + '#' + method.getName()))
+            .map(name -> name + ':' + port)
+            .orElseThrow();
     }
 
     @Test

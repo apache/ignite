@@ -39,6 +39,9 @@ import org.apache.ignite.schema.definition.TableDefinition;
  * Starts nodes, populates tables and data for tests.
  */
 public class PlatformTestNodeRunner {
+    /** Test node name. */
+    private static final String NODE_NAME = PlatformTestNodeRunner.class.getCanonicalName();
+
     /** */
     private static final String SCHEMA_NAME = "PUB";
 
@@ -47,9 +50,9 @@ public class PlatformTestNodeRunner {
 
     /** Nodes bootstrap configuration. */
     private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-        put("node0", "{\n" +
+        put(NODE_NAME, "{\n" +
                 "  \"node\": {\n" +
-                "    \"metastorageNodes\":[ \"node0\" ]\n" +
+                "    \"metastorageNodes\":[ \"" + NODE_NAME + "\" ]\n" +
                 "  },\n" +
                 "  \"clientConnector\":{\"port\": 10942,\"portRange\":10}," +
                 "  \"network\": {\n" +

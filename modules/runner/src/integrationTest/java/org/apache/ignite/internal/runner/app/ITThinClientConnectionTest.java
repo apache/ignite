@@ -38,9 +38,12 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,30 +59,39 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
     private static final String TABLE_NAME = "tbl1";
 
     /** Nodes bootstrap configuration. */
-    private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-        put("node0", "{\n" +
-                "  \"node\": {\n" +
-                "    \"metastorageNodes\":[ \"node0\" ]\n" +
-                "  },\n" +
-                "  \"network\": {\n" +
-                "    \"port\":3344,\n" +
-                "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\" ]\n" +
-                "  }\n" +
-                "}");
-
-        put("node1", "{\n" +
-                "  \"node\": {\n" +
-                "    \"metastorageNodes\":[ \"node0\" ]\n" +
-                "  },\n" +
-                "  \"network\": {\n" +
-                "    \"port\":3345,\n" +
-                "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\" ]\n" +
-                "  }\n" +
-                "}");
-        }};
+    private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
 
     /** */
     private final List<Ignite> startedNodes = new ArrayList<>();
+
+    /** */
+    @BeforeEach
+    void setup(TestInfo testInfo) {
+        String node0Name = testNodeName(testInfo, 3344);
+        String node1Name = testNodeName(testInfo, 3345);
+
+        nodesBootstrapCfg.put(
+            node0Name,
+            "{\n" +
+                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+                "  network: {\n" +
+                "    port: " + 3344 + "\n" +
+                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\" ]\n" +
+                "  }\n" +
+                "}"
+        );
+
+        nodesBootstrapCfg.put(
+            node1Name,
+            "{\n" +
+                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+                "  network: {\n" +
+                "    port: " + 3345 + "\n" +
+                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\" ]\n" +
+                "  }\n" +
+                "}"
+        );
+    }
 
     /** */
     @AfterEach
@@ -111,8 +123,7 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
         );
 
         var addrs = new String[]{"127.0.0.1:" +
-            ((InetSocketAddress) ((IgniteImpl)startedNodes.stream().filter(node -> "node0".equals(node.name())).
-                findAny().get()).clientHandlerModule().localAddress()).getPort()};
+            ((InetSocketAddress) ((IgniteImpl)startedNodes.get(0)).clientHandlerModule().localAddress()).getPort()};
 
         for (var addr : addrs) {
             try (var client = IgniteClient.builder().addresses(addr).build()) {

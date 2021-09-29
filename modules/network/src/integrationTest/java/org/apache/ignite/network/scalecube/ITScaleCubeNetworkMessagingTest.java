@@ -50,6 +50,7 @@ import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Mono;
 
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
@@ -87,12 +88,12 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception in case of errors.
      */
     @Test
-    public void messageWasSentToAllMembersSuccessfully() throws Exception {
+    public void messageWasSentToAllMembersSuccessfully(TestInfo testInfo) throws Exception {
         Map<String, TestMessage> messageStorage = new ConcurrentHashMap<>();
 
         var messageReceivedLatch = new CountDownLatch(3);
 
-        testCluster = new Cluster(3);
+        testCluster = new Cluster(3, testInfo);
 
         for (ClusterService member : testCluster.members) {
             member.messagingService().addMessageHandler(
@@ -128,8 +129,8 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testShutdown() throws Exception {
-        testShutdown0(false);
+    public void testShutdown(TestInfo testInfo) throws Exception {
+        testShutdown0(testInfo, false);
     }
 
     /**
@@ -138,8 +139,8 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testForcefulShutdown() throws Exception {
-        testShutdown0(true);
+    public void testForcefulShutdown(TestInfo testInfo) throws Exception {
+        testShutdown0(testInfo, true);
     }
 
     /**
@@ -148,8 +149,8 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception in case of errors.
      */
     @Test
-    public void testSendMessageToSelf() throws Exception {
-        testCluster = new Cluster(1);
+    public void testSendMessageToSelf(TestInfo testInfo) throws Exception {
+        testCluster = new Cluster(1, testInfo);
         testCluster.startAwait();
 
         ClusterService member = testCluster.members.get(0);
@@ -196,8 +197,8 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception in case of errors.
      */
     @Test
-    public void testInvokeMessageToSelf() throws Exception {
-        testCluster = new Cluster(1);
+    public void testInvokeMessageToSelf(TestInfo testInfo) throws Exception {
+        testCluster = new Cluster(1, testInfo);
         testCluster.startAwait();
 
         ClusterService member = testCluster.members.get(0);
@@ -228,8 +229,8 @@ class ITScaleCubeNetworkMessagingTest {
      * the corresponding future completes exceptionally.
      */
     @Test
-    public void testInvokeDuringStop() throws InterruptedException {
-        testCluster = new Cluster(2);
+    public void testInvokeDuringStop(TestInfo testInfo) throws InterruptedException {
+        testCluster = new Cluster(2, testInfo);
         testCluster.startAwait();
 
         ClusterService member0 = testCluster.members.get(0);
@@ -287,8 +288,8 @@ class ITScaleCubeNetworkMessagingTest {
      * @throws Exception in case of errors.
      */
     @Test
-    public void testMessageGroupsHandlers() throws Exception {
-        testCluster = new Cluster(2);
+    public void testMessageGroupsHandlers(TestInfo testInfo) throws Exception {
+        testCluster = new Cluster(2, testInfo);
         testCluster.startAwait();
 
         ClusterService node1 = testCluster.members.get(0);
@@ -337,11 +338,12 @@ class ITScaleCubeNetworkMessagingTest {
     /**
      * Tests shutdown.
      *
+     * @param testInfo Test info.
      * @param forceful Whether shutdown should be forceful.
      * @throws Exception If failed.
      */
-    private void testShutdown0(boolean forceful) throws Exception {
-        testCluster = new Cluster(2);
+    private void testShutdown0(TestInfo testInfo, boolean forceful) throws Exception {
+        testCluster = new Cluster(2, testInfo);
         testCluster.startAwait();
 
         ClusterService alice = testCluster.members.get(0);
@@ -423,8 +425,9 @@ class ITScaleCubeNetworkMessagingTest {
          * Creates a test cluster with the given amount of members.
          *
          * @param numOfNodes Amount of cluster members.
+         * @param testInfo Test info.
          */
-        Cluster(int numOfNodes) {
+        Cluster(int numOfNodes, TestInfo testInfo) {
             startupLatch = new CountDownLatch(numOfNodes - 1);
 
             int initialPort = 3344;
@@ -434,21 +437,24 @@ class ITScaleCubeNetworkMessagingTest {
             var isInitial = new AtomicBoolean(true);
 
             members = nodeFinder.findNodes().stream()
-                .map(addr -> startNode(addr, nodeFinder, isInitial.getAndSet(false)))
+                .map(addr -> startNode(testInfo, addr, nodeFinder, isInitial.getAndSet(false)))
                 .collect(Collectors.toUnmodifiableList());
         }
 
         /**
          * Start cluster node.
          *
+         * @param testInfo Test info.
          * @param addr Node address.
          * @param nodeFinder Node finder.
          * @param initial Whether this node is the first one.
          * @return Started cluster node.
          */
-        private ClusterService startNode(NetworkAddress addr, NodeFinder nodeFinder, boolean initial) {
+        private ClusterService startNode(
+            TestInfo testInfo, NetworkAddress addr, NodeFinder nodeFinder, boolean initial
+        ) {
             ClusterService clusterSvc = ClusterServiceTestUtils.clusterService(
-                addr.toString(),
+                testInfo,
                 addr.port(),
                 nodeFinder,
                 serializationRegistry,
