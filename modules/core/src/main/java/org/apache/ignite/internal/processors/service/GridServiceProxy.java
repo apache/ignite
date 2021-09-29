@@ -193,10 +193,12 @@ public class GridServiceProxy<T> implements Serializable {
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
 
-                            if (svc != null)
-                                return svcCtx.statisticsEnabled() ?
-                                    measureCall(ctx.service(), () -> callServiceLocally(svc, mtd, args), name, mtd.getName()) :
-                                    callServiceLocally(svc, mtd, args);
+                            if (svc != null) {
+                                if (svcCtx.statisticsEnabled())
+                                    return measureCall(ctx.service(), () -> callServiceLocally(svc, mtd, args), name, mtd.getName());
+
+                                return callServiceLocally(svc, mtd, args);
+                            }
                         }
                     }
                     else {

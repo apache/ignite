@@ -272,7 +272,7 @@ public class ServiceConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public ServiceConfiguration setStatisticsEnabled(boolean enabled) {
-        this.isStatisticsEnabled = enabled;
+        isStatisticsEnabled = enabled;
 
         return this;
     }
