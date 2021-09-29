@@ -31,7 +31,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.task.GatherPartitionStatistics;
-import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
@@ -53,17 +52,11 @@ public class StatisticsProcessor {
     private final IgniteStatisticsRepository statRepo;
 
     /** Ignite Thread pool executor to do statistics collection tasks. */
-    private final IgniteThreadPoolExecutor gatherPool;
+    private final BusyExecutor gatherPool;
 
     /** (cacheGroupId -> gather context) */
     private final ConcurrentMap<StatisticsKey, LocalStatisticsGatheringContext> gatheringInProgress =
         new ConcurrentHashMap<>();
-
-    /** Active flag (used to skip commands in inactive cluster.) */
-    private volatile boolean active;
-
-    /** Lock protection of started gathering during deactivation. */
-    private static final GridBusyLock busyLock = new GridBusyLock();
 
     /**
      * Constructor.
@@ -78,7 +71,7 @@ public class StatisticsProcessor {
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.statRepo = repo;
-        this.gatherPool = gatherPool;
+        this.gatherPool = new BusyExecutor("gathering", gatherPool, logSupplier);
         this.log = logSupplier.apply(StatisticsProcessor.class);
     }
 
@@ -180,7 +173,7 @@ public class StatisticsProcessor {
                     // Will be executed before original, so have to try to cancel previous context to add new one.
                     gatheringInProgress.remove(ctx.configuration().key(), v);
 
-                    boolean rescheduled = busyRun(() -> updateLocalStatistics(ctx));
+                    boolean rescheduled = gatherPool.busyRun(() -> updateLocalStatistics(ctx));
 
                     if (!rescheduled && log.isDebugEnabled()) {
                         log.debug("Unable to reschedule statistics task by key " + ctx.configuration().key()
@@ -216,7 +209,17 @@ public class StatisticsProcessor {
                 log
             );
 
-            submitTask(task);
+            gatherPool.submit(() -> processPartitionTask(task))
+                .thenAccept(success -> {
+                    if (!success) {
+                        if (log.isDebugEnabled()) {
+                            log.debug(String.format("Gathering failed for key %s.%d ", ctx.configuration().key(),
+                                task.partition()));
+                        }
+
+                        ctx.partitionNotAvailable(task.partition());
+                    }
+                });
         }
     }
 
@@ -253,66 +256,42 @@ public class StatisticsProcessor {
     }
 
     /**
-     * Mark partition task failed. If that was the last partition -
-     * finalize ctx and remove it from gathering in progress.
-     *
-     * @param ctx Context to fishish partition in.
-     * @param partId Partition id.
+     * Process partition: call gather task, mark partition done, aggregate and complete future if needed.
+     * @param task Partition gathering task to process.
      */
-    private void failPartTask(LocalStatisticsGatheringContext ctx, int partId) {
-    }
-
-    /**
-     * Submit partition gathering task.
-     *
-     * @param task Gathering task to proceed.
-     */
-    private void submitTask(final GatherPartitionStatistics task) {
+    private void processPartitionTask(final GatherPartitionStatistics task) {
         LocalStatisticsGatheringContext ctx = task.context();
 
-        gatherPool.execute(() -> {
-            boolean started = busyRun(() -> {
-                try {
-                    task.call();
+        try {
+            task.call();
 
-                    if (ctx.partitionDone(task.partition())) {
-                        if (log.isDebugEnabled())
-                            log.debug("Local partitions statistics successfully gathered by key " +
-                                ctx.configuration().key());
-
-                        aggregateStatistics(ctx);
-
-                        ctx.future().complete(null);
-                    }
-
-                }
-                catch (Throwable t) {
-                    ctx.partitionNotAvailable(task.partition());
-
-                    if (t instanceof GatherStatisticCancelException) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Collect statistics task was cancelled " +
-                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
-                        }
-                    }
-                    else if (t.getCause() instanceof NodeStoppingException) {
-                        if (log.isDebugEnabled())
-                            log.debug("Node stopping during statistics collection on " +
-                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
-                    }
-                    else
-                        log.warning("Unexpected error on statistic gathering", t);
-                }
-            });
-
-            if (!started) {
+            if (ctx.partitionDone(task.partition())) {
                 if (log.isDebugEnabled())
-                    log.debug(String.format("Gathering failed for key %s.%d ", ctx.configuration().key(),
-                        task.partition()));
+                    log.debug("Local partitions statistics successfully gathered by key " +
+                        ctx.configuration().key());
 
-                ctx.partitionNotAvailable(task.partition());
+                aggregateStatistics(ctx);
+
+                ctx.future().complete(null);
             }
-        });
+        }
+        catch (Throwable t) {
+            ctx.partitionNotAvailable(task.partition());
+
+            if (t instanceof GatherStatisticCancelException) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Collect statistics task was cancelled " +
+                        "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+                }
+            }
+            else if (t.getCause() instanceof NodeStoppingException) {
+                if (log.isDebugEnabled())
+                    log.debug("Node stopping during statistics collection on " +
+                        "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+            }
+            else
+                log.warning("Unexpected error on statistic gathering", t);
+        }
     }
 
     /**
@@ -341,29 +320,6 @@ public class StatisticsProcessor {
     }
 
     /**
-     * Run task on busy lock.
-     *
-     * @param r Task to run.
-     * @return {@code true} if task was succesfully scheduled, {@code false} - otherwise (due to inactive state)
-     */
-    public boolean busyRun(Runnable r) {
-        if (!busyLock.enterBusy())
-            return false;
-
-        try {
-            if (!active)
-                return false;
-
-            r.run();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-
-            return true;
-    }
-
-    /**
      * Get gathering context by key.
      *
      * @param key Statistics key.
@@ -380,7 +336,7 @@ public class StatisticsProcessor {
         if (log.isDebugEnabled())
             log.debug("Statistics gathering started.");
 
-        active = true;
+        gatherPool.activate();
     }
 
     /**
@@ -390,33 +346,10 @@ public class StatisticsProcessor {
         if (log.isTraceEnabled())
             log.trace(String.format("Statistics gathering stopping %d task...", gatheringInProgress.size()));
 
-        active = false;
-
-        cancelAllContexts();
+        // Can skip waiting for each task finished because of global busyLock.
+        gatherPool.deactivate(() -> gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel));
 
         if (log.isDebugEnabled())
             log.debug("Statistics gathering stopped.");
-    }
-
-    /**
-     * Cancel all currently running statistics gathering contexts.
-     */
-    public void cancelAllContexts() {
-        gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel);
-        // Can skip waiting for each task finished because of global busyLock.
-
-        gatheringInProgress.clear();
-
-        busyLock.block();
-        busyLock.unblock();
-    }
-
-    /**
-     * Get gathering pool.
-     *
-     * @return Gathering pool.
-     */
-    public IgniteThreadPoolExecutor gatheringPool() {
-        return gatherPool;
     }
 }

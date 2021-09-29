@@ -83,6 +83,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Management pool. */
     private final IgniteThreadPoolExecutor mgmtPool;
 
+    /** Executor to do obsolescence management. */
+    private final BusyExecutor obsolescenceExecutor;
+
     /** Gathering pool. */
     private final IgniteThreadPoolExecutor gatherPool;
 
@@ -155,6 +158,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.uncaughtExceptionHandler()
         );
 
+        obsolescenceExecutor = new BusyExecutor("obsolescence", mgmtPool, ctx::log);
+
         boolean storeData = !(ctx.config().isClientMode() || ctx.isDaemon());
 
         IgniteStatisticsStore store;
@@ -209,14 +214,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (!ctx.clientNode()) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
             ctx.timeout().schedule(() -> {
-                mgmtPool.execute(() -> {
-                    try {
-                        statProc.busyRun(() -> processObsolescence());
-                    }
-                    catch (Throwable e) {
-                        log.warning("Error while processing statistics obsolescence", e);
-                    }
-                });
+                obsolescenceExecutor.submit(() -> processObsolescence());
             }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
         }
 
@@ -247,6 +245,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         statProc.stop();
         statsRepos.stop();
 
+        obsolescenceExecutor.deactivate(() -> {});
         started = false;
     }
 

@@ -83,7 +83,7 @@ public class IgniteStatisticsConfigurationManager {
     private final StatisticsProcessor statProc;
 
     /** */
-    private final IgniteThreadPoolExecutor mgmtPool;
+    private final BusyExecutor mgmtPool;
 
     /** Persistence enabled flag. */
     private final boolean persistence;
@@ -115,11 +115,10 @@ public class IgniteStatisticsConfigurationManager {
                     if (topVer == null)
                         return;
 
-                    mgmtPool.execute(() -> {
+                    mgmtPool.submit(() -> {
                         StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
-                        statProc.busyRun(() -> updateLocalStatistics(newStatCfg));
-
+                        updateLocalStatistics(newStatCfg);
                     });
                 }
             );
@@ -149,9 +148,7 @@ public class IgniteStatisticsConfigurationManager {
                 return;
         }
 
-        mgmtPool.submit(() -> {
-            statProc.busyRun(() -> updateAllLocalStatistics());
-        });
+        mgmtPool.submit(this::updateAllLocalStatistics);
     }
 
     /** Drop columns listener to clean its statistics configuration. */
@@ -285,7 +282,7 @@ public class IgniteStatisticsConfigurationManager {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
         this.persistence = persistence;
-        this.mgmtPool = mgmtPool;
+        this.mgmtPool = new BusyExecutor("configuration manager", mgmtPool, logSupplier);
         this.statProc = statProc;
         this.cluster = cluster;
         subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
@@ -320,6 +317,8 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager starting...");
 
+        mgmtPool.activate();
+
         schemaMgr.registerDropColumnsListener(dropColsLsnr);
         schemaMgr.registerDropTableListener(dropTblLsnr);
 
@@ -327,7 +326,7 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager started.");
 
         if (distrMetaStorage != null)
-            mgmtPool.execute(() -> statProc.busyRun(() -> updateAllLocalStatistics()));
+            mgmtPool.submit(this::updateAllLocalStatistics);
     }
 
     /**
@@ -355,6 +354,8 @@ public class IgniteStatisticsConfigurationManager {
 
         schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
         schemaMgr.unregisterDropTableListener(dropTblLsnr);
+
+        mgmtPool.deactivate(() -> {});
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager stopped.");
