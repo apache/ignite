@@ -10,8 +10,6 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
 
-    <!-- netcoreapp2.0 is out of support -->
-    <NoWarn>NETSDK1138</NoWarn>
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
