@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.BenchmarkDotN
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.DotNetCore", "Apache.Ignite.Core.Tests\Apache.Ignite.Core.Tests.DotNetCore.csproj", "{54BDA92C-8551-4E42-A73B-F55EE883E537}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apache.Ignite.NLog\Apache.Ignite.NLog.csproj", "{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{54BDA92C-8551-4E42-A73B-F55EE883E537}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54BDA92C-8551-4E42-A73B-F55EE883E537}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54BDA92C-8551-4E42-A73B-F55EE883E537}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
