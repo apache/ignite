@@ -128,9 +128,8 @@ public class LocalStatisticsGatheringContext {
      * Decrement remaining partitions due to unavailable partition.
      *
      * @param partId Unavailable partition id.
-     * @return {@code true} if no more partitions left, {@code false} - otherwise.
      */
-    public synchronized boolean partitionNotAvailable(int partId) {
+    public synchronized void partitionNotAvailable(int partId) {
         remainingParts.remove(partId);
 
         cancel();
@@ -138,10 +137,10 @@ public class LocalStatisticsGatheringContext {
         if (remainingParts.isEmpty()) {
             future.cancel(true);
 
-            return true;
+            return;
         }
 
-        return false;
+        return;
     }
 
     /**

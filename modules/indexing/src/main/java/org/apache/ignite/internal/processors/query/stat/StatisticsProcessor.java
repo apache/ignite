@@ -137,7 +137,7 @@ public class StatisticsProcessor {
     /**
      * Try to register new task. Returned task will remove itself from gatheringInProgress after completion.
      * If there are some other task for the given key - operation will be scheduled right after it if necessary
-     * (current task have never configuration or topology).
+     * (current task have newer configuration or topology).
      *
      * @param ctx Task to register.
      * @return {@code true} if task was actually pushed as Gathering in progress task, {@code false} - othrewise.
@@ -249,39 +249,6 @@ public class StatisticsProcessor {
     }
 
     /**
-     * Try to get busyLock and check active state. Return success flag.
-     * If unsuccess - release busyLock.
-     *
-     * @return {@code true}
-     */
-    private boolean startJob() {
-        if (!busyLock.enterBusy()) {
-            if (log.isDebugEnabled())
-                log.debug("Unable to start statistics operation due to inactive state.");
-
-            return false;
-        }
-
-        if (!active) {
-            if (log.isDebugEnabled())
-                log.debug("Unable to start statistics operation due to inactive state.");
-
-            busyLock.leaveBusy();
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Just unlock busyLock.
-     */
-    private void endJob() {
-        busyLock.leaveBusy();
-    }
-
-    /**
      * Mark partition task failed. If that was the last partition -
      * finalize ctx and remove it from gathering in progress.
      *
@@ -299,52 +266,48 @@ public class StatisticsProcessor {
     private void submitTask(final GatherPartitionStatistics task) {
         LocalStatisticsGatheringContext ctx = task.context();
 
-        gatherPool.submit(() -> {
-            if (!startJob()) {
+        gatherPool.execute(() -> {
+            boolean started = busyRun(() -> {
+                try {
+                    task.call();
+
+                    if (ctx.partitionDone(task.partition())) {
+                        if (log.isDebugEnabled())
+                            log.debug("Local partitions statistics successfully gathered by key " +
+                                ctx.configuration().key());
+
+                        aggregateStatistics(ctx);
+
+                        ctx.future().complete(null);
+                    }
+
+                }
+                catch (Throwable t) {
+                    ctx.partitionNotAvailable(task.partition());
+
+                    if (t instanceof GatherStatisticCancelException) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Collect statistics task was cancelled " +
+                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+                        }
+                    }
+                    else if (t.getCause() instanceof NodeStoppingException) {
+                        if (log.isDebugEnabled())
+                            log.debug("Node stopping during statistics collection on " +
+                                "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
+                    }
+                    else
+                        log.warning("Unexpected error on statistic gathering", t);
+                }
+            });
+
+            if (!started) {
                 if (log.isDebugEnabled())
                     log.debug(String.format("Gathering failed for key %s.%d ", ctx.configuration().key(),
                         task.partition()));
 
                 ctx.partitionNotAvailable(task.partition());
-
-                return;
             }
-
-            try {
-                task.call();
-
-                if (ctx.partitionDone(task.partition())) {
-                    if (log.isDebugEnabled())
-                        log.debug("Local partitions statistics successfully gathered by key " +
-                            ctx.configuration().key());
-
-                    aggregateStatistics(ctx);
-
-                    ctx.future().complete(null);
-                }
-
-            }
-            catch (Throwable t) {
-                ctx.partitionNotAvailable(task.partition());
-
-                if (t instanceof GatherStatisticCancelException) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Collect statistics task was cancelled " +
-                            "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
-                    }
-                }
-                else if (t.getCause() instanceof NodeStoppingException) {
-                    if (log.isDebugEnabled())
-                        log.debug("Node stopping during statistics collection on " +
-                            "[key=" + ctx.configuration().key() + ", part=" + task.partition() + ']');
-                }
-                else
-                    log.warning("Unexpected error on statistic gathering", t);
-            }
-            finally {
-                endJob();
-            }
-
         });
     }
 
@@ -377,14 +340,15 @@ public class StatisticsProcessor {
      * Run task on busy lock.
      *
      * @param r Task to run.
+     * @return {@code true} if task was succesfully scheduled, {@code false} - otherwise (due to inactive state)
      */
-    public void busyRun(Runnable r) {
+    public boolean busyRun(Runnable r) {
         if (!busyLock.enterBusy())
-            return;
+            return false;
 
         try {
             if (!active)
-                return;
+                return false;
 
             r.run();
         }
@@ -392,6 +356,7 @@ public class StatisticsProcessor {
             busyLock.leaveBusy();
         }
 
+            return true;
     }
 
     /**
