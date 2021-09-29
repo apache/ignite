@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite", "Apache.Ign
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Log4Net", "Apache.Ignite.Log4Net\Apache.Ignite.Log4Net.csproj", "{6F82D669-382E-4435-8092-68C4440146D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.TestDll", "Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj", "{F4A69E2D-908E-4F0F-A794-84D508D60E5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{6F82D669-382E-4435-8092-68C4440146D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F82D669-382E-4435-8092-68C4440146D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F82D669-382E-4435-8092-68C4440146D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
