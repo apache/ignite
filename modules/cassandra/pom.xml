@@ -39,7 +39,7 @@
         <dependencies>
             <dependency>
                 <artifactId>ignite-cassandra-store</artifactId>
-                <groupId>org.apache.ignite</groupId>
+                <groupId>${project.groupId}</groupId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

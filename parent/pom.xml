@@ -303,7 +303,7 @@
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                 <tagletArtifact>
-                                    <groupId>org.apache.ignite</groupId>
+                                    <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
                                     <version>${project.version}</version>
                                 </tagletArtifact>
@@ -618,7 +618,7 @@
                 </configuration>
                 <dependencies>
                     <dependency>
-                        <groupId>org.apache.ignite</groupId>
+                        <groupId>${project.groupId}</groupId>
                         <artifactId>ignite-tools</artifactId>
                         <version>${project.version}</version>
                     </dependency>
@@ -757,7 +757,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
+                            <excludeGroupIds>${project.groupId}</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>true</excludeTransitive>
@@ -1149,7 +1149,7 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
                     <version>${project.version}</version>
                     <scope>test</scope><!-- hack to have ignite-apache-license-gen at first place at mvn reactor -->
@@ -1169,7 +1169,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${project.version}
+                                        <resourceBundle>${project.groupId}:ignite-apache-license-gen:${project.version}
                                         </resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
