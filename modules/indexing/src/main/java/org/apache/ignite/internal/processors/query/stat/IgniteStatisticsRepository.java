@@ -113,6 +113,22 @@ public class IgniteStatisticsRepository {
     }
 
     /**
+     * Get partition obsolescence info.
+     *
+     * @param key Statistics key.
+     * @param partId Parititon id.
+     * @return Partition obsolescence info or {@code null} if it doesn't exist.
+     */
+    public ObjectPartitionStatisticsObsolescence getObsolescence(StatisticsKey key, int partId) {
+        IntMap<ObjectPartitionStatisticsObsolescence> objObs = statObs.get(key);
+
+        if (objObs == null)
+            return null;
+
+        return objObs.get(partId);
+    }
+
+    /**
      * Refresh statistics obsolescence and save clear object to store, after partition gathering.
      *
      * @param key Statistics key.
@@ -350,27 +366,6 @@ public class IgniteStatisticsRepository {
     public synchronized void start() {
         if (log.isDebugEnabled())
             log.debug("Statistics repository started.");
-    }
-
-    /**
-     * Try to count modified to specified object and partition.
-     *
-     * @param key Statistics key.
-     * @param partId Partition id.
-     * @param changedKey Changed key bytes.
-     */
-    public void onRowModified(StatisticsKey key, int partId, byte[] changedKey) {
-        IntMap<ObjectPartitionStatisticsObsolescence> objObs = statObs.get(key);
-
-        if (objObs == null)
-            return;
-
-        ObjectPartitionStatisticsObsolescence objPartObs = objObs.get(partId);
-
-        if (objPartObs == null)
-            return;
-
-        objPartObs.onModified(changedKey);
     }
 
     /**

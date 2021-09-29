@@ -371,7 +371,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void onRowUpdated(String schemaName, String objName, int partId, byte[] keyBytes) {
-        statsRepos.onRowModified(new StatisticsKey(schemaName, objName), partId, keyBytes);
+        ObjectPartitionStatisticsObsolescence statObs = statsRepos.getObsolescence(
+            new StatisticsKey(schemaName, objName), partId);
+
+        if (statObs != null)
+            statObs.onModified(keyBytes);
     }
 
     /**
