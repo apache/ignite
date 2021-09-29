@@ -223,8 +223,8 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
         private final UUID nodeId;
 
         /**
-         * List of nodes that respons with cache query result pages. This collection should be cleaned before sending new
-         * cache query request.
+         * {@code true} shows whether all nodes responsed with cache query result pages. Flag will be set to {@code false}
+         * before new page requests.
          */
         private volatile boolean rcvd;
 

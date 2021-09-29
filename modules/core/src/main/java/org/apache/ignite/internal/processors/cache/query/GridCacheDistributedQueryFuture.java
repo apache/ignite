@@ -68,9 +68,10 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void onNodeLeft(UUID nodeId) {
         boolean qryNode = reducer.remoteQueryNode(nodeId);
 
-        if (qryNode)
+        if (qryNode) {
             onPage(nodeId, null,
                 new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
+        }
     }
 
     /** {@inheritDoc} */
