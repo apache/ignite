@@ -69,8 +69,7 @@ public class StatisticsObjectConfiguration implements Serializable, Comparable<S
         byte maxPartitionObsolescencePercent
     ) {
         this.key = key;
-        this.cols = (cols == null) ? null : cols.stream()
-            .collect(Collectors.toMap(StatisticsColumnConfiguration::name, Function.identity()));
+        this.cols = cols.stream().collect(Collectors.toMap(StatisticsColumnConfiguration::name, Function.identity()));
         this.maxPartitionObsolescencePercent = maxPartitionObsolescencePercent;
     }
 
