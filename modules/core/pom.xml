@@ -55,7 +55,7 @@
             *
         </osgi.import.package>
         <osgi.export.package>
-            ${project.groupId}.*,
+            org.apache.ignite.*,
             org.jsr166.*;version=1.0.0;
             {local-packages}
         </osgi.export.package>
@@ -322,7 +322,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>${project.groupId}</argument>
+                                <argument>org.apache.ignite</argument>
                             </arguments>
                         </configuration>
                     </execution>
