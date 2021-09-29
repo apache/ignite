@@ -115,7 +115,7 @@ public class IgniteStatisticsConfigurationManager {
                     if (topVer == null)
                         return;
 
-                    mgmtPool.submit(() -> {
+                    mgmtPool.execute(() -> {
                         StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
                         statProc.busyRun(() -> updateLocalStatistics(newStatCfg));
@@ -327,7 +327,7 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager started.");
 
         if (distrMetaStorage != null)
-            mgmtPool.submit(() -> statProc.busyRun(() -> updateAllLocalStatistics()));
+            mgmtPool.execute(() -> statProc.busyRun(() -> updateAllLocalStatistics()));
     }
 
     /**

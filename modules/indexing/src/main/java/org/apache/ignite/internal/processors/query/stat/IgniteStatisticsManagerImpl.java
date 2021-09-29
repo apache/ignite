@@ -209,7 +209,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (!ctx.clientNode()) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
             ctx.timeout().schedule(() -> {
-                mgmtPool.submit(() -> {
+                mgmtPool.execute(() -> {
                     try {
                         statProc.busyRun(() -> processObsolescence());
                     }
