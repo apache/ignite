@@ -16,7 +16,7 @@
 
   <PropertyGroup>
     <NoWarn>1701;1702;1705;NU1701</NoWarn>
-    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.DotNetCore.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
