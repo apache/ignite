@@ -94,10 +94,11 @@ namespace Apache.Ignite.Core.Impl.Services
                 GenerateMethod(buildContext, i);
             }
 
-            TypeInfo typeInfo = proxyType.CreateTypeInfo();
-            Type type = typeInfo?.AsType();
+            // TODO
+            // TypeInfo typeInfo = proxyType.CreateTypeInfo();
+            // Type type = typeInfo?.AsType();
 
-            return Tuple.Create(type, buildContext.Methods);
+            return Tuple.Create((Type)null, buildContext.Methods);
         }
 
         /// <summary>
