@@ -96,7 +96,7 @@ tab:C++[unsupported]
 
 Amazon S3-based discovery allows Ignite nodes to register their IP addresses on start-up in an Amazon S3 store.
 This way other nodes can try to connect to any of the IP addresses stored in S3 and initiate automatic node discovery.
-To use S3 based automatic node discovery, you need to configure the `TcpDiscoveryS3IpFindera` type of `ipFinder`.
+To use S3 based automatic node discovery, you need to configure the `TcpDiscoveryS3IpFinder` type of `ipFinder`.
 
 CAUTION: You must link:setup#enabling-modules[enable the 'ignite-aws' module].
 
