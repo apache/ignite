@@ -45,7 +45,7 @@
     <dependencies>
         <dependency>
             <artifactId>ignite-cassandra-store</artifactId>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
         </dependency>
 
         <!-- Kryo and required dependencies -->
@@ -80,7 +80,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

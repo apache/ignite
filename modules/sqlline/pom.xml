@@ -55,7 +55,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
+                            <excludeGroupIds>${project.groupId}</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>

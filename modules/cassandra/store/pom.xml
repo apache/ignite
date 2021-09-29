@@ -51,26 +51,26 @@
 
         <!-- Ignite -->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -224,7 +224,7 @@
                             <overWriteIfNewer>true</overWriteIfNewer>
                             <excludeTransitive>true</excludeTransitive>
                             <excludeGroupIds>
-                                org.apache.ignite,org.springframework,org.gridgain
+                                ${project.groupId},org.springframework,org.gridgain
                             </excludeGroupIds>
                             <excludeArtifactIds>
                                 commons-logging,slf4j-api,cache-api,slf4j-api,aopalliance

@@ -37,13 +37,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${project.version}</version>
         </dependency>

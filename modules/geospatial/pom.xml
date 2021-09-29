@@ -36,7 +36,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -48,7 +48,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -56,7 +56,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -119,7 +119,7 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                        <Fragment-Host>${project.groupId}.ignite-core</Fragment-Host>
                     </instructions>
                 </configuration>
             </plugin>

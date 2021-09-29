@@ -28,80 +28,80 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-core</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>${groupId}</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-log4j2</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>${groupId}</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-log4j</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>${groupId}</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-jcl</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>${groupId}</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-slf4j</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-indexing</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-spring</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-urideploy</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-zookeeper</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-opencensus</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-cloud</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-aws</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-azure</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-compress</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.ignite</groupId>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>ignite-gce</artifactId>
 			<version>${ignite.version}</version>
 		</dependency>
