@@ -33,10 +33,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         private IIgnite Grid2;
 
-//
-//        /** */
-//        private IIgnite _client;
-//
+        /** */
+        private IIgnite _client;
+
         /** */
         private IIgnite[] Grids;
 
@@ -65,15 +64,14 @@ namespace Apache.Ignite.Core.Tests.Services
             Grid1 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid1")));
             Grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid2")));
 
-//
-//            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "client"));
-//
-//            cfg.ClientMode = true;
-//            cfg.IgniteInstanceName = "client";
-//
-//            _client = Ignition.Start(cfg);
-//
-            Grids = new[] { Grid1, Grid2 };
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "client"));
+
+            cfg.ClientMode = true;
+            cfg.IgniteInstanceName = "client";
+
+            _client = Ignition.Start(cfg);
+
+            Grids = new[] { Grid1, Grid2, _client };
         }
 
         /// <summary>
@@ -95,17 +93,36 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestProxyContext()
         {
             // todo test cases
-            CheckProxyContext(Grid1, false, false);
-            CheckProxyContext(Grid1, false, true);
-            CheckProxyContext(Grid2, false, false);
-            CheckProxyContext(Grid2, false, true);
-            CheckProxyContext(Grid1, true, false);
-            CheckProxyContext(Grid1, true, true);
-            CheckProxyContext(Grid2, true, false);
-            CheckProxyContext(Grid2, true, true);
+            CheckProxyContext(Grid1, false, false, false);
+            CheckProxyContext(Grid1, false, false, true);
+            CheckProxyContext(Grid1, false, true, false);
+            CheckProxyContext(Grid1, false, true, true);
+            CheckProxyContext(Grid1, true, false, false);
+            CheckProxyContext(Grid1, true, false, true);
+            CheckProxyContext(Grid1, true, true, false);
+            CheckProxyContext(Grid1, true, true, true);
+
+
+            CheckProxyContext(Grid2, false, false, false);
+            CheckProxyContext(Grid2, false, false, true);
+            CheckProxyContext(Grid2, false, true, false);
+            CheckProxyContext(Grid2, false, true, true);
+            CheckProxyContext(Grid2, true, false, false);
+            CheckProxyContext(Grid2, true, false, true);
+            CheckProxyContext(Grid2, true, true, false);
+            CheckProxyContext(Grid2, true, true, true);
+
+            CheckProxyContext(_client, false, false, false);
+            CheckProxyContext(_client, false, false, true);
+            CheckProxyContext(_client, false, true, false);
+            CheckProxyContext(_client, false, true, true);
+            CheckProxyContext(_client, true, false, false);
+            CheckProxyContext(_client, true, false, true);
+            CheckProxyContext(_client, true, true, false);
+            CheckProxyContext(_client, true, true, true);
         }
 
-        private void CheckProxyContext(IIgnite ignite, bool nodeSingleton, bool sticky)
+        private void CheckProxyContext(IIgnite ignite, bool nodeSingleton, bool sticky, bool dynamic)
         {
             if (nodeSingleton)
                 ignite.GetServices().DeployNodeSingleton(SvcName, new MyService());
@@ -115,15 +132,23 @@ namespace Apache.Ignite.Core.Tests.Services
             try {
                 foreach (var grid in Grids)
                 {
-                    var svcs0 = grid.GetServices();
-                    
-                    var svcProxy0 =
-                        svcs0.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 123}});
-                    var svcProxy1 =
-                        svcs0.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 12345}});
+                    var svcs = grid.GetServices();
 
-                    Assert.AreEqual(123, svcProxy0.Method("id"));
-                    Assert.AreEqual(12345, svcProxy1.Method("id"));
+                    if (dynamic)
+                    {
+                        var proxy0 = svcs.GetDynamicServiceProxy(SvcName, sticky, new Dictionary<string, object> {{"id", 123}});
+                        var proxy1 = svcs.GetDynamicServiceProxy(SvcName, sticky, new Dictionary<string, object> {{"id", 12345}});
+
+                        Assert.AreEqual(123, proxy0.Method("id"), "Node=" + grid.Name);
+                        Assert.AreEqual(12345, proxy1.Method("id"), "Node=" + grid.Name);
+                    }
+                    else {
+                        var proxy0 = svcs.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 123}});
+                        var proxy1 = svcs.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 12345}});
+
+                        Assert.AreEqual(123, proxy0.Method("id"), "Node=" + grid.Name);
+                        Assert.AreEqual(12345, proxy1.Method("id"), "Node=" + grid.Name);
+                    }
                 }
             }
             finally

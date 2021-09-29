@@ -210,6 +210,12 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return _services.GetDynamicServiceProxy(name, sticky);
         }
+        
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> invokeCtx)
+        {
+            return _services.GetDynamicServiceProxy(name, sticky, invokeCtx);
+        }
 
         /** <inheritDoc /> */
         public IServices WithKeepBinary()

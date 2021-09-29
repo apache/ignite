@@ -1053,7 +1053,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     stream.SynchronizeOutput();
                     
-                    svcCtx?.Dispose();
+                    if (svcCtx != null)
+                        svcCtx.Dispose();
 
                     return 0;
                 }
@@ -1105,7 +1106,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 }
                 finally
                 {
-                    ((ServiceContext)_ignite.HandleRegistry.Release(svcPtr))?.Dispose();
+                    var svcCtx = ((ServiceContext)_ignite.HandleRegistry.Release(svcPtr));
+                    
+                    if (svcCtx != null)
+                        svcCtx.Dispose();
                 }
             }
         }

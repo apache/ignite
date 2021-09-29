@@ -299,6 +299,9 @@ namespace Apache.Ignite.Core.Services
         /// service or try to load-balance between services.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
         dynamic GetDynamicServiceProxy(string name, bool sticky);
+        
+        
+        dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> invokeCtx);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.

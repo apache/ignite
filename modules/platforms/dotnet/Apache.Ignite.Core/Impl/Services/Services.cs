@@ -378,14 +378,12 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
 
-            if (invokeCtx == null) {
-                // In local scenario try to return service instance itself instead of a proxy
-                // Get as object because proxy interface may be different from real interface
-                var locInst = GetService<object>(name) as T;
-
-                if (locInst != null)
-                    return locInst;
-            }
+            T locInst;
+            
+            // In local scenario try to return service instance itself instead of a proxy
+            // Get as object because proxy interface may be different from real interface
+            if ((invokeCtx == null || !invokeCtx.Any()) && (locInst = (GetService<object>(name) as T)) != null)
+                return locInst;
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
@@ -404,18 +402,25 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return GetDynamicServiceProxy(name, false);
         }
-
+        
         /** <inheritDoc /> */
         public dynamic GetDynamicServiceProxy(string name, bool sticky)
+        {
+            return GetDynamicServiceProxy(name, sticky, null);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> invokeCtx)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             // In local scenario try to return service instance itself instead of a proxy
-            var locInst = GetService<object>(name);
-
-            if (locInst != null)
+            if (invokeCtx == null || !invokeCtx.Any())
             {
-                return locInst;
+                var locInst = GetService<object>(name);
+
+                if (locInst != null)
+                    return locInst;
             }
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
@@ -426,9 +431,8 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
-            // todo
             return new DynamicServiceProxy((methodName, args) =>
-                InvokeProxyMethod(javaProxy, methodName, null, args, platform, null));
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, invokeCtx));
         }
 
         /// <summary>

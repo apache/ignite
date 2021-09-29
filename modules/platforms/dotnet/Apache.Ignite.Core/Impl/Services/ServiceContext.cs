@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritdoc /> */
         public object AffinityKey { get; private set; }
         
-        public IService Service { get; }
+        public IService Service { get; private set; }
 
         public void InvocationContext(Hashtable invokeCtx)
         {
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             var currCtx = _invCtx.Value;
 
-            return currCtx?[key];
+            return currCtx == null ? null : currCtx[key];
         }
 
         public void Dispose()
