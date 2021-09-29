@@ -1431,7 +1431,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
     /** */
     @Test
-    public void testGetTime() {
+    public void testGetTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         HistogramMetricImpl getTime = metric("GetTime");
@@ -1443,19 +1443,19 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.get(1);
         cache.getAsync(1).get();
 
-        assertEquals(2, Arrays.stream(getTime.value()).sum());
+        assertTrue(waitForCondition(() -> Arrays.stream(getTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(0, Arrays.stream(getAllTime.value()).sum());
 
         cache.getAll(Collections.singleton(1));
         cache.getAllAsync(Collections.singleton(1)).get();
 
+        assertTrue(waitForCondition(() -> Arrays.stream(getAllTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(2, Arrays.stream(getTime.value()).sum());
-        assertEquals(2, Arrays.stream(getAllTime.value()).sum());
     }
 
     /** */
     @Test
-    public void testPutTime() {
+    public void testPutTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         HistogramMetricImpl putTime = metric("PutTime");
@@ -1467,19 +1467,19 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.put(1, 1);
         cache.putAsync(2, 2).get();
 
-        assertEquals(2, Arrays.stream(putTime.value()).sum());
+        assertTrue(waitForCondition(() -> Arrays.stream(putTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(0, Arrays.stream(putAllTime.value()).sum());
 
         cache.putAll(F.asMap(3, 3));
         cache.putAllAsync(F.asMap(4, 4)).get();
 
+        assertTrue(waitForCondition(() -> Arrays.stream(putAllTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(2, Arrays.stream(putTime.value()).sum());
-        assertEquals(2, Arrays.stream(putAllTime.value()).sum());
     }
 
     /** */
     @Test
-    public void testRemoveTime() {
+    public void testRemoveTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         HistogramMetricImpl removeTime = metric("RemoveTime");
@@ -1497,14 +1497,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.remove(1);
         cache.removeAsync(2).get();
 
-        assertEquals(2, Arrays.stream(removeTime.value()).sum());
+        assertTrue(waitForCondition(() -> Arrays.stream(removeTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(0, Arrays.stream(removeAllTime.value()).sum());
 
         cache.removeAll(Collections.singleton(3));
         cache.removeAllAsync(Collections.singleton(4)).get();
 
+        assertTrue(waitForCondition(() -> Arrays.stream(removeAllTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(2, Arrays.stream(removeTime.value()).sum());
-        assertEquals(2, Arrays.stream(removeAllTime.value()).sum());
     }
 
     /**
