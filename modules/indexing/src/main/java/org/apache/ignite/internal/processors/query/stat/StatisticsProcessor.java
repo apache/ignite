@@ -180,9 +180,13 @@ public class StatisticsProcessor {
                     // Will be executed before original, so have to try to cancel previous context to add new one.
                     gatheringInProgress.remove(ctx.configuration().key(), v);
 
-                    busyRun(() -> {
-                        updateLocalStatistics(ctx);
-                    });
+                    boolean rescheduled = busyRun(() -> updateLocalStatistics(ctx));
+
+                    if (!rescheduled && log.isDebugEnabled()) {
+                        log.debug("Unable to reschedule statistics task by key " + ctx.configuration().key()
+                            + " due to inactive state.");
+                    }
+
                 });
 
                 res[0] = false;
@@ -388,17 +392,17 @@ public class StatisticsProcessor {
 
         active = false;
 
-        cancelAllTasks();
+        cancelAllContexts();
 
         if (log.isDebugEnabled())
             log.debug("Statistics gathering stopped.");
     }
 
     /**
-     * Cancel all currently running statistics gathering tasks.
+     * Cancel all currently running statistics gathering contexts.
      */
-    public void cancelAllTasks() {
-        gatheringInProgress.values().forEach(g -> g.future().cancel(true));
+    public void cancelAllContexts() {
+        gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel);
         // Can skip waiting for each task finished because of global busyLock.
 
         gatheringInProgress.clear();
