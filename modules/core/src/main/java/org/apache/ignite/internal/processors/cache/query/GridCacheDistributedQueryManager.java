@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -38,8 +37,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
-import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortDistributedCacheQueryReducer;
-import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedDistributedCacheQueryReducer;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -62,7 +59,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 
 /**
  * Distributed query manager (for cache in REPLICATED / PARTITIONED cache mode).
@@ -505,14 +501,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        // Cache query future completes within reducer.
         final GridCacheDistributedQueryFuture fut = fields ?
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry) :
-            new GridCacheDistributedQueryFuture(cctx, reqId, qry);
-
-        DistributedCacheQueryReducer<?> reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
-
-        fut.reducer(reducer);
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes) :
+            new GridCacheDistributedQueryFuture(cctx, reqId, qry, nodes);
 
         try {
             fut.qry.query().validate();
@@ -534,13 +525,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     cctx.kernalContext().cluster().clientReconnectFuture(),
                     "Query was cancelled, client node disconnected.");
 
-                reducer.onError(err);
+                fut.onDone(err);
             }
 
             startQuery(reqId, fut, nodes);
         }
         catch (IgniteCheckedException e) {
-            reducer.onError(e);
+            fut.onDone(e);
         }
 
         return fut;
@@ -700,20 +691,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
         return queryDistributed(qry, nodes, true);
     }
-
-    /** Creates a reducer depends on query type. */
-    private DistributedCacheQueryReducer<?> createReducer(GridCacheQueryType qryType, long reqId,
-        GridCacheDistributedQueryFuture<K, V, ?> fut, Collection<ClusterNode> nodes) {
-
-        if (qryType == TEXT)
-            return new MergeSortDistributedCacheQueryReducer<>(fut, reqId, this, nodes, textResultComparator);
-        else
-            return new UnsortedDistributedCacheQueryReducer<>(fut, reqId, this, nodes);
-    }
-
-    /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
-    private static final Comparator<ScoredCacheEntry<?, ?>> textResultComparator = (c1, c2) ->
-        Float.compare(c2.score(), c1.score());
 
     /**
      * Gets topic for ordered response messages.

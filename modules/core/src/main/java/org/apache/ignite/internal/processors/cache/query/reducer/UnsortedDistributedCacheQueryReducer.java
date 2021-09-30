@@ -19,28 +19,24 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
+import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryReducer;
 
 /**
  * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
  */
-public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributedCacheQueryReducer<R> {
-    /** */
+public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
+    /** Current page to return data to user. */
     private NodePage<R> page;
 
     /**
-     * @param fut Cache query future.
-     * @param reqId Cache query request ID.
-     * @param qryMgr Provides a functionality to request pages from remote nodes.
      * @param nodes Collection of nodes this query applies to.
      */
-    public UnsortedDistributedCacheQueryReducer(
-        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, GridCacheDistributedQueryManager<?, ?> qryMgr,
-        Collection<ClusterNode> nodes) {
-        super(fut, reqId, qryMgr, nodes);
+    public UnsortedDistributedCacheQueryReducer(Function<UUID, NodePage<R>> pagesProvider, Collection<ClusterNode> nodes) {
+        super(pagesProvider, nodes);
     }
 
     /** {@inheritDoc} */
@@ -48,15 +44,18 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
         if (page != null && page.hasNext())
             return true;
 
-        Iterator<NodePageStream> it = streams.values().iterator();
+        Iterator<UUID> it = nodes.iterator();
 
         while (it.hasNext()) {
-            page = it.next().nextPage();
+            NodePage<R> p = pagesProvider.apply(it.next());
 
-            if (page.hasNext())
+            if (p == null || !p.hasNext())
+                it.remove();
+            else {
+                page = p;
+
                 return true;
-
-            it.remove();
+            }
         }
 
         return false;

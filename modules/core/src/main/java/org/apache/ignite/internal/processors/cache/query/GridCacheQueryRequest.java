@@ -209,8 +209,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param all If {@code true} then request for all pages, otherwise for single only.
      */
     public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheQueryFutureAdapter<?, ?, ?> fut, boolean all) {
-        GridCacheQueryAdapter<?> qry = fut.query().query();
+        GridCacheQueryAdapter<?> qry, boolean fields, boolean all) {
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
@@ -218,7 +217,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             cctx.name(),
             qry.pageSize(),
             qry.includeBackups(),
-            fut.fields(),
+            fields,
             all,
             qry.keepBinary(),
             qry.taskHash(),

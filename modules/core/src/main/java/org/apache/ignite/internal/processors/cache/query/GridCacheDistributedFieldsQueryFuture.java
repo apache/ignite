@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -33,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridCacheDistributedFieldsQueryFuture
     extends GridCacheDistributedQueryFuture<Object, Object, List<Object>>
     implements GridCacheQueryMetadataAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Meta data future. */
     private final GridFutureAdapter<List<GridQueryFieldMetadata>> metaFut;
 
@@ -44,8 +42,8 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param reqId Request ID.
      * @param qry Query.
      */
-    public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId, GridCacheQueryBean qry) {
-        super((GridCacheContext<Object, Object>)ctx, reqId, qry);
+    public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId, GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
+        super((GridCacheContext<Object, Object>)ctx, reqId, qry, nodes);
 
         metaFut = new GridFutureAdapter<>();
 

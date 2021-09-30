@@ -17,34 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 
 /**
- * This class is responsible for reducing results of cache query. Query results are delivered via callback
- * {@link #onPage(UUID, Collection, boolean)}.
+ * This abstract class is base class for cache query reducers. They are responsible for reducing results of cache query.
  *
  * <T> is a type of cache query result item.
  */
 public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
-    /**
-     * Callback that invoked on receiving a new page.
-     *
-     * @param nodeId Node ID that sent this page.
-     * @param data Page data rows.
-     * @param last Whether this page is last for specified {@code nodeId}.
-     */
-    public abstract void onPage(UUID nodeId, Collection<T> data, boolean last);
-
-    /**
-     * Callback in case of receiving page with error.
-     *
-     * @param err Received error
-     */
-    public abstract void onError(Throwable err);
-
     /** {@inheritDoc} */
     @Override public void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException("CacheQueryReducer doesn't support removing items.");

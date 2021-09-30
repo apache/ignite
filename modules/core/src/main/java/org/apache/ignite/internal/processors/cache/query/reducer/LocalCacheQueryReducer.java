@@ -78,16 +78,11 @@ public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onPage(UUID nodeId, Collection<R> data, boolean last) {
+    public void onPage(UUID nodeId, Collection<R> data, boolean last) {
         synchronized (pagesLock) {
             page = data.iterator();
 
             pagesLock.notifyAll();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(Throwable err) {
-        fut.onDone(err);
     }
 }

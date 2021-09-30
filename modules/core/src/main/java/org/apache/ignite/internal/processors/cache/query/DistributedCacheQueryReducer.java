@@ -17,29 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
 
 /**
- * Reducer for distributed cache query.
+ * Base class for distributed cache query reducers.
  */
 public abstract class DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
     /**
-     * Checks whether node with provided {@code nodeId} is a map node for the query.
-     * Note: if all pages were received from this node, then the method will return {@code false}.
-     *
-     * @param nodeId Node ID.
-     * @return {@code true} if node with provided {@code nodeId} is a map node for the query, {@code false} otherwise.
+     * Function returns a new data page for specified node.
      */
-    public abstract boolean remoteQueryNode(UUID nodeId);
+    protected final Function<UUID, NodePage<T>> pagesProvider;
 
     /**
-     * Blocks current thread until reducer will be ready to return the very first result item for the query.
+     * List of nodes with not reduced data.
      */
-    public abstract void awaitInitialization() throws IgniteInterruptedCheckedException;
+    protected final List<UUID> nodes;
 
-    /**
-     * Cancel cache query and stop reduce pages.
-     */
-    public abstract void cancel();
+    /** */
+    protected DistributedCacheQueryReducer(Function<UUID, NodePage<T>> pagesProvider, Collection<ClusterNode> nodes) {
+        this.pagesProvider = pagesProvider;
+        this.nodes = nodes.stream().map(ClusterNode::id).collect(Collectors.toList());
+    }
 }

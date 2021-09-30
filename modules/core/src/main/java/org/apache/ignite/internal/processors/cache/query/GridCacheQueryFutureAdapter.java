@@ -235,7 +235,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                         err);
                 }
 
-                reducer().onError(err);
+                onPageError(err);
             }
             else {
                 if (data == null)
@@ -264,19 +264,25 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 } else
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
-                reducer().onPage(nodeId, (Collection<R>) data, lastPage);
+                onPage(nodeId, (Collection<R>) data, lastPage);
 
                 if (isDone())
                     clear();
             }
         }
         catch (Throwable e) {
-            reducer().onError(e);
+            onPageError(e);
 
             if (e instanceof Error)
                 throw (Error)e;
         }
     }
+
+    /** Invokes in case of receiving error with new page from query node. */
+    protected abstract void onPageError(Throwable err);
+
+    /** Handles new data page from query node. */
+    protected abstract void onPage(UUID nodeId, Collection<R> data, boolean lastPage);
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {

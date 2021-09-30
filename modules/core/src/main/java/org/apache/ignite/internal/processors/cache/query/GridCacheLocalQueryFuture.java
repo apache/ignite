@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -33,16 +35,13 @@ import org.apache.ignite.marshaller.Marshaller;
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private Runnable run;
 
     /** */
     private IgniteInternalFuture<?> fut;
 
     /** Local reducer for this query. */
-    private final CacheQueryReducer<R> reducer;
+    private final LocalCacheQueryReducer<R> reducer;
 
     /**
      * @param ctx Context.
@@ -77,6 +76,16 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /** {@inheritDoc} */
     @Override public void awaitFirstItemAvailable() throws IgniteCheckedException {
         get();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onPageError(Throwable err) {
+        onDone(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onPage(UUID nodeId, Collection<R> data, boolean lastPage) {
+        reducer.onPage(nodeId, data, lastPage);
     }
 
     /** */

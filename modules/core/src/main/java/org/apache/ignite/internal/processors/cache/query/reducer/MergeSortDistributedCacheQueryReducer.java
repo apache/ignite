@@ -19,21 +19,20 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
+import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryReducer;
 
 /**
  * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node
  * returns pre-sorted collection of data.
  */
-public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistributedCacheQueryReducer<R> {
+public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
     /**
      * Queue of pages from all nodes. Order of streams controls with order of head items of pages.
      */
@@ -42,11 +41,8 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     /**
      * @param rowCmp Comparator to sort query results from different nodes.
      */
-    public MergeSortDistributedCacheQueryReducer(
-        GridCacheQueryFutureAdapter<?, ?, ?> fut, long reqId, GridCacheDistributedQueryManager<?, ?> qryMgr,
-        Collection<ClusterNode> nodes, Comparator<R> rowCmp
-    ) {
-        super(fut, reqId, qryMgr, nodes);
+    public MergeSortDistributedCacheQueryReducer(Function<UUID, NodePage<R>> pagesProvider, Comparator<R> rowCmp, Collection<ClusterNode> nodes) {
+        super(pagesProvider, nodes);
 
         // Compares head pages from all nodes to get the lowest value at the moment.
         Comparator<NodePage<R>> pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());
@@ -57,11 +53,17 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         // Initial sort.
-        if (nodePages.isEmpty() && !streams.isEmpty()) {
-            Set<UUID> nodes = new HashSet<>(streams.keySet());
+        if (nodePages.isEmpty()) {
+            Iterator<UUID> it = nodes.iterator();
 
-            for (UUID nodeId : nodes)
-                fillWithPage(nodeId);
+            while (it.hasNext()) {
+                NodePage<R> p = pagesProvider.apply(it.next());
+
+                if (p == null || !p.hasNext())
+                    it.remove();
+                else
+                    nodePages.add(p);
+            }
         }
 
         return !nodePages.isEmpty();
@@ -78,26 +80,13 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
 
         if (page.hasNext())
             nodePages.offer(page);
-        else
-            fillWithPage(page.nodeId());
+        else {
+            NodePage<R> p = pagesProvider.apply(page.nodeId());
+
+            if (p != null && p.hasNext())
+                nodePages.offer(p);
+        }
 
         return o;
-    }
-
-    /** */
-    private void fillWithPage(UUID nodeId) throws IgniteCheckedException {
-        NodePage<R> page = streams.get(nodeId).nextPage();
-
-        if (!page.hasNext())
-            streams.remove(nodeId);
-        else
-            nodePages.offer(page);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        super.cancel();
-
-        nodePages.clear();
     }
 }
