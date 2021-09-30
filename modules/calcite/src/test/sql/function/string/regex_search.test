@@ -73,7 +73,7 @@ true
 
 # postgres says throw error on invalid regex
 statement error
-SELECT '' ~ '\X'
+SELECT '' ~ '[a-z'
 
 statement ok
 CREATE TABLE regex(s VARCHAR, p VARCHAR)

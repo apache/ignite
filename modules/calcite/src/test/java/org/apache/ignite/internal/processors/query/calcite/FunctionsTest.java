@@ -286,7 +286,7 @@ public class FunctionsTest extends GridCommonAbstractTest {
         checkQuery("SELECT null !~* 'ab[cd]'").returns(NULL_RESULT).check();
         checkQuery("SELECT 'abcd' !~* null").returns(NULL_RESULT).check();
         checkQuery("SELECT null !~* null").returns(NULL_RESULT).check();
-        assertThrows("SELECT 'abcd' ~ '\\X'", IgniteSQLException.class, null);
+        assertThrows("SELECT 'abcd' ~ '[a-z'", IgniteSQLException.class, null);
     }
 
     /** */
