@@ -184,7 +184,7 @@ public class IgniteStatisticsConfigurationManager {
                 return;
         }
 
-        mgmtPool.submit(this::updateAllLocalStatistics);
+        mgmtPool.execute(this::updateAllLocalStatistics);
     }
 
     /** Drop columns listener to clean its statistics configuration. */
@@ -323,7 +323,7 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Statistics configuration manager started.");
 
         if (distrMetaStorage != null)
-            mgmtPool.submit(this::updateAllLocalStatistics);
+            mgmtPool.execute(this::updateAllLocalStatistics);
     }
 
     /**

@@ -214,7 +214,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (!ctx.clientNode()) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
             ctx.timeout().schedule(() -> {
-                obsolescenceExecutor.submit(() -> processObsolescence());
+                obsolescenceExecutor.execute(() -> processObsolescence());
             }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
         }
 
@@ -268,6 +268,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private void startX() {
         if (log.isDebugEnabled())
             log.debug("Starting statistics subsystem...");
+
+        obsolescenceExecutor.activate();
 
         statsRepos.start();
         statProc.start();
