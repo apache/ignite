@@ -64,6 +64,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
     /** */
     public static interface CastFunction extends Function<Object, Object> {
+        /** {@inheritDoc} */
         @Override Object apply(Object o);
     }
 

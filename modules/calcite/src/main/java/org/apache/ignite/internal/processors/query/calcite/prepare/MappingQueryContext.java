@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.UUID;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**

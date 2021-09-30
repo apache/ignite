@@ -42,6 +42,8 @@ public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V>, Ignit
      * Creates a new visitor based on instance of {@link IgniteBiInClosure}.
      *
      * @param c Closure.
+     * @param <K> Ignite cache key type.
+     * @param <V> Ignite cache value type.
      * @return Stream visitor.
      */
     public static <K, V> StreamVisitor<K, V> from(final IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> c) {

@@ -1058,7 +1058,7 @@ public final class IgniteSystemProperties {
      * Defaults to {@code 0}, meaning that inline index store is disabled.
      */
     @SystemProperty(value = "Maximum payload size in bytes for H2TreeIndex. " +
-        "0 means that inline index store is disabled", type = Integer.class, defaults = "10")
+        "0 means that inline index store is disabled", type = Integer.class, defaults = "64")
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**
@@ -2008,6 +2008,9 @@ public final class IgniteSystemProperties {
         "stopped when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
+    /**
+     * Determines whether to use the experimental sql, calcite based, engine.
+     */
     @SystemProperty(value = "Determines whether to use the experimental sql, calcite based, engine.",
         defaults = "" + DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE)
     public static final String IGNITE_EXPERIMENTAL_SQL_ENGINE = "IGNITE_EXPERIMENTAL_SQL_ENGINE";
@@ -2030,6 +2033,7 @@ public final class IgniteSystemProperties {
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
+     * @param <E> Type of the enum.
      * @return Enum value or {@code null} if the property is not set.
      */
     public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
@@ -2038,6 +2042,8 @@ public final class IgniteSystemProperties {
 
     /**
      * @param name Name of the system property or environment variable.
+     * @param dflt Default value if property is not set.
+     * @param <E> Type of the enum.
      * @return Enum value or the given default.
      */
     public static <E extends Enum<E>> E getEnum(String name, E dflt) {

@@ -97,6 +97,7 @@ public class SessionPool {
      *
      * @param cassandraSes Session wrapper.
      * @param driverSes Driver session.
+     * @param expirationTimeout Expiration timeout.
      */
     public static void put(CassandraSessionImpl cassandraSes, Session driverSes, long expirationTimeout) {
         if (cassandraSes == null || driverSes == null)

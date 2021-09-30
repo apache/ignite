@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
+import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 
 /**
  * Abstract class for control.sh commands, that support verbose mode.
@@ -31,5 +38,33 @@ public abstract class AbstractCommand<T> implements Command<T> {
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log, boolean verbose) throws Exception {
         this.verbose = verbose;
         return execute(clientCfg, log);
+    }
+
+    /**
+     * Print cache command usage with default indention.
+     *
+     * @param logger Logger to use.
+     * @param cmd Cache command.
+     * @param description Command description.
+     * @param paramsDesc Parameter desciptors.
+     * @param args Cache command arguments.
+     */
+    protected void usageCache(
+        Logger logger,
+        CacheSubcommands cmd,
+        String description,
+        Map<String, String> paramsDesc,
+        String... args
+    ) {
+        logger.info("");
+        logger.info(INDENT + CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)));
+        logger.info(DOUBLE_INDENT + description);
+
+        if (!F.isEmpty(paramsDesc)) {
+            logger.info("");
+            logger.info(DOUBLE_INDENT + "Parameters:");
+
+            usageParams(paramsDesc, DOUBLE_INDENT + INDENT, logger);
+        }
     }
 }

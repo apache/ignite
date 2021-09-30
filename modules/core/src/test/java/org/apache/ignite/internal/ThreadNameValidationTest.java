@@ -214,8 +214,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         /** Id. */
         long id;
 
-        String name;
         /** Name. */
+        String name;
 
         /**
          * Constructor.

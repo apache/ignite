@@ -47,11 +47,20 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        startGrids(2);
 
         client = startClientGrid(CLIENT_NODE_NAME);
 
         client.cluster().state(ClusterState.ACTIVE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -80,13 +89,13 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected List<List<?>> executeSql(String sql) {
-        return executeSql(client, sql);
+    protected List<List<?>> executeSql(String sql, Object... params) {
+        return executeSql(client, sql, params);
     }
 
     /** */
-    protected List<List<?>> executeSql(IgniteEx ignite, String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql);
+    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... params) {
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql, params);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();

@@ -69,6 +69,7 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
         return cfg;
     }
 
+    /** */
     protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }

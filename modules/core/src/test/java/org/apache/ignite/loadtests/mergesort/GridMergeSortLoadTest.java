@@ -18,10 +18,11 @@
 package org.apache.ignite.loadtests.mergesort;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -94,7 +95,7 @@ public class GridMergeSortLoadTest {
                     GridLoadTestUtils.appendLineToFile(
                         outputFileName,
                         "%s,%d",
-                        GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                        IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                         execTime / 1000);
             }
         }

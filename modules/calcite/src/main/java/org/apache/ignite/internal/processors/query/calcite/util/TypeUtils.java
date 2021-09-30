@@ -208,6 +208,10 @@ public class TypeUtils {
         return fldDesc.storageType();
     }
 
+    /**
+     * @param ectx Execution context.
+     * @param resultType Result type.
+     */
     public static <Row> Function<Row, Row> resultTypeConverter(ExecutionContext<Row> ectx, RelDataType resultType) {
         assert resultType.isStruct();
 

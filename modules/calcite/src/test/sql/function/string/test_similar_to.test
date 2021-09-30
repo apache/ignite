@@ -67,6 +67,36 @@ SELECT 'aaa' NOT SIMILAR TO '[b-z]{3}'
 ----
 true
 
+query T
+SELECT 'aaa' ~ 'aaa'
+----
+true
+
+query T
+SELECT 'aaa' !~ 'bbb'
+----
+true
+
+# posix regex can match any part of expression
+query T
+SELECT 'aaa' ~ '^a'
+----
+true
+
+query T
+SELECT 'aaa' ~ '^a+'
+----
+true
+
+query T
+SELECT 'aaa' ~ '(a|b)*'
+----
+true
+
+query T
+SELECT 'abc' ~ '^(b|c)'
+----
+false
 
 # Test SIMILAR TO statement with expressions
 statement ok

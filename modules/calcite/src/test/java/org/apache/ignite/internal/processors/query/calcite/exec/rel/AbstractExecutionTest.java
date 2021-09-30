@@ -98,6 +98,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     enum ExecutionStrategy {
         /** */
         FIFO {
+            /** {@inheritDoc} */
             @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
                 return tasks.pollFirst();
             }
@@ -105,6 +106,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
         /** */
         LIFO {
+            /** {@inheritDoc} */
             @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
                 return tasks.pollLast();
             }
@@ -112,6 +114,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
         /** */
         RANDOM {
+            /** {@inheritDoc} */
             @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
                 return ThreadLocalRandom.current().nextBoolean() ? tasks.pollLast() : tasks.pollFirst();
             }

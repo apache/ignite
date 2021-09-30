@@ -37,10 +37,12 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
      * Wrong Externalizable class.
      */
     private static class GridCacheWrongValue implements Externalizable {
+        /** */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             throw new NullPointerException("Expected exception.");
         }
 
+        /** */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             throw new NullPointerException("Expected exception.");
         }
@@ -50,8 +52,10 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
      * Wrong Externalizable class.
      */
     private static class GridCacheWrongValue1 {
+        /** */
         private int val1 = 8;
 
+        /** */
         private long val2 = 9;
     }
 

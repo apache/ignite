@@ -255,6 +255,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         return physicalPlan(sql, plannerCtx(sql, publicSchema, disabledRules));
     }
 
+    /** */
     protected IgniteRel physicalPlan(String sql, PlanningContext ctx) throws Exception {
         try (IgnitePlanner planner = ctx.planner()) {
             assertNotNull(planner);

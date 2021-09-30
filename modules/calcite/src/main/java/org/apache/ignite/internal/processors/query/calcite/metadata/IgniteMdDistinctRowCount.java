@@ -29,6 +29,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdDistinctRowCount extends RelMdDistinctRowCount {
+    /** */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.DISTINCT_ROW_COUNT.method, new IgniteMdDistinctRowCount());

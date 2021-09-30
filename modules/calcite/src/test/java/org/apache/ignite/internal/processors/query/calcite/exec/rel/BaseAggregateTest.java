@@ -606,7 +606,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     }
 
     /** */
-    private SingleNode<Object[]> createAggregateNodesChain(
+    protected SingleNode<Object[]> createAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
         ImmutableList<ImmutableBitSet> grpSets,
         AggregateCall aggCall,

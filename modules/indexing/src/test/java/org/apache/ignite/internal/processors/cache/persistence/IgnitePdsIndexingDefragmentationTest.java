@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
@@ -311,8 +312,12 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         private boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx, force);
+        @Override @Nullable public IgniteInternalFuture<?> rebuild(
+            GridCacheContext cctx,
+            boolean force,
+            IndexRebuildCancelToken cancelTok
+        ) {
+            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
             rebuiltIndexes = future != null;
 
             return future;

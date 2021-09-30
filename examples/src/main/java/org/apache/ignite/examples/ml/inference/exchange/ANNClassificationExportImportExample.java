@@ -115,6 +115,7 @@ public class ANNClassificationExportImportExample {
         }
     }
 
+    /** */
     private static double evaluateModel(IgniteCache<Integer, double[]> dataCache, NNClassificationModel knnMdl) {
         int amountOfErrors = 0;
         int totalAmount = 0;

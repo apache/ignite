@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 
+/** */
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class DateTimeTest extends GridCommonAbstractTest {
     /** */
@@ -83,6 +84,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
     }
 
+    /** */
     @Test
     public void testQuery1() throws Exception {
         checkQuery("SELECT SQLDATE FROM datetimetable where SQLTIME = '12:00:00'")
@@ -90,6 +92,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery2() throws Exception {
         checkQuery("SELECT SQLDATE FROM datetimetable where JAVADATE = ?")
@@ -98,6 +101,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery3() throws Exception {
         checkQuery("SELECT SQLDATE FROM datetimetable where JAVADATE = ?")
@@ -106,6 +110,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery4() throws Exception {
         checkQuery("SELECT MAX(SQLDATE) FROM datetimetable")
@@ -113,6 +118,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery5() throws Exception {
         checkQuery("SELECT MIN(SQLDATE) FROM datetimetable")
@@ -120,6 +126,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery6() throws Exception {
         checkQuery("SELECT JAVADATE FROM datetimetable WHERE SQLTIME = '13:15:00'")
@@ -127,6 +134,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery7() throws Exception {
         checkQuery("SELECT t1.JAVADATE, t2.JAVADATE FROM datetimetable t1 " +
@@ -202,17 +210,24 @@ public class DateTimeTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     public static class DateTimeEntry {
+        /** */
         long id;
 
+        /** */
         Date javaDate;
 
+        /** */
         java.sql.Date sqlDate;
 
+        /** */
         Time sqlTime;
 
+        /** */
         Timestamp sqlTimestamp;
 
+        /** */
         public DateTimeEntry(long id, Date javaDate, java.sql.Date sqlDate, Time sqlTime, Timestamp sqlTimestamp) {
             this.id = id;
             this.javaDate = javaDate;

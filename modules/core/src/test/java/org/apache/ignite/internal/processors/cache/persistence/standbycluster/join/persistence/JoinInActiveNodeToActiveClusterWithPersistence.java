@@ -30,6 +30,7 @@ public class JoinInActiveNodeToActiveClusterWithPersistence extends JoinInActive
         return persistentCfg(super.cfg(name));
     }
 
+    /** */
     private AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder persistent(AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder b) {
         b.afterClusterStarted(
             b.checkCacheEmpty()
@@ -44,6 +45,7 @@ public class JoinInActiveNodeToActiveClusterWithPersistence extends JoinInActive
         return b;
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder withOutConfigurationTemplate() throws Exception {
         AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder b = persistent(super.withOutConfigurationTemplate());
 
@@ -52,6 +54,7 @@ public class JoinInActiveNodeToActiveClusterWithPersistence extends JoinInActive
         return b;
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientWithOutConfigurationTemplate() throws Exception {
         AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder b = persistent(super.joinClientWithOutConfigurationTemplate());
 
@@ -60,28 +63,34 @@ public class JoinInActiveNodeToActiveClusterWithPersistence extends JoinInActive
         return b;
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate()
         throws Exception {
         return persistent(super.joinClientStaticCacheConfigurationInClusterTemplate());
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate()
         throws Exception {
         return persistent(super.joinClientStaticCacheConfigurationDifferentOnBothTemplate());
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder staticCacheConfigurationOnJoinTemplate() throws Exception {
         return persistent(super.staticCacheConfigurationOnJoinTemplate());
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder staticCacheConfigurationInClusterTemplate() throws Exception {
         return persistent(super.staticCacheConfigurationInClusterTemplate());
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder staticCacheConfigurationSameOnBothTemplate() throws Exception {
         return persistent(super.staticCacheConfigurationSameOnBothTemplate());
     }
 
+    /** {@inheritDoc} */
     @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder staticCacheConfigurationDifferentOnBothTemplate() throws Exception {
         return persistent(super.staticCacheConfigurationDifferentOnBothTemplate());
     }

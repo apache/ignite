@@ -77,7 +77,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class Commons {
     /** */
-    private Commons(){}
+    private Commons() {
+        // No-op.
+    }
 
     /**
      * Converts a QueryContext into a planner context.

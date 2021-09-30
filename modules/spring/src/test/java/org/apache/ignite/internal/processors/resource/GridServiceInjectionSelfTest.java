@@ -280,6 +280,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
      * Dummy Service.
      */
     public interface DummyService {
+        /** */
         public void noop();
     }
 

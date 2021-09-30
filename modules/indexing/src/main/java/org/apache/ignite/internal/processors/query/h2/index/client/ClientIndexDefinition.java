@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.index.client;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
@@ -37,29 +39,16 @@ public class ClientIndexDefinition implements IndexDefinition {
     private final IndexName idxName;
 
     /** */
-    private final List<IndexColumn> cols;
-
-    /** */
-    private final GridH2Table table;
+    private final List<IndexKeyDefinition> keyDefs;
 
     /** */
     public ClientIndexDefinition(GridH2Table table, IndexName idxName, List<IndexColumn> unwrappedCols,
         int cfgInlineSize, int maxInlineSize) {
-        this.table = table;
         this.idxName = idxName;
         this.cfgInlineSize = cfgInlineSize;
         this.maxInlineSize = maxInlineSize;
-        cols = unwrappedCols;
-    }
 
-    /** */
-    public GridH2Table getTable() {
-        return table;
-    }
-
-    /** */
-    public List<IndexColumn> getColumns() {
-        return cols;
+        keyDefs = new QueryIndexKeyDefinitionProvider(table, unwrappedCols).keyDefinitions();
     }
 
     /** */
@@ -75,5 +64,10 @@ public class ClientIndexDefinition implements IndexDefinition {
     /** {@inheritDoc} */
     @Override public IndexName idxName() {
         return idxName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+        return keyDefs;
     }
 }

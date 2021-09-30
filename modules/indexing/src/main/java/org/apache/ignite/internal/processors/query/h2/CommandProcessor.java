@@ -1101,7 +1101,8 @@ public class CommandProcessor extends SqlCommandProcessor {
 
             if (col.getType() == Value.STRING ||
                 col.getType() == Value.STRING_FIXED ||
-                col.getType() == Value.STRING_IGNORECASE)
+                col.getType() == Value.STRING_IGNORECASE ||
+                col.getType() == Value.BYTES)
                 if (col.getPrecision() < H2Utils.STRING_DEFAULT_PRECISION)
                     precision.put(e.getKey(), (int)col.getPrecision());
         }

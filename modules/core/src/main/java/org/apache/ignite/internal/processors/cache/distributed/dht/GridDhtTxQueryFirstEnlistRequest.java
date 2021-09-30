@@ -39,9 +39,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
     /** */
     private static final long serialVersionUID = -7494735627739420176L;
 
-    /** Tx initiator. Primary node in case of remote DHT tx. */
-    private UUID subjId;
-
     /** */
     private AffinityTopologyVersion topVer;
 
@@ -75,7 +72,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
     /**
      * @param cacheId Cache id.
      * @param dhtFutId DHT future id.
-     * @param subjId Subject id.
      * @param topVer Topology version.
      * @param lockVer Lock version.
      * @param snapshot Mvcc snapshot.
@@ -90,7 +86,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
      */
     GridDhtTxQueryFirstEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
-        UUID subjId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
         MvccSnapshot snapshot,
@@ -105,7 +100,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
 
         this.cacheId = cacheId;
-        this.subjId = subjId;
         this.topVer = topVer;
         this.crdVer = snapshot.coordinatorVersion();
         this.cntr = snapshot.counter();
@@ -140,13 +134,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @return Subject id.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -235,24 +222,18 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
@@ -315,14 +296,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
                 reader.incrementState();
 
             case 16:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -330,7 +303,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -338,7 +311,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -353,7 +326,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 20;
+        return 19;
     }
 
     /** {@inheritDoc} */

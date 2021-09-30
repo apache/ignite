@@ -88,6 +88,12 @@
     <ClCompile Include="..\..\src\compute_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\compute_java_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compute_java_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cluster_group_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -109,6 +115,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\complex_type.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute_types.h">
       <Filter>Code\Types</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\test_type.h">
@@ -136,74 +145,81 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\invalid.xml">
+    <Xml Include="..\..\config\invalid.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-test.xml">
+    </Xml>
+    <Xml Include="..\..\config\interop.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-test-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\interop-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-test-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\interop-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-test.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-test-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-test-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-continuous.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-query.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-continuous-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-query-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-continuous-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-query-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-identity.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-query-continuous.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-identity-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-query-continuous-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-identity-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-query-continuous-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-store.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-identity.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-store-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-identity-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-store-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-identity-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\isolated.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-store.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\isolated-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-store-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\isolated-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-store-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\persistence-store.xml">
+    </Xml>
+    <Xml Include="..\..\config\isolated.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\persistence-store-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\isolated-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\persistence-store-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\isolated-default.xml">
       <Filter>Configs</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
+    </Xml>
+    <Xml Include="..\..\config\persistence-store.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\persistence-store-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\persistence-store-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
     <Xml Include="..\..\config\compute-client.xml">
       <Filter>Configs</Filter>
     </Xml>
