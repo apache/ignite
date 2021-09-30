@@ -228,7 +228,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         testServiceMetrics(4, 3, 2, 1);
     }
 
-    /** Tests service metrics for multy service instance: serveral instances per node */
+    /** Tests service metrics for multy service instance: serveral instances per node. */
     @Test
     public void testServiceMetricsMultyDuplicated() throws Throwable {
         testServiceMetrics(3, 2, 3, 3);
