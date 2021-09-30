@@ -87,7 +87,7 @@ public class ServiceExample {
         //tag::deploy-by-key[]
         Ignite ignite = Ignition.start();
 
-        // Making sure the cache exists.
+        //making sure the cache exists
         ignite.getOrCreateCache("orgCache");
 
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
@@ -152,32 +152,6 @@ public class ServiceExample {
 
         ignite.services().deploy(serviceCfg);
         //end::start-with-service-config[]
-
-        ignite.close();
-    }
-
-    @Test
-    void startWithStatistics() {
-        //tag::start-with-statistics[]
-        Ignite ignite = Ignition.start();
-
-        ServiceConfiguration serviceCfg = new ServiceConfiguration();
-
-        serviceCfg.setName("myService");
-        serviceCfg.setMaxPerNodeCount(1);
-        serviceCfg.setService(new MyCounterServiceImpl());
-
-        // Enable service statistics.
-        // NOTE: Statistics slows invocation of service's methods.
-        serviceCfg.setStatisticsEnabled(true);
-
-        ignite.services().deploy(serviceCfg);
-
-        // If service statistics is enabled, service reference is proxyed even if local instance is available.
-        // The proxy is slower compared to direct implementation.
-        // Remote service instance is always proxied.
-        MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true)
-        //end::start-with-statistics[]
 
         ignite.close();
     }
