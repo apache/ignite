@@ -149,6 +149,7 @@ public class KubernetesConnectionConfiguration {
      */
     public KubernetesConnectionConfiguration setDiscoveryPort(int discoveryPort) {
         this.discoveryPort = discoveryPort;
+        
         return this;
     }
 
