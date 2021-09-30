@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -89,6 +88,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -128,7 +128,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SERVICE_METRIC_REGISTRY = "Services";
 
     /** Description for the service method invocation metric. */
-    private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Duration of service method in milliseconds.";
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration of service method in milliseconds for ";
 
     /** Default bounds of invocation histogram in nanoseconds. */
     public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
@@ -1213,6 +1213,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
+        ReadOnlyMetricRegistry invocationMetrics = null;
+
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
 
@@ -1239,10 +1241,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled()) {
-                assert srvcCtx.metrics() == null;
+            if (cfg.isStatisticsEnabled()) {
+                if (invocationMetrics == null)
+                    invocationMetrics = createServiceMetrics(srvcCtx);
 
-                cacheServiceMetrics(srvcCtx);
+                srvcCtx.metrics(invocationMetrics);
             }
 
             // Start service in its own thread.
@@ -1860,26 +1863,25 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Caches metrics to measure durations of service methods.
+     * Creates metrics registry for the invocation histograms.
      *
      * @param srvcCtx ServiceContext.
+     * @return Created metric registry.
      */
-    private void cacheServiceMetrics(ServiceContextImpl srvcCtx) {
+    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
         MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
-
-        Map<String, HistogramMetricImpl> hostograms = new HashMap<>();
 
         for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
             for (Method mtd : itf.getMethods()) {
                 if (metricIgnored(mtd.getDeclaringClass()) || metricRegistry.findMetric(mtd.getName()) != null)
                     continue;
 
-                hostograms.put(mtd.getName(),
-                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC));
+                metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
+                    '\'' + mtd.getName() + "()'");
             }
         }
 
-        srvcCtx.metrics(Collections.unmodifiableMap(hostograms));
+        return metricRegistry;
     }
 
     /**

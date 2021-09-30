@@ -18,17 +18,16 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -62,7 +61,7 @@ public class ServiceContextImpl implements ServiceContext {
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
     /** Invocation metrics. */
-    private Map<String, HistogramMetricImpl> metrics;
+    private ReadOnlyMetricRegistry metrics;
 
     /** Service. */
     @GridToStringExclude
@@ -145,7 +144,7 @@ public class ServiceContextImpl implements ServiceContext {
     /**
      * @return Invocation metrics.
      */
-    Map<String, HistogramMetricImpl> metrics() {
+    ReadOnlyMetricRegistry metrics() {
         return metrics;
     }
 
@@ -154,7 +153,7 @@ public class ServiceContextImpl implements ServiceContext {
      *
      * @return {@code this}.
      */
-    ServiceContextImpl metrics(Map<String, HistogramMetricImpl> metrics) {
+    ServiceContextImpl metrics(ReadOnlyMetricRegistry metrics) {
         this.metrics = metrics;
 
         return this;

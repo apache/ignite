@@ -27,11 +27,8 @@ import com.google.common.collect.Iterables;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
-import org.apache.ignite.internal.processors.service.inner.NamingService;
-import org.apache.ignite.internal.processors.service.inner.NamingServiceImpl;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -186,28 +183,6 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         for (IgniteEx ignite : servers)
             assertEquals(metricsCnt(ignite, SRVC_NAME), 0);
-    }
-
-    /** Checks two different histograms are created for the same short names of service methods. */
-    @Test
-    public void testMetricNaming() throws Exception {
-        IgniteEx ignite = startGrid(1);
-
-        ignite.services().deploy(serviceCfg(new NamingServiceImpl(), 0, 1));
-
-        MetricRegistry registry = ignite.context().metric().registry(serviceMetricRegistryName(SRVC_NAME));
-
-        List<Metric> metricsFound = new ArrayList<>();
-
-        for (Method mtd : NamingService.class.getDeclaredMethods()) {
-            Metric curMetric;
-
-            if ((curMetric = registry.findMetric(mtd.getName())) instanceof HistogramMetric
-                && !metricsFound.contains(curMetric))
-                metricsFound.add(curMetric);
-
-            assertNotNull("No metric found for method " + mtd, curMetric);
-        }
     }
 
     /** Tests service metrics for single service instance. */

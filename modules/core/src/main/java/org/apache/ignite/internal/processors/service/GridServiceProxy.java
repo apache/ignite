@@ -425,7 +425,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (srvcProc instanceof IgniteServiceProcessor) {
                 long duration = System.nanoTime() - startTime;
 
-                HistogramMetricImpl histogram = srvCtx.metrics() == null ? null : srvCtx.metrics().get(mtdName);
+                HistogramMetricImpl histogram = srvCtx.metrics() == null ? null : srvCtx.metrics().findMetric(mtdName);
 
                 if (histogram != null)
                     histogram.value(duration);
