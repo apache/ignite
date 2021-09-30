@@ -142,7 +142,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Specifies the port which is returned to the caller to use for service discovery
+     * Specifies the port which is returned to the caller to use for service discovery.
      * defaults to 0
      * @param discoveryPort Port to use for Kubernetes IP Finder
      * @return {@code this} for chaining.
