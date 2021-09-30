@@ -85,7 +85,6 @@ public class JettyRestProcessorNodeFilterTest extends JettyRestProcessorCommonSe
         checkSize(cache, "destId", grid(2).cluster().localNode().id().toString());
     }
 
-
     /** */
     private IgniteCache<String, String> createCacheWithNodeFilter() throws InterruptedException {
         // Start cache only on node 1.
