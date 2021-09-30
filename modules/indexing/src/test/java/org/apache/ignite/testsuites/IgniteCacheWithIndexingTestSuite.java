@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyT
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeDoesNotBreakSqlSelectTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
-import org.apache.ignite.internal.processors.cache.EnumImplementingIndexedInterfaceTest;
+import org.apache.ignite.internal.processors.cache.EnumClassImplementingIndexedInterfaceTest;
 import org.apache.ignite.internal.processors.cache.FieldsPrecisionTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
@@ -123,7 +123,7 @@ import org.junit.runners.Suite;
 
     FieldsPrecisionTest.class,
 
-    EnumImplementingIndexedInterfaceTest.class
+    EnumClassImplementingIndexedInterfaceTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }

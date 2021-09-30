@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest {
+public class EnumClassImplementingIndexedInterfaceTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CACHE = "Person";
 
@@ -70,14 +70,15 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
     /** */
     private void checkCachePutInsert(IgniteCache<Integer, Person> cache) {
         Arrays.stream(RoleEnum.values()).forEach(role -> {
-            Person person = new Person(role, role.toString());
+            Title title = role.ordinal() % 2 == 0 ? new TitleClass1() : new TitleClass2();
+            Person person = new Person(role, title, role.toString());
 
             cache.put(KEY, person);
             assertEquals(person, cache.get(KEY));
 
             cache.clear();
 
-            cache.query(sqlInsertQuery(role, role.toString()));
+            cache.query(sqlInsertQuery(role, title, role.toString()));
             assertEquals(person, cache.get(KEY));
 
             cache.clear();
@@ -97,7 +98,8 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
         ignite.context().query().querySqlFields(new SqlFieldsQuery(
             "create table " + PERSON_CACHE + "(" +
             "   id int PRIMARY KEY," +
-            "   val Object," +
+            "   role Object," +
+            "   title Object," +
             "   desc varchar(5)" +
             ") with \"CACHE_NAME=" + PERSON_CACHE + ",VALUE_TYPE=" + Person.class.getName() + "\""), false);
 
@@ -105,10 +107,10 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
     }
 
     /** */
-    private SqlFieldsQuery sqlInsertQuery(Role role, String description) {
+    private SqlFieldsQuery sqlInsertQuery(Role role, Title title, String description) {
 
-        return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, val, desc) values (?, ?, ?)")
-            .setArgs(KEY, role, description);
+        return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, role, title, desc) values (?, ?, ?, ?)")
+            .setArgs(KEY, role, title, description);
     }
 
     /** */
@@ -137,19 +139,88 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
         ROlE3
     }
 
+    /** */
+    static interface Title {
+
+        /** */
+        public String getTitle();
+    }
+
+    /** */
+    static class TitleClass1 implements Title {
+        /** */
+        private final String title1 = "title1";
+
+        /** */
+        @Override public String getTitle() {
+
+            return title1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TitleClass1 titleCls = (TitleClass1)o;
+
+            return Objects.equals(title1, titleCls.title1);
+        }
+
+        /** */
+        @Override public int hashCode() { return 0; }
+    }
+
+    /** */
+    static class TitleClass2 implements Title {
+
+        /** */
+        private final String title2 = "title2";
+
+        /** */
+        @Override public String getTitle() {
+
+            return title2;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TitleClass2 titleCls = (TitleClass2)o;
+
+            return Objects.equals(title2, titleCls.title2);
+        }
+
+        /** */
+        @Override public int hashCode() { return 1; }
+    }
+
         /** */
     static class Person {
         /** */
         @QuerySqlField(index = true)
-        private final Role val;
+        private final Role role;
+
+        /** */
+        @QuerySqlField(index = true)
+        private final Title title;
 
         /** */
         @QuerySqlField
         private final String desc;
 
         /** */
-        Person(Role val, String desc) {
-            this.val = val;
+        Person(Role role, Title title, String desc) {
+            this.role = role;
+            this.title = title;
             this.desc = desc;
         }
 
@@ -163,12 +234,14 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
 
             Person person = (Person)o;
 
-            return Objects.equals(val, person.val) && Objects.equals(desc, person.desc);
+            return Objects.equals(role, person.role) && Objects.equals(title, person.title) && Objects.equals(desc,
+                    person.desc);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(val);
+            int result = Objects.hash(role);
+            result = 31 * result + Objects.hash(title);
             result = 31 * result + Objects.hash(desc);
             return result;
         }
