@@ -50,7 +50,7 @@ public abstract class StatisticsStorageAbstractTest extends StatisticsAbstractTe
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
-        Thread.sleep(500);
+        //Thread.sleep(500);
 
         grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 

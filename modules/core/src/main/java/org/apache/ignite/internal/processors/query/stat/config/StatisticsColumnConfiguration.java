@@ -167,8 +167,7 @@ public class StatisticsColumnConfiguration implements Serializable {
      *
      * @return Tombstone column configuration.
      */
-    public StatisticsColumnConfiguration createTombstone()
-    {
+    public StatisticsColumnConfiguration createTombstone() {
         if (tombstone)
             return this;
 

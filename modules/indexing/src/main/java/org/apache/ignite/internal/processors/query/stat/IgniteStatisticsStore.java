@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.collection.IntMap;
 
 /**
- * Statistics store interface. Wrap phisical storage (in memory or local metastore) to give easy access to statistics.
+ * Statistics store interface. Wrap physical storage (in memory or local metastore) to give easy access to statistics.
  */
 public interface IgniteStatisticsStore {
     /**

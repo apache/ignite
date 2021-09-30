@@ -78,7 +78,7 @@ public class StatisticsProcessor {
     /**
      * Update statistics for the given key to actual state.
      * If byObsolescence and tbl is not {@code null} - does not clear any other partitions.
-     * Should run throw management pool only.
+     * 
      * 1) Replace previous gathering context if exist and needed (replace byObsolescence gathering with new one or
      * replace gathering with older configuration or topology version with new one).
      * 2) If byObsolescence and no table awailable - clean obsolescence and partition statistics for the given key.
@@ -317,16 +317,6 @@ public class StatisticsProcessor {
         }
 
         return true;
-    }
-
-    /**
-     * Get gathering context by key.
-     *
-     * @param key Statistics key.
-     * @return Gathering in progress or {@code null} if there are no active gathering by specified key.
-     */
-    public LocalStatisticsGatheringContext gatheringInProgress(StatisticsKey key) {
-        return gatheringInProgress.get(key);
     }
 
     /**

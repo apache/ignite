@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsSurvivesNodeRestartTest;
 import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsUsageTest;
+import org.apache.ignite.internal.processors.query.stat.BusyExecutorTest;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatisticsCollectorAggregationTest;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatisticsCollectorTest;
 import org.apache.ignite.internal.processors.query.stat.HasherSelfTest;
@@ -76,6 +77,7 @@ import org.junit.runners.Suite;
     PSUStatisticsStorageTest.class,
 
     // Statistics collection components tests
+    BusyExecutorTest.class,
     FullHLLTest.class,
     StatisticsStorageInMemoryTest.class,
     StatisticsStoragePersistenceTest.class,

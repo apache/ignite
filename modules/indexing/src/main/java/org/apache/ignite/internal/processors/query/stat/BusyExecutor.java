@@ -101,6 +101,8 @@ public class BusyExecutor {
                 return false;
 
             r.run();
+
+            return true;
         }
         catch (Throwable t) {
             log.warning("Unexpected exception on statistics processing: " + t.getMessage(), t);
@@ -109,12 +111,12 @@ public class BusyExecutor {
             busyLock.leaveBusy();
         }
 
-        return true;
+        return false;
     }
 
     /**
-     * Submit task to execute in thread pool. Task surrounded with try/catch and if it's complete with any exception -
-     * resulting future will return false.
+     * Submit task to execute in thread pool under busy lock.
+     * Task surrounded with try/catch and if it's complete with any exception - resulting future will return
      *
      * @param r Task to execute.
      * @return Completable future.
@@ -125,5 +127,14 @@ public class BusyExecutor {
         pool.execute(() -> res.complete(busyRun(r)));
 
         return res;
+    }
+
+    /**
+     * Execute task in thread pool under busy lock.
+     *
+     * @param r Task to execute.
+     */
+    public void execute(Runnable r) {
+        pool.execute(() -> busyRun(r));
     }
 }

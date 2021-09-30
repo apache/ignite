@@ -94,9 +94,6 @@ public class IgniteStatisticsConfigurationManager {
     /** Last ready topology version if {@code null} - used to skip updates of the distributed metastorage on start. */
     private volatile AffinityTopologyVersion topVer;
 
-    /** Monitor to synchronize changes repository: aggregate after collects and drop statistics. */
-    private final Object mux = new Object();
-
     /** Cluster state processor. */
     private final GridClusterStateProcessor cluster;
 
@@ -115,7 +112,7 @@ public class IgniteStatisticsConfigurationManager {
                     if (topVer == null)
                         return;
 
-                    mgmtPool.submit(() -> {
+                    mgmtPool.execute(() -> {
                         StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
                         updateLocalStatistics(newStatCfg);
@@ -124,6 +121,45 @@ public class IgniteStatisticsConfigurationManager {
             );
         }
     };
+
+    /**
+     * Constructor.
+     *
+     * @param schemaMgr Schema manager.
+     * @param subscriptionProcessor Subscription processor.
+     * @param sysViewMgr System view manager.
+     * @param cluster Cluster state processor.
+     * @param statProc Staitistics processor.
+     * @param persistence Persistence enabled flag.
+     * @param mgmtPool Statistics management pool
+     * @param logSupplier Log supplier.
+     */
+    public IgniteStatisticsConfigurationManager(
+        SchemaManager schemaMgr,
+        GridInternalSubscriptionProcessor subscriptionProcessor,
+        GridSystemViewManager sysViewMgr,
+        GridClusterStateProcessor cluster,
+        StatisticsProcessor statProc,
+        boolean persistence,
+        IgniteThreadPoolExecutor mgmtPool,
+        Function<Class<?>, IgniteLogger> logSupplier
+    ) {
+        this.schemaMgr = schemaMgr;
+        log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
+        this.persistence = persistence;
+        this.mgmtPool = new BusyExecutor("configuration manager", mgmtPool, logSupplier);
+        this.statProc = statProc;
+        this.cluster = cluster;
+        subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
+
+        ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
+            logSupplier);
+
+        sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
+            new StatisticsColumnConfigurationViewWalker(),
+            colCfgViewSupplier::columnConfigurationViewSupplier,
+            Function.identity());
+    }
 
     /**
      * Update statistics after topology change, if necessary.
@@ -255,45 +291,6 @@ public class IgniteStatisticsConfigurationManager {
         finally {
             cctx.gate().leave();
         }
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param schemaMgr Schema manager.
-     * @param subscriptionProcessor Subscription processor.
-     * @param sysViewMgr System view manager.
-     * @param cluster Cluster state processor.
-     * @param statProc Staitistics processor.
-     * @param persistence Persistence enabled flag.
-     * @param mgmtPool Statistics management pool
-     * @param logSupplier Log supplier.
-     */
-    public IgniteStatisticsConfigurationManager(
-        SchemaManager schemaMgr,
-        GridInternalSubscriptionProcessor subscriptionProcessor,
-        GridSystemViewManager sysViewMgr,
-        GridClusterStateProcessor cluster,
-        StatisticsProcessor statProc,
-        boolean persistence,
-        IgniteThreadPoolExecutor mgmtPool,
-        Function<Class<?>, IgniteLogger> logSupplier
-    ) {
-        this.schemaMgr = schemaMgr;
-        log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
-        this.persistence = persistence;
-        this.mgmtPool = new BusyExecutor("configuration manager", mgmtPool, logSupplier);
-        this.statProc = statProc;
-        this.cluster = cluster;
-        subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
-
-        ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
-            logSupplier);
-
-        sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
-            new StatisticsColumnConfigurationViewWalker(),
-            colCfgViewSupplier::columnConfigurationViewSupplier,
-            Function.identity());
     }
 
     /**
