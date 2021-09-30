@@ -54,6 +54,8 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         ignite.destroyCache(PERSON_CACHE);
     }
+
+    /** */
     @Test
     public void testInsertTableVarColumns() {
         checkCachePutInsert(startSqlPersonCache());
@@ -68,7 +70,7 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
     /** */
     private void checkCachePutInsert(IgniteCache<Integer, Person> cache) {
         Arrays.stream(RoleEnum.values()).forEach(role -> {
-            Person person = Person.newPerson(role, role.toString());
+            Person person = new Person(role, role.toString());
 
             cache.put(KEY, person);
             assertEquals(person, cache.get(KEY));
@@ -122,9 +124,17 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
     static interface Role {
 
     }
+
     /** */
     enum RoleEnum implements Role {
-        ROLE1, ROLE2, ROlE3
+        /** */
+        ROLE1,
+
+        /** */
+        ROLE2,
+
+        /** */
+        ROlE3
     }
 
         /** */
@@ -133,18 +143,14 @@ public class EnumImplementingIndexedInterfaceTest extends GridCommonAbstractTest
         @QuerySqlField(index = true)
         private final Role val;
 
+        /** */
         @QuerySqlField
         private final String desc;
 
         /** */
-        Person(Role val,String desc) {
+        Person(Role val, String desc) {
             this.val = val;
             this.desc = desc;
-        }
-
-        /** */
-        static Person newPerson(Role val,String desc) {
-           return new Person(val,desc);
         }
 
         /** {@inheritDoc} */

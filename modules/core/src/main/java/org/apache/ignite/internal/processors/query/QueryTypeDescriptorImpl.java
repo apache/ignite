@@ -735,7 +735,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         }
                     } catch (ClassNotFoundException e) {
                         if (log.isDebugEnabled())
-                            U.error(log,"Failed to find child class: " + clsName, e);
+                            U.error(log, "Failed to find child class: " + clsName, e);
                     }
 
                     throw new IgniteSQLException("Type for a column '" + idxField +
