@@ -27,6 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Simple reducer for local queries. */
 public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Iterator provides access to result data. Local query returns all data in single page. */
     private volatile Iterator<R> page;
 
@@ -77,7 +80,7 @@ public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
         return page.next();
     }
 
-    /** {@inheritDoc} */
+    /** Receive the only page with data for local reducer. */
     public void onPage(UUID nodeId, Collection<R> data, boolean last) {
         synchronized (pagesLock) {
             page = data.iterator();

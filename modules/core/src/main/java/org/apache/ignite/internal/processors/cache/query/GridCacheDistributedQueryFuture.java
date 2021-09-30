@@ -67,7 +67,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * @param reqId Request ID.
      * @param qry Query.
      */
-    protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId, GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
+    protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId, GridCacheQueryBean qry,
+        Collection<ClusterNode> nodes) {
         super(ctx, qry, false);
 
         assert reqId > 0;
@@ -224,7 +225,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             firstPageLatch.countDown();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * Await receiving all pages from all nodes.
+         */
         public void awaitInitialization() throws IgniteInterruptedCheckedException {
             U.await(firstPageLatch);
         }
@@ -253,7 +256,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             }
         }
 
-        /** {@inheritDoc} */
+        /** Handle receiving error page. */
         public void onError(Throwable err) {
             synchronized (pagesLock) {
                 for (NodePageStream s: remoteStreams.values())
@@ -263,7 +266,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             }
         }
 
-        /** {@inheritDoc} */
+        /** Handle cancelling query. */
         public void cancel() {
             release(false, null);
 
@@ -288,7 +291,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             }
         }
 
-        /** {@inheritDoc} */
+        /** Handle receiving new data page from query node. */
         public void onPage(UUID nodeId, Collection<R> data, boolean last) {
             synchronized (pagesLock) {
                 if (rcvdFirstPage != null) {
@@ -316,12 +319,12 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             }
         }
 
-        /** {@inheritDoc} */
+        /** Whether specified {@code nodeId} is remote query node or not. */
         public boolean remoteQueryNode(UUID nodeId) {
             return remoteStreams.containsKey(nodeId);
         }
 
-        /** {@inheritDoc} */
+        /** Returns next node page for specified {@code nodeId} or {@code null} in case of error. */
         public @Nullable NodePage<R> nextNodePage(UUID nodeId) {
             try {
                 return streams.get(nodeId).nextPage();

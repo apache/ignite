@@ -29,6 +29,9 @@ import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryRe
  * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
  */
 public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Current page to return data to user. */
     private NodePage<R> page;
 

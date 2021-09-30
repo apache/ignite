@@ -33,6 +33,9 @@ import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryRe
  * returns pre-sorted collection of data.
  */
 public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Queue of pages from all nodes. Order of streams controls with order of head items of pages.
      */
@@ -41,7 +44,8 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
     /**
      * @param rowCmp Comparator to sort query results from different nodes.
      */
-    public MergeSortDistributedCacheQueryReducer(Function<UUID, NodePage<R>> pagesProvider, Comparator<R> rowCmp, Collection<ClusterNode> nodes) {
+    public MergeSortDistributedCacheQueryReducer(Function<UUID, NodePage<R>> pagesProvider, Comparator<R> rowCmp,
+        Collection<ClusterNode> nodes) {
         super(pagesProvider, nodes);
 
         // Compares head pages from all nodes to get the lowest value at the moment.

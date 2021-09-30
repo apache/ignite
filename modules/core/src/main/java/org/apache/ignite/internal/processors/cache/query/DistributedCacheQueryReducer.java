@@ -29,6 +29,9 @@ import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
  * Base class for distributed cache query reducers.
  */
 public abstract class DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Function returns a new data page for specified node.
      */
