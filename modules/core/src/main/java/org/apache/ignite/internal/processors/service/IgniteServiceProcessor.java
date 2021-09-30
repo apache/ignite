@@ -214,9 +214,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Disconnected flag. */
     private volatile boolean disconnected;
 
-    /** Keeps histograms to measure durations of service methods. */
-    private final Map<String, Map<String, HistogramMetricImpl>> invocationHistograms = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -331,8 +328,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         assert opsLock.isWriteLockedByCurrentThread();
 
         deployedServices.clear();
-
-        invocationHistograms.clear();
 
         ctx.metric().remove(SERVICE_METRIC_REGISTRY);
 
@@ -1196,7 +1191,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 int cancelCnt = ctxs.size() - assignCnt;
 
                 if (cancelCnt >= ctxs.size())
-                    clearServiceMetrics(cfg.getName());
+                    ctx.metric().remove(serviceMetricRegistryName(name));
 
                 cancel(ctxs, cancelCnt);
             }
@@ -1244,8 +1239,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled())
-                cacheServiceMetrics(srvc, srvcCtx.name());
+            if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled() && srvcCtx.metrics() == null)
+                cacheServiceMetrics(srvcCtx);
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1399,7 +1394,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (ctxs != null) {
             synchronized (ctxs) {
                 if (!ctxs.isEmpty())
-                    clearServiceMetrics(ctxs.iterator().next().name());
+                    ctx.metric().remove(serviceMetricRegistryName(ctxs.iterator().next().name()));
 
                 cancel(ctxs, ctxs.size());
             }
@@ -1864,45 +1859,24 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Caches metrics to measure durations of service methods.
      *
-     * @param srvc Service to measure durations of methods.
-     * @param srvcName Name of {@code srvc}.
+     * @param srvcCtx ServiceContext.
      */
-    private void cacheServiceMetrics(Service srvc, String srvcName) {
-        Map<String, HistogramMetricImpl> srvcHistograms = invocationHistograms.get(srvcName);
+    private void cacheServiceMetrics(ServiceContextImpl srvcCtx) {
+        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
-        // The histogms might be already created by multipile-deploy.
-        if (srvcHistograms != null)
-            return;
+        Map<String, HistogramMetricImpl> hostograms = new HashMap<>();
 
-        srvcHistograms = new HashMap<>();
-
-        for (Class<?> itf : allInterfaces(srvc.getClass())) {
+        for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
             for (Method mtd : itf.getMethods()) {
-                if (metricIgnored(mtd.getDeclaringClass()))
+                if (metricIgnored(mtd.getDeclaringClass()) || metricRegistry.findMetric(mtd.getName()) != null)
                     continue;
 
-                MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcName));
-
-                if (metricRegistry.findMetric(mtd.getName()) != null)
-                    continue;
-
-                srvcHistograms.put(mtd.getName(), metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS,
-                    DESCRIPTION_OF_INVOCATION_METRIC));
+                hostograms.put(mtd.getName(),
+                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC));
             }
         }
 
-        invocationHistograms.put(srvcName, Collections.unmodifiableMap(srvcHistograms));
-    }
-
-    /**
-     * Removes metrics for service {@code srvcName}.
-     *
-     * @param srvcName Service name.
-     */
-    private void clearServiceMetrics(String srvcName) {
-        ctx.metric().remove(serviceMetricRegistryName(srvcName));
-
-        invocationHistograms.remove(srvcName);
+        srvcCtx.metrics(Collections.unmodifiableMap(hostograms));
     }
 
     /**
@@ -1911,21 +1885,5 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private static boolean metricIgnored(Class<?> cls) {
         return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls)
             || PlatformService.class.equals(cls);
-    }
-
-    /**
-     * Searches histogram for service method.
-     *
-     * @param srvcName Service name.
-     * @param mtdName  Method name.
-     * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
-     */
-    HistogramMetricImpl histogram(String srvcName, String mtdName) {
-        Map<String, HistogramMetricImpl> srvcMap = invocationHistograms.get(srvcName);
-
-        if (srvcMap != null)
-            return srvcMap.get(mtdName);
-
-        return null;
     }
 }

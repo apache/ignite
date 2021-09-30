@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -58,6 +60,9 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
+
+    /** Invocation metrics. */
+    private Map<String, HistogramMetricImpl> metrics;
 
     /** Service. */
     @GridToStringExclude
@@ -135,6 +140,24 @@ public class ServiceContextImpl implements ServiceContext {
      */
     ExecutorService executor() {
         return exe;
+    }
+
+    /**
+     * @return Invocation metrics.
+     */
+    Map<String, HistogramMetricImpl> metrics() {
+        return metrics;
+    }
+
+    /**
+     * Sets the invocation metrics.
+     *
+     * @return {@code this}.
+     */
+    ServiceContextImpl metrics(Map<String, HistogramMetricImpl> metrics) {
+        this.metrics = metrics;
+
+        return this;
     }
 
     /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
