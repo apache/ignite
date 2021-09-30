@@ -19,6 +19,7 @@ package org.apache.ignite.internal.runner.app.jdbc;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,8 +31,10 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.apache.ignite.jdbc.IgniteJdbcDriver;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +63,25 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class ITJdbcConnectionSelfTest extends AbstractJdbcSelfTest {
+    /**
+     * Test JDBC loading via ServiceLoader
+     */
+    @Test
+    public void testServiceLoader() {
+        ServiceLoader<Driver> sl = ServiceLoader.load(Driver.class);
+
+        IgniteJdbcDriver igniteJdbcDriver = null;
+
+        for (Driver driver : sl) {
+            if (driver instanceof IgniteJdbcDriver) {
+                igniteJdbcDriver = ((IgniteJdbcDriver)driver);
+                break;
+            }
+        }
+
+        assertNotNull(igniteJdbcDriver);
+    }
+
     /**
      * @throws Exception If failed.
      */

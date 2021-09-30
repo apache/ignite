@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
-import org.apache.ignite.jdbc.IgniteJdbcDriver;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInfo;
@@ -48,8 +47,6 @@ public class AbstractJdbcSelfTest {
      */
     @BeforeAll
     public static void beforeAll(@TempDir Path temp, TestInfo testInfo) {
-        IgniteJdbcDriver.register();
-
         String nodeName = testNodeName(testInfo, 47500);
 
         String configStr = "node.metastorageNodes: [ \"" + nodeName + "\" ]";

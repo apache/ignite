@@ -32,18 +32,14 @@ import org.apache.ignite.internal.jdbc.JdbcConnection;
 import static org.apache.ignite.internal.jdbc.ConnectionPropertiesImpl.URL_PREFIX;
 
 /**
- * JDBC driver thin implementation for In-Memory Data Grid.
+ * JDBC driver thin implementation for Apache Ignite 3.x.
  * <p>
- * Driver allows to get distributed data from Ignite cache using standard
- * SQL queries and standard JDBC API. It will automatically get only fields that
- * you actually need from objects stored in cache.
+ * Driver allows to get distributed data from Ignite Data Storage using standard
+ * SQL queries and standard JDBC API.
  */
 public class IgniteJdbcDriver implements Driver {
     /** Driver instance. */
-    private static final Driver INSTANCE = new IgniteJdbcDriver();
-
-    /** Registered flag. */
-    private static volatile boolean registered;
+    private static Driver instance;
 
     static {
         register();
@@ -107,18 +103,26 @@ public class IgniteJdbcDriver implements Driver {
      * @return Driver instance.
      * @throws RuntimeException when failed to register driver.
      */
-    public static synchronized Driver register() {
-        try {
-            if (!registered) {
-                DriverManager.registerDriver(INSTANCE);
+    private static synchronized void register() {
+        if (isRegistered())
+            throw new RuntimeException("Driver is already registered. It can only be registered once.");
 
-                registered = true;
-            }
+        try {
+            Driver registeredDriver = new IgniteJdbcDriver();
+            DriverManager.registerDriver(registeredDriver);
+            IgniteJdbcDriver.instance = registeredDriver;
         }
         catch (SQLException e) {
             throw new RuntimeException("Failed to register Ignite JDBC driver.", e);
         }
+    }
 
-        return INSTANCE;
+    /**
+     * Checks if Driver is instantiated.
+     *
+     * @return {@code true} if the driver is registered against {@link DriverManager}.
+     */
+    private static boolean isRegistered() {
+        return instance != null;
     }
 }
