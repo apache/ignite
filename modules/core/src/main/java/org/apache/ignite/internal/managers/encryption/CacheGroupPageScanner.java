@@ -219,15 +219,6 @@ public class CacheGroupPageScanner implements CheckpointListener {
             lock.unlock();
         }
 
-        singleExecSvc.submit(() -> schedule0(grpScanTask));
-
-        return grpScanTask;
-    }
-
-    /**
-     * @param grpScanTask Cache group scan task.
-     */
-    private void schedule0(GroupScanTask grpScanTask) {
         try {
             forEachPageStore(grpScanTask.group(), new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
@@ -245,6 +236,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
         } catch (IgniteCheckedException e) {
             grpScanTask.onDone(e);
         }
+
+        return grpScanTask;
     }
 
     /**
