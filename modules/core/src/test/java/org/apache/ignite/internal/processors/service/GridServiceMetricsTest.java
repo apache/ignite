@@ -166,7 +166,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
     /** Checks metric are created when service is deployed and removed when service is undeployed. */
     @Test
-    public void testMetricDeplotmentUndeployment() throws Exception {
+    public void testMetricsOnServiceDeployAndCancel() throws Exception {
         List<IgniteEx> servers = startGrids(3, false);
 
         // 2 services per node.

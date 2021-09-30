@@ -981,7 +981,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
 
-            if (ctx != null && !ctx.statisticsEnabled()) {
+            if (ctx != null && !ctx.isStatisticsEnabled()) {
                 Service srvc = ctx.service();
 
                 if (srvc != null) {

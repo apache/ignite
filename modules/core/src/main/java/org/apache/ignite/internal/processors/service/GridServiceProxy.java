@@ -194,7 +194,7 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null) {
-                                if (svcCtx.statisticsEnabled())
+                                if (svcCtx.isStatisticsEnabled())
                                     return measureCall(ctx.service(), () -> callServiceLocally(svc, mtd, args), name, mtd.getName());
 
                                 return callServiceLocally(svc, mtd, args);
@@ -398,8 +398,8 @@ public class GridServiceProxy<T> implements Serializable {
     private static Object callServiceLocally(Service svc, Method mtd, Object[] args) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
-        else
-            return mtd.invoke(svc, args);
+
+        return mtd.invoke(svc, args);
     }
 
     /**
@@ -507,11 +507,12 @@ public class GridServiceProxy<T> implements Serializable {
         /** */
         private Object callPlatformService(ServiceContextImpl svcCtx, PlatformService srv) {
             try {
-                if (svcCtx.statisticsEnabled())
+                if (svcCtx.isStatisticsEnabled()) {
                     return measureCall(ignite.context().service(),
                         () -> srv.invokeMethod(mtdName, false, true, args), svcName, mtdName);
-                else
-                    return srv.invokeMethod(mtdName, false, true, args);
+                }
+
+                return srv.invokeMethod(mtdName, false, true, args);
             }
             catch (PlatformNativeException ne) {
                 throw new ServiceProxyException(U.convertException(ne));
@@ -527,10 +528,10 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                if (svcCtx.statisticsEnabled())
+                if (svcCtx.isStatisticsEnabled())
                     return measureCall(ignite.context().service(), () -> mtd.invoke(svcCtx.service(), args), svcCtx.name(), mtd.getName());
-                else
-                    return mtd.invoke(svcCtx.service(), args);
+
+                return mtd.invoke(svcCtx.service(), args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());

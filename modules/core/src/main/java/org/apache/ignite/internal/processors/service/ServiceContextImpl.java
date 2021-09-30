@@ -138,7 +138,7 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
-    boolean statisticsEnabled() {
+    boolean isStatisticsEnabled() {
         return isStatisticsEnabled;
     }
 
