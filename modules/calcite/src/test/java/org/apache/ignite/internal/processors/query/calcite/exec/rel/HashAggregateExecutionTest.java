@@ -73,13 +73,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
 
         agg.register(scan);
 
-        // Collation of the first fields emulates planner behavior:
-        // The group's keys placed on the begin of the output row.
-        RelCollation collation = RelCollations.of(
-            ImmutableIntList.copyOf(
-                IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
-            )
-        );
+        RelCollation collation = createOutCollation(grpSets);
 
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
 
@@ -125,13 +119,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
 
         aggRdc.register(aggMap);
 
-        // Collation of the first fields emulates planner behavior:
-        // The group's keys placed on the begin of the output row.
-        RelCollation collation = RelCollations.of(
-            ImmutableIntList.copyOf(
-                IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
-            )
-        );
+        RelCollation collation = createOutCollation(grpSets);
 
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
 
@@ -141,6 +129,26 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
         sort.register(aggRdc);
 
         return sort;
+    }
+
+    /** */
+    private RelCollation createOutCollation(ImmutableList<ImmutableBitSet> grpSets) {
+        RelCollation collation;
+
+        if (!grpSets.isEmpty() && grpSets.stream().anyMatch(set -> !set.isEmpty())) {
+            // Sort by group to simplify compare results with expected results.
+            collation = RelCollations.of(
+                ImmutableIntList.copyOf(
+                    IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
+                )
+            );
+        }
+        else {
+            // Sort for the first column if there are no groups.
+            collation = RelCollations.of(0);
+        }
+
+        return collation;
     }
 
     /**
