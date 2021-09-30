@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -135,6 +136,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** Logger. */
+    protected final IgniteLogger log;
+
     /**
      * Constructor.
      *
@@ -144,6 +148,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
+        this.log = coCtx.kernalContext().log(getClass());
     }
 
     /**
@@ -728,7 +733,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         if (U.box(propType).isAssignableFrom(U.box(cls))) {
                             continue;
                         }
-                    } catch (ClassNotFoundException ignored) {
+                    } catch (ClassNotFoundException e) {
+                        if (log.isDebugEnabled())
+                            U.error(log,"Failed to find child class: " + clsName, e);
                     }
 
                     throw new IgniteSQLException("Type for a column '" + idxField +
