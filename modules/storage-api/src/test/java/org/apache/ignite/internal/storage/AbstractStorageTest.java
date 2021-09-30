@@ -19,12 +19,14 @@ package org.apache.ignite.internal.storage;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -38,9 +40,12 @@ import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.storage.basic.SimpleReadInvokeClosure;
 import org.apache.ignite.internal.storage.basic.SimpleRemoveInvokeClosure;
 import org.apache.ignite.internal.storage.basic.SimpleWriteInvokeClosure;
+import org.apache.ignite.internal.testframework.WorkDirectory;
+import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.Cursor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Abstract test that covers basic scenarios of the storage API.
  */
+@ExtendWith(WorkDirectoryExtension.class)
 public abstract class AbstractStorageTest {
     /** Test key. */
     private static final String KEY = "key";
@@ -575,6 +581,26 @@ public abstract class AbstractStorageTest {
         Collection<DataRow> skipped = storage.removeAllExact(notExactRows);
 
         assertEquals(notExactRows, skipped);
+
+        rows.forEach(this::checkHasSameEntry);
+    }
+
+    /**
+     * Tests that {@link Storage#snapshot(Path)} and {@link Storage#restoreSnapshot(Path)} operations work properly in
+     * basic scenario of creating snapshot and restoring it on the clear db.
+     *
+     * @param snapshotDir Directory to store snapshot file.
+     * @throws Exception If failed to take snapshot.
+     */
+    @Test
+    public void testSnapshot(@WorkDirectory Path snapshotDir) throws Exception {
+        List<DataRow> rows = insertBulk(10);
+
+        storage.snapshot(snapshotDir).get(1, TimeUnit.SECONDS);
+
+        storage.removeAll(rows);
+
+        storage.restoreSnapshot(snapshotDir);
 
         rows.forEach(this::checkHasSameEntry);
     }

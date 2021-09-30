@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.schema.ByteBufferRow;
@@ -31,8 +32,9 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.storage.DataRow;
+import org.apache.ignite.internal.storage.Storage;
+import org.apache.ignite.internal.storage.basic.ConcurrentHashMapStorage;
 import org.apache.ignite.internal.storage.basic.SimpleDataRow;
-import org.apache.ignite.internal.storage.rocksdb.RocksDbStorage;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,7 +43,7 @@ import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 
 /**
- * Persistent (rocksdb-based) partitions raft group snapshots tests.
+ * Persistent partitions raft group snapshots tests.
  */
 public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<PartitionListener> {
     /** */
@@ -62,6 +64,9 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
 
     /** */
     private static final Row SECOND_VALUE = createKeyValueRow(1, 1);
+
+    /** Paths for created partition listeners. */
+    private final Map<PartitionListener, Path> paths = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void beforeFollowerStop(RaftGroupService service) throws Exception {
@@ -105,7 +110,7 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
 
     /** {@inheritDoc} */
     @Override public BooleanSupplier snapshotCheckClosure(JRaftServerImpl restarted, boolean interactedAfterSnapshot) {
-        RocksDbStorage storage = (RocksDbStorage) getListener(restarted, raftGroupId()).getStorage();
+        Storage storage = getListener(restarted, raftGroupId()).getStorage();
 
         Row key = interactedAfterSnapshot ? SECOND_KEY : FIRST_KEY;
         Row value = interactedAfterSnapshot ? SECOND_VALUE : FIRST_VALUE;
@@ -125,14 +130,22 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
 
     /** {@inheritDoc} */
     @Override public Path getListenerPersistencePath(PartitionListener listener) {
-        return ((RocksDbStorage) listener.getStorage()).getDbPath();
+        return paths.get(listener);
     }
 
     /** {@inheritDoc} */
     @Override public RaftGroupListener createListener(Path workDir) {
-        return new PartitionListener(
-            new RocksDbStorage(workDir.resolve(UUID.randomUUID().toString()), ByteBuffer::compareTo)
-        );
+        return paths.entrySet().stream()
+            .filter(entry -> entry.getValue().equals(workDir))
+            .map(Map.Entry::getKey)
+            .findAny()
+            .orElseGet(() -> {
+                PartitionListener listener = new PartitionListener(new ConcurrentHashMapStorage());
+
+                paths.put(listener, workDir);
+
+                return listener;
+            });
     }
 
     /** {@inheritDoc} */

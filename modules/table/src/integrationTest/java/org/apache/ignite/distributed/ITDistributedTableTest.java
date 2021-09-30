@@ -17,7 +17,6 @@
 
 package org.apache.ignite.distributed;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +39,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
-import org.apache.ignite.internal.storage.rocksdb.RocksDbStorage;
+import org.apache.ignite.internal.storage.basic.ConcurrentHashMapStorage;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.distributed.command.GetCommand;
 import org.apache.ignite.internal.table.distributed.command.InsertCommand;
@@ -177,7 +176,7 @@ public class ITDistributedTableTest {
 
         partSrv.startRaftGroup(
             grpId,
-            new PartitionListener(new RocksDbStorage(dataPath.resolve("db"), ByteBuffer::compareTo)),
+            new PartitionListener(new ConcurrentHashMapStorage()),
             conf
         );
 
@@ -192,7 +191,6 @@ public class ITDistributedTableTest {
 
         assertTrue(insertFur.get());
 
-//        Row keyChunk = new Row(SCHEMA, new ByteBufferRow(testRow.keySlice()));
         Row keyChunk = getTestKey();
 
         CompletableFuture<SingleRowResponse> getFut = partRaftGrp.run(new GetCommand(keyChunk));
@@ -269,7 +267,7 @@ public class ITDistributedTableTest {
 
             rs.startRaftGroup(
                 grpId,
-                new PartitionListener(new RocksDbStorage(dataPath.resolve("part" + p), ByteBuffer::compareTo)),
+                new PartitionListener(new ConcurrentHashMapStorage()),
                 conf
             );
 

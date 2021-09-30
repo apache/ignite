@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import org.apache.ignite.internal.storage.AbstractStorageTest;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +41,6 @@ public class RocksDbStorageTest extends AbstractStorageTest {
     /** */
     @AfterEach
     public void tearDown() throws Exception {
-        if (storage != null)
-            ((AutoCloseable)storage).close();
+        IgniteUtils.closeAll(storage);
     }
 }

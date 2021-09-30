@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.storage.basic;
 
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,13 +41,19 @@ import org.apache.ignite.internal.storage.Storage;
 import org.apache.ignite.internal.storage.StorageException;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Storage implementation based on {@link ConcurrentHashMap}.
  */
 public class ConcurrentHashMapStorage implements Storage {
+    /** Name of the snapshot file. */
+    private static final String SNAPSHOT_FILE = "snapshot_file";
+
     /** Storage content. */
     private final ConcurrentMap<ByteArray, byte[]> map = new ConcurrentHashMap<>();
 
@@ -185,12 +196,37 @@ public class ConcurrentHashMapStorage implements Storage {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> snapshot(Path snapshotPath) {
-        throw new UnsupportedOperationException("Not implemented!");
+        return CompletableFuture.runAsync(() -> {
+            try (
+                OutputStream out = Files.newOutputStream(snapshotPath.resolve(SNAPSHOT_FILE));
+                ObjectOutputStream objOut = new ObjectOutputStream(out)
+            ) {
+                objOut.writeObject(map.keySet().stream().map(ByteArray::bytes).collect(toList()));
+                objOut.writeObject(new ArrayList<>(map.values()));
+            }
+            catch (Exception e) {
+                throw new IgniteInternalException(e);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void restoreSnapshot(Path snapshotPath) {
-        throw new UnsupportedOperationException("Not implemented!");
+        try (
+            InputStream in = Files.newInputStream(snapshotPath.resolve(SNAPSHOT_FILE));
+            ObjectInputStream objIn = new ObjectInputStream(in)
+        ) {
+            var keys = (List<byte[]>)objIn.readObject();
+            var values = (List<byte[]>)objIn.readObject();
+
+            map.clear();
+
+            for (int i = 0; i < keys.size(); i++)
+                map.put(new ByteArray(keys.get(i)), values.get(i));
+        }
+        catch (Exception e) {
+            throw new IgniteInternalException(e);
+        }
     }
 
     /** {@inheritDoc} */
