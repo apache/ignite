@@ -17,7 +17,7 @@ set -o nounset; set -o errexit; set -o pipefail; set -o errtrace; set -o functra
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../.."
 POMS=$(find ${ROOT} -name pom.xml | grep -v parent)
-for xpath in "project/dependencyManagement/dependencies/dependency/artifactId/text()" \
+for xpath in "project/dependencyManagement/dependencies/dependency[not(scope='import')]/artifactId/text()" \
              "project/build/pluginManagement/plugins/plugin/artifactId/text()"; do
 	xpath -q -e "${xpath}" ${ROOT}/parent/pom.xml | \
       while read -r declaration; do

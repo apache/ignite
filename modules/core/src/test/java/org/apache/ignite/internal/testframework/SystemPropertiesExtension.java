@@ -29,7 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br/>
+ * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br>
  * Should be used in {@link ExtendWith}.
  *
  * @see WithSystemProperty
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class SystemPropertiesExtension implements
     BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
-    /** Class properties. */
+    /** Method properties. */
     @SuppressWarnings("InstanceVariableMayNotBeInitialized")
     private List<Prop<String, String>> testMethodSysProps;
 
@@ -75,26 +75,20 @@ public class SystemPropertiesExtension implements
      * @param testCls Current test class.
      * @return List of updated properties in reversed order.
      */
-    private List<Prop<String, String>> extractSystemPropertiesBeforeClass(Class<?> testCls) {
+    private static List<Prop<String, String>> extractSystemPropertiesBeforeClass(Class<?> testCls) {
         List<WithSystemProperty[]> allProps = new ArrayList<>();
 
         for (Class<?> cls = testCls; cls != null; cls = cls.getSuperclass()) {
-            SystemPropertiesList clsProps = cls.getAnnotation(SystemPropertiesList.class);
+            WithSystemProperty[] props = cls.getAnnotationsByType(WithSystemProperty.class);
 
-            if (clsProps != null)
-                allProps.add(clsProps.value());
-            else {
-                WithSystemProperty clsProp = cls.getAnnotation(WithSystemProperty.class);
-
-                if (clsProp != null)
-                    allProps.add(new WithSystemProperty[] {clsProp});
-            }
+            if (props.length > 0)
+                allProps.add(props);
         }
 
         Collections.reverse(allProps);
 
         // List of system properties to set when all tests in class are finished.
-        final List<Prop<String, String>> clsSysProps = new ArrayList<>();
+        List<Prop<String, String>> clsSysProps = new ArrayList<>();
 
         for (WithSystemProperty[] props : allProps) {
             for (WithSystemProperty prop : props) {
@@ -115,29 +109,16 @@ public class SystemPropertiesExtension implements
      * @param testMtd Current test method.
      * @return List of updated properties in reversed order.
      */
-    public List<Prop<String, String>> extractSystemPropertiesBeforeTestMethod(Method testMtd) {
-        WithSystemProperty[] allProps = null;
-
-        SystemPropertiesList testProps = testMtd.getAnnotation(SystemPropertiesList.class);
-
-        if (testProps != null)
-            allProps = testProps.value();
-        else {
-            WithSystemProperty testProp = testMtd.getAnnotation(WithSystemProperty.class);
-
-            if (testProp != null)
-                allProps = new WithSystemProperty[] {testProp};
-        }
+    private static List<Prop<String, String>> extractSystemPropertiesBeforeTestMethod(Method testMtd) {
+        WithSystemProperty[] allProps = testMtd.getAnnotationsByType(WithSystemProperty.class);
 
         // List of system properties to set when test is finished.
         List<Prop<String, String>> testSysProps = new ArrayList<>();
 
-        if (allProps != null) {
-            for (WithSystemProperty prop : allProps) {
-                String oldVal = System.setProperty(prop.key(), prop.value());
+        for (WithSystemProperty prop : allProps) {
+            String oldVal = System.setProperty(prop.key(), prop.value());
 
-                testSysProps.add(new Prop<>(prop.key(), oldVal));
-            }
+            testSysProps.add(new Prop<>(prop.key(), oldVal));
         }
 
         Collections.reverse(testSysProps);
@@ -150,7 +131,7 @@ public class SystemPropertiesExtension implements
      *
      * @param sysProps List of properties to clear.
      */
-    private void clearSystemProperties(List<Prop<String, String>> sysProps) {
+    private static void clearSystemProperties(List<Prop<String, String>> sysProps) {
         if (sysProps == null)
             return; // Nothing to do.
 

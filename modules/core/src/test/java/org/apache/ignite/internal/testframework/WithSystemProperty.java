@@ -26,12 +26,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Annotation that defines a scope with specific system property configured.<br/>
- * <br/>
- * Might be used on class level or on method level. Multiple annotations might be applied to the same class/method.<br/>
- * <br/>
- * In short, these two approaches are basically equivalent:<br/>
- * <br/>
+ * Annotation that defines a scope with specific system property configured.<br>
+ * <br>
+ * Might be used on class level or on method level. Multiple annotations might be applied to the same class/method.<br>
+ * <br>
+ * In short, these two approaches are basically equivalent:<br>
+ * <br>
  * Short:
  * <pre>{@code  @WithSystemProperty(key = "name", value = "val")
  *  public class SomeTest {
@@ -60,7 +60,7 @@ import org.junit.jupiter.api.BeforeEach;
  * <p>
  * Same applies to methods with the difference that annotation translates into something like {@link BeforeEach} and
  * {@link AfterEach}.
- * <br/><br/>
+ * <br><br>
  * <pre>{@code  public class SomeTest {
  *      @Test
  *      @WithSystemProperty(key = "name", value = "val")
@@ -89,10 +89,10 @@ import org.junit.jupiter.api.BeforeEach;
  * }</pre>
  * For class level annotation it applies system properties for the whole class hierarchy (ignoring interfaces, there's
  * no linearization implemented). More specific classes have higher priority and set their properties last. It all
- * starts with {@link Object} which, of course, is not annotated.<br/>
- * <br/>
- * Test methods do not inherit their annotations from overridden methods of super class.<br/>
- * <br/>
+ * starts with {@link Object} which, of course, is not annotated.<br>
+ * <br>
+ * Test methods do not inherit their annotations from overridden methods of super class.<br>
+ * <br>
  * If more than one annotation is presented on class/method then they will be applied in the same order as they
  * appear in code. It is achieved with the help of {@link Repeatable} feature of Java annotations -
  * {@link SystemPropertiesList} is automatically generated in such cases.
