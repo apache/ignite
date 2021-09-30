@@ -702,13 +702,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** Creates a reducer depends on query type. */
-    private DistributedCacheQueryReducer createReducer(GridCacheQueryType qryType, long reqId,
-        GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
+    private DistributedCacheQueryReducer<?> createReducer(GridCacheQueryType qryType, long reqId,
+        GridCacheDistributedQueryFuture<K, V, ?> fut, Collection<ClusterNode> nodes) {
 
         if (qryType == TEXT)
-            return new MergeSortDistributedCacheQueryReducer(fut, reqId, this, nodes, textResultComparator);
+            return new MergeSortDistributedCacheQueryReducer<>(fut, reqId, this, nodes, textResultComparator);
         else
-            return new UnsortedDistributedCacheQueryReducer(fut, reqId, this, nodes);
+            return new UnsortedDistributedCacheQueryReducer<>(fut, reqId, this, nodes);
     }
 
     /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
