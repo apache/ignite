@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Abstract class for distributed reducer implementations.
  */
-abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCacheQueryReducer<R> {
+abstract class AbstractDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
     /** Collection of streams that don't deliver all pages yet. */
     private final Map<UUID, NodePageStream> remoteStreams;
 
@@ -120,7 +120,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     }
 
     /**
-     * Callback that invoked when all nodes response with initial page.
+     * Callback that invoked when all node response with initial page.
      */
     private void onFirstItemReady() {
         firstPageLatch.countDown();
@@ -129,14 +129,14 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     /**
      * Send request to fetch new pages.
      *
-     * @param nodes Collection of nodes to send request.
+     * @param node Node to send request.
      * @param all Whether page will contain all data from node.
      */
-    private void requestPages(Collection<UUID> nodes, boolean all) {
+    private void requestPages(UUID node, boolean all) {
         try {
             GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(fut.cacheContext(), reqId, fut, all);
 
-            qryMgr.sendRequest(null, req, nodes);
+            qryMgr.sendRequest(null, req, Collections.singletonList(node));
 
         } catch (IgniteCheckedException e) {
             onError(e);
@@ -223,12 +223,12 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
         private final UUID nodeId;
 
         /**
-         * {@code true} shows whether all nodes responsed with cache query result pages. Flag will be set to {@code false}
+         * {@code true} shows whether node responsed with cache query result pages. Flag will be set to {@code false}
          * before new page requests.
          */
         private volatile boolean rcvd;
 
-        /** Flags shows whether there are no available pages on query nodes. */
+        /** Flags shows whether there are no available pages on query node. */
         private boolean noMorePages;
 
         /** */
@@ -342,7 +342,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
          * Trigger load new pages from all nodes that still have data.
          */
         private void loadPage() {
-            Collection<UUID> nodes = null;
+            boolean sendReq = false;
 
             synchronized (pagesLock) {
                 if (noMorePages)
@@ -356,12 +356,12 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
                 if (rcvd) {
                     rcvd = false;
 
-                    nodes = Collections.singletonList(nodeId);
+                    sendReq = true;
                 }
             }
 
-            if (nodes != null)
-                requestPages(nodes, false);
+            if (sendReq)
+                requestPages(nodeId, false);
         }
     }
 }

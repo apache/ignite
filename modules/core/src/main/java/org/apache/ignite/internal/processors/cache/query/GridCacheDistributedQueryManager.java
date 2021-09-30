@@ -732,7 +732,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param reqId Request (cache query) ID.
      * @param fut Cache query future, contains query info.
      */
-    private void startQuery(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut, Collection<ClusterNode> nodes) throws IgniteCheckedException {
+    private void startQuery(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut, Collection<ClusterNode> nodes)
+        throws IgniteCheckedException {
         GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, fut);
 
         List<UUID> sendNodes = new ArrayList<>();

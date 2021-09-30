@@ -23,7 +23,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 /**
  * Reducer for distributed cache query.
  */
-public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
+public abstract class DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
     /**
      * Checks whether node with provided {@code nodeId} is a map node for the query.
      * Note: if all pages were received from this node, then the method will return {@code false}.
@@ -31,15 +31,15 @@ public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
      * @param nodeId Node ID.
      * @return {@code true} if node with provided {@code nodeId} is a map node for the query, {@code false} otherwise.
      */
-    public boolean remoteQueryNode(UUID nodeId);
+    public abstract boolean remoteQueryNode(UUID nodeId);
 
     /**
      * Blocks current thread until reducer will be ready to return the very first result item for the query.
      */
-    public void awaitInitialization() throws IgniteInterruptedCheckedException;
+    public abstract void awaitInitialization() throws IgniteInterruptedCheckedException;
 
     /**
      * Cancel cache query and stop reduce pages.
      */
-    public void cancel();
+    public abstract void cancel();
 }

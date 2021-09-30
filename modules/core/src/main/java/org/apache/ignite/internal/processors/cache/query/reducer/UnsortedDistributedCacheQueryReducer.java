@@ -44,7 +44,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() throws IgniteCheckedException {
+    @Override public boolean hasNextX() throws IgniteCheckedException {
         if (page != null && page.hasNext())
             return true;
 
@@ -63,7 +63,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     }
 
     /** {@inheritDoc} */
-    @Override public R next() throws IgniteCheckedException {
+    @Override public R nextX() throws IgniteCheckedException {
         return page.next();
     }
 }

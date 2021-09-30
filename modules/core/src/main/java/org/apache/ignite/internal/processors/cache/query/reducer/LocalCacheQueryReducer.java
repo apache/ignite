@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryFutu
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Simple reducer for local queries. */
-public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
+public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** Iterator provides access to result data. Local query returns all data in single page. */
     private volatile Iterator<R> page;
 
@@ -42,7 +42,7 @@ public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() throws IgniteCheckedException {
+    @Override public boolean hasNextX() throws IgniteCheckedException {
         Iterator<R> p = page;
 
         if (p != null)
@@ -73,7 +73,7 @@ public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R next() throws IgniteCheckedException {
+    @Override public R nextX() throws IgniteCheckedException {
         return page.next();
     }
 

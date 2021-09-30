@@ -55,7 +55,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() throws IgniteCheckedException {
+    @Override public boolean hasNextX() throws IgniteCheckedException {
         // Initial sort.
         if (nodePages.isEmpty() && !streams.isEmpty()) {
             Set<UUID> nodes = new HashSet<>(streams.keySet());
@@ -68,7 +68,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     }
 
     /** {@inheritDoc} */
-    @Override public R next() throws IgniteCheckedException {
+    @Override public R nextX() throws IgniteCheckedException {
         if (nodePages.isEmpty())
             throw new NoSuchElementException("No next element. Please, be sure to invoke hasNext() before next().");
 

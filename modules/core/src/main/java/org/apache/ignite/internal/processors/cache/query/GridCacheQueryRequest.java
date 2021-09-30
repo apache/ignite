@@ -167,7 +167,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param reqId Request (cache query) ID.
      * @param fut Cache query future, contains query info.
      */
-    public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut) {
+    public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
+        GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         GridCacheQueryBean bean = fut.query();
         GridCacheQueryAdapter<?> qry = bean.query();
 
@@ -207,7 +208,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param reqId Request (cache query) ID.
      * @param all If {@code true} then request for all pages, otherwise for single only.
      */
-    public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId, GridCacheQueryFutureAdapter<?, ?, ?> fut, boolean all) {
+    public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
+        GridCacheQueryFutureAdapter<?, ?, ?> fut, boolean all) {
         GridCacheQueryAdapter<?> qry = fut.query().query();
 
         return new GridCacheQueryRequest(
@@ -239,7 +241,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             cctx.startTopologyVersion(),
             cctx.deploymentEnabled());
     }
-
 
     /**
      * Creates cancel query request.
