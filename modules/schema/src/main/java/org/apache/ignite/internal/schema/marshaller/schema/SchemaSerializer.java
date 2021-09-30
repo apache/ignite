@@ -15,41 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
+package org.apache.ignite.internal.schema.marshaller.schema;
 
-import org.apache.ignite.internal.tostring.S;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
 
 /**
- * Variable-length native type.
+ * SchemaDescriptor (De)Serializer interface.
  */
-public class VarlenNativeType extends NativeType {
-    /** Length of the type. */
-    private final int len;
+public interface SchemaSerializer {
+    /**
+     * Writes SchemaDescriptor object to byte buffer.
+     *
+     * @param desc SchemaDescriptor object.
+     * @param byteBuf ByteBuffer object with allocated byte array.
+     */
+    void writeTo(SchemaDescriptor desc, ByteBuffer byteBuf);
 
     /**
-     * @param typeSpec Type spec.
-     * @param len Type length.
+     * @param byteBuf Byte buffer with byte array.
+     * @return SchemaDescriptor object.
      */
-    protected VarlenNativeType(NativeTypeSpec typeSpec, int len) {
-        super(typeSpec);
-
-        this.len = len;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mismatch(NativeType type) {
-        return super.mismatch(type) || len < ((VarlenNativeType)type).len;
-    }
+    SchemaDescriptor readFrom(ByteBuffer byteBuf);
 
     /**
-     * @return Length of the type.
+     * Calculates size in bytes of SchemaDescriptor object.
+     *
+     * @param desc SchemaDescriptor object.
+     * @return size in bytes.
      */
-    public int length() {
-        return len;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VarlenNativeType.class.getSimpleName(), "name", spec(), "len", len);
-    }
+    int size(SchemaDescriptor desc);
 }
