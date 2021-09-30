@@ -154,6 +154,6 @@ tab:C++[]
 
 You can use the following tools to monitor and/or manage the baseline topology:
 
-* link:control-script[Control Script]
-* link:monitoring-metrics/metrics#monitoring-topology[JMX Beans]
+* link:tools/control-script[Control Script,window=_blank]
+* link:monitoring-metrics/metrics#monitoring-topology[JMX Beans,window=_blank]
 
