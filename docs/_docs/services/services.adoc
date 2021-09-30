@@ -268,6 +268,9 @@ service configuration. Service statistics are collected under name "Services" in
 link:monitoring-metrics/new-metrics-system.adoc[metrics], in
 link:monitoring-metrics/system-views.adoc[system views] and in JMX.
 
+[NOTE]
+Overloaded methods have same metric by the method name.
+
 [tabs]
 --
 tab:Java[]
@@ -279,9 +282,11 @@ tab:C#/.NET[]
 tab:C++[]
 --
 
-WARNING: Be aware that measuring method requires additional wrapping and slows the invocation. Probably it's not
-an issue for slow-by-nature jobs like working with a DB. Also, if you enable service statistics, even local services
-become proxies which are slower. See the example above.
+[NOTE]
+Method measuring requires additional wrapping and slows down the invocation. Probably it's not
+an issue for slow-by-nature jobs like working with a DB. But, if you enable service statistics, even local services
+become proxies which are slower.
+
 
 // TODO: add how to  call java services from .NET
 
