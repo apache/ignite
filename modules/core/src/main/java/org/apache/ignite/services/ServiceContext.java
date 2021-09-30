@@ -18,7 +18,6 @@
 package org.apache.ignite.services;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,5 +66,12 @@ public interface ServiceContext extends Serializable {
      */
     @Nullable public <K> K affinityKey();
 
+    /**
+     * Gets operation context attribute.
+     *
+     * @param name Operation context attribute name.
+     * @param <V> Type of attribute value.
+     * @return Attribute value.
+     */
     @Nullable public <V> V attribute(String name);
 }

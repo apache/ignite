@@ -1123,12 +1123,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 string mthdName;
                 object[] mthdArgs;
-                Hashtable invokeCtx;
+                Hashtable opCtx;
 
-                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out invokeCtx);
+                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out opCtx);
                 
-                if (invokeCtx != null)
-                    svcCtx.InvocationContext(invokeCtx);
+                if (opCtx != null)
+                    svcCtx.OperationContext(opCtx);
 
                 var svcs = _ignite.GetServices();
 
@@ -1146,8 +1146,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 }
                 finally
                 {
-                    if (invokeCtx != null)
-                        svcCtx.InvocationContext(null);
+                    if (opCtx != null)
+                        svcCtx.OperationContext(null);
                 }
 
                 return 0;

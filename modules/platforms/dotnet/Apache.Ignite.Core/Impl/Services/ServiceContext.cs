@@ -81,20 +81,32 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritdoc /> */
         public object AffinityKey { get; private set; }
         
-        public IService Service { get; private set; }
-
-        public void InvocationContext(Hashtable invokeCtx)
-        {
-            _invCtx.Value = invokeCtx;
-        }
-
-        public object Attribute(string key)
+        /** <inheritdoc /> */
+        public object Attribute(string name)
         {
             var currCtx = _invCtx.Value;
 
-            return currCtx == null ? null : currCtx[key];
+            return currCtx == null ? null : currCtx[name];
+        }
+        
+        /// <summary>
+        /// Gets service instance.
+        /// </summary>
+        /// <value>
+        /// Service instance.
+        /// </value>
+        public IService Service { get; private set; }
+
+        /// <summary>
+        /// Sets service operation context.
+        /// </summary>
+        /// <param name="opCtx">Service operation context.</param>
+        public void OperationContext(Hashtable opCtx)
+        {
+            _invCtx.Value = opCtx;
         }
 
+        /** <inheritdoc /> */
         public void Dispose()
         {
             _invCtx.Dispose();

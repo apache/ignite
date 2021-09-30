@@ -372,17 +372,20 @@ namespace Apache.Ignite.Core.Impl.Services
 
 
         /** <inheritDoc /> */
-        public T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> invokeCtx) where T : class
+        public T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> opCtx) where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
 
+            if (opCtx != null && !opCtx.Any())
+                opCtx = null;
+
             T locInst;
             
             // In local scenario try to return service instance itself instead of a proxy
             // Get as object because proxy interface may be different from real interface
-            if ((invokeCtx == null || !invokeCtx.Any()) && (locInst = (GetService<object>(name) as T)) != null)
+            if ((opCtx == null || !opCtx.Any()) && (locInst = (GetService<object>(name) as T)) != null)
                 return locInst;
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
@@ -394,7 +397,7 @@ namespace Apache.Ignite.Core.Impl.Services
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
-                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, invokeCtx));
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, opCtx));
         }
 
         /** <inheritDoc /> */
@@ -410,12 +413,15 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> invokeCtx)
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> opCtx)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
+            if (opCtx != null && !opCtx.Any())
+                opCtx = null;
+
             // In local scenario try to return service instance itself instead of a proxy
-            if (invokeCtx == null || !invokeCtx.Any())
+            if (opCtx == null)
             {
                 var locInst = GetService<object>(name);
 
@@ -432,7 +438,7 @@ namespace Apache.Ignite.Core.Impl.Services
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return new DynamicServiceProxy((methodName, args) =>
-                InvokeProxyMethod(javaProxy, methodName, null, args, platform, invokeCtx));
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, opCtx));
         }
 
         /// <summary>
@@ -443,11 +449,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
         /// <param name="platformType">The platform.</param>
+        /// <param name="opCtx">Service operation context.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType, Dictionary<string, object> invokeCtx)
+            MethodBase method, object[] args, PlatformType platformType, Dictionary<string, object> opCtx)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
@@ -459,7 +466,7 @@ namespace Apache.Ignite.Core.Impl.Services
             try
             {
                 return DoOutInOp(OpInvokeMethod,
-                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, invokeCtx),
+                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, opCtx),
                     (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
                     proxy);
             }

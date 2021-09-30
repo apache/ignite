@@ -41,8 +41,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
         /// <param name="platformType">The platform.</param>
+        /// <param name="opCtx">Service operation context.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, PlatformType platformType, Dictionary<string, object> invokeCtx)
+            object[] arguments, PlatformType platformType, Dictionary<string, object> opCtx)
         {
             Debug.Assert(writer != null);
 
@@ -77,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Services
             else
                 writer.WriteBoolean(false);
 
-            writer.WriteDictionary(invokeCtx);
+            writer.WriteDictionary(opCtx);
         }
 
         /// <summary>

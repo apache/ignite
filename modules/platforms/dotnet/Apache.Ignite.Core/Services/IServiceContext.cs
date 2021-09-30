@@ -66,6 +66,13 @@ namespace Apache.Ignite.Core.Services
         /// </value>
         object AffinityKey { get; }
 
-        object Attribute(string key);
+        /// <summary>
+        /// Gets operation context attribute.
+        /// </summary>
+        /// <param name="name">Operation context attribute name.</param>
+        /// <value>
+        /// Attribute value, possibly null.
+        /// </value>
+        object Attribute(string name);
     }
 }

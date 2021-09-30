@@ -382,7 +382,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
-        final Map<String, Object> execCtx, final long timeout) throws IgniteException {
+        final Map<String, Object> opCtx, final long timeout) throws IgniteException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
@@ -391,7 +391,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, execCtx, timeout);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, opCtx, timeout);
         }
         finally {
             unguard();

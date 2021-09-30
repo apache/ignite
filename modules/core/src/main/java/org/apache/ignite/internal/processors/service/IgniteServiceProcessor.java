@@ -944,7 +944,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        Map<String, Object> execCtx, long timeout)
+        Map<String, Object> opCtx, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -954,7 +954,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (ctx != null) {
                 Service srvc = ctx.service();
 
-                if (srvc != null && F.isEmpty(execCtx)) {
+                if (srvc != null && F.isEmpty(opCtx)) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
@@ -965,7 +965,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, execCtx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, opCtx).proxy();
     }
 
     /**

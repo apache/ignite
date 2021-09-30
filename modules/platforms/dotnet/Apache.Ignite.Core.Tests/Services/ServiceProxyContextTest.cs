@@ -58,9 +58,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private void StartGrids()
         {
-//            if (Grid1 != null)
-//                return;
-
             Grid1 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid1")));
             Grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false, "grid2")));
 

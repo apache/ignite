@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -194,8 +193,8 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args, Map<String, Object> invokeCtx)
-        throws IgniteCheckedException {
+    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult,
+        Object[] args, Map<String, Object> opCtx) throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
 
@@ -217,7 +216,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
                     writer.writeObjectDetached(arg);
             }
 
-            writer.writeMap(invokeCtx);
+            writer.writeMap(opCtx);
 
             out.synchronize();
 

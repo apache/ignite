@@ -67,7 +67,8 @@ public class ServiceContextImpl implements ServiceContext {
     /** Cancelled flag. */
     private volatile boolean isCancelled;
 
-    private final ThreadLocal<Map<String, Object>> execCtx = new ThreadLocal<>();
+    /** Service operation context. */
+    private final ThreadLocal<Map<String, Object>> opCtx = new ThreadLocal<>();
 
     /**
      * @param name Service name.
@@ -111,6 +112,13 @@ public class ServiceContextImpl implements ServiceContext {
     /** {@inheritDoc} */
     @Nullable @Override public <K> K affinityKey() {
         return (K)affKey;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <V> V attribute(String name) {
+        Map<String, Object> attrs = opCtx.get();
+
+        return attrs == null ? null : (V)attrs.get(name);
     }
 
     /**
@@ -164,17 +172,14 @@ public class ServiceContextImpl implements ServiceContext {
         this.isCancelled = isCancelled;
     }
 
-    public void setExecutionContext(@Nullable Map<String, Object> execCtx) {
-        if (execCtx == null)
-            this.execCtx.remove();
+    /**
+     * @param opCtx Service operation context.
+     */
+    public void setOperationContext(@Nullable Map<String, Object> opCtx) {
+        if (opCtx == null)
+            this.opCtx.remove();
         else
-            this.execCtx.set(execCtx);
-    }
-
-    @Override public <T> T attribute(String key) {
-        Map<String, Object> attrs = execCtx.get();
-
-        return attrs == null ? null : (T)attrs.get(key);
+            this.opCtx.set(opCtx);
     }
 
     /** {@inheritDoc} */
