@@ -46,6 +46,23 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
     /** */
     private static final int CNT = 10_000;
 
+    /** */
+    private static IgniteCache<Long, Person> cache;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        Ignite crd = startGrids(2);
+
+        cache = crd.cache(CACHE);
+
+        insertData(crd, cache);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -61,36 +78,40 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
 
     /** Should return full data. */
     @Test
-    public void testServerNodeReplicatedCache() throws Exception {
-        Ignite crd = startGrids(2);
-
-        IgniteCache<Long, Person> cache = crd.cache(CACHE);
-
-        insertData(crd, cache);
-
+    public void testServerNodeReplicatedCache() {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
         check(cache.withKeepBinary().query(qry), 0, CNT / 2);
     }
 
+    /** Should return full data. */
+    @Test
+    public void testBinaryFilter() {
+        IndexQuery<Long, BinaryObject> qry = new IndexQuery<Long, BinaryObject>(Person.class, IDX)
+            .setCriteria(lt("id", CNT / 2))
+            .setFilter((k, v) -> (int)v.field("id") > CNT / 4);
+
+        check(cache.withKeepBinary().query(qry), CNT / 4 + 1, CNT / 2);
+    }
+
     /**
      * @param left First cache key, inclusive.
      * @param right Last cache key, exclusive.
      */
-    private void check(QueryCursor<Cache.Entry<Long, Person>> cursor, int left, int right) {
-        List<Cache.Entry<Long, Person>> all = cursor.getAll();
+    private void check(QueryCursor cursor, int left, int right) {
+        List<Cache.Entry<Long, BinaryObject>> all = cursor.getAll();
 
         assertEquals(right - left, all.size());
 
         Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
 
         for (int i = 0; i < all.size(); i++) {
-            Cache.Entry<Long, Person> entry = all.get(i);
+            Cache.Entry<Long, ?> entry = all.get(i);
 
             assertTrue(expKeys.remove(entry.getKey()));
 
-            BinaryObject o = (BinaryObject) all.get(i).getValue();
+            BinaryObject o = all.get(i).getValue();
 
             assertEquals(new Person(entry.getKey().intValue()), o.deserialize());
         }
@@ -99,7 +120,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void insertData(Ignite ignite, IgniteCache<Long, Person> cache) {
+    private void insertData(Ignite ignite, IgniteCache cache) {
         try (IgniteDataStreamer<Long, Person> streamer = ignite.dataStreamer(cache.getName())) {
             for (int i = 0; i < CNT; i++)
                 streamer.addData((long) i, new Person(i));
