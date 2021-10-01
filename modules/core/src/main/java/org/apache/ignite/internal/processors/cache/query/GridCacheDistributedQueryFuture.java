@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortDistributedCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedDistributedCacheQueryReducer;
@@ -52,9 +51,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */
     private final long reqId;
-
-    /** Reducer of distributed cache query results. */
-    private final CacheQueryReducer<R> reducer;
 
     /** Helps to send cache query requests to other nodes. */
     private final GridCacheDistributedQueryManager<K, V> qryMgr;
@@ -190,11 +186,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheQueryReducer<R> reducer() {
-        return reducer;
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<R> get() throws IgniteCheckedException {
         return get0();
     }
@@ -249,7 +240,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             else
                 onDone();
         }
-
 
         // Must release the latch after onDone() in order for a waiting thread to see an exception, if any.
         firstPageLatch.countDown();

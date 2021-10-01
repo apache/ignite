@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.LocalCacheQueryReducer;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -41,8 +43,8 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /** */
     private IgniteInternalFuture<?> fut;
 
-    /** Local reducer for this query. */
-    private final LocalCacheQueryReducer<R> reducer;
+    /** Promise of local query single page result. */
+    private final GridFutureAdapter<Iterator<R>> pageFut;
 
     /**
      * @param ctx Context.
@@ -53,7 +55,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         run = new LocalQueryRunnable();
 
-        reducer = new LocalCacheQueryReducer<>(this);
+        pageFut = new GridFutureAdapter<>();
+
+        reducer = new LocalCacheQueryReducer<>(this, pageFut);
     }
 
     /**
@@ -67,28 +71,25 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     @Override protected void cancelQuery() throws IgniteCheckedException {
         if (fut != null)
             fut.cancel();
-    }
 
-    /** {@inheritDoc} */
-    @Override protected CacheQueryReducer<R> reducer() {
-        return reducer;
+        pageFut.onDone(Collections.emptyIterator());
     }
 
     /** {@inheritDoc} */
     @Override public void awaitFirstItemAvailable() throws IgniteCheckedException {
-        get();
+        pageFut.get();
     }
 
     /** {@inheritDoc} */
     @Override protected void onPageError(Throwable err) {
         onDone(err);
 
-        reducer.onError();
+        pageFut.onDone(Collections.emptyIterator());
     }
 
     /** {@inheritDoc} */
     @Override protected void onPage(UUID nodeId, Collection<R> data, boolean lastPage) {
-        reducer.onPage(nodeId, data, lastPage);
+        pageFut.onDone(data.iterator());
     }
 
     /** */

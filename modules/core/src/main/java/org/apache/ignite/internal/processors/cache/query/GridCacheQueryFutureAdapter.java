@@ -81,6 +81,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected boolean loc;
 
+    /** Reducer of cache query results. */
+    protected CacheQueryReducer<R> reducer;
+
     /** */
     protected GridCacheQueryFutureAdapter() {
         qry = null;
@@ -145,8 +148,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             R next = null;
 
-            if (reducer().hasNext()) {
-                next = unmaskNull(reducer().next());
+            if (reducer.hasNext()) {
+                next = unmaskNull(reducer.next());
 
                 if (!limitDisabled) {
                     cnt++;
@@ -165,11 +168,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             throw CU.convertToCacheException(e);
         }
     }
-
-    /**
-     * @return Cache query results reducer.
-     */
-    protected abstract CacheQueryReducer<R> reducer();
 
     /**
      * @return Cache context.
