@@ -14,6 +14,7 @@
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
 
     <!--
