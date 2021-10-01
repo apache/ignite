@@ -92,8 +92,8 @@ Register name: `cache.{cache_name}.{near}`
 |OffHeapPrimaryEntriesCount|long|Offheap primary entries count.
 |OffHeapPuts |long|The total number of put requests to the off-heap memory.
 |OffHeapRemovals |long|The total number of removals from the off-heap memory.
-|PutAllTime | histogram|   PutAll time in nanoseconds.
-|PutTime | histogram | Put time in nanoseconds.
+|PutAllTime | histogram | PutAll time in nanoseconds.
+|PutTime | histogram|   Put time in nanoseconds.
 |PutTimeTotal|long|The total time of cache puts, in nanoseconds.
 |QueryCompleted  |long|Count of completed queries.
 |QueryExecuted   |long|Count of executed queries.
