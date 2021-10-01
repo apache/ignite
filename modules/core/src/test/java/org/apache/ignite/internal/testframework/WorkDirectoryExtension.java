@@ -95,6 +95,9 @@ public class WorkDirectoryExtension
 
     /** {@inheritDoc} */
     @Override public void afterAll(ExtensionContext context) throws Exception {
+        removeWorkDir(context);
+
+        // remove the base folder, if empty
         try (Stream<Path> list = Files.list(BASE_PATH)) {
             if (list.findAny().isEmpty())
                 IgniteUtils.deleteIfExists(BASE_PATH);
@@ -117,12 +120,7 @@ public class WorkDirectoryExtension
 
     /** {@inheritDoc} */
     @Override public void afterEach(ExtensionContext context) throws Exception {
-        if (shouldRemoveDir()) {
-            Path workDir = context.getStore(NAMESPACE).get(context.getUniqueId(), Path.class);
-
-            if (workDir != null)
-                IgniteUtils.deleteIfExists(workDir);
-        }
+        removeWorkDir(context);
     }
 
     /** {@inheritDoc} */
@@ -173,6 +171,16 @@ public class WorkDirectoryExtension
         context.getStore(NAMESPACE).put(context.getUniqueId(), workDir);
 
         return workDir;
+    }
+
+    /**
+     * Removes a previously created work directory.
+     */
+    private static void removeWorkDir(ExtensionContext context) {
+        Path workDir = context.getStore(NAMESPACE).remove(context.getUniqueId(), Path.class);
+
+        if (workDir != null && shouldRemoveDir())
+            IgniteUtils.deleteIfExists(workDir);
     }
 
     /**
