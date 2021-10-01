@@ -48,6 +48,9 @@ public class PlatformTestNodeRunner {
     /** */
     private static final String TABLE_NAME = "tbl1";
 
+    /** Time to keep the node alive. */
+    private static final int RUN_TIME_MINUTES = 30;
+
     /** Nodes bootstrap configuration. */
     private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
         put(NODE_NAME, "{\n" +
@@ -70,6 +73,18 @@ public class PlatformTestNodeRunner {
      * @param args Args.
      */
     public static void main(String[] args) throws Exception {
+        System.out.println("Starting test node runner...");
+
+        for (int i = 0; i < args.length; i++) {
+            System.out.println("Arg " + i + ": " + args[i]);
+        }
+
+        if (args.length > 0 && "dry-run".equals(args[0]))
+        {
+            System.out.println("Dry run succeeded.");
+            return;
+        }
+
         IgniteUtils.deleteIfExists(BASE_PATH);
         Files.createDirectories(BASE_PATH);
 
@@ -99,7 +114,9 @@ public class PlatformTestNodeRunner {
 
         System.out.println("THIN_CLIENT_PORTS=" + ports);
 
-        Thread.sleep(Long.MAX_VALUE);
+        Thread.sleep(RUN_TIME_MINUTES * 60_000);
+
+        System.out.println("Exiting after " + RUN_TIME_MINUTES + " minutes.");
     }
 
     /**
