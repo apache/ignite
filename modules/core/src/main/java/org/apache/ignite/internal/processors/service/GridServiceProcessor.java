@@ -1286,6 +1286,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                         assigns.cacheName(),
                         assigns.affinityKey(),
                         Executors.newSingleThreadExecutor(threadFactory),
+                        ctx.metric(),
                         assigns.configuration().isStatisticsEnabled());
 
                     ctxs.add(svcCtx);

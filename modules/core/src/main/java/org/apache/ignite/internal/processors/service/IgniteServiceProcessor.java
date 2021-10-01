@@ -1178,6 +1178,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         cacheName,
                         affKey,
                         Executors.newSingleThreadExecutor(threadFactory),
+                        ctx.metric(),
                         cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
