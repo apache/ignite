@@ -22,18 +22,39 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Service context implementation.
  */
 public class ServiceContextImpl implements ServiceContext {
+    /** Base name domain for invocation metrics. */
+    static final String SERVICE_METRIC_REGISTRY = "Services";
+
+    /** Description for the service method invocation metric. */
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration of service method in milliseconds for ";
+
+    /** Default bounds of invocation histogram in nanoseconds. */
+    private static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(50, MILLISECONDS),
+        NANOSECONDS.convert(200, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,11 +78,14 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private final ExecutorService exe;
 
+    /** Metric manager& */
+    private final GridMetricManager metricManager;
+
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
-    /** Invocation metrics. */
-    private ReadOnlyMetricRegistry metrics;
+    /** Invocation metrics name. */
+    private final String metricsName;
 
     /** Service. */
     @GridToStringExclude
@@ -79,6 +103,7 @@ public class ServiceContextImpl implements ServiceContext {
      * @param cacheName Cache name.
      * @param affKey Affinity key.
      * @param exe Executor service.
+     * @param metricManager Metric manager.
      * @param statisticsEnabled Service statistics flag.
      */
     ServiceContextImpl(String name,
@@ -86,13 +111,16 @@ public class ServiceContextImpl implements ServiceContext {
         String cacheName,
         Object affKey,
         ExecutorService exe,
+        GridMetricManager metricManager,
         boolean statisticsEnabled) {
         this.name = name;
         this.execId = execId;
         this.cacheName = cacheName;
         this.affKey = affKey;
         this.exe = exe;
+        this.metricManager = metricManager;
         this.isStatisticsEnabled = statisticsEnabled;
+        this.metricsName = statisticsEnabled ? MetricUtils.metricName(SERVICE_METRIC_REGISTRY, name) : null;
     }
 
     /** {@inheritDoc} */
@@ -141,24 +169,6 @@ public class ServiceContextImpl implements ServiceContext {
         return exe;
     }
 
-    /**
-     * @return Invocation metrics.
-     */
-    ReadOnlyMetricRegistry metrics() {
-        return metrics;
-    }
-
-    /**
-     * Sets the invocation metrics.
-     *
-     * @return {@code this}.
-     */
-    ServiceContextImpl metrics(ReadOnlyMetricRegistry metrics) {
-        this.metrics = metrics;
-
-        return this;
-    }
-
     /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
     boolean isStatisticsEnabled() {
         return isStatisticsEnabled;
@@ -188,10 +198,34 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /**
+     * @param mtdName Method.
+     * @return Histogram for the method or {@code null} if: method should not be measured, service is canceled or statistics is disabled.
+     */
+    HistogramMetricImpl methodMetric(String mtdName) {
+        if (isStatisticsEnabled() && !isCancelled) {
+            MetricRegistry registry = metricManager.registry(metricsName);
+
+            HistogramMetricImpl hist = registry.findMetric(mtdName);
+
+            if (hist == null) {
+                hist = registry.histogram(mtdName, DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
+                    '\'' + mtdName + "()'");
+            }
+
+            return hist;
+        }
+
+        return null;
+    }
+
+    /**
      * @param isCancelled Cancelled flag.
      */
     public void setCancelled(boolean isCancelled) {
         this.isCancelled = isCancelled;
+
+        if (isCancelled && isStatisticsEnabled)
+            metricManager.remove(metricsName);
     }
 
     /** {@inheritDoc} */

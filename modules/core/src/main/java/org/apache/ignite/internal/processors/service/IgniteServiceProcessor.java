@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Externalizable;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -88,21 +85,16 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
-import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 
 /**
  * Ignite service processor.
@@ -123,21 +115,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** */
     public static final String SVCS_VIEW_DESC = "Services";
-
-    /** Base name domain for invocation metrics. */
-    public static final String SERVICE_METRIC_REGISTRY = "Services";
-
-    /** Description for the service method invocation metric. */
-    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration of service method in milliseconds for ";
-
-    /** Default bounds of invocation histogram in nanoseconds. */
-    public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
-        NANOSECONDS.convert(1, MILLISECONDS),
-        NANOSECONDS.convert(10, MILLISECONDS),
-        NANOSECONDS.convert(50, MILLISECONDS),
-        NANOSECONDS.convert(200, MILLISECONDS),
-        NANOSECONDS.convert(1000, MILLISECONDS)
-    };
 
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
@@ -328,8 +305,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         assert opsLock.isWriteLockedByCurrentThread();
 
         deployedServices.clear();
-
-        ctx.metric().remove(SERVICE_METRIC_REGISTRY);
 
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
@@ -1190,9 +1165,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
 
-                if (cancelCnt >= ctxs.size())
-                    ctx.metric().remove(serviceMetricRegistryName(name));
-
                 cancel(ctxs, cancelCnt);
             }
             else if (ctxs.size() < assignCnt) {
@@ -1204,6 +1176,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         cacheName,
                         affKey,
                         Executors.newSingleThreadExecutor(threadFactory),
+                        ctx.metric(),
                         cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
@@ -1212,8 +1185,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
         }
-
-        ReadOnlyMetricRegistry invocationMetrics = null;
 
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
@@ -1240,13 +1211,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
-
-            if (cfg.isStatisticsEnabled()) {
-                if (invocationMetrics == null)
-                    invocationMetrics = createServiceMetrics(srvcCtx);
-
-                srvcCtx.metrics(invocationMetrics);
-            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1399,9 +1363,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (ctxs != null) {
             synchronized (ctxs) {
-                if (!ctxs.isEmpty())
-                    ctx.metric().remove(serviceMetricRegistryName(ctxs.iterator().next().name()));
-
                 cancel(ctxs, ctxs.size());
             }
         }
@@ -1860,35 +1821,5 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void leaveBusy() {
         opsLock.readLock().unlock();
-    }
-
-    /**
-     * Creates metrics registry for the invocation histograms.
-     *
-     * @param srvcCtx ServiceContext.
-     * @return Created metric registry.
-     */
-    private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx) {
-        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
-
-        for (Class<?> itf : allInterfaces(srvcCtx.service().getClass())) {
-            for (Method mtd : itf.getMethods()) {
-                if (metricIgnored(mtd.getDeclaringClass()) || metricRegistry.findMetric(mtd.getName()) != null)
-                    continue;
-
-                metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
-                    '\'' + mtd.getName() + "()'");
-            }
-        }
-
-        return metricRegistry;
-    }
-
-    /**
-     * @return {@code True} if metrics should not be created for this class or interface.
-     */
-    private static boolean metricIgnored(Class<?> cls) {
-        return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls)
-            || PlatformService.class.equals(cls);
     }
 }

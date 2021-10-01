@@ -24,7 +24,6 @@ import org.apache.ignite.spi.metric.HistogramMetric;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -172,16 +171,6 @@ public class MetricUtils {
         names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
         return names;
-    }
-
-    /**
-     * Gives proper name for service metric registry.
-     *
-     * @param srvcName Name of the service.
-     * @return registry name for service {@code srvcName}.
-     */
-    public static String serviceMetricRegistryName(String srvcName) {
-        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 
     /**
