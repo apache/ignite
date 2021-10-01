@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -79,11 +80,39 @@ public class SystemViewExistSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean isPersistence;
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setName("pds")
+                    .setPersistenceEnabled(isPersistence)));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     @Test
     public void testViews() throws Exception {
-        cleanPersistenceDir();
-
         Set<String> expViews = new HashSet<>(Arrays.asList(
             BASELINE_NODE_ATTRIBUTES_SYS_VIEW,
             BASELINE_NODES_SYS_VIEW,
@@ -138,27 +167,22 @@ public class SystemViewExistSelfTest extends GridCommonAbstractTest {
         if (isPersistence)
             expViews.add(METASTORE_VIEW);
 
-        try (IgniteEx ignite = startGrid(getConfiguration()
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setName("pds")
-                    .setPersistenceEnabled(isPersistence))))
-        ) {
-            if (isPersistence) {
-                assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
+        IgniteEx ignite = startGrid();
 
-                assertEquals(expViews, getAllViewNames(ignite));
-            }
-
-            ignite.cluster().state(ClusterState.ACTIVE);
+        if (isPersistence) {
+            assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
 
             assertEquals(expViews, getAllViewNames(ignite));
+        }
 
-            if (isPersistence) {
-                ignite.cluster().state(ClusterState.INACTIVE);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-                assertEquals(expViews, getAllViewNames(ignite));
-            }
+        assertEquals(expViews, getAllViewNames(ignite));
+
+        if (isPersistence) {
+            ignite.cluster().state(ClusterState.INACTIVE);
+
+            assertEquals(expViews, getAllViewNames(ignite));
         }
     }
 
