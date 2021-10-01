@@ -92,8 +92,8 @@ public class IndexQueryProcessor {
                 while (currVal == null && cursor.next()) {
                     IndexRow r = cursor.get();
 
-                    K k = (K) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().key(), keepBinary, false);
-                    V v = (V) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().value(), keepBinary, false);
+                    K k = (K)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().key(), keepBinary, false);
+                    V v = (V)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().value(), keepBinary, false);
 
                     if (filter != null && !filter.apply(k, v))
                         continue;
