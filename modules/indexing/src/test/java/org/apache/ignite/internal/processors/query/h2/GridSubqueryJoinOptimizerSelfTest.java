@@ -577,8 +577,8 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimizationAlias2() {
-        String outerSqlTemplate = "SELECT i FROM (%s) u;";
-        String subSql = "SELECT id + id * id as i FROM dep";
+        String outerSqlTemplate = "SELECT id FROM (%s) u;";
+        String subSql = "SELECT id + id * id as id FROM dep";
 
         String resSql = String.format(outerSqlTemplate, subSql);
 
