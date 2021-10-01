@@ -126,7 +126,7 @@ public class NodeOptions extends RpcOptions implements Copiable<NodeOptions> {
     /**
      * Timer manager thread pool size
      */
-    private int timerPoolSize = Utils.cpus() * 3 > 20 ? 20 : Utils.cpus() * 3;
+    private int timerPoolSize = Math.min(Utils.cpus() * 3, 20);
 
     /**
      * CLI service request RPC executor pool size, use default executor if -1.

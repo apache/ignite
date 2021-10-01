@@ -37,7 +37,7 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
 /**
  * Implementation of {@link MessagingService} based on ScaleCube.
  */
-final class ScaleCubeMessagingService extends AbstractMessagingService {
+class ScaleCubeMessagingService extends AbstractMessagingService {
     /**
      * Inner representation of a ScaleCube cluster.
      */

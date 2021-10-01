@@ -22,13 +22,17 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
@@ -42,6 +46,7 @@ import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -93,8 +98,19 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
     /** Clients. */
     private final List<RaftGroupService> clients = new ArrayList<>();
 
+    /** Executor for raft group services. */
+    private ScheduledExecutorService executor;
+
     /**
-     * Shutdown raft server and stop all cluster nodes.
+     * Create executor for raft group services.
+     */
+    @BeforeEach
+    public void beforeTest() {
+        executor = new ScheduledThreadPoolExecutor(20, new NamedThreadFactory(Loza.CLIENT_POOL_NAME));
+    }
+
+    /**
+     * Shutdown raft server, executor for raft group services and stop all cluster nodes.
      *
      * @throws Exception If failed to shutdown raft server,
      */
@@ -102,6 +118,8 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
     public void afterTest() throws Exception {
         for (RaftGroupService client : clients)
             client.shutdown();
+
+        IgniteUtils.shutdownAndAwaitTermination(executor, 10, TimeUnit.SECONDS);
 
         for (JRaftServerImpl server : servers)
             server.stop();
@@ -388,7 +406,7 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
         ClusterService clientNode = clusterService(testInfo, CLIENT_PORT + clients.size(), addr);
 
         RaftGroupService client = RaftGroupServiceImpl.start(groupId, clientNode, FACTORY, 10_000,
-            List.of(new Peer(addr)), false, 200).get(3, TimeUnit.SECONDS);
+            List.of(new Peer(addr)), false, 200, executor).get(3, TimeUnit.SECONDS);
 
         clients.add(client);
 

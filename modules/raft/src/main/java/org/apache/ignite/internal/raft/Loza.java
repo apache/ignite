@@ -20,11 +20,16 @@ package org.apache.ignite.internal.raft;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
@@ -32,6 +37,7 @@ import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.jraft.RaftMessagesFactory;
 import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
+import org.apache.ignite.raft.jraft.util.Utils;
 
 /**
  * Best raft manager ever since 1982.
@@ -39,6 +45,14 @@ import org.apache.ignite.raft.jraft.rpc.impl.RaftGroupServiceImpl;
 public class Loza implements IgniteComponent {
     /** Factory. */
     private static final RaftMessagesFactory FACTORY = new RaftMessagesFactory();
+
+    /** Raft client pool name. */
+    public static final String CLIENT_POOL_NAME = "Raft-Group-Client";
+
+    /**
+     * Raft client pool size. Size was taken from jraft's TimeManager.
+     */
+    private static final int CLIENT_POOL_SIZE = Math.min(Utils.cpus() * 3, 20);
 
     /** Timeout. */
     private static final int TIMEOUT = 1000;
@@ -52,6 +66,9 @@ public class Loza implements IgniteComponent {
     /** Raft server. */
     private final RaftServer raftServer;
 
+    /** Executor for raft group services. */
+    private final ScheduledExecutorService executor;
+
     /**
      * Constructor.
      *
@@ -61,6 +78,12 @@ public class Loza implements IgniteComponent {
         this.clusterNetSvc = clusterNetSvc;
 
         this.raftServer = new JRaftServerImpl(clusterNetSvc, dataPath);
+
+        this.executor = new ScheduledThreadPoolExecutor(CLIENT_POOL_SIZE,
+            new NamedThreadFactory(NamedThreadFactory.threadPrefix(clusterNetSvc.localConfiguration().getName(),
+                CLIENT_POOL_NAME)
+            )
+        );
     }
 
     /** {@inheritDoc} */
@@ -71,6 +94,8 @@ public class Loza implements IgniteComponent {
     /** {@inheritDoc} */
     @Override public void stop() throws Exception {
         // TODO: IGNITE-15161 Implement component's stop.
+        IgniteUtils.shutdownAndAwaitTermination(executor, 10, TimeUnit.SECONDS);
+
         raftServer.stop();
     }
 
@@ -103,7 +128,8 @@ public class Loza implements IgniteComponent {
             TIMEOUT,
             peers,
             true,
-            DELAY
+            DELAY,
+            executor
         );
     }
 

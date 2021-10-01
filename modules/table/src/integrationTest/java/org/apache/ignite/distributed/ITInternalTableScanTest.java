@@ -28,11 +28,14 @@ import java.util.UUID;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.RaftServerImpl;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -43,8 +46,10 @@ import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuidGenerator;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
@@ -108,6 +113,9 @@ public class ITInternalTableScanTest {
     /** Internal table to test. */
     private InternalTable internalTbl;
 
+    /** Executor for raft group services. */
+    ScheduledExecutorService executor;
+
     /**
      * Prepare test environment:
      * <ol>
@@ -150,6 +158,8 @@ public class ITInternalTableScanTest {
             conf
         );
 
+        executor = new ScheduledThreadPoolExecutor(20, new NamedThreadFactory(Loza.CLIENT_POOL_NAME));
+
         RaftGroupService raftGrpSvc = RaftGroupServiceImpl.start(
             grpName,
             network,
@@ -157,7 +167,8 @@ public class ITInternalTableScanTest {
             10_000,
             conf,
             true,
-            200
+            200,
+            executor
         ).get(3, TimeUnit.SECONDS);
 
         internalTbl = new InternalTableImpl(
@@ -180,6 +191,8 @@ public class ITInternalTableScanTest {
 
         if (network != null)
             network.beforeNodeStop();
+
+        IgniteUtils.shutdownAndAwaitTermination(executor, 10, TimeUnit.SECONDS);
 
         if (raftSrv != null)
             raftSrv.stop();

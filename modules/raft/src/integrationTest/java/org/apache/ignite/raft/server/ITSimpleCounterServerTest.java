@@ -19,11 +19,16 @@ package org.apache.ignite.raft.server;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
@@ -75,6 +80,9 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
     @WorkDirectory
     private Path dataPath;
 
+    /** Executor for raft group services. */
+    private ScheduledExecutorService executor;
+
     /**
      * @throws Exception If failed.
      */
@@ -103,13 +111,15 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
 
         ClusterService clientNode1 = clusterService(PORT + 1, List.of(addr), true);
 
+        executor = new ScheduledThreadPoolExecutor(20, new NamedThreadFactory(Loza.CLIENT_POOL_NAME));
+
         client1 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_0, clientNode1, FACTORY, 1000,
-            List.of(new Peer(serverNode.address())), false, 200).get(3, TimeUnit.SECONDS);
+            List.of(new Peer(serverNode.address())), false, 200, executor).get(3, TimeUnit.SECONDS);
 
         ClusterService clientNode2 = clusterService(PORT + 2, List.of(addr), true);
 
         client2 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_1, clientNode2, FACTORY, 1000,
-            List.of(new Peer(serverNode.address())), false, 200).get(3, TimeUnit.SECONDS);
+            List.of(new Peer(serverNode.address())), false, 200, executor).get(3, TimeUnit.SECONDS);
 
         assertTrue(waitForTopology(service, 2, 1000));
         assertTrue(waitForTopology(clientNode1, 2, 1000));
@@ -124,6 +134,8 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
         server.stop();
         client1.shutdown();
         client2.shutdown();
+
+        IgniteUtils.shutdownAndAwaitTermination(executor, 10, TimeUnit.SECONDS);
 
         super.after();
     }
