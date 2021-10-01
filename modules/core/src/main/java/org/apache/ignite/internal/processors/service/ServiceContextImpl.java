@@ -116,7 +116,7 @@ public class ServiceContextImpl implements ServiceContext {
         this.cacheName = cacheName;
         this.affKey = affKey;
         this.exe = exe;
-        this.isStatisticsEnabled = statisticsEnabled;
+        isStatisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */
@@ -154,13 +154,15 @@ public class ServiceContextImpl implements ServiceContext {
         if (isStatisticsEnabled) {
             metricRegistry = metricMgr.registry(serviceMetricName(name));
 
+            if (metricRegistry.iterator().hasNext())
+                return;
+
             for (Class<?> itf : allInterfaces(svc.getClass())) {
                 for (Method mtd : itf.getMethods()) {
-                    if (metricIgnored(mtd.getDeclaringClass()) || metricRegistry.findMetric(mtd.getName()) != null)
-                        continue;
-
-                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
-                        '\'' + mtd.getName() + "()'");
+                    if (!metricIgnored(mtd.getDeclaringClass())) {
+                        metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
+                            '\'' + mtd.getName() + "()'");
+                    }
                 }
             }
         }

@@ -50,11 +50,11 @@ public class ServiceExample {
 
         // Print the latest counter value from our counter service.
         System.out.println("Incremented value : " + counterService.get());
-
+        
         //tag::undeploy[]
         services.cancel("myCounterService");
         //end::undeploy[]
-
+        
         ignite.close();
     }
 
@@ -63,7 +63,7 @@ public class ServiceExample {
         //tag::deploy-with-cluster-group[]
         Ignite ignite = Ignition.start();
 
-        //deploy the service to the nodes that host the cache named "myCache"
+        //deploy the service to the nodes that host the cache named "myCache" 
         ignite.services(ignite.cluster().forCacheNodes("myCache"));
 
         //end::deploy-with-cluster-group[]
@@ -83,7 +83,7 @@ public class ServiceExample {
 
     @Test
     void affinityKey() {
-
+        
         //tag::deploy-by-key[]
         Ignite ignite = Ignition.start();
 
