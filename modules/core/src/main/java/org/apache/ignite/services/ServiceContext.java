@@ -65,13 +65,4 @@ public interface ServiceContext extends Serializable {
      * @return Affinity key, possibly {@code null}.
      */
     @Nullable public <K> K affinityKey();
-
-    /**
-     * Gets operation context attribute.
-     *
-     * @param name Operation context attribute name.
-     * @param <V> Type of attribute value.
-     * @return Attribute value.
-     */
-    @Nullable public <V> V attribute(String name);
 }

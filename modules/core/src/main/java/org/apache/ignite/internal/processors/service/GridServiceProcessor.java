@@ -105,6 +105,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.services.ServiceProxyContext;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
@@ -1021,7 +1022,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        Map<String, Object> opCtx, long timeout)
+        ServiceProxyContext proxyCtx, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -1041,6 +1042,8 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 }
             }
         }
+
+        Map<String, Object> opCtx = proxyCtx != null ? ((ServiceProxyContextImpl)proxyCtx).values() : null;
 
         return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, opCtx).proxy();
     }

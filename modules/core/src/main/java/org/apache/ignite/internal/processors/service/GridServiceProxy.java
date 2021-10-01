@@ -281,13 +281,13 @@ public class GridServiceProxy<T> implements Serializable {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, opCtx);
 
-        ctx.setOperationContext(opCtx);
+        ServiceProxyContextImpl.current(opCtx);
 
         try {
             return mtd.invoke(svc, args);
         }
         finally {
-            ctx.setOperationContext(null);
+            ServiceProxyContextImpl.current(null);
         }
     }
 
@@ -513,7 +513,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
-            srvCtx.setOperationContext(opCtx);
+            ServiceProxyContextImpl.current(opCtx);
 
             try {
                 return mtd.invoke(srvCtx.service(), args);
@@ -522,7 +522,7 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new ServiceProxyException(e.getCause());
             }
             finally {
-                srvCtx.setOperationContext(null);
+                ServiceProxyContextImpl.current(null);
             }
         }
 

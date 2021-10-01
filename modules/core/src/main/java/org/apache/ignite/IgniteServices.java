@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
@@ -29,6 +28,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.services.ServiceProxyContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -627,7 +627,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
-    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, Map<String, Object> opCtx, long timeout)
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, ServiceProxyContext opCtx, long timeout)
         throws IgniteException;
 
     /** {@inheritDoc} */

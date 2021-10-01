@@ -27,11 +27,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceProxyContext;
+import org.apache.ignite.services.ServiceProxyContextBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -139,7 +140,8 @@ public class IgniteServiceProxyExecutionContextTest extends GridCommonAbstractTe
      * @return Service proxy instance.
      */
     private TestService createProxyWithContext(Ignite node, int attrVal) {
-        return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, F.asMap(ATTR_NAME, attrVal), 0);
+        return node.services().serviceProxy(SVC_NAME, TestService.class, sticky,
+            new ServiceProxyContextBuilder(ATTR_NAME, attrVal).build(), 0);
     }
 
     /** */
@@ -152,19 +154,9 @@ public class IgniteServiceProxyExecutionContextTest extends GridCommonAbstractTe
 
     /** */
     private static class TestServiceImpl implements TestService {
-        /** */
-        private ServiceContextImpl ctx;
-
-        /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
-            this.ctx = (ServiceContextImpl)ctx;
-        }
-
         /** {@inheritDoc} */
         @Override public Object attribute() {
-            assert ctx != null;
-
-            return ctx.attribute(ATTR_NAME);
+            return ServiceProxyContext.current().attribute(ATTR_NAME);
         }
 
         /** {@inheritDoc} */
@@ -174,6 +166,11 @@ public class IgniteServiceProxyExecutionContextTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
             // No-op.
         }
     }

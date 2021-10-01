@@ -114,13 +114,6 @@ public class ServiceContextImpl implements ServiceContext {
         return (K)affKey;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public <V> V attribute(String name) {
-        Map<String, Object> attrs = opCtx.get();
-
-        return attrs == null ? null : (V)attrs.get(name);
-    }
-
     /**
      * @param svc Service instance.
      */
@@ -170,16 +163,6 @@ public class ServiceContextImpl implements ServiceContext {
      */
     public void setCancelled(boolean isCancelled) {
         this.isCancelled = isCancelled;
-    }
-
-    /**
-     * @param opCtx Service operation context.
-     */
-    public void setOperationContext(@Nullable Map<String, Object> opCtx) {
-        if (opCtx == null)
-            this.opCtx.remove();
-        else
-            this.opCtx.set(opCtx);
     }
 
     /** {@inheritDoc} */

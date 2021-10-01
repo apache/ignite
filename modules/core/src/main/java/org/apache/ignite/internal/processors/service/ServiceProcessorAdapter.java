@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.services.ServiceProxyContext;
 
 /**
  * Adapter for different service processor implementations.
@@ -120,13 +121,13 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
-     * @param opCtx Service operation context.
+     * @param proxyCtx Service proxy context.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
     public abstract <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        Map<String, Object> opCtx, long timeout) throws IgniteException;
+        ServiceProxyContext proxyCtx, long timeout) throws IgniteException;
 
     /**
      * @param name Service name.
