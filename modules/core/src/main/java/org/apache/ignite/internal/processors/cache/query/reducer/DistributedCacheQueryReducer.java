@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
 
 /**
  * Base class for distributed cache query reducers.

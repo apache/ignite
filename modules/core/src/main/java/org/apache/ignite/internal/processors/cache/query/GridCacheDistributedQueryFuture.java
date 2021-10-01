@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortDistributedCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedDistributedCacheQueryReducer;
@@ -249,6 +250,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 onDone();
         }
 
+
         // Must release the latch after onDone() in order for a waiting thread to see an exception, if any.
         firstPageLatch.countDown();
     }
@@ -277,6 +279,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 s.onError();
 
             release(true, err);
+
+            pagesLock.notifyAll();
         }
     }
 

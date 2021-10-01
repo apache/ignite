@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -87,5 +87,10 @@ public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
 
             pagesLock.notifyAll();
         }
+    }
+
+    /** */
+    public void onError() {
+        onPage(null, Collections.emptyList(), true);
     }
 }

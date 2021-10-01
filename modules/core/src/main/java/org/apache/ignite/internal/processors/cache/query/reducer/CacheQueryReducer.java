@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;

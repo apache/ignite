@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryReducer;
 
 /**
  * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node

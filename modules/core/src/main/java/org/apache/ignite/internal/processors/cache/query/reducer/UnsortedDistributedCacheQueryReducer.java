@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryReducer;
 
 /**
  * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
