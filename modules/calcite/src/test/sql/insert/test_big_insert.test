@@ -44,7 +44,7 @@ INSERT INTO integers VALUES (DEFAULT+1, 4);
 statement ok
 INSERT INTO integers (i) SELECT j FROM integers;
 
-query II
+query II rowsort
 SELECT * FROM integers
 ----
 3	4
@@ -53,4 +53,3 @@ NULL	4
 4	NULL
 3	NULL
 4	NULL
-

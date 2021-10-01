@@ -63,7 +63,7 @@ statement ok
 INSERT INTO integers VALUES (1), (2), (3), (NULL)
 
 query T
-SELECT i BETWEEN 1 AND 2 FROM integers ORDER BY i
+SELECT i BETWEEN 1 AND 2 FROM integers ORDER BY i NULLS LAST
 ----
 true
 true
@@ -71,15 +71,15 @@ false
 NULL
 
 query T
-SELECT i BETWEEN NULL AND 2 FROM integers ORDER BY i
+SELECT i BETWEEN NULL AND 2 FROM integers ORDER BY i NULLS FIRST
 ----
 NULL
 NULL
-false
 NULL
+false
 
 query T
-SELECT i BETWEEN 2 AND NULL FROM integers ORDER BY i
+SELECT i BETWEEN 2 AND NULL FROM integers ORDER BY i NULLS LAST
 ----
 false
 NULL

@@ -1,0 +1,85 @@
+# name: test/sql/types/blob/test_blob_function.test
+# description: BLOB with Functions
+# group: [blob]
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15618
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE blobs (b binary);
+
+statement ok
+INSERT INTO blobs VALUES ('a'::binary)
+
+# conventional concat
+query T
+SELECT b || 'ZZ'::binary FROM blobs
+----
+aZZ
+
+query T
+SELECT 'abc '::BYTEA || 'klm *\xEF\xBF\xBDT'::binary
+----
+abc klm *\xEF\xBF\xBDT
+
+statement ok
+INSERT INTO blobs VALUES ('abc klm *\xEF\xBF\xBDT'::binary)
+
+query I
+SELECT COUNT(*) FROM blobs
+----
+2
+
+# octet_length
+query I
+SELECT OCTET_LENGTH(b) FROM blobs
+----
+1
+13
+
+# HEX strings
+statement ok
+DELETE FROM blobs
+
+statement ok
+INSERT INTO blobs VALUES ('\xFF'::binary)
+
+query T
+SELECT b || 'ZZ'::binary FROM blobs
+----
+\xFFZZ
+
+query T
+SELECT b || '\x5A\x5A'::binary FROM blobs
+----
+\xFFZZ
+
+# BLOB || VARCHAR is not allowed, should fail
+statement error
+SELECT b || '5A5A'::VARCHAR FROM blobs
+
+# Octet Length tests
+statement ok
+DELETE FROM blobs
+
+statement ok
+INSERT INTO blobs VALUES ('\xFF'::binary)
+
+statement ok
+INSERT INTO blobs VALUES ('FF'::binary)
+
+statement ok
+INSERT INTO blobs VALUES ('\x55\xAA\xFF\x55\xAA\xFF\x55\xAA\xFF\x01'::binary)
+
+statement ok
+INSERT INTO blobs VALUES ('55AAFF55AAFF55AAFF01'::binary)
+
+query I
+SELECT OCTET_LENGTH(b) FROM blobs
+----
+1
+2
+10
+20
+

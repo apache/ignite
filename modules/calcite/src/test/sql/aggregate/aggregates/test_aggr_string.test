@@ -29,7 +29,7 @@ SELECT a, COUNT(*), COUNT(s) FROM test GROUP BY a ORDER BY a;
 
 # group by the strings
 query TR
-SELECT s, SUM(a) FROM test GROUP BY s ORDER BY s;
+SELECT s, SUM(a) FROM test GROUP BY s ORDER BY s NULLS LAST;
 ----
 hello	11.000000
 world	12.000000
@@ -78,4 +78,5 @@ query II
 SELECT MAX(s), MIN(s) FROM test_strings2;
 ----
 aa	A
+
 

@@ -13,7 +13,7 @@ INSERT INTO integers VALUES (1), (NULL)
 
 # default is NULLS FIRST
 query I
-SELECT * FROM integers ORDER BY i
+SELECT * FROM integers ORDER BY i NULLS LAST
 ----
 1
 NULL
