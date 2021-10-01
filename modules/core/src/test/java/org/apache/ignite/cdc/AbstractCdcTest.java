@@ -17,26 +17,52 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
+import static org.apache.ignite.internal.cdc.CdcMain.BINARY_META_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
+import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
+import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
+import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -61,16 +87,71 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void addAndWaitForConsumption(
+    protected CdcMain createCdc(CdcConsumer cnsmr, IgniteConfiguration cfg) {
+        return createCdc(cnsmr, cfg, null);
+    }
+
+    /** */
+    protected CdcMain createCdc(
+        CdcConsumer cnsmr,
+        IgniteConfiguration cfg,
+        CountDownLatch latch,
+        GridAbsPredicate... conditions
+    ) {
+        CdcConfiguration cdcCfg = new CdcConfiguration();
+
+        cdcCfg.setConsumer(cnsmr);
+        cdcCfg.setKeepBinary(keepBinary());
+        cdcCfg.setMetricExporterSpi(metricExporters());
+
+        return new CdcMain(cfg, null, cdcCfg) {
+            @Override protected CdcConsumerState createState(Path stateDir) {
+                return new CdcConsumerState(stateDir) {
+                    @Override public void save(WALPointer ptr) throws IOException {
+                        super.save(ptr);
+
+                        if (!F.isEmpty(conditions)) {
+                            for (GridAbsPredicate p : conditions) {
+                                if (!p.apply())
+                                    return;
+                            }
+
+                            latch.countDown();
+                        }
+                    }
+                };
+            }
+        };
+    }
+
+    /** */
+    protected void addAndWaitForConsumption(
         UserCdcConsumer cnsmr,
-        CdcMain cdc,
+        IgniteConfiguration cfg,
         IgniteCache<Integer, CdcSelfTest.User> cache,
         IgniteCache<Integer, CdcSelfTest.User> txCache,
         CI3<IgniteCache<Integer, CdcSelfTest.User>, Integer, Integer> addData,
         int from,
         int to,
-        long timeout
-    ) throws IgniteCheckedException {
+        boolean waitForCommit
+    ) throws Exception {
+        GridAbsPredicate cachePredicate = sizePredicate(to - from, cache.getName(), UPDATE, cnsmr);
+        GridAbsPredicate txPredicate = txCache == null
+            ? null
+            : sizePredicate(to - from, txCache.getName(), UPDATE, cnsmr);
+
+        CdcMain cdc;
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        if (waitForCommit) {
+            cdc = txCache == null
+                ? createCdc(cnsmr, cfg, latch, cachePredicate)
+                : createCdc(cnsmr, cfg, latch, cachePredicate, txPredicate);
+        }
+        else
+            cdc = createCdc(cnsmr, cfg);
+
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         addData.apply(cache, from, to);
@@ -78,10 +159,16 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         if (txCache != null)
             addData.apply(txCache, from, to);
 
-        assertTrue(waitForSize(to - from, cache.getName(), UPDATE, timeout, cnsmr));
+        if (waitForCommit)
+            latch.await(getTestTimeout(), MILLISECONDS);
+        else {
+            assertTrue(waitForCondition(cachePredicate, getTestTimeout()));
 
-        if (txCache != null)
-            assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, timeout, cnsmr));
+            if (txCache != null)
+                assertTrue(waitForCondition(txPredicate, getTestTimeout()));
+        }
+
+        checkMetrics(cdc, txCache == null ? to : to * 2);
 
         fut.cancel();
 
@@ -96,29 +183,84 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public boolean waitForSize(
+    public void waitForSize(
         int expSz,
         String cacheName,
         CdcSelfTest.ChangeEventType evtType,
-        long timeout,
         TestCdcConsumer<?>... cnsmrs
     ) throws IgniteInterruptedCheckedException {
-        return waitForCondition(
-            () -> {
-                int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
-                return sum == expSz;
-            },
-            timeout);
+        assertTrue(waitForCondition(sizePredicate(expSz, cacheName, evtType, cnsmrs), getTestTimeout()));
     }
 
     /** */
-    public CdcConfiguration cdcConfig(CdcConsumer cnsmr) {
-        CdcConfiguration cdcCfg = new CdcConfiguration();
+    protected GridAbsPredicate sizePredicate(
+        int expSz,
+        String cacheName,
+        ChangeEventType evtType,
+        TestCdcConsumer<?>... cnsmrs
+    ) {
+        return () -> {
+            int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
+            return sum == expSz;
+        };
+    }
 
-        cdcCfg.setConsumer(cnsmr);
-        cdcCfg.setKeepBinary(false);
+    /** */
+    protected void checkMetrics(CdcMain cdc, int expCnt) throws Exception {
+        if (metricExporters() != null) {
+            IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
 
-        return cdcCfg;
+            DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+
+            Function<String, ?> jmxVal = m -> {
+                try {
+                    return jmxCdcReg.getAttribute(m);
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            };
+
+            checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
+        }
+
+        MetricRegistry mreg = getFieldValue(cdc, "mreg");
+
+        assertNotNull(mreg);
+
+        checkMetrics(
+            expCnt,
+            m -> mreg.<LongMetric>findMetric(m).value(),
+            m -> mreg.<ObjectMetric<String>>findMetric(m).value()
+        );
+    }
+
+    /** */
+    private void checkMetrics(long expCnt, Function<String, Long> longMetric, Function<String, String> strMetric) {
+        long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
+        long curSegIdx = longMetric.apply(CUR_SEG_IDX);
+
+        assertTrue(committedSegIdx <= curSegIdx);
+
+        assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
+        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+
+        assertTrue(longMetric.apply(LAST_EVT_TIME) > 0);
+
+        for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
+            assertTrue(new File(strMetric.apply(m)).exists());
+
+        assertEquals(expCnt, (long)longMetric.apply(EVTS_CNT));
+    }
+
+    /** */
+    protected boolean keepBinary() {
+        return false;
+    }
+
+    /** */
+    protected MetricExporterSpi[] metricExporters() {
+        return null;
     }
 
     /** */
@@ -130,7 +272,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         private volatile boolean stopped;
 
         /** {@inheritDoc} */
-        @Override public void start() {
+        @Override public void start(MetricRegistry mreg) {
             stopped = false;
         }
 

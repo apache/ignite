@@ -41,8 +41,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
@@ -50,6 +53,7 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
+@RunWith(Parameterized.class)
 public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -59,6 +63,16 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
 
     /** */
     private static IgniteCache<Long, Person> cache;
+
+    /** Whether to specify index name in IndexQuery. */
+    @Parameterized.Parameter
+    public boolean useIdxName;
+
+    /** */
+    @Parameterized.Parameters(name = "useIdxName={0}")
+    public static List<Boolean> params() {
+        return F.asList(false, true);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -301,8 +315,7 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
 
     /** */
     private String idxName(String field) {
-        // TODO: test case for escaping (true / false) separately.
-        return ("Person_" + field + "_idx").toUpperCase();
+        return useIdxName ? ("Person_" + field + "_idx").toUpperCase() : null;
     }
 
     /** */

@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.cache.query.index;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQuery;
@@ -48,7 +52,9 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
 
@@ -66,9 +72,12 @@ public class IndexQueryProcessor {
 
     /** Run query on local node. */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocal(
-        GridCacheContext<K, V> cctx, IndexQueryDesc idxQryDesc, IndexQueryContext qryCtx, boolean keepBinary)
-        throws IgniteCheckedException {
-
+        GridCacheContext<K, V> cctx,
+        IndexQueryDesc idxQryDesc,
+        @Nullable IgniteBiPredicate<K, V> filter,
+        IndexQueryContext qryCtx,
+        boolean keepBinary
+    ) throws IgniteCheckedException {
         Index idx = index(cctx, idxQryDesc);
 
         List<IndexQueryCriterion> criteria = alignCriteriaWithIndex(idxProc.indexDefinition(idx.id()), idxQryDesc);
@@ -77,7 +86,7 @@ public class IndexQueryProcessor {
 
         // Map IndexRow to Cache Key-Value pair.
         return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
-            private IndexRow currVal;
+            private IgniteBiTuple<K, V> currVal;
 
             private final CacheObjectContext coctx = cctx.cacheObjectContext();
 
@@ -86,12 +95,19 @@ public class IndexQueryProcessor {
                 if (currVal != null)
                     return true;
 
-                if (!cursor.next())
-                    return false;
+                while (currVal == null && cursor.next()) {
+                    IndexRow r = cursor.get();
 
-                currVal = cursor.get();
+                    K k = (K)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().key(), keepBinary, false);
+                    V v = (V)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().value(), keepBinary, false);
 
-                return true;
+                    if (filter != null && !filter.apply(k, v))
+                        continue;
+
+                    currVal = new IgniteBiTuple<>(k, v);
+                }
+
+                return currVal != null;
             }
 
             /** {@inheritDoc} */
@@ -100,14 +116,11 @@ public class IndexQueryProcessor {
                     if (!hasNext())
                         throw new NoSuchElementException();
 
-                IndexRow row = currVal;
+                IgniteBiTuple<K, V> row = currVal;
 
                 currVal = null;
 
-                K k = (K) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, row.cacheDataRow().key(), keepBinary, false);
-                V v = (V) CacheObjectUtils.unwrapBinaryIfNeeded(coctx, row.cacheDataRow().value(), keepBinary, false);
-
-                return new IgniteBiTuple<>(k, v);
+                return row;
             }
         };
     }
@@ -119,10 +132,19 @@ public class IndexQueryProcessor {
         if (tableName == null)
             throw failIndexQuery("No table found for type: " + idxQryDesc.valType(), null, idxQryDesc);
 
-        Index idx = indexByName(cctx, idxQryDesc, tableName);
+        if (idxQryDesc.idxName() != null) {
+            Index idx = indexByName(cctx, idxQryDesc, tableName);
+
+            if (idx == null)
+                throw failIndexQuery("No index found for name: " + idxQryDesc.idxName(), null, idxQryDesc);
+
+            return idx;
+        }
+
+        Index idx = indexByCriteria(cctx, idxQryDesc, tableName);
 
         if (idx == null)
-            throw failIndexQuery("No index found: " + idxQryDesc.idxName(), null, idxQryDesc);
+            throw failIndexQuery("No index found for criteria", null, idxQryDesc);
 
         return idx;
     }
@@ -148,6 +170,55 @@ public class IndexQueryProcessor {
         return idxProc.index(origIdxName);
     }
 
+    /**
+     * Get index by list of fields to query, or return {@code null}.
+     */
+    private Index indexByCriteria(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc, String tableName) {
+        Collection<Index> idxs = idxProc.indexes(cctx);
+
+        // Check both fields (original and normalized).
+        final Set<String> critFields = idxQryDesc.criteria().stream()
+            .map(IndexQueryCriterion::field)
+            .flatMap(f -> Stream.of(f, QueryUtils.normalizeObjectName(f, false)))
+            .collect(Collectors.toSet());
+
+        for (Index idx: idxs) {
+            IndexDefinition idxDef = idxProc.indexDefinition(idx.id());
+
+            if (!tableName.equals(idxDef.idxName().tableName()))
+                continue;
+
+            if (checkIndex(idxDef, idxQryDesc.criteria().size(), critFields))
+                return idx;
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks that specified index matches index query criteria.
+     *
+     * Criteria fields have to match to a prefix of the index. Order of fields in criteria doesn't matter.
+     */
+    private boolean checkIndex(IndexDefinition idxDef, int critLen, final Set<String> criteriaFlds) {
+        if (critLen > idxDef.indexKeyDefinitions().size())
+            return false;
+
+        int matches = 0;
+
+        for (int i = 0; i < idxDef.indexKeyDefinitions().size(); i++) {
+            String fld = idxDef.indexKeyDefinitions().get(i).name();
+
+            if (!criteriaFlds.contains(fld))
+                return false;
+
+            if (++matches == critLen)
+                return true;
+        }
+
+        return false;
+    }
+
     /** */
     private IgniteCheckedException failIndexQueryCriteria(IndexDefinition idxDef, IndexQueryDesc idxQryDesc) {
         return failIndexQuery( "Index doesn't match query", idxDef, idxQryDesc);
@@ -160,7 +231,7 @@ public class IndexQueryProcessor {
         if (idxDef != null)
             exMsg += " Index=" + idxDef;
 
-        return new IgniteCheckedException(exMsg + "; Query=" + desc);
+        return new IgniteCheckedException(exMsg + " Query=" + desc);
     }
 
     /** Checks that specified index matches index query criteria. */

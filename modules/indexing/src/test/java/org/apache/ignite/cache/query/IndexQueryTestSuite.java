@@ -27,12 +27,14 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     IndexQueryAllTypesTest.class,
     IndexQueryFailoverTest.class,
+    IndexQueryFilterTest.class,
     IndexQueryKeepBinaryTest.class,
     IndexQueryLocalTest.class,
     IndexQueryQueryEntityTest.class,
     IndexQueryAliasTest.class,
     IndexQuerySqlIndexTest.class,
     IndexQueryRangeTest.class,
+    IndexQueryWrongIndexTest.class,
     MultifieldIndexQueryTest.class,
     MultiTableIndexQuery.class
 })

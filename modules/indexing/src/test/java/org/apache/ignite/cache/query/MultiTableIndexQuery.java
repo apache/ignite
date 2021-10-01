@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -29,8 +30,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
@@ -38,6 +42,7 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
+@RunWith(Parameterized.class)
 public class MultiTableIndexQuery extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -53,6 +58,26 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
     /** */
     private static IgniteCache<Long, Object> cache;
+
+    /** */
+    @Parameterized.Parameter(value = 0)
+    public String qryPersIdx;
+
+    /** */
+    @Parameterized.Parameter(value = 1)
+    public String qrySecPersIdx;
+
+    /** */
+    @Parameterized.Parameter(value = 2)
+    public String qryKeyPkIdx;
+
+    /** */
+    @Parameterized.Parameters(name = "IDX={0}, SEC_IDX={1}, PK={2}")
+    public static Collection<Object[]> params() {
+        return F.asList(
+            new Object[] {null, null, null},
+            new Object[] {IDX, SEC_IDX, "_key_PK"});
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -83,14 +108,14 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     /** */
     @Test
     public void testEmptyCache() {
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryPersIdx)
             .setCriteria(lt("id", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
         assertTrue(cursor.getAll().isEmpty());
 
-        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, SEC_IDX)
+        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qrySecPersIdx)
             .setCriteria(lt("id", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, SecondPerson>> secCursor = cache.query(secQry);
@@ -106,45 +131,45 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, SEC_IDX)
+        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qrySecPersIdx)
             .setCriteria(lt("id", CNT + pivot));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryPersIdx)
             .setCriteria(lt("id", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
         // Lte.
-        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, SEC_IDX)
+        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qrySecPersIdx)
             .setCriteria(lte("id", CNT + pivot));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot + 1);
 
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+        qry = new IndexQuery<Long, Person>(Person.class, qryPersIdx)
             .setCriteria(lte("id", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
         // Gt.
-        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, SEC_IDX)
+        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qrySecPersIdx)
             .setCriteria(gt("id", CNT + pivot));
 
         checkSecondPerson(cache.query(secQry), CNT + pivot + 1, 2 * CNT);
 
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+        qry = new IndexQuery<Long, Person>(Person.class, qryPersIdx)
             .setCriteria(gt("id", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
         // Gte.
-        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, SEC_IDX)
+        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qrySecPersIdx)
             .setCriteria(gte("id", CNT + pivot));
 
         checkSecondPerson(cache.query(secQry), CNT + pivot, 2 * CNT);
 
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
+        qry = new IndexQuery<Long, Person>(Person.class, qryPersIdx)
             .setCriteria(gte("id", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
@@ -158,45 +183,45 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, "_key_PK")
+        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
             .setCriteria(lt("_KEY", (long) (CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot);
 
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "_key_PK")
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
             .setCriteria(lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
         // Lte.
-        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, "_key_PK")
+        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
             .setCriteria(lte("_KEY", (long) (CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot + 1);
 
-        qry = new IndexQuery<Long, Person>(Person.class, "_key_PK")
+        qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
             .setCriteria(lte("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
         // Gt.
-        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, "_key_PK")
+        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
             .setCriteria(gt("_KEY", (long) (CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT + pivot + 1, 2 * CNT);
 
-        qry = new IndexQuery<Long, Person>(Person.class, "_key_PK")
+        qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
             .setCriteria(gt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
         // Gte.
-        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, "_key_PK")
+        secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class, qryKeyPkIdx)
             .setCriteria(gte("_KEY", (long) (CNT + pivot)));
 
         checkSecondPerson(cache.query(secQry), CNT + pivot, 2 * CNT);
 
-        qry = new IndexQuery<Long, Person>(Person.class, "_key_PK")
+        qry = new IndexQuery<Long, Person>(Person.class, qryKeyPkIdx)
             .setCriteria(gte("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
