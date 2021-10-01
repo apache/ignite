@@ -1304,7 +1304,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 // Initialize service.
                 svc.init(svcCtx);
 
-                svcCtx.service(svc);
+                svcCtx.service(svc, ctx.metric());
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + assigns.name(), e);

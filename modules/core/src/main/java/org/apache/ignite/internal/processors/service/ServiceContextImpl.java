@@ -17,23 +17,47 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Externalizable;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 
 /**
  * Service context implementation.
  */
 public class ServiceContextImpl implements ServiceContext {
+    /** Base name domain for invocation metrics. */
+    static final String SERVICE_METRIC_REGISTRY = "Services";
+
+    /** Description for the service method invocation metric. */
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC_PREF = "Duration of service method in milliseconds for ";
+
+    /** Default bounds of invocation histogram in nanoseconds. */
+    private static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(50, MILLISECONDS),
+        NANOSECONDS.convert(200, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,11 +81,11 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private final ExecutorService exe;
 
+    /** Service metric registry. */
+    private volatile MetricRegistry metricRegistry;
+
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
-
-    /** Invocation metrics. */
-    private ReadOnlyMetricRegistry metrics;
 
     /** Service. */
     @GridToStringExclude
@@ -122,9 +146,24 @@ public class ServiceContextImpl implements ServiceContext {
 
     /**
      * @param svc Service instance.
+     * @param metricMgr Metric manager.
      */
-    void service(Service svc) {
+    void service(Service svc, GridMetricManager metricMgr) {
         this.svc = svc;
+
+        if (isStatisticsEnabled) {
+            metricRegistry = metricMgr.registry(serviceMetricName(name));
+
+            for (Class<?> itf : allInterfaces(svc.getClass())) {
+                for (Method mtd : itf.getMethods()) {
+                    if (metricIgnored(mtd.getDeclaringClass()) || metricRegistry.findMetric(mtd.getName()) != null)
+                        continue;
+
+                    metricRegistry.histogram(mtd.getName(), DEFAULT_INVOCATION_BOUNDS, DESCRIPTION_OF_INVOCATION_METRIC_PREF +
+                        '\'' + mtd.getName() + "()'");
+                }
+            }
+        }
     }
 
     /**
@@ -139,24 +178,6 @@ public class ServiceContextImpl implements ServiceContext {
      */
     ExecutorService executor() {
         return exe;
-    }
-
-    /**
-     * @return Invocation metrics.
-     */
-    ReadOnlyMetricRegistry metrics() {
-        return metrics;
-    }
-
-    /**
-     * Sets the invocation metrics.
-     *
-     * @return {@code this}.
-     */
-    ServiceContextImpl metrics(ReadOnlyMetricRegistry metrics) {
-        this.metrics = metrics;
-
-        return this;
     }
 
     /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
@@ -188,6 +209,17 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /**
+     * @param mtdName Method.
+     * @return Histogram for the method or {@code null} if: method should not be measured, service is canceled or statistics is disabled.
+     */
+    HistogramMetricImpl methodMetric(String mtdName) {
+        if (isStatisticsEnabled() && !isCancelled)
+            return metricRegistry.findMetric(mtdName);
+
+        return null;
+    }
+
+    /**
      * @param isCancelled Cancelled flag.
      */
     public void setCancelled(boolean isCancelled) {
@@ -197,5 +229,22 @@ public class ServiceContextImpl implements ServiceContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServiceContextImpl.class, this);
+    }
+
+    /**
+     * @param svcName Service name.
+     * @return regisrty name for the service metric.
+     */
+    static String serviceMetricName(String svcName) {
+        return MetricUtils.metricName(SERVICE_METRIC_REGISTRY, svcName);
+    }
+
+    /**
+     * @param cls Service object or interface.
+     * @return {@code True} if metrics should not be created for this class or interface.
+     */
+    static boolean metricIgnored(Class<?> cls) {
+        return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls)
+            || PlatformService.class.equals(cls);
     }
 }
