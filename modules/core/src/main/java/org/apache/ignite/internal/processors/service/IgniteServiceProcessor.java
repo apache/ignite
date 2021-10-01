@@ -1313,8 +1313,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 break;
         }
 
-        if (ctxs.isEmpty() && first.isStatisticsEnabled())
-            ctx.metric().remove(ServiceContextImpl.serviceMetricName(first.name()));
+        ctx.metric().remove(ServiceContextImpl.serviceMetricName(first.name()));
     }
 
     /**
