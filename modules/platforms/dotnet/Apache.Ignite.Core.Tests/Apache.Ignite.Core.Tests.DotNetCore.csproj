@@ -76,7 +76,7 @@
     <None Update="Config\KeyStore\trust.jks" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Lifecycle\lifecycle-beans.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Lifecycle\lifecycle-no-beans.xml" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Config\Client\server-with-ssl.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Client\server-with-ssl.xml" CopyToOutputDirectory="PreserveNewet" />
     <None Update="Config\Client\server.jks" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Client\thin-client-cert.pfx" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Client\IgniteClientConfiguration.xml" CopyToOutputDirectory="PreserveNewest" />
@@ -113,6 +113,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Apache.Ignite.Core\Properties\SharedAssemblyInfo.cs" />
     <Compile Remove="Deployment\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
