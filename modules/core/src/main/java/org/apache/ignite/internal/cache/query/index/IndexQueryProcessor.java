@@ -68,10 +68,12 @@ public class IndexQueryProcessor {
 
     /** Run query on local node. */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocal(
-        GridCacheContext<K, V> cctx, IndexQueryDesc idxQryDesc, @Nullable IgniteBiPredicate<K, V> filter,
-        IndexQueryContext qryCtx, boolean keepBinary)
-        throws IgniteCheckedException {
-
+        GridCacheContext<K, V> cctx,
+        IndexQueryDesc idxQryDesc,
+        @Nullable IgniteBiPredicate<K, V> filter,
+        IndexQueryContext qryCtx,
+        boolean keepBinary
+    ) throws IgniteCheckedException {
         Index idx = index(cctx, idxQryDesc);
 
         List<IndexQueryCriterion> criteria = alignCriteriaWithIndex(idxProc.indexDefinition(idx.id()), idxQryDesc);

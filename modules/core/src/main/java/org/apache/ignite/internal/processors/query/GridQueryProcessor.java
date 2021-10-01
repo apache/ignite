@@ -3374,9 +3374,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryIndex(String cacheName, String valCls,
-        final IndexQueryDesc idxQryDesc, @Nullable IgniteBiPredicate<K, V> filter, final IndexingQueryFilter filters,
-        boolean keepBinary) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryIndex(
+        String cacheName,
+        String valCls,
+        final IndexQueryDesc idxQryDesc,
+        @Nullable IgniteBiPredicate<K, V> filter,
+        final IndexingQueryFilter filters,
+        boolean keepBinary
+    ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
