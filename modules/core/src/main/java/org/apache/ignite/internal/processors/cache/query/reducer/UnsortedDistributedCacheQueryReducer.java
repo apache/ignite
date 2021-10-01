@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
@@ -34,33 +32,40 @@ public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQue
     /** Current page to return data to user. */
     private NodePage<R> page;
 
-    /**
-     * @param nodes Collection of nodes this query applies to.
-     */
-    public UnsortedDistributedCacheQueryReducer(Function<UUID, NodePage<R>> pagesProvider, Collection<ClusterNode> nodes) {
-        super(pagesProvider, nodes);
+    /** */
+    public UnsortedDistributedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams, long endTime) {
+        super(pageStreams, endTime);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
-        if (page != null && page.hasNext())
-            return true;
+        while (page != null && page.hasNext()) {
+            CompletableFuture<NodePage<R>>[] futs = new CompletableFuture[pageStreams.size()];
 
-        Iterator<UUID> it = nodes.iterator();
+            int i = 0;
 
-        while (it.hasNext()) {
-            NodePage<R> p = pagesProvider.apply(it.next());
+            for (NodePageStream<R> s: pageStreams.values()) {
+                if (s.closed())
+                    continue;
 
-            if (p == null || !p.hasNext())
-                it.remove();
-            else {
-                page = p;
+                CompletableFuture<NodePage<R>> f = s.nextPage();
 
-                return true;
+                if (f.isDone()) {
+                    page = f.getNow(null);
+
+                    return true;
+                }
+
+                futs[i++] = f;
             }
+
+            if (i == 0)
+                return false;
+
+            page = page(null, CompletableFuture.anyOf(futs));
         }
 
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

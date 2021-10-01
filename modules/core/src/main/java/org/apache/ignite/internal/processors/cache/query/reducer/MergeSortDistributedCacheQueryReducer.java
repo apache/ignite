@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.UUID;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node
@@ -43,29 +40,30 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
     /**
      * @param rowCmp Comparator to sort query results from different nodes.
      */
-    public MergeSortDistributedCacheQueryReducer(Function<UUID, NodePage<R>> pagesProvider, Comparator<R> rowCmp,
-        Collection<ClusterNode> nodes) {
-        super(pagesProvider, nodes);
+    public MergeSortDistributedCacheQueryReducer(
+        final Map<UUID, NodePageStream<R>> pageStreams,
+        Comparator<R> rowCmp,
+        long endTime
+    ) {
+        super(pageStreams, endTime);
 
         // Compares head pages from all nodes to get the lowest value at the moment.
         Comparator<NodePage<R>> pageCmp = (o1, o2) -> rowCmp.compare(o1.head(), o2.head());
 
-        nodePages = new PriorityQueue<>(nodes.size(), pageCmp);
+        nodePages = new PriorityQueue<>(pageStreams.size(), pageCmp);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         // Initial sort.
         if (nodePages.isEmpty()) {
-            Iterator<UUID> it = nodes.iterator();
-
-            while (it.hasNext()) {
-                NodePage<R> p = pagesProvider.apply(it.next());
+            for (NodePageStream<R> s: pageStreams.values()) {
+                NodePage<R> p = page(s.nodeId(), s.nextPage());
 
                 if (p == null || !p.hasNext())
-                    it.remove();
-                else
-                    nodePages.add(p);
+                    continue;
+
+                nodePages.add(p);
             }
         }
 
@@ -84,7 +82,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
         if (page.hasNext())
             nodePages.offer(page);
         else {
-            NodePage<R> p = pagesProvider.apply(page.nodeId());
+            NodePage<R> p = page(page.nodeId(), pageStreams.get(page.nodeId()).nextPage());
 
             if (p != null && p.hasNext())
                 nodePages.offer(p);

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.apache.ignite.cluster.ClusterNode;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Base class for distributed cache query reducers.
@@ -31,19 +31,37 @@ public abstract class DistributedCacheQueryReducer<T> extends CacheQueryReducer<
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Function returns a new data page for specified node.
-     */
-    protected final Function<UUID, NodePage<T>> pagesProvider;
+    /** Page streams collection. */
+    protected final Map<UUID, NodePageStream<T>> pageStreams;
 
-    /**
-     * List of nodes with not reduced data.
-     */
-    protected final List<UUID> nodes;
+    /** Timestamp of query timeout. */
+    protected final long endTime;
 
     /** */
-    protected DistributedCacheQueryReducer(Function<UUID, NodePage<T>> pagesProvider, Collection<ClusterNode> nodes) {
-        this.pagesProvider = pagesProvider;
-        this.nodes = nodes.stream().map(ClusterNode::id).collect(Collectors.toList());
+    protected DistributedCacheQueryReducer(final Map<UUID, NodePageStream<T>> pageStreams, long endTime) {
+        this.pageStreams = pageStreams;
+        this.endTime = endTime > 0 ? endTime : Long.MAX_VALUE;
+    }
+
+    /**
+     * @return Page with query results data from specified stream. In case of error return empty page.
+     */
+    protected NodePage<T> page(UUID nodeId, CompletableFuture<?> pageFut) throws IgniteCheckedException {
+        try {
+            long timeout = endTime - System.currentTimeMillis();
+
+            if (timeout < 0)
+                return new NodePage<>(nodeId, Collections.emptyList());
+
+            return (NodePage<T>)pageFut.get(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteCheckedException("Query was interrupted.", e);
+        }
+        catch (Exception e) {
+            return new NodePage<>(nodeId, Collections.emptyList());
+        }
     }
 }
