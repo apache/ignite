@@ -1,0 +1,96 @@
+# name: test/sql/types/blob/test_blob.test
+# description: BLOB tests
+# group: [blob]
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15618
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE blobs (b binary);
+
+# Insert valid hex strings
+statement ok
+INSERT INTO blobs VALUES('\xaa\xff\xaa'), ('\xAA\xFF\xAA\xAA\xFF\xAA'), ('\xAA\xFF\xAA\xAA\xFF\xAA\xAA\xFF\xAA')
+
+query T
+SELECT * FROM blobs
+----
+\xAA\xFF\xAA
+\xAA\xFF\xAA\xAA\xFF\xAA
+\xAA\xFF\xAA\xAA\xFF\xAA\xAA\xFF\xAA
+
+# Insert valid hex strings, lower case
+statement ok
+DELETE FROM blobs
+
+statement ok
+INSERT INTO blobs VALUES('\xaa\xff\xaa'), ('\xaa\xff\xaa\xaa\xff\xaa'), ('\xaa\xff\xaa\xaa\xff\xaa\xaa\xff\xaa')
+
+query T
+SELECT * FROM blobs
+----
+\xAA\xFF\xAA
+\xAA\xFF\xAA\xAA\xFF\xAA
+\xAA\xFF\xAA\xAA\xFF\xAA\xAA\xFF\xAA
+
+# Insert valid hex strings with number and letters
+statement ok
+DELETE FROM blobs
+
+statement ok
+INSERT INTO blobs VALUES('\xaa1199'), ('\xaa1199aa1199'), ('\xaa1199aa1199aa1199')
+
+query T
+SELECT * FROM blobs
+----
+\xAA1199
+\xAA1199aa1199
+\xAA1199aa1199aa1199
+
+# Insert invalid hex strings (invalid hex chars: G, H, I)
+statement error
+INSERT INTO blobs VALUES('\xGA\xFF\xAA')
+
+# Insert invalid hex strings (odd # of chars)
+statement error
+INSERT INTO blobs VALUES('\xA')
+
+statement error
+INSERT INTO blobs VALUES('\xAA\xA')
+
+statement error
+INSERT INTO blobs VALUES('blablabla\x')
+
+# BLOB with “non-printable” octets
+statement error
+SELECT 'abc �'::BYTEA;
+
+# BLOB null and empty values
+query T
+SELECT ''::BLOB
+----
+(empty)
+
+query T
+SELECT NULL::BLOB
+----
+NULL
+
+statement ok
+CREATE TABLE blob_empty (b binary);
+
+statement ok
+INSERT INTO blob_empty VALUES(''), (''::BLOB)
+
+statement ok
+INSERT INTO blob_empty VALUES(NULL), (NULL::BLOB)
+
+query T
+SELECT * FROM blob_empty
+----
+(empty)
+(empty)
+NULL
+NULL
+

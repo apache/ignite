@@ -54,7 +54,7 @@ hulld
 motörhead
 
 query T
-select LOWER(b) FROM strings ORDER BY b
+select LOWER(b) FROM strings ORDER BY b NULLS LAST
 ----
 räcks
 world

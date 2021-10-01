@@ -17,7 +17,7 @@ INSERT INTO strings VALUES ('hello'), ('world'), (NULL)
 
 # normal concat
 query T
-SELECT s || ' ' || s FROM strings ORDER BY s
+SELECT s || ' ' || s FROM strings ORDER BY s NULLS LAST
 ----
 hello hello
 world world
@@ -25,14 +25,14 @@ NULL
 
 # unicode concat
 query T
-SELECT s || ' ' || '🦆' FROM strings ORDER BY s
+SELECT s || ' ' || '🦆' FROM strings ORDER BY s NULLS LAST
 ----
 hello 🦆
 world 🦆
 NULL
 
 query T
-SELECT s || ' ' || '🦆' FROM strings ORDER BY s
+SELECT s || ' ' || '🦆' FROM strings ORDER BY s NULLS LAST
 ----
 hello 🦆
 world 🦆
@@ -68,7 +68,7 @@ NULL
 
 # this also applies to non-constant null values
 query T
-SELECT CONCAT('hello', ' ', s) FROM strings ORDER BY s
+SELECT CONCAT('hello', ' ', s) FROM strings ORDER BY s NULLS LAST
 ----
 hello hello
 hello world

@@ -44,34 +44,34 @@ NULL
 query T
 SELECT EXISTS(SELECT * FROM integers)
 ----
-1
+true
 
 query T
 SELECT EXISTS(SELECT * FROM integers WHERE i>10)
 ----
-0
+false
 
 # multiple exists
 query TT
 SELECT EXISTS(SELECT * FROM integers), EXISTS(SELECT * FROM integers)
 ----
-1	1
+true	true
 
 # exists used in operations
 query T
 SELECT EXISTS(SELECT * FROM integers) AND EXISTS(SELECT * FROM integers)
 ----
-1
+true
 
 # nested EXISTS
 query T
 SELECT EXISTS(SELECT EXISTS(SELECT * FROM integers))
 ----
-1
+true
 
 # uncorrelated IN
 query I
-SELECT * FROM integers WHERE 1 IN (SELECT 1) ORDER BY i
+SELECT * FROM integers WHERE 1 IN (SELECT 1) ORDER BY i NULLS FIRST
 ----
 NULL
 1
@@ -79,7 +79,7 @@ NULL
 3
 
 query I
-SELECT * FROM integers WHERE 1 IN (SELECT * FROM integers) ORDER BY i
+SELECT * FROM integers WHERE 1 IN (SELECT * FROM integers) ORDER BY i NULLS FIRST
 ----
 NULL
 1

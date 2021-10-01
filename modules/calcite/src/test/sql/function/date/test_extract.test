@@ -11,90 +11,101 @@ INSERT INTO dates VALUES (DATE '1993-08-14'), (NULL)
 # extract various parts of the date
 # year
 query I
-SELECT EXTRACT(year FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(year FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 1993
 NULL
 
 # month
 query I
-SELECT EXTRACT(month FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(month FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 8
 NULL
 
 # day
 query I
-SELECT EXTRACT(day FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(day FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 14
 NULL
 
 # decade
 query I
-SELECT EXTRACT(decade FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(decade FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 199
 NULL
 
 # century
 query I
-SELECT EXTRACT(century FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(century FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 20
 NULL
 
 # day of the week (Sunday = 1, Saturday = 7)
 query I
-SELECT EXTRACT(DOW FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(DOW FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 7
 NULL
 
 # day of the year (1 - 365/366)
 query I
-SELECT EXTRACT(DOY FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(DOY FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 226
 NULL
 
 # epoch
 query I
-SELECT EXTRACT(epoch FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(epoch FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 745286400
 NULL
 
 # isodow (Monday = 1, Sunday = 7)
 query I
-SELECT EXTRACT(ISODOW FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(ISODOW FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 6
 NULL
 
 # millenium (change of millenium is January 1, X001)
 query I
-SELECT EXTRACT(millennium FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(millennium FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 2
 NULL
 
 # timestamp variants all give 0 for date
 query I
-SELECT EXTRACT(second FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(second FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 0
 NULL
 
 query I
-SELECT EXTRACT(minute FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(minute FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 0
 NULL
 
 query I
-SELECT EXTRACT(hour FROM i) FROM dates ORDER BY i
+SELECT EXTRACT(hour FROM i) FROM dates ORDER BY i NULLS LAST
 ----
 0
 NULL
 
+query I
+SELECT EXTRACT(millisecond FROM i) FROM dates ORDER BY i NULLS LAST
+----
+0
+NULL
+
+query I
+SELECT EXTRACT(microsecond FROM i) FROM dates ORDER BY i NULLS LAST
+----
+0
+NULL
