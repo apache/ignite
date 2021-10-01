@@ -127,6 +127,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -3367,13 +3368,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param valCls Cache value class.
      * @param idxQryDesc Index query description.
-     * @param filters Key and value filters.
+     * @param filter Optional user defined cache entries filter.
+     * @param filters Ignite specific cache entries filters.
      * @param keepBinary Keep binary flag.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryIndex(String cacheName, String valCls,
-        final IndexQueryDesc idxQryDesc, final IndexingQueryFilter filters, boolean keepBinary) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryIndex(
+        String cacheName,
+        String valCls,
+        final IndexQueryDesc idxQryDesc,
+        @Nullable IgniteBiPredicate<K, V> filter,
+        final IndexingQueryFilter filters,
+        boolean keepBinary
+    ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -3385,7 +3393,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                         IndexQueryContext qryCtx = new IndexQueryContext(filters, null);
 
-                        return idxQryPrc.queryLocal(cctx, idxQryDesc, qryCtx, keepBinary);
+                        return idxQryPrc.queryLocal(cctx, idxQryDesc, filter, qryCtx, keepBinary);
 
                     }
                 }, true);
