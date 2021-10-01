@@ -113,7 +113,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Apache.Ignite.Core\Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <Compile Remove="Deployment\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>
