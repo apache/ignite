@@ -34,7 +34,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelCollations;
@@ -42,9 +41,9 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Aggregate.Group;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.rules.TransformationRule;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
@@ -55,7 +54,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBeans;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -180,24 +178,25 @@ public final class AggregateExpandDistinctAggregatesRule
                 // aggregate A must be SUM. For other aggregates, it remains the same.
                 final int arg = bottomGroups.size() + nonDistinctAggCallProcessedSoFar;
                 final List<Integer> newArgs = ImmutableList.of(arg);
+                RelDataTypeFactory typeFactory = aggregate.getCluster().getTypeFactory();
                 if (aggCall.getAggregation().getKind() == SqlKind.COUNT) {
-                    RelDataTypeFactory typeFactory = aggregate.getCluster().getTypeFactory();
-
+                    // pass 'null' type to infering type from input
                     newCall =
                         AggregateCall.create(new SqlSumEmptyIsZeroAggFunction(), false,
                             aggCall.isApproximate(), aggCall.ignoreNulls(),
                             newArgs, -1, aggCall.distinctKeys, aggCall.collation,
                             originalGroupSet.cardinality(), relBuilder.peek(),
-                            typeFactory.getTypeSystem().deriveSumType(typeFactory, aggCall.getType()),
+                            null,
                             aggCall.getName());
                 }
                 else {
+                    // pass 'null' type to infering type from input
                     newCall =
                         AggregateCall.create(aggCall.getAggregation(), false,
                             aggCall.isApproximate(), aggCall.ignoreNulls(),
                             newArgs, -1, aggCall.distinctKeys, aggCall.collation,
                             originalGroupSet.cardinality(),
-                            relBuilder.peek(), aggCall.getType(), aggCall.name);
+                            relBuilder.peek(), null, aggCall.name);
                 }
                 nonDistinctAggCallProcessedSoFar++;
             }
@@ -216,9 +215,14 @@ public final class AggregateExpandDistinctAggregatesRule
             groupSetToAdd++;
         }
 
-        relBuilder.push(
-            aggregate.copy(aggregate.getTraitSet(), relBuilder.build(),
-                ImmutableBitSet.of(topGroupSet), null, topAggregateCalls));
+        try {
+            relBuilder.push(
+                aggregate.copy(aggregate.getTraitSet(), relBuilder.build(),
+                    ImmutableBitSet.of(topGroupSet), null, topAggregateCalls));
+        }
+        catch (AssertionError e) {
+            throw e;
+        }
 
         // Add projection node for case: SUM of COUNT(*):
         // Type of the SUM may be larger than type of COUNT.
@@ -228,6 +232,7 @@ public final class AggregateExpandDistinctAggregatesRule
         return relBuilder;
     }
 
+    /** */
     private static void rewriteUsingGroupingSets(RelOptRuleCall call,
         Aggregate aggregate) {
         final Set<ImmutableBitSet> groupSetTreeSet =
@@ -386,6 +391,7 @@ public final class AggregateExpandDistinctAggregatesRule
         return v;
     }
 
+    /** */
     static ImmutableBitSet remap(ImmutableBitSet groupSet,
         ImmutableBitSet bitSet) {
         final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
@@ -396,6 +402,7 @@ public final class AggregateExpandDistinctAggregatesRule
         return builder.build();
     }
 
+    /** */
     static ImmutableList<ImmutableBitSet> remap(ImmutableBitSet groupSet,
         Iterable<ImmutableBitSet> bitSets) {
         final ImmutableList.Builder<ImmutableBitSet> builder =
@@ -407,6 +414,7 @@ public final class AggregateExpandDistinctAggregatesRule
         return builder.build();
     }
 
+    /** */
     private static List<Integer> remap(ImmutableBitSet groupSet,
         List<Integer> argList) {
         ImmutableIntList list = ImmutableIntList.of();
@@ -417,6 +425,7 @@ public final class AggregateExpandDistinctAggregatesRule
         return list;
     }
 
+    /** */
     private static int remap(ImmutableBitSet groupSet, int arg) {
         return arg < 0 ? -1 : groupSet.indexOf(arg);
     }
@@ -627,6 +636,7 @@ public final class AggregateExpandDistinctAggregatesRule
         relBuilder.join(JoinRelType.INNER, conditions);
     }
 
+    /** */
     private static void rewriteAggCalls(
         List<AggregateCall> newAggCalls,
         List<Integer> argList,
@@ -753,6 +763,7 @@ public final class AggregateExpandDistinctAggregatesRule
         return relBuilder;
     }
 
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         final Aggregate aggregate = call.rel(0);
 
@@ -911,13 +922,16 @@ public final class AggregateExpandDistinctAggregatesRule
 
     /** Rule configuration. */
     public interface Config extends RelRule.Config {
+        /** */
         Config DEFAULT = EMPTY
             .withOperandSupplier(b ->
                 b.operand(LogicalAggregate.class).anyInputs())
             .as(Config.class);
 
+        /** */
         Config JOIN = DEFAULT.withUsingGroupingSets(false);
 
+        /** {@inheritDoc} */
         @Override default AggregateExpandDistinctAggregatesRule toRule() {
             return new AggregateExpandDistinctAggregatesRule(this);
         }

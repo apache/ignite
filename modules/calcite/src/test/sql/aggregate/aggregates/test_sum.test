@@ -74,7 +74,7 @@ SELECT SUM(b) FROM bigints
 query T
 SELECT typeof(SUM(b)) FROM bigints
 ----
-JavaType(class java.math.BigDecimal)
+DECIMAL(32767, 0)
 
 # this is too big for a bigint
 statement error
