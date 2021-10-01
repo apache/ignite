@@ -18,24 +18,29 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.table.Tuple;
+import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
+/** */
 public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
-    /**
-     * @return Distribution.
-     */
+    /** Returns distribution of the table. */
     IgniteDistribution distribution();
+
+    /** Returns the table this description describes. */
+    TableImpl table();
 
     /**
      * Returns nodes mapping.
@@ -57,6 +62,16 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Row type for INSERT operation.
      */
     default RelDataType insertRowType(IgniteTypeFactory factory) {
+        return rowType(factory, null);
+    }
+
+    /**
+     * Returns row type containing only key fields.
+     *
+     * @param factory Type factory.
+     * @return Row type for DELETE operation.
+     */
+    default RelDataType deleteRowType(IgniteTypeFactory factory) {
         return rowType(factory, null);
     }
 
@@ -87,6 +102,37 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return {@code True} if update operation is allowed for a column with a given index.
      */
     boolean isUpdateAllowed(RelOptTable tbl, int colIdx);
+
+    /**
+     * Converts a tuple to relational node row.
+     *
+     * @param ectx Execution context.
+     * @param row Tuple to convert.
+     * @param requiredColumns Participating columns.
+     * @return Relational node row.
+     */
+    <Row> Row toRow(
+        ExecutionContext<Row> ectx,
+        Tuple row,
+        RowHandler.RowFactory<Row> factory,
+        @Nullable ImmutableBitSet requiredColumns
+    );
+
+    /**
+     * Converts a relational node row to internal tuple;
+     *
+     * @param ectx Execution context.
+     * @param row Relational node row.
+     * @param op Operation.
+     * @param arg Operation specific argument.
+     * @return Cache key-value tuple;
+     */
+    <Row> Tuple toTuple(
+        ExecutionContext<Row> ectx,
+        Row row,
+        TableModify.Operation op,
+        @Nullable Object arg
+    );
 
     /**
      * Returns column descriptor for given field name.

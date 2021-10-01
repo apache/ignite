@@ -19,6 +19,7 @@ package org.apache.ignite.internal.table.distributed.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +33,9 @@ import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.internal.table.distributed.command.DeleteAllCommand;
@@ -58,6 +62,8 @@ import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.IgniteUuidGenerator;
 import org.apache.ignite.lang.LoggerMessageHelper;
+import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.schema.definition.SchemaManagementMode;
 import org.apache.ignite.tx.Transaction;
@@ -76,16 +82,19 @@ public class InternalTableImpl implements InternalTable {
 
     //TODO: IGNITE-15443 Use IntMap structure instead of HashMap.
     /** Partition map. */
-    private Map<Integer, RaftGroupService> partitionMap;
+    private final Map<Integer, RaftGroupService> partitionMap;
 
     /** Partitions. */
-    private int partitions;
+    private final int partitions;
 
     /** Table name. */
-    private String tableName;
+    private final String tableName;
 
     /** Table identifier. */
-    private IgniteUuid tableId;
+    private final IgniteUuid tableId;
+
+    /** Resolver that resolves a network address to node id. */
+    private final Function<NetworkAddress, String> netAddrResolver;
 
     /** Table schema mode. */
     private volatile SchemaManagementMode schemaMode;
@@ -100,12 +109,14 @@ public class InternalTableImpl implements InternalTable {
         String tableName,
         IgniteUuid tableId,
         Map<Integer, RaftGroupService> partMap,
-        int partitions
+        int partitions,
+        Function<NetworkAddress, String> netAddrResolver
     ) {
         this.tableName = tableName;
         this.tableId = tableId;
         this.partitionMap = partMap;
         this.partitions = partitions;
+        this.netAddrResolver = netAddrResolver;
 
         this.schemaMode = SchemaManagementMode.STRICT;
     }
@@ -303,6 +314,30 @@ public class InternalTableImpl implements InternalTable {
             keyRowsByPartition.computeIfAbsent(partId(keyRow), k -> new HashSet<>()).add(keyRow);
 
         return keyRowsByPartition;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull List<String> assignments() {
+        awaitLeaderInitialization();
+
+        return partitionMap.entrySet().stream()
+            .sorted(Comparator.comparingInt(Map.Entry::getKey))
+            .map(Map.Entry::getValue)
+            .map(RaftGroupService::leader)
+            .map(Peer::address)
+            .map(netAddrResolver)
+            .collect(Collectors.toList());
+    }
+
+    private void awaitLeaderInitialization() {
+        List<CompletableFuture<Void>> futs = new ArrayList<>();
+
+        for (RaftGroupService raftSvc : partitionMap.values()) {
+            if (raftSvc.leader() == null)
+                futs.add(raftSvc.refreshLeader());
+        }
+
+        CompletableFuture.allOf(futs.toArray(CompletableFuture[]::new)).join();
     }
 
     /**

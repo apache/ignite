@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 import static org.apache.ignite.internal.util.ArrayUtils.OBJECT_EMPTY_ARRAY;
@@ -24,7 +25,7 @@ import static org.apache.ignite.internal.util.ArrayUtils.OBJECT_EMPTY_ARRAY;
 /**
  *
  */
-public class GroupKey {
+public class GroupKey implements Serializable {
     /** */
     public static final GroupKey EMPTY_GRP_KEY = new GroupKey(OBJECT_EMPTY_ARRAY);
 
@@ -61,6 +62,11 @@ public class GroupKey {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Arrays.hashCode(fields);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "GroupKey" + Arrays.toString(fields);
     }
 
     /** */

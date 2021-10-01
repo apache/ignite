@@ -33,7 +33,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
+
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.apache.ignite.configuration.schemas.table.TableChange;
@@ -76,6 +78,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lang.IgniteUuidGenerator;
 import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.ClusterNode;
+import org.apache.ignite.network.NetworkAddress;
+import org.apache.ignite.network.TopologyService;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -123,6 +127,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Tables. */
     private final Map<IgniteUuid, TableImpl> tablesById = new ConcurrentHashMap<>();
 
+    /** Resolver that resolves a network address to node id. */
+    private final Function<NetworkAddress, String> netAddrResolver;
+
     /**
      * Creates a new table manager.
      *
@@ -136,6 +143,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         TablesConfiguration tablesCfg,
         Loza raftMgr,
         BaselineManager baselineMgr,
+        TopologyService topologyService,
         MetaStorageManager metaStorageMgr,
         Path partitionsStoreDir
     ) {
@@ -144,6 +152,15 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         this.baselineMgr = baselineMgr;
         this.metaStorageMgr = metaStorageMgr;
         this.partitionsStoreDir = partitionsStoreDir;
+
+        netAddrResolver = addr -> {
+            ClusterNode node = topologyService.getByAddress(addr);
+
+            if (node == null)
+                throw new IllegalStateException("Can't resolve ClusterNode by its networkAddress=" + addr);
+
+            return node.id();
+        };
     }
 
     /** {@inheritDoc} */
@@ -298,7 +315,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     partitionMap.put(p, service);
                 }
 
-                InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions);
+                InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions, netAddrResolver);
 
                 var schemaRegistry = new SchemaRegistryImpl(v -> schemaDesc);
 

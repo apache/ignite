@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 
 import org.apache.ignite.internal.util.ArrayUtils;
 
@@ -49,6 +50,11 @@ public class ArrayRowHandler implements RowHandler<Object[]> {
     /** {@inheritDoc} */
     @Override public int columnCount(Object[] row) {
         return row.length;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(Object[] objects) {
+        return "Row" + Arrays.toString(objects);
     }
 
     /** {@inheritDoc} */

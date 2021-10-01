@@ -187,9 +187,11 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            assert holder == null : "sudden apply for: " + other + " on SingleVal";
+            assert other instanceof SingleVal;
 
-            holder = ((SingleVal)other).holder;
+            SingleVal otherSingle = (SingleVal)other;
+            if (otherSingle.touched)
+                add(otherSingle.holder);
         }
 
         /** {@inheritDoc} */

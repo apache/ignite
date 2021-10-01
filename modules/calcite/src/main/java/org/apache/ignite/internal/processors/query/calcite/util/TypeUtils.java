@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.nativeTypeToClass;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.transform;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
@@ -206,7 +207,7 @@ public class TypeUtils {
 
         assert fldDesc != null;
 
-        return fldDesc.storageType();
+        return nativeTypeToClass(fldDesc.storageType());
     }
 
     /** */

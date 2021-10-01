@@ -20,7 +20,10 @@ import java.util.function.Supplier;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.schema.NativeType;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.nativeTypeToClass;
 
 /** */
 public class ColumnDescriptorImpl implements ColumnDescriptor {
@@ -35,13 +38,13 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
     private final int fieldIdx;
 
     /** */
-    private final Class<?> storageType;
+    private final NativeType storageType;
 
     public ColumnDescriptorImpl(
         String name,
         boolean key,
         int fieldIdx,
-        Class<?> storageType,
+        NativeType storageType,
         @Nullable Supplier<Object> dfltVal
     ) {
         this.key = key;
@@ -78,16 +81,11 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
 
     /** {@inheritDoc} */
     @Override public RelDataType logicalType(IgniteTypeFactory f) {
-        return f.createJavaType(storageType);
+        return f.createJavaType(nativeTypeToClass(storageType));
     }
 
     /** {@inheritDoc} */
-    @Override public Class<?> storageType() {
+    @Override public NativeType storageType() {
         return storageType;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void set(Object dst, Object val) {
-        throw new AssertionError();
     }
 }

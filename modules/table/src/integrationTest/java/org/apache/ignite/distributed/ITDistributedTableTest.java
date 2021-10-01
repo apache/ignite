@@ -60,6 +60,7 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
@@ -302,7 +303,8 @@ public class ITDistributedTableTest {
             "tbl",
             new IgniteUuid(UUID.randomUUID(), 0),
             partMap,
-            PARTS
+            PARTS,
+            NetworkAddress::toString
         ), new SchemaRegistry() {
             @Override public SchemaDescriptor schema() {
                 return SCHEMA;

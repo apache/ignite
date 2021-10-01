@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.table;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow.Publisher;
+
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.schema.definition.SchemaManagementMode;
@@ -204,6 +206,16 @@ public interface InternalTable {
      * @return {@link Publisher<BinaryRow>} that reactively notifies about partition rows.
      */
     @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx);
+
+    /**
+     * Gets a list of current table assignments.
+     *
+     * Returns a list where on the i-th place resides a node id that considered
+     * as a leader for the i-th partition on the moment of invocation.
+     *
+     * @return List of current assignments.
+     */
+    @NotNull List<String> assignments();
 
     //TODO: IGNITE-14488. Add invoke() methods.
 }

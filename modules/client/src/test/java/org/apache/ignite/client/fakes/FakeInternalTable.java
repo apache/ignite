@@ -20,9 +20,11 @@ package org.apache.ignite.client.fakes;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Flow.Publisher;
+
 import javax.naming.OperationNotSupportedException;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.InternalTable;
@@ -230,6 +232,11 @@ public class FakeInternalTable implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx) {
+        throw new IgniteInternalException(new OperationNotSupportedException());
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull List<String> assignments() {
         throw new IgniteInternalException(new OperationNotSupportedException());
     }
 }

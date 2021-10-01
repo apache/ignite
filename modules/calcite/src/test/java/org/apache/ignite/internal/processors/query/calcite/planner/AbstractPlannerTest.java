@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -46,6 +45,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelVisitor;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -63,6 +63,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
@@ -87,9 +88,12 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ArrayUtils;
+import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -556,17 +560,6 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(
-                ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
-                @Nullable ImmutableBitSet usedColumns
-        ) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
         @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
             RelDataType rowType = protoType.apply(typeFactory);
 
@@ -703,6 +696,11 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public TableImpl table() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
         @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
             return rowType;
         }
@@ -710,6 +708,18 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Row toRow(ExecutionContext<Row> ectx, Tuple row, RowHandler.RowFactory<Row> factory,
+            @Nullable ImmutableBitSet requiredColumns) {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Tuple toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op,
+            @Nullable Object arg) {
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */
@@ -790,17 +800,12 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> storageType() {
+        @Override public NativeType storageType() {
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
         @Override public Object defaultValue() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void set(Object dst, Object val) {
             throw new AssertionError();
         }
     }

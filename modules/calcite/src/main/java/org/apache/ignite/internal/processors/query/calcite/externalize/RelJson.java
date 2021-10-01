@@ -859,11 +859,6 @@ class RelJson {
 
                 map.put("keys", keys);
 
-                DistributionFunction function = distribution.function();
-
-                if (function.affinity())
-                    map.put("cacheId", function.cacheId());
-
                 return map;
             default:
                 throw new AssertionError("Unexpected distribution type.");

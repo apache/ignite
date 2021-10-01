@@ -31,6 +31,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -86,10 +88,10 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
         builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
-        builder.add("GROUP_KEY", typeFactory.createJavaType(Object.class/*GroupKey.class*/));
+        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
 
         if (addData)
-            builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Object.class/*Accumulator.class*/), -1));
+            builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
 
         return builder.build();
     }

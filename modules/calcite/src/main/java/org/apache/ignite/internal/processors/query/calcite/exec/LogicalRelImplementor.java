@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.IntersectNod
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MinusNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -89,6 +91,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleH
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -305,21 +308,27 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
         List<RexNode> projects = rel.projects();
-        ImmutableBitSet requiredColunms = rel.requiredColumns();
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColunms);
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         ColocationGroup group = ctx.group(rel.sourceId());
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, group, filters, prj, requiredColunms);
-
-        return new ScanNode<>(ctx, rowType, rowsIter);
+        return new TableScanNode<>(
+            ctx,
+            rowType,
+            tbl.descriptor(),
+            group.partitions(ctx.planningContext().localNodeId()),
+            filters,
+            prj,
+            requiredColumns
+        );
     }
 
     /** {@inheritDoc} */
@@ -463,7 +472,23 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableModify rel) {
-        throw new UnsupportedOperationException();
+        switch (rel.getOperation()) {
+            case INSERT:
+            case UPDATE:
+            case DELETE:
+                ModifyNode<Row> node = new ModifyNode<>(ctx, rel.getRowType(), rel.getTable().unwrap(TableDescriptor.class),
+                    rel.getOperation(), rel.getUpdateColumnList());
+
+                Node<Row> input = visit(rel.getInput());
+
+                node.register(input);
+
+                return node;
+            case MERGE:
+                throw new UnsupportedOperationException();
+            default:
+                throw new AssertionError();
+        }
     }
 
     /** {@inheritDoc} */

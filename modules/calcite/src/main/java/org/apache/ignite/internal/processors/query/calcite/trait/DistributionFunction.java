@@ -65,11 +65,6 @@ public abstract class DistributionFunction {
         return false;
     }
 
-    /** */
-    public int cacheId() {
-        return intFoo()/*CU.UNDEFINED_CACHE_ID*/;
-    }
-
     /**
      * Creates a destination based on this function algorithm, given nodes mapping and given distribution keys.
      *
@@ -270,11 +265,6 @@ public abstract class DistributionFunction {
         /** {@inheritDoc} */
         @Override public boolean affinity() {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int cacheId() {
-            return cacheId;
         }
 
         /** {@inheritDoc} */

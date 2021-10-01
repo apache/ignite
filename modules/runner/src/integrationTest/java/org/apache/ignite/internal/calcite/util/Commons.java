@@ -14,32 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.calcite.util;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.schema.NativeType;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/** */
-public interface ColumnDescriptor {
-    /** */
-    boolean key();
+import com.google.common.collect.Streams;
+import org.apache.ignite.internal.util.Cursor;
 
-    /** */
-    boolean hasDefaultValue();
-
-    /** */
-    String name();
-
-    /** */
-    int fieldIndex();
-
-    /** */
-    RelDataType logicalType(IgniteTypeFactory f);
-
-    /** */
-    NativeType storageType();
-
-    /** */
-    Object defaultValue();
+public class Commons {
+    public static List<List<?>> getAllFromCursor(Cursor<List<?>> cur) {
+        return Streams.stream((Iterable<List<?>>)cur).collect(Collectors.toList());
+    }
 }

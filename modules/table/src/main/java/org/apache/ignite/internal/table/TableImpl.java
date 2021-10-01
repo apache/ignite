@@ -65,6 +65,11 @@ public class TableImpl implements Table {
         return tbl.tableId();
     }
 
+    /** Returns an internal table instance this view represents. */
+    public InternalTable internalTable() {
+        return tbl;
+    }
+
     /** {@inheritDoc} */
     @Override public @NotNull String tableName() {
         return tbl.tableName();

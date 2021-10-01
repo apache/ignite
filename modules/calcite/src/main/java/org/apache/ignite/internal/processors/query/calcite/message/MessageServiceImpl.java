@@ -33,6 +33,8 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TopologyService;
 
+import static org.apache.ignite.internal.processors.query.calcite.message.SqlQueryMessageGroup.GROUP_TYPE;
+
 /**
  *
  */
@@ -124,7 +126,7 @@ public class MessageServiceImpl implements MessageService {
 
     /** */
     private void onMessage(NetworkMessage msg, NetworkAddress addr, String correlationId) {
-        assert msg.groupType() == 3 : "unexpected message group grpType=" + msg.groupType();
+        assert msg.groupType() == GROUP_TYPE : "unexpected message group grpType=" + msg.groupType();
 
         ClusterNode node = topSrvc.getByAddress(addr);
         if (node == null) {

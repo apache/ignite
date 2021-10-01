@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTa
 import org.apache.ignite.lang.IgniteException;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BOOLEAN;
-import static org.apache.ignite.internal.processors.query.calcite.Stubs.stringFoo;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.AFFINITY_KEY;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.BACKUPS;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.CACHE_GROUP;
@@ -136,7 +135,6 @@ public class DdlSqlToCommandConverter {
         createTblCmd.schemaName(deriveSchemaName(createTblNode.name(), ctx));
         createTblCmd.tableName(deriveObjectName(createTblNode.name(), ctx, "tableName"));
         createTblCmd.ifNotExists(createTblNode.ifNotExists());
-        createTblCmd.templateName(stringFoo()/*QueryUtils.TEMPLATE_PARTITIONED*/);
 
         if (createTblNode.createOptionList() != null) {
             for (SqlNode optNode : createTblNode.createOptionList().getList()) {

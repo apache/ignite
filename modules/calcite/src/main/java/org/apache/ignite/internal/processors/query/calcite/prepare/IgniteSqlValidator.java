@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.calcite.plan.RelOptTable;
@@ -46,7 +44,6 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
@@ -60,8 +57,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Static.RESOURCE;
-import static org.apache.ignite.internal.processors.query.calcite.Stubs.boolFoo;
-import static org.apache.ignite.internal.processors.query.calcite.Stubs.stringFoo;
 import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
 
 /** Validator. */
@@ -159,8 +154,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlSelect createSourceSelectForDelete(SqlDelete call) {
-        final SqlNodeList selectList = SqlNodeList.of(
-            new SqlIdentifier(stringFoo()/*QueryUtils.KEY_FIELD_NAME*/, SqlParserPos.ZERO));
+        final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
+        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier)call.getTargetTable()).names);
+
+        table.unwrap(IgniteTable.class).descriptor().deleteRowType((IgniteTypeFactory)typeFactory)
+            .getFieldNames().stream()
+            .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
+            .forEach(selectList::add);
 
         SqlNode sourceTable = call.getTargetTable();
 
@@ -181,20 +181,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         checkIntegerLimit(select.getOffset(), "offset");
 
         super.validateSelect(select, targetRowType);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void validateNamespace(SqlValidatorNamespace namespace, RelDataType targetRowType) {
-//        SqlValidatorTable table = namespace.getTable();
-//
-//        if (table != null) {
-//            IgniteTable igniteTable = table.unwrap(IgniteTable.class);
-//
-//            if (igniteTable != null)
-//                igniteTable.ensureCacheStarted();
-//        }
-
-        super.validateNamespace(namespace, targetRowType);
     }
 
     /**
@@ -226,18 +212,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateCall(SqlCall call, SqlValidatorScope scope) {
-        if (call.getKind() == SqlKind.AS) {
-            final String alias = deriveAlias(call, 0);
-
-            if (isSystemFieldName(alias))
-                throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
-        }
-
-        super.validateCall(call, scope);
-    }
-
-    /** {@inheritDoc} */
     @Override public String deriveAlias(SqlNode node, int ordinal) {
         if (node.isA(HUMAN_READABLE_ALIASES_FOR)) {
             String alias = node.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)
@@ -259,18 +233,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateAggregateFunction(aggCall, (SqlAggFunction) aggCall.getOperator());
 
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void addToSelectList(List<SqlNode> list, Set<String> aliases,
-        List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
-        if (includeSystemVars || exp.getKind() != SqlKind.IDENTIFIER || !isSystemFieldName(deriveAlias(exp, 0)))
-            super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isSystemField(RelDataTypeField field) {
-        return isSystemFieldName(field.getName());
     }
 
     /** */
@@ -375,11 +337,5 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private IgniteTypeFactory typeFactory() {
         return (IgniteTypeFactory) typeFactory;
-    }
-
-    /** */
-    private boolean isSystemFieldName(String alias) {
-        return boolFoo(alias)/*QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias)*/;
     }
 }

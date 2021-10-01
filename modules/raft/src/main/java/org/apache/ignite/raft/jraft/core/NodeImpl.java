@@ -178,6 +178,8 @@ public class NodeImpl implements Node, RaftServerService {
     private RepeatedTimer voteTimer;
     private RepeatedTimer stepDownTimer;
 
+    private boolean sharedTimerManager;
+
     /**
      * Triggered on a leader each electionTimeoutMs / 2 milliseconds to ensure the alive quorum.
      */
@@ -883,8 +885,13 @@ public class NodeImpl implements Node, RaftServerService {
         // Init timers
         final String suffix = getOptions().getServerName() + "-";
 
-        timerManager = getOptions().getScheduler() == null ? timerFactory.createScheduler(this.options.getTimerPoolSize(),
-            "JRaft-Node-ScheduleThreadPool-" + suffix) : getOptions().getScheduler();
+        if (getOptions().getScheduler() == null)
+            timerManager = timerFactory.createScheduler(this.options.getTimerPoolSize(),
+            "JRaft-Node-ScheduleThreadPool-" + suffix);
+        else {
+            sharedTimerManager = true;
+            timerManager = getOptions().getScheduler();
+        }
 
         String name = "JRaft-VoteTimer-" + suffix;
         this.voteTimer = new RepeatedTimer(name, options.getElectionTimeoutMs(), timerFactory.getVoteTimer(name)) {
@@ -2797,7 +2804,7 @@ public class NodeImpl implements Node, RaftServerService {
                             event.shutdownLatch = latch;
                         }));
                 }
-                if (this.timerManager != null) {
+                if (!sharedTimerManager && this.timerManager != null) {
                     this.timerManager.shutdown();
                 }
             }

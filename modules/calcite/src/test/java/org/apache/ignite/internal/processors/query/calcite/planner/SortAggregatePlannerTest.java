@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -32,8 +33,11 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  *
@@ -50,15 +54,16 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         String sqlMin = "SELECT MIN(val0) FROM test";
 
-//        GridTestUtils.assertThrows(log,
-//            () -> physicalPlan(
-//                sqlMin,
-//                publicSchema,
-//                "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
-//            ),
-//            RelOptPlanner.CannotPlanException.class,
-//            "There are not enough rules to produce a node with desired properties"
-//        );
+        RelOptPlanner.CannotPlanException ex = assertThrows(
+            RelOptPlanner.CannotPlanException.class,
+            () -> physicalPlan(
+                sqlMin,
+                publicSchema,
+                "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+            )
+        );
+
+        assertThat(ex.getMessage(), startsWith("There are not enough rules to produce a node with desired properties"));
     }
 
     /**

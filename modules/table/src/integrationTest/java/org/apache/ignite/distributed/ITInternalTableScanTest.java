@@ -175,7 +175,8 @@ public class ITInternalTableScanTest {
             TEST_TABLE_NAME,
             new IgniteUuidGenerator(UUID.randomUUID(), 0).randomUuid(),
             Map.of(0, raftGrpSvc),
-            1
+            1,
+            NetworkAddress::toString
         );
     }
 

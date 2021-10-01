@@ -72,6 +72,12 @@ public class ExecutionContext<Row> implements DataContext {
     /** */
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
+    /**
+     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value
+     * throughout the query.
+     */
+    private final long startTs;
+
     /** */
     private Object[] correlations = new Object[16];
 
@@ -100,6 +106,9 @@ public class ExecutionContext<Row> implements DataContext {
         this.params = params;
 
         expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
+
+        long ts = System.currentTimeMillis();
+        startTs = ts + TIME_ZONE.getOffset(ts);
     }
 
     /**
@@ -195,6 +204,10 @@ public class ExecutionContext<Row> implements DataContext {
             return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
             return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
+        if (Variable.CURRENT_TIMESTAMP.camelName.equals(name))
+            return startTs;
+        if (Variable.LOCAL_TIMESTAMP.camelName.equals(name))
+            return startTs;
         if (name.startsWith("?"))
             return TypeUtils.toInternal(this, params.get(name));
 
@@ -273,7 +286,7 @@ public class ExecutionContext<Row> implements DataContext {
     @FunctionalInterface
     public interface RunnableX {
         /** */
-        void run() throws Exception;
+        void run() throws Throwable;
     }
 
     /**

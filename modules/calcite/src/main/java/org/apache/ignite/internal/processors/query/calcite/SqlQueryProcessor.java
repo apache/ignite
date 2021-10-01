@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
+
 import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
@@ -79,7 +80,7 @@ public class SqlQueryProcessor implements QueryProcessor {
             taskExecutor
         );
 
-        SchemaHolderImpl schemaHolder = new SchemaHolderImpl(clusterSrvc.topologyService());
+        SchemaHolderImpl schemaHolder = new SchemaHolderImpl();
 
         executionSrvc = new ExecutionServiceImpl<>(
             clusterSrvc.topologyService(),
@@ -132,8 +133,7 @@ public class SqlQueryProcessor implements QueryProcessor {
         @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
             schemaHolder.onSqlTypeCreated(
                 "PUBLIC",
-                parameters.tableName(),
-                parameters.table().schemaView().schema()
+                parameters.table()
             );
 
             return false;
@@ -151,8 +151,7 @@ public class SqlQueryProcessor implements QueryProcessor {
         @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
             schemaHolder.onSqlTypeUpdated(
                 "PUBLIC",
-                parameters.tableName(),
-                parameters.table().schemaView().schema()
+                parameters.table()
             );
 
             return false;

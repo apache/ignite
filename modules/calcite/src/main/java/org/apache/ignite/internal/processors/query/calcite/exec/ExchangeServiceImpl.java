@@ -176,7 +176,7 @@ public class ExchangeServiceImpl implements ExchangeService {
                 outbox.context().execute(outbox.context()::cancel, outbox::onError);
         }
         else if (LOG.isDebugEnabled()) {
-            LOG.debug("Stale oubox cancel message received: [" +
+            LOG.debug("Stale outbox cancel message received: [" +
                 "nodeId=" + nodeId +
                 ", queryId=" + msg.queryId() +
                 ", fragmentId=" + msg.fragmentId() +

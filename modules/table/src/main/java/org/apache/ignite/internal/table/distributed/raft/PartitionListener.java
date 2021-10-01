@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.storage.DataRow;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.table.distributed.command.scan.ScanRetrieveBat
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
@@ -473,8 +475,10 @@ public class PartitionListener implements RaftGroupListener {
     private void handleScanRetrieveBatchCommand(CommandClosure<ScanRetrieveBatchCommand> clo) {
         CursorMeta cursorDesc = cursors.get(clo.command().scanId());
 
-        if (cursorDesc == null)
-            clo.result(new NoSuchElementException("Corresponding cursor on server side not found."));
+        if (cursorDesc == null) {
+            clo.result(new NoSuchElementException(LoggerMessageHelper.format(
+                "Cursor with id={} is not found on server side.", clo.command().scanId())));
+        }
 
         List<BinaryRow> res = new ArrayList<>();
 
