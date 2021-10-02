@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Snapshot restore management task.
  */
-abstract class SnapshotManagementTask extends ComputeTaskAdapter<String, Boolean> {
+abstract class SnapshotRestoreManagementTask extends ComputeTaskAdapter<String, Boolean> {
    /**
      * @param param Compute job argument.
      * @return Compute job.

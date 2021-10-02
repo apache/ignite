@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.rmi.ServerError;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -95,7 +92,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
-        assertTrue(mxBean.statusSnapshot().values().isEmpty());
+        assertTrue(mxBean.statusSnapshot().values().stream().allMatch("No snapshot operation."::equals));
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
@@ -111,7 +108,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertTrue("Waiting for snapshot operation failed.",
                 GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, 10_000));
 
-        assertTrue(mxBean.statusSnapshot().values().isEmpty());
+        assertTrue(mxBean.statusSnapshot().values().stream().allMatch("No snapshot operation."::equals));
     }
 
     /**

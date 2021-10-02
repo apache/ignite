@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.visor.snapshot;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
@@ -58,21 +56,9 @@ public class VisorSnapshotStatusTask extends VisorOneNodeTask<String, String> {
         @Override protected String run(@Nullable String arg) throws IgniteException {
             Map<Object, String> statusMap = new SnapshotMXBeanImpl(ignite.context()).statusSnapshot();
 
-            if (statusMap.isEmpty())
-                return "No snapshot operations.";
+            StringBuilder sb = new StringBuilder("Status of SNAPSHOT operations:").append(IgniteUtils.nl());
 
-            Set<Object> ids = statusMap.entrySet()
-                .stream()
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-
-            String msg = statusMap.get(ids.iterator().next());
-
-            StringBuilder sb = new StringBuilder(msg + " on nodes with Consistent ID:");
-
-            ids.stream()
-                    .map(String::valueOf)
-                    .forEach(s -> sb.append(IgniteUtils.nl()).append(" - ").append(s));
+            statusMap.forEach((key, value) -> sb.append(key).append(" -> ").append(value).append(IgniteUtils.nl()));
 
             return sb.toString();
         }

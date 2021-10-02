@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,7 +77,7 @@ public interface IgniteSnapshot {
      * Status snapshot operation.
      * Checks if running snapshot operations exist on nodes.
      *
-     * @return Future which Map contains Consistent ID's and description snapshot operation if operation is in progress.
+     * @return Future which Map contains Consistent ID's and description snapshot operation.
      */
     public IgniteFuture<Map<Object, String>> statusSnapshot();
 }

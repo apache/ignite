@@ -17,23 +17,23 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-/** Snapshot operation management action. */
-public enum VisorSnapshotTaskAction {
-    /** Start snapshot operation. */
+/** Snapshot restore operation management action. */
+public enum VisorSnapshotRestoreTaskAction {
+    /** Start snapshot restore operation. */
     START,
 
-    /** Cancel snapshot operation. */
+    /** Cancel snapshot restore operation. */
     CANCEL,
 
-    /** Status of the snapshot operation. */
+    /** Status of the snapshot restore operation. */
     STATUS;
 
     /**
      * @param cmdArg Command line argument.
      * @return Snapshot restore operation management action.
      */
-    public static VisorSnapshotTaskAction fromCmdArg(String cmdArg) {
-        for (VisorSnapshotTaskAction val : values()) {
+    public static VisorSnapshotRestoreTaskAction fromCmdArg(String cmdArg) {
+        for (VisorSnapshotRestoreTaskAction val : values()) {
             if (cmdArg.equalsIgnoreCase(val.cmdName()))
                 return val;
         }

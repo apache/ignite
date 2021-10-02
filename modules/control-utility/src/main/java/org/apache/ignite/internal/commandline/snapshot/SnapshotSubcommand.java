@@ -42,7 +42,7 @@ public enum SnapshotSubcommand {
     /** Sub-command to restore snapshot. */
     RESTORE("restore", VisorSnapshotRestoreTask.class.getName()),
 
-    /** Sub-command to get consistent IDs of the nodes on which the snapshot operation is in progress. */
+    /** Sub-command to get the status of a snapshot operation. */
     STATUS("status", VisorSnapshotStatusTask.class.getName());
 
     /** Sub-command name. */

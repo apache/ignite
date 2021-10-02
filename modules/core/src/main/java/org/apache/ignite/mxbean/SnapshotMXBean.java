@@ -48,9 +48,7 @@ public interface SnapshotMXBean {
      * @see IgniteSnapshot#statusSnapshot()
      *
      * @return Map from Consistent ID's to status of the snapshot operation.
-     * {@code True} if snapshot operation is in progress.
      */
-    @MXBeanDescription("Map from Consistent ID's to status of the snapshot operation. " +
-            "If not null then snapshot operation is in progress.")
+    @MXBeanDescription("Map from Consistent ID's to status of the snapshot operation.")
     public Map<Object, String> statusSnapshot();
 }

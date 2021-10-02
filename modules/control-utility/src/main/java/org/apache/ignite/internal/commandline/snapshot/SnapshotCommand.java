@@ -30,9 +30,8 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArgs;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskAction;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
@@ -104,15 +103,15 @@ public class SnapshotCommand extends AbstractCommand<Object> {
             return;
         }
 
-        VisorSnapshotTaskAction cmdAction =
-            VisorSnapshotTaskAction.fromCmdArg(argIter.nextArg("Restore action expected."));
+        VisorSnapshotRestoreTaskAction cmdAction =
+            VisorSnapshotRestoreTaskAction.fromCmdArg(argIter.nextArg("Restore action expected."));
 
         Set<String> grpNames = null;
 
         if (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("");
 
-            if (cmdAction != VisorSnapshotTaskAction.START)
+            if (cmdAction != VisorSnapshotRestoreTaskAction.START)
                 throw new IllegalArgumentException("Invalid argument \"" + arg + "\", no more arguments expected.");
 
             grpNames = argIter.parseStringSet(arg);
@@ -134,13 +133,13 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         startParams.put("group1,...groupN", "Cache group names.");
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
-            "snapshot_name", VisorSnapshotTaskAction.START.cmdName(), optional("group1,...groupN"));
+            "snapshot_name", VisorSnapshotRestoreTaskAction.START.cmdName(), optional("group1,...groupN"));
 
         usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
-            "snapshot_name", VisorSnapshotTaskAction.STATUS.cmdName());
+            "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
 
         usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
-            "snapshot_name", VisorSnapshotTaskAction.CANCEL.cmdName());
+            "snapshot_name", VisorSnapshotRestoreTaskAction.CANCEL.cmdName());
     }
 
     /** {@inheritDoc} */
@@ -150,7 +149,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
         VisorSnapshotRestoreTaskArg arg = (VisorSnapshotRestoreTaskArg)cmdArg;
 
-        return arg.jobAction() == VisorSnapshotTaskAction.START && arg.groupNames() != null ? null :
+        return arg.jobAction() == VisorSnapshotRestoreTaskAction.START && arg.groupNames() != null ? null :
             "Warning: command will restore ALL PUBLIC CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 

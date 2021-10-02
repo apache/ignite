@@ -71,9 +71,18 @@ class SnapshotStatusTask extends ComputeTaskAdapter<Void, Map<Object, String>> {
 
             @Override public String execute() throws IgniteException {
                 IgniteSnapshotManager mgr = ignite.context().cache().context().snapshotMgr();
-                return mgr.isRestoring() ? "Restoring to snapshot with name: " + mgr.getRestoringSnapshotName()
-                    : mgr.isSnapshotCreating() ? "Creating the snapshot with name: " + mgr.getSnapshotCreatingName()
-                    : null;
+
+                String name = mgr.getCreatingSnapshotName();
+
+                if (name != null)
+                    return "Creating the snapshot with name: " + name;
+
+                name = mgr.getRestoringSnapshotName();
+
+                if (name != null)
+                    return "Restoring to snapshot with name: " + name;
+
+                return "No snapshot operation.";
             }
         };
     }

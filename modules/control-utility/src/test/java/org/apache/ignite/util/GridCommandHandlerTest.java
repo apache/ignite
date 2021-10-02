@@ -168,6 +168,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
+import static org.apache.maven.shared.utils.StringUtils.countMatches;
 
 /**
  * Command line handler test.
@@ -3035,20 +3036,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ig.cluster().state(ACTIVE);
 
+        int size = ig.cluster().nodes().size();
+
         createCacheAndPreload(ig, keysCnt);
 
         CommandHandler h = new CommandHandler();
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertTrue(h.getLastOperationResult().toString().contains("No snapshot operations."));
+        assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertTrue(h.getLastOperationResult().toString()
-                .contains("Creating the snapshot with name"));
+        assertEquals(size, countMatches(h.getLastOperationResult().toString(),
+            "Creating the snapshot with name: " + snpName));
 
         assertTrue(h.getLastOperationResult().toString()
                 .contains(ig.context().discovery().localNode().consistentId().toString()));
@@ -3061,7 +3064,41 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertTrue(h.getLastOperationResult().toString().contains("No snapshot operations."));
+        assertEquals(ig.cluster().nodes().size(),
+            countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+
+        ig.cache(DEFAULT_CACHE_NAME).destroy();
+
+        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
+
+        spi0.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start"));
+
+        assertContains(log, h.getLastOperationResult().toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName);
+
+        assertTrue(waitForCondition(() -> {
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+            return size == countMatches(h.getLastOperationResult().toString(),
+                "Restoring to snapshot with name: " + snpName );
+        }, getTestTimeout()));
+
+        spi0.stopBlock();
+        spi1.stopBlock();
+
+        assertTrue(waitForCondition(() -> ig.cache(DEFAULT_CACHE_NAME) != null, getTestTimeout()));
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
     }
 
     /** @throws Exception If failed. */

@@ -28,7 +28,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Snapshot restore status task.
  */
 @GridInternal
-class SnapshotRestoreStatusTask extends SnapshotManagementTask {
+class SnapshotRestoreStatusTask extends SnapshotRestoreManagementTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

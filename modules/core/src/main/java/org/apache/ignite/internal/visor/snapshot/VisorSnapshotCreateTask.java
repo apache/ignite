@@ -19,87 +19,42 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorOneNodeTask<VisorSnapshotCreateTaskArgs, String> {
+public class VisorSnapshotCreateTask extends VisorOneNodeTask<String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorSnapshotCreateTaskArgs, String> job(VisorSnapshotCreateTaskArgs arg) {
+    @Override protected VisorJob<String, String> job(String arg) {
         return new VisorSnapshotCreateJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorJob<VisorSnapshotCreateTaskArgs, String> {
+    private static class VisorSnapshotCreateJob extends VisorJob<String, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg VisorSnapshotCreateTaskArgs.
+         * @param name Snapshot name.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCreateJob(VisorSnapshotCreateTaskArgs arg, boolean debug) {
-            super(arg, debug);
+        protected VisorSnapshotCreateJob(String name, boolean debug) {
+            super(name, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotCreateTaskArgs arg) throws IgniteException {
-            new SnapshotMXBeanImpl(ignite.context()).createSnapshot(arg.snapshotName());
+        @Override protected String run(String name) throws IgniteException {
+            new SnapshotMXBeanImpl(ignite.context()).createSnapshot(name);
 
-            return "Snapshot operation started: " + arg.snapshotName();
-        }
-    }
-
-    /** */
-    private static class VisorSnapshotCancelJob extends VisorJob<VisorSnapshotCreateTaskArgs, String> {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param args VisorSnapshotCreateTaskArgs.
-         * @param debug Flag indicating whether debug information should be printed into node log.
-         */
-        protected VisorSnapshotCancelJob(VisorSnapshotCreateTaskArgs args, boolean debug) {
-            super(args, debug);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotCreateTaskArgs args) throws IgniteException {
-            ignite.snapshot().cancelSnapshot(args.snapshotName()).get();
-
-            return "Snapshot operation cancelled.";
-        }
-    }
-
-    /** */
-    private static class VisorSnapshotStatuslJob extends VisorJob<VisorSnapshotCreateTaskArgs, String> {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param arg VisorSnapshotCreateTaskArgs.
-         * @param debug Flag indicating whether debug information should be printed into node log.
-         */
-        protected VisorSnapshotStatuslJob(VisorSnapshotCreateTaskArgs arg, boolean debug) {
-            super(arg, debug);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotCreateTaskArgs arg) throws IgniteException {
-            ((IgniteSnapshotManager)ignite.snapshot()).isSnapshotCreating();
-
-            return "Snapshot create operation is: " +
-                (((IgniteSnapshotManager)ignite.snapshot()).isSnapshotCreating() ? "running." : "absent.");
+            return "Snapshot operation started: " + name;
         }
     }
 }
