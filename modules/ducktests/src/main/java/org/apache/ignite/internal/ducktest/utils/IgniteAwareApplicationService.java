@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Base64;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.apache.spark.sql.catalyst.TableIdentifier;
 
 /**
  *
@@ -98,25 +96,10 @@ public class IgniteAwareApplicationService {
 
             ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
 
-            long startTime = System.currentTimeMillis();
-            int reconnect = 4;
-            int maxReconnect = 10;
-
             try (IgniteClient client = Ignition.startClient(cfg)) {
                 app.client = client;
 
                 app.start(jsonNode);
-            }
-            catch (Exception e){
-                if(reconnect == 0){
-                    throw e;
-                }
-                else {
-                    while(System.currentTimeMillis() < startTime + reconnect * 1000){
-                        TimeUnit.SECONDS.sleep(1);
-                    }
-                    main();
-                }
             }
             finally {
                 log.info("Thin client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");

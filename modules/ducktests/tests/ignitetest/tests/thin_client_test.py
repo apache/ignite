@@ -17,6 +17,8 @@
 This module contains client tests.
 """
 import time
+from ducktape.mark import matrix
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
@@ -67,48 +69,56 @@ class ThinClientTest(IgniteTest):
         ignite.stop()
 
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientContiniusApplication"
-    @cluster(num_nodes=5)
+    @cluster(num_nodes=3)
     @ignite_versions(str(DEV_BRANCH))
-    def test_thin_client_max_reconnect(self, ignite_version):
+    @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients":0, "runTime": 60, "freeze": True},
+                         {"connectClients": 150, "putClients": 0, "putAllClients":0, "runTime": 60, "freeze": False},
+                         {"connectClients": 150, "putClients": 2, "putAllClients":0, "runTime": 60, "freeze": False},
+                         {"connectClients": 150, "putClients": 0, "putAllClients":2, "runTime": 60, "freeze": False}])
+    def test_thin_client_connect_time(self, ignite_version, test_params):
         """
-        Thin client compatibility test.
+        Thin client connect time test.
+        Determain how thin client connect time depend on cluster buzines
+        Demonstrate 4 situations:
+        - Cluster have too much clients
+        - Cluster have many put in work
+        - Cluster have some putAll jobs
+        - One node hung for some time
         """
 
         server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
-                                            data_storage=DataStorageConfiguration(
-                                                default=DataRegionConfiguration(persistent=True)),
+                                            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
                                             client_connector_configuration=ClientConnectorConfiguration())
 
         ignite = IgniteService(self.test_context, server_config, 2)
 
-        addresses = ignite.nodes[1].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+        addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
         thin_clients = IgniteApplicationService(self.test_context,
                                                 IgniteThinClientConfiguration(addresses=addresses,
                                                                               version=IgniteVersion(
                                                                                   ignite_version)),
                                                 java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                                                params={"connectClients": test_params["connectClients"],
+                                                        "putClients": test_params["putClients"],
+                                                        "putAllClients": test_params["putAllClients"],
+                                                        "runTime": test_params["runTime"]},
                                                 num_nodes=1,
                                                 startup_timeout_sec=60)
 
         ignite.start()
         ControlUtility(cluster=ignite).activate()
 
-
-        # for i in range(2):
-        #     ignite.freeze_node(ignite.nodes[0])
-        #     thin_clients.start_async()
-        #     thin_clients.await_started()
-        #     thin_clients.stop()
-        #     ignite.unfreeze_node(ignite.nodes[0])
-
-        # time.sleep(3)
-
         thin_clients.start_async()
-        thin_clients.await_started()
-        thin_clients.stop()
 
-        # thin_clients.await_started()
+        if test_params["freeze"]:
+            thin_clients.await_event("START WAITING",120)
+            ignite.freeze_node(ignite.nodes[0])
+            time.sleep(3)
+            ignite.unfreeze_node(ignite.nodes[0])
+
+        thin_clients.await_event("IGNITE_APPLICATION_FINISHED", 120)
+        thin_clients.stop(force_stop=True)
 
         ControlUtility(cluster=ignite).baseline()
 
