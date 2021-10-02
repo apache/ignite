@@ -69,7 +69,7 @@ class ThinClientTest(IgniteTest):
         ignite.stop()
 
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientContiniusApplication"
-    @cluster(num_nodes=3)
+    @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients":0, "runTime": 60, "freeze": True},
                          {"connectClients": 150, "putClients": 0, "putAllClients":0, "runTime": 60, "freeze": False},
@@ -103,7 +103,7 @@ class ThinClientTest(IgniteTest):
                                                         "putClients": test_params["putClients"],
                                                         "putAllClients": test_params["putAllClients"],
                                                         "runTime": test_params["runTime"]},
-                                                num_nodes=1,
+                                                num_nodes=2,
                                                 startup_timeout_sec=60)
 
         ignite.start()
@@ -113,9 +113,11 @@ class ThinClientTest(IgniteTest):
 
         if test_params["freeze"]:
             thin_clients.await_event("START WAITING",120)
-            ignite.freeze_node(ignite.nodes[0])
-            time.sleep(3)
-            ignite.unfreeze_node(ignite.nodes[0])
+            for x in range(4):
+                ignite.freeze_node(ignite.nodes[0])
+                time.sleep(3)
+                ignite.unfreeze_node(ignite.nodes[0])
+                time.sleep(7)
 
         thin_clients.await_event("IGNITE_APPLICATION_FINISHED", 120)
         thin_clients.stop(force_stop=True)

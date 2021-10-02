@@ -95,7 +95,7 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 class oneThinClient implements Runnable {
     private static final int DATA_SIZE = 15;
     private static final int RUN_TIME = 1000;
-    private static final int PUT_ALL_SIZE = 500;
+    private static final int PUT_ALL_SIZE = 1000;
 
     ClientConfiguration cfg;
     List<Long> connectTime;
