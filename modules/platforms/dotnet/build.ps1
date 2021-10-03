@@ -196,6 +196,8 @@ if (!$skipDotNet) {
     if ((Get-Command $msBuild -ErrorAction SilentlyContinue) -eq $null)
     {
         # Detect MSBuild 4.0+
+		# TODO: This detects old MSBuild, see https://www.codewrecks.com/post/general/find-msbuild-location-in-powershell/
+        # TODO: WE CAN BUILD WITH "dotnet build"!
         for ($i = 20; $i -ge 4; $i--) {
             $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
             if (Test-Path $regKey)
