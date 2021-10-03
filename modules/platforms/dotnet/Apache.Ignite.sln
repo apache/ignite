@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apache.Ignite.Core.DotNetCore", "Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj", "{318E7E44-17E5-49E4-B305-1915221FD947}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apache.Ignite.Core", "Apache.Ignite.Core\Apache.Ignite.Core.csproj", "{318E7E44-17E5-49E4-B305-1915221FD947}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apache.Ignite.Linq.DotNetCore", "Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj", "{5ED9F0FA-C371-49B5-AB5B-C4038F83E2DB}"
 EndProject

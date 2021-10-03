@@ -18,7 +18,7 @@
 
     <PackageReference Include="NUnit" Version="3.12.0" />
 
-    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
     <ProjectReference Include="..\Apache.Ignite.AspNet\Apache.Ignite.AspNet.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Core.Tests\Apache.Ignite.Core.Tests.csproj" />
   </ItemGroup>

@@ -31,7 +31,7 @@
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
 
-    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj" />
     <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj" />
