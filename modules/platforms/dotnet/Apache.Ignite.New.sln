@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.AspNet.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework", "Apache.Ignite.EntityFramework\Apache.Ignite.EntityFramework.csproj", "{C558518A-C1A0-4224-AAA9-A8688474B4DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework.Tests", "Apache.Ignite.EntityFramework.Tests\Apache.Ignite.EntityFramework.Tests.csproj", "{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
