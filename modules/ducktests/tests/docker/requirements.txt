@@ -14,3 +14,4 @@
 # limitations under the License.
 
 ducktape==0.8.2
+filelock==3.2.0
