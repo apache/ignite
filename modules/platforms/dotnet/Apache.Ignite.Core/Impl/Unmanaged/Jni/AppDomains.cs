@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         [Guid("05F696DC-2B29-3663-AD8B-C4389CF2A713")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         [ComVisible(true)]
-        public interface _AppDomain
+        internal interface _AppDomain
         {
             // No-op.
         }

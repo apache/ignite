@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Tests
     public class ProjectFilesTest
     {
         /// <summary>
-        /// Tests that tools version is compatible with VS2010.
+        /// Tests that target framework is set correctly.
         /// </summary>
         [Test]
-        public void TestCsprojToolsVersion()
+        public void TestCsprojTargetFramework()
         {
             var projFiles = TestUtils.GetDotNetSourceDir()
                 .GetFiles("*.csproj", SearchOption.AllDirectories)
@@ -44,7 +44,10 @@ namespace Apache.Ignite.Core.Tests
                 .ToArray();
 
             Assert.GreaterOrEqual(projFiles.Length, 7);
-            CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
+            CheckFiles(
+                projFiles,
+                x => !x.Contains("<TargetFramework>net461</TargetFramework>") && !x.Contains("<TargetFramework>netstandard2.0</TargetFramework>"),
+                "Invalid csproj files: ");
         }
 
         /// <summary>
@@ -65,26 +68,6 @@ namespace Apache.Ignite.Core.Tests
         {
             CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"),
                 "Invalid constants in release mode: ");
-        }
-
-        /// <summary>
-        /// Tests that release build settings are correct: debug information is disabled.
-        /// </summary>
-        [Test]
-        public void TestCsprojPdbSettings()
-        {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<DebugType>none</DebugType>"),
-                "Invalid DebugType in release mode: ");
-        }
-
-        /// <summary>
-        /// Tests that release build settings are correct: debug information is disabled.
-        /// </summary>
-        [Test]
-        public void TestCsprojOptimizeCode()
-        {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<Optimize>true</Optimize>"),
-                "Invalid optimize setting in release mode: ");
         }
 
         /// <summary>
@@ -213,23 +196,6 @@ namespace Apache.Ignite.Core.Tests
         {
             return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>",
                 RegexOptions.Singleline).Value;
-        }
-
-        /// <summary>
-        /// Tests that tools version is compatible with VS2010.
-        /// </summary>
-        [Test]
-        public void TestSlnToolsVersion()
-        {
-            var slnFiles = TestUtils.GetDotNetSourceDir()
-                .GetFiles("*.sln", SearchOption.AllDirectories)
-                .Where(x => !x.Name.Contains("DotNetCore") && !x.Name.Contains("Examples"))
-                .ToArray();
-
-            Assert.GreaterOrEqual(slnFiles.Length, 2);
-            CheckFiles(slnFiles, x => !x.Contains("# Visual Studio 2010") ||
-                                      !x.Contains("Microsoft Visual Studio Solution File, Format Version 11.00"),
-                "Invalid sln files: ");
         }
 
         /// <summary>
