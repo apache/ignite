@@ -22,13 +22,22 @@
 
     <PackageReference Include="EntityFramework" Version="6.1.3" />
     <PackageReference Include="EntityFramework.SqlServerCompact" Version="6.1.3" />
-    <PackageReference Include="Microsoft.SqlServer.Compact" Version="4.0.8876.1" />
+    <PackageReference Include="Microsoft.SqlServer.Compact" Version="4.0.8876.1" GeneratePathProperty="true" />
     <PackageReference Include="NUnit" Version="3.12.0" />
 
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
     <ProjectReference Include="..\Apache.Ignite.EntityFramework\Apache.Ignite.EntityFramework.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Core.Tests\Apache.Ignite.Core.Tests.csproj" />
 
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="$(PkgMicrosoft_SqlServer_Compact)\NativeBinaries\x86\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PkgMicrosoft_SqlServer_Compact)\NativeBinaries\amd64\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
