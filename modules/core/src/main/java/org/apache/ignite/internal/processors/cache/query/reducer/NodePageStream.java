@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
-import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 
 /**
  * This class provides an interface {@link #nextPage()} that returns a {@link NodePage} of cache query result from
@@ -32,23 +30,23 @@ public class NodePageStream<R> {
     /** Node ID to stream pages */
     private final UUID nodeId;
 
-    /** Flags shows whether there are no available pages on query node. */
+    /** Flags shows whether there are no available pages on a query node. */
     private boolean noRemotePages;
 
-    /**
-     *  Promise of next query result page. It's inited here as initial request is sent independetly in
-     * {@link GridCacheDistributedQueryManager}.
-     */
-    private CompletableFuture<NodePage<R>> pendingPage = new CompletableFuture<>();
+    /** Last delivered page from the stream. */
+    private NodePage<R> head;
 
-    /** This lock syncs {@link #pendingPage} and {@link #noRemotePages}. */
+    /** Promise to notify the stream consumer about delivering new page. */
+    private CompletableFuture<UUID> pageReady = new CompletableFuture<>();
+
+    /** This lock syncs {@link #head} and {@link #noRemotePages}. */
     private final Object pagesLock = new Object();
 
-    /** Request pages. */
-    private final BiConsumer<UUID, Boolean> reqPages;
+    /** Request pages action. */
+    private final Runnable reqPages;
 
     /** */
-    public NodePageStream(UUID nodeId, BiConsumer<UUID, Boolean> reqPages) {
+    public NodePageStream(UUID nodeId, Runnable reqPages) {
         this.nodeId = nodeId;
         this.reqPages = reqPages;
     }
@@ -59,57 +57,58 @@ public class NodePageStream<R> {
     }
 
     /**
-     * Returns a future with query result page from query node.
-     *
-     * @return Query result page future.
+     * @return Future that will be completed when a new page delivered.
      */
-    public CompletableFuture<NodePage<R>> nextPage() {
-        CompletableFuture<NodePage<R>> pageFut;
+    public CompletableFuture<UUID> pageReady() {
+        return pageReady;
+    }
 
-        boolean loadPage;
+    /**
+     * Returns a last delivered page from this stream. Note, that this method has to be invoked after getting
+     * the future provided with {@link #pageReady()}.
+     *
+     * @return Query result page.
+     */
+    public NodePage<R> nextPage() {
+        boolean loadPage = false;
+
+        NodePage<R> page;
 
         synchronized (pagesLock) {
-            if (pendingPage == null) {
-                pageFut = new CompletableFuture<>();
+            assert head != null;
 
-                pageFut.complete(new NodePage<>(nodeId, Collections.emptyList()));
+            page = head;
 
-                return pageFut;
-            }
+            head = null;
 
-            if (!pendingPage.isDone())
-                return pendingPage;
-
-            pageFut = pendingPage;
-
-            pendingPage = noRemotePages ? null : new CompletableFuture<>();
-
-            loadPage = pendingPage != null;
+            if (!noRemotePages)
+                loadPage = true;
         }
 
-        if (loadPage)
-            reqPages.accept(nodeId, false);
+        if (loadPage) {
+            pageReady = new CompletableFuture<>();
 
-        return pageFut;
+            reqPages.run();
+        }
+
+        return page;
     }
 
     /**
      * Add new query result page of data.
      *
-     * @return Whether it's a last page for this node.
+     * @param data Collection of query result items.
+     * @param last Whether it is the last page from this node.
      */
-    public boolean addPage(UUID nodeId, Collection<R> data, boolean last) {
+    public void addPage(Collection<R> data, boolean last) {
         synchronized (pagesLock) {
-            if (pendingPage == null)
-                return true;
-
-            pendingPage.complete(new NodePage<>(nodeId, data));
+            head = new NodePage<>(nodeId, data);
 
             if (last)
                 noRemotePages = true;
-
-            return last;
         }
+
+        pageReady.complete(nodeId);
     }
 
     /**
@@ -117,30 +116,29 @@ public class NodePageStream<R> {
      */
     public void cancel() {
         synchronized (pagesLock) {
-            if (pendingPage == null)
-                return;
-
-            if (!pendingPage.isDone())
-                pendingPage.complete(new NodePage<>(nodeId, Collections.emptyList()));
-
-            pendingPage = null;
+            head = new NodePage<>(nodeId, Collections.emptyList());
 
             noRemotePages = true;
         }
+
+        pageReady.complete(nodeId);
     }
 
-    /** */
+    /**
+     * @return {@code true} if there are some undelivered page from the node, otherwise {@code false}.
+     */
     public boolean hasRemotePages() {
         synchronized (pagesLock) {
             return !noRemotePages;
         }
     }
 
-    /** */
+    /**
+     * @return {@code true} if this stream delivers all query results from the node to a consumer.
+     */
     public boolean closed() {
         synchronized (pagesLock) {
-            return pendingPage == null;
+            return noRemotePages && (head == null);
         }
     }
-
 }

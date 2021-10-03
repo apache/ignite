@@ -21,7 +21,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -53,14 +55,16 @@ public abstract class DistributedCacheQueryReducer<T> extends CacheQueryReducer<
             if (timeout < 0)
                 return new NodePage<>(nodeId, Collections.emptyList());
 
-            return (NodePage<T>)pageFut.get(timeout, TimeUnit.MILLISECONDS);
+            nodeId = (UUID) pageFut.get(timeout, TimeUnit.MILLISECONDS);
+
+            return pageStreams.get(nodeId).nextPage();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
             throw new IgniteCheckedException("Query was interrupted.", e);
         }
-        catch (Exception e) {
+        catch (TimeoutException | ExecutionException e) {
             return new NodePage<>(nodeId, Collections.emptyList());
         }
     }

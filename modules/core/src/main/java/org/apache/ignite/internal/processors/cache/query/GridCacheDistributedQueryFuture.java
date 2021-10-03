@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +34,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortDistributedCacheQueryReducer;
-import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedDistributedCacheQueryReducer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,7 +84,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         streams = new ConcurrentHashMap<>(nodes.size());
 
         for (ClusterNode node : nodes) {
-            NodePageStream<R> s = new NodePageStream<>(node.id(), this::requestPages);
+            NodePageStream<R> s = new NodePageStream<>(node.id(), () -> requestPages(node.id()));
 
             streams.put(node.id(), s);
         }
@@ -95,7 +92,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         Map<UUID, NodePageStream<R>> unmodified = Collections.unmodifiableMap(streams);
 
         reducer = qry.query().type() == TEXT ?
-            new MergeSortDistributedCacheQueryReducer<R>(unmodified, textResultComparator, endTime())
+            new MergeSortDistributedCacheQueryReducer<>(unmodified, endTime())
             : new UnsortedDistributedCacheQueryReducer<>(unmodified, endTime());
     }
 
@@ -145,14 +142,16 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void onPage(UUID nodeId, Collection<R> data, boolean last) {
-        if (rcvdFirstPage != null) {
-            rcvdFirstPage.add(nodeId);
+        synchronized (firstPageLatch) {
+            if (rcvdFirstPage != null) {
+                rcvdFirstPage.add(nodeId);
 
-            if (rcvdFirstPage.size() == streams.size()) {
-                firstPageLatch.countDown();
+                if (rcvdFirstPage.size() == streams.size()) {
+                    firstPageLatch.countDown();
 
-                rcvdFirstPage.clear();
-                rcvdFirstPage = null;
+                    rcvdFirstPage.clear();
+                    rcvdFirstPage = null;
+                }
             }
         }
 
@@ -161,7 +160,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         if (stream == null)
             return;
 
-        stream.addPage(nodeId, data, last);
+        stream.addPage(data, last);
 
         if (last) {
             int cnt;
@@ -169,7 +168,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             do {
                 cnt = noRemotePagesStreamsCnt.get();
 
-            } while (noRemotePagesStreamsCnt.compareAndSet(cnt, cnt + 1));
+            } while (!noRemotePagesStreamsCnt.compareAndSet(cnt, cnt + 1));
 
             if (cnt + 1 >= streams.size())
                 onDone();
@@ -223,19 +222,14 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         return reqId;
     }
 
-    /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
-    private static final Comparator textResultComparator = (c1, c2) ->
-        Float.compare(((ScoredCacheEntry)c2).score(), ((ScoredCacheEntry)c1).score());
-
     /**
      * Send request to fetch new pages.
      *
      * @param node Node to send request.
-     * @param all  Whether page will contain all data from node.
      */
-    private void requestPages(UUID node, boolean all) {
+    private void requestPages(UUID node) {
         try {
-            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(cctx, reqId, query().query(), fields(), all);
+            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(cctx, reqId, query().query(), fields());
 
             qryMgr.sendRequest(null, req, Collections.singletonList(node));
         }
@@ -251,12 +245,5 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         onDone(err);
 
         firstPageLatch.countDown();
-    }
-
-    /**
-     * Returns next node page for specified {@code nodeId}.
-     */
-    public CompletableFuture<NodePage<R>> pendingPage(UUID nodeId) {
-        return streams.get(nodeId).nextPage();
     }
 }

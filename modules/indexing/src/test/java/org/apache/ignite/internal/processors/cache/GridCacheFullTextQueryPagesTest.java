@@ -109,25 +109,25 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
     /** Test that do not send cache page request after limit exceeded. */
     @Test
     public void testTextQueryLimitedMultiplePages() throws Exception {
-        CountDownLatch latch = new CountDownLatch(12);
+        CountDownLatch latch = new CountDownLatch(14);
 
         PageStats stats = cacheQueryRequestsCount(latch);
 
         checkTextQuery("1*", QUERY_LIMIT, 30);
 
-        checkPages(latch, stats, 4, 4, 4);
+        checkPages(latch, stats, 4, 7, 3);
     }
 
     /** Test that rerequest some pages but then send a cancel query after limit exceeded. */
     @Test
     public void testTextQueryHighLimitedMultiplePages() throws Exception {
-        CountDownLatch latch = new CountDownLatch(12);
+        CountDownLatch latch = new CountDownLatch(15);
 
         PageStats stats = cacheQueryRequestsCount(latch);
 
         checkTextQuery("1*", QUERY_LIMIT, 20);
 
-        checkPages(latch, stats, 4, 6, 4);
+        checkPages(latch, stats, 4, 8, 3);
     }
 
     /** */

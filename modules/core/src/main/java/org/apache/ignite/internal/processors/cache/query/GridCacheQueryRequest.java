@@ -206,10 +206,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * Send request for fetching query result pages to specified nodes.
      *
      * @param reqId Request (cache query) ID.
-     * @param all If {@code true} then request for all pages, otherwise for single only.
      */
     public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheQueryAdapter<?> qry, boolean fields, boolean all) {
+        GridCacheQueryAdapter<?> qry, boolean fields) {
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
@@ -218,7 +217,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.pageSize(),
             qry.includeBackups(),
             fields,
-            all,
+            false,
             qry.keepBinary(),
             qry.taskHash(),
             cctx.startTopologyVersion(),

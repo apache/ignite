@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -39,30 +40,30 @@ public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQue
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
-        while (page != null && page.hasNext()) {
-            CompletableFuture<NodePage<R>>[] futs = new CompletableFuture[pageStreams.size()];
+        while (page == null || !page.hasNext()) {
+            CompletableFuture<UUID>[] futs = new CompletableFuture[pageStreams.size()];
 
-            int i = 0;
+            int pendingNodesCnt = 0;
 
             for (NodePageStream<R> s: pageStreams.values()) {
                 if (s.closed())
                     continue;
 
-                CompletableFuture<NodePage<R>> f = s.nextPage();
+                CompletableFuture<UUID> f = s.pageReady();
 
                 if (f.isDone()) {
-                    page = f.getNow(null);
+                    page = page(s.nodeId(), f);
 
-                    return true;
-                }
-
-                futs[i++] = f;
+                    if (page.hasNext())
+                        return true;
+                } else
+                    futs[pendingNodesCnt++] = f;
             }
 
-            if (i == 0)
+            if (pendingNodesCnt == 0)
                 return false;
 
-            page = page(null, CompletableFuture.anyOf(futs));
+            page = page(null, CompletableFuture.anyOf(Arrays.copyOf(futs, pendingNodesCnt)));
         }
 
         return true;
