@@ -415,7 +415,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
 
             Assertions.assertEquals(0, exitCode);
             verify(nodeMgr).getRunningNodes(ignitePaths.logDir, ignitePaths.cliPidsDir());
-            assertEquals(cmd.getColorScheme().text("Currently, there are @|bold 2|@ locally running nodes.\n\n") +
+            assertEquals(cmd.getColorScheme().text("Number of running nodes: @|bold 2|@\n\n") +
                 "+---------------+-----+----------+\n" +
                 cmd.getColorScheme().text("| @|bold Consistent ID|@ | @|bold PID|@ | @|bold Log File|@ |\n") +
                 "+---------------+-----+----------+\n" +
