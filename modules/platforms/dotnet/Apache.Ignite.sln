@@ -31,6 +31,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramewo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Linq", "Apache.Ignite.Linq\Apache.Ignite.Linq.csproj", "{F42FB1B0-1368-424A-8954-F3C70ADB80F8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{468E2AC0-FBB7-4048-98B4-BAA8E6478574}"
+ProjectSection(SolutionItems) = preProject
+	Apache.Ignite.ruleset = Apache.Ignite.ruleset
+	Apache.Ignite.Tests.ruleset = Apache.Ignite.Tests.ruleset
+	build-mono.sh = build-mono.sh
+	build.bat = build.bat
+	build.ps1 = build.ps1
+	build.sh = build.sh
+	DEVNOTES.txt = DEVNOTES.txt
+	README.md = README.md
+	Directory.Build.props = Directory.Build.props
+	logo_ignite_128x128.png = logo_ignite_128x128.png
+	SharedAssemblyInfo.cs = SharedAssemblyInfo.cs
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
