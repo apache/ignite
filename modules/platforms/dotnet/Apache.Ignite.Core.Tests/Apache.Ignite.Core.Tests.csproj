@@ -47,6 +47,8 @@
     <Reference Include="System.ServiceProcess" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Transactions" />
+
+    <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>

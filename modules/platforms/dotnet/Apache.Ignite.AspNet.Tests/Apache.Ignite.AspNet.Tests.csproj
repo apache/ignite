@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
     <ProjectReference Include="..\Apache.Ignite.AspNet\Apache.Ignite.AspNet.csproj" />
     <ProjectReference Include="..\Apache.Ignite.Core.Tests\Apache.Ignite.Core.Tests.csproj" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
 
 </Project>

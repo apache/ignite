@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
 
 </Project>
