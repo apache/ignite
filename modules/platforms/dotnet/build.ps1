@@ -108,11 +108,10 @@ function Make-Dir([string]$dirPath) {
 }
 
 function Exec([string]$command) {
-    try {
-        iex "& $command"
-    } catch {
+    iex "& $command"
+
+    if ($lastexitcode) {
         echo "Command failed: $command"
-        throw
         exit -1
     }
 }
