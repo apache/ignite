@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests
             System.Diagnostics.Debug.AutoFlush = true;
 
 #if (!NETCOREAPP)
-            System.Diagnostics.Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
+            System.Diagnostics.Debug.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));
 #endif
 
             if (args.Length == 1 && args[0] == "-basicTests")
