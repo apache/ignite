@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apache.Ignite.Core", "Apache.Ignite.Core\Apache.Ignite.Core.csproj", "{318E7E44-17E5-49E4-B305-1915221FD947}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks.DotNetCore", "Apache.Ignite.Benchmarks\Apache.Ignite.Benchmarks.DotNetCore.csproj", "{4344AEB8-6772-4625-9445-2C4A224B7716}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.BenchmarkDotNet", "Apache.Ignite.BenchmarkDotNet\Apache.Ignite.BenchmarkDotNet.csproj", "{4ACD0487-0774-4705-8245-8D4F36A2F963}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apache.Ignite.NLog\Apache.Ignite.NLog.csproj", "{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}"
@@ -45,6 +43,8 @@ ProjectSection(SolutionItems) = preProject
 	SharedAssemblyInfo.cs = SharedAssemblyInfo.cs
 EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks", "Apache.Ignite.Benchmarks\Apache.Ignite.Benchmarks.csproj", "{8F507DBE-56F9-437F-82D4-74C02EC44E41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,10 +55,6 @@ Global
 		{318E7E44-17E5-49E4-B305-1915221FD947}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{318E7E44-17E5-49E4-B305-1915221FD947}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{318E7E44-17E5-49E4-B305-1915221FD947}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4344AEB8-6772-4625-9445-2C4A224B7716}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4344AEB8-6772-4625-9445-2C4A224B7716}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4344AEB8-6772-4625-9445-2C4A224B7716}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4344AEB8-6772-4625-9445-2C4A224B7716}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4ACD0487-0774-4705-8245-8D4F36A2F963}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -107,6 +103,10 @@ Global
 		{F42FB1B0-1368-424A-8954-F3C70ADB80F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F42FB1B0-1368-424A-8954-F3C70ADB80F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F42FB1B0-1368-424A-8954-F3C70ADB80F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
