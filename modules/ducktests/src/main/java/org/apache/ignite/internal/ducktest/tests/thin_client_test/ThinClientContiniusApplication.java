@@ -45,9 +45,7 @@ enum ClientType {
 }
 
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
+    /**{@inheritDoc}*/
 
     @Override
     protected void run(JsonNode jsonNode) throws Exception {

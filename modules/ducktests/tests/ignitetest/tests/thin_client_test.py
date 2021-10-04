@@ -69,26 +69,28 @@ class ThinClientTest(IgniteTest):
         ignite.stop()
 
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientContiniusApplication"
+
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients":0, "runTime": 60, "freeze": True},
-                         {"connectClients": 150, "putClients": 0, "putAllClients":0, "runTime": 60, "freeze": False},
-                         {"connectClients": 150, "putClients": 2, "putAllClients":0, "runTime": 60, "freeze": False},
-                         {"connectClients": 150, "putClients": 0, "putAllClients":2, "runTime": 60, "freeze": False}])
+    @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 60, "freeze": True},
+                         {"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 60, "freeze": False},
+                         {"connectClients": 150, "putClients": 2, "putAllClients": 0, "runTime": 60, "freeze": False},
+                         {"connectClients": 150, "putClients": 0, "putAllClients": 2, "runTime": 60, "freeze": False}])
     def test_thin_client_connect_time(self, ignite_version, test_params):
         """
         Thin client connect time test.
-        Determain how thin client connect time depend on cluster buzines
+        Determain how thin client connection time depend on cluster load
         Demonstrate 4 situations:
         - Cluster have too much clients
-        - Cluster have many put in work
+        - Cluster have many put's
         - Cluster have some putAll jobs
         - One node hung for some time
         """
 
-        server_config = IgniteConfiguration(version=IgniteVersion(ignite_version),
-                                            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
-                                            client_connector_configuration=ClientConnectorConfiguration())
+        server_config = \
+            IgniteConfiguration(version=IgniteVersion(ignite_version),
+                                data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
+                                client_connector_configuration=ClientConnectorConfiguration())
 
         ignite = IgniteService(self.test_context, server_config, 2)
 
@@ -112,8 +114,8 @@ class ThinClientTest(IgniteTest):
         thin_clients.start_async()
 
         if test_params["freeze"]:
-            thin_clients.await_event("START WAITING",120)
-            for x in range(4):
+            thin_clients.await_event("START WAITING", 120)
+            for _ in range(4):
                 ignite.freeze_node(ignite.nodes[0])
                 time.sleep(3)
                 ignite.unfreeze_node(ignite.nodes[0])
@@ -127,4 +129,3 @@ class ThinClientTest(IgniteTest):
         ControlUtility(cluster=ignite).deactivate()
 
         ignite.stop()
-
