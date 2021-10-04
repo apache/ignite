@@ -355,7 +355,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (row.key(i) == null)
                 return 0;
 
-            int c = def.rowComparator().compareKey(currRow, row, i);
+            int c = def.rowComparator().compareRow(currRow, row, i);
 
             if (c != 0)
                 return applySortOrder(Integer.signum(c), rowHnd.indexKeyDefinitions().get(i).order().sortOrder());

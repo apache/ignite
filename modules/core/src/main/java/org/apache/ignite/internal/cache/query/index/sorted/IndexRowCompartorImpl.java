@@ -54,12 +54,12 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
+    @Override public int compareRow(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
         return compare(left.key(idx), right.key(idx));
     }
 
     /** {@inheritDoc} */
-    @Override public int compareSearchKey(IndexKey left, IndexKey right) throws IgniteCheckedException {
+    @Override public int compareKey(IndexKey left, IndexKey right) throws IgniteCheckedException {
         if (left == right)
             return 0;
 

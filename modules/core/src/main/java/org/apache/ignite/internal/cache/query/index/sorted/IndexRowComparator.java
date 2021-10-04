@@ -38,17 +38,17 @@ public interface IndexRowComparator {
     /**
      * Compare index keys.
      *
+     * @param left index key.
+     * @param right index key.
+     */
+    public int compareKey(IndexKey left, IndexKey right) throws IgniteCheckedException;
+
+    /**
+     * Compare index rows by key specified with {@code idx}.
+     *
      * @param left index row.
      * @param right index row.
      * @param idx offset of index key.
      */
-    public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException;
-
-    /**
-     * Compare index keys.
-     *
-     * @param left index key.
-     * @param right index key.
-     */
-    public int compareSearchKey(IndexKey left, IndexKey right) throws IgniteCheckedException;
+    public int compareRow(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException;
 }

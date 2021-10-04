@@ -87,8 +87,8 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
-        int cmp = super.compareKey(left, right, idx);
+    @Override public int compareRow(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
+        int cmp = super.compareRow(left, right, idx);
 
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;
@@ -115,8 +115,8 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareSearchKey(IndexKey left, IndexKey right) throws IgniteCheckedException {
-        int cmp = super.compareSearchKey(left, right);
+    @Override public int compareKey(IndexKey left, IndexKey right) throws IgniteCheckedException {
+        int cmp = super.compareKey(left, right);
 
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;

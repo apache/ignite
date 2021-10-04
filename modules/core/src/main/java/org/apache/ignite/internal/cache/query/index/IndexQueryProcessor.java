@@ -256,7 +256,7 @@ public class IndexQueryProcessor {
                 int lowCmp = 0;
 
                 // Use previous lower boudary, as it's greater than the current.
-                if (l == null || (prev.lower() != null && (lowCmp = keyCmp.compareSearchKey((IndexKey)prev.lower(), l)) >= 0)) {
+                if (l == null || (prev.lower() != null && (lowCmp = keyCmp.compareKey((IndexKey)prev.lower(), l)) >= 0)) {
                     l = (IndexKey)prev.lower();
                     lowIncl = lowCmp != 0 ? prev.lowerIncl() : prev.lowerIncl() ? lowIncl : prev.lowerIncl();
                     lowNull = prev.lowerNull();
@@ -265,7 +265,7 @@ public class IndexQueryProcessor {
                 int upCmp = 0;
 
                 // Use previous upper boudary, as it's less than the current.
-                if (u == null || (prev.upper() != null && (upCmp = keyCmp.compareSearchKey((IndexKey)prev.upper(), u)) <= 0)) {
+                if (u == null || (prev.upper() != null && (upCmp = keyCmp.compareKey((IndexKey)prev.upper(), u)) <= 0)) {
                     u = (IndexKey)prev.upper();
                     upIncl = upCmp != 0 ? prev.upperIncl() : prev.upperIncl() ? upIncl : prev.upperIncl();
                     upNull = prev.upperNull();
@@ -439,7 +439,7 @@ public class IndexQueryProcessor {
                     boolean descOrder = hnd.indexKeyDefinitions().get(i).order().sortOrder() == DESC;
 
                     if (low != null && low.key(i) != null) {
-                        int cmp = rowCmp.compareKey(row, low, i);
+                        int cmp = rowCmp.compareRow(row, low, i);
 
                         if (cmp == 0) {
                             if (!c.lowerIncl())
@@ -450,7 +450,7 @@ public class IndexQueryProcessor {
                     }
 
                     if (high != null && high.key(i) != null) {
-                        int cmp = rowCmp.compareKey(row, high, i);
+                        int cmp = rowCmp.compareRow(row, high, i);
 
                         if (cmp == 0) {
                             if (!c.upperIncl())
@@ -494,7 +494,7 @@ public class IndexQueryProcessor {
             cursorComp = new Comparator<GridCursor<IndexRow>>() {
                 @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
                     try {
-                        return rowCmp.compareKey(o1.get(), o2.get(), 0);
+                        return rowCmp.compareRow(o1.get(), o2.get(), 0);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
