@@ -68,7 +68,8 @@ public class RaftOptions implements Copiable<RaftOptions> {
     /**
      * Maximum number of tasks that can be applied in a batch
      */
-    private int applyBatch = 32;
+    //TODO: IGNITE-15568 Default value will be returned to 32 after the issue would be fixed.
+    private int applyBatch = 1;
 
     /**
      * Call fsync when need
