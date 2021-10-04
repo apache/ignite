@@ -1153,6 +1153,28 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             getTestTimeout()));
     }
 
+    /** */
+    @Test
+    public void testSnapshots() throws Exception {
+        String snap0 = "testSnapshot0";
+        String snap1 = "testSnapshot1";
+
+        assertEquals(0, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
+
+        ignite0.createCache(DEFAULT_CACHE_NAME).put("key", "val");
+
+        ignite0.snapshot().createSnapshot(snap1).get();
+
+        assertEquals(2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS").size());
+        assertEquals(1, execute(ignite0, "SELECT * FROM SYS.SNAPSHOTS where snapshot_name = ?", snap0).size());
+        assertEquals(1, execute(ignite0,
+            "SELECT * FROM SYS.SNAPSHOTS WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
+    }
+
     /**
      * Execute query on given node.
      *

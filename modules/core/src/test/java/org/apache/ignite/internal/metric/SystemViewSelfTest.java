@@ -77,7 +77,6 @@ import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -2093,14 +2092,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             views = ignite.context().systemView().view(SNAPSHOTS_SYS_VIEW);
 
             assertEquals(2, F.size(views.iterator()));
-
-            // Test filtering.
-            assertTrue(views instanceof FiltrableSystemView);
-
-            Iterator<SnapshotView> iter = ((FiltrableSystemView<SnapshotView>)views)
-                .iterator(F.asMap(SnapshotViewWalker.SNAPSHOT_NAME_FILTER, testSnap1));
-
-            assertEquals(1, F.size(iter));
         }
     }
 

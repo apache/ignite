@@ -53,6 +53,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -1084,14 +1085,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration(node0));
         startGrid(getTestIgniteInstanceName(1), getPdsConfiguration(node1));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
         ignite.snapshot().createSnapshot(testSnapname).get();
 
         List<List<?>> res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS");
 
         assertColumnTypes(res.get(0), String.class, String.class, String.class, String.class);
 
-        assertEquals(2, res.size());
+        assertEquals(1, res.size());
 
         assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname::equals));
 
@@ -1105,7 +1106,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         res = execSql("SELECT * FROM " + systemSchemaName() + ".SNAPSHOTS");
 
-        assertEquals(4, res.size());
+        assertEquals(2, res.size());
 
         String expBltNodes = toStringSafe(asList(node0, node1));
 
@@ -1116,15 +1117,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(2, res.size());
 
         res = execSql("SELECT SNAPSHOT_NAME, CACHE_GROUPS FROM " + systemSchemaName() + ".SNAPSHOTS " +
-            "WHERE SNAPSHOT_NAME = ? ORDER BY CACHE_GROUPS", testSnapname0);
+            "WHERE SNAPSHOT_NAME = ?", testSnapname0);
 
-        assertEquals(2, res.size());
+        assertEquals(1, res.size());
 
-        assertTrue(res.stream().map(l -> l.get(0)).allMatch(testSnapname0::equals));
+        assertEquals(testSnapname0, res.get(0).get(0));
 
         String expCacheGrps = toStringSafe(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME));
 
-        assertTrue(res.stream().map(l -> l.get(1)).allMatch(expCacheGrps::equals));
+        assertEquals(expCacheGrps, res.get(0).get(1));
     }
 
     /** {@inheritDoc} */
