@@ -48,18 +48,13 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.cache.CacheException;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.EternalExpiryPolicy;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
@@ -1551,36 +1546,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 EventType.EVT_NODE_JOINED, localNode());
 
         startTimer.finishGlobalStage("Await exchange");
-
-        if (log.isInfoEnabled())
-            ackExpPlcInfoByCaches();
-    }
-
-    /**
-     * Acks expiration policy info by caches.
-     */
-    private void ackExpPlcInfoByCaches() {
-        final String r = ctx.cache().context().cacheContexts().stream()
-                .map(cacheCtx -> {
-                    ExpiryPolicy expPlc = cacheCtx.expiry();
-                    if (expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
-
-                    Duration dur;
-                    if (expPlc.getExpiryForCreation() != null)
-                        dur = expPlc.getExpiryForCreation();
-                    else if (expPlc.getExpiryForUpdate() != null)
-                        dur = expPlc.getExpiryForUpdate();
-                    else
-                        dur = expPlc.getExpiryForAccess();
-
-                    if (dur == null || dur.getTimeUnit() == null) return null;
-
-                    return "{cache=" + cacheCtx.name() + ", duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-                            "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + "}";
-                }).filter(s -> !Objects.isNull(s))
-                .collect(Collectors.joining(", "));
-
-        log.info(String.format("Expiration policy info for caches [%s]", r));
     }
 
     /** */
