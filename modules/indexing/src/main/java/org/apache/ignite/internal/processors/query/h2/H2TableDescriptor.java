@@ -412,8 +412,14 @@ public class H2TableDescriptor {
         for (String field : idxDesc.fields()) {
             Column col = tbl.getColumn(field);
 
-            cols.add(tbl.indexColumn(col.getColumnId(),
-                idxDesc.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
+            int sortType = idxDesc.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING;
+
+            if (idxDesc.nullsLast(field))
+                sortType |= SortOrder.NULLS_LAST;
+            else if (idxDesc.nullsFirst(field))
+                sortType |= SortOrder.NULLS_FIRST;
+
+            cols.add(tbl.indexColumn(col.getColumnId(), sortType));
         }
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();

@@ -31,9 +31,11 @@ public interface IndexRowComparator {
      * @param off offset of an index key.
      * @param maxSize max size to read.
      * @param key key to compare with.
-     * @param curType type of an index key.
+     * @param curType type of index key.
+     * @param idx offset of index key.
      */
-    public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) throws IgniteCheckedException;
+    public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType, int idx)
+        throws IgniteCheckedException;
 
     /**
      * Compare index keys.

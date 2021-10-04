@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.cache.IndexFieldOrder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -363,7 +364,7 @@ public class QueryUtils {
         for (QueryIndex idx : entity.getIndexes()) {
             QueryIndex normalIdx = new QueryIndex();
 
-            normalIdx.setFields(idx.getFields());
+            normalIdx.setFieldsOrder(idx.getFieldsOrder());
             normalIdx.setIndexType(idx.getIndexType());
             normalIdx.setInlineSize(idx.getInlineSize());
 
@@ -786,16 +787,17 @@ public class QueryUtils {
 
         int i = 0;
 
-        for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
+        for (Map.Entry<String, IndexFieldOrder> entry : idx.getFieldsOrder().entrySet()) {
             String field = entry.getKey();
-            boolean asc = entry.getValue();
-
             String alias = typeDesc.aliases().get(field);
 
             if (alias != null)
                 field = alias;
 
-            res.addField(field, i++, !asc);
+            if (!typeDesc.hasField(field))
+                throw new IgniteCheckedException("Field not found: " + field);
+
+            res.addField(field, i++, entry.getValue());
         }
 
         return res;

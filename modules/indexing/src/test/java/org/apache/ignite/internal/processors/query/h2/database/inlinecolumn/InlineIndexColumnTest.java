@@ -29,6 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.Order;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
@@ -286,7 +288,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             keyType.put(pageAddr, off, idxKey(wrap(v1, cls)), maxSize);
 
-            return keyType.compare(pageAddr, off, maxSize, idxKey(wrap(v2, cls)));
+            return keyType.compare(pageAddr, off, maxSize, idxKey(wrap(v2, cls)), new Order(SortOrder.ASC, null));
         }
         finally {
             if (page != 0L)
@@ -558,7 +560,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                     keyType.get(pageAddr, off, maxSize).key().hashCode());
 
                 Assert.assertEquals(CANT_BE_COMPARE,
-                    keyType.compare(pageAddr, off, maxSize, idxKey(exp)));
+                    keyType.compare(pageAddr, off, maxSize, idxKey(exp), new Order(SortOrder.ASC, null)));
             }
         }
         finally {
@@ -902,7 +904,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             assertEquals(v1.getObject(), v11.key());
             assertEquals(v2.getObject(), v22.key());
 
-            assertEquals(0, keyType.compare(pageAddr, 0, max, idxKey(v1)));
+            assertEquals(0, keyType.compare(pageAddr, 0, max, idxKey(v1), new Order(SortOrder.ASC, null)));
         }
         finally {
             if (page != 0L)

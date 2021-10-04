@@ -1593,7 +1593,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (oldEntity == null)
                     err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
                 else {
-                    for (String fieldName : op0.index().getFields().keySet()) {
+                    for (String fieldName : op0.index().getFieldNames()) {
                         Set<String> oldEntityFields = new HashSet<>(oldEntity.getFields().keySet());
 
                         for (Map.Entry<String, String> alias : oldEntity.getAliases().entrySet()) {

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +71,13 @@ public interface InlineIndexKeyType {
     public int put(long pageAddr, int off, IndexKey key, int maxSize);
 
     /**
+     * Restores value from inline, if possible.
+     *
+     * @param pageAddr Address of the page.
+     * @param off Offset on the page.
+     * @param maxSize Max size to read.
+     *
+     * @return Restored value or {@code null} if value can't be restored.
      */
     @Nullable public IndexKey get(long pageAddr, int off, int maxSize);
 
@@ -79,10 +87,11 @@ public interface InlineIndexKeyType {
      * @param pageAddr Page address.
      * @param off Offset.
      * @param maxSize Max size.
-     * @param v Value that should be compare.
+     * @param v Value that should be compared.
+     * @param order Comparison order.
      *
      * @return -1, 0 or 1 if inlined value less, equal or greater
      * than given respectively, or -2 if inlined part is not enough to compare.
      */
-    public int compare(long pageAddr, int off, int maxSize, IndexKey v);
+    public int compare(long pageAddr, int off, int maxSize, IndexKey v, Order order);
 }

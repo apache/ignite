@@ -42,4 +42,25 @@ public class Order {
     public NullsOrder nullsOrder() {
         return nullsOrder;
     }
+
+    /**
+     * Compare non-value with null. Note, it reverses values for DESC because SortOrder will be applied on result later.
+     *
+     * @param nullLeft If {@code true} means {@code null} is on the left side of comparison, otherwise it's on the right side.
+     */
+    public int compareWithNull(boolean nullLeft) {
+        // Default behavior: NULLS_FIRST for ASC, NULLS_LAST for DESC.
+        int cmp = -1;
+
+        if (nullsOrder == NullsOrder.NULLS_FIRST && sortOrder == SortOrder.ASC)
+            cmp = -1;
+        else if (nullsOrder == NullsOrder.NULLS_FIRST && sortOrder == SortOrder.DESC)
+            cmp = 1;
+        else if (nullsOrder == NullsOrder.NULLS_LAST && sortOrder == SortOrder.ASC)
+            cmp = 1;
+        else if (nullsOrder == NullsOrder.NULLS_LAST && sortOrder == SortOrder.DESC)
+            cmp = -1;
+
+        return nullLeft ? cmp : -cmp;
+    }
 }

@@ -88,7 +88,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test for unsupported SQL statements in CREATE TABLE statement.
+     * Test for unsupported SQL statements in CREATE INDEX statement.
      */
     @Test
     public void testUnsupportedCreateIndex() {
@@ -97,8 +97,6 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
                 "id integer PRIMARY KEY, " +
                 "val varchar DEFAULT 'test_val')");
 
-        assertSqlUnsupported("CREATE INDEX test_idx ON test (val NULLS FIRST)");
-        assertSqlUnsupported("CREATE INDEX test_idx ON test (val NULLS LAST)");
         assertSqlUnsupported("CREATE UNIQUE INDEX test_idx ON test (val)");
         assertSqlUnsupported("CREATE HASH INDEX test_idx ON test (val)");
     }

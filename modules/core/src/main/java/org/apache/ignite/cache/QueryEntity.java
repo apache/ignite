@@ -730,7 +730,7 @@ public class QueryEntity implements Serializable {
                 txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
             }
             else
-                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
+                txtIdx.addField(QueryUtils.VAL_FIELD_NAME, new IndexFieldOrder(true));
         }
 
         if (txtIdx != null)
@@ -785,7 +785,7 @@ public class QueryEntity implements Serializable {
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
-                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
+                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, new IndexFieldOrder(true));
             }
 
             return;
@@ -864,7 +864,7 @@ public class QueryEntity implements Serializable {
                 desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
-                desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
+                desc.addFieldToIndex(idxName, prop.fullName(), 0, new IndexFieldOrder(!sqlAnn.descending()));
             }
 
             if (sqlAnn.notNull())
@@ -884,12 +884,12 @@ public class QueryEntity implements Serializable {
 
             if (!F.isEmpty(sqlAnn.groups())) {
                 for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
+                    desc.addFieldToIndex(group, prop.fullName(), 0, new IndexFieldOrder(true));
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {
                 for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
-                    desc.addFieldToIndex(idx.name(), prop.fullName(), idx.order(), idx.descending());
+                    desc.addFieldToIndex(idx.name(), prop.fullName(), idx.order(), new IndexFieldOrder(!idx.descending()));
             }
         }
 
