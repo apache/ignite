@@ -256,7 +256,7 @@ if (!$skipNuGet) {
     # TODO: Get rid of nuspec, pack everything that has IsPackable property
     Get-ChildItem *.nuspec -Recurse  `
         | % {
-            Exec "dotnet pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir"
+            Exec "dotnet pack $_ -c Release /p:Version=$ver -o $nupkgDir"
         }
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
