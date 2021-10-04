@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.expiry;
 
 import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.AccessedExpiryPolicy;
