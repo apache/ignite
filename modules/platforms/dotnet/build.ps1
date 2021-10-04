@@ -253,7 +253,7 @@ if (!$skipNuGet) {
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
-    # TODO: Get rid of nuspec
+    # TODO: Get rid of nuspec, pack everything that has IsPackable property
     Get-ChildItem *.nuspec -Recurse  `
         | % {
             Exec "dotnet pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir"
