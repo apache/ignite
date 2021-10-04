@@ -131,25 +131,18 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         int lower = new Random().nextInt(CNT / 2);
         int upper = CNT / 2 + new Random().nextInt(CNT / 2 - 1);
 
+        checkEqualsCriteria(lower, upper, 0, CNT);
+        checkEqualsCriteria(lower, upper, CNT, 0);
+        checkEqualsCriteria(upper, lower, 0, CNT);
+        checkEqualsCriteria(upper, lower, CNT, 0);
+    }
+
+    /** */
+    private void checkEqualsCriteria(int eq1, int eq2, int from, int to) {
         IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, upper), eq(fldName, lower), between(fldName, 0, CNT));
+            .setCriteria(eq(fldName, eq1), eq(fldName, eq2), between(fldName, from, to));
 
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), eq(fldName, upper), between(fldName, 0, CNT));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), eq(fldName, upper), between(fldName, CNT, 0));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, lower), eq(fldName, upper), between(fldName, CNT, 0));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
+        assertTrue(qry.getCriteria().toString(), cache.query(qry).getAll().isEmpty());
     }
 
     /** */
@@ -157,22 +150,11 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
     public void testCommonBoundary() {
         int upper, lower = upper = new Random().nextInt(CNT / 2);
 
+        checkEmptyForCommonBoundary(lt(fldName, lower), gt(fldName, upper));
+        checkEmptyForCommonBoundary(lte(fldName, lower), gt(fldName, upper));
+        checkEmptyForCommonBoundary(lt(fldName, lower), gte(fldName, upper));
+
         IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), gt(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lt(fldName, lower), gte(fldName, upper));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lte(fldName, lower), gte(fldName, upper));
 
         check(null, cache.query(qry), lower, upper + 1);
@@ -181,6 +163,14 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
             .setCriteria(between(fldName, 0, lower), between(fldName, upper, CNT));
 
         check(null, cache.query(qry), lower, upper + 1);
+    }
+
+    /** */
+    private void checkEmptyForCommonBoundary(IndexQueryCriterion c1, IndexQueryCriterion c2) {
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+            .setCriteria(c1, c2);
+
+        assertTrue(qry.getCriteria().toString(), cache.query(qry).getAll().isEmpty());
     }
 
     /** */
