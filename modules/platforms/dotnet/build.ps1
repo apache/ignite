@@ -253,9 +253,10 @@ if (!$skipNuGet) {
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
+    # TODO: Get rid of nuspec
     Get-ChildItem *.nuspec -Recurse  `
         | % {
-            Exec "$ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir"
+            Exec "dotnet pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir"
         }
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
