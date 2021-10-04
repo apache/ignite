@@ -17,11 +17,15 @@
 
 package org.apache.ignite.cache.validation;
 
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
 
-/** Represents {@link SegmentationResolver} that can be obtained through Ignite plugin extensions. */
-public interface PluggableSegmentationResolver extends Extension {
-    /** @return Whether current segment is valid. */
-    public boolean validateSegment();
+/**
+ * Represents {@link SegmentationResolver} that revalidates current segment at the end of each PME and can be
+ * obtained through Ignite extensions.
+ */
+public interface PluggableSegmentationResolver extends SegmentationResolver, PartitionsExchangeAware, Extension {
+    /** {@inheritDoc} */
+    @Override public boolean isValidSegment();
 }

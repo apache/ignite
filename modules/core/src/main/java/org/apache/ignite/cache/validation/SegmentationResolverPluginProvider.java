@@ -136,9 +136,9 @@ public class SegmentationResolverPluginProvider implements PluginProvider<Plugin
         String errMsg = null;
 
         if (!node.isClient() && !TRUE.equals(node.attribute(ATTR_SEG_RESOLVE_ENABLED))) {
-            errMsg = "The segmentation resolver plugin is not configured for the server node that is " +
-                "trying to join the cluster. Since the segmentation resolver is only applicable if all server nodes in" +
-                " the cluster have one, node join request will be rejected [nodeId=" + node.id() + ']';
+            errMsg = "The segmentation resolver plugin is not configured for the server node that is" +
+                " trying to join the cluster. Since the segmentation resolver is only applicable if all server nodes" +
+                " in the cluster have one, node join request will be rejected [nodeId=" + node.id() + ']';
         }
 
         if (!segResolver.isValidSegment())

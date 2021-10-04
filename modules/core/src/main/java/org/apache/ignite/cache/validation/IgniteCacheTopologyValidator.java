@@ -49,12 +49,14 @@ public class IgniteCacheTopologyValidator implements TopologyValidator, Lifecycl
         if (ignite.cluster().localNode().isClient())
             return true;
 
-        boolean isValid = segResolver.validateSegment();
+        segResolver.onDoneBeforeTopologyUnlock(ignite.context().cache().context().exchange().lastTopologyFuture());
+
+        boolean isValid = segResolver.isValidSegment();
 
         if (!isValid)
             U.warn(ignite.log(), "Cache validation failed - current node belongs to segmented part of the cluster." +
-                " Cache operation are limited to read-only. To manually perform cache revalidation, change cluster" +
-                " state to ACTIVE [cacheName=" + cacheName + ", localNodeId=" + ignite.localNode().id() + ']');
+                " Cache operation are limited to read-only [cacheName=" + cacheName + ", localNodeId=" +
+                ignite.localNode().id() + ']');
 
         return isValid;
     }
@@ -67,14 +69,15 @@ public class IgniteCacheTopologyValidator implements TopologyValidator, Lifecycl
         PluggableSegmentationResolver[] segResolvers = ignite.context().plugins().extensions(PluggableSegmentationResolver.class);
 
         if (F.isEmpty(segResolvers)) {
-            throw new IgniteException("No external plugin that provide " + PluggableSegmentationResolver.class.getName() +
-                " extension are found that is required by configured topology validator. Check the plugin provider" +
-                " section of Ignite configuration. Cache will be stopped [cacheName=" + cacheName + ']');
+            throw new IgniteException("No Ignite plugin that provides " + PluggableSegmentationResolver.class.getName() +
+                " extension is found. Cache will be stopped [cacheName=" + cacheName + ']');
         }
 
         if (segResolvers.length > 1) {
-            throw new IgniteException("Multiple plugins that provide " + PluggableSegmentationResolver.class.getName() +
-                " extension are not allowed. Cache will be stopped [cacheName=" + cacheName + ']');
+            throw new IgniteException("Multiple Ignite plugins that provide " +
+                PluggableSegmentationResolver.class.getName() + " extension are defined. Check your plugins" +
+                " configuration and make sure that only one of them provides segmentation resolver. Cache will be" +
+                " stopped [cacheName=" + cacheName + ']');
         }
 
         segResolver = segResolvers[0];

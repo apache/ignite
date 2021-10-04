@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.validation;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.validation.IgniteCacheTopologyValidator;
+import org.apache.ignite.cache.validation.PluggableSegmentationResolver;
 import org.apache.ignite.cache.validation.SegmentationResolverPluginProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,47 +33,60 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitAbstractTest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @SuppressWarnings("ThrowableNotThrown")
 public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTest {
     /** */
+    private static final int CACHE_KEY_CNT = 1000;
+
+    /** */
     public static final int CACHE_CNT = 2;
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration(igniteInstanceName, false);
+    }
+
+    /** */
+    private IgniteConfiguration getConfiguration(
+        String igniteInstanceName,
+        boolean skipSegmentationPluginConfiguration
+    ) throws Exception {
         int idx = getTestIgniteInstanceIndex(igniteInstanceName);
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new SegmentationResolverPluginProvider())
             .setUserAttributes(singletonMap(IDX_ATTR, idx));
 
-        TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+        if (!skipSegmentationPluginConfiguration)
+            cfg.setPluginProviders(new SegmentationResolverPluginProvider());
 
-        tcpDisco.setLocalPort(getDiscoPort(idx));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi())
+            .setIpFinder(sharedStaticIpFinder)
+            .setLocalPortRange(1)
+            .setLocalPort(getDiscoPort(idx))
+            .setConnectionRecoveryTimeout(0);
 
         return cfg;
-    }
-
-    /**  */
-    private int getDiscoPort(int gridIdx) {
-        return DFLT_PORT + gridIdx;
     }
 
     /** {@inheritDoc} */
@@ -80,10 +96,35 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean isBlocked(int locPort, int rmtPort) {
+        return isDiscoPort(locPort) && isDiscoPort(rmtPort) && segment(locPort) != segment(rmtPort);
+    }
+
+    /**  */
+    private int segment(int discoPort) {
+        return (discoPort - DFLT_PORT) % 2 == 0 ? 0 : 1;
+    }
+
+    /** */
+    @Override public int segment(ClusterNode node) {
+        return node.<Integer>attribute(IDX_ATTR) % 2 == 0 ? 0 : 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx startGrid(IgniteConfiguration cfg) throws Exception {
+        return super.startGrid(optimize(cfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx startClientGrid(IgniteConfiguration cfg) throws Exception {
+        return super.startClientGrid(optimize(cfg));
+    }
+
     /** */
     @Test
     public void testConnectionToIncompatibleCluster() throws Exception {
-        startGrid(super.getConfiguration(getTestIgniteInstanceName(0)));
+        startGrid(getConfiguration(getTestIgniteInstanceName(0), true));
 
         assertThrows(
             log,
@@ -100,14 +141,51 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
         assertThrowsAnyCause(
             log,
-            () -> startGrid(super.getConfiguration(getTestIgniteInstanceName(1))),
+            () -> startGrid(getConfiguration(getTestIgniteInstanceName(1), true)),
             IgniteSpiException.class,
             "The segmentation resolver plugin is not configured for the server node that is trying to join the cluster."
         );
 
-        startClientGrid(super.getConfiguration(getTestIgniteInstanceName(2)));
+        startClientGrid(getConfiguration(getTestIgniteInstanceName(2), true));
 
         assertEquals(2, srv.cluster().nodes().size());
+    }
+
+    /** */
+    @Test
+    public void testMissingSegmentationResolverPlugin() throws Exception {
+        IgniteEx srv = startGrid(super.getConfiguration(getTestIgniteInstanceName(0)));
+
+        assertThrowsWithCause(
+            () -> srv.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setTopologyValidator(new IgniteCacheTopologyValidator())),
+            IgniteCheckedException.class
+        );
+    }
+
+    /** */
+    @Test
+    public void testConnectionToSegmentedCluster() throws Exception {
+        startGrids(4);
+
+        splitAndWait();
+
+        checkSegmentState(0, false);
+        checkSegmentState(0, false);
+
+        assertThrowsAnyCause(
+            log,
+            () -> connectNodeToSegment(4, 0),
+            IgniteSpiException.class,
+            "The node cannot join the cluster because the cluster was marked as segmented."
+        );
+
+        assertThrowsAnyCause(
+            log,
+            () -> connectNodeToSegment(5, 1),
+            IgniteSpiException.class,
+            "The node cannot join the cluster because the cluster was marked as segmented."
+        );
     }
 
     /** */
@@ -132,14 +210,14 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
     /** */
     @Test
-    public void testClientNodeSegmentation() throws Exception {
+    public void testClientNodeSegmentationIgnored() throws Exception {
         IgniteEx srv = startGrid(0);
 
         IgniteEx cli = startClientGrid(1);
 
         startCaches(0);
 
-        checkPut(0, false);
+        checkPut(0, true);
 
         long topVer = srv.cluster().topologyVersion();
 
@@ -150,7 +228,9 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
         awaitExchangeVersionFinished(Collections.singleton(srv), topVer + 1);
 
-        checkPut(0, false);
+        checkSegmentState(0, true);
+
+        checkPut(0, true);
         checkGet(0);
     }
 
@@ -163,16 +243,16 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
         startCaches(2);
 
-        checkPut(0, false);
+        checkPut(0, true);
 
         startGrid(3);
 
         splitAndWait();
 
-        checkPut(0, false);
+        checkPut(0, true);
         checkGet(0);
 
-        checkPut(1, true);
+        checkPut(1, false);
         checkGet(1);
 
         assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(1).cluster().state(), getTestTimeout()));
@@ -185,14 +265,14 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
         startCaches(2);
 
-        checkPut(0, false);
+        checkPut(0, true);
 
         splitAndWait();
 
-        checkPut(1, true);
+        checkPut(1, false);
         checkGet(1);
 
-        checkPut(0, false);
+        checkPut(0, true);
         checkGet(0);
 
         assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(1).cluster().state(), getTestTimeout()));
@@ -208,10 +288,10 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
         splitAndWait();
 
-        checkPut(1, true);
+        checkPut(1, false);
         checkGet(1);
 
-        checkPut(0, true);
+        checkPut(0, false);
         checkGet(0);
 
         assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(1).cluster().state(), getTestTimeout()));
@@ -219,32 +299,39 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
 
         grid(0).cluster().state(ACTIVE);
 
-        checkPut(0, false);
+        checkPut(0, true);
         checkGet(0);
 
-        checkPut(1, true);
+        checkPut(1, false);
         checkGet(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isBlocked(int locPort, int rmtPort) {
-        return isDiscoPort(locPort) && isDiscoPort(rmtPort) && segment(locPort) != segment(rmtPort);
-    }
+    /** */
+    private IgniteEx connectNodeToSegment(int nodeIdx, int segment) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(nodeIdx));
 
-    /**  */
-    private int segment(int discoPort) {
-        return (discoPort - DFLT_PORT) % 2 == 0 ? 1 : 0;
+        List<String> segmentDiscoPorts = segmentNodes(segment, false).stream()
+            .map(node -> "127.0.0.1:" + getDiscoPort(node.localNode().<Integer>attribute(IDX_ATTR)))
+            .collect(toList());
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(segmentDiscoPorts));
+
+        return startGrid(optimize(cfg));
     }
 
     /** */
-    @Override public int segment(ClusterNode node) {
-        return node.<Integer>attribute(IDX_ATTR) % 2 == 0 ? 1 : 0;
+    private void checkSegmentState(int segment, boolean isValid) {
+        for (IgniteEx node : segmentNodes(segment, false)) {
+            assertEquals(isValid, node.context().plugins()
+                .extensions(PluggableSegmentationResolver.class)[0]
+                .isValidSegment());
+        }
     }
 
     /**  */
     private boolean isDiscoPort(int port) {
         return port >= DFLT_PORT &&
-            port <= (DFLT_PORT + TcpDiscoverySpi.DFLT_PORT_RANGE);
+            port <= (DFLT_PORT + DFLT_PORT_RANGE);
     }
 
     /** */
@@ -252,7 +339,6 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
         for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++) {
             grid(0).createCache(new CacheConfiguration<>()
                 .setName(cacheName(cacheIdx))
-                .setCacheMode(PARTITIONED)
                 .setBackups(backups)
                 .setWriteSynchronizationMode(PRIMARY_SYNC)
                 .setTopologyValidator(new IgniteCacheTopologyValidator())
@@ -269,23 +355,28 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
     private void checkPutGetAfter(RunnableX r) {
         r.run();
 
-        checkPut(0, false);
+        checkPut(0, true);
 
         checkGet(0);
     }
 
+    /**  */
+    private int getDiscoPort(int idx) {
+        return DFLT_PORT + idx;
+    }
+
     /** */
-    private void checkPut(int idx, boolean failExpected) {
-        Collection<Ignite> segmentNodes = segmentNodesIndexes(idx);
+    private void checkPut(int segment, boolean success) {
+        Collection<IgniteEx> segmentNodes = segmentNodes(segment, true);
 
         for (Ignite node : segmentNodes) {
             for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++) {
                 IgniteCache<Object, Object> cache = node.cache(cacheName(cacheIdx));
 
-                for (int i = 0; i < 1000; i++) {
+                for (int i = 0; i < CACHE_KEY_CNT; i++) {
                     int key = i;
 
-                    if (failExpected) {
+                    if (!success) {
                         assertThrowsAnyCause(
                             log,
                             () -> {
@@ -304,21 +395,25 @@ public class SegmentationResolverTest extends IgniteCacheTopologySplitAbstractTe
     }
 
     /** */
-    private void checkGet(int idx) {
-        Collection<Ignite> segmentNodes = segmentNodesIndexes(idx);
+    private void checkGet(int segment) {
+        Collection<IgniteEx> segmentNodes = segmentNodes(segment, true);
 
         for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++) {
             for (Ignite node : segmentNodes) {
                 IgniteCache<Object, Object> cache = node.cache(cacheName(cacheIdx));
 
-                for (int key = 0; key < 1000; key++)
+                for (int key = 0; key < CACHE_KEY_CNT; key++)
                     assertEquals(key, cache.get(key));
             }
         }
     }
 
     /** */
-    private Collection<Ignite> segmentNodesIndexes(int idx) {
-        return grid(idx).context().discovery().allNodes().stream().map(this::grid).collect(toList());
+    private Collection<IgniteEx> segmentNodes(int segment, boolean includeClients) {
+        return G.allGrids().stream()
+            .filter(ignite -> includeClients || !ignite.cluster().localNode().isClient())
+            .filter(ignite -> segment(ignite.cluster().localNode()) == segment)
+            .map(ignite -> (IgniteEx)ignite)
+            .collect(Collectors.toList());
     }
 }
