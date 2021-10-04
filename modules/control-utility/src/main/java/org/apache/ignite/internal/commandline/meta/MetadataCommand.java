@@ -26,7 +26,6 @@ import org.apache.ignite.internal.commandline.meta.subcommands.MetadataRemoveCom
 import org.apache.ignite.internal.commandline.meta.subcommands.MetadataUpdateCommand;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataTypeArgs;
 
-import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.METADATA;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList.DETAILS;

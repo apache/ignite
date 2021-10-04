@@ -237,6 +237,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         doForceServerAndClientTest();
     }
 
+    /** */
     @Test
     public void checkMessageOnCoordinatorChangeTest() throws Exception {
         startGrid(1);

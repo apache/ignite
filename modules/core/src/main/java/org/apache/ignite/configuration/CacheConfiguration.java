@@ -603,6 +603,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @return Name of the memory policy.
      * @deprecated Use {@link #getDataRegionName()} (String)} instead.
      */
     @Deprecated
@@ -626,6 +627,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @param memPlcName Memory policy name.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link #setDataRegionName(String)} instead.
      */
     @Deprecated
@@ -755,6 +758,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
      *
+     * @param sqlOnheapCacheMaxSize Maximum SQL on-heap cache.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setSqlOnheapCacheMaxSize(int sqlOnheapCacheMaxSize) {
@@ -805,6 +809,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Enabling this can greatly improve performance for key-value operations and scan queries,
      * at the expense of RAM usage.
      *
+     * @param platformCfg Platform cache configuration.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
@@ -2370,6 +2375,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache key configuration.
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.keyCfg = cacheKeyCfg;

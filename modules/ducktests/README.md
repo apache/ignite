@@ -113,7 +113,6 @@ pip install -e .
 
 - For running unit tests invoke `pytest` in `${DUCKTESTS_DIR}`.
 - For checking codestyle invoke `flake8` in `${DUCKTESTS_DIR}`.
-- For running linter invoke `pylint --rcfile=tox.ini ignitetests checks` in `${DUCKTESTS_DIR}`.
 
 #### Run checks over multiple python's versions using tox (optional)
 All commits and PR's are checked against multiple python's version, namely 3.6, 3.7 and 3.8.

@@ -52,7 +52,8 @@ include::code-snippets/dotnet/NearCaches.cs[tag=nearCacheConf,indent=0]
 tab:C++[unsupported]
 --
 
-Once configured in this way, the near cache is created on any node that requests data from the underlying cache, including both server nodes and client nodes.
+Once configured in this way, the near cache is created on any node that requests data from the underlying cache, including both server nodes and client nodes. Near caches are created on server nodes and thick client nodes, but not on thin clients.
+
 When you get an instance of the cache, as shown in the following example, the data requests go through the near cache.
 
 [tabs]

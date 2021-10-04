@@ -288,6 +288,7 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    /** */
     @ParametersDelegate
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
@@ -467,6 +468,7 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    /** */
     public void setRange(int newVal) {
         range = newVal;
     }

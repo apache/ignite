@@ -574,7 +574,7 @@ public class ClientConnectorConfiguration {
     }
 
     /**
-     * Gets thin-client specific configuration.
+     * @return Thin-client specific configuration.
      */
     public ThinClientConfiguration getThinClientConfiguration() {
         return thinCliCfg;
@@ -583,6 +583,7 @@ public class ClientConnectorConfiguration {
     /**
      * Sets thin-client specific configuration.
      *
+     * @param thinCliCfg Thin-client specific configuration..
      * @return {@code this} for chaining.
      */
     public ClientConnectorConfiguration setThinClientConfiguration(ThinClientConfiguration thinCliCfg) {

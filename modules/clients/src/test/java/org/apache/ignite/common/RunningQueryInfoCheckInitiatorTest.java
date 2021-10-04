@@ -370,6 +370,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
      * Utility class with custom SQL functions.
      */
     public static class TestSQLFunctions {
+        /** */
         static final Phaser ph = new Phaser(2);
 
         /**

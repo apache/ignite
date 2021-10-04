@@ -471,6 +471,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         private int productId;
 
+        /** */
         @QuerySqlField
         private int price;
 

@@ -61,6 +61,7 @@ public class FetchingQueryCursorStressTest {
     /** */
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
+    /** */
     public static final AtomicReference<Exception> error = new AtomicReference<>();
 
     /**
@@ -186,6 +187,7 @@ public class FetchingQueryCursorStressTest {
         @QuerySqlField
         private String lastName;
 
+        /** */
         public Person(int id, String firstName, String lastName) {
             this.id = id;
             this.firstName = firstName;

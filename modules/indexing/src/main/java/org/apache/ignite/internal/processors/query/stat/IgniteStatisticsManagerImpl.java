@@ -101,6 +101,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
 
+        boolean serverNode = !(ctx.config().isClientMode() || ctx.isDaemon());
+
         helper = new IgniteStatisticsHelper(ctx.localNodeId(), schemaMgr, ctx::log);
 
         log = ctx.log(IgniteStatisticsManagerImpl.class);
@@ -108,30 +110,33 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         IgniteCacheDatabaseSharedManager db = (GridCacheUtils.isPersistenceEnabled(ctx.config())) ?
             ctx.cache().context().database() : null;
 
-        gatherPool = new IgniteThreadPoolExecutor("stat-gather",
-            ctx.igniteInstanceName(),
-            0,
-            STATS_POOL_SIZE,
-            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.UNDEFINED,
-            ctx.uncaughtExceptionHandler()
-        );
-
-        mgmtPool = new IgniteThreadPoolExecutor("stat-mgmt",
-            ctx.igniteInstanceName(),
-            0,
-            1,
-            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.UNDEFINED,
-            ctx.uncaughtExceptionHandler()
-        );
-
-        boolean storeData = !(ctx.config().isClientMode() || ctx.isDaemon());
+        if (serverNode) {
+            gatherPool = new IgniteThreadPoolExecutor("stat-gather",
+                ctx.igniteInstanceName(),
+                0,
+                STATS_POOL_SIZE,
+                IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                ctx.uncaughtExceptionHandler()
+            );
+            mgmtPool = new IgniteThreadPoolExecutor("stat-mgmt",
+                ctx.igniteInstanceName(),
+                0,
+                1,
+                IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                ctx.uncaughtExceptionHandler()
+            );
+        }
+        else {
+            gatherPool = null;
+            mgmtPool = null;
+        }
 
         IgniteStatisticsStore store;
-        if (!storeData)
+        if (!serverNode)
             store = new IgniteStatisticsDummyStoreImpl(ctx::log);
         else if (db == null)
             store = new IgniteStatisticsInMemoryStoreImpl(ctx::log);
@@ -140,11 +145,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         statsRepos = new IgniteStatisticsRepository(store, ctx.systemView(), helper, ctx::log);
 
-        gatherer = new StatisticsGatherer(
+        gatherer = serverNode ? new StatisticsGatherer(
             statsRepos,
             gatherPool,
             ctx::log
-        );
+        ) : null;
 
         statCfgMgr = new IgniteStatisticsConfigurationManager(
             schemaMgr,
@@ -155,7 +160,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             statsRepos,
             gatherer,
             mgmtPool,
-            ctx::log
+            ctx::log,
+            serverNode
         );
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
@@ -186,20 +192,23 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (currState == ON || currState == NO_UPDATE)
             enableOperations();
 
-        ctx.timeout().schedule(() -> {
-            StatisticsUsageState state = usageState();
-            if (state == ON && !ctx.isStopping()) {
-                if (log.isTraceEnabled())
-                    log.trace("Processing statistics obsolescence...");
+        if (serverNode) {
+            ctx.timeout().schedule(() -> {
+                StatisticsUsageState state = usageState();
 
-                try {
-                    processObsolescence();
-                } catch (Throwable e) {
-                    log.warning("Error while processing statistics obsolescence", e);
+                if (state == ON && !ctx.isStopping()) {
+                    if (log.isTraceEnabled())
+                        log.trace("Processing statistics obsolescence...");
+
+                    try {
+                        processObsolescence();
+                    } catch (Throwable e) {
+                        log.warning("Error while processing statistics obsolescence", e);
+                    }
                 }
-            }
 
-        }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
+            }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
+        }
     }
 
     /**
@@ -207,7 +216,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      */
     private synchronized void enableOperations() {
         statsRepos.start();
-        gatherer.start();
+        if (gatherer != null)
+            gatherer.start();
         statCfgMgr.start();
     }
 
@@ -216,7 +226,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      */
     private synchronized void disableOperations() {
         statCfgMgr.stop();
-        gatherer.stop();
+        if (gatherer != null)
+            gatherer.stop();
         statsRepos.stop();
     }
 

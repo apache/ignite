@@ -272,11 +272,18 @@ public class StatisticsGatherer {
         if (log.isTraceEnabled())
             log.trace(String.format("Statistics gathering stopping %d task...", gatheringInProgress.size()));
 
-        gatheringInProgress.values().forEach(ctx -> ctx.futureGather().cancel(true));
-
-        gatheringInProgress.clear();
+        cancelAllTasks();
 
         if (log.isDebugEnabled())
             log.debug("Statistics gathering stopped.");
+    }
+
+    /**
+     * Cancel all currently running statistics gathering tasks.
+     */
+    public void cancelAllTasks() {
+        gatheringInProgress.values().forEach(ctx -> ctx.futureGather().cancel(true));
+
+        gatheringInProgress.clear();
     }
 }

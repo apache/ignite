@@ -75,4 +75,4 @@ matrix:
       python: 3.8.5
       <<: *ducktape-tox
       script:
-        - tox -e linter,codestyle,py38
+        - tox -e codestyle,py38

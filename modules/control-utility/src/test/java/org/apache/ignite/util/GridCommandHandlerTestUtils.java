@@ -24,6 +24,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Utility class for command handler.
  */
 public class GridCommandHandlerTestUtils {
+    /** */
     public static void addSslParams(List<String> params) {
         params.add("--keystore");
         params.add(GridTestUtils.keyStorePath("node01"));

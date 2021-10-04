@@ -76,7 +76,6 @@ class IgniteSpec(metaclass=ABCMeta):
     This class is a basic Spec
     """
 
-    # pylint: disable=R0913
     def __init__(self, service, jvm_opts, full_jvm_opts):
         self.service = service
 
@@ -118,7 +117,6 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return config_templates
 
-    # pylint: disable=unused-argument,no-self-use
     def extend_config(self, config):
         """
         Extend config with custom variables

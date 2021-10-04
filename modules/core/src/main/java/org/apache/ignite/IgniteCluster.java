@@ -71,6 +71,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * There's only one instance of node local storage per local node. Node local storage is
      * based on {@link java.util.concurrent.ConcurrentMap} and is safe for multi-threaded access.
      *
+     * @param <K> Type of keys in the node local map.
+     * @param <V> Type of mapped values in the node local map.
      * @return Node local storage instance for the local node.
      */
     public <K, V> ConcurrentMap<K, V> nodeLocalMap();

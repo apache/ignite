@@ -66,6 +66,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** Connection. */
     private final JdbcConnection conn;
 
+    /** */
     private final JdbcMetadataInfo meta;
 
     /**

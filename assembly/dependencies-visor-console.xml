@@ -32,7 +32,7 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-visor-console</include>
+                <include>${project.groupId}:ignite-visor-console</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
@@ -86,8 +86,8 @@
 
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-ssh</include>
-                <include>org.apache.ignite:ignite-spring</include>
+                <include>${project.groupId}:ignite-ssh</include>
+                <include>${project.groupId}:ignite-spring</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>

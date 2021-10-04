@@ -38,8 +38,8 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSel
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -398,7 +398,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
             GridCacheContext cctx,
             GridFutureAdapter<Void> rebuildIdxFut,
             SchemaIndexCacheVisitorClosure clo,
-            SchemaIndexOperationCancellationToken cancel
+            IndexRebuildCancelToken cancel
         ) {
             if (!firstRbld) {
                 try {
