@@ -174,65 +174,20 @@ cd $PSScriptRoot
 
 
 # 2) Build .NET
-if (!($skipDotNet -and $skipNuGet)) {
-    # Detect NuGet
-    $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
-
-    if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
-        $ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }
-
-        if (-not (Test-Path $ng)) {
-            echo "Downloading NuGet..."
-            (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", "$PSScriptRoot/nuget.exe")
-        }
-    }
-
-    echo "Using NuGet from: $ng"
-}
-
 if (!$skipDotNet) {
-    $msBuild = "msbuild"
-
-    if ((Get-Command $msBuild -ErrorAction SilentlyContinue) -eq $null)
-    {
-        # Detect MSBuild 4.0+
-		# TODO: This detects old MSBuild, see https://www.codewrecks.com/post/general/find-msbuild-location-in-powershell/
-        # TODO: WE CAN BUILD WITH "dotnet build"!
-        for ($i = 20; $i -ge 4; $i--) {
-            $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
-            if (Test-Path $regKey)
-            {
-                break
-            }
-        }
-
-        if (!(Test-Path $regKey))
-        {
-            echo "Failed to detect MSBuild path, exiting."
-            exit -1
-        }
-
-        $msBuild = (Join-Path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
-        $msBuild = "`"$msBuild`""  # Put in quotes and escape to handle whitespace in path
+    $targetSolution =  ".\Apache.Ignite.sln"
+    if ($clean) {
+        $cleanCommand = "dotnet clean $targetSolution -c $configuration"
+        echo "Starting dotnet clean: '$cleanCommand'"
+        Exec $cleanCommand
     }
 
-    echo "MSBuild detected at '$msBuild'."
-
-	# Restore NuGet packages
-	echo "Restoring NuGet..."
-	Exec "$ng restore Apache.Ignite.sln"
-
-	# Build
-	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
-	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-	$msBuildCommand = "$msBuild Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
-	echo "Starting MsBuild: '$msBuildCommand'"
-	Exec $msBuildCommand
+    $buildCommand = "dotnet build $targetSolution -c $configuration"
+    echo "Starting dotnet build: '$buildCommand'"
+    Exec $buildCommand
 }
 
 if(!$skipDotNetCore) {
-
-    # Build core
     $targetSolution =  ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj"
     if ($clean) {
         $cleanCommand = "dotnet clean $targetSolution -c $configuration"
