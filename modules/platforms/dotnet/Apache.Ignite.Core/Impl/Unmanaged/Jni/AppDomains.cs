@@ -82,8 +82,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var runtime = (ICLRRuntimeInfo) host.GetRuntime(versString, ref IID_CLRRuntimeInfo);
 
             bool started;
-            uint flags;
-            runtime.IsStarted(out started, out flags);
+            uint unused;
+            runtime.IsStarted(out started, out unused);
             Debug.Assert(started);
 
             var rtHost = (ICorRuntimeHost) runtime.GetInterface(ref CLSID_CorRuntimeHost, ref IID_CorRuntimeHost);

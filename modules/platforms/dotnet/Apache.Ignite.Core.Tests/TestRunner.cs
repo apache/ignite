@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary.Serializable;
@@ -36,9 +35,10 @@ namespace Apache.Ignite.Core.Tests
         [STAThread]
         static void Main(string[] args)
         {
+            System.Diagnostics.Debug.AutoFlush = true;
+
 #if (!NETCOREAPP)
-            Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
-            Debug.AutoFlush = true;
+            System.Diagnostics.Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
 #endif
 
             if (args.Length == 1 && args[0] == "-basicTests")
