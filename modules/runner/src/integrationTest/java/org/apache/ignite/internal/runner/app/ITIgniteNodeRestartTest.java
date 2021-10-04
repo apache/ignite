@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.runner.app;
 
-import org.apache.ignite.app.Ignite;
-import org.apache.ignite.app.IgnitionManager;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.internal.app.IgniteImpl;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;

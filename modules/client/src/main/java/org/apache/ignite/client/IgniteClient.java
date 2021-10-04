@@ -20,7 +20,7 @@ package org.apache.ignite.client;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.ignite.app.Ignite;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.IgniteClientConfigurationImpl;
 import org.apache.ignite.internal.client.TcpIgniteClient;
 

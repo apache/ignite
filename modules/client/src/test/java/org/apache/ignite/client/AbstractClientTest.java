@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import io.netty.util.ResourceLeakDetector;
-import org.apache.ignite.app.Ignite;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.client.fakes.FakeIgnite;
 import org.apache.ignite.client.handler.ClientHandlerModule;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;

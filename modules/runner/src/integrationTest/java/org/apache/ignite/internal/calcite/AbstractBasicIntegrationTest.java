@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import org.apache.ignite.app.Ignite;
-import org.apache.ignite.app.IgnitionManager;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.app.IgniteImpl;
 import org.apache.ignite.internal.calcite.util.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;

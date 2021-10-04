@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.runner.app;
 
 import java.util.List;
-import org.apache.ignite.app.Ignite;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.table.TableImpl;

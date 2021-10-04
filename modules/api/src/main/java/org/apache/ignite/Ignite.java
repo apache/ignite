@@ -15,7 +15,33 @@
  * limitations under the License.
  */
 
+package org.apache.ignite;
+
+import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.tx.IgniteTransactions;
+
 /**
- * Contains Ignite node API and classes for node lifecycle management.
+ * Ignite node interface. Main entry-point for all Ignite APIs.
  */
-package org.apache.ignite.app;
+public interface Ignite extends AutoCloseable {
+    /**
+     * Returns ignite node name.
+     *
+     * @return Ignite node name.
+     */
+    String name();
+
+    /**
+     * Gets an object for manipulate Ignite tables.
+     *
+     * @return Ignite tables.
+     */
+    IgniteTables tables();
+
+    /**
+     * Returns a transaction facade.
+     *
+     * @return Ignite transactions.
+     */
+    IgniteTransactions transactions();
+}

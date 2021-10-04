@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.app;
+package org.apache.ignite;
 
 import java.io.InputStream;
 import java.nio.file.Path;
+import org.apache.ignite.Ignite;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.runner.app;
 
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.app.Ignite;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaMismatchException;

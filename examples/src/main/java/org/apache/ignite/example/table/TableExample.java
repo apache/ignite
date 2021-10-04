@@ -19,8 +19,8 @@ package org.apache.ignite.example.table;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.ignite.app.Ignite;
-import org.apache.ignite.app.IgnitionManager;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.app;
+package org.apache.ignite;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

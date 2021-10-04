@@ -20,7 +20,7 @@ package org.apache.ignite.internal.runner.app;
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Supplier;
-import org.apache.ignite.app.Ignite;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnDefinition;
