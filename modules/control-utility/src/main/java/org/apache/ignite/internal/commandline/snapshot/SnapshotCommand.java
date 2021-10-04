@@ -127,6 +127,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         usage(log, "Create cluster snapshot:", SNAPSHOT, commonParams, CREATE.toString(), "snapshot_name");
         usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
         usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
+        usage(log, "Status snapshot:", SNAPSHOT, STATUS.toString());
 
         Map<String, String> startParams = new LinkedHashMap<>(commonParams);
 

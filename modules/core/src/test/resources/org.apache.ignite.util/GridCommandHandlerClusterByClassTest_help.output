@@ -157,6 +157,9 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Status snapshot:
+    control.(sh|bat) --snapshot status
+
   Restore snapshot:
     control.(sh|bat) --snapshot restore snapshot_name --start [group1,...groupN]
 
@@ -175,9 +178,6 @@ This utility can do the following commands:
 
     Parameters:
       snapshot_name  - Snapshot name.
-
-  Status snapshot:
-    control.(sh|bat) --snapshot status
 
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
