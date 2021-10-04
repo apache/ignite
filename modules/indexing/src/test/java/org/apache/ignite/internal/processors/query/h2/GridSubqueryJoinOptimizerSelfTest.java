@@ -586,6 +586,32 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Case with a double aliases in the query and subquery.
+     */
+    @Test
+    public void testOptimizationAlias3() {
+        String outerSqlTemplate = "SELECT d1, d1 as p1, d2 as p2, d3::VARCHAR as p3, d2::VARCHAR as p4 FROM (%s) u;";
+        String subSql = "SELECT id as d1, id + 1 as d2, 2 + 2 as d3 FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
+     * Case with a sum of a set of variables with aliases and different types (pure column, constant, sum).
+     */
+    @Test
+    public void testOptimizationAlias4() {
+        String outerSqlTemplate = "SELECT (d1 + d2 + d3 + id) as p FROM (%s) u;";
+        String subSql = "SELECT id, id as d1, id + 1 as d2, 2 + 2 as d3 FROM dep";
+
+        String resSql = String.format(outerSqlTemplate, subSql);
+
+        check(resSql, 1);
+    }
+
+    /**
      * Case with constants in subquery without aliases.
      */
     @Test
