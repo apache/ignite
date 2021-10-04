@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the default application domain.
         /// </summary>
-        public static _AppDomain GetDefaultAppDomain()
+        public static object GetDefaultAppDomain()
         {
             if (Os.IsMono)
             {
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                 Debug.Assert(prop != null);
 
-                return (_AppDomain)prop.GetValue(null, null);
+                return prop.GetValue(null, null);
             }
 
             object objHost;
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         [Guid("05F696DC-2B29-3663-AD8B-C4389CF2A713")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         [ComVisible(true)]
-        internal interface _AppDomain
+        private interface _AppDomain
         {
             // No-op.
         }
