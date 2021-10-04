@@ -23,9 +23,13 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -800,17 +804,35 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     private void check(String sql, int expSelectClauses) {
         optimizationEnabled(false);
 
-        List<List<?>> exp = cache.query(new SqlFieldsQuery(sql)).getAll();
+        FieldsQueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(sql));
+
+        List<GridQueryFieldMetadata> expMetaList = ((QueryCursorEx<List<?>>)qry).fieldsMeta();
+
+        List<List<?>> exp = qry.getAll();
 
         exp.sort(ROW_COMPARATOR);
 
         optimizationEnabled(true);
 
-        List<List<?>> act = cache.query(new SqlFieldsQuery(sql).setEnforceJoinOrder(true)).getAll();
+        FieldsQueryCursor<List<?>> optQry = cache.query(new SqlFieldsQuery(sql).setEnforceJoinOrder(true));
+
+        List<GridQueryFieldMetadata> actMetaList = ((QueryCursorEx<List<?>>)optQry).fieldsMeta();
+
+        List<List<?>> act = optQry.getAll();
 
         act.sort(ROW_COMPARATOR);
 
         Assert.assertEquals("Result set mismatch", exp, act);
+
+        Assert.assertEquals("Result set column size mismatch", expMetaList.size(), actMetaList.size());
+
+        for (int i = 0; i < expMetaList.size(); i++) {
+            GridQueryFieldMetadata expMeta = expMetaList.get(i);
+            GridQueryFieldMetadata actMeta = actMetaList.get(i);
+
+            Assert.assertEquals("Field name mistmatch", expMeta.fieldName(), actMeta.fieldName());
+            Assert.assertEquals("Field type mistmatch", expMeta.fieldTypeName(), actMeta.fieldTypeName());
+        }
 
         String plan = cache.query(new SqlFieldsQuery("explain " + sql)).getAll().get(0).get(0).toString();
 
