@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
@@ -133,15 +132,15 @@ namespace Apache.Ignite.Core.Tests.Services
 
                     if (dynamic)
                     {
-                        var proxy0 = svcs.GetDynamicServiceProxy(SvcName, sticky, new Dictionary<string, object> {{"id", 123}});
-                        var proxy1 = svcs.GetDynamicServiceProxy(SvcName, sticky, new Dictionary<string, object> {{"id", 12345}});
+                        var proxy0 = svcs.GetDynamicServiceProxy(SvcName, sticky, new ServiceProxyContextBuilder("id", 123).Build());
+                        var proxy1 = svcs.GetDynamicServiceProxy(SvcName, sticky, new ServiceProxyContextBuilder("id", 12345).Build());
 
                         Assert.AreEqual(123, proxy0.Method("id"), "Node=" + grid.Name);
                         Assert.AreEqual(12345, proxy1.Method("id"), "Node=" + grid.Name);
                     }
                     else {
-                        var proxy0 = svcs.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 123}});
-                        var proxy1 = svcs.GetServiceProxy<IMyService>(SvcName, sticky, new Dictionary<string, object> {{"id", 12345}});
+                        var proxy0 = svcs.GetServiceProxy<IMyService>(SvcName, sticky, new ServiceProxyContextBuilder("id", 123).Build());
+                        var proxy1 = svcs.GetServiceProxy<IMyService>(SvcName, sticky, new ServiceProxyContextBuilder("id", 12345).Build());
 
                         Assert.AreEqual(123, proxy0.Method("id"), "Node=" + grid.Name);
                         Assert.AreEqual(12345, proxy1.Method("id"), "Node=" + grid.Name);
@@ -164,14 +163,14 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             public object Method(string arg)
             {
-                return context.Attribute(arg);
+                return ServiceProxyContext.Current().Attribute(arg);
             }
 
-            private IServiceContext context;
+            // private IServiceContext context;
 
             public void Init(IServiceContext context)
             {
-                this.context = context;
+                //this.context = context;
             }
 
             public void Execute(IServiceContext context)

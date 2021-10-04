@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="platformType">The platform.</param>
         /// <param name="opCtx">Service operation context.</param>
         public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
-            object[] arguments, PlatformType platformType, Dictionary<string, object> opCtx)
+            object[] arguments, PlatformType platformType, Hashtable opCtx)
         {
             Debug.Assert(writer != null);
 

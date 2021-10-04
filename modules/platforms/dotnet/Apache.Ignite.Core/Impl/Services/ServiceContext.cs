@@ -15,47 +15,23 @@
  * limitations under the License.
  */
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
-    using System.Collections;
     using System.Diagnostics;
-    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Service context.
     /// </summary>
-    internal class ServiceContext : IServiceContext, IDisposable
+    internal class ServiceContext : IServiceContext
     {
-        private readonly ThreadLocal<Hashtable> _invCtx = new ThreadLocal<Hashtable>();
-
-        public ServiceContext(IBinaryRawReader reader, IService svc)
-        {
-            Update(reader);
-
-            Service = svc;
-        }
-
-        public void Update(IBinaryRawReader reader)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceContext"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        public ServiceContext(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -80,36 +56,5 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** <inheritdoc /> */
         public object AffinityKey { get; private set; }
-        
-        /** <inheritdoc /> */
-        public object Attribute(string name)
-        {
-            var currCtx = _invCtx.Value;
-
-            return currCtx == null ? null : currCtx[name];
-        }
-        
-        /// <summary>
-        /// Gets service instance.
-        /// </summary>
-        /// <value>
-        /// Service instance.
-        /// </value>
-        public IService Service { get; private set; }
-
-        /// <summary>
-        /// Sets service operation context.
-        /// </summary>
-        /// <param name="opCtx">Service operation context.</param>
-        public void OperationContext(Hashtable opCtx)
-        {
-            _invCtx.Value = opCtx;
-        }
-
-        /** <inheritdoc /> */
-        public void Dispose()
-        {
-            _invCtx.Dispose();
-        }
     }
 }

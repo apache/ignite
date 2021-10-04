@@ -280,9 +280,9 @@ namespace Apache.Ignite.Core.Services
         /// <param name="name">Service name.</param>
         /// <param name="sticky">Whether or not Ignite should always contact the same remote
         /// service or try to load-balance between services.</param>
-        /// <param name="opCtx">Service operation context.</param>
+        /// <param name="proxyCtx">Service proxy context.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
-        T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> opCtx) where T : class;
+        T GetServiceProxy<T>(string name, bool sticky, ServiceProxyContext proxyCtx) where T : class;
 
         /// <summary>
         /// Gets a remote handle on the service as a dynamic object. If service is available locally,
@@ -321,9 +321,9 @@ namespace Apache.Ignite.Core.Services
         /// <param name="name">Service name.</param>
         /// <param name="sticky">Whether or not Ignite should always contact the same remote
         /// service or try to load-balance between services.</param>
-        /// <param name="opCtx">Service operation context.</param>
+        /// <param name="proxyCtx">Service proxy context.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
-        dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> opCtx);
+        dynamic GetDynamicServiceProxy(string name, bool sticky, ServiceProxyContext proxyCtx);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.

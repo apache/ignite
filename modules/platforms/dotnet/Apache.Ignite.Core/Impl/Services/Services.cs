@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -352,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<ServiceContext>(r.ReadLong()).Service);
+                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
 
                     return res;
                 });
@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return GetServiceProxy<T>(name, false);
         }
-        
+
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
@@ -372,20 +372,19 @@ namespace Apache.Ignite.Core.Impl.Services
 
 
         /** <inheritDoc /> */
-        public T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> opCtx) where T : class
+        public T GetServiceProxy<T>(string name, bool sticky, ServiceProxyContext proxyCtx) where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
 
-            if (opCtx != null && !opCtx.Any())
-                opCtx = null;
+            Hashtable opCtx = proxyCtx != null ? ((ServiceProxyContextImpl) proxyCtx).Values() : null;
 
             T locInst;
-            
+
             // In local scenario try to return service instance itself instead of a proxy
             // Get as object because proxy interface may be different from real interface
-            if ((opCtx == null || !opCtx.Any()) && (locInst = (GetService<object>(name) as T)) != null)
+            if (opCtx == null && (locInst = (GetService<object>(name) as T)) != null)
                 return locInst;
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
@@ -413,12 +412,11 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> opCtx)
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, ServiceProxyContext proxyCtx)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            if (opCtx != null && !opCtx.Any())
-                opCtx = null;
+            Hashtable opCtx = proxyCtx != null ? ((ServiceProxyContextImpl) proxyCtx).Values() : null;
 
             // In local scenario try to return service instance itself instead of a proxy
             if (opCtx == null)
@@ -454,7 +452,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType, Dictionary<string, object> opCtx)
+            MethodBase method, object[] args, PlatformType platformType, Hashtable opCtx)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 

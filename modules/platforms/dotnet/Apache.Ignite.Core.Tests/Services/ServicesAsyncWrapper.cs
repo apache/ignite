@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
@@ -194,9 +195,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /** <inheritDoc /> */
-        public T GetServiceProxy<T>(string name, bool sticky, Dictionary<string, object> opCtx) where T : class
+        public T GetServiceProxy<T>(string name, bool sticky, ServiceProxyContext proxyCtx) where T : class
         {
-            return _services.GetServiceProxy<T>(name, sticky, opCtx);
+            return _services.GetServiceProxy<T>(name, sticky, proxyCtx);
         }
 
         /** <inheritDoc /> */
@@ -212,9 +213,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /** <inheritDoc /> */
-        public dynamic GetDynamicServiceProxy(string name, bool sticky, Dictionary<string, object> opCtx)
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, ServiceProxyContext proxyCtx)
         {
-            return _services.GetDynamicServiceProxy(name, sticky, opCtx);
+            return _services.GetDynamicServiceProxy(name, sticky, proxyCtx);
         }
 
         /** <inheritDoc /> */
