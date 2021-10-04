@@ -9,6 +9,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <IsPackable>false</IsPackable>
 
     <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>

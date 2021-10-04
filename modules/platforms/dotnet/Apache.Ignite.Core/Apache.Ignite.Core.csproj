@@ -8,6 +8,7 @@
     <AssemblyOriginatorKeyFile>Apache.Ignite.Core.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
+    <IsPackable>true</IsPackable>
 
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
