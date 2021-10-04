@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
+ * <p>
  * <h2>Overview</h2>
  *
  * Ignite provides this built-in implementation of {@link MetricExporterSpi} it exports metrics as JMX beans. This
@@ -46,7 +47,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  * <h2>Java Example</h2>
  * See the example below of how the internal metrics can be obtained through your application by
  * constructing MBean names.
- *
+ * </p>
  * <p>
  * <pre>
  * Ignite ignite = Ignition.start(new IgniteConfiguration()
@@ -88,6 +89,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  *  System.out.println("The list of available data region metrics: " + listOfMetrics);
  *  System.out.println("The 'default' data region MaxSize: " + dataRegionMBean.getAttribute("MaxSize"));
  * </pre>
+ * </p>
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry

@@ -47,14 +47,17 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
+ * <p>
  * Local deployment SPI that implements only within VM deployment on local
  * node via {@link #register(ClassLoader, Class)} method. This SPI requires
  * no configuration.
+ * </p>
  * <p>
  * Note that if peer class loading is enabled (which is default behavior,
  * see {@link org.apache.ignite.configuration.IgniteConfiguration#isPeerClassLoadingEnabled()}), then it is
  * enough to deploy a task only on one node and all other nodes will load
  * required classes from the node that initiated task execution.
+ * </p>
  * <p>
  * <h1 class="header">Configuration</h1>
  * This SPI requires no configuration.
@@ -62,6 +65,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
  * configuration parameters.
+ * </p>
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)

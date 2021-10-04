@@ -43,6 +43,7 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.FailoverSpi;
 
 /**
+ * <p>
  * Failover SPI that always reroutes a failed job to another node.
  * Note, that at first an attempt will be made to reroute the failed job
  * to a node that was not part of initial split for a better chance of
@@ -50,6 +51,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * reroute the failed job to the nodes in the initial split minus the node
  * the job is failed on. If none of the above attempts succeeded, then the
  * job will not be failed over and {@code null} will be returned.
+ * </p>
  * <p>
  * <h1 class="header">Configuration</h1>
  * This SPI is default failover SPI and does not have to be explicitly
@@ -88,7 +90,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- * <p>
+ * </p>
  * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>

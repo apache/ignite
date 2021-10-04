@@ -37,15 +37,18 @@ import org.jsr166.ConcurrentLinkedDeque8;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
+ * <p>
  * In-memory {@link org.apache.ignite.spi.eventstorage.EventStorageSpi} implementation. All events are
  * kept in the FIFO queue. If no configuration is provided a default expiration
  * {@link #DFLT_EXPIRE_AGE_MS} and default count {@link #DFLT_EXPIRE_COUNT} will
  * be used.
+ * </p>
  * <p>
  * It's recommended not to set huge size and unlimited TTL because this might
  * lead to consuming a lot of memory and result in {@link OutOfMemoryError}.
  * Both event expiration time and maximum queue size could be changed at
  * runtime.
+ * </p>
  * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
@@ -88,10 +91,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  *         ...
  * &lt;/bean&gt;
  * </pre>
+ * </p>
  * <p>
  * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * </p>
  * @see org.apache.ignite.spi.eventstorage.EventStorageSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)

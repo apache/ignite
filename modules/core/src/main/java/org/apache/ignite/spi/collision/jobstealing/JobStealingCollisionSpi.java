@@ -63,25 +63,30 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
+ * <p>
  * Collision SPI that supports job stealing from over-utilized nodes to
  * under-utilized nodes. This SPI is especially useful if you have
  * some jobs within task complete fast, and others sitting in the waiting
  * queue on slower nodes. In such case, the waiting jobs will be <b>stolen</b>
  * from slower node and moved to the fast under-utilized node.
+ * </p>
  * <p>
  * The design and ideas for this SPI are significantly influenced by
  * <a href="http://gee.cs.oswego.edu/dl/papers/fj.pdf">Java Fork/Join Framework</a>
  * authored by Doug Lea and planned for Java 7. {@code GridJobStealingCollisionSpi} took
  * similar concepts and applied them to the grid (as opposed to within VM support planned
  * in Java 7).
+ * </p>
  * <p>
  * Quite often grids are deployed across many computers some of which will
  * always be more powerful than others. This SPI helps you avoid jobs being
  * stuck at a slower node, as they will be stolen by a faster node. In the following picture
  * when Node<sub>3</sub> becomes free, it steals Job<sub>13</sub> and Job<sub>23</sub>
  * from Node<sub>1</sub> and Node<sub>2</sub> respectively.
+ * </p>
  * <p>
  * <center><img src="http://http://ignite.apache.org/images/job_stealing_white.gif"></center>
+ * </p>
  * <p>
  * <i>
  * Note that this SPI must always be used in conjunction with
@@ -96,6 +101,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * checks this counter and will not allow a job to be stolen if this counter
  * exceeds a certain threshold {@link JobStealingCollisionSpi#setMaximumStealingAttempts(int)}.
  * </i>
+ * </p>
  * <p>
  * <h1 class="header">Configuration</h1>
  * In order to use this SPI, you should configure your grid instance
@@ -178,10 +184,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
+ * </p>
  * <p>
  * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * </p>
  */
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @IgniteSpiMultipleInstancesSupport(true)

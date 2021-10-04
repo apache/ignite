@@ -21,8 +21,9 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Read only metric registry.
  * <p>
+ * Read only metric registry.
+ * </p>
  *
  * <h2>Java example</h2>
  * See the example below of how the internal metrics can be obtained through your application

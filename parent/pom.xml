@@ -43,7 +43,7 @@
         <doxygen.exec>doxygen</doxygen.exec>
         <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
-        <javadoc.opts>-Xdoclint:none</javadoc.opts>
+        <javadoc.opts>-Xdoclint:accessibility -Xdoclint:-missing -Xdoclint:reference -Xdoclint:syntax -Xdoclint:html</javadoc.opts>
         <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
         <failIfNoTests>false</failIfNoTests>
 

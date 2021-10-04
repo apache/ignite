@@ -20,18 +20,22 @@ package org.apache.ignite.spi.loadbalancing.adaptive;
 import org.apache.ignite.cluster.ClusterNode;
 
 /**
+ * <p>
  * Pluggable implementation of node load probing. Implementations
  * of this can be configured to be used with {@link AdaptiveLoadBalancingSpi}
  * by setting {@link AdaptiveLoadBalancingSpi#setLoadProbe(AdaptiveLoadProbe)}
  * configuration parameter.
+ * </p>
  * <p>
  * Note that if {@link #getLoad(org.apache.ignite.cluster.ClusterNode, int)} returns a value of {@code 0},
  * then implementation will assume that load value is simply not available and
  * will try to calculate an average of load values for other nodes. If such
  * average cannot be obtained (all node load values are {@code 0}), then a value
  * of {@code 1} will be used.
+ * </p>
  * <p>
  * By default, {@link AdaptiveCpuLoadProbe} probing implementation is used.
+ * </p>
  * <p>
  * <h1 class="header">Example</h1>
  * Here is an example of how probing can be implemented to use
@@ -74,6 +78,7 @@ import org.apache.ignite.cluster.ClusterNode;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
+ * </p>
  */
 public interface AdaptiveLoadProbe {
     /**

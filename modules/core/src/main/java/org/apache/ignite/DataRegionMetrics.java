@@ -26,9 +26,10 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
+ * <p>
  * This interface provides page memory related metrics of a specific Apache Ignite node. The overall page memory
  * architecture is covered in {@link DataStorageConfiguration}.
- * <p>
+ * </p>
  * Since there are can be several memory regions configured with {@link DataRegionConfiguration} on an individual
  * Apache Ignite node, the metrics for every region will be collected and obtained separately.
  * <p>
@@ -49,6 +50,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * why the metrics are turned off by default. To enable the collection you can use both
  * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property or
  * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ * </p>
  *
  * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  *
