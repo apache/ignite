@@ -36,8 +36,10 @@ namespace Apache.Ignite.Core.Tests
         [STAThread]
         static void Main(string[] args)
         {
+#if (!NETCOREAPP)
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
+#endif
 
             if (args.Length == 1 && args[0] == "-basicTests")
             {

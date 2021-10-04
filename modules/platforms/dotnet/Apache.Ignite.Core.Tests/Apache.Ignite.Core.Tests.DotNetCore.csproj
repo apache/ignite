@@ -11,7 +11,7 @@
 
     <OutputType>Exe</OutputType>
     <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
-
+    <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -32,8 +32,8 @@
     <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
-    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
-    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj" />
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" />
   </ItemGroup>
 
