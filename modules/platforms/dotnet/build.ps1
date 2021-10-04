@@ -252,6 +252,7 @@ if (!$skipNuGet) {
     # Detect version
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\netstandard2.0\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
+    # TODO: Build Schema package from nuspec.
     Exec "dotnet pack Apache.Ignite.sln -c Release -o $nupkgDir /p:Version=$ver"
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."

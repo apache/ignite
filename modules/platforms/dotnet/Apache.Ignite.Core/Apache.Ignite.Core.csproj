@@ -11,6 +11,7 @@
 
     <IsPackable>true</IsPackable>
     <Description>Apache Ignite is a distributed database for high-performance computing with in-memory speed.</Description>
+    <PackageTags>Apache;Ignite;In-Memory;Distributed;Computing;SQL;NoSQL;Database;Cache;Grid;Map;Reduce;LINQ;linqpad-samples</PackageTags>
 
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
@@ -38,4 +39,12 @@
   <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\bin\libs\*.jar" Pack="true" PackagePath="build\output\libs"/>
+    <None Include="Apache.Ignite.targets" Pack="true" PackagePath="build"/>
+    <None Include="..\..\..\..\config\java.util.logging.properties" Pack="true" PackagePath="build\output\config"/>
+    <None Include="NuGet\LINQPad\*.*" Pack="true" PackagePath="linqpad-samples"/>
+  </ItemGroup>
+
 </Project>
