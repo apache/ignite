@@ -250,7 +250,7 @@ if (!$skipNuGet) {
     Make-Dir($nupkgDir)
 
     # Detect version
-    $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
+    $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\netstandard2.0\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
     Exec "dotnet pack Apache.Ignite.sln -c Release -o $nupkgDir /p:Version=$ver"
 
