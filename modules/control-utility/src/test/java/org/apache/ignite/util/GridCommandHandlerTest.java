@@ -159,6 +159,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -3046,15 +3047,28 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
 
+        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi0.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == END_SNAPSHOT.ordinal());
+
+        spi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == END_SNAPSHOT.ordinal());
+
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+        assertTrue(waitForCondition(() -> {
+            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertEquals(size, countMatches(h.getLastOperationResult().toString(),
-            "Creating the snapshot with name: " + snpName));
+            return size == countMatches(h.getLastOperationResult().toString(), "Creating the snapshot with name: " + snpName);
+        }, 10_000));
 
         assertTrue(h.getLastOperationResult().toString()
                 .contains(ig.context().discovery().localNode().consistentId().toString()));
+
+        spi0.stopBlock();
+        spi1.stopBlock();
 
         assertTrue("Waiting for snapshot operation end failed.",
                 waitForCondition(() ->
@@ -3069,12 +3083,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ig.cache(DEFAULT_CACHE_NAME).destroy();
 
-        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
-
         spi0.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
-
-        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
 
         spi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
