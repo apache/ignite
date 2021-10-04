@@ -22,20 +22,10 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Core")]
 [assembly: AssemblyDescription("Apache Ignite.NET Core")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright 2021")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]
 
 [assembly: Guid("97db45a8-f922-456a-a819-7b3c6e5e03ba")]
-
-[assembly: AssemblyVersion("2.12.0.56898")]
-[assembly: AssemblyFileVersion("2.12.0.56898")]
-[assembly: AssemblyInformationalVersion("2.12.0")]
 
 [assembly: CLSCompliant(true)]
 

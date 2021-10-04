@@ -30,7 +30,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, LATEST, DEV_BRANCH
 
 
-# pylint: disable=W0223
 class SnapshotTest(IgniteTest):
     """
     Test Snapshot.

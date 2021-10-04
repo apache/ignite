@@ -109,6 +109,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <Compile Remove="Deployment\**" />
     <Compile Remove="Compute\Forked\**" />
   </ItemGroup>

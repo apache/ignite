@@ -15,6 +15,7 @@
     <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
   </ItemGroup>
 </Project>
