@@ -126,16 +126,6 @@ public class AbstractBasicIntegrationTest {
             LOG.info("End tearDown()");
     }
 
-//    /** */
-//    protected void cleanQueryPlanCache() {
-//        for (Ignite ign : G.allGrids()) {
-//            CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
-//                ((IgniteEx)ign).context(), QueryEngine.class);
-//
-//            qryProc.queryPlanCache().clear();
-//        }
-//    }
-
     /** */
     protected QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry) {

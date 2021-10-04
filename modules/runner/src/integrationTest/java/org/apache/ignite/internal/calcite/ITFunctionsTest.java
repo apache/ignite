@@ -23,7 +23,13 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.function.LongFunction;
 
+import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.TableDefinition;
+import org.apache.ignite.table.RecordView;
+import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -121,61 +127,72 @@ public class ITFunctionsTest extends AbstractBasicIntegrationTest {
         assertEquals("Increment can't be 0", ex.getMessage());
     }
 
-//    /**
-//     * Important! Don`t change query call sequence in this test. This also tests correctness of
-//     * {@link org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl#SCALAR_CACHE} usage.
-//     */
-//    @Test
-//    public void testRangeWithCache() throws Exception {
-//        IgniteCache<Integer, Integer> cache = grid(0).getOrCreateCache(
-//            new CacheConfiguration<Integer, Integer>("test")
-//                .setBackups(1)
-//                .setIndexedTypes(Integer.class, Integer.class)
-//        );
-//
-//        for (int i = 0; i < 100; i++)
-//            cache.put(i, i);
-//
-//        awaitPartitionMapExchange();
-//
-//        // Correlated INNER join.
-//        assertQuery("SELECT t._val FROM \"test\".Integer t WHERE t._val < 5 AND " +
-//            "t._key in (SELECT x FROM table(system_range(t._val, t._val))) ")
-//            .returns(0)
-//            .returns(1)
-//            .returns(2)
-//            .returns(3)
-//            .returns(4)
-//            .check();
-//
-//        // Correlated LEFT joins.
-//        assertQuery("SELECT t._val FROM \"test\".Integer t WHERE t._val < 5 AND " +
-//            "EXISTS (SELECT x FROM table(system_range(t._val, t._val)) WHERE mod(x, 2) = 0) ")
-//            .returns(0)
-//            .returns(2)
-//            .returns(4)
-//            .check();
-//
-//        assertQuery("SELECT t._val FROM \"test\".Integer t WHERE t._val < 5 AND " +
-//            "NOT EXISTS (SELECT x FROM table(system_range(t._val, t._val)) WHERE mod(x, 2) = 0) ")
-//            .returns(1)
-//            .returns(3)
-//            .check();
-//
-//        assertEquals(0, qryEngine.query(null, "PUBLIC",
-//            "SELECT t._val FROM \"test\".Integer t WHERE " +
-//                "EXISTS (SELECT x FROM table(system_range(t._val, null))) ").get(0).getAll().size());
-//
-//        // Non-correlated join.
-//        assertQuery("SELECT t._val FROM \"test\".Integer t JOIN table(system_range(1, 50)) as r ON t._key = r.x " +
-//            "WHERE mod(r.x, 10) = 0")
-//            .returns(10)
-//            .returns(20)
-//            .returns(30)
-//            .returns(40)
-//            .returns(50)
-//            .check();
-//    }
+    /** */
+    @Test
+    public void testRangeWithCache() {
+        TableDefinition tblDef = SchemaBuilders.tableBuilder("PUBLIC", "TEST")
+            .columns(
+                SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
+                SchemaBuilders.column("VAL", ColumnType.INT32).asNonNull().build()
+            )
+            .withPrimaryKey("ID")
+            .build();
+
+        String tblName = tblDef.canonicalName();
+
+        RecordView<Tuple> tbl = CLUSTER_NODES.get(0).tables().createTable(tblDef.canonicalName(), tblCh ->
+            SchemaConfigurationConverter.convert(tblDef, tblCh)
+                .changeReplicas(1)
+                .changePartitions(10)
+        ).recordView();
+
+        try {
+
+            for (int i = 0; i < 100; i++)
+                tbl.insert(Tuple.create().set("ID", i).set("VAL", i));
+
+            // Correlated INNER join.
+            assertQuery("SELECT t.val FROM test t WHERE t.val < 5 AND " +
+                "t.id in (SELECT x FROM table(system_range(t.val, t.val))) ")
+                .returns(0)
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .returns(4)
+                .check();
+
+            // Correlated LEFT joins.
+            assertQuery("SELECT t.val FROM test t WHERE t.val < 5 AND " +
+                "EXISTS (SELECT x FROM table(system_range(t.val, t.val)) WHERE mod(x, 2) = 0) ")
+                .returns(0)
+                .returns(2)
+                .returns(4)
+                .check();
+
+            assertQuery("SELECT t.val FROM test t WHERE t.val < 5 AND " +
+                "NOT EXISTS (SELECT x FROM table(system_range(t.val, t.val)) WHERE mod(x, 2) = 0) ")
+                .returns(1)
+                .returns(3)
+                .check();
+
+            assertQuery("SELECT t.val FROM test t WHERE " +
+                "EXISTS (SELECT x FROM table(system_range(t.val, null))) ")
+                .check();
+
+            // Non-correlated join.
+            assertQuery("SELECT t.val FROM test t JOIN table(system_range(1, 50)) as r ON t.id = r.x " +
+                "WHERE mod(r.x, 10) = 0")
+                .returns(10)
+                .returns(20)
+                .returns(30)
+                .returns(40)
+                .returns(50)
+                .check();
+        }
+        finally {
+            CLUSTER_NODES.get(0).tables().dropTable(tblName);
+        }
+    }
 
     /** */
     @Test

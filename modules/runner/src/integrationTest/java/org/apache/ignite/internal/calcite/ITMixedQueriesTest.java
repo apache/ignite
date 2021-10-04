@@ -267,32 +267,6 @@ public class ITMixedQueriesTest extends AbstractBasicIntegrationTest {
         assertQuery(selectAllQry).columnNames("ID", "VAL").check();
     }
 
-//    /**
-//     * Verifies infix cast operator.
-//     */
-//    @Test
-//    public void testInfixTypeCast() {
-//        sql("drop table if exists test_tbl");
-//        sql("create table test_tbl(id int primary key, val varchar)");
-//
-//        // Await for PME, see details here: https://issues.apache.org/jira/browse/IGNITE-14974
-//        awaitPartitionMapExchange();
-//
-//        QueryEngine engineSrv = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-//
-//        FieldsQueryCursor<List<?>> cur = engineSrv.query(null, "PUBLIC",
-//            "select id, id::tinyint as tid, id::smallint as sid, id::varchar as vid from test_tbl").get(0);
-//
-//        assertThat(cur, CoreMatchers.instanceOf(QueryCursorEx.class));
-//
-//        QueryCursorEx<?> qCur = (QueryCursorEx<?>)cur;
-//
-//        assertThat(qCur.fieldsMeta().get(0).fieldTypeName(), equalTo(Integer.class.getName()));
-//        assertThat(qCur.fieldsMeta().get(1).fieldTypeName(), equalTo(Byte.class.getName()));
-//        assertThat(qCur.fieldsMeta().get(2).fieldTypeName(), equalTo(Short.class.getName()));
-//        assertThat(qCur.fieldsMeta().get(3).fieldTypeName(), equalTo(String.class.getName()));
-//    }
-
     /** Quantified predicates test. */
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-13159")
     @Test

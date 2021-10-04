@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.calcite.util;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,8 +28,10 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.CollectionUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.hamcrest.CoreMatchers;
@@ -39,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.calcite.util.Commons.getAllFromCursor;
 import static org.apache.ignite.internal.util.ArrayUtils.OBJECT_EMPTY_ARRAY;
 import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -223,6 +227,9 @@ public abstract class QueryChecker {
     private List<String> expectedColumnNames;
 
     /** */
+    private List<Type> expectedColumnTypes;
+
+    /** */
     private boolean ordered;
 
     /** */
@@ -273,6 +280,13 @@ public abstract class QueryChecker {
     }
 
     /** */
+    public QueryChecker columnTypes(Type... columns) {
+        expectedColumnTypes = Arrays.asList(columns);
+
+        return this;
+    }
+
+    /** */
     public QueryChecker matches(Matcher<String>... planMatcher) {
         Collections.addAll(planMatchers, planMatcher);
 
@@ -310,14 +324,24 @@ public abstract class QueryChecker {
         List<SqlCursor<List<?>>> cursors =
             qryProc.query( "PUBLIC", qry, params);
 
-        Cursor<List<?>> cur = cursors.get(0);
+        SqlCursor<List<?>> cur = cursors.get(0);
 
-//        if (expectedColumnNames != null) {
-//            List<String> colNames = IntStream.range(0, cur.getColumnsCount())
-//                .mapToObj(cur::getFieldName).collect(Collectors.toList());
-//
-//            assertThat("Column names don't match", colNames, equalTo(expectedColumnNames));
-//        }
+        if (expectedColumnNames != null) {
+            List<String> colNames = cur.getColumnMetadata().rowType().getFieldNames();
+
+            assertThat("Column names don't match", colNames, equalTo(expectedColumnNames));
+        }
+
+        if (expectedColumnTypes != null) {
+            IgniteTypeFactory typeFactory = new IgniteTypeFactory();
+
+            List<Type> colNames = cur.getColumnMetadata().rowType().getFieldList().stream()
+                .map(RelDataTypeField::getType)
+                .map(typeFactory::getResultClass)
+                .collect(Collectors.toList());
+
+            assertThat("Column types don't match", colNames, equalTo(expectedColumnTypes));
+        }
 
         List<List<?>> res = getAllFromCursor(cur);
 

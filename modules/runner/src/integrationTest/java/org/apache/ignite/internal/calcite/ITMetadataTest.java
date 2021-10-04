@@ -69,4 +69,13 @@ public class ITMetadataTest extends AbstractBasicIntegrationTest {
 
         assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
     }
+
+    /** */
+    @Test
+    public void infixTypeCast() {
+        assertQuery("select id, id::tinyint as tid, id::smallint as sid, id::varchar as vid from person")
+            .columnNames("ID", "TID", "SID", "VID")
+            .columnTypes(Integer.class, Byte.class, Short.class, String.class)
+            .check();
+    }
 }
