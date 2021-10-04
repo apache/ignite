@@ -10,6 +10,7 @@
     <DelaySign>false</DelaySign>
 
     <IsPackable>true</IsPackable>
+    <PackageId>Apache.Ignite</PackageId>
     <Description>Apache Ignite is a distributed database for high-performance computing with in-memory speed.</Description>
     <PackageTags>Apache;Ignite;In-Memory;Distributed;Computing;SQL;NoSQL;Database;Cache;Grid;Map;Reduce;LINQ;linqpad-samples</PackageTags>
 
