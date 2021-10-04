@@ -160,7 +160,7 @@ public final class IgniteTestUtils {
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
-    private static boolean hasCause(
+    public static boolean hasCause(
         @NotNull Throwable t,
         @NotNull Class<?> cls,
         @Nullable String msg

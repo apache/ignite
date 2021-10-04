@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
@@ -175,6 +176,12 @@ public class MetaStorageManager implements IgniteComponent {
             List<ClusterNode> metaStorageMembers = clusterNetSvc.topologyService().allMembers().stream()
                 .filter(metaStorageNodesContainsLocPred)
                 .collect(Collectors.toList());
+
+            // TODO: This is temporary solution for providing human-readable error when you try to start single-node cluster
+            // without hosting metastorage, this will be rewritten in init phase https://issues.apache.org/jira/browse/IGNITE-14414
+            if (metaStorageMembers.isEmpty())
+                throw new IgniteException(
+                    "Cannot start meta storage manager because there is no node in the cluster that hosts meta storage.");
 
             storage.start();
 

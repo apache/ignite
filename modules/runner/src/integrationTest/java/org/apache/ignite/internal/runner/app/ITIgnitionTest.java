@@ -25,9 +25,11 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Ignition interface tests.
@@ -124,5 +128,79 @@ class ITIgnitionTest {
         startedNodes.add(IgnitionManager.start(testNodeName(testInfo, 47500), null, workDir));
 
         Assertions.assertNotNull(startedNodes.get(0));
+    }
+
+    /**
+     * Tests scenario when we try to start cluster with single node, but without any node, that hosts metastorage.
+     */
+    @Test
+    void testErrorWhenStartSingleNodeClusterWithoutMetastorage() throws Exception {
+        try {
+            startedNodes.add(IgnitionManager.start("other-name", "{\n" +
+                "    \"node\": {\n" +
+                "        \"metastorageNodes\": [\n" +
+                "            \"node-0\", \"node-1\", \"node-2\"\n" +
+                "        ]\n" +
+                "    },\n" +
+                "    \"network\": {\n" +
+                "        \"port\": 3344,\n" +
+                "        \"netClusterNodes\": [\n" +
+                "            \"localhost:3344\"\n" +
+                "        ]\n" +
+                "    }\n" +
+                "}", workDir.resolve("other-name")));
+        }
+        catch (Throwable th) {
+            assertTrue(IgniteTestUtils.hasCause(th,
+                IgniteException.class,
+                "Cannot start meta storage manager because there is no node in the cluster that hosts meta storage."
+            ));
+        }
+    }
+
+    /**
+     * Tests scenario when we try to start node that doesn't host metastorage in cluster with node, that hosts
+     * metastorage.
+     */
+    @Test
+    void testStartNodeClusterWithoutMetastorage() throws Exception {
+        Ignite ig1 = null;
+
+        Ignite ig2 = null;
+
+        try {
+            ig1 = IgnitionManager.start("node-0", "{\n" +
+                "    \"node\": {\n" +
+                "        \"metastorageNodes\": [\n" +
+                "            \"node-0\", \"node-1\", \"node-2\"\n" +
+                "        ]\n" +
+                "    },\n" +
+                "    \"network\": {\n" +
+                "        \"port\": 3344,\n" +
+                "        \"netClusterNodes\": [\n" +
+                "            \"localhost:3344\"\n" +
+                "        ]\n" +
+                "    }\n" +
+                "}", workDir.resolve("node-0"));
+
+            ig2 = IgnitionManager.start("other-name", "{\n" +
+                "    \"node\": {\n" +
+                "        \"metastorageNodes\": [\n" +
+                "            \"node-0\", \"node-1\", \"node-2\"\n" +
+                "        ]\n" +
+                "    },\n" +
+                "    \"network\": {\n" +
+                "        \"port\": 3344,\n" +
+                "        \"netClusterNodes\": [\n" +
+                "            \"localhost:3344\"\n" +
+                "        ]\n" +
+                "    }\n" +
+                "}", workDir.resolve("other-name"));
+
+            assertEquals(ig2.name(), "other-name");
+        }
+        finally {
+            IgniteUtils.closeAll(ig2, ig1);
+        }
     }
 }
