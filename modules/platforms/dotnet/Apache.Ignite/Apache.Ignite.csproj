@@ -9,7 +9,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
     <IsPackable>false</IsPackable>
-    <PackageId>Apache.Ignite.Runner</PackageId>
+    <PackageId>Apache.Ignite.Executable</PackageId>
 
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
