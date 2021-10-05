@@ -50,8 +50,8 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  * <p>
  * Refer to {@link org.apache.ignite.compute.ComputeTask} documentation for more information on how a task
  * can be split into multiple sub-jobs.
- * <p>
  * <h1 class="header">Java Example</h1>
+ * <p>
  * Here is a simple example how to grid-enable a Java method. The method {@code sayIt}
  * with {@code @Gridify} annotation will be executed on remote node.
  * <pre class="java">
@@ -97,8 +97,8 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  *    }
  * }
  * </pre>
- * <p>
  * <h1 class="header">Jboss AOP</h1>
+ * <p>
  * The following configuration needs to be applied to enable JBoss byte code
  * weaving. Note that Ignite is not shipped with JBoss and necessary
  * libraries will have to be downloaded separately (they come standard
@@ -123,8 +123,8 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  *      </ul>
  * </li>
  * </ul>
- * <p>
  * <h1 class="header">AspectJ AOP</h1>
+ * <p>
  * The following configuration needs to be applied to enable AspectJ byte code
  * weaving.
  * <ul>
@@ -137,8 +137,8 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  *      The file should contain Gridify aspects and needed weaver options.
  * </li>
  * </ul>
- * <p>
  * <h1 class="header">Spring AOP</h1>
+ * <p>
  * Spring AOP framework is based on dynamic proxy implementation and doesn't require
  * any specific runtime parameters for online weaving.
  * <p>

@@ -470,9 +470,9 @@ public interface CacheMetrics {
     public boolean isWriteBehindEnabled();
 
     /**
-     * Gets the maximum size of the write-behind buffer. When the count of unique keys
+     * <p>Gets the maximum size of the write-behind buffer. When the count of unique keys
      * in write buffer exceeds this value, the buffer is scheduled for write to the underlying store.
-     * <p/>
+     * </p>
      * If this value is {@code 0}, then flush is performed only on time-elapsing basis. However,
      * when this value is {@code 0}, the cache critical size is set to
      * {@link org.apache.ignite.configuration.CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}
@@ -489,9 +489,9 @@ public interface CacheMetrics {
     public int getWriteBehindFlushThreadCount();
 
     /**
-     * Gets the cache flush frequency. All pending operations on the underlying store will be performed
+     * <p>Gets the cache flush frequency. All pending operations on the underlying store will be performed
      * within time interval not less then this value.
-     * <p/>
+     * </p>
      * If this value is {@code 0}, then flush is performed only when buffer size exceeds flush size.
      *
      * @return Flush frequency in milliseconds.

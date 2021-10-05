@@ -32,8 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
  * <p>
  * Class that should be created by {@link IgniteReflectionFactory} (component class) have to be
  * public java POJO with public setters for field
- * for which property injection will be used (see {@link #setProperties(Map)}).
- * <p>
+ * for which property injection will be used (see {@link #setProperties(Map)}).</p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * The following configuration parameters are mandatory:
@@ -45,13 +44,12 @@ import org.apache.ignite.internal.util.typedef.F;
  * <h2 class="header">Optional</h2>
  * The following configuration parameters are optional:
  * <ul>
- * </li>
  * <li>Singleton mode (see {@link #setSingleton(boolean)})</li>
  * <li>Properties map (see {@link #setProperties(Map)}</li>
  * <li>With method (see {@link #setWithMethod(Object, String, Serializable)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * <pre class="java">
+ * <pre class="java">{@code
  * Factory<CacheStoreSessionListener> factory =
  *     new IgniteReflectionFactory<CacheStoreSessionListener>(MyCacheStoreSessionListener.class);
  *
@@ -63,7 +61,7 @@ import org.apache.ignite.internal.util.typedef.F;
  *
  * // Start grid.
  * Ignition.start(cfg);
- * </pre>
+ * }</pre>
  * <h2 class="header">Spring Example</h2>
  * TcpDiscoverySpi can be configured from Spring XML configuration file:
  * <pre class="xml">

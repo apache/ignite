@@ -42,8 +42,8 @@ import org.apache.ignite.IgniteCache;
  * {@link javax.cache.Cache#iterator()} loads entries from all the cluster nodes and to speed up the load additional
  * information, like entry's version, is ignored.
  *
- * <h2 class="header">Java Example</h2>
- * <pre class="java">
+ * <h1 class="header">Java Example</h1>
+ * <pre class="java">{@code
  * IgniteCache<Integer, String> cache = grid(0).cache(null);
  *
  * CacheEntry<String, Integer> entry1 = cache.invoke(100,
@@ -68,7 +68,7 @@ import org.apache.ignite.IgniteCache;
  * if (entry1.version().compareTo(entry2.version()) < 0) {
  *     // the entry has been updated
  * }
- * </pre>
+ * }</pre>
  */
 public interface CacheEntry<K, V> extends Cache.Entry<K, V> {
     /**

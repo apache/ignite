@@ -26,11 +26,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Grid task interface defines a task that can be executed on the grid. Grid task
+ * <p>Grid task interface defines a task that can be executed on the grid. Grid task
  * is responsible for splitting business logic into multiple grid jobs, receiving
  * results from individual grid jobs executing on remote nodes, and reducing
- * (aggregating) received jobs' results into final grid task result.
- * <p>
+ * (aggregating) received jobs' results into final grid task result.</p>
  * <h1 class="header">Grid Task Execution Sequence</h1>
  * <ol>
  * <li>
@@ -107,16 +106,16 @@ import org.jetbrains.annotations.Nullable;
  *      {@link ComputeTaskFuture#get()} method.
  * </li>
  * </ol>
- * <p>
  * <h1 class="header">Continuous Job Mapper</h1>
+ * <p>
  * For cases when jobs within split are too large to fit in memory at once or when
  * simply not all jobs in task are known during {@link #map(List, Object)} step,
  * use {@link ComputeTaskContinuousMapper} to continuously stream jobs from task even after {@code map(...)}
  * step is complete. Usually with continuous mapper the number of jobs within task
  * may grow too large - in this case it may make sense to use it in combination with
  * {@link ComputeTaskNoResultCache @ComputeTaskNoResultCache} annotation.
- * <p>
  * <h1 class="header">Task Result Caching</h1>
+ * <p>
  * Sometimes job results are too large or task simply has too many jobs to keep track
  * of which may hinder performance. In such cases it may make sense to disable task
  * result caching by attaching {@link ComputeTaskNoResultCache @ComputeTaskNoResultCache} annotation to task class, and
@@ -126,8 +125,8 @@ import org.jetbrains.annotations.Nullable;
  * {@link #reduce(List)} methods will always be empty. Note that list of
  * job siblings on {@link ComputeTaskSession} will also be empty to prevent number
  * of job siblings from growing as well.
- * <p>
  * <h1 class="header">Resource Injection</h1>
+ * <p>
  * Grid task implementation can be injected using IoC (dependency injection) with
  * ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
@@ -139,8 +138,8 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
- * <p>
  * <h1 class="header">Grid Task Adapters</h1>
+ * <p>
  * {@code ComputeTask} comes with several convenience adapters to make the usage easier:
  * <ul>
  * <li>

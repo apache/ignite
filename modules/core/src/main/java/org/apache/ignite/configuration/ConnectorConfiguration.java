@@ -275,7 +275,7 @@ public class ConnectorConfiguration {
      * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
      * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
      * For more information, see {@link Socket#setTcpNoDelay(boolean)}
-     * <p/>
+     * <p>
      * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
      *
      * @return Whether {@code TCP_NODELAY} option should be enabled.
@@ -451,7 +451,7 @@ public class ConnectorConfiguration {
 
     /**
      * Sets whether Secure Socket Layer should be enabled for REST TCP binary protocol.
-     * <p/>
+     * <p>
      * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
      * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *

@@ -42,13 +42,13 @@ import org.apache.ignite.cluster.ClusterNode;
  * <h1 class="header">Example</h1>
  * The example below shows how a validator can be used to allow cache updates only in case if the cluster
  * topology contains exactly 2 nodes:
- * <pre class="java">
+ * <pre class="java">{@code
  * new TopologyValidator() {
  *    public boolean validate(Collection<ClusterNode> nodes) {
  *       return nodes.size() == 2;
  *    }
  * }
- * </pre>
+ * }</pre>
  * <h1 class="header">Configuration</h1>
  * The topology validator can be configured either from code or XML via
  * {@link CacheConfiguration#setTopologyValidator(TopologyValidator)} method.

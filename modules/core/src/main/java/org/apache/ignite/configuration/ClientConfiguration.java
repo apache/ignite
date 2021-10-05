@@ -615,9 +615,9 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Gets the async continuation executor.
-     * <p />
+     * <p>
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
-     * <p />
+     * <p>
      * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor. Thin client operation results are handled by a dedicated thread.
      * This thread should be free from any extra work, and should not be not be used to execute future listeners
@@ -631,9 +631,9 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Sets the async continuation executor.
-     * <p />
+     * <p>
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
-     * <p />
+     * <p>
      * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor. Thin client operation results are handled by a dedicated thread.
      * This thread should be free from any extra work, and should not be not be used to execute future listeners

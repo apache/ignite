@@ -493,7 +493,7 @@ public class ClientConnectorConfiguration {
 
     /**
      * Sets whether Secure Socket Layer should be enabled for client connector.
-     * <p/>
+     * <p>
      * Note that if this flag is set to {@code true}, then a valid instance of {@code Factory&lt;SSLContext&gt;}
      * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *

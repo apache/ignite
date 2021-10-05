@@ -2840,11 +2840,11 @@ public class IgniteConfiguration {
 
     /**
      * Gets state of cluster on start.
-     * <br/>
+     * <br>
      * For <b>in-memory cluster</b> this state will be applied to the first started node. If
      * cluster state on start is {@link ClusterState#INACTIVE}, further hode joins will be handled by cluster faster and
      * manual cluster activation should be performed in order to start working the cluster and caches.
-     * <br/>
+     * <br>
      * For <b>persistent cluster</b> If state is different from {@link ClusterState#INACTIVE} and BaselineTopology is
      * set (cluster was activated before, for example before cluster restart) as well then cluster moves to given
      * cluster state when all nodes from the BaselineTopology join the cluster, i.e. manual activation isn't required
@@ -3655,9 +3655,9 @@ public class IgniteConfiguration {
 
     /**
      * Gets the continuation executor for cache async APIs.
-     * <p />
+     * <p>
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
-     * <p />
+     * <p>
      * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor.
      *
@@ -3669,9 +3669,9 @@ public class IgniteConfiguration {
 
     /**
      * Sets the continuation executor for cache async APIs.
-     * <p />
+     * <p>
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
-     * <p />
+     * <p>
      * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor.
      *

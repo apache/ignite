@@ -52,8 +52,8 @@ import org.jetbrains.annotations.Nullable;
  * attribute B before A. Attribute order is identical across all session
  * participants. Attribute order is also fault tolerant and is preserved
  * whenever a job gets failed over to another node.
- * <p>
  * <h1 class="header">Connected Tasks</h1>
+ * <p>
  * Note that apart from setting and getting session attributes, tasks or
  * jobs can choose to wait for a certain attribute to be set using any of
  * the {@code waitForAttribute(...)} methods. Tasks and jobs can also
@@ -76,8 +76,8 @@ import org.jetbrains.annotations.Nullable;
  * found by all the jobs in the split. Grid task would then reduce (aggregate)
  * all compressed sections into one compressed file. Without session attribute
  * synchronization step this problem would be much harder to solve.
- * <p>
  * <h1 class="header">Session Injection</h1>
+ * <p>
  * Session can be injected into a task or a job using IoC (dependency
  * injection) by attaching {@link org.apache.ignite.resources.TaskSessionResource @TaskSessionResource}
  * annotation to a field or a setter method inside of {@link ComputeTask} or

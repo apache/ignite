@@ -1247,10 +1247,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
      * Note that caches with {@link CacheRebalanceMode#SYNC SYNC} rebalancing mode are always rebalanced prior to caches
      * with {@link CacheRebalanceMode#ASYNC ASYNC} rebalancing mode when rebalancing order is the same.
-     * <p/>
+     * <p>
      * The rebalance order guarantees that rebalancing for this cache will start only when rebalancing for
      * all caches with smaller rebalance order will be completed.
-     * <p/>
+     * <p>
      * If not set, cache order is 0.
      *
      * @return Cache rebalance order.
@@ -1412,10 +1412,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Maximum size of the write-behind cache. If cache size exceeds this value,
      * all cached items are flushed to the cache store and write cache is cleared.
-     * <p/>
+     * <p>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_FLUSH_SIZE}.
      * If this value is {@code 0}, then flush is performed according to the flush frequency interval.
-     * <p/>
+     * <p>
      * Note that you cannot set both, {@code flush} size and {@code flush frequency}, to {@code 0}.
      *
      * @return Maximum object count in write-behind cache.
@@ -1471,7 +1471,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * when cache size exceeds value defined by
      * {@link #getWriteBehindFlushSize}, or flush interval defined by
      * {@link #getWriteBehindFlushFrequency} is elapsed.
-     * <p/>
+     * <p>
      * If not provided, default value is {@link #DFLT_WRITE_FROM_BEHIND_FLUSH_THREAD_CNT}.
      *
      * @return Count of flush threads.
@@ -1498,7 +1498,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * are combined in a batch of this size to be passed to
      * {@link CacheStore#writeAll(Collection)} or
      * {@link CacheStore#deleteAll(Collection)} methods.
-     * <p/>
+     * <p>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_BATCH_SIZE}.
      *
      * @return Maximum batch size for store operations.
@@ -1524,7 +1524,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Write coalescing flag for write-behind cache store operations. Store operations (get or remove)
      * with the same key are combined or coalesced to single, resulting operation
      * to reduce pressure to underlying cache store.
-     * <p/>
+     * <p>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
      *
      * @return Write coalescing flag.
@@ -1884,7 +1884,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets sql schema to be used for current cache. This name will correspond to SQL ANSI-99 standard.
      * Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
-     * <p/>
+     * <p>
      * Be aware of using the same string in case sensitive and case insensitive manner simultaneously, since
      * behaviour for such case is not specified.
      * <p/>
