@@ -123,8 +123,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  *    }
  * }
  * </pre>
- * <p>
  * <h1 class="header">Configuration</h1>
+ * <p>
  * In order to use this load balancer, you should configure your grid instance
  * to use {@link WeightedRandomLoadBalancingSpi} either from Spring XML file or
  * directly. The following configuration parameters are supported:

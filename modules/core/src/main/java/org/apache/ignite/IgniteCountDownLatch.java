@@ -21,8 +21,7 @@ import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This interface provides a rich API for working with distributed count down latch.
- * <p>
+ * <p>This interface provides a rich API for working with distributed count down latch.</p>
  * <h1 class="header">Functionality</h1>
  * Distributed count down latch provides functionality similar to {@code java.util.CountDownLatch}.
  * Note that you cannot remove count down latch having count greater that zero. It should be

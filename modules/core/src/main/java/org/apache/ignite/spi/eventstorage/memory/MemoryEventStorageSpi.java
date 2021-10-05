@@ -49,7 +49,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  * Both event expiration time and maximum queue size could be changed at
  * runtime.
  * </p>
- * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -91,7 +90,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  *         ...
  * &lt;/bean&gt;
  * </pre>
- * </p>
  * <p>
  * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>

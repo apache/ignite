@@ -21,9 +21,9 @@ import java.io.Closeable;
 
 /**
  * This interface provides a rich API for working with distributed atomic sequence.
- * <p>
  * <h1 class="header">Functionality</h1>
- * Distributed atomic sequence includes the following main functionality:
+ * <p>
+ * Distributed atomic sequence includes the following main functionality:</p>
  * <ul>
  * <li>
  * Method {@link #get()} gets current value from atomic sequence.

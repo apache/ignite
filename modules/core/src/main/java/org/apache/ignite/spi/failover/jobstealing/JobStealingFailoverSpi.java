@@ -56,17 +56,17 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * Prior to rejecting a job,  {@link org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi} will populate this
  * attribute with the ID of the node that wants to <b>steal</b> this job.
  * Then {@code JobStealingFailoverSpi} will read the value of this attribute and
- * route the job to the node specified.
+ * route the job to the node specified.</p>
  * <p>
  * If failure is caused by a node crash, and not by <b>steal</b> request, then this
  * SPI behaves identically to {@link org.apache.ignite.spi.failover.always.AlwaysFailoverSpi}, and tries to find the
- * next balanced node to fail-over a job to.
- * <p>
+ * next balanced node to fail-over a job to.</p>
+ * <br>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
  * <h2 class="header">Optional</h2>
- * This SPI has following optional configuration parameters:
+ * This SPI has the following optional configuration parameters:
  * <ul>
  * <li>Maximum failover attempts for a single job (see {@link #setMaximumFailoverAttempts(int)}).</li>
  * </ul>

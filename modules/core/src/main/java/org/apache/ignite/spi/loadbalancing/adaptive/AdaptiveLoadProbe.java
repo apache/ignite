@@ -36,10 +36,10 @@ import org.apache.ignite.cluster.ClusterNode;
  * <p>
  * By default, {@link AdaptiveCpuLoadProbe} probing implementation is used.
  * </p>
- * <p>
  * <h1 class="header">Example</h1>
+ * <p>
  * Here is an example of how probing can be implemented to use
- * number of active and waiting jobs as probing mechanism:
+ * number of active and waiting jobs as probing mechanism:</p>
  * <pre class="java">
  * public class FooBarLoadProbe implements GridAdaptiveLoadProbe {
  *     // Flag indicating whether to use average value or current.
@@ -78,7 +78,6 @@ import org.apache.ignite.cluster.ClusterNode;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- * </p>
  */
 public interface AdaptiveLoadProbe {
     /**

@@ -22,9 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 /**
- * This interface provides a rich API for working with condition objects
- * associated with distributed reentrant locks.
- * <p>
+ * <p>This interface provides a rich API for working with condition objects
+ * associated with distributed reentrant locks.</p>
  * <h1 class="header">Functionality</h1>
  * IgniteCondition provides functionality similar to {@code java.util.concurrent.locks.Condition}.
  */

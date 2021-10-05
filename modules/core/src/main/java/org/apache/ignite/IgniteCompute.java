@@ -126,7 +126,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public ClusterGroup clusterGroup();
 
     /**
-     * Executes given job on the node where data for provided affinity key is located
+     * <p>Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
      * </p>
      * It's guaranteed that the data of the whole partition, the affinity key belongs to,
@@ -155,7 +155,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Executes given job on the node where data for provided affinity key is located
+     * <p>Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
      * </p>
      * It's guaranteed that the data of all the partitions of all participating caches,
@@ -187,7 +187,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         IgniteRunnable job) throws IgniteException;
 
     /**
-     * Executes given job on the node where partition is located (the partition is primary on the node)
+     * <p>Executes given job on the node where partition is located (the partition is primary on the node)
      * </p>
      * It's guaranteed that the data of all the partitions of all participating caches,
      * the affinity key belongs to, will present on the destination node throughout the job execution.
@@ -218,7 +218,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         IgniteRunnable job) throws IgniteException;
 
     /**
-     * Executes given job on the node where data for provided affinity key is located
+     * <p>Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
      * </p>
      * It's guaranteed that the data of the whole partition, the affinity key belongs to,
@@ -250,7 +250,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Executes given job on the node where data for provided affinity key is located
+     * <p>Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location).
      * </p>
      * It's guaranteed that the data of all the partitions of all participating caches,
@@ -284,7 +284,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         IgniteCallable<R> job) throws IgniteException;
 
     /**
-     * Executes given job on the node where partition is located (the partition is primary on the node)
+     * <p>Executes given job on the node where partition is located (the partition is primary on the node)
      * </p>
      * It's guaranteed that the data of all the partitions of all participating caches,
      * the affinity key belongs to, will present on the destination node throughout the job execution.

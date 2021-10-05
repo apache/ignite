@@ -52,7 +52,6 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * the job is failed on. If none of the above attempts succeeded, then the
  * job will not be failed over and {@code null} will be returned.
  * </p>
- * <p>
  * <h1 class="header">Configuration</h1>
  * This SPI is default failover SPI and does not have to be explicitly
  * configured unless configuration parameters need to be changed.
@@ -90,7 +89,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- * </p>
+ * <br>
  * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>

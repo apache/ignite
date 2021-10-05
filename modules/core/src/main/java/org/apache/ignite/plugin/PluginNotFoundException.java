@@ -21,9 +21,6 @@ import org.apache.ignite.IgniteException;
 
 /**
  * Exception thrown if plugin is not found.
- *
- * @author @java.author
- * @version @java.version
  */
 public class PluginNotFoundException extends IgniteException {
     /** */

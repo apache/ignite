@@ -76,9 +76,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
  * all others will only read. Also, resizing this or any other kind of
  * hash table is a relatively slow operation, so, when possible, it is
  * a good idea to provide estimates of expected table sizes in
- * constructors.
+ * constructors.</p>
  *
- * <p/> This implementation differs from
+ * This implementation differs from
  * <tt>HashMap</tt> in that it maintains a doubly-linked list running through
  * all of its entries.  This linked list defines the iteration ordering,
  * which is the order in which keys were inserted into the map
@@ -94,9 +94,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
  *
  * <p>An optional {@code maxCap} may be passed to the map constructor to
  * create bounded map that will remove stale mappings automatically when new mappings
- * are added to the map.
+ * are added to the map.</p>
  *
- * <p/>When iterating over the key set in insertion order one should note that iterator
+ * When iterating over the key set in insertion order one should note that iterator
  * will see all removes done since the iterator was created, but will see <b>no</b>
  * inserts to map.
  *
@@ -140,7 +140,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     /**
      * The maximum capacity, used if a higher value is implicitly
      * specified by either of the constructors with arguments.  MUST
-     * be a power of two <= 1<<30 to ensure that entries are indexable
+     * be a power of two &lt;= 1&lt;&lt;30 to ensure that entries are indexable
      * using ints.
      */
     public static final int MAX_CAP_LIMIT = 1 << 30;

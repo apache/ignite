@@ -22,9 +22,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Evictable cache entry passed into {@link EvictionPolicy}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**

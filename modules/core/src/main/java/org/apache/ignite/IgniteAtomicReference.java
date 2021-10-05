@@ -21,9 +21,10 @@ import java.io.Closeable;
 
 /**
  * This interface provides a rich API for working with distributed atomic reference.
- * <p>
  * <h1 class="header">Functionality</h1>
+ * <p>
  * Distributed atomic reference includes the following main functionality:
+ * </p>
  * <ul>
  * <li>
  * Method {@link #get()} gets current value of an atomic reference.

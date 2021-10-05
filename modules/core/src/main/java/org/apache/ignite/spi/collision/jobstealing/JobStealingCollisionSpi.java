@@ -84,9 +84,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * when Node<sub>3</sub> becomes free, it steals Job<sub>13</sub> and Job<sub>23</sub>
  * from Node<sub>1</sub> and Node<sub>2</sub> respectively.
  * </p>
- * <p>
- * <center><img src="http://http://ignite.apache.org/images/job_stealing_white.gif"></center>
- * </p>
+ * <center><img alt="Job Stealing White" src="http://http://ignite.apache.org/images/job_stealing_white.gif"></center>
  * <p>
  * <i>
  * Note that this SPI must always be used in conjunction with
@@ -102,7 +100,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * exceeds a certain threshold {@link JobStealingCollisionSpi#setMaximumStealingAttempts(int)}.
  * </i>
  * </p>
- * <p>
  * <h1 class="header">Configuration</h1>
  * In order to use this SPI, you should configure your grid instance
  * to use {@link JobStealingCollisionSpi JobStealingCollisionSpi} either from Spring XML file or
@@ -184,7 +181,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- * </p>
+ * <br>
  * <p>
  * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>

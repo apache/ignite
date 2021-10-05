@@ -22,9 +22,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * This interface provides a rich API for working with distributed atomic stamped value.
- * <p>
  * <h1 class="header">Functionality</h1>
- * Distributed atomic stamped includes the following main functionality:
+ * <p>
+ * Distributed atomic stamped includes the following main functionality:</p>
  * <ul>
  * <li>
  * Method {@link #get()} gets both value and stamp of atomic.

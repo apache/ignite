@@ -62,9 +62,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Directory paths for shared checkpoints should either be empty or contain previously
  * stored checkpoint files.
- * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
+ * <p>
  * This SPI has no mandatory configuration parameters.
  * <h2 class="header">Optional</h2>
  * This SPI has following optional configuration parameters:
@@ -73,7 +73,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link SharedFsCheckpointSpi} can be configured as follows:
- * <pre class="java">
+ * <pre class="java">{@code
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * SharedFsCheckpointSpi checkpointSpi = new SharedFsCheckpointSpi();
@@ -92,7 +92,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * // Starts grid.
  * G.start(cfg);
- * </pre>
+ * }</pre>
  * <h2 class="header">Spring Example</h2>
  * {@link SharedFsCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre class="xml">

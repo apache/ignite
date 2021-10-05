@@ -58,14 +58,13 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * enough to deploy a task only on one node and all other nodes will load
  * required classes from the node that initiated task execution.
  * </p>
- * <p>
  * <h1 class="header">Configuration</h1>
- * This SPI requires no configuration.
+ * <p>This SPI requires no configuration.</p>
  * <h2 class="header">Example</h2>
+ * <p>
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
- * configuration parameters.
- * </p>
+ * configuration parameters.</p>
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)

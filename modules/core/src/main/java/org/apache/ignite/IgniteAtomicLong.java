@@ -23,9 +23,10 @@ import java.io.Closeable;
  * <p>
  * This interface provides a rich API for working with distributedly cached atomic long value.
  * </p>
- * <p>
  * <h1 class="header">Functionality</h1>
+ * <p>
  * Distributed atomic long includes the following main functionality:
+ * </p>
  * <ul>
  * <li>
  * Method {@link #get()} gets current value of atomic long.
@@ -52,7 +53,6 @@ import java.io.Closeable;
  * Method {@link #name()} gets name of atomic long.
  * </li>
  * </ul>
- * </p>
  * <h1 class="header">Creating Distributed Atomic Long</h1>
  * Instance of distributed atomic long can be created by calling the following method:
  * <ul>

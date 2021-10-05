@@ -68,15 +68,15 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * Load balancing SPI that adapts to overall node performance. It
  * proportionally distributes more jobs to more performant nodes based
  * on a pluggable and dynamic node load probing.
- * <p>
  * <h1 class="header">Adaptive Node Probe</h1>
+ * <p>
  * This SPI comes with pluggable algorithm to calculate a node load
  * at any given point of time. The algorithm is defined by
  * {@link AdaptiveLoadProbe} interface and user is
  * free to provide custom implementations. By default
  * {@link AdaptiveCpuLoadProbe} implementation is used
  * which distributes jobs to nodes based on average CPU load
- * on every node.
+ * on every node.</p>
  * <p>
  * The following load probes are available with the product:
  * <ul>
@@ -138,8 +138,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * with as it simply attempts to utilize every CPU on the grid to the maximum. However, you should
  * experiment with other probes by executing load tests in your environment and observing
  * which probe gives you best performance and load balancing.
- * <p>
  * <h1 class="header">Task Coding Example</h1>
+ * <p>
  * If you are using {@link org.apache.ignite.compute.ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
@@ -202,8 +202,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  *    }
  * }
  * </pre>
- * <p>
  * <h1 class="header">Configuration</h1>
+ * <p>
  * In order to use this load balancer, you should configure your grid instance
  * to use {@code JobsLoadBalancingSpi} either from Spring XML file or
  * directly. The following configuration parameters are supported:

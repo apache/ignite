@@ -50,7 +50,7 @@ import org.apache.ignite.spi.checkpoint.CheckpointSpi;
  * <li>DataSource (see {@link #setDataSource(DataSource)}).</li>
  * </ul>
  * <h2 class="header">Optional</h2>
- * This SPI has following optional configuration parameters:
+ * This SPI has the following optional configuration parameters:
  * <ul>
  * <li>Checkpoint table name (see {@link #setCheckpointTableName(String)}).</li>
  * <li>Checkpoint key field name (see {@link #setKeyFieldName(String)}). </li>
@@ -67,8 +67,8 @@ import org.apache.ignite.spi.checkpoint.CheckpointSpi;
  * <a href="http://commons.apache.org/dbcp/">Apache DBCP</a> project provides various wrappers
  * for data sources and connection pools. You can use these wrappers as Spring beans to configure
  * this SPI from Spring configuration file. Refer to {@code Apache DBCP} project for more information.
- * <p>
  * <h2 class="header">Java Example</h2>
+ * <p>
  * {@link JdbcCheckpointSpi} can be configured as follows:
  * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();

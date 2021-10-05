@@ -181,12 +181,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Full list of repairable methods:
      * <ul>
-     * <li>{@link IgniteCache#containsKey} && {@link IgniteCache#containsKeyAsync}</li>
-     * <li>{@link IgniteCache#containsKeys} && {@link IgniteCache#containsKeysAsync}</li>
-     * <li>{@link IgniteCache#getEntry} && {@link IgniteCache#getEntryAsync}</li>
-     * <li>{@link IgniteCache#getEntries} && {@link IgniteCache#getEntriesAsync}</li>
-     * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
-     * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
+     * <li>{@link IgniteCache#containsKey} &amp;&amp; {@link IgniteCache#containsKeyAsync}</li>
+     * <li>{@link IgniteCache#containsKeys} &amp;&amp; {@link IgniteCache#containsKeysAsync}</li>
+     * <li>{@link IgniteCache#getEntry} &amp;&amp; {@link IgniteCache#getEntryAsync}</li>
+     * <li>{@link IgniteCache#getEntries} &amp;&amp; {@link IgniteCache#getEntriesAsync}</li>
+     * <li>{@link IgniteCache#get} &amp;&amp; {@link IgniteCache#getAsync}</li>
+     * <li>{@link IgniteCache#getAll} &amp;&amp; {@link IgniteCache#getAllAsync}</li>
      * </ul>
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
@@ -217,12 +217,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * For example, if you use {@link Integer} as a key and {@code Value} class as a value
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
-     * <pre>
+     * <pre>{@code
      * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);
-     * </pre>
+     * }</pre>
      * <p>
      * Note that this method makes sense only if cache is working in binary mode
      * if default marshaller is used.
@@ -1274,10 +1274,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
-     * <p/>
+     * <p>
      * Note that this operation is local as it merely clears
      * an entry from local cache, it does not remove entries from
-     * remote caches.
+     * remote caches.</p>
      *
      * @param key Key to clear.
      */
@@ -1287,10 +1287,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
-     * <p/>
+     * <p>
      * Note that this operation is local as it merely clears
      * an entry from local cache, it does not remove entries from
-     * remote caches.
+     * remote caches.</p>
      *
      * @param keys Keys to clear.
      */

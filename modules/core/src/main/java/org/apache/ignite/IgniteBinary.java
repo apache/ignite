@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * To work with the binary format directly, user should create a special cache projection
  * using IgniteCache.withKeepBinary() method and then retrieve individual fields as needed:
- * <pre name=code class=java>
+ * <pre class=java>
  * IgniteCache&lt;BinaryObject, BinaryObject&gt; prj = cache.withKeepBinary();
  *
  * // Convert instance of MyKey to binary format.
@@ -70,7 +70,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times.
- * <pre name=code class=java>
+ * <pre class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
  * MyValue val = cache.get(new MyKey());
@@ -81,7 +81,7 @@ import org.jetbrains.annotations.Nullable;
  * If we used, for example, one of the automatically handled binary types for a key, like integer,
  * and still wanted to work with binary binary format for values, then we would declare cache projection
  * as follows:
- * <pre name=code class=java>
+ * <pre class=java>
  * IgniteCache&lt;Integer.class, BinaryObject&gt; prj = cache.withKeepBinary();
  * </pre>
  * <h1 class="header">Automatic Binary Types</h1>
@@ -110,7 +110,7 @@ import org.jetbrains.annotations.Nullable;
  * in C#, etc.
  * <h1 class="header">Building Binary Objects</h1>
  * Ignite comes with {@link org.apache.ignite.binary.BinaryObjectBuilder} which allows to build binary objects dynamically:
- * <pre name=code class=java>
+ * <pre class=java>
  * BinaryBuilder builder = Ignition.ignite().binary().builder();
  *
  * builder.typeId("MyObject");
@@ -123,7 +123,7 @@ import org.jetbrains.annotations.Nullable;
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
  * convert it to binary format, like so:
- * <pre name=code class=java>
+ * <pre class=java>
  * MyObject obj = new MyObject();
  *
  * obj.setFieldA("A");
@@ -157,7 +157,7 @@ import org.jetbrains.annotations.Nullable;
  * into concrete types on the server as well as on the client.
  * <p>
  * Here is an example of binary configuration (note that star (*) notation is supported):
- * <pre name=code class=xml>
+ * <pre class=xml>
  * ...
  * &lt;!-- Explicit binary objects configuration. --&gt;
  * &lt;property name="marshaller"&gt;
@@ -173,7 +173,7 @@ import org.jetbrains.annotations.Nullable;
  * ...
  * </pre>
  * or from code:
- * <pre name=code class=java>
+ * <pre class=java>
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * BinaryMarshaller marsh = new BinaryMarshaller();
@@ -194,7 +194,7 @@ import org.jetbrains.annotations.Nullable;
  * {@code Organization}, and want to colocate employees with organization they work for,
  * so you can process them together, you need to specify an alternate affinity key.
  * With binary objects you would have to do it as following:
- * <pre name=code class=xml>
+ * <pre class=xml>
  * &lt;property name="marshaller"&gt;
  *     &lt;bean class="org.gridgain.grid.marshaller.binary.BinaryMarshaller"&gt;
  *         ...
@@ -213,7 +213,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Serialization</h1>
  * Serialization and deserialization works out-of-the-box in Ignite. However, you can provide your own custom
  * serialization logic by optionally implementing {@link org.apache.ignite.binary.Binarylizable} interface, like so:
- * <pre name=code class=java>
+ * <pre class=java>
  * public class Address implements BinaryMarshalAware {
  *     private String street;
  *     private int zip;
@@ -261,7 +261,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link org.apache.ignite.cache.QueryEntity} inside of specific
  * {@link org.apache.ignite.configuration.CacheConfiguration} instance,
  * like so:
- * <pre name=code class=xml>
+ * <pre class=xml>
  * ...
  * &lt;bean class="org.apache.ignite.cache.CacheConfiguration"&gt;
  *     ...

@@ -34,6 +34,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * Apache Ignite node, the metrics for every region will be collected and obtained separately.
  * <p>
  * There are two ways to get the metrics of an Apache Ignite node.
+ * </p>
  * <ol>
  *     <li>
  *       First, a collection of the metrics can be obtained through {@link Ignite#dataRegionMetrics()} method. Note that
@@ -44,7 +45,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  *       {@link DataRegionMetricsMXBean} for more details.
  *     </li>
  * </ol>
- * </p>
  * <p>
  * Data region metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
