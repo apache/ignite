@@ -1768,6 +1768,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Snapshot name.
+     * @return Snapshot view.
      */
     private SnapshotView snapshotViewSupplier(String snpName) {
         SnapshotMetadata meta = readSnapshotMetadata(snpName,
