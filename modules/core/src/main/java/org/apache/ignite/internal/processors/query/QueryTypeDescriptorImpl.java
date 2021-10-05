@@ -137,7 +137,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private Set<String> pkFields;
 
     /** Logger. */
-    protected final IgniteLogger log;
+    private final IgniteLogger log;
 
     /**
      * Constructor.
@@ -726,13 +726,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
                 else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
-                    // Check for classes/enums implementing indexed interfaces
+                    // Check for classes/enums implementing indexed interfaces.
                     String clsName = ((BinaryObject) propVal).type().typeName();
                     try {
                         final Class<?> cls = Class.forName(clsName);
-                        if (U.box(propType).isAssignableFrom(U.box(cls))) {
+
+                        if (U.box(propType).isAssignableFrom(U.box(cls)))
                             continue;
-                        }
                     } catch (ClassNotFoundException e) {
                         if (log.isDebugEnabled())
                             U.error(log, "Failed to find child class: " + clsName, e);

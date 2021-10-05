@@ -136,7 +136,7 @@ public class EnumClassImplementingIndexedInterfaceTest extends GridCommonAbstrac
         ROLE2,
 
         /** */
-        ROlE3
+        ROLE3
     }
 
     /** */
