@@ -33,7 +33,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -516,19 +515,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals(2, res.get(0).size());
     }
 
-    @Test
-    public void dbg() {
-        String sql =
-            "CREATE TABLE TBL0 (id INT PRIMARY KEY, name VARCHAR);\n" +
-                "INSERT INTO TBL0 (id, name) VALUES (0, 'val0');\n" +
-                "INSERT INTO TBL0 (id, name) VALUES (1, 'val1');\n" +
-                "SELECT * FROM TBL0;";
-
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(grid(0)).query(null, "PUBLIC", sql);
-
-        cur.stream().sequential().forEach(c -> System.out.println("+++ " + c.getAll()));
-    }
-
     /**
      * Add/drop column if table exists.
      */
@@ -749,7 +735,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void alterTableLogging() {
         String cacheName = "cache";
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(cacheName)
+        client.getOrCreateCache(new CacheConfiguration<>(cacheName)
             .setDataRegionName(PERSISTENT_DATA_REGION).setIndexedTypes(Integer.class, Integer.class));
 
         assertTrue(client.cluster().isWalEnabled(cacheName));
