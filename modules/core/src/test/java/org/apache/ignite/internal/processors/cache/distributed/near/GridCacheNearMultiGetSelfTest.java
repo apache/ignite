@@ -79,6 +79,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

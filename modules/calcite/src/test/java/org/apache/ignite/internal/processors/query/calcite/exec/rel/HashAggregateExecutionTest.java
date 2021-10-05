@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,12 +28,17 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
@@ -66,13 +73,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
 
         agg.register(scan);
 
-        // Collation of the first fields emulates planner behavior:
-        // The group's keys placed on the begin of the output row.
-        RelCollation collation = RelCollations.of(
-            ImmutableIntList.copyOf(
-                IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
-            )
-        );
+        RelCollation collation = createOutCollation(grpSets);
 
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
 
@@ -118,13 +119,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
 
         aggRdc.register(aggMap);
 
-        // Collation of the first fields emulates planner behavior:
-        // The group's keys placed on the begin of the output row.
-        RelCollation collation = RelCollations.of(
-            ImmutableIntList.copyOf(
-                IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
-            )
-        );
+        RelCollation collation = createOutCollation(grpSets);
 
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
 
@@ -134,5 +129,80 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
         sort.register(aggRdc);
 
         return sort;
+    }
+
+    /** */
+    private RelCollation createOutCollation(ImmutableList<ImmutableBitSet> grpSets) {
+        RelCollation collation;
+
+        if (!grpSets.isEmpty() && grpSets.stream().anyMatch(set -> !set.isEmpty())) {
+            // Sort by group to simplify compare results with expected results.
+            collation = RelCollations.of(
+                ImmutableIntList.copyOf(
+                    IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
+                )
+            );
+        }
+        else {
+            // Sort for the first column if there are no groups.
+            collation = RelCollations.of(0);
+        }
+
+        return collation;
+    }
+
+    /**
+     * Test verifies that after rewind all groups are properly initialized.
+     */
+    @Test
+    public void countOfEmptyWithRewind() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Collections.emptyList());
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.COUNT,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(),
+            -1,
+            null,
+            RelCollations.EMPTY,
+            tf.createJavaType(int.class),
+            null
+        );
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
+
+        SingleNode<Object[]> aggChain = createAggregateNodesChain(
+            ctx,
+            grpSets,
+            call,
+            rowType,
+            aggRowType,
+            rowFactory(),
+            scan
+        );
+
+        for (int i = 0; i < 2; i++) {
+            RootNode<Object[]> root = new RootNode<Object[]>(ctx, aggRowType) {
+                /** {@inheritDoc} */
+                @Override public void close() {
+                    // NO-OP
+                }
+            };
+
+            root.register(aggChain);
+
+            assertTrue(root.hasNext());
+            Assert.assertArrayEquals(row(0), root.next());
+            assertFalse(root.hasNext());
+
+            aggChain.rewind();
+        }
     }
 }

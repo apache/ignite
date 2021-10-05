@@ -135,6 +135,7 @@ public class FragmentSplitter extends IgniteRelShuttle {
             this.root = root;
         }
 
+        /** */
         Fragment build() {
             return new Fragment(id, root, remotes.build());
         }

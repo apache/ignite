@@ -12,14 +12,10 @@ statement ok
 drop table if exists t2;
 
 statement ok
-create table t1 (id string);
+create table t1 (id varchar);
 
 statement ok
-create table t2 (id string);
-
-statement ok
-insert into t1 values
-(NULL);
+create table t2 (id varchar);
 
 statement ok
 insert into t2 values (1), (1);
@@ -27,17 +23,14 @@ insert into t2 values (1), (1);
 query II
 select * from t1 left join t2 on t1.id = t2.id;
 ----
-NULL	NULL
 
 query II
 select * from t1 left join t2 on t1.id > t2.id;
 ----
-NULL	NULL
 
 query II
 select * from t1 left join t2 on t1.id <> t2.id;
 ----
-NULL	NULL
 
 statement ok
 insert into t2 values (1);
@@ -45,17 +38,14 @@ insert into t2 values (1);
 query II
 select * from t1 left join t2 on t1.id = t2.id;
 ----
-NULL	NULL
 
 query II
 select * from t1 left join t2 on t1.id > t2.id;
 ----
-NULL	NULL
 
 query II
 select * from t1 left join t2 on t1.id <> t2.id;
 ----
-NULL	NULL
 
 statement ok
 insert into t2 values (NULL), (NULL);
@@ -63,17 +53,14 @@ insert into t2 values (NULL), (NULL);
 query II
 select * from t1 left join t2 on t1.id = t2.id;
 ----
-NULL	NULL
 
 query II
 select * from t1 left join t2 on t1.id > t2.id;
 ----
-NULL	NULL
 
 query II
 select * from t1 left join t2 on t1.id <> t2.id;
 ----
-NULL	NULL
 
 statement ok
 drop table if exists t1;
@@ -82,19 +69,19 @@ statement ok
 drop table if exists t2;
 
 statement ok
-create table t1 (id string);
+create table t1 (id varchar);
 
 statement ok
-create table t2 (id string);
+create table t2 (id varchar);
 
 statement ok
-insert into t1 (id) values (1), (1), (NULL);
+insert into t1 (id) values (1), (1), (DEFAULT);
 
 statement ok
 insert into t2 (id) values (1), (1), (1), (1), (1), (1);
 
 query II
-select * from t1 left join t2 on t1.id = t2.id order by 1, 2;
+select * from t1 left join t2 on t1.id = t2.id order by 1 NULLS FIRST, 2;
 ----
 NULL	NULL
 1	1
@@ -114,7 +101,7 @@ statement ok
 insert into t2 (id) values (1);
 
 query II
-select * from t1 left join t2 on t1.id = t2.id order by 1, 2;
+select * from t1 left join t2 on t1.id = t2.id order by 1 NULLS FIRST, 2;
 ----
 NULL	NULL
 1	1

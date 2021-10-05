@@ -59,15 +59,3 @@ SELECT id, i FROM integers ORDER BY id
 3	2
 4	3
 
-# use DEFAULT with correlated subquery in WHERE
-statement ok
-UPDATE integers i1 SET i=DEFAULT WHERE i=(SELECT MIN(i) FROM integers WHERE i1.id<id);
-
-query II
-SELECT id, i FROM integers ORDER BY id
-----
-1	NULL
-2	NULL
-3	2
-4	3
-

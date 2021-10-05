@@ -121,6 +121,7 @@ public class RandomForestClassificationExportImportExample {
         }
     }
 
+    /** */
     private static double evaluateModel(IgniteCache<Integer, Vector> dataCache, RandomForestModel randomForestMdl) {
         int amountOfErrors = 0;
         int totalAmount = 0;

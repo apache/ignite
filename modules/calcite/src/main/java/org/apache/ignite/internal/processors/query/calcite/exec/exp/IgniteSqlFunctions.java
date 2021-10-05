@@ -62,6 +62,7 @@ public class IgniteSqlFunctions {
         return x == null ? null : x.toPlainString();
     }
 
+    /** */
     private static BigDecimal setScale(int precision, int scale, BigDecimal decimal) {
         return precision == IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL)
             ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);

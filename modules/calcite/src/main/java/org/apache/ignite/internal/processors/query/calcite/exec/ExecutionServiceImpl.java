@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.type.RelDataType;
@@ -469,7 +470,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryReg.unregister(qry.id());
         }
 
-        return H2Utils.zeroCursor();
+        if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).insertStatement() != null) {
+            SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
+
+            try {
+                // Create new planning context containing created table in the schema.
+                PlanningContext dmlCtx = createContext(pctx, pctx.schemaName(), pctx.query(), pctx.parameters());
+
+                QueryPlan dmlPlan = prepareDml(insertStmt, dmlCtx);
+
+                return executePlan(qryId, dmlCtx, dmlPlan);
+            }
+            catch (ValidationException e) {
+                throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
+            }
+        }
+        else
+            return H2Utils.zeroCursor();
     }
 
     /** */

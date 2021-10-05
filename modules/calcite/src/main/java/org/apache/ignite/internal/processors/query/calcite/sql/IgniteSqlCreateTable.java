@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -42,6 +41,9 @@ public class IgniteSqlCreateTable extends SqlCreate {
     private final @Nullable SqlNodeList columnList;
 
     /** */
+    private final @Nullable SqlNode qry;
+
+    /** */
     private final @Nullable SqlNodeList createOptionList;
 
     /** */
@@ -49,18 +51,19 @@ public class IgniteSqlCreateTable extends SqlCreate {
         new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
     /** Creates a SqlCreateTable. */
-    protected IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists,
-        SqlIdentifier name, @Nullable SqlNodeList columnList, @Nullable SqlNodeList createOptionList) {
+    protected IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists, SqlIdentifier name,
+        @Nullable SqlNodeList columnList, @Nullable SqlNode qry, @Nullable SqlNodeList createOptionList) {
         super(OPERATOR, pos, false, ifNotExists);
         this.name = Objects.requireNonNull(name, "name");
         this.columnList = columnList;
+        this.qry = qry;
         this.createOptionList = createOptionList;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("nullness")
     @Override public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of(name, columnList, createOptionList);
+        return ImmutableNullableList.of(name, columnList, qry, createOptionList);
     }
 
     /** {@inheritDoc} */
@@ -71,6 +74,7 @@ public class IgniteSqlCreateTable extends SqlCreate {
             writer.keyword("IF NOT EXISTS");
 
         name.unparse(writer, leftPrec, rightPrec);
+
         if (columnList != null) {
             SqlWriter.Frame frame = writer.startList("(", ")");
             for (SqlNode c : columnList) {
@@ -84,6 +88,12 @@ public class IgniteSqlCreateTable extends SqlCreate {
             writer.keyword("WITH");
 
             createOptionList.unparse(writer, 0, 0);
+        }
+
+        if (qry != null) {
+            writer.keyword("AS");
+            writer.newlineAndIndent();
+            qry.unparse(writer, 0, 0);
         }
     }
 
@@ -99,6 +109,13 @@ public class IgniteSqlCreateTable extends SqlCreate {
      */
     public SqlNodeList columnList() {
         return columnList;
+    }
+
+    /**
+     * @return Query of "CREATE TABLE AS query" statement.
+     */
+    public SqlNode query() {
+        return qry;
     }
 
     /**

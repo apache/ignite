@@ -45,6 +45,7 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
 
     /** Rule configuration. */
     public interface Config extends RelRule.Config {
+        /** Default config. */
         SortConverterRule.Config DEFAULT = EMPTY
             .withOperandSupplier(b ->
                 b.operand(LogicalSort.class).anyInputs())

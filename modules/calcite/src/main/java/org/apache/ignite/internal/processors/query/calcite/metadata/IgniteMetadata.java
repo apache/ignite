@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
  * Utility class, holding metadata related interfaces and metadata providers.
  */
 public class IgniteMetadata {
+    /** Metadata provider. */
     public static final RelMetadataProvider METADATA_PROVIDER =
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
@@ -56,6 +57,7 @@ public class IgniteMetadata {
 
     /** */
     public interface FragmentMappingMetadata extends Metadata {
+        /** */
         MetadataDef<FragmentMappingMetadata> DEF = MetadataDef.of(FragmentMappingMetadata.class,
             FragmentMappingMetadata.Handler.class, IgniteMethod.FRAGMENT_MAPPING.method());
 
@@ -64,6 +66,7 @@ public class IgniteMetadata {
 
         /** Handler API. */
         interface Handler extends MetadataHandler<FragmentMappingMetadata> {
+            /** */
             FragmentMapping fragmentMapping(RelNode r, RelMetadataQuery mq, MappingQueryContext ctx);
         }
     }

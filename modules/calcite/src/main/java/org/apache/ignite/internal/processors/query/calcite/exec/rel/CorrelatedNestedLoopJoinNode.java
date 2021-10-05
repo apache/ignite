@@ -85,7 +85,23 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     private enum State {
-        INITIAL, FILLING_LEFT, FILLING_RIGHT, IDLE, IN_LOOP, END
+        /** */
+        INITIAL,
+
+        /** */
+        FILLING_LEFT,
+
+        /** */
+        FILLING_RIGHT,
+
+        /** */
+        IDLE,
+
+        /** */
+        IN_LOOP,
+
+        /** */
+        END
     }
 
     /**

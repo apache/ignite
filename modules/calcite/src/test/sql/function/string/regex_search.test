@@ -73,7 +73,7 @@ true
 
 # postgres says throw error on invalid regex
 statement error
-SELECT '' ~ '\X'
+SELECT '' ~ '[a-z'
 
 statement ok
 CREATE TABLE regex(s VARCHAR, p VARCHAR)
@@ -107,19 +107,6 @@ query T
 SELECT 'asdf' ~ '.*SD.*'
 ----
 false
-
-# newlines
-query T
-SELECT 'hello
-world' ~ '.*'
-----
-true
-
-query T
-SELECT 'hello
-world' ~ '^.*$'
-----
-true
 
 # this also works with tables
 statement ok

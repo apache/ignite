@@ -853,6 +853,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     @Test
     public void testTableDistributionKeysForComplexKeyObject() {
         {
+            /** */
             class MyKey {
                 int id1;
 
