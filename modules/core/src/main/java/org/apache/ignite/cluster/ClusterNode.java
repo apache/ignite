@@ -28,11 +28,11 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface representing a single cluster node. Use {@link #attribute(String)} or
+ * <p>Interface representing a single cluster node. Use {@link #attribute(String)} or
  * {@link #metrics()} to get static and dynamic information about cluster nodes.
  * {@code ClusterNode} list, which includes all nodes within task topology, is provided
  * to {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method.
- * <p>
+ * </p>
  * <h1 class="header">Cluster Node Attributes</h1>
  * You can use cluster node attributes to provide static information about a node.
  * This information is initialized once within a cluster, during the node startup, and
@@ -73,7 +73,7 @@ import org.jetbrains.annotations.Nullable;
  * Note that all System and Environment properties for all nodes are automatically included
  * into node attributes. This gives you an ability to get any information specified
  * in {@link System#getProperties()} about any node. So for example, in order to print out
- * information about Operating System for all nodes you would do the following:
+ * information about Operating System for all nodes you would do the following:</p>
  * <pre class="java">
  * for (ClusterNode node : ignite.cluster().nodes()) {
  *     System.out.println("Operating system name: " + node.getAttribute("os.name"));
@@ -81,7 +81,6 @@ import org.jetbrains.annotations.Nullable;
  *     System.out.println("Operating system version: " + node.getAttribute("os.version"));
  * }
  * </pre>
- * <p>
  * <h1 class="header">Cluster Node Metrics</h1>
  * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update

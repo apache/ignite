@@ -46,8 +46,7 @@ public interface CdcEvent extends Serializable {
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.
-     * @see <a href="
-     * https://ignite.apache.org/docs/latest/configuring-caches/configuring-backups#configuring-partition-backups">
+     * @see <a href="https://ignite.apache.org/docs/latest/configuring-caches/configuring-backups#configuring-partition-backups">
      * Configuring partition backups.</a>
      */
     public boolean primary();
