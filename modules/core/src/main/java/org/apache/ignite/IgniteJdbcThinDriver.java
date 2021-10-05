@@ -97,7 +97,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
  *     </tr>
  * </table>
  * <h1 class="header">Example</h1>
- * <pre name="code" class="java">
+ * <pre class="java">
  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//localhost:10800");
  *

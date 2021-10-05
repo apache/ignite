@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * from nodes where they were mapped to.
  * <p>
  * Here is an example of how this annotation can be attached to a job class:
- * <pre name="code" class="java">
+ * <pre class="java">
  * &#64;GridJobStealingDisabled
  * public class MyJob extends ComputeJobAdapter&lt;Object&gt; {
  *     public Serializable execute() throws IgniteCheckedException {

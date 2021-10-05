@@ -68,7 +68,7 @@ import scala.annotation.meta.field
  * ==Importing==
  * Scalar needs to be imported in a proper way so that necessary objects and implicit
  * conversions got available in the scope:
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * import org.apache.ignite.scalar._
  * import scalar._
  * </pre>
@@ -83,26 +83,26 @@ import scala.annotation.meta.field
  * Ignite - while remaining absolutely distilled to the core domain logic.
  *
  * This code snippet prints out full topology:
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * scalar {
  *     grid$ foreach (n => println("Node: " + n.id8))
  * }
  * </pre>
  * The obligatory example - cloud enabled `Hello World!`. It splits the phrase
  * into multiple words and prints each word on a separate grid node:
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * scalar {
  *     grid$ *< (SPREAD, (for (w <- "Hello World!".split(" ")) yield () => println(w)))
  * }
  * </pre>
  * This example broadcasts message to all nodes:
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * scalar {
  *     grid$ *< (BROADCAST, () => println("Broadcasting!!!"))
  * }
  * </pre>
  * This example "greets" remote nodes only (note usage of Java-side closure):
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * scalar {
  *     val me = grid$.localNode.id
  *     grid$.remoteProjection() *< (BROADCAST, F.println("Greetings from: " + me))
@@ -113,12 +113,12 @@ import scala.annotation.meta.field
  * using MapReduce type of processing by splitting the input string into
  * multiple substrings, calculating each substring length on the remote
  * node and aggregating results for the final length of the original string:
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * def count(msg: String) =
  *     grid$ @< (SPREAD, for (w <- msg.split(" ")) yield () => w.length, (s: Seq[Int]) => s.sum)
  * </pre>
  * This example shows a simple example of how Scalar can be used to work with in-memory data grid:
- * <pre name="code" class="scala">
+ * <pre class="scala">
  * scalar {
  *     val t = cache$[Symbol, Double]("partitioned")
  *     t += ('symbol -> 2.0)

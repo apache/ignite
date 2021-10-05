@@ -2343,7 +2343,7 @@ public class GridFunc {
      * element {@code x} of the input collection {@code c}.
      * <p>
      * For example:
-     * <pre name="code" class="java">
+     * <pre class="java">
      * ...
      *
      * Collection&lt;Integer&gt; nums = new ArrayList&lt;Integer&gt;(size);

@@ -52,7 +52,7 @@ import java.util.concurrent.Callable;
  * cache. To achieve that, cache key used to cache {@code Person} objects should have a field or method
  * annotated with {@code @AffinityKeyMapped} annotation, which will provide the value of
  * the company key for which that person works, like so:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class PersonKey {
  *     // Person ID used to identify a person.
  *     private String personId;
@@ -76,7 +76,7 @@ import java.util.concurrent.Callable;
  * <h2 class="header">AffinityKey</h2>
  * For convenience, you can also optionally use {@link AffinityKey} class. Here is how a
  * {@code PersonKey} defined above would look using {@link AffinityKey}:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Object personKey1 = new AffinityKey("myPersonId1", "myCompanyId");
  * Object personKey2 = new AffinityKey("myPersonId2", "myCompanyId");
  *

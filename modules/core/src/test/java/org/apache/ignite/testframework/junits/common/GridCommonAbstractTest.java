@@ -1063,7 +1063,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * Use method for manual rebalancing cache on all nodes. Note that using
-     * <pre name="code" class="java">
+     * <pre class="java">
      *   for (int i = 0; i < G.allGrids(); i++)
      *     grid(i).cache(CACHE_NAME).rebalance().get();
      * </pre>

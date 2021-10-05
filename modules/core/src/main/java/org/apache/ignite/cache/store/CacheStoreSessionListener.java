@@ -92,7 +92,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * </ul>
  * For example, here is how global {@link CacheJdbcStoreSessionListener}
  * can be configured in Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
  *

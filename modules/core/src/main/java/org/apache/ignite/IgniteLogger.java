@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * console logging are provided as supported implementations.
  * <p>
  * Ignite logger could be configured either from code (for example log4j logger):
- * <pre name="code" class="java">
+ * <pre class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *      cfg.setGridLogger(log);
  * </pre>
  * or in grid configuration file (see JCL logger example below):
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"&gt;

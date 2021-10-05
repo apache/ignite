@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Ignite TextQuery supports classic Lucene query syntax.
  * See Lucene classic MultiFieldQueryParser and StandardAnalyzer javadoc for details.
  * As an example, suppose we have data model consisting of {@code 'Employee'} class defined as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class Person {
  *     private long id;
  *
@@ -48,7 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  * Here is a possible query that will use Lucene text search to scan all resumes to
  * check if employees have {@code Master} degree:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Query&lt;Cache.Entry&lt;Long, Person&gt;&gt; qry =
  *     new TextQuery(Person.class, "Master");
  *

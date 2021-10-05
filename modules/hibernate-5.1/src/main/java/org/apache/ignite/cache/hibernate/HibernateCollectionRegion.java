@@ -30,7 +30,7 @@ import org.hibernate.persister.collection.CollectionPersister;
  * Implementation of {@link CollectionRegion}. This region is used to store collection data.
  * <p>
  * L2 cache for collection can be enabled in the Hibernate configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;hibernate-configuration&gt;
  *     &lt;!-- Enable L2 cache. --&gt;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
@@ -49,7 +49,7 @@ import org.hibernate.persister.collection.CollectionPersister;
  * &lt;/hibernate-configuration&gt;
  * </pre>
  * Also cache for collection can be enabled using annotations:
- * <pre name="code" class="java">
+ * <pre class="java">
  * &#064;javax.persistence.Entity
  * public class Entity {
  *    ...

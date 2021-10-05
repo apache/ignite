@@ -51,7 +51,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * Here is an example of configuring Java logger in Ignite configuration Spring
  * file to work over log4j implementation. Note that we use the same configuration file
  * as we provide by default:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.java.JavaLogger"&gt;
@@ -65,7 +65,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      ...
  * </pre>
  * or
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.java.JavaLogger"/&gt;
@@ -73,7 +73,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      ...
  * </pre>
  * And the same configuration if you'd like to configure Ignite in your code:
- * <pre name="code" class="java">
+ * <pre class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      IgniteLogger log = new JavaLogger(Logger.global);
@@ -81,7 +81,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      cfg.setGridLogger(log);
  * </pre>
  * or which is actually the same:
- * <pre name="code" class="java">
+ * <pre class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      IgniteLogger log = new JavaLogger();

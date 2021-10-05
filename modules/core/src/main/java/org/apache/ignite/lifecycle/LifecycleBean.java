@@ -70,7 +70,7 @@ import org.apache.ignite.IgniteException;
  * <p>
  * <h1 class="header">Configuration</h1>
  * Node lifecycle beans can be configured programmatically as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * cfg.setLifecycleBeans(new FooBarLifecycleBean1(), new FooBarLifecycleBean2());
@@ -79,7 +79,7 @@ import org.apache.ignite.IgniteException;
  * Ignition.start(cfg);
  * </pre>
  * or from Spring XML configuration file as follows:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *    ...
  *    &lt;property name="lifecycleBeans"&gt;

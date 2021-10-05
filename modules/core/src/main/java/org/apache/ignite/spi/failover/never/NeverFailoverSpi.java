@@ -42,7 +42,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * This SPI has no optional configuration parameters.
  * <p>
  * Here is a Java example on how to configure grid with {@code GridNeverFailoverSpi}:
- * <pre name="code" class="java">
+ * <pre class="java">
  * NeverFailoverSpi spi = new NeverFailoverSpi();
  *
  * IgniteConfiguration cfg = new IgniteConfiguration();
@@ -54,13 +54,13 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * G.start(cfg);
  * </pre>
  * Here is an example on how to configure grid with {@link NeverFailoverSpi} from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="failoverSpi"&gt;
  * &lt;bean class="org.apache.ignite.spi.failover.never.NeverFailoverSpi"/&gt;
  * &lt;/property&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  *

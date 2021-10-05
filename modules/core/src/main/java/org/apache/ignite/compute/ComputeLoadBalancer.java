@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * If you are using {@link ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;String> {
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
@@ -60,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link ComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String> {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource

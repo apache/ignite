@@ -50,7 +50,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * as the primary.   Note: This example requires that the environment variable "AVAILABILTY_ZONE" be set appropriately on
  * each node via some means external to Ignite.  On AWS, some nodes might have AVAILABILTY_ZONE=us-east-1a and others
  * AVAILABILTY_ZONE=us-east-1b.
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="cacheConfiguration"&gt;
  *     &lt;list&gt;
  *         &lt;bean id="cache-template-bean" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration"&gt;

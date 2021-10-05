@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
  * {@link GridExecutorService#invokeAll(Collection, long, TimeUnit)},
  * {@link GridExecutorService#invokeAny(Collection)},
  * {@link GridExecutorService#invokeAny(Collection, long, TimeUnit)} to
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class GridExecutorService implements ExecutorService {
  * ...
  *     public &lt;T&gt; List&lt;Future&lt;T&gt;&gt; invokeAll(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks) throws InterruptedException {
@@ -312,7 +312,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      * <p>
      * Note, for compilation with JDK 1.6 necessary to change method signature
      * (note the {@code &lt;? extends T&gt;} clause).
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ...
      *     public &lt;T&gt; List&lt;Future&lt;T&gt;&gt; invokeAll(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks) throws InterruptedException {
      *         // Method body.
@@ -329,7 +329,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      * <p>
      * Note, for compilation with JDK 1.6 necessary to change method signature
      * (note the {@code &lt;? extends T&gt;} clause).
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     public &lt;T&gt; List&lt;Future&lt;T&gt;&gt; invokeAll(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks, long timeout, TimeUnit unit)
      *         throws InterruptedException {
      *         ...
@@ -440,7 +440,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      * <p>
      * Note, for compilation with JDK 1.6 necessary to change method signature
      * (note the {@code &lt;? extends T&gt;} clause).
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ...
      *     public &lt;T&gt; T invokeAny(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks) throws InterruptedException, ExecutionException {
      *         // Method body.
@@ -463,7 +463,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      * <p>
      * Note, for compilation with JDK 1.6 necessary to change method signature
      * (note the {@code &lt;? extends T&gt;} clause).
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ...
      *     public &lt;T&gt; T invokeAny(Collection&lt;? extends Callable&lt;T&gt;&gt; tasks, long timeout, TimeUnit unit)
      *         throws InterruptedException, ExecutionException, TimeoutException {

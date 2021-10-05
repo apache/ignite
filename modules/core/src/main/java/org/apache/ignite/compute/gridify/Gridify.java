@@ -54,7 +54,7 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  * <h1 class="header">Java Example</h1>
  * Here is a simple example how to grid-enable a Java method. The method {@code sayIt}
  * with {@code @Gridify} annotation will be executed on remote node.
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * &#64;Gridify
  * public static void sayIt(String arg) {
@@ -66,7 +66,7 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  * Here is an example of how to grid-enable a Java method with custom task. The custom task
  * logic will provide a way to split and aggregate the result. The method {@code sayIt} will
  * be executed on remote node.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class GridifyHelloWorldTaskExample {
  *     ...
  *     &#64;Gridify(taskClass = GridifyHelloWorldTask.class, timeout = 3000)
@@ -81,7 +81,7 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  * </pre>
  * The custom task will actually take the String passed into {@code sayIt(String)} method,
  * split it into words and execute every word on different remote node.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class GridifyHelloWorldTask extends GridifyTaskSplitAdapter&lt;Integer&gt; {
  *    &#64;Override public Integer apply(String e) {
  *        return F.outJobs(F.yield(((String)arg.getMethodParameters()[0]).split(" "), new C1&lt;String, Integer&gt;() {

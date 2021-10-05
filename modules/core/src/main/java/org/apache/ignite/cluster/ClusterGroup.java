@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * from the existing cluster group. If you create a new cluster group from the current one, then
  * the resulting cluster group will include a subset of nodes from the current one. The following
  * code shows how to create and nest cluster groups:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Ignite ignite = Ignition.ignite();
  *
  * IgniteCluster cluster = ignite.cluster();

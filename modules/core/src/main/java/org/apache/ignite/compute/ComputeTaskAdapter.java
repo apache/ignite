@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 /**
  * Convenience adapter for {@link ComputeTask} interface. Here is an example of
  * how {@code ComputeTaskAdapter} can be used:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource

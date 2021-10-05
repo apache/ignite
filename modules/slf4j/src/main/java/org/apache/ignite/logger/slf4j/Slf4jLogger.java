@@ -32,7 +32,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * by loaders that have prefer slf4j-based logging.
  * <p>
  * Here is an example of configuring SLF4J logger in Ignite configuration Spring file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/&gt;
  *      &lt;/property&gt;

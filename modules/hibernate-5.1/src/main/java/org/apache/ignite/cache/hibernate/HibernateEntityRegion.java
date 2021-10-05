@@ -32,7 +32,7 @@ import org.hibernate.persister.entity.EntityPersister;
  * Implementation of {@link EntityRegion}. This region is used to store entity data.
  * <p>
  * L2 cache for entity can be enabled in the Hibernate configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;hibernate-configuration&gt;
  *     &lt;!-- Enable L2 cache. --&gt;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
@@ -48,7 +48,7 @@ import org.hibernate.persister.entity.EntityPersister;
  * &lt;/hibernate-configuration&gt;
  * </pre>
  * Also cache for entity can be enabled using annotations:
- * <pre name="code" class="java">
+ * <pre class="java">
  * &#064;javax.persistence.Entity
  * &#064;javax.persistence.Cacheable
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

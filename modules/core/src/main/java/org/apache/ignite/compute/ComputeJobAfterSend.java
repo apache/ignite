@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
  * It is invoked on the caller node after the job has been sent to remote node for execution.
  * <p>
  * Example:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
  *     &#64;ComputeJobAfterSend

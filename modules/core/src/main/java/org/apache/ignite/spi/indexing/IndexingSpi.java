@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * BinaryObjects can be deserialized manually if original objects needed.
  *
  * Here is a Java example on how to configure SPI.
- * <pre name="code" class="java">
+ * <pre class="java">
  * IndexingSpi spi = new MyIndexingSpi();
  *
  * IgniteConfiguration cfg = new IgniteConfiguration();
@@ -50,14 +50,14 @@ import org.jetbrains.annotations.Nullable;
  * Ignition.start(cfg);
  * </pre>
  * Here is an example of how to configure SPI from Spring XML configuration file.
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name=&quot;indexingSpi&quot;&gt;
  *     &lt;bean class=&quot;com.example.MyIndexingSpi&quot;&gt;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

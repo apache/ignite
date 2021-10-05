@@ -102,7 +102,7 @@ import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TY
  *     <li>Parallel load cache minimum threshold. (see {@link #setParallelLoadCacheMinimumThreshold(int)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * <pre name="code" class="java">
+ * <pre class="java">
  *    ...
  *    // Create store factory.
  *    CacheJdbcPojoStoreFactory storeFactory = new CacheJdbcPojoStoreFactory();

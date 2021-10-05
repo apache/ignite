@@ -32,7 +32,7 @@ import org.hibernate.persister.entity.EntityPersister;
  * Implementation of {@link NaturalIdRegion}. This region is used to store naturalId data.
  * <p>
  * L2 cache for entity naturalId and target cache region can be set using annotations:
- * <pre name="code" class="java">
+ * <pre class="java">
  * &#064;javax.persistence.Entity
  * &#064;javax.persistence.Cacheable
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

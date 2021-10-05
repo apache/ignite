@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * corresponding values. Here is an example of how you can configure node filter for a
  * cache or a service so that it's deployed only on nodes that have {@code group}
  * attribute set to value {@code data}:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name=&quot;nodeFilter&quot;&gt;
  *     &lt;bean class=&quot;org.apache.ignite.util.AttributeNodeFilter&quot;&gt;
  *         &lt;constructor-arg value="group"/&gt;
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;/property&gt;
  * </pre>
  * You can also specify multiple attributes for the filter:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name=&quot;nodeFilter&quot;&gt;
  *     &lt;bean class=&quot;org.apache.ignite.util.AttributeNodeFilter&quot;&gt;
  *         &lt;constructor-arg&gt;

@@ -82,7 +82,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * </li>
  * </ul>
  * Below is a Java example of configuration for priority collision SPI:
- * <pre name="code" class="java">
+ * <pre class="java">
  * PriorityQueueCollisionSpi colSpi = new PriorityQueueCollisionSpi();
  *
  * // Execute all jobs sequentially by setting parallel job number to 1.
@@ -97,7 +97,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * G.start(cfg);
  * </pre>
  * Here is Spring XML configuration example:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="collisionSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi"&gt;
  *         &lt;property name="priorityAttributeKey" value="myPriorityAttributeKey"/&gt;
@@ -117,7 +117,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * jobs is set to {@code 1}) that all jobs from {@code MyGridUrgentTask} will most likely
  * be activated first (one by one) and jobs from {@code MyGridUsualTask} with lowest priority
  * will wait. Once higher priority jobs complete, lower priority jobs will be scheduled.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridUsualTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 20;
  *
@@ -143,7 +143,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * }
  * </pre>
  * and
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridUrgentTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 5;
  *
@@ -169,7 +169,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * }
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

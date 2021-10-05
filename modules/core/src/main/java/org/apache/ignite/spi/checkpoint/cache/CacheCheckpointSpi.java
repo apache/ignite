@@ -51,7 +51,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link CacheCheckpointSpi} can be configured as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * String cacheName = "checkpoints";
@@ -74,7 +74,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * {@link CacheCheckpointSpi} can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *         &lt;!-- Cache configuration. --&gt;
@@ -96,7 +96,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi

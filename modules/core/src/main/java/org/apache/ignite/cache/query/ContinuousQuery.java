@@ -48,7 +48,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * to query for all people with salary above 1000.
  * <p>
  * Here is the {@code Person} class:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class Person {
  *     // Name.
  *     private String name;
@@ -61,7 +61,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * </pre>
  * <p>
  * You can create and execute a continuous query like so:
- * <pre name="code" class="java">
+ * <pre class="java">
  * // Create a new continuous query.
  * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
@@ -89,7 +89,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * listener will start receiving notifications for cache updates.
  * <p>
  * To stop receiving updates call {@link QueryCursor#close()} method:
- * <pre name="code" class="java">
+ * <pre class="java">
  * cur.close();
  * </pre>
  * Note that this works even if you didn't provide the initial query. Cursor will

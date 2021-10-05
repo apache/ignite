@@ -89,7 +89,7 @@ import org.jclouds.location.reference.LocationConstants;
  * or home network tests.
  * </p>
  * <h2 class="header">Java Example</h2>
- * <pre name="code" class="java">
+ * <pre class="java">
  * String accountId = "your_account_id";
  * String accountKey = "your_account_key";
  *
@@ -103,7 +103,7 @@ import org.jclouds.location.reference.LocationConstants;
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * TcpDiscoveryCloudIpFinder can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="discoverySpi"&gt;
@@ -129,7 +129,7 @@ import org.jclouds.location.reference.LocationConstants;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

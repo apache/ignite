@@ -97,7 +97,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Ignite ignite = Ignition.ignite();
  *
  * IgniteCache&lt;String, Integer&gt; cache = ignite.cache(cacheName);

@@ -2846,7 +2846,7 @@ public abstract class IgniteUtils {
 
     /**
      * Converts byte array to formatted string. If calling:
-     * <pre name="code" class="java">
+     * <pre class="java">
      * ...
      * byte[] data = {10, 20, 30, 40, 50, 60, 70, 80, 90};
      *
@@ -2854,7 +2854,7 @@ public abstract class IgniteUtils {
      * ...
      * </pre>
      * the result will be:
-     * <pre name="code" class="java">
+     * <pre class="java">
      * ...
      * 0x0A, 0x14, 0x1E, 0x28, 0x32, 0x3C, 0x46, 0x50, 0x5A
      * ...

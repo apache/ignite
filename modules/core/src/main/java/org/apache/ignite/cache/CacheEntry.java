@@ -43,7 +43,7 @@ import org.apache.ignite.IgniteCache;
  * information, like entry's version, is ignored.
  *
  * <h2 class="header">Java Example</h2>
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteCache<Integer, String> cache = grid(0).cache(null);
  *
  * CacheEntry<String, Integer> entry1 = cache.invoke(100,

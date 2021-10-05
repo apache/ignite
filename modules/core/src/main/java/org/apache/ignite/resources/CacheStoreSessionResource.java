@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * instance. It can be injected into {@link org.apache.ignite.cache.store.CacheStore}.
  * <p>
  * Here is how injection would typically happen:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyCacheStore implements CacheStore {
  *      ...
  *      &#64;CacheStoreSessionResource

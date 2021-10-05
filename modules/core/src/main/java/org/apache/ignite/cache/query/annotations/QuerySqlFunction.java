@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
  * <p>
  * Example usage:
- * <pre name="code" class="java">
+ * <pre class="java">
  *     public class MyFunctions {
  *         &#64;QuerySqlFunction
  *         public static int sqr(int x) {

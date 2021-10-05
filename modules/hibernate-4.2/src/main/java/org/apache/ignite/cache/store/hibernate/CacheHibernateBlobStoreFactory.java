@@ -36,7 +36,7 @@ import org.hibernate.SessionFactory;
  *
  * <h2 class="header">Java Example</h2>
  * In this example existing session factory is provided.
- * <pre name="code" class="java">
+ * <pre class="java">
  *     ...
  *     CacheHibernateBlobStoreFactory&lt;String, String&gt; factory = new CacheHibernateBlobStoreFactory&lt;String, String&gt;();
  *
@@ -45,7 +45,7 @@ import org.hibernate.SessionFactory;
  * </pre>
  *
  * <h2 class="header">Spring Example (using Spring ORM)</h2>
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *   ...
  *   &lt;bean id=&quot;cache.hibernate.store.factory&quot;
  *       class=&quot;org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreFactory&quot;&gt;
@@ -73,7 +73,7 @@ import org.hibernate.SessionFactory;
  * </pre>
  *
  * <h2 class="header">Spring Example (using Spring ORM and persistent annotations)</h2>
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *     ...
  *     &lt;bean id=&quot;cache.hibernate.store.factory1&quot;
  *         class=&quot;org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreFactory&quot;&gt;
@@ -101,7 +101,7 @@ import org.hibernate.SessionFactory;
  * </pre>
  *
  * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *     ...
  *     &lt;bean id=&quot;cache.hibernate.store.factory2&quot;
  *         class=&quot;org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreFactory&quot;&gt;
@@ -116,7 +116,7 @@ import org.hibernate.SessionFactory;
  *     ...
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

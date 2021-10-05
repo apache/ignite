@@ -29,7 +29,7 @@ import java.io.Serializable;
  * {@link #execute(ServiceContext)} method on that service. It is up to the user
  * to control whenever the service should exit from the {@code execute} method.
  * For example, user may choose to implement service as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyIgniteService implements Service {
  *      ...
  *      // Example of ignite resource injection. All resources are optional.
@@ -51,14 +51,14 @@ import java.io.Serializable;
  *  }
  * </pre>
  * Consecutively, this service can be deployed as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * IgniteServices svcs = ignite.services();
  *
  * svcs.deployClusterSingleton("mySingleton", new MyIgniteService());
  * </pre>
  * Or from grid configuration on startup:
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * IgniteServiceConfiguration svcCfg = new IgniteServiceConfiguration();

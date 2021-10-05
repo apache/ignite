@@ -149,7 +149,7 @@ import org.jetbrains.annotations.Nullable;
  * due to node crash (detected by {@link org.apache.ignite.cluster.ClusterTopologyException} exception) or due to job
  * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
  * Here is an example of how a you would implement your task using {@link ComputeTaskAdapter}:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource
@@ -192,7 +192,7 @@ import org.jetbrains.annotations.Nullable;
  * user and provides convenient {@link ComputeTaskSplitAdapter#split(int, Object)}
  * method for splitting task into sub-jobs in homogeneous environments.
  * Here is an example of how you would implement your task using {@link ComputeTaskSplitAdapter}:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {

@@ -74,7 +74,7 @@ import java.lang.annotation.Target;
  * <p>
  * Example for these types of functions would be any function that is looking for a subset of data
  * in a given input collection. For example:
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * &#64;GridifySetToSet(threshold = 2)
  * public static Collection&lt;Number&gt; findAllPrimeNumbers(Collection&lt;Number&gt; input) {...}

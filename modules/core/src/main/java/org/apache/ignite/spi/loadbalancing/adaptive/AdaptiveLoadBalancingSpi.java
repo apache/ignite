@@ -107,7 +107,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * <p>
  * Here is an example of how probing can be implemented to use
  * number of active and waiting jobs as probing mechanism:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class FooBarLoadProbe implements GridAdaptiveLoadProbe {
  *     // Flag indicating whether to use average value or current.
  *     private int useAvg = true;
@@ -143,7 +143,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * If you are using {@link org.apache.ignite.compute.ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -165,7 +165,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * {@link org.apache.ignite.compute.ComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *    // Inject load balancer.
  *    &#64;LoadBalancerResource
@@ -221,7 +221,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * </ul>
  * <p>
  * Below is Java configuration example:
- * <pre name="code" class="java">
+ * <pre class="java">
  * AdaptiveLoadBalancingSpi spi = new AdaptiveLoadBalancingSpi();
  *
  * // Configure probe to use latest job execution time vs. average.
@@ -238,7 +238,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * G.start(cfg);
  * </pre>
  * Here is how you can configure {@code GridJobsLoadBalancingSpi} using Spring XML configuration:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.AdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;
@@ -250,7 +250,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * &lt;/property&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

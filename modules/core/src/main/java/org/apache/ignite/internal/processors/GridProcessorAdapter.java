@@ -126,7 +126,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
      * @param condDesc Description of failed condition. Note that this description should include
      *      JavaBean name of the property (<b>not</b> a variable name) as well condition in
      *      Java syntax like, for example:
-     *      <pre name="code" class="java">
+     *      <pre class="java">
      *      ...
      *      assertParameter(dirPath != null, "dirPath != null");
      *      ...

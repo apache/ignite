@@ -38,7 +38,7 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
  * <p>
  * Following Hibernate settings should be specified to enable second level cache and to use this
  * region factory for caching:
- * <pre name="code" class="brush: xml; gutter: false;">
+ * <pre class="brush: xml; gutter: false;">
  * hibernate.cache.use_second_level_cache=true
  * hibernate.cache.region.factory_class=org.apache.ignite.cache.hibernate.HibernateRegionFactory
  * </pre>
@@ -46,7 +46,7 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
  * For example to start Ignite node one of loader provided in {@code org.apache.ignite.grid.startup} package can be used.
  * <p>
  * Name of Ignite instance to be used for region factory must be specified as following Hibernate property:
- * <pre name="code" class="brush: xml; gutter: false;">
+ * <pre class="brush: xml; gutter: false;">
  * org.apache.ignite.hibernate.ignite_instance_name=&lt;Ignite instance name&gt;
  * </pre>
  * Each Hibernate cache region must be associated with some {@link IgniteInternalCache}, by default it is assumed that
@@ -54,7 +54,7 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
  * region to cache mapping using properties with prefix {@code org.apache.ignite.hibernate.region_cache}.
  * For example if for region with name "region1" cache with name "cache1" should be used then following
  * Hibernate property should be specified:
- * <pre name="code" class="brush: xml; gutter: false;">
+ * <pre class="brush: xml; gutter: false;">
  * org.apache.ignite.hibernate.region_cache.region1=cache1
  * </pre>
  */

@@ -34,7 +34,7 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  * Use this factory to pass {@link CacheJdbcBlobStore} to {@link CacheConfiguration}.
  *
  * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *     &lt;bean id= "myDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
  *
  *     &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
@@ -55,7 +55,7 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  *     &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

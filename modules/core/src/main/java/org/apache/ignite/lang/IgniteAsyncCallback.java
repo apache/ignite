@@ -43,7 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * to query all persons with salary above then 1000. Also remote filter will update some entries.
  * <p>
  * Here is the {@code Person} class:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class Person {
  *     // Name.
  *     private String name;
@@ -56,7 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * </pre>
  * <p>
  * Here is the {@code ExampleCacheEntryFilter} class:
- * <pre name="code" class="java">
+ * <pre class="java">
  * &#064;IgniteAsyncCallback
  * public class ExampleCacheEntryFilter implements CacheEntryEventFilter&lt;Integer, Person&gt; {
  *     &#064;IgniteInstanceResource
@@ -79,7 +79,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * </pre>
  * <p>
  * Query with asynchronous callback execute as usually:
- * <pre name="code" class="java">
+ * <pre class="java">
  * // Create new continuous query.
  * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *

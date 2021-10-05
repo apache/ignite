@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * Defines compute grid functionality for executing tasks and closures over nodes
  * in the {@link ClusterGroup}. Instance of {@code IgniteCompute} is obtained from {@link Ignite}
  * as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Ignite ignite = Ignition.ignite();
  *
  * // Compute over all nodes in the cluster.
@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * You can also get an instance of {@link IgniteCompute} over a subset of cluster nodes, i.e. over
  * a {@link ClusterGroup}:
- * <pre name="code" class="java">
+ * <pre class="java">
  * // Cluster group composed of all remote nodes.
  * ClusterGroup rmtGrp = ignite.cluster().forRemotes();
  *
@@ -102,7 +102,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * Here is an example of how to inject instance of {@link Ignite} into a computation:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyIgniteJob extends IgniteRunnable {
  *      ...
  *      &#64;IgniteInstanceResource
@@ -713,7 +713,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * defining {@link ComputeTask}.
      * <p>
      * Here is an example.
-     * <pre name="code" class="java">
+     * <pre class="java">
      * ignite.withName("MyTask").run(new IgniteRunnable() {...});
      * </pre>
      *
@@ -745,7 +745,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * failover policy, unless this flag is set again.
      * <p>
      * Here is an example.
-     * <pre name="code" class="java">
+     * <pre class="java">
      * ignite.compute().withNoFailover().run(new IgniteRunnable() {...});
      * </pre>
      *
@@ -759,7 +759,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * <p>
      * Here is an example.
-     * <pre name="code" class="java">
+     * <pre class="java">
      * ignite.compute().withNoResultCache().run(new IgniteRunnable() {...});
      * </pre>
      * @return This {@code IgniteCompute} instance for chaining calls.

@@ -45,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * each other. This is useful for port forwarding, where multiple nodes will
  * typically map to the same external address (router), but with different port
  * numbers. Here is the example:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name=&quot;addressResolver&quot;&gt;
  *     &lt;bean class=&quot;org.apache.ignite.configuration.BasicAddressResolver&quot;&gt;
  *         &lt;constructor-arg&gt;
@@ -62,7 +62,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Second type maps one host to another. In this case any internal address a node
  * is bound to will be mapped to the corresponding external host with the same
  * host number. Here is the example:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name=&quot;addressResolver&quot;&gt;
  *     &lt;bean class=&quot;org.apache.ignite.configuration.BasicAddressResolver&quot;&gt;
  *         &lt;constructor-arg&gt;

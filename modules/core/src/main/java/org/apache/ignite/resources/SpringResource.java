@@ -51,7 +51,7 @@ import java.lang.annotation.Target;
  * <p>
  * <h1 class="header">Examples</h1>
  * Here is how injection would typically happen:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;SpringResource(resourceName = "bean-name")
@@ -60,7 +60,7 @@ import java.lang.annotation.Target;
  *  }
  * </pre>
  * or
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
  *     private transient MyUserBean rsrc;
@@ -73,7 +73,7 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  * and user resource {@code MyUserResource}
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyUserResource {
  *     ...
  *     &#64;SpringResource(resourceName = "bean-name")
@@ -90,13 +90,13 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  * where spring bean resource class can look like this:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyUserBean {
  *     ...
  * }
  * </pre>
  * and Spring file
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="bean-name" class="my.foo.MyUserBean" singleton="true"&gt;
  *         ...
  * &lt;/bean&gt;

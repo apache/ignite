@@ -28,7 +28,7 @@ import java.util.UUID;
  * to serve them.
  * <p>
  * Below is an example on how to start TCP router with non-default configuration.
- * <pre name="code" class="java">
+ * <pre class="java">
  * GridTcpRouterConfiguration cfg =
  *     new GridTcpRouterConfiguration();
  *

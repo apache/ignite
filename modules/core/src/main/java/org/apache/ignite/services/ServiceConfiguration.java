@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgnitePredicate;
  * calling any of the provided {@code deploy(...)} methods, managed services
  * can also be automatically deployed on startup by specifying them in {@link org.apache.ignite.configuration.IgniteConfiguration}
  * like so:
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();

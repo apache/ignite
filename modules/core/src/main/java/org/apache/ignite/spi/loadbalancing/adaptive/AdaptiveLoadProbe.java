@@ -40,7 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * <h1 class="header">Example</h1>
  * Here is an example of how probing can be implemented to use
  * number of active and waiting jobs as probing mechanism:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class FooBarLoadProbe implements GridAdaptiveLoadProbe {
  *     // Flag indicating whether to use average value or current.
  *     private int useAvg = true;
@@ -67,7 +67,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * </pre>
  * Below is an example of how a probe shown above would be configured with {@link AdaptiveLoadBalancingSpi}
  * SPI:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;

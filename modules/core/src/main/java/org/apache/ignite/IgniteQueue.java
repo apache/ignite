@@ -41,7 +41,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  * have maximum capacity. Queue capacity can be set at creation time and cannot be
  * changed later. Here is an example of how to create {@code bounded} {@code LIFO} queue with
  * capacity of {@code 1000} items.
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteQueue&lt;String&gt; queue = cache().queue("anyName", LIFO, 1000);
  * ...
  * queue.add("item");
@@ -58,7 +58,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  * <p>
  * Here is an example of how create {@code unbounded} queue
  * in non-collocated mode.
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteQueue&lt;String&gt; queue = cache().queue("anyName", 0 &#047;*unbounded*&#047;, false &#047;*non-collocated*&#047;);
  * ...
  * queue.add("item");

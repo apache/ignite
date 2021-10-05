@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteException;
 /**
  * Implementation of Transaction Manager factory that should used within WebSphere Liberty.
  * <h2 class="header">Java Configuration</h2>
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * TransactionConfiguration txCfg = new TransactionConfiguration();
@@ -35,7 +35,7 @@ import org.apache.ignite.IgniteException;
  * cfg.setTransactionConfiguration(new txCfg);
  * </pre>
  * <h2 class="header">Spring Configuration</h2>
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *         ...
  *         &lt;property name="transactionConfiguration"&gt;
@@ -45,7 +45,7 @@ import org.apache.ignite.IgniteException;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>*
  */

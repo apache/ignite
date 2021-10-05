@@ -168,7 +168,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * <h2 class="header">Java Example</h2>
  * TcpCommunicationSpi is used by default and should be explicitly configured only if some SPI configuration parameters
  * need to be overridden.
- * <pre name="code" class="java">
+ * <pre class="java">
  * TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
  *
  * // Override local port.
@@ -184,7 +184,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * TcpCommunicationSpi can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="communicationSpi"&gt;
@@ -197,7 +197,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  *

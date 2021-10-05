@@ -79,7 +79,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link S3CheckpointSpi} can be configured as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * S3CheckpointSpi spi = new S3CheckpointSpi();
@@ -98,7 +98,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * {@link S3CheckpointSpi} can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *        &lt;property name=&quot;checkpointSpi&quot;&gt;
@@ -119,7 +119,7 @@ import org.jetbrains.annotations.Nullable;
  * Choose another implementation of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} for local or
  * home network tests.
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi

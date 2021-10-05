@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * extra convenience whenever custom affinity mapping is required. Here is
  * an example of how {@code Person} objects can be collocated with
  * {@code Company} objects they belong to:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Object personKey = new AffinityKey(myPersonId, myCompanyId);
  *
  * // Both, the company and the person objects will be cached on the same node.

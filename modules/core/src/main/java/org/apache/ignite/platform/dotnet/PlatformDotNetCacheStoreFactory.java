@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCache
  * {@link org.apache.ignite.configuration.CacheConfiguration#setCacheStoreFactory(javax.cache.configuration.Factory)} property
  * and provide assembly name and class name of your .NET store
  * implementation (both properties are mandatory):
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean class="org.apache.ignite.cache.CacheConfiguration"&gt;
  *     ...
  *     &lt;property name="cacheStoreFactory"&gt;

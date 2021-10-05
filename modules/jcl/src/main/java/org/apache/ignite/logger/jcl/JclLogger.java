@@ -32,7 +32,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * Here is an example of configuring JCL logger in Ignite configuration Spring
  * file to work over log4j implementation. Note that we use the same configuration file
  * as we provide by default:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"&gt;
@@ -46,7 +46,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      ...
  * </pre>
  * If you are using system properties to configure JCL logger use following configuration:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"/&gt;
@@ -54,7 +54,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      ...
  * </pre>
  * And the same configuration if you'd like to configure Ignite in your code:
- * <pre name="code" class="java">
+ * <pre class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      IgniteLogger log = new JclLogger(new Log4JLogger("config/ignite-log4j.xml"));
@@ -62,7 +62,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      cfg.setGridLogger(log);
  * </pre>
  * or following for the configuration by means of system properties:
- * <pre name="code" class="java">
+ * <pre class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      IgniteLogger log = new JclLogger();

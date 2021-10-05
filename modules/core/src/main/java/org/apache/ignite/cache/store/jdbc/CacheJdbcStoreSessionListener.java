@@ -47,7 +47,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
  * As an example, here is how the {@link CacheStore#write(Cache.Entry)}
  * method can be implemented if {@link CacheJdbcStoreSessionListener}
  * is configured:
- * <pre name="code" class="java">
+ * <pre class="java">
  * private static class Store extends CacheStoreAdapter&lt;Integer, Integer&gt; {
  *     &#64;CacheStoreSessionResource
  *     private CacheStoreSession ses;

@@ -151,7 +151,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Code Example</h1>
  * The following example demonstrates how the deployment SPI can be used. It expects that you have a package file
  * in 'home/username/ignite/work/my_deployment/file' folder which contains 'myproject.HelloWorldTask' class.
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * DeploymentSpi deploymentSpi = new UriDeploymentSpi();
@@ -263,7 +263,7 @@ import org.jetbrains.annotations.Nullable;
  * </blockquote>
  * <h2 class="header">Java Example</h2>
  * UriDeploymentSpi needs to be explicitly configured to override default local deployment SPI.
- * <pre name="code" class="java">
+ * <pre class="java">
  * UriDeploymentSpi deploySpi = new UriDeploymentSpi();
  *
  * IgniteConfiguration cfg = new IgniteConfiguration();
@@ -284,7 +284,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * <h2 class="header">Spring Example</h2>
  * UriDeploymentSpi can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="deploymentSpi"&gt;
@@ -302,7 +302,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.deployment.DeploymentSpi

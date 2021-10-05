@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * If more than one service is deployed on a server, then the first available instance will be returned.
  * <p>
  * Here is how injection would typically happen:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
  *      // Inject single instance of 'myService'. If there is
@@ -39,7 +39,7 @@ import java.lang.annotation.Target;
  *  }
  * </pre>
  * or attach the same annotations to methods:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
  *     private MyService svc;

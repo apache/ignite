@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * remains the same throughout the lifetime of a node. Use
  * {@link IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration">
  *     ...
  *     &lt;property name="userAttributes">
@@ -74,7 +74,7 @@ import org.jetbrains.annotations.Nullable;
  * into node attributes. This gives you an ability to get any information specified
  * in {@link System#getProperties()} about any node. So for example, in order to print out
  * information about Operating System for all nodes you would do the following:
- * <pre name="code" class="java">
+ * <pre class="java">
  * for (ClusterNode node : ignite.cluster().nodes()) {
  *     System.out.println("Operating system name: " + node.getAttribute("os.name"));
  *     System.out.println("Operating system architecture: " + node.getAttribute("os.arch"));

@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isIns
  * Use {@link #start()} method to start grid with default configuration. You can also use
  * {@link org.apache.ignite.configuration.IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with custom configuration for <strong>URI deployment</strong>.
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * GridUriDeployment deploySpi = new GridUriDeployment();
@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isIns
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
  * (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}) and specifies a Ignite instance name:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
  *     &lt;property name="igniteInstanceName" value="grid"/&gt;
@@ -84,7 +84,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isIns
  * you do not need to pass path to Spring XML file if you are using
  * {@code IGNITE_HOME/config/default-config.xml}. Also note, that the path can be
  * absolute or relative to IGNITE_HOME.
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * Ignition.start("/path/to/spring/xml/file.xml");
  * ...

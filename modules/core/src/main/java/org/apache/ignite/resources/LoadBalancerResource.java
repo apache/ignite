@@ -35,14 +35,14 @@ import java.lang.annotation.Target;
  * </ul>
  * <p>
  * Here is how injection would typically happen:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
  *    &#64;LoadBalancerResource
  *    private ComputeLoadBalancer balancer;
  * }
  * </pre>
  * or
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
  *     ...
  *     private ComputeLoadBalancer balancer;

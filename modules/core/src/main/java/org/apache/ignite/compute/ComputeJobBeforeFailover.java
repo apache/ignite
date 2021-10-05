@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * job gets failed over to another node.
  * <p>
  * Example:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
  *     &#64;ComputeJobBeforeFailover

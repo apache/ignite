@@ -52,7 +52,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
- * <pre name="code" class="java">
+ * <pre class="java">
  * OptimizedMarshaller marshaller = new OptimizedMarshaller();
  *
  * // Enforce Serializable interface.
@@ -68,7 +68,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridOptimizedMarshaller can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
@@ -80,7 +80,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

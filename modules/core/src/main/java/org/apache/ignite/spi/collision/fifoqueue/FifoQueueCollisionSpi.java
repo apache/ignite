@@ -50,7 +50,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@code FifoQueueCollisionSpi} can be configured as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * FifoQueueCollisionSpi colSpi = new FifoQueueCollisionSpi();
  *
  * // Execute all jobs sequentially by setting parallel job number to 1.
@@ -66,7 +66,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * {@code FifoQueueCollisionSpi} can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *       ...
  *       &lt;property name="collisionSpi"&gt;

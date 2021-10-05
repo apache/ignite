@@ -37,7 +37,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * inside any web container as servlet.
  * <p>
  * This startup must be defined in {@code web.xml} file.
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;servlet&gt;
  *     &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
  *     &lt;servlet-class&gt;org.apache.ignite.startup.servlet.ServletStartup&lt;/servlet-class&gt;
@@ -70,7 +70,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
  *         (replace {@code $IGNITE_HOME} with absolute path).
  *     </li>
  *     <li>Configure startup in {@code $TOMCAT_HOME/conf/web.xml}
- *         <pre name="code" class="xml">
+ *         <pre class="xml">
  *         &lt;servlet&gt;
  *             &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
  *             &lt;servlet-class&gt;org.apache.ignite.startup.servlet.ServletStartup&lt;/servlet-class&gt;
@@ -93,7 +93,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * <p>
  * <h2 class="header">Jetty</h2>
  * Below is Java code example with Jetty API:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Server service = new Server();
  *
  * service.addListener("localhost:8090");

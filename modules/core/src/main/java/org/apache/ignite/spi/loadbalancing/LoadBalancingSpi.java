@@ -33,7 +33,7 @@ import org.apache.ignite.spi.IgniteSpi;
  * If you are using {@link org.apache.ignite.compute.ComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task could look:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object,Object&gt; {
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -55,7 +55,7 @@ import org.apache.ignite.spi.IgniteSpi;
  * {@link org.apache.ignite.compute.ComputeTaskAdapter}. Here is an example of how your task could look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskAdapter&lt;String,String&gt; {
  *    // Inject load balancer.
  *    &#64;LoadBalancerResource

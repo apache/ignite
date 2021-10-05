@@ -42,7 +42,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * This startup can be used to start Ignite inside any web container.
  * <p>
  * This startup must be defined in {@code web.xml} file.
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;listener&gt;
  *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.ServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
@@ -74,7 +74,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
  *         (replace {@code $IGNITE_HOME} with absolute path).
  *     </li>
  *     <li>Configure this startup in {@code $TOMCAT_HOME/conf/web.xml}
- *         <pre name="code" class="xml">
+ *         <pre class="xml">
  *         &lt;listener&gt;
  *             &lt;listener-class&gt;org.apache.ignite.startup.servlet.ServletContextListenerStartup&lt;/listener-class&gt;
  *         &lt;/listener&gt;

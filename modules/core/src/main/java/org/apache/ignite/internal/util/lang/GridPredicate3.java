@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.P3;
  * scope at execution.
  * <p>
  * This form of predicate is essentially a syntactic "sugar" providing shorter syntax for:
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * GridPredicate&lt;GridTuple3&lt;E1, E2, E3&gt;&gt;
  * ...

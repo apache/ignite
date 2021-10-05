@@ -74,7 +74,7 @@ import java.lang.annotation.Target;
  * <p>
  * Example for these types of functions would be any aggregate function returning single value from
  * the multiple inputs. For example:
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * &#64;GridifySetToValue(threshold = 2)
  * public static Number findMaxValue(Collection&lt;Number&gt; input);

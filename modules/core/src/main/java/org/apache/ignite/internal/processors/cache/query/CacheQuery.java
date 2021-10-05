@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * Note that cache name is case sensitive and has to always be specified in double quotes.
  * Here is an example of cross cache query (note that 'replicated' and 'partitioned' are
  * cache names for replicated and partitioned caches accordingly):
- * <pre name="code" class="java">
+ * <pre class="java">
  * CacheQuery&lt;Map.Entry&lt;Integer, FactPurchase&gt;&gt; storePurchases = cache.queries().createSqlQuery(
  *     Purchase.class,
  *     "from \"replicated\".Store, \"partitioned\".Purchase where Store.id=Purchase.storeId and Store.id=?");
@@ -88,7 +88,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Query usage</h1>
  * As an example, suppose we have data model consisting of {@code 'Employee'} and {@code 'Organization'}
  * classes defined as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class Organization {
  *     // Indexed field.
  *     &#64;QuerySqlField(index = true)
@@ -123,7 +123,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Then you can create and execute queries that check various salary ranges like so:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Cache&lt;Long, Person&gt; cache = Ignition.ignite().cache();
  * ...
  * // Create query which selects salaries based on range for all employees
@@ -142,7 +142,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * Here is a possible query that will use Lucene text search to scan all resumes to
  * check if employees have {@code Master} degree:
- * <pre name="code" class="java">
+ * <pre class="java">
  * CacheQuery&lt;Map.Entry&lt;Long, Person&gt;&gt; mastersQry =
  *     cache.queries().createFullTextQuery(Person.class, "Master");
  *
@@ -151,7 +151,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * <h1 class="header">Geo-Spatial Indexes and Queries</h1>
  * Ignite also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index:
- * <pre name="code" class="java">
+ * <pre class="java">
  * private class MapPoint implements Serializable {
  *     // Geospatial index.
  *     &#64;QuerySqlField(index = true)
@@ -168,7 +168,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Example of spatial query on the geo-indexed field from above:
- * <pre name="code" class="java">
+ * <pre class="java">
  * org.locationtech.jts.geom.GeometryFactory factory = new org.locationtech.jts.geom.GeometryFactory();
  *
  * org.locationtech.jts.geom.Polygon square = factory.createPolygon(new Coordinate[] {

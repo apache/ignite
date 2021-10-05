@@ -261,7 +261,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
  *     </tr>
  * </table>
  * <h1 class="header">Example</h1>
- * <pre name="code" class="java">
+ * <pre class="java">
   * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:cfg//cache=persons@file:///etc/configs/ignite-jdbc.xml");
  *

@@ -50,7 +50,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * listener method declared in that bean.
  *
  * <h3 class="header">Spring XML Configuration Example</h3>
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="igniteClient" class="org.apache.ignite.IgniteClientSpringBean"&gt;
  *     &lt;property name="clientConfiguration"&gt;
  *         &lt;bean class="org.apache.ignite.configuration.ClientConfiguration"&gt;

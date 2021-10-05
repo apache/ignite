@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * </ul>
  * <p>
  * Here is how injection would typically happen:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;IgniteJobContextResource
@@ -42,7 +42,7 @@ import java.lang.annotation.Target;
  *  }
  * </pre>
  * or
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
  *     private ComputeJobContext jobCtx;

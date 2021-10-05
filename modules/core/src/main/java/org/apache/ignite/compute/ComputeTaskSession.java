@@ -82,7 +82,7 @@ import org.jetbrains.annotations.Nullable;
  * injection) by attaching {@link org.apache.ignite.resources.TaskSessionResource @TaskSessionResource}
  * annotation to a field or a setter method inside of {@link ComputeTask} or
  * {@link ComputeJob} implementations as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * // This field will be injected with distributed task session.
  * &#64TaskSessionResource
@@ -90,7 +90,7 @@ import org.jetbrains.annotations.Nullable;
  * ...
  * </pre>
  * or from a setter method:
- * <pre name="code" class="java">
+ * <pre class="java">
  * // This setter method will be automatically called by the system
  * // to set grid task session.
  * &#64TaskSessionResource

@@ -45,7 +45,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * injection) by attaching {@link org.apache.ignite.resources.TaskContinuousMapperResource}
  * annotation to a field or a setter method inside of {@link ComputeTask} implementations
  * as follows:
- * <pre name="code" class="java">
+ * <pre class="java">
  * ...
  * // This field will be injected with task continuous mapper.
  * &#64TaskContinuousMapperResource
@@ -53,7 +53,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * ...
  * </pre>
  * or from a setter method:
- * <pre name="code" class="java">
+ * <pre class="java">
  * // This setter method will be automatically called by the system
  * // to set grid task continuous mapper.
  * &#64TaskContinuousMapperResource

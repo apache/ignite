@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * Here is an example of how {@code ComputeJobAdapter} can be used from task logic
  * to create jobs. The example creates job adapter as anonymous class, but you
  * are free to create a separate class for it.
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class TestGridTask extends ComputeTaskSplitAdapter&lt;String, Integer&gt; {
  *     // Used to imitate some logic for the
  *     // sake of this example

@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * if any. You can attach any metadata to it, e.g. to recognize if several operations belong
  * to the same transaction or not.
  * Here is an example of how attach a JDBC connection as transaction metadata:
- * <pre name="code" class="java">
+ * <pre class="java">
  * Connection conn = tx.meta("some.name");
  *
  * if (conn == null) {

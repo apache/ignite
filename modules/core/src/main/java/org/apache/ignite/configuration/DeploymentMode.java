@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * change the user version.
  * <p>
  * User version is specified in {@code META-INF/ignite.xml} file as follows:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *    &lt;!-- User version. --&gt;
  *    &lt;bean id="userVersion" class="java.lang.String"&gt;
  *        &lt;constructor-arg value="0"/&gt;

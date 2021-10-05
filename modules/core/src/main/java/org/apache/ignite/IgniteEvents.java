@@ -62,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  * events that you need within your logic. You can enable/disable events either by calling {@link #enableLocal(int...)}
  * or {@link #disableLocal(int...)} methods, or from XML configuration.
  * For example, you can enable all cache events as follows:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="includeEventTypes"&gt;
  *     &lt;util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/&gt;
  * &lt;/property&gt;

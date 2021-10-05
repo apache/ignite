@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;hibernate-configuration&gt;
  *     &lt;!-- Enable L2 cache. --&gt;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;/hibernate-configuration&gt;
  * </pre>
  * Also cache access strategy can be set using annotations:
- * <pre name="code" class="java">
+ * <pre class="java">
  * &#064;javax.persistence.Entity
  * &#064;javax.persistence.Cacheable
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)

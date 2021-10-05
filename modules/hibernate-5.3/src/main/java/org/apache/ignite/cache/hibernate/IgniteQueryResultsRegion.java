@@ -25,7 +25,7 @@ import org.hibernate.query.Query;
  * Implementation of {@link QueryResultsRegion}. This region is used to store query results.
  * <p>
  * Query results caching can be enabled in the Hibernate configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;hibernate-configuration&gt;
  *     &lt;!-- Enable L2 cache. --&gt;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
@@ -45,7 +45,7 @@ import org.hibernate.query.Query;
  * </pre>
  * By default queries are not cached even after enabling query caching, to enable results caching for a particular
  * query, call {@link Query#setCacheable(boolean)}:
- * <pre name="code" class="java">
+ * <pre class="java">
  *     Session ses = getSession();
  *
  *     Query qry = ses.createQuery("...");

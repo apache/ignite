@@ -63,7 +63,7 @@ import org.jetbrains.annotations.Nullable;
  * In addition to deploying managed services by calling any of the provided {@code deploy(...)} methods,
  * you can also automatically deploy services on startup by specifying them in {@link IgniteConfiguration}
  * like so:
- * <pre name="code" class="java">
+ * <pre class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * ServiceConfiguration svcCfg1 = new ServiceConfiguration();
@@ -106,7 +106,7 @@ import org.jetbrains.annotations.Nullable;
  * Refer to corresponding resource documentation for more information.
  * <h1 class="header">Service Example</h1>
  * Here is an example of how an distributed service may be implemented and deployed:
- * <pre name="code" class="java">
+ * <pre class="java">
  * // Simple service implementation.
  * public class MyIgniteService implements Service {
  *      ...
@@ -226,7 +226,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)}
      * method as follows:
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
@@ -261,7 +261,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * This method is analogous to the invocation of
      * {@link #deployAsync(org.apache.ignite.services.ServiceConfiguration)} method as follows:
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
@@ -297,7 +297,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)}
      * method as follows:
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
@@ -331,7 +331,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * This method is analogous to the invocation of
      * {@link #deployAsync(org.apache.ignite.services.ServiceConfiguration)} method as follows:
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
@@ -375,7 +375,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * value greater than {@code 0}.
      * <p>
      * Here is an example of creating service deployment configuration:
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
@@ -417,7 +417,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * value greater than {@code 0}.
      * <p>
      * Here is an example of creating service deployment configuration:
-     * <pre name="code" class="java">
+     * <pre class="java">
      *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);

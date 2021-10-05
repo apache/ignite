@@ -138,7 +138,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * </li>
  * </ul>
  * Below is example of configuring this SPI from Java code:
- * <pre name="code" class="java">
+ * <pre class="java">
  * JobStealingCollisionSpi spi = new JobStealingCollisionSpi();
  *
  * // Configure number of waiting jobs
@@ -168,7 +168,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * cfg.setCollisionSpi(spi);
  * </pre>
  * Here is an example of how this SPI can be configured from Spring XML configuration:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="collisionSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi"&gt;
  *         &lt;property name="activeJobsThreshold" value="100"/&gt;
@@ -186,7 +186,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * </pre>
  * </p>
  * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * </p>

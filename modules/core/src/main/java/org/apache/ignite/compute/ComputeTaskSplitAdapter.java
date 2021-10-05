@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  * job. See {@link #split(int, Object)} method for more details.
  * <p>
  * Below is a coding example of how you would use {@code ComputeTaskSplitAdapter}:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {

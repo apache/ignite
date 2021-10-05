@@ -71,7 +71,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * <p>
  * This is a request filter, that you need to specify in your {@code web.xml} along
  * with {@link ServletContextListenerStartup} to enable web sessions caching:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;listener&gt;
  *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.ServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
@@ -89,7 +89,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * </pre>
  * It is also possible to specify a servlet name in a filter mapping, and a servlet URL pattern will
  * be used in this case:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;filter&gt;
  *     &lt;filter-name&gt;WebSessionFilter&lt;/filter-name&gt;
  *     &lt;filter-class&gt;org.apache.ignite.cache.websession.WebSessionFilter&lt;/filter-class&gt;
@@ -141,7 +141,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * </table>
  * These parameters are taken from either filter init parameter list or
  * servlet context parameters. You can specify filter init parameters as follows:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;filter&gt;
  *     &lt;filter-name&gt;WebSessionFilter&lt;/filter-name&gt;
  *     &lt;filter-class&gt;org.apache.ignite.cache.websession.WebSessionFilter&lt;/filter-class&gt;

@@ -55,7 +55,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * by loaders that have prefer <a target=_new href="http://logging.apache.org/log4j/1.2/">log4j</a>-based logging.
  * <p>
  * Here is a typical example of configuring log4j logger in Ignite configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.log4j.Log4JLogger"&gt;
  *              &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
@@ -63,7 +63,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      &lt;/property&gt;
  * </pre>
  * and from your code:
- * <pre name="code" class="java">
+ * <pre class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");

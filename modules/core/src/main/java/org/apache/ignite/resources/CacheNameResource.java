@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * if {@link CacheNameResource} annotation is used in another classes it is no-op.
  * <p>
  * Here is how injection would typically happen:
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyCacheStore implements GridCacheStore {
  *      ...
  *      &#64;CacheNameResource
@@ -40,7 +40,7 @@ import java.lang.annotation.Target;
  *  }
  * </pre>
  * or
- * <pre name="code" class="java">
+ * <pre class="java">
  * public class MyCacheStore implements GridCacheStore {
  *     ...
  *     private String cacheName;

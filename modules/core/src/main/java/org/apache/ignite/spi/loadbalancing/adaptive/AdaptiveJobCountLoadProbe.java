@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <p>
  * Below is an example of how CPU load probe would be configured in Ignite
  * Spring configuration file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;

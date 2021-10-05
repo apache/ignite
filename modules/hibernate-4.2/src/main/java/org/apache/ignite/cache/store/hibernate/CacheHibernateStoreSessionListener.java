@@ -53,7 +53,7 @@ import org.hibernate.cfg.Configuration;
  * As an example, here is how the {@link CacheStore#write(javax.cache.Cache.Entry)}
  * method can be implemented if {@link CacheHibernateStoreSessionListener}
  * is configured:
- * <pre name="code" class="java">
+ * <pre class="java">
  * private static class Store extends CacheStoreAdapter&lt;Integer, Integer&gt; {
  *     &#64;CacheStoreSessionResource
  *     private CacheStoreSession ses;

@@ -68,7 +68,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * <p>
  * <h1 class="header">Spring Configuration Example</h1>
  * Here is a typical example of describing it in Spring file:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
  *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
@@ -78,12 +78,12 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * &lt;/bean&gt;
  * </pre>
  * Or use default configuration:
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean"/&gt;
  * </pre>
  * <h1 class="header">Java Example</h1>
  * Here is how you may access this bean from code:
- * <pre name="code" class="java">
+ * <pre class="java">
  * AbstractApplicationContext ctx = new FileSystemXmlApplicationContext("/path/to/spring/file");
  *
  * // Register Spring hook to destroy bean automatically.

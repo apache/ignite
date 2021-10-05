@@ -68,7 +68,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  *      </li>
  * </ul>
  * Here is a Java example how to configure grid with {@link AlwaysFailoverSpi} failover SPI.
- * <pre name="code" class="java">
+ * <pre class="java">
  * AlwaysFailoverSpi spi = new AlwaysFailoverSpi();
  *
  * // Override maximum failover attempts.
@@ -83,7 +83,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * G.start(cfg);
  * </pre>
  * Here is an example of how to configure {@code AlwaysFailoverSpi} from Spring XML configuration file.
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="failoverSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.failover.always.AlwaysFailoverSpi"&gt;
  *         &lt;property name="maximumFailoverAttempts" value="5"/&gt;
@@ -91,7 +91,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * &lt;/property&gt;
  * </pre>
  * </p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <img alt="Spring" src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.failover.FailoverSpi

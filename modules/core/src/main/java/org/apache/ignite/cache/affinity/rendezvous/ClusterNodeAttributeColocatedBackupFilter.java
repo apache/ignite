@@ -60,7 +60,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Create a partitioned cache template plate with 1 backup, where the backup will be placed in the same cell
  * as the primary.   Note: This example requires that the environment variable "CELL" be set appropriately on
  * each node via some means external to Ignite.
- * <pre name="code" class="xml">
+ * <pre class="xml">
  * &lt;property name="cacheConfiguration"&gt;
  *     &lt;list&gt;
  *         &lt;bean id="cache-template-bean" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration"&gt;
