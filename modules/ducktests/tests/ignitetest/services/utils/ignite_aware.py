@@ -43,7 +43,6 @@ from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
 
-# pylint: disable=R0902,too-many-public-methods
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -57,7 +56,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         OUTPUT = 1
         ALL = 2
 
-    # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class, modules,
                  **kwargs):
         """
@@ -230,7 +228,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         return node.account.java_pids(self.main_java_class)
 
-    # pylint: disable=W0613
     def worker(self, idx, node, **kwargs):
         cmd = self.spec.command(node)
 

@@ -50,7 +50,6 @@ class ClusterLoad(IntEnum):
     TRANSACTIONAL = 2
 
 
-# pylint: disable=R0913
 class DiscoveryTestConfig(NamedTuple):
     """
     Configuration for DiscoveryTest.
@@ -64,7 +63,6 @@ class DiscoveryTestConfig(NamedTuple):
     net_part: IgniteAwareService.NetPart = IgniteService.NetPart.ALL
 
 
-# pylint: disable=W0223, no-member
 class DiscoveryTest(IgniteTest):
     """
     Test various node failure scenarios (TCP and ZooKeeper).
@@ -174,7 +172,6 @@ class DiscoveryTest(IgniteTest):
 
         return self._perform_node_fail_scenario(test_config)
 
-    # pylint: disable=R0914
     def _perform_node_fail_scenario(self, test_config):
         failure_detection_timeout = self._global_int(self.GLOBAL_DETECTION_TIMEOUT, self.DEFAULT_DETECTION_TIMEOUT)
 

@@ -667,8 +667,7 @@
                                             <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                                <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -676,8 +675,7 @@
                                             <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
                                             <substitution expression="\1${new.ignite.version.fixed}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                                <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
                                         </replaceregexp>
 
