@@ -18,14 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.function.Supplier;
-import jdk.vm.ci.code.site.Call;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -36,22 +31,17 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHelper.optimize;
 
 /**
@@ -59,35 +49,11 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHe
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class PrepareServiceImpl extends AbstractService {
-    /**
-     *
-     */
+    /** */
     private static final int MAX_PREPARE_THREADS = 4;
 
-    /**
-     *
-     */
+    /** */
     private final DdlSqlToCommandConverter ddlConverter;
-
-    /**
-     *
-     */
-    private QueryPlanCache qryPlanCache;
-
-    /**
-     *
-     */
-    private SchemaHolder schemaHolder;
-
-    /**
-     *
-     */
-    private FailureProcessor failureProcessor;
-
-    /**
-     *
-     */
-    private IgniteThreadPoolExecutor exec;
 
     /**
      * @param ctx Kernal.
@@ -96,24 +62,6 @@ public class PrepareServiceImpl extends AbstractService {
         super(ctx);
 
         ddlConverter = new DdlSqlToCommandConverter();
-
-        ThreadFactory factory = new IgniteThreadFactory(ctx.igniteInstanceName(), "prepare", ctx.uncaughtExceptionHandler());
-
-        exec = new IgniteThreadPoolExecutor(
-            1,
-            MAX_PREPARE_THREADS,
-            DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            factory);
-
-        exec.allowCoreThreadTimeOut(true);
-    }
-
-    /**
-     *
-     */
-    public <T> CompletableFuture<T> submit(Supplier<T> prepareTask) {
-        return CompletableFuture.supplyAsync(prepareTask, exec);
     }
 
     /** {@inheritDoc} */
@@ -155,7 +103,7 @@ public class PrepareServiceImpl extends AbstractService {
                         "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
         }
-        catch (ValidationException e) {
+        catch (ValidationException | CalciteContextException e) {
             throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
         }
     }
@@ -257,11 +205,6 @@ public class PrepareServiceImpl extends AbstractService {
         RelDataType planDataType = factory.createStructType(singletonList(planField));
 
         return queryFieldsMetadata(ctx, planDataType, null);
-    }
-
-    /** */
-    public IgniteThreadPoolExecutor executor() {
-        return exec;
     }
 
     /** */

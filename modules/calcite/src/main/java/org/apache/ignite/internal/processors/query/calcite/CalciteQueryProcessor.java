@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -259,6 +260,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return failureProcessor;
     }
 
+    /** */
+    public PrepareServiceImpl prepareService() {
+        return prepareSvc;
+    }
+
     /** {@inheritDoc} */
     @Override public void start() {
         onStart(ctx,
@@ -311,8 +317,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
             return Collections.singletonList(executionSvc.executePlan(
                 qry,
-                plan,
-                params
+                plan
             ));
         }
 
@@ -340,7 +345,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 else
                     plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
-                cursors.add(executionSvc.executePlan(qry, plan, params));
+                cursors.add(executionSvc.executePlan(qry, plan));
             }
             catch (Exception e) {
                 unregister(qry.id());
@@ -375,6 +380,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** {@inheritDoc} */
     @Override public Query register(Query qry) {
+        log.info("+++ REG " + qry);
         Query old = runningQrys.putIfAbsent(qry.id(), qry);
 
         return old != null ? old : qry;
@@ -393,6 +399,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public Collection<Query> runningQueries() {
         return runningQrys.values();
+    }
+
+    /** {@inheritDoc} */
+    @Override public RunningQuery runningQuery(UUID id) {
+        return runningQrys.get(id);
     }
 
     /** */

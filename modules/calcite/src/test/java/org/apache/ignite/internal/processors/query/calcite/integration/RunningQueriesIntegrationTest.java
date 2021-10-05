@@ -73,7 +73,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         Collection<? extends RunningQuery> running = engine.runningQueries();
 
-        assertEquals(1, running.size());
+        assertEquals("Running: " + running, 1, running.size());
 
         RunningQuery qry = F.first(running);
 

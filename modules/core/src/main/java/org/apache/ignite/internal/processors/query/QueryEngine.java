@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.jetbrains.annotations.Nullable;
@@ -41,4 +42,7 @@ public interface QueryEngine extends GridProcessor {
 
     /** */
     Collection<? extends RunningQuery> runningQueries();
+
+    /** */
+    RunningQuery runningQuery(UUID id);
 }

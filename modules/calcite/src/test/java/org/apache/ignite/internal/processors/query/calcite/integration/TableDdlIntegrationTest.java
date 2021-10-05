@@ -281,8 +281,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectSimpleCase() {
-        executeSql("create table my_table as select 1 as i, 'test' as s");
-        List<List<?>> res = executeSql("select i, s from my_table");
+        sql("create table my_table as select 1 as i, 'test' as s");
+        List<List<?>> res = sql("select i, s from my_table");
 
         assertEquals(1, res.size());
 
@@ -297,8 +297,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectWithColumns() {
-        executeSql("create table my_table(i, s) as select 1 as a, 'test' as b");
-        List<List<?>> res = executeSql("select i, s from my_table");
+        sql("create table my_table(i, s) as select 1 as a, 'test' as b");
+        List<List<?>> res = sql("select i, s from my_table");
 
         assertEquals(1, res.size());
 
@@ -316,8 +316,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @SuppressWarnings("unchecked")
     @Test
     public void createTableAsSelectWithOptions() {
-        executeSql("create table my_table(s, i) with cache_name=\"CacheWithOpts\", cache_group=\"CacheGroup\" as select '1', 1");
-        List<List<?>> res = executeSql("select * from my_table");
+        sql("create table my_table(s, i) with cache_name=\"CacheWithOpts\", cache_group=\"CacheGroup\" as select '1', 1");
+        List<List<?>> res = sql("select * from my_table");
 
         assertEquals(1, res.size());
 
@@ -336,8 +336,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectWithParameters() {
-        executeSql("create table my_table(s, i) as select cast(? as varchar), cast(? as int)", "a", 1);
-        List<List<?>> res = executeSql("select * from my_table");
+        sql("create table my_table(s, i) as select cast(? as varchar), cast(? as int)", "a", 1);
+        List<List<?>> res = sql("select * from my_table");
 
         assertEquals(1, res.size());
 
@@ -351,7 +351,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @Test
     public void createTableAsSelectWrongColumnsCount() {
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> executeSql("create table my_table(i, s1, s2) as select 1, 'test'"),
+            () -> sql("create table my_table(i, s1, s2) as select 1, 'test'"),
             IgniteSQLException.class, "Number of columns");
     }
 
@@ -360,13 +360,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectFromDistributedTable() {
-        executeSql("create table my_table1(i) as select x from table(system_range(1, 100))");
+        sql("create table my_table1(i) as select x from table(system_range(1, 100))");
 
-        assertEquals(100L, executeSql("select count(*) from my_table1").get(0).get(0));
+        assertEquals(100L, sql("select count(*) from my_table1").get(0).get(0));
 
-        executeSql("create table my_table2(i) as select * from my_table1");
+        sql("create table my_table2(i) as select * from my_table1");
 
-        assertEquals(100L, executeSql("select count(*) from my_table2").get(0).get(0));
+        assertEquals(100L, sql("select count(*) from my_table2").get(0).get(0));
     }
 
     /**
@@ -789,7 +789,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
-     * Asserts that executeSql throws an exception.
+     * Asserts that sql throws an exception.
      *
      * @param sql Query.
      * @param cls Exception class.

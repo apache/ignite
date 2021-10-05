@@ -43,5 +43,5 @@ public interface ExecutionService<Row> extends Service {
     void cancelQuery(UUID queryId);
 
     /** */
-    FieldsQueryCursor<List<?>> executePlan(RootQuery<Row> qry, QueryPlan plan, Object[] params);
+    FieldsQueryCursor<List<?>> executePlan(RootQuery<Row> qry, QueryPlan plan);
 }

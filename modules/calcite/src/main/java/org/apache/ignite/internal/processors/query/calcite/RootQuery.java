@@ -209,6 +209,17 @@ public class RootQuery<Row> extends Query<Row> {
     }
 
     /** */
+    public void nextPlanningContext() {
+        pctx.unwrap(BaseQueryContext.class).resetCatalogReader();
+
+        pctx = PlanningContext.builder()
+            .parentContext(pctx)
+            .query(sql)
+            .parameters(params)
+            .build();
+    }
+
+    /** */
     public PlanningContext planningContext() {
         if (pctx == null) {
             state = QueryState.PLANNING;

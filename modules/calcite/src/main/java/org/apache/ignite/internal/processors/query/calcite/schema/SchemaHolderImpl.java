@@ -269,7 +269,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         rebuild();
     }
 
-    public SchemaPlus getDefaultSchema(String schema) {
+    /** {@inheritDoc} */
+    @Override public SchemaPlus getDefaultSchema(String schema) {
         return schema != null ? schema().getSubSchema(schema) : schema();
     }
 
