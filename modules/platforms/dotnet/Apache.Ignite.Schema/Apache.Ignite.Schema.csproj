@@ -4,5 +4,10 @@
     <NoBuild>true</NoBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <Description>XSD file describes the structure of IgniteConfigurationSection and enables Intellisense(TM) when editing IgniteConfigurationSection in app.config and web.config in Visual Studio.</Description>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\Apache.Ignite.Core\IgniteConfigurationSection.xsd" Pack="true" PackagePath="content"/>
+    <None Include="..\Apache.Ignite.Core\IgniteClientConfigurationSection.xsd" Pack="true" PackagePath="content"/>
+  </ItemGroup>
 </Project>
