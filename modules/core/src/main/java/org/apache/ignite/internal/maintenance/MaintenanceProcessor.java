@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
     /** */
-    private static final String IN_MEMORY_MODE_ERR_MSG = "Maintenance Mode is not supported for in-memory clusters";
+    private static final String DISABLED_ERR_MSG = "Maintenance Mode is not supported for in-memory and client nodes";
 
     /**
      * Active {@link MaintenanceTask}s are the ones that were read from disk when node entered Maintenance Mode.
@@ -59,7 +59,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     private final MaintenanceFileStore fileStorage;
 
     /** */
-    private final boolean inMemoryMode;
+    private final boolean disabled;
 
     /** */
     private volatile boolean maintenanceMode;
@@ -70,9 +70,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     public MaintenanceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        inMemoryMode = !CU.isPersistenceEnabled(ctx.config());
+        disabled = !CU.isPersistenceEnabled(ctx.config()) || ctx.clientNode();
 
-        if (inMemoryMode) {
+        if (disabled) {
             fileStorage = new MaintenanceFileStore(true,
                 null,
                 null,
@@ -89,8 +89,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceTask registerMaintenanceTask(MaintenanceTask task) throws IgniteCheckedException {
-        if (inMemoryMode)
-            throw new IgniteCheckedException(IN_MEMORY_MODE_ERR_MSG);
+        if (disabled)
+            throw new IgniteCheckedException(DISABLED_ERR_MSG);
 
         if (isMaintenanceMode())
             throw new IgniteCheckedException("Node is already in Maintenance Mode, " +
@@ -130,7 +130,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         try {
@@ -223,7 +223,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public boolean unregisterMaintenanceTask(String maintenanceTaskName) {
-        if (inMemoryMode)
+        if (disabled)
             return false;
 
         boolean deleted;
@@ -250,8 +250,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public void registerWorkflowCallback(@NotNull String maintenanceTaskName, @NotNull MaintenanceWorkflowCallback cb) {
-        if (inMemoryMode)
-            throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
+        if (disabled)
+            throw new IgniteException(DISABLED_ERR_MSG);
 
         List<MaintenanceAction<?>> actions = cb.allActions();
 
@@ -281,8 +281,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public List<MaintenanceAction<?>> actionsForMaintenanceTask(String maintenanceTaskName) {
-        if (inMemoryMode)
-            throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
+        if (disabled)
+            throw new IgniteException(DISABLED_ERR_MSG);
 
         if (!activeTasks.containsKey(maintenanceTaskName))
             throw new IgniteException("Maintenance workflow callback for given task name not found, " +

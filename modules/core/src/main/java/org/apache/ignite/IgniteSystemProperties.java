@@ -1057,7 +1057,7 @@ public final class IgniteSystemProperties {
      * Defaults to {@code 0}, meaning that inline index store is disabled.
      */
     @SystemProperty(value = "Maximum payload size in bytes for H2TreeIndex. " +
-        "0 means that inline index store is disabled", type = Integer.class, defaults = "10")
+        "0 means that inline index store is disabled", type = Integer.class, defaults = "64")
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**
@@ -1113,7 +1113,9 @@ public final class IgniteSystemProperties {
 
     /**
      * WAL rebalance threshold.
+     * @deprecated use Distributed MetaStorage property {@code historical.rebalance.threshold}.
      */
+    @Deprecated
     @SystemProperty(value = "WAL rebalance threshold", type = Integer.class,
         defaults = "" + DFLT_PDS_WAL_REBALANCE_THRESHOLD)
     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
@@ -1353,6 +1355,17 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Percentage of archive size for checkpoint trigger",
         type = Double.class, defaults = "" + DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE)
     public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Property for setup percentage of WAL archive size to calculate
+     * threshold since which removing of old archive should be started.
+     *
+     * @deprecated Use {@link DataStorageConfiguration#setMinWalArchiveSize}.
+     */
+    @SystemProperty(value = "Property for setup percentage of WAL archive size to calculate threshold since which " +
+        "removing of old archive should be started", type = Double.class)
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
+        "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
      * Threshold time (in millis) to print warning to log if waiting for next wal segment took longer than the threshold.
@@ -2012,6 +2025,7 @@ public final class IgniteSystemProperties {
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
+     * @param <E> Type of the enum.
      * @return Enum value or {@code null} if the property is not set.
      */
     public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
@@ -2020,6 +2034,8 @@ public final class IgniteSystemProperties {
 
     /**
      * @param name Name of the system property or environment variable.
+     * @param dflt Default value if property is not set.
+     * @param <E> Type of the enum.
      * @return Enum value or the given default.
      */
     public static <E extends Enum<E>> E getEnum(String name, E dflt) {

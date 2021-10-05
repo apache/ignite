@@ -688,8 +688,11 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
     /** */
     private enum EnumType {
-        /** */ ENUM_VAL_0,
-        /** */ ENUM_VAL_1
+        /** */
+        ENUM_VAL_0,
+
+        /** */
+        ENUM_VAL_1
     }
 
     /**

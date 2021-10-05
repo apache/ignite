@@ -116,6 +116,7 @@ public class DecisionTreeClassificationExportImportExample {
         }
     }
 
+    /** */
     private static int evaluateModel(Random rnd, DecisionTreeModel mdl) {
         // Calculate score.
         int correctPredictions = 0;

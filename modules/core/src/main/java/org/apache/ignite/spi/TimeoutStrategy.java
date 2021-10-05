@@ -24,6 +24,7 @@ public interface TimeoutStrategy {
     /**
      * Get next timeout based on previously timeout calculated by strategy.
      *
+     * @param currTimeout Current timeout value that is used to calculate the next one.
      * @return Gets next timeout.
      * @throws IgniteSpiOperationTimeoutException in case of total timeout already breached.
      */

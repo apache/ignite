@@ -19,19 +19,21 @@ package org.apache.ignite.internal.cdc;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractCdcTest;
-import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -78,11 +80,12 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         BinaryCdcConsumer cnsmr = new BinaryCdcConsumer();
 
-        CdcConfiguration cdcCfg = new CdcConfiguration();
+        CountDownLatch latch = new CountDownLatch(1);
 
-        cdcCfg.setConsumer(cnsmr);
+        GridAbsPredicate userPredicate = sizePredicate(KEYS_CNT, USER, UPDATE, cnsmr);
+        GridAbsPredicate cityPredicate = sizePredicate(KEYS_CNT, CITY, UPDATE, cnsmr);
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcCfg);
+        CdcMain cdc = createCdc(cnsmr, cfg, latch, userPredicate, cityPredicate);
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -114,8 +117,10 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
-        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, getTestTimeout(), cnsmr));
-        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, getTestTimeout(), cnsmr));
+        // Wait while both predicte will become true and state saved on the disk.
+        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));;
+
+        checkMetrics(cdc, KEYS_CNT * 2);
 
         fut.cancel();
 
@@ -127,9 +132,13 @@ public class SqlCdcTest extends AbstractCdcTest {
         for (int i = 0; i < KEYS_CNT; i++)
             executeSql(ign, "DELETE FROM USER WHERE id = ?", i);
 
+        cdc = createCdc(cnsmr, cfg);
+
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        assertTrue(waitForSize(KEYS_CNT, USER, DELETE, getTestTimeout(), cnsmr));
+        waitForSize(KEYS_CNT, USER, DELETE, cnsmr);
+
+        checkMetrics(cdc, KEYS_CNT);
 
         rmvFut.cancel();
 
@@ -190,5 +199,10 @@ public class SqlCdcTest extends AbstractCdcTest {
     /** */
     private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean keepBinary() {
+        return true;
     }
 }

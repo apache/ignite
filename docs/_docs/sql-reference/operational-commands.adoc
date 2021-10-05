@@ -334,7 +334,7 @@ KILL CONTINUOUS '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' '6fa749ee-7cf8-4635
 
 == KILL SERVICE
 
-The `KILL SERVICE` command allows you to cance a running service.
+The `KILL SERVICE` command allows you to cancel a running service.
 
 [tabs]
 --
@@ -370,3 +370,25 @@ control.bat --kill SERVICE name
 
 * `name` - corresponds to the name you selected for the service upon the deployment time.
 You can always find it with the link:monitoring-metrics/system-views#services[SERVICES] view.
+
+
+== KILL CONSISTENCY repair/check operations
+
+The `KILL CONSISTENCY` command allows you to cancel all running consistency repair/check operations.
+
+[tabs]
+--
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill CONSISTENCY
+----
+
+tab:Windows[]
+[source,bash]
+----
+control.bat --kill CONSISTENCY
+----
+
+--

@@ -118,6 +118,7 @@ public interface BinaryRawReader {
 
     /**
      * @return Object.
+     * @param <T> Type of the object to read.
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public <T> T readObject() throws BinaryObjectException;
@@ -213,6 +214,7 @@ public interface BinaryRawReader {
     @Nullable public Object[] readObjectArray() throws BinaryObjectException;
 
     /**
+     * @param <T> Type of elements in collection to read.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
@@ -220,6 +222,7 @@ public interface BinaryRawReader {
 
     /**
      * @param factory Collection factory.
+     * @param <T> Type of elements in collection to read.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
@@ -227,6 +230,8 @@ public interface BinaryRawReader {
         throws BinaryObjectException;
 
     /**
+     * @param <K> Type of keys in the map to read.
+     * @param <V> Type of mapped values in the map to read.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
@@ -234,18 +239,22 @@ public interface BinaryRawReader {
 
     /**
      * @param factory Map factory.
+     * @param <K> Type of keys in the map to read.
+     * @param <V> Type of mapped values in the map to read.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public <K, V> Map<K, V> readMap(BinaryMapFactory<K, V> factory) throws BinaryObjectException;
 
     /**
+     * @param <T> Type of the enum to read.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public <T extends Enum<?>> T readEnum() throws BinaryObjectException;
 
     /**
+     * @param <T> Type of the enum values in array to read.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */

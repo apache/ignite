@@ -79,14 +79,10 @@ import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -99,10 +95,10 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -171,6 +167,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
  * Command line handler test.
@@ -273,6 +270,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
     }
 
+    /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
             .setAtomicityMode(TRANSACTIONAL)
@@ -495,7 +493,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /**
      * Test verifies that persistence backup command to backup all caches backs up all cache directories.
-     * 
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -963,10 +961,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames) {
+    private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames) throws Exception {
         log.info(ignite.cluster().state() + " -> " + state);
 
+        CountDownLatch latch = getNewStateLatch(ignite.cluster().state(), state);
+
         assertEquals(EXIT_CODE_OK, execute("--set-state", strState));
+
+        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(state, ignite.cluster().state());
 
@@ -983,6 +985,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 grid(0).cache(cacheName).clear();
         }
     }
+
+   /** */
+   private CountDownLatch getNewStateLatch(ClusterState oldState, ClusterState newState) {
+        if (oldState != newState) {
+            CountDownLatch latch = new CountDownLatch(G.allGrids().size());
+
+            for (Ignite grid : G.allGrids()) {
+                ((IgniteEx)grid).context().discovery().setCustomEventListener(ChangeGlobalStateFinishMessage.class,
+                    ((topVer, snd, msg) -> latch.countDown()));
+            }
+
+            return latch;
+        }
+        else
+            return new CountDownLatch(0);
+   }
 
     /**
      * Test baseline collect works via control.sh
@@ -1209,10 +1227,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testConnectivityCommandWithNodeExit() throws Exception {
         IgniteEx[] node3 = new IgniteEx[1];
 
+        /** */
         class KillNode3CommunicationSpi extends TcpCommunicationSpi {
             /** Fail check connection request and stop third node */
             boolean fail;
 
+            /** */
             public KillNode3CommunicationSpi(boolean fail) {
                 this.fail = fail;
             }
@@ -2273,8 +2293,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "found 1 conflict partitions: [counterConflicts=0, " +
-                "hashConflicts=1]");
+            assertContains(log, dumpWithConflicts, "conflict partitions has been found: [counterConflicts=1, " +
+                "hashConflicts=2]");
         }
         else
             fail("Should be found dump with conflicts");
@@ -2598,63 +2618,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             entry.setValue(entry.exists() ? entry.getValue() + 1 : 0);
 
             return null;
-        }
-    }
-
-    /**
-     * Corrupts data entry.
-     *
-     * @param ctx Context.
-     * @param key Key.
-     * @param breakCntr Break counter.
-     * @param breakData Break data.
-     */
-    private void corruptDataEntry(
-        GridCacheContext<Object, Object> ctx,
-        Object key,
-        boolean breakCntr,
-        boolean breakData
-    ) {
-        int partId = ctx.affinity().partition(key);
-
-        try {
-            long updateCntr = ctx.topology().localPartition(partId).updateCounter();
-
-            Object valToPut = ctx.cache().keepBinary().get(key);
-
-            if (breakCntr)
-                updateCntr++;
-
-            if (breakData)
-                valToPut = valToPut.toString() + " broken";
-
-            // Create data entry
-            DataEntry dataEntry = new DataEntry(
-                ctx.cacheId(),
-                new KeyCacheObjectImpl(key, null, partId),
-                new CacheObjectImpl(valToPut, null),
-                GridCacheOperation.UPDATE,
-                new GridCacheVersion(),
-                new GridCacheVersion(),
-                0L,
-                partId,
-                updateCntr,
-                DataEntry.EMPTY_FLAGS
-            );
-
-            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.shared().database();
-
-            db.checkpointReadLock();
-
-            try {
-                U.invoke(GridCacheDatabaseSharedManager.class, db, "applyUpdate", ctx, dataEntry);
-            }
-            finally {
-                db.checkpointReadUnlock();
-            }
-        }
-        catch (IgniteCheckedException e) {
-            e.printStackTrace();
         }
     }
 

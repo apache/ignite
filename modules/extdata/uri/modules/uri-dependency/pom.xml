@@ -27,12 +27,12 @@
     <artifactId>ignite-extdata-uri-dep</artifactId>
     <packaging>jar</packaging>
 
-    <version>2.11.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <modelVersion>4.0.0</modelVersion>
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>

@@ -714,6 +714,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
     }
 
+    /** */
     private static class SecurityPermissionSetImpl implements SecurityPermissionSet {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;

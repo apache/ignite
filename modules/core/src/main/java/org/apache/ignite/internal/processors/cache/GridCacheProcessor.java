@@ -225,6 +225,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -394,7 +395,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
 
             if (msg0.exchange())
-                return new SchemaExchangeWorkerTask(msg0);
+                return new SchemaExchangeWorkerTask(remoteSecurityContext(ctx), msg0);
         }
         else if (msg instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage msg0 = (ClientCacheChangeDummyDiscoveryMessage)msg;
@@ -405,7 +406,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
             if (msg0.initial())
-                return new CacheStatisticsModeChangeTask(msg0);
+                return new CacheStatisticsModeChangeTask(remoteSecurityContext(ctx), msg0);
         }
 
         return null;
@@ -1877,7 +1878,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             doInParallel(
                 parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
+                sharedCtx.kernalContext().pools().getSystemExecutorService(),
                 startCacheInfos,
                 startCacheInfo -> {
                     cacheStartFailHandler.handle(
@@ -1939,7 +1940,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             doInParallel(
                 parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
+                sharedCtx.kernalContext().pools().getSystemExecutorService(),
                 cacheContexts.entrySet(),
                 cacheCtxEntry -> {
                     cacheStartFailHandler.handle(
@@ -2800,7 +2801,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             doInParallel(
                 parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
+                sharedCtx.kernalContext().pools().getSystemExecutorService(),
                 cachesToStop.entrySet(),
                 cachesToStopByGrp -> {
                     CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
@@ -5522,7 +5523,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
 
-            ExecutorService sysPool = ctx.getSystemExecutorService();
+            ExecutorService sysPool = ctx.pools().getSystemExecutorService();
 
             CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
 

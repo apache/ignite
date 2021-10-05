@@ -64,8 +64,10 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryIpFinder specialIpFinder1;
 
+    /** */
     private UUID nodeId;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

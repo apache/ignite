@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -119,11 +119,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
-
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
 
-        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT, getTestTimeout());
+        addAndWaitForConsumption(cnsmr, cfg, cache, null, this::addConflictData, 0, KEYS_CNT, true);
     }
 
     /** */
@@ -154,11 +152,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 return true;
             }
 
-            @Override public void onTypes(Iterator<BinaryType> types) {
-                // No-op.
-            }
-
-            @Override public void start() {
+            @Override public void start(MetricRegistry mreg) {
                 // No-op.
             }
 
@@ -167,7 +161,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
         };
 
-        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = createCdc(cnsmr, cfg);
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache("my-cache");
 

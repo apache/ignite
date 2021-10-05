@@ -20,9 +20,9 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.cache.AutoReleaseSegmentSelfTest;
 import org.apache.ignite.cache.BreakRebalanceChainTest;
 import org.apache.ignite.cache.CircledRebalanceTest;
-import org.apache.ignite.cache.NoUnnecessaryRebalancesTest;
 import org.apache.ignite.cache.NotOptimizedRebalanceTest;
 import org.apache.ignite.cache.RebalanceAfterResettingLostPartitionTest;
 import org.apache.ignite.cache.RebalanceCancellationTest;
@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDu
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRestartAfterFailedToWriteMetaPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSpuriousRebalancingOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
+import org.apache.ignite.internal.processors.cache.persistence.NoUnnecessaryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.persistence.PagesPossibleCorruptionDiagnosticTest;
 import org.apache.ignite.internal.processors.cache.persistence.PendingTreeCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;
@@ -56,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.Historical
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRebalanceRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerResourcesTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelperTest;
@@ -110,6 +113,7 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsSpuriousRebalancingOnNodeJoinTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RebalanceCompleteDuringExchangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ReleaseSegmentOnHistoricalRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, AutoReleaseSegmentSelfTest.class, ignoredTests);
 
         // Page lock tracker tests.
         GridTestUtils.addTestIfNeeded(suite, PageLockTrackerManagerTest.class, ignoredTests);
@@ -121,8 +125,9 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, OffHeapLockStackTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, HistoricalReservationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CircledRebalanceTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, NoUnnecessaryRebalancesTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, NoUnnecessaryRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ToStringDumpHelperTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageLockTrackerResourcesTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheEntriesExpirationTest.class, ignoredTests);
 
@@ -141,6 +146,8 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, DefragmentationMXBeanTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, PendingTreeCorruptionTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PagesPossibleCorruptionDiagnosticTest.class, ignoredTests);
 
         return suite;
     }

@@ -34,11 +34,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,6 +59,13 @@ import static org.apache.ignite.internal.processors.query.stat.StatisticsUsageSt
 public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     /** Columns to check.*/
     private static final String[] COLUMNS = {"A", "B", "C"};
+
+    /** Listener which catches client-side statistics store warning. */
+    private LogListener obsolescenceLsnr = LogListener
+        .matches("Unable to save statistics obsolescence info on non server node.").build();
+
+    /** Logger which tries to catch client-side statistics store warning. */
+    private final ListeningTestLogger obsolescenceAwareLog = new ListeningTestLogger(log(), obsolescenceLsnr);
 
     /** Lazy mode. */
     @Parameterized.Parameter(value = 0)
@@ -110,7 +120,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                         new DataRegionConfiguration()
                             .setPersistenceEnabled(persist)
                     )
-            );
+            ).setGridLogger(obsolescenceAwareLog);
     }
 
     /** {@inheritDoc} */
@@ -204,6 +214,43 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         stopGrid(1);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
+    }
+
+    /**
+     * Start client node and check no store related errors in log.
+     *
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void checkClientNode() throws Exception {
+        startGridAndChangeBaseline(0);
+
+        createSmallTable(null);
+
+        IgniteEx client = startClientGrid("cli");
+
+        collectStatistics(SMALL_TARGET);
+
+        sql("delete from small");
+
+        for (int i = 0; i < 1000; i++)
+            sql(String.format("INSERT INTO small(a, b, c) VALUES(%d, %d, %d)", i, i, i % 10));
+
+        StatisticsObjectConfiguration smallCfg = statisticsMgr(0).statisticConfiguration().config(SMALL_KEY);
+
+        statisticsMgr(client).refreshStatistics(SMALL_TARGET);
+
+        Thread.sleep(100);
+
+        StatisticsObjectConfiguration smallCfg2 = statisticsMgr(0).statisticConfiguration().config(SMALL_KEY);
+
+        assertNotSame(smallCfg.columns().get("A").version(), smallCfg2.columns().get("A").version());
+
+        client.cluster().state(ClusterState.INACTIVE);
+
+        client.cluster().state(ClusterState.ACTIVE);
+
+        assertFalse(obsolescenceLsnr.check(TIMEOUT));
     }
 
     /**

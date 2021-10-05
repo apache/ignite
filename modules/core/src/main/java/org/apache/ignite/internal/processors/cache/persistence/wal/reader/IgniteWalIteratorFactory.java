@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -45,12 +46,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -166,42 +165,54 @@ public class IgniteWalIteratorFactory {
     }
 
     /**
-     * @param iterParametersBuilder Iterator parameters builder.
+     * @param iteratorParametersBuilder Iterator parameters builder.
      * @return closable WAL records iterator, should be closed when non needed
      */
     public WALIterator iterator(
-        @NotNull IteratorParametersBuilder iterParametersBuilder
+        @NotNull IteratorParametersBuilder iteratorParametersBuilder
     ) throws IgniteCheckedException, IllegalArgumentException {
-        return iteratorWithContext(iterParametersBuilder).get1();
-    }
+        iteratorParametersBuilder.validate();
 
-    /**
-     * @param iterParametersBuilder Iterator parameters builder.
-     * @return closable WAL records iterator, should be closed when non needed
-     */
-    public IgniteBiTuple<WALIterator, GridCacheSharedContext<?, ?>> iteratorWithContext(
-        @NotNull IteratorParametersBuilder iterParametersBuilder
-    ) throws IgniteCheckedException, IllegalArgumentException {
-        iterParametersBuilder.validate();
+        if (iteratorParametersBuilder.sharedCtx == null) {
+            GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
 
-        GridCacheSharedContext<?, ?> ctx = iterParametersBuilder.sharedCtx == null
-            ? prepareSharedCtx(iterParametersBuilder)
-            : iterParametersBuilder.sharedCtx;
+            for (GridComponent comp : sctx.kernalContext())
+                comp.start();
 
-        StandaloneWalRecordsIterator iter = new StandaloneWalRecordsIterator(
-            iterParametersBuilder.log == null ? log : iterParametersBuilder.log,
-            ctx,
-            iterParametersBuilder.ioFactory,
-            resolveWalFiles(iterParametersBuilder),
-            iterParametersBuilder.filter,
-            iterParametersBuilder.lowBound,
-            iterParametersBuilder.highBound,
-            iterParametersBuilder.keepBinary,
-            iterParametersBuilder.bufferSize,
-            iterParametersBuilder.strictBoundsCheck
-        );
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                sctx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            ) {
+                @Override protected void onClose() throws IgniteCheckedException {
+                    super.onClose();
 
-        return F.t(iter, ctx);
+                    for (GridComponent comp : sctx.kernalContext())
+                        comp.stop(true);
+                }
+            };
+        }
+        else {
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                iteratorParametersBuilder.sharedCtx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            );
+        }
     }
 
     /**

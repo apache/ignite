@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -299,7 +300,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE",
                     "\"ID1\" ASC, \"ID2\" ASC", false, false, 10},
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE",
-                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", false, false, 10},
+                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", false, false, 20},
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "SCAN", null, false, false, null},
                 {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "BTREE",
                     "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
@@ -307,9 +308,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", false, true, null},
 
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_1", "BTREE",
-                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", false, false, 10},
+                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_3", "BTREE",
-                    "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", false, false, 10},
+                    "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "__SCAN_", "SCAN", null, false, false, null},
                 {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "BTREE",
                     "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
@@ -332,7 +333,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals(expRow[j], resRow.get(j));
+                assertEquals("expRow: [" + Arrays.toString(expRow) + "]", expRow[j], resRow.get(j));
         }
     }
 
@@ -1842,19 +1843,25 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
         private final int attemptsBeforeException;
 
+        /** */
         private volatile int attempts;
 
+        /** */
         public CustomNodeFilter(int attemptsBeforeException) {
             this.attemptsBeforeException = attemptsBeforeException;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             if (attempts++ > attemptsBeforeException)
                 throw new NullPointerException("Oops... incorrect customer realization.");

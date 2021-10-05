@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.client.suite;
 
+import org.apache.ignite.common.CacheCreateDestroyEventSecurityContextTest;
+import org.apache.ignite.common.CacheEventSecurityContextTest;
 import org.apache.ignite.common.ClientSideCacheCreationDestructionWileTopologyChangeTest;
 import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
+import org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest;
 import org.apache.ignite.common.NodeSslConnectionMetricTest;
+import org.apache.ignite.common.RebalanceCacheEventSecurityContextTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
-import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientSslParametersTest;
@@ -156,7 +159,6 @@ import org.junit.runners.Suite;
     // Rest task command handler test.
     TaskCommandHandlerSelfTest.class,
     ChangeStateCommandHandlerTest.class,
-    TaskEventSubjectIdSelfTest.class,
 
     // Default cache only test.
     ClientDefaultCacheSelfTest.class,
@@ -184,7 +186,11 @@ import org.junit.runners.Suite;
 
     ClientSizeCacheCreationDestructionTest.class,
     ClientSideCacheCreationDestructionWileTopologyChangeTest.class,
-    NodeSslConnectionMetricTest.class
+    NodeSslConnectionMetricTest.class,
+    ComputeTaskRemoteSecurityContextTest.class,
+    CacheCreateDestroyEventSecurityContextTest.class,
+    CacheEventSecurityContextTest.class,
+    RebalanceCacheEventSecurityContextTest.class
 })
 public class IgniteClientTestSuite {
 }
