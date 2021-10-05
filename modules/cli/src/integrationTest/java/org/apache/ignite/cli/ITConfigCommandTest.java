@@ -33,6 +33,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -83,17 +84,6 @@ public class ITConfigCommandTest extends AbstractCliTest {
     void tearDown(TestInfo testInfo) {
         IgnitionManager.stop(testNodeName(testInfo, networkPort));
         ctx.stop();
-    }
-
-    /**
-     * Creates a unique Ignite node name for the given test.
-     */
-    private static String testNodeName(TestInfo testInfo, int port) {
-        return testInfo.getTestClass()
-            .map(Class::getCanonicalName)
-            .flatMap(clsName -> testInfo.getTestMethod().map(method -> clsName + '#' + method.getName()))
-            .map(name -> name + ':' + port)
-            .orElseThrow();
     }
 
     @Test
