@@ -31,7 +31,9 @@ namespace Apache.Ignite.Core.Services
 
         public static ServiceProxyContext Current()
         {
-            if (ProxyCtxs.TryGetValue(Thread.CurrentThread.ManagedThreadId, out var attrs))
+            Hashtable attrs;
+
+            if (ProxyCtxs.TryGetValue(Thread.CurrentThread.ManagedThreadId, out attrs))
                 return new ServiceProxyContextImpl(attrs);
 
             return null;

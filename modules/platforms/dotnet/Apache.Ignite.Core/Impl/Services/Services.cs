@@ -370,7 +370,6 @@ namespace Apache.Ignite.Core.Impl.Services
             return GetServiceProxy<T>(name, sticky, null);
         }
 
-
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky, ServiceProxyContext proxyCtx) where T : class
         {

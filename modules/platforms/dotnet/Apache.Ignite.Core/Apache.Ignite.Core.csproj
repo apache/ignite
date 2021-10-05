@@ -554,6 +554,7 @@
     <Compile Include="Impl\Resource\ResourceTypeDescriptor.cs" />
     <Compile Include="Impl\Services\ServiceContext.cs" />
     <Compile Include="Impl\Services\ServiceDescriptor.cs" />
+    <Compile Include="Impl\Services\ServiceProxyContextImpl.cs" />
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
@@ -610,6 +611,8 @@
     <Compile Include="Services\ServiceConfiguration.cs" />
     <Compile Include="Services\ServiceDeploymentException.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
+    <Compile Include="Services\ServiceProxyContext.cs"/>
+    <Compile Include="Services\ServiceProxyContextBuilder.cs"/>
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionCollection.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
