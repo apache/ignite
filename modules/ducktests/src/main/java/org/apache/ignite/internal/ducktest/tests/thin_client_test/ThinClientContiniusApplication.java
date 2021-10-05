@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
+import java.util.*;
+import java.util.concurrent.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.log4j.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
@@ -25,11 +29,6 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-import java.util.*;
-import java.util.concurrent.*;
-
-import org.apache.log4j.Logger;
 
 /**
  * Thin clients.
@@ -91,6 +90,8 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 }
 
 class oneThinClient implements Runnable {
+    /**{@inheritDoc}*/
+
     private static final int DATA_SIZE = 15;
     private static final int RUN_TIME = 1000;
     private static final int PUT_ALL_SIZE = 1000;
