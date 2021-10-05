@@ -646,7 +646,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
-                    iter = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(), filter(qry), qry.keepBinary());
+                    iter = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(), qry.scanFilter(),
+                        filter(qry), qry.keepBinary());
 
                     break;
 
@@ -2879,7 +2880,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public <R> CacheQuery<R> createIndexQuery(IndexQuery qry, boolean keepBinary) {
         IndexQueryDesc desc = new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType());
 
-        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(cctx, INDEX, desc, qry.getValueType());
+        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(cctx, INDEX, desc, qry.getValueType(), qry.getFilter());
         q.keepBinary(keepBinary);
 
         return q;
