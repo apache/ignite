@@ -104,7 +104,7 @@ public class PrepareServiceImpl extends AbstractService {
             }
         }
         catch (ValidationException | CalciteContextException e) {
-            throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
+            throw new IgniteSQLException("Failed to validate query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
 

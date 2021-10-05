@@ -471,8 +471,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private FieldsQueryCursor<List<?>> executeDdl(RootQuery qry, DdlPlan plan) {
-        SchemaPlus s0 = schemaHolder.getDefaultSchema("PUBLIC");
-
         try {
             ddlCmdHnd.handle(qry.id(), plan.command());
         }
@@ -485,17 +483,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
 
         if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).insertStatement() != null) {
-            SchemaPlus s1 = schemaHolder.getDefaultSchema("PUBLIC");
+            RootQuery insQry = qry.childQuery(schemaHolder.getDefaultSchema(qry.context().schemaName()));
+
             SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
-            // Create new planning context containing created table in the schema.
-//            PlanningContext dmlCtx = createContext(pctx, pctx.schemaName(), pctx.query(), pctx.parameters());
+            QueryPlan dmlPlan = prepareSvc.prepareSingle(insertStmt, insQry.planningContext());
 
-            qry.nextPlanningContext();
-
-            QueryPlan dmlPlan = prepareSvc.prepareSingle(insertStmt, qry.planningContext());
-
-            return executePlan(qry, dmlPlan);
+            return executePlan(insQry, dmlPlan);
         }
         else
             return H2Utils.zeroCursor();

@@ -119,6 +119,11 @@ public class RootQuery<Row> extends Query<Row> {
     }
 
     /** */
+    public RootQuery childQuery(SchemaPlus schema) {
+        return new RootQuery(sql, schema, params, null, exch, unregister, log);
+    }
+
+    /** */
     public BaseQueryContext context() {
         return ctx;
     }

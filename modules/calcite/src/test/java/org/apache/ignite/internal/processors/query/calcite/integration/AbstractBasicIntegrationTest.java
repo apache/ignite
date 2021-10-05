@@ -114,7 +114,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> sql(String sql, Object... params) {
-        return sql(client, sql);
+        return sql(client, sql, params);
     }
 
     /** */
