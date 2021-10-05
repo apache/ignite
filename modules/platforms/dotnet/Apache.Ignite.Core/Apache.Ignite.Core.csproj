@@ -28,7 +28,7 @@
     but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
     NOTE: Don't upgrade to 3.x - it does not work on some older 2.x SDKs
     -->
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12"/>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12" />
   </ItemGroup>
   <ItemGroup>
     <None Update="IgniteConfigurationSection.xsd">
@@ -43,10 +43,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\bin\libs\*.jar" Pack="true" PackagePath="build\output\libs"/>
-    <None Include="Apache.Ignite.targets" Pack="true" PackagePath="build"/>
-    <None Include="..\..\..\..\config\java.util.logging.properties" Pack="true" PackagePath="build\output\config"/>
-    <None Include="NuGet\LINQPad\*.*" Pack="true" PackagePath="linqpad-samples"/>
+    <None Include="..\bin\libs\*.jar" Pack="true" PackagePath="build\output\libs" />
+    <None Include="Apache.Ignite.targets" Pack="true" PackagePath="build" />
+    <None Include="..\..\..\..\config\java.util.logging.properties" Pack="true" PackagePath="build\output\config" />
+    <None Include="NuGet\LINQPad\*.*" Pack="true" PackagePath="linqpad-samples" />
   </ItemGroup>
 
 </Project>
