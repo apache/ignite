@@ -165,46 +165,42 @@ public class RootQuery<Row> extends Query<Row> {
      * at {@link #onResponse(RemoteFragmentKey, Throwable)}.
      */
     private void tryClose() {
-        QueryState state0 = null;
+        try {
+            QueryState state0 = null;
 
-        synchronized (this) {
-            if (state == QueryState.CLOSED)
-                return;
+            synchronized (this) {
+                if (state == QueryState.CLOSED)
+                    return;
 
-            if (state == QueryState.EXECUTION)
-                state0 = state = QueryState.CLOSING;
+                if (state == QueryState.EXECUTION)
+                    state0 = state = QueryState.CLOSING;
 
-            // 1) close local fragment
-            root.closeInternal();
-
-            if (state == QueryState.CLOSING && waiting.isEmpty())
-                state0 = state = QueryState.CLOSED;
-        }
-
-        if (state0 == QueryState.CLOSED) {
-            // 2) unregister runing query
-            unregister.accept(this);
-
-            IgniteException wrpEx = null;
-
-            // 3) close remote fragments
-            for (UUID nodeId : remotes) {
-                try {
-                    exch.closeOutbox(nodeId, id(), -1, -1);
-                }
-                catch (IgniteCheckedException e) {
-                    if (wrpEx == null)
-                        wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + nodeId + ']', e);
-                    else
-                        wrpEx.addSuppressed(e);
-                }
+                if (state == QueryState.CLOSING && waiting.isEmpty())
+                    state0 = state = QueryState.CLOSED;
             }
 
-            // 4) Cancel local fragment
-            root.context().execute(root.context()::cancel, root::onError);
+            if (state0 == QueryState.CLOSED) {
+                IgniteException wrpEx = null;
 
-            if (wrpEx != null)
-                throw wrpEx;
+                for (UUID nodeId : remotes) {
+                    try {
+//                        if (!nodeId.equals(root.context().localNodeId()))
+                        exch.closeQuery(nodeId, id());
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (wrpEx == null)
+                            wrpEx = new IgniteException("Failed to send cancel message. [nodeId=" + nodeId + ']', e);
+                        else
+                            wrpEx.addSuppressed(e);
+                    }
+                }
+
+                if (wrpEx != null)
+                    throw wrpEx;
+            }
+        }
+        finally {
+            super.cancel();
         }
     }
 

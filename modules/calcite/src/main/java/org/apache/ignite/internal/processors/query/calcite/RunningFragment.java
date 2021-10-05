@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Objects;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Downstream;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,7 +30,7 @@ public class RunningFragment<Row> {
     private final IgniteRel rootRel;
 
     /** */
-    private final Downstream<Row> root;
+    private final AbstractNode<Row> root;
 
     /** */
     private final ExecutionContext<Row> ectx;
@@ -37,7 +38,7 @@ public class RunningFragment<Row> {
     /** */
     public RunningFragment(
         IgniteRel rootRel,
-        Downstream<Row> root,
+        AbstractNode<Row> root,
         ExecutionContext<Row> ectx) {
         this.rootRel = rootRel;
         this.root = root;
@@ -55,7 +56,7 @@ public class RunningFragment<Row> {
     }
 
     /** */
-    public Downstream<Row> root() {
+    public AbstractNode<Row> root() {
         return root;
     }
 

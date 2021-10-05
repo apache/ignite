@@ -380,7 +380,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** {@inheritDoc} */
     @Override public Query register(Query qry) {
-        log.info("+++ REG " + qry);
         Query old = runningQrys.putIfAbsent(qry.id(), qry);
 
         return old != null ? old : qry;

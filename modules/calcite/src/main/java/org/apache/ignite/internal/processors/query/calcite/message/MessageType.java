@@ -51,6 +51,9 @@ public enum MessageType {
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
 
     /** */
+    QUERY_CLOSE_MESSAGE(308, QueryCloseMessage::new),
+
+    /** */
     FRAGMENT_MAPPING(350, FragmentMapping::new),
 
     /** */

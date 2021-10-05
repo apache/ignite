@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryState;
@@ -87,7 +86,13 @@ public class Query<Row> implements RunningQuery {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        // TODO
+        for (RunningFragment<Row> frag : fragments)
+            frag.context().execute(frag.root()::close, frag.root()::onError);
+
+        for (RunningFragment<Row> frag : fragments)
+            frag.context().execute(frag.context()::cancel, frag.root()::onError);
+
+        unregister.accept(this);
     }
 
     /** */
