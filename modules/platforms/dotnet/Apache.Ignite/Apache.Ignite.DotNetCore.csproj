@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputType>Exe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AssemblyName>Apache.Ignite</AssemblyName>
     <RootNamespace>Apache.Ignite</RootNamespace>
-    <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
-    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
+    <IsPackable>false</IsPackable>
+    <PackageId>Apache.Ignite.Runner</PackageId>
 
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
