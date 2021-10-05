@@ -23,7 +23,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -109,20 +108,21 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         int lower = new Random().nextInt(CNT / 2);
         int upper = CNT / 2 + new Random().nextInt(CNT / 2 - 1);
 
-        List<T2<RangeIndexQueryCriterion, RangeIndexQueryCriterion>> cc = new ArrayList<>();
+        List<IndexQueryCriterion> criteria1 = criteria(fldName, lower, upper);
+        List<IndexQueryCriterion> criteria2 = criteria(fldName, upper, lower);
 
-        Stream.of(new T2<>(lower, upper), new T2<>(upper, lower)).forEach(pair -> {
-            for (int i = 0; i < 6; i++) {
-                for (int j = 0; j < 6; j++) {
-                    RangeIndexQueryCriterion c1 = (RangeIndexQueryCriterion)criterion(i, fldName, pair.get1(), pair.get2());
-                    RangeIndexQueryCriterion c2 = (RangeIndexQueryCriterion)criterion(j, fldName, pair.get2(), pair.get1());
+        List<T2<RangeIndexQueryCriterion, RangeIndexQueryCriterion>> checks = new ArrayList<>();
 
-                    cc.add(new T2<>(c1, c2));
-                }
+        for (int i = 0; i < criteria1.size(); i++) {
+            for (int j = 0; j < criteria2.size(); j++) {
+                checks.add(new T2<>(
+                    (RangeIndexQueryCriterion)criteria1.get(i),
+                    (RangeIndexQueryCriterion)criteria2.get(j)));
             }
-        });
 
-        cc.forEach(c -> checkTwoCriteria(c.get1(), c.get2()));
+        }
+
+        checks.forEach(c -> checkTwoCriteria(c.get1(), c.get2()));
     }
 
     /** */
@@ -148,21 +148,21 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCommonBoundary() {
-        int upper, lower = upper = new Random().nextInt(CNT / 2);
+        int boundary = new Random().nextInt(CNT / 2);
 
-        checkEmptyForCommonBoundary(lt(fldName, lower), gt(fldName, upper));
-        checkEmptyForCommonBoundary(lte(fldName, lower), gt(fldName, upper));
-        checkEmptyForCommonBoundary(lt(fldName, lower), gte(fldName, upper));
+        checkEmptyForCommonBoundary(lt(fldName, boundary), gt(fldName, boundary));
+        checkEmptyForCommonBoundary(lte(fldName, boundary), gt(fldName, boundary));
+        checkEmptyForCommonBoundary(lt(fldName, boundary), gte(fldName, boundary));
 
         IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(lte(fldName, lower), gte(fldName, upper));
+            .setCriteria(lte(fldName, boundary), gte(fldName, boundary));
 
-        check(null, cache.query(qry), lower, upper + 1);
+        check(null, cache.query(qry), boundary, boundary + 1);
 
         qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(between(fldName, 0, lower), between(fldName, upper, CNT));
+            .setCriteria(between(fldName, 0, boundary), between(fldName, boundary, CNT));
 
-        check(null, cache.query(qry), lower, upper + 1);
+        check(null, cache.query(qry), boundary, boundary + 1);
     }
 
     /** */
@@ -243,17 +243,14 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IndexQueryCriterion criterion(int idx, String fld, int val1, int val2) {
-        switch (idx) {
-            case 0: return eq(fld, val1);
-            case 1: return lt(fld, val1);
-            case 2: return lte(fld, val1);
-            case 3: return gt(fld, val1);
-            case 4: return gte(fld, val1);
-            case 5: return between(fld, val1, val2);
-            default:
-                throw new RuntimeException("Unknown criteria operation");
-        }
+    private List<IndexQueryCriterion> criteria(String fld, int val1, int val2) {
+        return F.asList(
+            eq(fld, val1),
+            lt(fld, val1),
+            lte(fld, val1),
+            gt(fld, val1),
+            gte(fld, val1),
+            between(fld, val1, val2));
     }
 
     /** */
