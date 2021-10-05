@@ -57,8 +57,8 @@ option (WITH_TESTS OFF)
 option (WARNINGS_AS_ERRORS OFF)
 
 if (${WITH_CORE} OR ${WITH_TESTS})
-	find_package(Java 1.8 REQUIRED)
-	find_package(JNI REQUIRED)
+    find_package(Java 1.8 REQUIRED)
+    find_package(JNI REQUIRED)
 endif()
 
 if (${WARNINGS_AS_ERRORS})
@@ -73,9 +73,9 @@ add_subdirectory(common)
 add_subdirectory(binary)
 
 if (${WITH_CORE} OR ${WITH_TESTS})
-	add_subdirectory(jni)
-	add_subdirectory(core)
-	add_subdirectory(ignite)
+    add_subdirectory(jni)
+    add_subdirectory(core)
+    add_subdirectory(ignite)
 endif()
 
 if (${WITH_TESTS})
