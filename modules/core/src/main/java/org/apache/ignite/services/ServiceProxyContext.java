@@ -26,6 +26,7 @@ public abstract class ServiceProxyContext {
 
     /**
      * @param name Context attribute name.
+     * @param <V> Type of the attribute value.
      * @return Context attribute value.
      */
     public abstract <V> V attribute(String name);
