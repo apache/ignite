@@ -51,9 +51,6 @@ Skip examples build.
 .PARAMETER clean
 Perform a clean rebuild.
 
-.PARAMETER platform
-Build platform ("Any CPU", "x86", "x64").
-
 .PARAMETER configuration
 Build configuration ("Release", "Debug").
 
@@ -62,12 +59,6 @@ Custom Maven options, default is "-U -P-lgpl,-scala,-examples,-test,-benchmarks 
 
 .PARAMETER jarDirs
 Java jar files source folders, default is "modules\indexing\target,modules\core\target,modules\spring\target"
-
-.PARAMETER asmDirs
-.NET assembly directories to copy pre-build binaries from. Default is "", which means no copy.
-
-.PARAMETER nugetPath
-Path to nuget.exe.
 
 .PARAMETER version
 NuGet version override (normally inferred from assembly version).
@@ -90,14 +81,10 @@ param (
     [switch]$skipCodeAnalysis,
     [switch]$skipExamples,
     [switch]$clean,
-    [ValidateSet("Any CPU", "x64", "x86")]
-    [string]$platform="Any CPU",
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-all-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
-    [string]$asmDirs="",
-    [string]$nugetPath="",
 	[string]$version=""
  )
 
@@ -199,26 +186,8 @@ if(!$skipDotNetCore) {
 	Exec $publishCommand
 }
 
-if ($asmDirs) {
-    Get-ChildItem $asmDirs.Split(',') | % `
-    {
-        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
-
-        if ($_.Name.EndsWith(".exe.config")) {
-            $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName)
-        }
-
-        if ($projName.StartsWith("Apache.Ignite")) {
-            $target = [IO.Path]::Combine($projName, "bin", $configuration)
-            New-Item -Path $target -ItemType "directory" -Force
-
-            echo "Copying '$_' to '$target'"
-            Copy-Item -Force $_.FullName $target
-        }
-    }
-}
-
 # Copy binaries
+# TODO: Create two folders: net461 and netcoreapp3.1
 Make-Dir("bin")
 
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
@@ -240,8 +209,8 @@ Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
 # 3) Pack NuGet
 if (!$skipNuGet) {
     # Check parameters
-    if (($platform -ne "Any CPU") -or ($configuration -ne "Release")) {
-        echo "NuGet can only package 'Release' 'Any CPU' builds; you have specified '$configuration' '$platform'."
+    if ($configuration -ne "Release") {
+        echo "NuGet can only package 'Release' builds; you have specified '$configuration'."
         exit -1
     }
 
