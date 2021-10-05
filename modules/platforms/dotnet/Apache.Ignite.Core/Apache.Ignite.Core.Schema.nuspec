@@ -38,8 +38,6 @@ nuget pack Apache.Ignite.Schema.nuspec -Version 1.6.1
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 XSD file describes the structure of IgniteConfigurationSection and enables Intellisense(TM) when editing IgniteConfigurationSection in app.config and web.config in Visual Studio.
-
-More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
         </description>
         <copyright>Copyright 2021</copyright>
         <tags>Apache Ignite XSD Intellisense</tags>

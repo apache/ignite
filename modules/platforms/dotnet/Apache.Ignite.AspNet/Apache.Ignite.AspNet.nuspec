@@ -41,8 +41,6 @@ Creating NuGet package:
         <description>
 Output Cache Provider: caches page output in a distributed in-memory cache.
 Session State Store Provider: stores session state data in a distributed in-memory cache.
-            
-More info: https://apacheignite-net.readme.io/
         </description>
         <copyright>Copyright 2021</copyright>
         <tags>OutputCacheProvider Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>

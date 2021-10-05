@@ -40,8 +40,6 @@ Creating NuGet package:
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 Apache Ignite EntityFramework Second Level Cache: caches EF query results in a distributed in-memory cache.
-            
-More info: https://apacheignite-net.readme.io/
         </description>
         <summary>
             Apache Ignite EntityFramework Integration

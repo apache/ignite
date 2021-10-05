@@ -45,8 +45,6 @@ Query distributed in-memory data in a strongly-typed manner and with IDE support
 All Ignite SQL features are supported: distributed joins, groupings, aggregates, field queries, and more.
 
 Supports .NET 4+ and .NET Core 2.0+.
-            
-More info: https://apacheignite-net.readme.io/
         </description>
         <copyright>Copyright 2021</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>

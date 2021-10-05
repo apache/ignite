@@ -45,6 +45,8 @@ EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks", "Apache.Ignite.Benchmarks\Apache.Ignite.Benchmarks.csproj", "{8F507DBE-56F9-437F-82D4-74C02EC44E41}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Schema", "Apache.Ignite.Schema\Apache.Ignite.Schema.csproj", "{C408E540-2081-4939-96E1-B70ED5C0E031}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,10 @@ Global
 		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C408E540-2081-4939-96E1-B70ED5C0E031}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C408E540-2081-4939-96E1-B70ED5C0E031}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C408E540-2081-4939-96E1-B70ED5C0E031}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C408E540-2081-4939-96E1-B70ED5C0E031}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <NoBuild>true</NoBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <Description>XSD file describes the structure of IgniteConfigurationSection and enables Intellisense(TM) when editing IgniteConfigurationSection in app.config and web.config in Visual Studio.</Description>
+  </PropertyGroup>
+</Project>
