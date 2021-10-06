@@ -56,7 +56,10 @@ public class IgniteCliRunner {
         var ignition = new IgnitionImpl();
 
         // TODO use the work dir provided as a parameter: https://issues.apache.org/jira/browse/IGNITE-15060
-        ignition.start(parsedArgs.nodeName, parsedArgs.config.toAbsolutePath(), Path.of("work"));
+        ignition.start(
+            parsedArgs.nodeName,
+            parsedArgs.config != null ? parsedArgs.config.toAbsolutePath() : null,
+            Path.of("work"));
     }
 
     /**
