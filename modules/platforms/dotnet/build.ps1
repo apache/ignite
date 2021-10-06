@@ -196,7 +196,7 @@ if(!$skipDotNetCore) {
 }
 
 # Copy binaries
-# TODO: Create two folders: net461 and netcoreapp3.1
+Make-Dir("bin")
 Make-Dir("bin\net461")
 Make-Dir("bin\netcoreapp3.1")
 
