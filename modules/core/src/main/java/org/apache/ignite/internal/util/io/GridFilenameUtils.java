@@ -58,7 +58,7 @@ import java.util.Stack;
  * <p>
  * This class only supports Unix and Windows style names.
  * Prefixes are matched as follows:
- * <pre>
+ * <pre>{@code
  * Windows:
  * a\b\c.txt           --> ""          --> relative
  * \a\b\c.txt          --> "\"         --> current drive absolute
@@ -73,7 +73,7 @@ import java.util.Stack;
  * ~                   --> "~/"        --> current user (slash added)
  * ~user/a/b/c.txt     --> "~user/"    --> named user
  * ~user               --> "~user/"    --> named user (slash added)
- * </pre>
+ * }</pre>
  * Both prefix styles are matched always, irrespective of the machine that you are
  * currently running on.
  * <p>
@@ -83,7 +83,6 @@ import java.util.Stack;
  * @since 1.1
  */
 public class GridFilenameUtils {
-
     /**
      * The extension separator character.
      * @since 1.4
@@ -168,7 +167,7 @@ public class GridFilenameUtils {
      * <p>
      * The output will be the same on both Unix and Windows except
      * for the separator character.
-     * <pre>
+     * <pre>{@code
      * /foo//               -->   /foo/
      * /foo/./              -->   /foo/
      * /foo/../bar          -->   /bar
@@ -186,7 +185,7 @@ public class GridFilenameUtils {
      * C:\..\bar            -->   null
      * ~/foo/../bar/        -->   ~/bar/
      * ~/../bar             -->   null
-     * </pre>
+     * }</pre>
      * (Note the file separator returned will be correct for Windows/Unix)
      *
      * @param filename  the filename to normalize, null returns null
@@ -212,7 +211,7 @@ public class GridFilenameUtils {
      * <p>
      * The output will be the same on both Unix and Windows except
      * for the separator character.
-     * <pre>
+     * <pre>{@code
      * /foo//               -->   /foo/
      * /foo/./              -->   /foo/
      * /foo/../bar          -->   /bar
@@ -230,7 +229,7 @@ public class GridFilenameUtils {
      * C:\..\bar            -->   null
      * ~/foo/../bar/        -->   ~/bar/
      * ~/../bar             -->   null
-     * </pre>
+     * }</pre>
      * The output will be the same on both Unix and Windows including
      * the separator character.
      *
@@ -263,7 +262,7 @@ public class GridFilenameUtils {
      * <p>
      * The output will be the same on both Unix and Windows except
      * for the separator character.
-     * <pre>
+     * <pre>{@code
      * /foo//               -->   /foo
      * /foo/./              -->   /foo
      * /foo/../bar          -->   /bar
@@ -281,7 +280,7 @@ public class GridFilenameUtils {
      * C:\..\bar            -->   null
      * ~/foo/../bar/        -->   ~/bar
      * ~/../bar             -->   null
-     * </pre>
+     * }</pre>
      * (Note the file separator returned will be correct for Windows/Unix)
      *
      * @param filename  the filename to normalize, null returns null
@@ -308,7 +307,7 @@ public class GridFilenameUtils {
      * <p>
      * The output will be the same on both Unix and Windows including
      * the separator character.
-     * <pre>
+     * <pre>{@code
      * /foo//               -->   /foo
      * /foo/./              -->   /foo
      * /foo/../bar          -->   /bar
@@ -326,7 +325,7 @@ public class GridFilenameUtils {
      * C:\..\bar            -->   null
      * ~/foo/../bar/        -->   ~/bar
      * ~/../bar             -->   null
-     * </pre>
+     * }</pre>
      *
      * @param filename  the filename to normalize, null returns null
      * @param unixSeparator {@code true} if a unix separator should
@@ -450,7 +449,7 @@ public class GridFilenameUtils {
      * <p>
      * The output will be the same on both Unix and Windows except
      * for the separator character.
-     * <pre>
+     * <pre>{@code
      * /foo/ + bar          -->   /foo/bar
      * /foo + bar           -->   /foo/bar
      * /foo + /bar          -->   /bar
@@ -462,7 +461,7 @@ public class GridFilenameUtils {
      * /foo/.. + /bar       -->   /bar
      * /foo + bar/c.txt     -->   /foo/bar/c.txt
      * /foo/c.txt + bar     -->   /foo/c.txt/bar (!)
-     * </pre>
+     * }</pre>
      * (*) Note that the Windows relative drive prefix is unreliable when
      * used with this method.
      * (!) Note that the first parameter must be a path. If it ends with a name, then
@@ -578,7 +577,7 @@ public class GridFilenameUtils {
      * The prefix length includes the first slash in the full filename
      * if applicable. Thus, it is possible that the length returned is greater
      * than the length of the input string.
-     * <pre>
+     * <pre>{@code
      * Windows:
      * a\b\c.txt           --> ""          --> relative
      * \a\b\c.txt          --> "\"         --> current drive absolute
@@ -593,7 +592,7 @@ public class GridFilenameUtils {
      * ~                   --> "~/"        --> current user (slash added)
      * ~user/a/b/c.txt     --> "~user/"    --> named user
      * ~user               --> "~user/"    --> named user (slash added)
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      * ie. both Unix and Windows prefixes are matched regardless.
@@ -695,7 +694,7 @@ public class GridFilenameUtils {
      * <p>
      * This method will handle a file in either Unix or Windows format.
      * The prefix includes the first slash in the full filename where applicable.
-     * <pre>
+     * <pre>{@code
      * Windows:
      * a\b\c.txt           --> ""          --> relative
      * \a\b\c.txt          --> "\"         --> current drive absolute
@@ -710,7 +709,7 @@ public class GridFilenameUtils {
      * ~                   --> "~/"        --> current user (slash added)
      * ~user/a/b/c.txt     --> "~user/"    --> named user
      * ~user               --> "~user/"    --> named user (slash added)
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      * ie. both Unix and Windows prefixes are matched regardless.
@@ -735,13 +734,13 @@ public class GridFilenameUtils {
      * This method will handle a file in either Unix or Windows format.
      * The method is entirely text based, and returns the text before and
      * including the last forward or backslash.
-     * <pre>
+     * <pre>{@code
      * C:\a\b\c.txt --> a\b\
      * ~/a/b/c.txt  --> a/b/
      * a.txt        --> ""
      * a/b/c        --> a/b/
      * a/b/c/       --> a/b/c/
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      * <p>
@@ -762,13 +761,13 @@ public class GridFilenameUtils {
      * This method will handle a file in either Unix or Windows format.
      * The method is entirely text based, and returns the text before the
      * last forward or backslash.
-     * <pre>
+     * <pre>{@code
      * C:\a\b\c.txt --> a\b
      * ~/a/b/c.txt  --> a/b
      * a.txt        --> ""
      * a/b/c        --> a/b
      * a/b/c/       --> a/b/c
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      * <p>
@@ -808,7 +807,7 @@ public class GridFilenameUtils {
      * This method will handle a file in either Unix or Windows format.
      * The method is entirely text based, and returns the text before and
      * including the last forward or backslash.
-     * <pre>
+     * <pre>{@code
      * C:\a\b\c.txt --> C:\a\b\
      * ~/a/b/c.txt  --> ~/a/b/
      * a.txt        --> ""
@@ -820,7 +819,7 @@ public class GridFilenameUtils {
      * ~/           --> ~/
      * ~user        --> ~user/
      * ~user/       --> ~user/
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      *
@@ -838,7 +837,7 @@ public class GridFilenameUtils {
      * This method will handle a file in either Unix or Windows format.
      * The method is entirely text based, and returns the text before the
      * last forward or backslash.
-     * <pre>
+     * <pre>{@code
      * C:\a\b\c.txt --> C:\a\b
      * ~/a/b/c.txt  --> ~/a/b
      * a.txt        --> ""
@@ -850,7 +849,7 @@ public class GridFilenameUtils {
      * ~/           --> ~
      * ~user        --> ~user
      * ~user/       --> ~user
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      *
@@ -894,12 +893,12 @@ public class GridFilenameUtils {
      * <p>
      * This method will handle a file in either Unix or Windows format.
      * The text after the last forward or backslash is returned.
-     * <pre>
+     * <pre>{@code
      * a/b/c.txt --> c.txt
      * a.txt     --> a.txt
      * a/b/c     --> c
      * a/b/c/    --> ""
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      *
@@ -918,12 +917,12 @@ public class GridFilenameUtils {
      * <p>
      * This method will handle a file in either Unix or Windows format.
      * The text after the last forward or backslash and before the last dot is returned.
-     * <pre>
+     * <pre>{@code
      * a/b/c.txt --> c
      * a.txt     --> a
      * a/b/c     --> c
      * a/b/c/    --> ""
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      *
@@ -939,12 +938,12 @@ public class GridFilenameUtils {
      * <p>
      * This method returns the textual part of the filename after the last dot.
      * There must be no directory separator after the dot.
-     * <pre>
+     * <pre>{@code
      * foo.txt      --> "txt"
      * a/b/c.jpg    --> "jpg"
      * a/b.txt/c    --> ""
      * a/b/c        --> ""
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      *
@@ -968,12 +967,12 @@ public class GridFilenameUtils {
      * <p>
      * This method returns the textual part of the filename before the last dot.
      * There must be no directory separator after the dot.
-     * <pre>
+     * <pre>{@code
      * foo.txt    --> foo
      * a\b\c.jpg  --> a\b\c
      * a\b\c      --> a\b\c
      * a.b\c      --> a.b\c
-     * </pre>
+     * }</pre>
      * <p>
      * The output will be the same irrespective of the machine that the code is running on.
      *
@@ -1162,13 +1161,13 @@ public class GridFilenameUtils {
      * single or multiple (zero or more) wildcard characters.
      * This is the same as often found on Dos/Unix command lines.
      * The check is case-sensitive always.
-     * <pre>
+     * <pre>{@code
      * wildcardMatch("c.txt", "*.txt")      --> true
      * wildcardMatch("c.txt", "*.jpg")      --> false
      * wildcardMatch("a/b/c.txt", "a/b/*")  --> true
      * wildcardMatch("c.txt", "*.???")      --> true
      * wildcardMatch("c.txt", "*.????")     --> false
-     * </pre>
+     * }</pre>
      * N.B. the sequence "*?" does not work properly at present in match strings.
      *
      * @param filename  the filename to match on
@@ -1188,13 +1187,13 @@ public class GridFilenameUtils {
      * single or multiple (zero or more) wildcard characters.
      * This is the same as often found on Dos/Unix command lines.
      * The check is case-sensitive on Unix and case-insensitive on Windows.
-     * <pre>
+     * <pre>{@code
      * wildcardMatch("c.txt", "*.txt")      --> true
      * wildcardMatch("c.txt", "*.jpg")      --> false
      * wildcardMatch("a/b/c.txt", "a/b/*")  --> true
      * wildcardMatch("c.txt", "*.???")      --> true
      * wildcardMatch("c.txt", "*.????")     --> false
-     * </pre>
+     * }</pre>
      * N.B. the sequence "*?" does not work properly at present in match strings.
      *
      * @param filename  the filename to match on
