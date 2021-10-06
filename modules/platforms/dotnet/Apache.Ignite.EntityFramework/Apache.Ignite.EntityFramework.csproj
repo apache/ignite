@@ -17,9 +17,9 @@
 
   <ItemGroup>
     <Reference Include="System.Data" />
-    
+
     <PackageReference Include="EntityFramework" Version="6.1.3" />
-    
+
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
 
     <!--
@@ -27,7 +27,7 @@
     but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
     NOTE: Don't upgrade to 3.x - it does not work on some older 2.x SDKs
     -->
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12" PrivateAssets="all" />
 
     <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
