@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -669,10 +670,17 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         throws IgniteInterruptedCheckedException
     {
         boolean b = waitForCondition(
-            () -> ignite.context().cache().publicCaches()
-                .stream()
-                .filter(c -> !excludedCacheNames.contains(c.getName()))
-                .allMatch(c -> c.indexReadyFuture().isDone()),
+            () -> {
+                boolean b1 = ignite.context().cache().publicCaches()
+                    .stream()
+                    .filter(c -> !excludedCacheNames.contains(c.getName()))
+                    .allMatch(c -> c.indexReadyFuture().isDone());
+
+                log.warning("@@@ STILL WAIT:" + ignite.context().cache().publicCaches().stream()
+                    .map(entries -> new T2<>(entries.getName(), entries.indexReadyFuture().isDone()))
+                    .collect(Collectors.toList()));
+                return b1;
+            },
             timeout);
 
         assertTrue(b);
