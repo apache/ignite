@@ -208,12 +208,10 @@ Get-ChildItem *.csproj -Recurse
                      | where Name -NotLike "*Benchmark*" | % {
     $projDir = split-path -parent $_.FullName
     $dir = [IO.Path]::Combine($projDir, "bin", $configuration)
-    $netFwDir = [IO.Path]::Combine($dir, "net461");
-    $netCoreDir = [IO.Path]::Combine($dir, "netcoreapp3.1", "publish");
-    echo $netFwDir
 
-    Copy-If-Exists $netFwDir "bin\net461"
-    Copy-If-Exists $netCoreDir "bin\netcoreapp3.1"
+    Copy-If-Exists [IO.Path]::Combine($dir, "net461") "bin\net461"
+    Copy-If-Exists [IO.Path]::Combine($dir, "netcoreapp3.1", "publish") "bin\netcoreapp3.1"
+    Copy-If-Exists [IO.Path]::Combine($dir, "netstandard2.0", "publish") "bin\netcoreapp3.1"
 }
 
 
