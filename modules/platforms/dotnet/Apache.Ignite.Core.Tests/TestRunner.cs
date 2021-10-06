@@ -18,8 +18,10 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using NUnit.Framework;
 
     /// <summary>
     /// Console test runner.
@@ -37,14 +39,8 @@ namespace Apache.Ignite.Core.Tests
 
             if (args.Length == 2)
             {
-                //Debugger.Launch();
-                var testClass = Type.GetType(args[0]);
-                var method = args[1];
+                TestOne(args[0], args[1]);
 
-                if (testClass == null || testClass.GetMethods().All(x => x.Name != method))
-                    throw new InvalidOperationException("Failed to find method: " + testClass + "." + method);
-
-                Environment.ExitCode = TestOne(testClass, method);
                 return;
             }
 
@@ -55,17 +51,33 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Runs specified test method.
         /// </summary>
-        private static int TestOne(Type testClass, string method, bool sameDomain = false)
+        private static void TestOne(string className, string methodName)
         {
-            string[] args =
-            {
-                "-noshadow",
-                "-domain:" + (sameDomain ? "None" : "Single"),
-                "-run:" + testClass.FullName + "." + method,
-                Assembly.GetAssembly(testClass).Location
-            };
+            var fixtureClass = Type.GetType(className);
 
-            throw new Exception("TODO" + args);
+            if (fixtureClass == null)
+            {
+                throw new InvalidOperationException("Failed to find class: " + className);
+            }
+
+            var fixture = Activator.CreateInstance(fixtureClass);
+
+            foreach (var setUpMethod in GetMethodsWithAttr<SetUpAttribute>(fixtureClass))
+            {
+                setUpMethod.Invoke(fixture, Array.Empty<object>());
+            }
+
+            var testMethod = fixtureClass.GetMethod(methodName);
+
+            if (testMethod == null)
+                throw new InvalidOperationException("Failed to find method: " + fixtureClass + "." + methodName);
+
+            testMethod.Invoke(fixture, Array.Empty<object>());
+        }
+
+        private static IEnumerable<MethodInfo> GetMethodsWithAttr<T>(Type testClass)
+        {
+            return testClass.GetMethods().Where(m => m.GetCustomAttributes(true).Any(a => a is T));
         }
     }
 }
