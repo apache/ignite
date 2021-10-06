@@ -37,8 +37,8 @@ Examples are shipped as a separate Maven project, which is located in the `examp
 To start running you simply need to import provided `pom.xml` file into your favourite IDE.
 
 The following examples are included:
-* `TableExample` - demonstrates the usage of the `org.apache.ignite.table.Table` API
-* `KeyValueBinaryViewExample` - demonstrates the usage of the `org.apache.ignite.table.KeyValueView` API
+* `RecordViewExample` - demonstrates the usage of the `org.apache.ignite.table.RecordView` API
+* `KeyValueViewExample` - demonstrates the usage of the `org.apache.ignite.table.KeyValueView` API
 
 To run an example, do the following:
 1. Import the examples project into you IDE.

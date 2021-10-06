@@ -32,23 +32,23 @@ public class TableExamplesTest {
     protected static final String[] EMPTY_ARGS = new String[0];
 
     /**
-     * Runs TableExample.
+     * Runs RecordViewExample.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testTableExample() throws Exception {
-        TableExample.main(EMPTY_ARGS);
+    public void testRecordViewExample() throws Exception {
+        RecordViewExample.main(EMPTY_ARGS);
     }
 
     /**
-     * Runs KeyValueBinaryViewExample.
+     * Runs KeyValueViewExample.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testKeyValueBinaryViewExample() throws Exception {
-        KeyValueBinaryViewExample.main(EMPTY_ARGS);
+    public void testKeyValueViewExample() throws Exception {
+        KeyValueViewExample.main(EMPTY_ARGS);
     }
 
     /**
