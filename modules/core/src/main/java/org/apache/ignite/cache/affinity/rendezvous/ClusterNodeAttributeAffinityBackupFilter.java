@@ -44,8 +44,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Warning: the misspelling of an attribute name can cause all nodes to believe they have a null attribute, which would
  * the number of cache entries seen in visor with the number of expected entries, e.g., SELECT COUNT(*) from YOUR_TABLE
  * times the number of backups.
- * </pre>
- * <h2 class="header">Spring Example</h2>
+ * <h1 class="header">Spring Example</h1>
  * Create a partitioned cache template plate with 1 backup, where the backup will not be placed in the same availability zone
  * as the primary.   Note: This example requires that the environment variable "AVAILABILTY_ZONE" be set appropriately on
  * each node via some means external to Ignite.  On AWS, some nodes might have AVAILABILTY_ZONE=us-east-1a and others

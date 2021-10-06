@@ -101,7 +101,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
-     * Different application servers us different format (URL & url).
+     * Different application servers us different format (URL &amp; url).
      * @return Connection URL.
      */
     public String getURL() {
@@ -109,7 +109,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
-     * Different application servers us different format (URL & url).
+     * Different application servers us different format (URL &amp; url).
      * @param url Connection URL.
      * @throws SQLException On error whrn URL is invalid.
      */
@@ -144,7 +144,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
      *     <li>"127.0.0.1:10800"</li>
      *     <li>"127.0.0.1:10800..10810"</li>
      *     <li>"mynode0.mydomain.org:10800..10810", "mynode1.mydomain.org:10800..10810", "127.0.0.1:10800"</li>
-     * <ul/>
+     * </ul>
      *
      * @param addrsStr Ignite nodes addresses.
      * @throws SQLException On invalid addresses.
@@ -343,7 +343,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
      * Gets SSL connection mode.
      *
      * @return Use SSL flag.
-     * @see #setSslMode(String).
+     * @see #setSslMode(String)
      */
     public String getSslMode() {
         return props.getSslMode();
@@ -416,7 +416,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
 
     /**
      * Sets key manager algorithm that will be used to create a key manager. Notice that in most cased default value
-     * suites well, however, on Android platform this value need to be set to <tt>X509<tt/>.
+     * suites well, however, on Android platform this value need to be set to <tt>X509</tt>.
      * Algorithms implementations supplied by JSEE: PKIX (X509 or SunPKIX), SunX509
      *
      * <p>See more at JSSE Reference Guide.

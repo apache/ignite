@@ -40,7 +40,6 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
  *       {@link DataRegionMetricsMXBean} for more details.
  *     </li>
  * </ol>
- * </p>
  * <p>
  * Memory metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both

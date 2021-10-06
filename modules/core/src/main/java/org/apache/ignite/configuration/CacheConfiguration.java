@@ -1887,9 +1887,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Be aware of using the same string in case sensitive and case insensitive manner simultaneously, since
      * behaviour for such case is not specified.
-     * <p/>
+     * <p>
      * When sqlSchema is not specified, quoted {@code cacheName} is used instead.
-     * <p/>
+     * <p>
      * {@code sqlSchema} could not be an empty string. Has to be {@code "\"\""} instead.
      *
      * @param sqlSchema Schema name for current cache according to SQL ANSI-99. Should not be {@code null}.

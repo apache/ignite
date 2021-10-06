@@ -1634,11 +1634,11 @@ public final class IgniteSystemProperties {
     /**
      * Manages the type of the implementation of the service processor (implementation of the {@link IgniteServices}).
      * All nodes in the cluster must have the same value of this property.
-     * <p/>
+     * <p>
      * If the property is {@code true} then event-driven implementation of the service processor will be used.
-     * <p/>
+     * <p>
      * If the property is {@code false} then internal cache based implementation of service processor will be used.
-     * <p/>
+     * <p>
      * Default is {@code true}.
      */
     @SystemProperty(value = "Manages the type of the implementation of the service processor " +
@@ -1692,7 +1692,7 @@ public final class IgniteSystemProperties {
     /**
      * Flag to disable memory optimization:
      *  BitSets instead of HashSets to store partitions.
-     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     *  When number of backups per partion is {@code > IGNITE_AFFINITY_BACKUPS_THRESHOLD} we use HashMap to improve contains()
      * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */
@@ -1897,7 +1897,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Enables extended logging of indexes create/rebuild process. Default {@code false}.
-     * <p/>
+     * <p>
      * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node
      * restart.
      */

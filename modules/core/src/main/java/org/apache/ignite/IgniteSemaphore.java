@@ -24,8 +24,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * This interface provides a rich API for working with distributed semaphore.
- * <p>
+ * <p>This interface provides a rich API for working with distributed semaphore.
+ * </p>
  * <h1 class="header">Functionality</h1>
  * Distributed semaphore provides functionality similar to {@code java.util.concurrent.Semaphore}.
  * <h1 class="header">Creating Distributed Semaphore</h1>

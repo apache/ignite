@@ -26,8 +26,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * This interface provides a rich API for working with distributed queues based on In-Memory Data Grid.
- * <p>
+ * <p>This interface provides a rich API for working with distributed queues based on In-Memory Data Grid.
+ * </p>
  * <h1 class="header">Overview</h1>
  * Cache queue provides an access to cache elements using typical queue API. Cache queue also implements
  * {@link Collection} interface and provides all methods from collections including
@@ -35,8 +35,8 @@ import org.apache.ignite.lang.IgniteRunnable;
  * {@link Collection#retainAll(Collection)} methods for bulk operations. Note that all
  * {@link Collection} methods in the queue may throw {@link IgniteException} in case
  * of failure.
- * <p>
  * <h1 class="header">Bounded vs Unbounded</h1>
+ * <p>
  * Queues can be {@code unbounded} or {@code bounded}. {@code Bounded} queues can
  * have maximum capacity. Queue capacity can be set at creation time and cannot be
  * changed later. Here is an example of how to create {@code bounded} {@code LIFO} queue with

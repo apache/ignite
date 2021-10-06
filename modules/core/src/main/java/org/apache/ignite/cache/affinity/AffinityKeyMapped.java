@@ -35,7 +35,6 @@ import java.util.concurrent.Callable;
  * One of the major use cases for this annotation is the routing of grid computations
  * to the nodes where the data for this computation is cached, the concept
  * otherwise known as {@code Collocation Of Computations And Data}.
- * <p>
  * <h1 class="header">Mapping Cache Keys</h1>
  * The default implementation of {@link AffinityKeyMapper}, which will be used
  * if no explicit affinity mapper is specified in cache configuration, will first look
@@ -72,7 +71,6 @@ import java.util.concurrent.Callable;
  * cache.put(personKey1, new Person(..));
  * cache.put(personKey2, new Person(..));
  * </pre>
- * <p>
  * <h2 class="header">AffinityKey</h2>
  * For convenience, you can also optionally use {@link AffinityKey} class. Here is how a
  * {@code PersonKey} defined above would look using {@link AffinityKey}:
@@ -85,7 +83,6 @@ import java.util.concurrent.Callable;
  * cache.put(personKey1, new Person(..));
  * cache.put(personKey2, new Person(..));
  * </pre>
- * <p>
  * <h1 class="header">Collocating Computations And Data</h1>
  * It is also possible to route computations to the nodes where the data is cached. This concept
  * is otherwise known as {@code Collocation Of Computations And Data}. In this case,

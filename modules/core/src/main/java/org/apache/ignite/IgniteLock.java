@@ -24,8 +24,8 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * This interface provides a rich API for working with distributed reentrant locks.
- * <p>
  * <h1 class="header">Functionality</h1>
+ * <p>
  * Distributed reentrant lock provides functionality similar to {@code java.util.concurrent.ReentrantLock}.
  * <h1 class="header">Creating Distributed ReentrantLock</h1>
  * Instance of cache reentrant lock can be created by calling the following method:
@@ -44,6 +44,7 @@ import java.util.concurrent.locks.Lock;
  * </ul>
  *
  * <h1 class="header">Implementation issues</h1>
+ * <p>
  * Ignite lock comes in two flavours: fair and non-fair. Non-fair lock assumes no ordering should be imposed
  * on acquiring threads; in case of contention, threads from all nodes compete for the lock once the lock is released.
  * In most cases this is the desired behaviour. However, in some cases, using the non-fair lock can lead to uneven load
@@ -53,8 +54,8 @@ import java.util.concurrent.locks.Lock;
  * Thus, one of many threads on any node using a fair lock may obtain it multiple times in succession while other
  * active threads are not progressing and not currently holding the lock. Also note that the untimed tryLock method
  * does not honor the fairness setting. It will succeed if the lock is available even if other threads are waiting.
- *
  * </p>
+ *
  * As a rule of thumb, whenever there is a reasonable time window between successive calls to release and acquire
  * the lock, non-fair lock should be preferred:
  *
@@ -117,8 +118,9 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * <li>Lock is broken (any node failed while owning this lock), and lock is created in
      * non-failoverSafe mode.
-     *
      * <li>Local node is stopped.
+     *
+     * </ul>
      *
      * @throws IgniteException if the node is stopped or broken in non-failoverSafe mode
      */

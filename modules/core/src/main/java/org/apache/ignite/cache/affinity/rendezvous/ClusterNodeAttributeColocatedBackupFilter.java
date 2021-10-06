@@ -55,8 +55,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * <p>
  * This class is constructed with a node attribute name, and a candidate node will be rejected if previously selected
  * nodes for a partition have a different value for attribute on the candidate node.
- * </pre>
- * <h2 class="header">Spring Example</h2>
+ * <h1 class="header">Spring Example</h1>
  * Create a partitioned cache template plate with 1 backup, where the backup will be placed in the same cell
  * as the primary.   Note: This example requires that the environment variable "CELL" be set appropriately on
  * each node via some means external to Ignite.
@@ -81,7 +80,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  *     &lt;/list&gt;
  * &lt;/property&gt;
  * </pre>
- * <p>
  */
 public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>> {
     /** */
