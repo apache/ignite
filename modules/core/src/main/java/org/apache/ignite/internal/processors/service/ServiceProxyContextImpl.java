@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.services.ServiceProxyContext;
 
 /**
@@ -31,7 +33,17 @@ public class ServiceProxyContextImpl extends ServiceProxyContext {
      * @param attrs Context attributes.
      */
     public ServiceProxyContextImpl(Map<String, Object> attrs) {
+        A.notNull(attrs, "attrs");
+        A.ensure(!attrs.isEmpty(), "cannot create an empty context.");
+
         this.attrs = attrs;
+    }
+
+    /**
+     * Constructor to create an empty context.
+     */
+    public ServiceProxyContextImpl() {
+        attrs = Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

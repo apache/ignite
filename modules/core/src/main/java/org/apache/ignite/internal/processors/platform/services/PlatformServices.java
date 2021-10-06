@@ -285,10 +285,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
-                Map<String, Object> invokeCtx = reader.readMap();
+                Map<String, Object> opCtx = reader.readMap();
 
                 try {
-                    Object result = svc.invoke(mthdName, srvKeepBinary, args, invokeCtx);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args, opCtx);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }

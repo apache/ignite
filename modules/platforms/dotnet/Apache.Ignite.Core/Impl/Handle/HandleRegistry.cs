@@ -172,13 +172,11 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// </summary>
         /// <param name="id">Identifier.</param>
         /// <param name="quiet">Whether release must be quiet or not.</param>
-        public object Release(long id, bool quiet = false)
+        public void Release(long id, bool quiet = false)
         {
-            object target;
-
             if (id < _fastCap)
             {
-                target = Thread.VolatileRead(ref _fast[id]);
+                object target = Thread.VolatileRead(ref _fast[id]);
 
                 if (target != null)
                 {
@@ -189,11 +187,11 @@ namespace Apache.Ignite.Core.Impl.Handle
             }
             else
             {
+                object target;
+
                 if (_slow.TryRemove(id, out target))
                     Release0(target, quiet);
             }
-            
-            return target;
         }
         
         /// <summary>

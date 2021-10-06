@@ -394,5 +394,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc.sleep(delayMs);
         }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return _svc.contextAttribute(name);
+        }
     }
 }

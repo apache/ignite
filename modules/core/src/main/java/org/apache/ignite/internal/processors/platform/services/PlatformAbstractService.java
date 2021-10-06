@@ -182,7 +182,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
     /** {@inheritDoc} */
     @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         return invokeMethod(mthdName, srvKeepBinary, false, args);
     }
 

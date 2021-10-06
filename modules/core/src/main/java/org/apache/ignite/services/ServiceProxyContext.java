@@ -17,6 +17,8 @@
 
 package org.apache.ignite.services;
 
+import org.apache.ignite.internal.processors.service.ServiceProxyContextImpl;
+
 /**
  * Service operation context.
  *
@@ -39,6 +41,8 @@ public abstract class ServiceProxyContext {
      * @return Current thread's service proxy context.
      */
     public static ServiceProxyContext current() {
-        return threadProxyCtx.get();
+        ServiceProxyContext locCtx = threadProxyCtx.get();
+
+        return locCtx != null ? locCtx : new ServiceProxyContextImpl();
     }
 }

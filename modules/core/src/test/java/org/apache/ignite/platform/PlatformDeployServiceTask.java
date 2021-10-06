@@ -54,6 +54,7 @@ import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceProxyContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -642,6 +643,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** */
+        public Object contextAttribute(String name) {
+            return ServiceProxyContext.current().attribute(name);
         }
     }
 

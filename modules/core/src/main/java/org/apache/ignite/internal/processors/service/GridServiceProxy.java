@@ -156,8 +156,6 @@ public class GridServiceProxy<T> implements Serializable {
         return false;
     }
 
-    // , final Map<String, Object> execCtx
-
     /**
      * Invoek the method.
      *
@@ -197,7 +195,7 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null)
-                                return callServiceLocally(svc, mtd, args, svcCtx, opCtx);
+                                return callServiceLocally(svc, mtd, args, opCtx);
                         }
                     }
                     else {
@@ -276,18 +274,31 @@ public class GridServiceProxy<T> implements Serializable {
      * @param opCtx Service operation context.
      * @return Invocation result.
      */
-    private Object callServiceLocally(Service svc, Method mtd, Object[] args, ServiceContextImpl ctx,
-        Map<String, Object> opCtx) throws Exception {
+    private Object callServiceLocally(Service svc, Method mtd, Object[] args, Map<String, Object> opCtx) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, opCtx);
+        else
+            return callServiceMethod(svc, mtd, args, opCtx);
+    }
 
-        ServiceProxyContextImpl.current(opCtx);
+    /**
+     * @param svc Service to be called.
+     * @param mtd Method to call.
+     * @param args Method args.
+     * @param opCtx Service operation context.
+     * @return Invocation result.
+     */
+    private static Object callServiceMethod(Service svc, Method mtd, Object[] args, Map<String, Object> opCtx)
+        throws InvocationTargetException, IllegalAccessException {
+        if (opCtx != null)
+            ServiceProxyContextImpl.current(opCtx);
 
         try {
             return mtd.invoke(svc, args);
         }
         finally {
-            ServiceProxyContextImpl.current(null);
+            if (opCtx != null)
+                ServiceProxyContextImpl.current(null);
         }
     }
 
@@ -492,7 +503,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (ctx.service() instanceof PlatformService && mtd == null)
                 return callPlatformService((PlatformService)ctx.service());
             else
-                return callService(ctx, mtd);
+                return callService(ctx.service(), mtd);
         }
 
         /** */
@@ -509,20 +520,15 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** */
-        private Object callService(ServiceContextImpl srvCtx, Method mtd) throws Exception {
+        private Object callService(Service srv, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
-            ServiceProxyContextImpl.current(opCtx);
-
             try {
-                return mtd.invoke(srvCtx.service(), args);
+                return callServiceMethod(srv, mtd, args, opCtx);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
-            }
-            finally {
-                ServiceProxyContextImpl.current(null);
             }
         }
 

@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return GetDynamicServiceProxy(name, false);
         }
-        
+
         /** <inheritDoc /> */
         public dynamic GetDynamicServiceProxy(string name, bool sticky)
         {

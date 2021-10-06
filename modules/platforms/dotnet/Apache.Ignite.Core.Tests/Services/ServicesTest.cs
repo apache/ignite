@@ -29,8 +29,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
-    using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
+    using NUnit.Framework;
 
     /// <summary>
     /// Services tests.
@@ -263,6 +263,43 @@ namespace Apache.Ignite.Core.Tests.Services
 
             for (var i = 0; i < 10; i++)
                 AssertNoService(SvcName + i);
+        }
+
+        /// <summary>
+        /// Tests service proxy context.
+        /// </summary>
+        [Test]
+        public void TestServiceProxyContext([Values(true, false)] bool binarizable)
+        {
+            var svc = binarizable
+                ? new TestIgniteServiceBinarizable {TestProperty = 17}
+                : new TestIgniteServiceSerializable {TestProperty = 17};
+
+            Services.DeployClusterSingleton(SvcName, svc);
+            
+            Assert.Throws<ArgumentException>(() => new ServiceProxyContextBuilder().Build());
+
+            foreach (var grid in Grids)
+            {
+                var attrName = grid.Name;
+                Guid attrValue = Guid.NewGuid();
+
+                var svc0 = grid.GetServices().GetService<ITestIgniteService>(SvcName);
+                if (svc0 != null)
+                    Assert.IsNull(svc0.ContextAttribute(attrName));
+                
+                ServiceProxyContext ctx = new ServiceProxyContextBuilder(attrName, attrValue).Build();
+
+                var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, ctx);
+                var stickyProxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, true, ctx);
+                var dynamicProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, false, ctx);
+                var dynamicStickyProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, true, ctx);
+
+                Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, proxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
+            }
         }
 
         /// <summary>
@@ -872,7 +909,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
 
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false, proxyContext());
             var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
@@ -898,7 +935,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
 
-            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
+            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false, proxyContext());
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
@@ -920,7 +957,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true, proxyContext()));
 
             DoTestService(svc);
 
@@ -954,7 +991,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
 
-            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName, false, proxyContext());
 
             DoTestService(svc);
 
@@ -1092,6 +1129,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+            Assert.AreEqual("value", svc.contextAttribute("attr"));
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
@@ -1114,6 +1152,15 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(9, now);
             Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
 #endif
+        }
+
+        /// <summary>
+        /// Create test context for the service proxy.
+        /// </summary>
+        /// <returns>Test context for the service proxy.</returns>
+        private ServiceProxyContext proxyContext()
+        {
+            return new ServiceProxyContextBuilder("attr", "value").Build();
         }
 
         /// <summary>
@@ -1461,6 +1508,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             int TestOverload(int count, Parameter[] param);
+
+            /** */
+            object ContextAttribute(string name);
         }
 
         /// <summary>
@@ -1581,6 +1631,12 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(45, param[1].Values[1].Val);
 
                 return 43;
+            }
+
+            /** <inheritdoc /> */
+            public object ContextAttribute(string name)
+            {
+                return ServiceProxyContext.Current().Attribute(name);
             }
 
             /** <inheritdoc /> */

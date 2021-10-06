@@ -617,5 +617,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             throw new NotImplementedException();
         }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return ServiceProxyContext.Current().Attribute(name);
+        }
     }
 }

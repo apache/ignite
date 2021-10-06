@@ -32,6 +32,9 @@ namespace Apache.Ignite.Core.Services
         protected static readonly ConcurrentDictionary<int, Hashtable> ProxyCtxs = 
             new ConcurrentDictionary<int, Hashtable>();
 
+        /** Empty context. */
+        private static readonly ServiceProxyContext EmptyCtx = new ServiceProxyContextImpl();
+
         /// <summary>
         /// Get the value of the proxy context attribute.
         /// </summary>
@@ -50,7 +53,8 @@ namespace Apache.Ignite.Core.Services
             if (ProxyCtxs.TryGetValue(Thread.CurrentThread.ManagedThreadId, out attrs))
                 return new ServiceProxyContextImpl(attrs);
 
-            return null;
+            // Return an empty context.
+            return EmptyCtx;
         }
     }
 }

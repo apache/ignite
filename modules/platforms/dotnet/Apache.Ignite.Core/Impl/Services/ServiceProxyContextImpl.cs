@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System;
     using System.Collections;
     using System.Threading;
     using Apache.Ignite.Core.Impl.Common;
@@ -41,6 +40,14 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.Ensure(attrs.Count > 0, "attrs", "cannot create an empty context.");
 
             _attrs = attrs;
+        }
+
+        /// <summary>
+        /// Constructor to create an empty context.
+        /// </summary>
+        internal ServiceProxyContextImpl()
+        {
+            _attrs = new Hashtable(0);
         }
         
         /** <inheritDoc /> */
