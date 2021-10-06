@@ -18,14 +18,8 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using Apache.Ignite.Core.Tests.Binary.Serializable;
-    using Apache.Ignite.Core.Tests.Cache;
-    using Apache.Ignite.Core.Tests.Client.Cache;
-    using Apache.Ignite.Core.Tests.Compute;
-    using Apache.Ignite.Core.Tests.Memory;
 
     /// <summary>
     /// Console test runner.
@@ -41,13 +35,6 @@ namespace Apache.Ignite.Core.Tests
             System.Diagnostics.Debug.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));
 #endif
 
-            if (args.Length == 1 && args[0] == "-basicTests")
-            {
-                RunBasicTests();
-
-                return;
-            }
-
             if (args.Length == 2)
             {
                 //Debugger.Launch();
@@ -61,28 +48,8 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            Environment.ExitCode = TestAllInAssembly();
-        }
-
-        /// <summary>
-        /// Runs some basic tests.
-        /// </summary>
-        private static void RunBasicTests()
-        {
-            Console.WriteLine(">>> Starting basic tests...");
-
-            var basicTests = new[]
-            {
-                typeof(ComputeApiTest),
-                typeof(SqlDmlTest),
-                typeof(LinqTest),
-                typeof(PersistenceTest),
-                typeof(CacheTest)
-            };
-
-            Environment.ExitCode = TestAll(basicTests, true);
-
-            Console.WriteLine(">>> Test run finished.");
+            // Default: test startup.
+            new IgniteStartStopTest().TestStartDefault();
         }
 
         /// <summary>
@@ -96,37 +63,6 @@ namespace Apache.Ignite.Core.Tests
                 "-domain:" + (sameDomain ? "None" : "Single"),
                 "-run:" + testClass.FullName + "." + method,
                 Assembly.GetAssembly(testClass).Location
-            };
-
-            throw new Exception("TODO" + args);
-        }
-
-        /// <summary>
-        /// Runs all tests in specified class.
-        /// </summary>
-        private static int TestAll(IEnumerable<Type> testClass, bool sameDomain = false)
-        {
-            var args = new List<string>
-            {
-                "-noshadow",
-                "-domain:" + (sameDomain ? "None" : "Single"),
-                "-run:" + string.Join(",", testClass.Select(x => x.FullName)),
-                Assembly.GetAssembly(typeof(TestRunner)).Location
-            };
-
-            throw new Exception("TODO" + args);
-        }
-
-        /// <summary>
-        /// Runs all tests in assembly.
-        /// </summary>
-        private static int TestAllInAssembly(bool sameDomain = false)
-        {
-            string[] args =
-            {
-                "-noshadow",
-                "-domain:" + (sameDomain ? "None" : "Single"),
-                Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
             };
 
             throw new Exception("TODO" + args);
