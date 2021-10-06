@@ -121,7 +121,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** 
+    /**
       * Default lock timeout.
       * @deprecated Default lock timeout configuration property has no effect.
       */
