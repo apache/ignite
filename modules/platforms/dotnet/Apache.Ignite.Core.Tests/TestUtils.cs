@@ -654,10 +654,11 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                proc.AttachProcessConsoleReader();
+                var reader = new ListDataReader();
+                proc.AttachProcessConsoleReader(reader, new IgniteProcessConsoleOutputReader());
 
-                Assert.IsTrue(proc.WaitForExit(50000));
-                Assert.AreEqual(0, proc.ExitCode);
+                Assert.IsTrue(proc.WaitForExit(50000), string.Join("\n", reader.GetOutput()));
+                Assert.AreEqual(0, proc.ExitCode, string.Join("\n", reader.GetOutput()));
             }
             finally
             {

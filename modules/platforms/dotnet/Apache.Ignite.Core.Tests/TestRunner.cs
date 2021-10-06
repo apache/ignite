@@ -72,8 +72,6 @@ namespace Apache.Ignite.Core.Tests
             if (testMethod == null)
                 throw new InvalidOperationException("Failed to find method: " + fixtureClass + "." + methodName);
 
-            Console.WriteLine(">>> Starting test " + fixtureClass + "." + methodName);
-
             testMethod.Invoke(fixture, Array.Empty<object>());
         }
 
