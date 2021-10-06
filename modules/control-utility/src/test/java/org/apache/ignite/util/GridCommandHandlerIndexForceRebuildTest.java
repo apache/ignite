@@ -52,7 +52,10 @@ import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.lang.Math.max;
 import static java.lang.String.valueOf;
+import static org.apache.ignite.configuration.IgniteConfiguration.AVAILABLE_PROC_CNT;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_BUILD_IDX_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -269,6 +272,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testGroupNamesArg() throws Exception {
+        log.warning("@@@000 DFLT_BUILD_IDX_THREAD_POOL_SIZE=" + DFLT_BUILD_IDX_THREAD_POOL_SIZE);
+        log.warning("@@@000 buildIndexExecutorService=" + grid(LAST_NODE_NUM).context().pools().buildIndexExecutorService());
+        log.warning("@@@000 getBuildIndexThreadPoolSize=" + grid(LAST_NODE_NUM).context().config().getBuildIndexThreadPoolSize());
+        log.warning("@@@000 1=" + max(1, AVAILABLE_PROC_CNT / 4));
+        log.warning("@@@000 AVAILABLE_PROC_CNT=" + AVAILABLE_PROC_CNT);
+
         blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>());
 
         injectTestSystemOut();
