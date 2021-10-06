@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,10 +50,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.lang.Math.max;
 import static java.lang.String.valueOf;
-import static org.apache.ignite.configuration.IgniteConfiguration.AVAILABLE_PROC_CNT;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_BUILD_IDX_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -272,12 +267,6 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testGroupNamesArg() throws Exception {
-        log.warning("@@@000 DFLT_BUILD_IDX_THREAD_POOL_SIZE=" + DFLT_BUILD_IDX_THREAD_POOL_SIZE);
-        log.warning("@@@000 buildIndexExecutorService=" + grid(LAST_NODE_NUM).context().pools().buildIndexExecutorService());
-        log.warning("@@@000 getBuildIndexThreadPoolSize=" + grid(LAST_NODE_NUM).context().config().getBuildIndexThreadPoolSize());
-        log.warning("@@@000 1=" + max(1, AVAILABLE_PROC_CNT / 4));
-        log.warning("@@@000 AVAILABLE_PROC_CNT=" + AVAILABLE_PROC_CNT);
-
         blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>());
 
         injectTestSystemOut();
@@ -396,7 +385,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      *
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testIndexRebuildUnderLoad() throws Exception {
         IgniteEx n = grid(0);
 
@@ -645,13 +634,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         resetBaselineTopology();
         awaitPartitionMapExchange();
-        U.sleep(10_000);
-        assertTrue(waitForIndexesRebuild(ignite, 60_000, excludedCacheNames));
+        waitForIndexesRebuild(ignite, 30_000, excludedCacheNames);
     }
 
     /** */
     private boolean waitForIndexesRebuild(IgniteEx ignite) throws IgniteInterruptedCheckedException {
-        return waitForIndexesRebuild(ignite, 60_000, Collections.emptySet());
+        return waitForIndexesRebuild(ignite, 30_000, Collections.emptySet());
     }
 
     /**
@@ -665,33 +653,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private boolean waitForIndexesRebuild(IgniteEx ignite, long timeout, Collection<String> excludedCacheNames)
         throws IgniteInterruptedCheckedException
     {
-        boolean b = waitForCondition(
-            () -> {
-                boolean b1 = ignite.context().cache().publicCaches()
-                    .stream()
-                    .filter(c -> !excludedCacheNames.contains(c.getName()))
-                    .allMatch(c -> c.indexReadyFuture().isDone());
-
-                log.warning("\n@@@ STILL WAIT:" +
-                    "\n" + ignite.context().cache().publicCaches().stream()
-                    .map(entries -> "\nname=" + entries.getName() + " indexReady=" + entries.indexReadyFuture().isDone())
-                    .collect(Collectors.toList())
-                    + "\n"
-                    + "\nblockRebuildIdx=" + blockRebuildIdx
-                    + "\nallGrids=" + G.allGrids().stream().map(Ignite::name).collect(Collectors.toList())
-                );
-                return b1;
-            },
+        return GridTestUtils.waitForCondition(
+            () -> ignite.context().cache().publicCaches()
+                .stream()
+                .filter(c -> !excludedCacheNames.contains(c.getName()))
+                .allMatch(c -> c.indexReadyFuture().isDone()),
             timeout);
-
-        if (!b) {
-            log.warning("@@@ await111");
-            U.dumpThreads(log);
-        }
-
-        assertTrue(b);
-
-        return b;
     }
 
     /**
@@ -740,18 +707,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         /** {@inheritDoc} */
         @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
             SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
-            log.warning("@@@ START REBUILD name=" + cctx.name());
-            BlockingRebuildIdxFuture fut0 = new BlockingRebuildIdxFuture(fut, cctx);
-
-            fut.listen(future -> {
-                log.warning("@@@ REBUILD FUTURE WAS DONE name=" + cctx.name());
-            });
-
-            fut0.listen(future -> {
-                log.warning("@@@ REBUILD BLOCKING FUTURE WAS DONE name=" + cctx.name());
-            });
-
-            super.startRebuild(cctx, fut0, clo, cancel);
+            super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
         }
     }
 
@@ -776,15 +732,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             try {
                 GridFutureAdapter<Void> fut = blockRebuildIdx.get(cctx.name());
 
-                log.warning("@@@ BLOCKING FUT ONDONE name=" + cctx.name() + " fut=" + fut);
-
                 if (fut != null) {
                     fut.onDone();
 
-                    assertTrue("Failed to wait for indexes rebuild unblocking: " + blockRebuildIdx,
-                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 2 * 60_000));
+                    assertTrue("Failed to wait for indexes rebuild unblocking",
+                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 60_000));
                 }
-                log.warning("@@@ BLOCKING FUT ONDONE COMPLETE name=" + cctx.name() + " fut=" + fut);
             }
             catch (IgniteInterruptedCheckedException e) {
                 fail("Waiting for indexes rebuild unblocking was interrupted");

@@ -73,10 +73,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_BUILD_IDX_THREAD_POOL_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
@@ -268,6 +270,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
             dsCfg.setEncryptionConfiguration(encCfg);
         }
+
+        cfg.setBuildIndexThreadPoolSize(max(2, DFLT_BUILD_IDX_THREAD_POOL_SIZE));
 
         return cfg;
     }
