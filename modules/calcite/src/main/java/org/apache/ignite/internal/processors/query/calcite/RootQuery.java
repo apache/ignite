@@ -57,9 +57,6 @@ public class RootQuery<Row> extends Query<Row> {
     /** SQL query. */
     private final String sql;
 
-    /** Schema. */
-    private final SchemaPlus schema;
-
     /** Parameters. */
     private final Object[] params;
 
@@ -96,10 +93,7 @@ public class RootQuery<Row> extends Query<Row> {
     ) {
         super(UUID.randomUUID(), qryCtx != null? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
 
-        System.out.println("+++ new qry " + id());
-
         this.sql = sql;
-        this.schema = schema;
         this.params = params;
         this.exch = exch;
         this.log = log;
@@ -142,6 +136,13 @@ public class RootQuery<Row> extends Query<Row> {
 
     /** */
     public void run(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
+        if (state == QueryState.CLOSED) {
+            throw new IgniteSQLException(
+                "The query was cancelled while executing.",
+                IgniteQueryErrorCode.QUERY_CANCELED
+            );
+        }
+
         RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
         rootNode.register(root);
 
@@ -173,14 +174,20 @@ public class RootQuery<Row> extends Query<Row> {
             if (state == QueryState.CLOSED)
                 return;
 
+            if (state == QueryState.PLANNING) {
+                state = QueryState.CLOSED;
+
+                return;
+            }
+
             if (state == QueryState.EXECUTION)
                 state0 = state = QueryState.CLOSING;
+
+            root.closeInternal();
 
             if (state == QueryState.CLOSING && waiting.isEmpty())
                 state0 = state = QueryState.CLOSED;
         }
-
-        System.out.println("+++ ROOT QRY CLOSE " + " " + id() +" " + Thread.currentThread().getName());
 
         if (state0 == QueryState.CLOSED) {
             try {
@@ -211,17 +218,8 @@ public class RootQuery<Row> extends Query<Row> {
     /** {@inheritDoc} */
     @Override public void cancel() {
         cancel.cancel();
-    }
 
-    /** */
-    public void nextPlanningContext() {
-        pctx.unwrap(BaseQueryContext.class).resetCatalogReader();
-
-        pctx = PlanningContext.builder()
-            .parentContext(pctx)
-            .query(sql)
-            .parameters(params)
-            .build();
+        tryClose();
     }
 
     /** */

@@ -23,10 +23,8 @@ import java.util.UUID;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -40,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
@@ -156,7 +155,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         this.handler = handler;
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
-        //running = new ConcurrentHashMap<>();
 
         ddlCmdHnd = new DdlCommandHandler(
             ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema()
@@ -542,11 +540,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         qry.run(ectx, plan, node);
 
-//        QueryInfo info = new QueryInfo(ectx, plan, node);
-//
-//        // register query
-//        register(info);
-
         // start remote execution
         for (int i = 1; i < fragments.size(); i++) {
             fragment = fragments.get(i);
@@ -580,7 +573,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
 
         return new ListFieldsQueryCursor<>(plan, iteratorsHolder().iterator(qry.iterator()), ectx);
-//        return new ListFieldsQueryCursor<>(plan, info.iterator(), ectx);
     }
 
     /** */
@@ -631,9 +623,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            Query<Row> qry = new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id()));
+            Query<Row> qryNew = new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id()));
 
-            qry = qryReg.register(qry);
+            Query<Row> qry = qryReg.register(qryNew);
 
             final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
@@ -702,10 +694,20 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         Query qry = qryReg.query(msg.queryId());
 
-        if (qry != null) {
+        if (qry != null && qry.state() != QueryState.CLOSED) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;
 
-            ((RootQuery<Row>)qry).onError(new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error()));
+            Exception e = new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error());
+
+            if (X.hasCause(msg.error(), ExecutionCancelledException.class)) {
+                e = new IgniteSQLException(
+                    "The query was cancelled while executing.",
+                    IgniteQueryErrorCode.QUERY_CANCELED,
+                    e
+                );
+            }
+
+            ((RootQuery<Row>)qry).onError(e);
         }
     }
 
@@ -714,53 +716,5 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         qryReg.runningQueries().stream()
             .filter(q -> q instanceof RootQuery)
             .forEach((qry) -> ((RootQuery<Row>)qry).onNodeLeft(nodeId));
-    }
-
-    /** */
-    private enum QueryState {
-        /** */
-        RUNNING,
-
-        /** */
-        CLOSING,
-
-        /** */
-        CLOSED
-    }
-
-    /** */
-    private static final class RemoteFragmentKey {
-        /** */
-        private final UUID nodeId;
-
-        /** */
-        private final long fragmentId;
-
-        /** */
-        private RemoteFragmentKey(UUID nodeId, long fragmentId) {
-            this.nodeId = nodeId;
-            this.fragmentId = fragmentId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            RemoteFragmentKey that = (RemoteFragmentKey) o;
-
-            if (fragmentId != that.fragmentId)
-                return false;
-            return nodeId.equals(that.nodeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = nodeId.hashCode();
-            res = 31 * res + (int) (fragmentId ^ (fragmentId >>> 32));
-            return res;
-        }
     }
 }

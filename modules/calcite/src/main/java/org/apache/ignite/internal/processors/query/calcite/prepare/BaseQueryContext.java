@@ -186,19 +186,12 @@ public final class BaseQueryContext extends AbstractQueryContext {
         if (catalogReader != null)
             return catalogReader;
 
-        resetCatalogReader();
-
-        return catalogReader;
-    }
-
-    /** */
-    public void resetCatalogReader() {
         SchemaPlus dfltSchema = schema(), rootSchema = dfltSchema;
 
         while (rootSchema.getParentSchema() != null)
             rootSchema = rootSchema.getParentSchema();
 
-        catalogReader = new CalciteCatalogReader(
+        return catalogReader = new CalciteCatalogReader(
             CalciteSchema.from(rootSchema),
             CalciteSchema.from(dfltSchema).path(null),
             typeFactory(), CALCITE_CONNECTION_CONFIG);

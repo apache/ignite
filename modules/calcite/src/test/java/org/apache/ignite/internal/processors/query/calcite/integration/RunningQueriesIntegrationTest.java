@@ -130,7 +130,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
     /** */
     @Test
-    public void testCancelByFragment() throws IgniteCheckedException {
+    public void testCancelByRemoteFragment() throws IgniteCheckedException {
         QueryEngine clientEngine = queryProcessor(client);
         QueryEngine serverEngine = queryProcessor(srv);
         int cnt = 6;
@@ -155,50 +155,19 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             },
             TIMEOUT_IN_MS));
 
-//        Assert.assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningFragments().isEmpty(), TIMEOUT_IN_MS));
-//
-//        List<RunningFragmentInfo> fragments = serverEngine.runningFragments();
-//        RunningQueryInfo run = fragments.get(0);
-//
-//        serverEngine.cancelQuery(run.qryId());
-//
-//        Assert.assertTrue(GridTestUtils.waitForCondition(
-//            () -> clientEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
-//
-//        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
-    }
+        Assert.assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-    /** */
-    @Test
-    public void testBroadcastCancelMessage() throws IgniteCheckedException {
-        QueryEngine clientEngine = queryProcessor(client);
-        QueryEngine serverEngine = queryProcessor(srv);
-        int cnt = 6;
+        Collection<? extends RunningQuery> running = serverEngine.runningQueries();
+        RunningQuery qry = F.first(running);
 
-        sql(srv, "CREATE TABLE t (id int, val varchar)");
+        qry.cancel();
 
-        String data = IntStream.range(0, 10000).mapToObj((i) -> "(" + i + ",'" + i + "')").collect(joining(", "));
-        String insertSql = "INSERT INTO t (id, val) VALUES " + data;
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> {
+                log.info("+++ " + F.first(clientEngine.runningQueries()));
+                return clientEngine.runningQueries().isEmpty();
+            }, TIMEOUT_IN_MS));
 
-        sql(srv, insertSql);
-
-        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "t t" + i).collect(joining(", "));
-        String sql = "SELECT * FROM " + bigJoin;
-
-        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(srv, sql));
-
-//        Assert.assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningFragments().isEmpty(), TIMEOUT_IN_MS));
-//
-//        List<RunningFragmentInfo> fragments = serverEngine.runningFragments();
-//        RunningQueryInfo run = fragments.get(0);
-//
-//        Assert.assertTrue(clientEngine.runningFragments().isEmpty());
-//
-//        clientEngine.cancelQuery(run.qryId());
-//
-//        Assert.assertTrue(GridTestUtils.waitForCondition(
-//            () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
-//
-//        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
     }
 }

@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -39,6 +41,7 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 
 /** */
 public class Query<Row> implements RunningQuery {
+    public static final CompletableFuture[] COMPLETABLE_FUTURES_EMPTY_ARRAY = new CompletableFuture[0];
     /** */
     private final UUID id;
 
@@ -89,14 +92,15 @@ public class Query<Row> implements RunningQuery {
 
     /** */
     protected void tryClose() {
-        List<CompletableFuture> futs = new ArrayList<>();
-        for (RunningFragment<Row> frag : fragments)
-            futs.add(frag.context().submit(frag.root()::close, frag.root()::onError));
+        List<CompletableFuture<?>> futs = new ArrayList<>();
+        for (RunningFragment<Row> frag : fragments) {
+            CompletableFuture<?> f = frag.context().submit(frag.root()::close, frag.root()::onError);
 
-        for (RunningFragment<Row> frag : fragments)
-            futs.add(frag.context().submit(frag.context()::cancel, frag.root()::onError));
+            CompletableFuture<?> fCancel = f.thenApply((u) -> frag.context().submit(frag.context()::cancel, frag.root()::onError));
+            futs.add(fCancel);
+        }
 
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[futs.size()]))
+        CompletableFuture.allOf(futs.toArray(COMPLETABLE_FUTURES_EMPTY_ARRAY))
             .thenAccept((u) -> unregister.accept(this));
     }
 
@@ -108,6 +112,12 @@ public class Query<Row> implements RunningQuery {
 
             if (state == QueryState.EXECUTION)
                 state = QueryState.CLOSED;
+        }
+
+        for (RunningFragment<Row> frag : fragments) {
+            frag.context().execute(()-> {
+                frag.root().onError(new ExecutionCancelledException());
+            }, frag.root()::onError);
         }
 
         tryClose();

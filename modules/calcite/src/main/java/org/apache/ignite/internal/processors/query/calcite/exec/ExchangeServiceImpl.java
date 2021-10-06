@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.message.OutboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage;
@@ -247,12 +245,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
         if (inbox != null) {
             try {
-                if (qryRegistry.query(msg.queryId()) != null && qryRegistry.query(msg.queryId()).state() == QueryState.CLOSED) {
-                    System.out.println("+++ ALREADY CLOSED " + msg.queryId());
-
-                    return;
-                }
-
                 inbox.onBatchReceived(nodeId, msg.batchId(), msg.last(), Commons.cast(msg.rows()));
             }
             catch (Throwable e) {

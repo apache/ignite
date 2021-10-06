@@ -55,7 +55,6 @@ public final class PlanningContext implements Context {
     /** */
     private IgnitePlanner planner;
 
-
     /**
      * Private constructor, used by a builder.
      */

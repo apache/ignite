@@ -136,16 +136,12 @@ public class PrepareServiceImpl extends AbstractService {
         return new ExplainPlan(plan, explainFieldsMetadata(ctx));
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean single(SqlNode sqlNode) {
         return !(sqlNode instanceof SqlNodeList);
     }
 
-    /**
-     *
-     */
+    /** */
     private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext ctx) {
         IgnitePlanner planner = ctx.planner();
 
@@ -164,9 +160,7 @@ public class PrepareServiceImpl extends AbstractService {
         return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
     }
 
-    /**
-     *
-     */
+    /** */
     private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
@@ -184,9 +178,7 @@ public class PrepareServiceImpl extends AbstractService {
         return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
     }
 
-    /**
-     *
-     */
+    /** */
     private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
         @Nullable List<List<String>> origins) {
         RelDataType resultType = TypeUtils.getResultType(
@@ -194,9 +186,7 @@ public class PrepareServiceImpl extends AbstractService {
         return new FieldsMetadataImpl(resultType, origins);
     }
 
-    /**
-     *
-     */
+    /** */
     private FieldsMetadata explainFieldsMetadata(PlanningContext ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
@@ -205,17 +195,5 @@ public class PrepareServiceImpl extends AbstractService {
         RelDataType planDataType = factory.createStructType(singletonList(planField));
 
         return queryFieldsMetadata(ctx, planDataType, null);
-    }
-
-    /** */
-    public boolean isPrepareDependsOn(SqlNode qry0, SqlNode prev) {
-        return prev != null;
-//        return prev != null && SqlKind.DDL.contains(prev.getKind());
-    }
-
-    /** */
-    public boolean isExecuteDependsOn(SqlNode qry0, SqlNode prev) {
-        return prev != null;
-//        return  prev != null && !(SqlKind.QUERY.contains(qry0)) && !(SqlKind.QUERY.contains(prev));
     }
 }

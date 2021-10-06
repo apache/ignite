@@ -31,5 +31,4 @@ public interface SchemaHolder extends Service {
 
     /** */
     public SchemaPlus getDefaultSchema(String schema);
-
 }

@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -341,8 +340,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      * @return {@code True} if flag was changed by this call.
      */
     public boolean cancel() {
-        unwrap(BaseQueryContext.class).logger().info("+++ CANCEL: " + qryId);
-
         return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
     }
 
