@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,6 +44,7 @@ public class IndexQueryWrongIndexTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Person> cache = crd.getOrCreateCache(new CacheConfiguration<Integer, Person>()
             .setName("CACHE")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(Integer.class, Person.class));
 
         // Wrong fields in query.
