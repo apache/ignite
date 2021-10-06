@@ -385,7 +385,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testIndexRebuildUnderLoad() throws Exception {
         IgniteEx n = grid(0);
 
