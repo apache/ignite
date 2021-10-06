@@ -202,6 +202,7 @@ Make-Dir("bin\netcoreapp3.1")
 
 Get-ChildItem *.csproj -Recurse
                      | where FullName -NotLike "*examples*" `
+                     | where Name -NotLike "*Examples*" `
                      | where FullName -NotLike "*templates*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*DotNetCore*" `
