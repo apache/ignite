@@ -41,7 +41,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             // First, use CreateInstanceFrom to set up the AssemblyResolve handler.
             var resHelpType = typeof(AssemblyResolver);
 
-            // TODO: Call with Reflection
             var handle = InvokeMethod(defDomain, "CreateInstanceFrom", resHelpType.Assembly.Location, resHelpType.FullName);
             var resHelp = (AssemblyResolver)InvokeMethod(handle, "Unwrap");
 
