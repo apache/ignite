@@ -754,7 +754,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 if (fut != null) {
                     fut.onDone();
 
-                    assertTrue("Failed to wait for indexes rebuild unblocking",
+                    assertTrue("Failed to wait for indexes rebuild unblocking: " + blockRebuildIdx,
                         GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 3 * 60_000));
                 }
             }
