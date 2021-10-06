@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.apache.calcite.schema.SchemaPlus;
@@ -84,19 +87,41 @@ public class Query<Row> implements RunningQuery {
             .build();
     }
 
+    /** */
+    protected void tryClose() {
+        List<CompletableFuture> futs = new ArrayList<>();
+        for (RunningFragment<Row> frag : fragments)
+            futs.add(frag.context().submit(frag.root()::close, frag.root()::onError));
+
+        for (RunningFragment<Row> frag : fragments)
+            futs.add(frag.context().submit(frag.context()::cancel, frag.root()::onError));
+
+        CompletableFuture.allOf(futs.toArray(new CompletableFuture[futs.size()]))
+            .thenAccept((u) -> unregister.accept(this));
+    }
+
     /** {@inheritDoc} */
     @Override public void cancel() {
-        for (RunningFragment<Row> frag : fragments)
-            frag.context().execute(frag.root()::close, frag.root()::onError);
+        synchronized (this) {
+            if (state == QueryState.CLOSED)
+                return;
 
-        for (RunningFragment<Row> frag : fragments)
-            frag.context().execute(frag.context()::cancel, frag.root()::onError);
+            if (state == QueryState.EXECUTION)
+                state = QueryState.CLOSED;
+        }
 
-        unregister.accept(this);
+        tryClose();
     }
 
     /** */
     public void addFragment(RunningFragment f) {
+        if (state == QueryState.INIT) {
+            synchronized (this) {
+                if (state == QueryState.INIT)
+                    state = QueryState.EXECUTION;
+            }
+        }
+
         fragments.add(f);
     }
 

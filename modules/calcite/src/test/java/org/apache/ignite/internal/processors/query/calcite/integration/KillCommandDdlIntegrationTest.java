@@ -82,6 +82,11 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
             cache.put(i, i);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        // No-op.
+    }
+
     /** */
     @Override public void cleanUp() {
         // No-op.

@@ -96,6 +96,8 @@ public class RootQuery<Row> extends Query<Row> {
     ) {
         super(UUID.randomUUID(), qryCtx != null? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
 
+        System.out.println("+++ new qry " + id());
+
         this.sql = sql;
         this.schema = schema;
         this.params = params;
@@ -164,28 +166,30 @@ public class RootQuery<Row> extends Query<Row> {
      * Can be called multiple times after receive each error
      * at {@link #onResponse(RemoteFragmentKey, Throwable)}.
      */
-    private void tryClose() {
-        try {
-            QueryState state0 = null;
+    @Override protected void tryClose() {
+        QueryState state0 = null;
 
-            synchronized (this) {
-                if (state == QueryState.CLOSED)
-                    return;
+        synchronized (this) {
+            if (state == QueryState.CLOSED)
+                return;
 
-                if (state == QueryState.EXECUTION)
-                    state0 = state = QueryState.CLOSING;
+            if (state == QueryState.EXECUTION)
+                state0 = state = QueryState.CLOSING;
 
-                if (state == QueryState.CLOSING && waiting.isEmpty())
-                    state0 = state = QueryState.CLOSED;
-            }
+            if (state == QueryState.CLOSING && waiting.isEmpty())
+                state0 = state = QueryState.CLOSED;
+        }
 
-            if (state0 == QueryState.CLOSED) {
+        System.out.println("+++ ROOT QRY CLOSE " + " " + id() +" " + Thread.currentThread().getName());
+
+        if (state0 == QueryState.CLOSED) {
+            try {
                 IgniteException wrpEx = null;
 
                 for (UUID nodeId : remotes) {
                     try {
-//                        if (!nodeId.equals(root.context().localNodeId()))
-                        exch.closeQuery(nodeId, id());
+                        if (!nodeId.equals(root.context().localNodeId()))
+                            exch.closeQuery(nodeId, id());
                     }
                     catch (IgniteCheckedException e) {
                         if (wrpEx == null)
@@ -198,9 +202,9 @@ public class RootQuery<Row> extends Query<Row> {
                 if (wrpEx != null)
                     throw wrpEx;
             }
-        }
-        finally {
-            super.cancel();
+            finally {
+                super.tryClose();
+            }
         }
     }
 

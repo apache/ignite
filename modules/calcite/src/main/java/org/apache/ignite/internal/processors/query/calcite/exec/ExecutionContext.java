@@ -341,6 +341,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      * @return {@code True} if flag was changed by this call.
      */
     public boolean cancel() {
+        unwrap(BaseQueryContext.class).logger().info("+++ CANCEL: " + qryId);
+
         return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
     }
 
