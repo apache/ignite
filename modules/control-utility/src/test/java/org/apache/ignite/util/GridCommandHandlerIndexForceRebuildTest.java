@@ -661,12 +661,16 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private boolean waitForIndexesRebuild(IgniteEx ignite, long timeout, Collection<String> excludedCacheNames)
         throws IgniteInterruptedCheckedException
     {
-        return GridTestUtils.waitForCondition(
+        boolean b = waitForCondition(
             () -> ignite.context().cache().publicCaches()
                 .stream()
                 .filter(c -> !excludedCacheNames.contains(c.getName()))
                 .allMatch(c -> c.indexReadyFuture().isDone()),
             timeout);
+
+        assertTrue(b);
+
+        return b;
     }
 
     /**
