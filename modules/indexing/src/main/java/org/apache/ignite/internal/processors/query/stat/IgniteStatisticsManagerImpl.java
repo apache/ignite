@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -101,6 +102,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** Started flag to prevent double start on change statistics usage state and activation and vice versa. */
     private boolean started = false;
+
+    /** Schedule to process obsolescence statistics. */
+    private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
 
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
@@ -213,7 +217,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         if (!ctx.clientNode()) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
-            ctx.timeout().schedule(() -> {
+            obsolescenceSchedule = ctx.timeout().schedule(() -> {
                 obsolescenceBusyExecutor.execute(() -> processObsolescence());
             }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
         }
@@ -332,6 +336,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** {@inheritDoc} */
     @Override public void stop() {
         stopX();
+
+        if (obsolescenceSchedule != null)
+            obsolescenceSchedule.close();
 
         if (gatherPool != null) {
             List<Runnable> unfinishedTasks = gatherPool.shutdownNow();
