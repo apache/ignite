@@ -643,7 +643,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         resetBaselineTopology();
         awaitPartitionMapExchange();
         U.sleep(5000);
-        assertTrue(waitForIndexesRebuild(ignite, 30_000, excludedCacheNames));
+        assertTrue(waitForIndexesRebuild(ignite, 4 * 60_000, excludedCacheNames));
         System.out.println("@@@ await111");
     }
 
