@@ -200,7 +200,9 @@ if(!$skipDotNetCore) {
 Make-Dir("bin\net461")
 Make-Dir("bin\netcoreapp3.1")
 
-Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
+Get-ChildItem *.csproj -Recurse
+                     | where FullName -NotLike "*examples*" `
+                     | where FullName -NotLike "*templates*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*DotNetCore*" `
                      | where Name -NotLike "*Benchmark*" | % {
@@ -208,9 +210,10 @@ Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
     $dir = [IO.Path]::Combine($projDir, "bin", $configuration)
     $netFwDir = [IO.Path]::Combine($dir, "net461");
     $netCoreDir = [IO.Path]::Combine($dir, "netcoreapp3.1", "publish");
+    echo $netFwDir
 
-    Copy-If-Exists($netFwDir, "bin\net461")
-    Copy-If-Exists($netCoreDir, "bin\netcoreapp3.1")
+    Copy-If-Exists $netFwDir "bin\net461"
+    Copy-If-Exists $netCoreDir "bin\netcoreapp3.1"
 }
 
 
