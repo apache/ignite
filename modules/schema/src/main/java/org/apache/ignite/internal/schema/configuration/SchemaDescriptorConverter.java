@@ -32,7 +32,6 @@ import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.DecimalNativeType;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeType;
-import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaException;
@@ -163,7 +162,7 @@ public class SchemaDescriptorConverter {
      * @return Parsed object.
      */
     private static Serializable convertDefault(NativeType type, String dflt) {
-        if (dflt == null || dflt.isEmpty() && type.spec() != NativeTypeSpec.STRING)
+        if (dflt == null || dflt.isEmpty())
             return null;
 
         assert dflt instanceof String;

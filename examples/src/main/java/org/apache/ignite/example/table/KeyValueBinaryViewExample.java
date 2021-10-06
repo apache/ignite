@@ -21,6 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
+import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
@@ -43,72 +46,71 @@ import org.apache.ignite.table.Tuple;
  */
 public class KeyValueBinaryViewExample {
     public static void main(String[] args) throws Exception {
-        Ignite ignite = IgnitionManager.start(
+        try (Ignite ignite = IgnitionManager.start(
             "node-0",
-            Files.readString(Path.of("config", "ignite-config.json").toAbsolutePath()),
+            Files.readString(Path.of("config", "ignite-config.json")),
             Path.of("work")
-        );
+        )) {
 
-        //---------------------------------------------------------------------------------
-        //
-        // Creating a table. The API call below is the equivalent of the following DDL:
-        //
-        //     CREATE TABLE accounts (
-        //         accountNumber INT PRIMARY KEY,
-        //         firstName     VARCHAR,
-        //         lastName      VARCHAR,
-        //         balance       DOUBLE
-        //     )
-        //
-        //---------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------
+            //
+            // Creating a table. The API call below is the equivalent of the following DDL:
+            //
+            //     CREATE TABLE accounts (
+            //         accountNumber INT PRIMARY KEY,
+            //         firstName     VARCHAR,
+            //         lastName      VARCHAR,
+            //         balance       DOUBLE
+            //     )
+            //
+            //---------------------------------------------------------------------------------
 
-        Table accounts = ignite.tables().createTable("PUBLIC.accounts", tbl -> tbl
-            .changeName("PUBLIC.accounts")
-            .changeColumns(cols -> cols
-                .create("0", c -> c.changeName("accountNumber").changeType(t -> t.changeType("int32")).changeNullable(false))
-                .create("1", c -> c.changeName("firstName").changeType(t -> t.changeType("string")).changeNullable(true))
-                .create("2", c -> c.changeName("lastName").changeType(t -> t.changeType("string")).changeNullable(true))
-                .create("3", c -> c.changeName("balance").changeType(t -> t.changeType("double")).changeNullable(true))
-            )
-            .changeIndices(idxs -> idxs
-                .create("PK", idx -> idx
-                    .changeName("PK")
-                    .changeType("PK")
-                    .changeColumns(cols -> cols.create("0", c -> c.changeName("accountNumber").changeAsc(true)))
-                )
-            )
-        );
+            Table accounts = ignite.tables().createTable("PUBLIC.accounts", tbl ->
+                SchemaConfigurationConverter.convert(
+                    SchemaBuilders.tableBuilder("PUBLIC", "accounts")
+                        .columns(
+                            SchemaBuilders.column("accountNumber", ColumnType.INT32).asNonNull().build(),
+                            SchemaBuilders.column("firstName", ColumnType.string()).asNullable().build(),
+                            SchemaBuilders.column("lastName", ColumnType.string()).asNullable().build(),
+                            SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable().build()
+                        )
+                        .withPrimaryKey("accountNumber")
+                        .build(), tbl)
+                    .changeReplicas(1)
+                    .changePartitions(10)
+            );
 
-        KeyValueView<Tuple, Tuple> kvView = accounts.keyValueView();
+            KeyValueView<Tuple, Tuple> kvView = accounts.keyValueView();
 
-        //---------------------------------------------------------------------------------
-        //
-        // Tuple API: insert operation.
-        //
-        //---------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------
+            //
+            // Tuple API: insert operation.
+            //
+            //---------------------------------------------------------------------------------
 
-        Tuple key = Tuple.create()
-            .set("accountNumber", 123456);
+            Tuple key = Tuple.create()
+                .set("accountNumber", 123456);
 
-        Tuple value = Tuple.create()
-            .set("firstName", "Val")
-            .set("lastName", "Kulichenko")
-            .set("balance", 100.00d);
+            Tuple value = Tuple.create()
+                .set("firstName", "Val")
+                .set("lastName", "Kulichenko")
+                .set("balance", 100.00d);
 
-        kvView.put(key, value);
+            kvView.put(key, value);
 
-        //---------------------------------------------------------------------------------
-        //
-        // Tuple API: get operation.
-        //
-        //---------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------
+            //
+            // Tuple API: get operation.
+            //
+            //---------------------------------------------------------------------------------
 
-        value = accounts.recordView().get(key);
+            value = accounts.recordView().get(key);
 
-        System.out.println(
-            "Retrieved using Key-Value API\n" +
-            "    Account Number: " + key.intValue("accountNumber") + '\n' +
-            "    Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n' +
-            "    Balance: $" + value.doubleValue("balance"));
+            System.out.println(
+                "Retrieved using Key-Value API\n" +
+                    "    Account Number: " + key.intValue("accountNumber") + '\n' +
+                    "    Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n' +
+                    "    Balance: $" + value.doubleValue("balance"));
+        }
     }
 }

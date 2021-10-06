@@ -30,6 +30,8 @@ import org.apache.ignite.configuration.NamedListChange;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.addDefaults;
+
 /**
  * Configuration node implementation for the collection of named {@link InnerNode}s. Unlike implementations of
  * {@link InnerNode}, this class is used for every named list in configuration.
@@ -122,7 +124,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
 
         checkNewKey(key);
 
-        ElementDescriptor<N> element = new ElementDescriptor<>(valSupplier.get());
+        ElementDescriptor<N> element = newElementDescriptor();
 
         map.put(key, element);
 
@@ -143,7 +145,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
 
         checkNewKey(key);
 
-        ElementDescriptor<N> element = new ElementDescriptor<>(valSupplier.get());
+        ElementDescriptor<N> element = newElementDescriptor();
 
         map.putByIndex(index, key, element);
 
@@ -165,7 +167,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
 
         checkNewKey(key);
 
-        ElementDescriptor<N> element = new ElementDescriptor<>(valSupplier.get());
+        ElementDescriptor<N> element = newElementDescriptor();
 
         map.putAfter(precedingKey, key, element);
 
@@ -187,7 +189,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
         ElementDescriptor<N> element = map.get(key);
 
         if (element == null) {
-            element = new ElementDescriptor<>(valSupplier.get());
+            element = newElementDescriptor();
 
             reverseIdMap.put(element.internalId, key);
         }
@@ -346,6 +348,19 @@ public final class NamedListNode<N extends InnerNode> implements NamedListChange
     /** {@inheritDoc} */
     @Override public NamedListNode<N> copy() {
         return new NamedListNode<>(this);
+    }
+
+    /**
+     * Creates new element instance with initialized defaults.
+     *
+     * @return New element instance with initialized defaults.
+     */
+    private NamedListNode.ElementDescriptor<N> newElementDescriptor() {
+        N newElement = valSupplier.get();
+
+        addDefaults(newElement);
+
+        return new ElementDescriptor<>(newElement);
     }
 
     /**

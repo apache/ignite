@@ -208,10 +208,6 @@ public class ConfigurationUtilTest {
 
         parent.changeElements(elements -> elements.createOrUpdate("name", element -> {}));
 
-        assertNull(ConfigurationUtil.find(List.of("elements", "name", "child"), parent, true));
-
-        ((NamedElementChange)parent.elements().get("name")).changeChild(child -> {});
-
         assertNull(ConfigurationUtil.find(List.of("elements", "name", "child", "str"), parent, true));
     }
 
@@ -232,7 +228,7 @@ public class ConfigurationUtilTest {
 
         assertThrows(
             KeyNotFoundException.class,
-            () -> ConfigurationUtil.find(List.of("elements", "name", "child", "str"), parent, true)
+            () -> ConfigurationUtil.find(List.of("elements", "name", "child", "str0"), parent, true)
         );
 
         ((NamedElementChange)parent.elements().get("name")).changeChild(child -> child.changeStr("value"));
