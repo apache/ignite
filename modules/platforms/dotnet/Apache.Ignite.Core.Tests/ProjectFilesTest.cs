@@ -56,8 +56,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojReleaseDocs()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("DocumentationFile"),
-                "Missing XML doc in release mode: ");
+            CheckFiles(GetReleaseCsprojFiles(), x => !x.Contains("GenerateDocumentationFile"), "Missing XML doc: ");
         }
 
         /// <summary>
@@ -117,64 +116,6 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-#if NETCOREAPP
-        /// <summary>
-        /// Tests that all .cs files are included in the project.
-        /// </summary>
-        [Test]
-        public void TestAllCsharpFilesAreIncludedInProject()
-        {
-            var projFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x =>
-                    !x.Name.Contains("DotNetCore") &&
-                    !x.Name.Contains("Benchmark") &&
-                    !x.FullName.Contains("templates") &&
-                    !x.FullName.Contains("examples"));
-
-            var excludedFiles = new[]
-            {
-                "IgnitionStartTest.cs",
-                "ShellTests.cs",
-                "Common\\TestFixtureSetUp.cs",
-                "Common\\TestFixtureTearDown.cs",
-                "Client\\Cache\\CacheTestAsyncAwait.cs",
-                "Cache\\CacheTestAsyncAwait.cs",
-                "Compute\\ComputeTestAsyncAwait.cs"
-            };
-
-            Assert.Multiple(() =>
-            {
-                foreach (var projFile in projFiles)
-                {
-                    Assert.IsNotNull(projFile.Directory);
-
-                    var projFileText = File.ReadAllText(projFile.FullName);
-                    var csFiles = projFile.Directory.GetFiles("*.cs", SearchOption.AllDirectories);
-
-                    foreach (var csFile in csFiles)
-                    {
-                        // Csproj uses the same path separator on all platforms.
-                        var csFileRelativePath = Path.GetRelativePath(projFile.Directory.FullName, csFile.FullName)
-                            .Replace(Path.DirectorySeparatorChar, '\\');
-
-                        if (csFileRelativePath.StartsWith("bin\\") ||
-                            csFileRelativePath.StartsWith("obj\\") ||
-                            csFileRelativePath.Contains("DotNetCore") ||
-                            csFileRelativePath.Contains("Examples") ||
-                            excludedFiles.Contains(csFileRelativePath))
-                        {
-                            continue;
-                        }
-
-                        Assert.IsTrue(
-                            projFileText.Contains(csFileRelativePath),
-                            string.Format("Project file '{0}' should contain file '{1}'", projFile.Name, csFile));
-                    }
-                }
-            });
-        }
-#endif
-
         /// <summary>
         /// Gets the csproj files that go to the release binary package.
         /// </summary>
@@ -183,6 +124,7 @@ namespace Apache.Ignite.Core.Tests
             return TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
                 .Where(x => x.Name != "Apache.Ignite.csproj" &&
                             !x.Name.Contains("Test") &&
+                            !x.Name.Contains(".Schema") &&
                             !x.FullName.Contains("examples") &&
                             !x.FullName.Contains("templates") &&
                             !x.Name.Contains("DotNetCore") &&
