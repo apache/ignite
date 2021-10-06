@@ -385,7 +385,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      *
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testIndexRebuildUnderLoad() throws Exception {
         IgniteEx n = grid(0);
 
@@ -736,7 +736,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                     fut.onDone();
 
                     assertTrue("Failed to wait for indexes rebuild unblocking",
-                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 60_000));
+                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 5 * 60_000));
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
