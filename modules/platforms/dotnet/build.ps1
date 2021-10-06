@@ -103,6 +103,15 @@ function Exec([string]$command) {
     }
 }
 
+function Copy-If-Exists([string]$src, [string]$dst) {
+    if ([IO.Directory]::Exists($src)) {
+        echo "Copying files from '$src' to '$dst'..."
+
+        $srcAll = [IO.Path]::Combine($src, "*")
+        Copy-Item -Force -Recurse $srcAll $dst
+    }
+}
+
 # 1) Build Java (Maven)
 # Detect Ignite root directory
 cd $PSScriptRoot\..
@@ -188,7 +197,8 @@ if(!$skipDotNetCore) {
 
 # Copy binaries
 # TODO: Create two folders: net461 and netcoreapp3.1
-Make-Dir("bin")
+Make-Dir("bin\net461")
+Make-Dir("bin\netcoreapp3.1")
 
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
@@ -196,13 +206,11 @@ Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Benchmark*" | % {
     $projDir = split-path -parent $_.FullName
     $dir = [IO.Path]::Combine($projDir, "bin", $configuration)
+    $netFwDir = [IO.Path]::Combine($dir, "net461");
+    $netCoreDir = [IO.Path]::Combine($dir, "netcoreapp3.1", "publish");
 
-    if ([IO.Directory]::Exists($dir)) {
-        echo "Copying files to bin from '$dir'"
-
-        $dirAll = [IO.Path]::Combine($dir, "*")
-        Copy-Item -Force -Recurse $dirAll bin
-    }
+    Copy-If-Exists($netFwDir, "bin\net461")
+    Copy-If-Exists($netCoreDir, "bin\netcoreapp3.1")
 }
 
 
@@ -223,7 +231,7 @@ if (!$skipNuGet) {
     Exec "dotnet pack Apache.Ignite.sln -c Release -o $nupkgDir /p:Version=$ver"
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
-    
+
     # Examples template
     if (!$skipExamples) {
         # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
