@@ -208,6 +208,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testCacheNamesArg() throws Exception {
+        awaitPartitionMapExchange();
+        U.sleep(5000);
         assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
 
         blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>());
@@ -269,6 +271,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testGroupNamesArg() throws Exception {
+        awaitPartitionMapExchange();
+        U.sleep(5000);
         assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
 
         blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>());
