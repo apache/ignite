@@ -413,7 +413,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 ThreadLocalRandom r = ThreadLocalRandom.current();
 
                 while (!stopLoad.get())
-                    n.cache(cacheName1).put(r.nextInt(), new Person(r.nextInt(), valueOf(r.nextLong())));
+                    n.cache(cacheName1).put(r.nextInt(1000), new Person(r.nextInt(), valueOf(r.nextLong())));
             });
 
             assertTrue(waitForCondition(() -> n.cache(cacheName1).size() > cacheSize, getTestTimeout()));
@@ -736,7 +736,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                     fut.onDone();
 
                     assertTrue("Failed to wait for indexes rebuild unblocking",
-                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 5 * 60_000));
+                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 60_000));
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
