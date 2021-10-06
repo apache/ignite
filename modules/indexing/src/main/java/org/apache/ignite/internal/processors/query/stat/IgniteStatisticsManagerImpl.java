@@ -84,7 +84,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final IgniteThreadPoolExecutor mgmtPool;
 
     /** Executor to do obsolescence management. */
-    private final BusyExecutor obsolescenceExecutor;
+    private final BusyExecutor obsolescenceBusyExecutor;
 
     /** Gathering pool. */
     private final IgniteThreadPoolExecutor gatherPool;
@@ -158,7 +158,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             ctx.uncaughtExceptionHandler()
         );
 
-        obsolescenceExecutor = new BusyExecutor("obsolescence", mgmtPool, ctx::log);
+        obsolescenceBusyExecutor = new BusyExecutor("obsolescence", mgmtPool, ctx::log);
 
         boolean storeData = !(ctx.config().isClientMode() || ctx.isDaemon());
 
@@ -214,7 +214,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (!ctx.clientNode()) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
             ctx.timeout().schedule(() -> {
-                obsolescenceExecutor.execute(() -> processObsolescence());
+                obsolescenceBusyExecutor.execute(() -> processObsolescence());
             }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
         }
 
@@ -245,7 +245,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         statProc.stop();
         statsRepos.stop();
 
-        obsolescenceExecutor.deactivate(() -> {});
+        obsolescenceBusyExecutor.deactivate(() -> {});
         started = false;
     }
 
@@ -269,7 +269,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (log.isDebugEnabled())
             log.debug("Starting statistics subsystem...");
 
-        obsolescenceExecutor.activate();
+        obsolescenceBusyExecutor.activate();
 
         statsRepos.start();
         statProc.start();
@@ -335,14 +335,18 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         if (gatherPool != null) {
             List<Runnable> unfinishedTasks = gatherPool.shutdownNow();
+
             if (!unfinishedTasks.isEmpty())
                 log.warning(String.format("%d statistics collection cancelled.", unfinishedTasks.size()));
         }
 
         if (mgmtPool != null) {
             List<Runnable> unfinishedTasks = mgmtPool.shutdownNow();
-            if (!unfinishedTasks.isEmpty())
-                log.warning(String.format("%d statistics configuration change handler cancelled.", unfinishedTasks.size()));
+
+            if (!unfinishedTasks.isEmpty()) {
+                log.warning(String.format("%d statistics configuration change handler cancelled.",
+                    unfinishedTasks.size()));
+            }
         }
     }
 

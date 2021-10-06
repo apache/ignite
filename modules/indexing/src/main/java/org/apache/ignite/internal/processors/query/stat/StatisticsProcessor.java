@@ -52,7 +52,7 @@ public class StatisticsProcessor {
     private final IgniteStatisticsRepository statRepo;
 
     /** Ignite Thread pool executor to do statistics collection tasks. */
-    private final BusyExecutor gatherPool;
+    private final BusyExecutor gatheringBusyExecutor;
 
     /** (cacheGroupId -> gather context) */
     private final ConcurrentMap<StatisticsKey, LocalStatisticsGatheringContext> gatheringInProgress =
@@ -71,14 +71,14 @@ public class StatisticsProcessor {
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.statRepo = repo;
-        this.gatherPool = new BusyExecutor("gathering", gatherPool, logSupplier);
+        this.gatheringBusyExecutor = new BusyExecutor("gathering", gatherPool, logSupplier);
         this.log = logSupplier.apply(StatisticsProcessor.class);
     }
 
     /**
      * Update statistics for the given key to actual state.
      * If byObsolescence and tbl is not {@code null} - does not clear any other partitions.
-     * 
+     *
      * 1) Replace previous gathering context if exist and needed (replace byObsolescence gathering with new one or
      * replace gathering with older configuration or topology version with new one).
      * 2) If byObsolescence and no table awailable - clean obsolescence and partition statistics for the given key.
@@ -173,7 +173,7 @@ public class StatisticsProcessor {
                     // Will be executed before original, so have to try to cancel previous context to add new one.
                     gatheringInProgress.remove(ctx.configuration().key(), v);
 
-                    boolean rescheduled = gatherPool.busyRun(() -> updateLocalStatistics(ctx));
+                    boolean rescheduled = gatheringBusyExecutor.busyRun(() -> updateLocalStatistics(ctx));
 
                     if (!rescheduled && log.isDebugEnabled()) {
                         log.debug("Unable to reschedule statistics task by key " + ctx.configuration().key()
@@ -209,7 +209,7 @@ public class StatisticsProcessor {
                 log
             );
 
-            gatherPool.submit(() -> processPartitionTask(task))
+            gatheringBusyExecutor.submit(() -> processPartitionTask(task))
                 .thenAccept(success -> {
                     if (!success) {
                         if (log.isDebugEnabled()) {
@@ -326,7 +326,7 @@ public class StatisticsProcessor {
         if (log.isDebugEnabled())
             log.debug("Statistics gathering started.");
 
-        gatherPool.activate();
+        gatheringBusyExecutor.activate();
     }
 
     /**
@@ -337,7 +337,7 @@ public class StatisticsProcessor {
             log.trace(String.format("Statistics gathering stopping %d task...", gatheringInProgress.size()));
 
         // Can skip waiting for each task finished because of global busyLock.
-        gatherPool.deactivate(() -> gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel));
+        gatheringBusyExecutor.deactivate(() -> gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel));
 
         if (log.isDebugEnabled())
             log.debug("Statistics gathering stopped.");

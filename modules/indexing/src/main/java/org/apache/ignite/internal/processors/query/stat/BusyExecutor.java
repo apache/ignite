@@ -38,7 +38,7 @@ public class BusyExecutor {
     private volatile boolean active;
 
     /** Lock protection of started gathering during deactivation. */
-    private static final GridBusyLock busyLock = new GridBusyLock();
+    private final GridBusyLock busyLock = new GridBusyLock();
 
     /** Executor pool. */
     private final IgniteThreadPoolExecutor pool;
