@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -159,6 +160,10 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setCacheMode(cacheMode)
             .setQueryParallelism(qryParallelism)
             .setBackups(backups);
+
+        // TODO: remove after IGNITE-15671.
+        if (atomicityMode == ATOMIC)
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 

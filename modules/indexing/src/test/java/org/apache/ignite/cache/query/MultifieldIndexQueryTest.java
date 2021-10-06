@@ -31,6 +31,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -112,6 +113,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
             .setName(CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(Long.class, Person.class)
             .setQueryParallelism(4);
 
