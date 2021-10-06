@@ -644,7 +644,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         awaitPartitionMapExchange();
         U.sleep(5000);
         try {
-            assertTrue(waitForIndexesRebuild(ignite, 4 * 60_000, excludedCacheNames));
+            assertTrue(waitForIndexesRebuild(ignite, 60_000, excludedCacheNames));
         }
         finally {
             System.out.println("@@@ await111");
