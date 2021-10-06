@@ -216,6 +216,7 @@ if (!$skipNuGet) {
         Exec "dotnet pack Apache.Ignite.Examples.csproj --output $nupkgDir -p:PackageVersion=$ver"
 
         Remove-Item Apache.Ignite.Examples.csproj
+        Remove-Item bin\Debug -Force -Recurse
 
         echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
     }
