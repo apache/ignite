@@ -19,12 +19,16 @@ package org.apache.ignite.services;
 
 /**
  * Service operation context.
+ *
+ * todo extended doc with examples
  */
 public abstract class ServiceProxyContext {
     /** Thread local service proxy context. */
     protected static final ThreadLocal<ServiceProxyContext> threadProxyCtx = new ThreadLocal<>();
 
     /**
+     * Get the value of the proxy context attribute.
+     *
      * @param name Context attribute name.
      * @param <V> Type of the attribute value.
      * @return Context attribute value.

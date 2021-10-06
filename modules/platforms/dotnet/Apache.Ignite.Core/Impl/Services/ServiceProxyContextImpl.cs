@@ -17,24 +17,42 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System;
     using System.Collections;
     using System.Threading;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
+    /// <summary>
+    /// Service proxy context.
+    /// </summary>
     internal class ServiceProxyContextImpl : ServiceProxyContext
     {
+        /** Context attributes. */
         private readonly Hashtable _attrs;
         
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="attrs">Context attributes.</param>
         internal ServiceProxyContextImpl(Hashtable attrs)
         {
+            IgniteArgumentCheck.NotNull(attrs, "attrs");
+            IgniteArgumentCheck.Ensure(attrs.Count > 0, "attrs", "cannot create an empty context.");
+
             _attrs = attrs;
         }
         
+        /** <inheritDoc /> */
         public override object Attribute(string name)
         {
             return _attrs[name];
         }
 
+        /// <summary>
+        /// Set the service proxy context for the current thread.
+        /// </summary>
+        /// <param name="attrs">Context attributes.</param>
         internal static void Current(Hashtable attrs)
         {
             int threadId = Thread.CurrentThread.ManagedThreadId;
@@ -45,6 +63,10 @@ namespace Apache.Ignite.Core.Impl.Services
                 ProxyCtxs.AddOrUpdate(threadId, attrs, (k, v) => attrs);
         }
 
+        /// <summary>
+        /// Get context attributes.
+        /// </summary>
+        /// <returns>Context attributes.</returns>
         internal Hashtable Values()
         {
             return _attrs;

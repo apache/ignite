@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             // In local scenario try to return service instance itself instead of a proxy
             // Get as object because proxy interface may be different from real interface
-            if (opCtx == null && (locInst = (GetService<object>(name) as T)) != null)
+            if (opCtx == null && (locInst = GetService<object>(name) as T) != null)
                 return locInst;
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>

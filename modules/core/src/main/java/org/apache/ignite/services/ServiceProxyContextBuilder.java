@@ -22,10 +22,10 @@ import java.util.Map;
 import org.apache.ignite.internal.processors.service.ServiceProxyContextImpl;
 
 /**
- * Service operation context builder.
+ * Service proxy context builder.
  */
 public class ServiceProxyContextBuilder {
-    /** Context values. */
+    /** Context attributes. */
     private final Map<String, Object> values;
 
     /**
@@ -36,7 +36,7 @@ public class ServiceProxyContextBuilder {
     }
 
     /**
-     * @param values Context values.
+     * @param values Context attributes.
      */
     public ServiceProxyContextBuilder(Map<String, Object> values) {
         this.values = new HashMap<>(values);
@@ -53,8 +53,8 @@ public class ServiceProxyContextBuilder {
     }
 
     /**
-     * @param name Operation context attribute name.
-     * @param val Operation context attribute value.
+     * @param name Context attribute name.
+     * @param val Context attribute value.
      * @return This for chaining.
      */
     public ServiceProxyContextBuilder put(String name, Object val) {
@@ -64,7 +64,7 @@ public class ServiceProxyContextBuilder {
     }
 
     /**
-     * @return Service operation context.
+     * @return Service proxy context.
      */
     public ServiceProxyContext build() {
         return new ServiceProxyContextImpl(values);

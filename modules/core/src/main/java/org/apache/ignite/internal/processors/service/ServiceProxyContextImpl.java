@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.ignite.services.ServiceProxyContext;
 
 /**
- * Service operation context.
+ * Service proxy context.
  */
 public class ServiceProxyContextImpl extends ServiceProxyContext {
     /** Context attributes. */
@@ -40,7 +40,7 @@ public class ServiceProxyContextImpl extends ServiceProxyContext {
     }
 
     /**
-     * @return Attributes map.
+     * @return Context attributes.
      */
     protected Map<String, Object> values() {
         return attrs;

@@ -43,7 +43,7 @@ import org.junit.runners.Parameterized;
  * Tests service proxy execution context.
  */
 @RunWith(Parameterized.class)
-public class IgniteServiceProxyExecutionContextTest extends GridCommonAbstractTest {
+public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
     /** Custom context attribute. */
     private static final String ATTR_NAME = "int.attr";
 

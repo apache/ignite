@@ -22,13 +22,27 @@ namespace Apache.Ignite.Core.Services
     using System.Threading;
     using Apache.Ignite.Core.Impl.Services;
 
+    /// <summary>
+    /// Service operation context.
+    /// todo extended doc with examples
+    /// </summary>
     public abstract class ServiceProxyContext
     {
+        /** Global mapping of the thread ID to the service proxy context. */
         protected static readonly ConcurrentDictionary<int, Hashtable> ProxyCtxs = 
             new ConcurrentDictionary<int, Hashtable>();
 
+        /// <summary>
+        /// Get the value of the proxy context attribute.
+        /// </summary>
+        /// <param name="name">Context attribute name.</param>
+        /// <returns>Context attribute value.</returns>
         public abstract object Attribute(string name);
 
+        /// <summary>
+        /// Get the service proxy context of the current thread.
+        /// </summary>
+        /// <returns>Service proxy context.</returns> 
         public static ServiceProxyContext Current()
         {
             Hashtable attrs;
