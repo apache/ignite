@@ -158,7 +158,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         createAndFillThreeFieldsEntryCache(ignite, CACHE_NAME_NO_GRP, null, Collections.singletonList(complexIndexEntity()));
 
-        assertTrue(grid(LAST_NODE_NUM).context().config().getBuildIndexThreadPoolSize() >= 2);
+        assertTrue(grid(LAST_NODE_NUM).context().config().getBuildIndexThreadPoolSize() > 1);
     }
 
     /**
