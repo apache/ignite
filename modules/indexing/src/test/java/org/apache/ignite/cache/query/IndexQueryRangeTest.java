@@ -161,6 +161,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setQueryParallelism(qryParallelism)
             .setBackups(backups);
 
+        // TODO: remove after IGNITE-15671.
         if (atomicityMode == ATOMIC)
             ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
