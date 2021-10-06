@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -668,7 +669,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                     .collect(Collectors.toList())
                     + "\n"
                     + "\nblockRebuildIdx=" + blockRebuildIdx
-                    + "\nallGrids=" + G.allGrids().stream().map(ignite1 -> ignite.name()).collect(Collectors.toList())
+                    + "\nallGrids=" + G.allGrids().stream().map(Ignite::name).collect(Collectors.toList())
                 );
                 return b1;
             },
@@ -730,7 +731,18 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         /** {@inheritDoc} */
         @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
             SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
-            super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
+            log.warning("@@@ START REBUILD name=" + cctx.name());
+            BlockingRebuildIdxFuture fut0 = new BlockingRebuildIdxFuture(fut, cctx);
+
+            fut.listen(future -> {
+                log.warning("@@@ REBUILD FUTURE WAS DONE name=" + cctx.name());
+            });
+
+            fut0.listen(future -> {
+                log.warning("@@@ REBUILD BLOCKING FUTURE WAS DONE name=" + cctx.name());
+            });
+
+            super.startRebuild(cctx, fut0, clo, cancel);
         }
     }
 
@@ -755,12 +767,15 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             try {
                 GridFutureAdapter<Void> fut = blockRebuildIdx.get(cctx.name());
 
+                log.warning("@@@ BLOCKING FUT ONDONE name=" + cctx.name() + " fut=" + fut);
+
                 if (fut != null) {
                     fut.onDone();
 
                     assertTrue("Failed to wait for indexes rebuild unblocking: " + blockRebuildIdx,
                         GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 2 * 60_000));
                 }
+                log.warning("@@@ BLOCKING FUT ONDONE COMPLETE name=" + cctx.name() + " fut=" + fut);
             }
             catch (IgniteInterruptedCheckedException e) {
                 fail("Waiting for indexes rebuild unblocking was interrupted");
