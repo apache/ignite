@@ -50,6 +50,8 @@
     <Reference Include="System.Transactions" />
 
     <Compile Include="..\SharedAssemblyInfo.cs" />
+
+    <Compile Remove="Examples\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -118,6 +120,11 @@
     <None Update="Examples\ExpectedOutput\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Remove="Examples\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Examples\**" />
   </ItemGroup>
 
 </Project>
