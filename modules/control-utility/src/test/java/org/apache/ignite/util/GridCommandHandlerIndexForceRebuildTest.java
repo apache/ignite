@@ -208,7 +208,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testCacheNamesArg() throws Exception {
-        waitForIndexesRebuild(grid(LAST_NODE_NUM));
+        assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
 
         blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>());
 
@@ -269,7 +269,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testGroupNamesArg() throws Exception {
-        waitForIndexesRebuild(grid(LAST_NODE_NUM));
+        assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
 
         blockRebuildIdx.put(CACHE_NAME_1_2, new GridFutureAdapter<>());
 
