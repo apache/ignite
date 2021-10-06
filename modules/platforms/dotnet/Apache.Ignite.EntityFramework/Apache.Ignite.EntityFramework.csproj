@@ -11,7 +11,7 @@
     <AssemblyOriginatorKeyFile>Apache.Ignite.EntityFramework.snk</AssemblyOriginatorKeyFile>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
+    <Description>Apache Ignite EntityFramework Second Level Cache: caches EF query results in a distributed in-memory cache.</Description>
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
