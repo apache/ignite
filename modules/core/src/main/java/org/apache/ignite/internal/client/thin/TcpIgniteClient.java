@@ -155,7 +155,7 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         ch.close();
     }
 
