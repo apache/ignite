@@ -10,6 +10,7 @@
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>Apache.Ignite.EntityFramework.Tests.snk</AssemblyOriginatorKeyFile>
     <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
 
     <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>

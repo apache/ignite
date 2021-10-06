@@ -4,6 +4,7 @@
     <TargetFramework>net461</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
     <NoWarn>1701;1702;1705;NU1701</NoWarn>
     <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.TestDll.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>

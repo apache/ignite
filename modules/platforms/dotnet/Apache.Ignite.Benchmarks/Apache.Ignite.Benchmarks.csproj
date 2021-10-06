@@ -4,6 +4,7 @@
     <TargetFramework>net461</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
     <ApplicationIcon />
     <OutputType>Exe</OutputType>
     <RootNamespace>Apache.Ignite.Benchmarks</RootNamespace>

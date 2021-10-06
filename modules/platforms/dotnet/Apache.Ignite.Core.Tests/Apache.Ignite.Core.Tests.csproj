@@ -4,6 +4,7 @@
     <TargetFramework>net461</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
 
     <StartupObject>Apache.Ignite.Core.Tests.TestRunner</StartupObject>
 
