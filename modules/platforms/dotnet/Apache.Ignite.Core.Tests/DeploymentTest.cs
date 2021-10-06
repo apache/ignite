@@ -143,6 +143,8 @@ namespace Apache.Ignite.Core.Tests
             // Start a node and make sure it works properly
             var exePath = Path.Combine(dllFolder, "Apache.Ignite.exe");
 
+            Assert.IsTrue(File.Exists(exePath));
+
             var args = new List<string>
             {
                 "-springConfigUrl=" + springFile,
@@ -157,9 +159,15 @@ namespace Apache.Ignite.Core.Tests
                 args.Add("-jvmClasspath=" + string.Join(";", Directory.GetFiles(jarFolder)));
             }
 
-            var proc = IgniteProcess.Start(exePath, string.Empty, args: args.ToArray());
+            var reader = new ListDataReader();
+            var proc = IgniteProcess.Start(exePath, string.Empty, reader, args.ToArray());
 
             Assert.IsNotNull(proc);
+
+            if (proc.WaitForExit(300))
+            {
+                Assert.Fail("Node failed to start: " + string.Join("\n", reader.GetOutput()));
+            }
 
             VerifyNodeStarted(exePath);
         }
