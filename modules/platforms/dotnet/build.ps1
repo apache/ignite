@@ -112,6 +112,18 @@ function Copy-If-Exists([string]$src, [string]$dst) {
     }
 }
 
+function Build-Solution([string]$targetSolution, [string]$targetDir) {
+    if ($clean) {
+        $cleanCommand = "dotnet clean $targetSolution -c $configuration"
+        echo "Starting dotnet clean: '$cleanCommand'"
+        Exec $cleanCommand
+    }
+
+    $buildCommand = "dotnet publish $targetSolution -c $configuration -o $targetDir"
+    echo "Starting dotnet build: '$buildCommand'"
+    Exec $buildCommand
+}
+
 # 1) Build Java (Maven)
 # Detect Ignite root directory
 cd $PSScriptRoot\..
@@ -170,49 +182,11 @@ cd $PSScriptRoot
 
 # 2) Build .NET
 if (!$skipDotNet) {
-    $targetSolution =  ".\Apache.Ignite.sln"
-    if ($clean) {
-        $cleanCommand = "dotnet clean $targetSolution -c $configuration"
-        echo "Starting dotnet clean: '$cleanCommand'"
-        Exec $cleanCommand
-    }
-
-    $buildCommand = "dotnet build $targetSolution -c $configuration"
-    echo "Starting dotnet build: '$buildCommand'"
-    Exec $buildCommand
+    Build-Solution ".\Apache.Ignite.sln" "bin\net461"
 }
 
 if(!$skipDotNetCore) {
-    $targetSolution =  ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj"
-    if ($clean) {
-        $cleanCommand = "dotnet clean $targetSolution -c $configuration"
-        echo "Starting dotnet clean: '$cleanCommand'"
-        Exec $cleanCommand
-    }
-
-    $publishCommand = "dotnet publish $targetSolution -c $configuration"
-	echo "Starting dotnet publish: '$publishCommand'"
-	Exec $publishCommand
-}
-
-# Copy binaries
-Make-Dir("bin")
-Make-Dir("bin\net461")
-Make-Dir("bin\netcoreapp3.1")
-
-Get-ChildItem *.csproj -Recurse
-                     | where FullName -NotLike "*examples*" `
-                     | where Name -NotLike "*Examples*" `
-                     | where FullName -NotLike "*templates*" `
-                     | where Name -NotLike "*Tests*" `
-                     | where Name -NotLike "*DotNetCore*" `
-                     | where Name -NotLike "*Benchmark*" | % {
-    $projDir = split-path -parent $_.FullName
-    $dir = [IO.Path]::Combine($projDir, "bin", $configuration)
-
-    Copy-If-Exists [IO.Path]::Combine($dir, "net461") "bin\net461"
-    Copy-If-Exists [IO.Path]::Combine($dir, "netcoreapp3.1", "publish") "bin\netcoreapp3.1"
-    Copy-If-Exists [IO.Path]::Combine($dir, "netstandard2.0", "publish") "bin\netcoreapp3.1"
+    Build-Solution ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" "bin\netcoreapp3.1"
 }
 
 
