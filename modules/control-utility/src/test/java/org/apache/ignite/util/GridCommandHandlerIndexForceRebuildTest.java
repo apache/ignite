@@ -643,8 +643,13 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         resetBaselineTopology();
         awaitPartitionMapExchange();
         U.sleep(5000);
-        assertTrue(waitForIndexesRebuild(ignite, 4 * 60_000, excludedCacheNames));
-        System.out.println("@@@ await111");
+        try {
+            assertTrue(waitForIndexesRebuild(ignite, 4 * 60_000, excludedCacheNames));
+        }
+        finally {
+            System.out.println("@@@ await111");
+            U.dumpThreads(log);
+        }
     }
 
     /** */
@@ -749,13 +754,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 if (fut != null) {
                     fut.onDone();
 
-                    try {
-                        assertTrue("Failed to wait for indexes rebuild unblocking",
-                            GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 60_000));
-                    }
-                    finally {
-                        U.dumpStack("@@@");
-                    }
+                    assertTrue("Failed to wait for indexes rebuild unblocking",
+                        GridTestUtils.waitForCondition(() -> !blockRebuildIdx.containsKey(cctx.name()), 60_000));
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
