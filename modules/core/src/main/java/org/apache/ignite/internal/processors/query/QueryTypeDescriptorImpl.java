@@ -731,7 +731,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     try {
                         final Class<?> cls = Class.forName(clsName);
 
-                        if (U.box(propType).isAssignableFrom(U.box(cls)))
+                        if (propType.isAssignableFrom(cls))
                             continue;
                     } catch (ClassNotFoundException e) {
                         if (log.isDebugEnabled())

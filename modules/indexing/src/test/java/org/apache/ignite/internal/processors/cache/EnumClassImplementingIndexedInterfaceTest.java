@@ -41,8 +41,6 @@ public class EnumClassImplementingIndexedInterfaceTest extends GridCommonAbstrac
     /** */
     private static final int KEY = 0;
 
-    /** */
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -82,7 +80,6 @@ public class EnumClassImplementingIndexedInterfaceTest extends GridCommonAbstrac
             assertEquals(person, cache.get(KEY));
 
             cache.clear();
-
         });
     }
 
@@ -108,7 +105,6 @@ public class EnumClassImplementingIndexedInterfaceTest extends GridCommonAbstrac
 
     /** */
     private SqlFieldsQuery sqlInsertQuery(Role role, Title title, String description) {
-
         return new SqlFieldsQuery("insert into " + PERSON_CACHE + "(id, role, title, desc) values (?, ?, ?, ?)")
             .setArgs(KEY, role, title, description);
     }
