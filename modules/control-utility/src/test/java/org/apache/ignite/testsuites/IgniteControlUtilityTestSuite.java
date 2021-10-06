@@ -56,49 +56,49 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CommandHandlerParsingTest.class,
-
-    GridCommandHandlerTest.class,
-    GridCommandHandlerWithSSLTest.class,
-    GridCommandHandlerClusterByClassTest.class,
-    GridCommandHandlerClusterByClassWithSSLTest.class,
-    GridCommandHandlerSslTest.class,
-
-    GridCommandHandlerSslWithSecurityTest.class,
-
-    GridCommandHandlerBrokenIndexTest.class,
-    GridCommandHandlerIndexingTest.class,
-    GridCommandHandlerIndexingWithSSLTest.class,
-    GridCommandHandlerIndexingClusterByClassTest.class,
-    GridCommandHandlerIndexingClusterByClassWithSSLTest.class,
-    GridCommandHandlerIndexingCheckSizeTest.class,
-    GridCommandHandlerCheckIndexesInlineSizeTest.class,
-    GridCommandHandlerInterruptCommandTest.class,
-    GridCommandHandlerMetadataTest.class,
-
-    KillCommandsCommandShTest.class,
-
-    BaselineEventsLocalTest.class,
-    BaselineEventsRemoteTest.class,
+//    CommandHandlerParsingTest.class,
+//
+//    GridCommandHandlerTest.class,
+//    GridCommandHandlerWithSSLTest.class,
+//    GridCommandHandlerClusterByClassTest.class,
+//    GridCommandHandlerClusterByClassWithSSLTest.class,
+//    GridCommandHandlerSslTest.class,
+//
+//    GridCommandHandlerSslWithSecurityTest.class,
+//
+//    GridCommandHandlerBrokenIndexTest.class,
+//    GridCommandHandlerIndexingTest.class,
+//    GridCommandHandlerIndexingWithSSLTest.class,
+//    GridCommandHandlerIndexingClusterByClassTest.class,
+//    GridCommandHandlerIndexingClusterByClassWithSSLTest.class,
+//    GridCommandHandlerIndexingCheckSizeTest.class,
+//    GridCommandHandlerCheckIndexesInlineSizeTest.class,
+//    GridCommandHandlerInterruptCommandTest.class,
+//    GridCommandHandlerMetadataTest.class,
+//
+//    KillCommandsCommandShTest.class,
+//
+//    BaselineEventsLocalTest.class,
+//    BaselineEventsRemoteTest.class,
 
     GridCommandHandlerIndexForceRebuildTest.class,
-    GridCommandHandlerIndexListTest.class,
-    GridCommandHandlerIndexRebuildStatusTest.class,
-
-    GridCommandHandlerTracingConfigurationTest.class,
-
-    GridCommandHandlerPropertiesTest.class,
-
-    GridCommandHandlerDefragmentationTest.class,
-
-    GridCommandHandlerConsistencyTest.class,
-    GridCommandHandlerConsistencyBinaryTest.class,
-
-    SystemViewCommandTest.class,
-    MetricCommandTest.class,
+//    GridCommandHandlerIndexListTest.class,
+//    GridCommandHandlerIndexRebuildStatusTest.class,
+//
+//    GridCommandHandlerTracingConfigurationTest.class,
+//
+//    GridCommandHandlerPropertiesTest.class,
+//
+//    GridCommandHandlerDefragmentationTest.class,
+//
+//    GridCommandHandlerConsistencyTest.class,
+//    GridCommandHandlerConsistencyBinaryTest.class,
+//
+//    SystemViewCommandTest.class,
+//    MetricCommandTest.class,
     PerformanceStatisticsCommandTest.class,
 
-    IgniteIndexReaderTest.class
+//    IgniteIndexReaderTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }
