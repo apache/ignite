@@ -11,7 +11,7 @@
     <AssemblyOriginatorKeyFile>Apache.Ignite.Linq.snk</AssemblyOriginatorKeyFile>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
+    <Description>Apache Ignite LINQ Provider. Query distributed in-memory data in a strongly-typed manner and with IDE support. All Ignite SQL features are supported: distributed joins, groupings, aggregates, field queries, and more.</Description>
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
