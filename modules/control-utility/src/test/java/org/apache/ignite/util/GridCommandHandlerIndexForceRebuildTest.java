@@ -663,12 +663,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                     .allMatch(c -> c.indexReadyFuture().isDone());
 
                 log.warning("\n@@@ STILL WAIT:" +
-                    "\n" +
-                    ignite.context().cache().publicCaches().stream()
+                    "\n" + ignite.context().cache().publicCaches().stream()
                     .map(entries -> "\nname=" + entries.getName() + " indexReady=" + entries.indexReadyFuture().isDone())
                     .collect(Collectors.toList())
-                    +"\n"
-                    +"\nblockRebuildIdx=" + blockRebuildIdx
+                    + "\n"
+                    + "\nblockRebuildIdx=" + blockRebuildIdx
                     + "\nallGrids=" + G.allGrids().stream().map(ignite1 -> ignite.name()).collect(Collectors.toList())
                 );
                 return b1;
