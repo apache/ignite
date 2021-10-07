@@ -3078,8 +3078,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertEquals(ig.cluster().nodes().size(),
-            countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+        assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
 
         ig.cache(DEFAULT_CACHE_NAME).destroy();
 
