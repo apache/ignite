@@ -176,13 +176,13 @@ public class StripedDisruptor<T extends GroupAware> {
      * It routs an event to the event handler for a group.
      */
     private class StripeEntryHandler implements EventHandler<T> {
-        private final ConcurrentHashMap<String, EventHandler<T>> subscrivers;
+        private final ConcurrentHashMap<String, EventHandler<T>> subscribers;
 
         /**
          * The constructor.
          */
         StripeEntryHandler() {
-            subscrivers = new ConcurrentHashMap<>();
+            subscribers = new ConcurrentHashMap<>();
         }
 
         /**
@@ -192,7 +192,7 @@ public class StripedDisruptor<T extends GroupAware> {
          * @param handler Event handler for the group specified.
          */
         void subscribe(String group, EventHandler<T> handler) {
-            subscrivers.put(group, handler);
+            subscribers.put(group, handler);
         }
 
         /**
@@ -201,21 +201,22 @@ public class StripedDisruptor<T extends GroupAware> {
          * @param group Group id.
          */
         void unsubscribe(String group) {
-            subscrivers.remove(group);
+            subscribers.remove(group);
         }
 
         /** {@inheritDoc} */
         @Override public void onEvent(T event, long sequence, boolean endOfBatch) throws Exception {
-            EventHandler<T> handler = subscrivers.get(event.groupId());
+            EventHandler<T> handler = subscribers.get(event.groupId());
 
             assert handler != null : format("Group of the event is unsupported [group={}, event={}]", event.groupId(), event);
 
-            handler.onEvent(event, sequence, endOfBatch);
+            //TODO: IGNITE-15568 endOfBatch should be set to true to prevent caching tasks until IGNITE-15568 has fixed.
+            handler.onEvent(event, sequence, true);
         }
     }
 
     /**
-     * Striped disruptor exxception handler.
+     * Striped disruptor exception handler.
      * It prints into log when an exception has occurred and route it to the handler for group.
      */
     private class StripeExceptionHandler implements ExceptionHandler<T> {
@@ -254,12 +255,12 @@ public class StripedDisruptor<T extends GroupAware> {
 
         /** {@inheritDoc} */
         @Override public void handleOnStartException(Throwable ex) {
-            LOG.error("Fail to start disruptor [name={}]", name, ex);
+            LOG.error("Fail to start disruptor [name={}]", ex, name);
         }
 
         /** {@inheritDoc} */
         @Override public void handleOnShutdownException(Throwable ex) {
-            LOG.error("Fail to shutdown disruptor [name={}]", name, ex);
+            LOG.error("Fail to shutdown disruptor [name={}]", ex, name);
 
         }
 
@@ -267,7 +268,7 @@ public class StripedDisruptor<T extends GroupAware> {
         @Override public void handleEventException(Throwable ex, long sequence, T event) {
             BiConsumer<T, Throwable> handler = subscrivers.get(event.groupId());
 
-            LOG.error("Handle disruptor event error [name={}, event={}, hasHandler={}]", name, event, handler != null, ex);
+            LOG.error("Handle disruptor event error [name={}, event={}, hasHandler={}]", ex, name, event, handler != null);
 
             if (handler != null)
                 handler.accept(event, ex);

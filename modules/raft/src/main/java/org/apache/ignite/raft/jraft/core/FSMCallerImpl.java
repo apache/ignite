@@ -432,8 +432,7 @@ public class FSMCallerImpl implements FSMCaller {
             }
         }
         try {
-            //TODO: IGNITE-15568 This limitation is used until the issue is not fixed.
-            if ((node.getOptions().getRaftOptions().getApplyBatch() == 1 || endOfBatch) && maxCommittedIndex >= 0) {
+            if (endOfBatch && maxCommittedIndex >= 0) {
                 this.currTask = TaskType.COMMITTED;
                 doCommitted(maxCommittedIndex);
                 maxCommittedIndex = -1L; // reset maxCommittedIndex
