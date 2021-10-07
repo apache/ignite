@@ -37,14 +37,14 @@ import org.junit.runners.Parameterized;
  * Snapshot test for encrypted snapshots.
  */
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
+    /** Second cache name. */
+    private static final String CACHE2 = "cache2";
+
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption is enabled.")
     public static Iterable<Boolean> enableEncryption() {
         return Collections.singletonList(true);
     }
-
-    /** Second cache name. */
-    private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {

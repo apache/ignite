@@ -104,12 +104,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
-    /** Parameters. Encryption is not supported by snapshot validation. */
-    @Parameterized.Parameters(name = "Encryption is disabled")
-    public static Iterable<Boolean> disabledEncryption() {
-        return Collections.singletonList(false);
-    }
-
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
     private final Map<Class<?>, Map<PartitionKeyV2, List<PartitionHashRecordV2>>> jobResults = new ConcurrentHashMap<>();
 
@@ -118,6 +112,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Optional cache name to be created on demand. */
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
+
+    /** Parameters. Encryption is not supported by snapshot validation. */
+    @Parameterized.Parameters(name = "Encryption is disabled")
+    public static Iterable<Boolean> disabledEncryption() {
+        return Collections.singletonList(false);
+    }
 
     /** Cleanup data of task execution results if need. */
     @Before
