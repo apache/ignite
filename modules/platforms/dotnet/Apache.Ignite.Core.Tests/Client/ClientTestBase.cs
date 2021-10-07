@@ -221,7 +221,8 @@ namespace Apache.Ignite.Core.Tests.Client
                         EnabledLevels = _serverListLoggerLevels
                     }
                     : new TestUtils.TestContextLogger(),
-                SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
+                SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null,
+                RedirectJavaConsoleOutput = false
             };
         }
 
