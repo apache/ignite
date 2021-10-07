@@ -55,6 +55,10 @@
     <Compile Include="..\SharedAssemblyInfo.cs" />
 
     <Compile Remove="Examples\**" />
+
+    <Compile Remove="Client\Compatibility\**" />
+
+    <Compile Remove="Cache\CacheTestAsyncAwait.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -124,10 +128,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Remove="Examples\**" />
+    <None Remove="Client\Compatibility\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="Examples\**" />
+    <EmbeddedResource Remove="Client\Compatibility\**" />
   </ItemGroup>
 
   <ItemGroup>
