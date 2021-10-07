@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.example.table;
+package org.apache.ignite.example.sql.jdbc;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,38 +27,35 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * These tests check that all table examples pass correctly.
+ * These tests check that all SQL JDBC examples pass correctly.
  */
-public class TableExamplesTest {
+public class SqlExamplesTest {
     /** Empty argument to invoke an example. */
     protected static final String[] EMPTY_ARGS = new String[0];
 
     /**
-     * Runs RecordViewExample.
-     *
-     * @throws Exception If failed and checks its output.
-     */
-    @Test
-    public void testRecordViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutput(RecordViewExample::main, EMPTY_ARGS,
-            "Retrieved using Tuple API\n" +
-            "    Account Number: 123456\n" +
-            "    Owner: Val Kulichenko\n" +
-            "    Balance: $100.0\n");
-    }
-
-    /**
-     * Runs KeyValueViewExample and checks its output.
+     * Runs SqlJdbcExample and checks its output.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testKeyValueViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutput(KeyValueViewExample::main, EMPTY_ARGS,
-            "Retrieved using Key-Value API\n" +
-            "    Account Number: 123456\n" +
-            "    Owner: Val Kulichenko\n" +
-            "    Balance: $100.0\n");
+    public void testSqlJdbcExample() throws Exception {
+        ExampleTestUtils.assertConsoleOutputContains(SqlJdbcExample::main, EMPTY_ARGS,
+            ">>> Query results:\n" +
+            ">>>    John, Doe, Forest Hill\n" +
+            ">>>    Jane, Roe, Forest Hill\n" +
+            ">>>    Mary, Major, Denver\n" +
+            ">>>    Richard, Miles, St. Petersburg\n",
+
+            ">>> Query results:\n" +
+            ">>>    John, Doe, 1000.0\n" +
+            ">>>    Richard, Miles, 1450.0\n",
+
+            ">>> Query results:\n" +
+            ">>>    Jane, Roe, Forest Hill\n" +
+            ">>>    Mary, Major, Denver\n" +
+            ">>>    Richard, Miles, St. Petersburg\n"
+        );
     }
 
     /**

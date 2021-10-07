@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.sql.jdbc;
+package org.apache.ignite.example.sql.jdbc;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,7 +51,7 @@ public class SqlJdbcExample {
     public static void main(String[] args) throws Exception {
         Ignite ignite = IgnitionManager.start(
             "node-0",
-            Files.readString(Path.of( "config", "ignite-config.json")),
+            Files.readString(Path.of("config", "ignite-config.json")),
             Path.of("work")
         );
 

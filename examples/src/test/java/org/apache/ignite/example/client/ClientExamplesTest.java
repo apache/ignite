@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.example.table;
+package org.apache.ignite.example.client;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,20 +27,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * These tests check that all table examples pass correctly.
+ * These tests check that all client examples pass correctly.
  */
-public class TableExamplesTest {
+public class ClientExamplesTest {
     /** Empty argument to invoke an example. */
     protected static final String[] EMPTY_ARGS = new String[0];
 
     /**
-     * Runs RecordViewExample.
+     * Runs ClientRecordViewExample and checks its output.
      *
-     * @throws Exception If failed and checks its output.
+     * @throws Exception If failed.
      */
     @Test
-    public void testRecordViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutput(RecordViewExample::main, EMPTY_ARGS,
+    public void testClientRecordViewExample() throws Exception {
+        ExampleTestUtils.assertConsoleOutput(ClientRecordViewExample::main, EMPTY_ARGS,
             "Retrieved using Tuple API\n" +
             "    Account Number: 123456\n" +
             "    Owner: Val Kulichenko\n" +
@@ -48,13 +48,13 @@ public class TableExamplesTest {
     }
 
     /**
-     * Runs KeyValueViewExample and checks its output.
+     * Runs ClientKeyValueViewExample and checks its     output.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testKeyValueViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutput(KeyValueViewExample::main, EMPTY_ARGS,
+    public void testClientKeyValueViewExample() throws Exception {
+        ExampleTestUtils.assertConsoleOutput(ClientKeyValueViewExample::main, EMPTY_ARGS,
             "Retrieved using Key-Value API\n" +
             "    Account Number: 123456\n" +
             "    Owner: Val Kulichenko\n" +
