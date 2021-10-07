@@ -329,7 +329,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
-        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg, dfltCacheCfg);
+        dfltCacheCfg = null;
+
+        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
         Ignite client = startClientGrid(grids);
 

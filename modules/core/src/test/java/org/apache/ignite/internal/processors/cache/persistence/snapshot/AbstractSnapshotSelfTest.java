@@ -355,8 +355,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected <V> IgniteEx startGridsWithCache(
         int grids,
         int keys,
-        Function<Integer, ?> factory,
-        CacheConfiguration<Integer, ?>... ccfgs
+        Function<Integer, V> factory,
+        CacheConfiguration<Integer, V>... ccfgs
     ) throws Exception {
         for (int g = 0; g < grids; g++)
             startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
@@ -368,7 +368,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         ig.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < keys; i++) {
-            for (CacheConfiguration<Integer, ?> ccfg : ccfgs)
+            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
                 ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
         }
 

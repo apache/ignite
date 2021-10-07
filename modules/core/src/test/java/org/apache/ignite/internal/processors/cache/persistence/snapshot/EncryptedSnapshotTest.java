@@ -70,7 +70,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             "rejected.", IgniteException.class);
     }
 
-    /** Checks master key changing failes during snapshot restoration. */
+    /** Checks master key changing fails during snapshot restoration. */
     @Test
     public void testMasterKeyChangeDuringRestore() throws Exception {
         checkActionFailsDuringSnapshotOperation(true, this::chageMasterKey, "Master key change was rejected.",
@@ -97,7 +97,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         checkSnapshotActionFailsDuringReencryption(this::chageCacheKey, "Caches re-encryption process is not finished yet");
     }
 
-    /** Checks snapshot action fail during master key cnahge. */
+    /** Checks snapshot action fail during master key change. */
     @Test
     public void testSnapshotFailsDuringMasterKeyChange() throws Exception {
         checkSnapshotActionFailsDuringReencryption(this::chageMasterKey, "Master key changing process is not finished yet.");
@@ -126,7 +126,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         );
     }
 
-    /** Checks it is unavailable to register snapshot task for encrypted caches witout metastore. */
+    /** Checks it is unavailable to register snapshot task for encrypted caches without metastore. */
     @Test
     public void testSnapshotTaskIsBlockedWithoutMetastore() throws Exception {
         // Start grid node with data before each test.
