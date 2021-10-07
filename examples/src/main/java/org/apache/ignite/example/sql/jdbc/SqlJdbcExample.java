@@ -58,7 +58,7 @@ public class SqlJdbcExample {
         print("JDBC example started.");
 
         // Open JDBC connection
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.1.1:10800/")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800/")) {
             print("Connected to server.");
 
             //---------------------------------------------------------------------------------
