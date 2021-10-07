@@ -82,6 +82,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /** Policy max memory size. */
     protected long plcMaxMemSize = 0;
 
+    /** */
     protected Factory<T> policyFactory;
 
     /** Near policy max. */

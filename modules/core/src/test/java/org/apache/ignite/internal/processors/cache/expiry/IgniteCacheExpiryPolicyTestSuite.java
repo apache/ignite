@@ -58,7 +58,9 @@ import org.junit.runners.Suite;
     GridCacheTtlManagerNotificationTest.class,
     IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class,
 
-    IgniteCacheExpireWhileRebalanceTest.class
+    IgniteCacheExpireWhileRebalanceTest.class,
+
+    ExpiryPolicyInfoLoggingTest.class
 })
 public class IgniteCacheExpiryPolicyTestSuite {
 }

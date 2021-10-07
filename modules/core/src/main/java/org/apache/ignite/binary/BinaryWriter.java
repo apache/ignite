@@ -251,6 +251,7 @@ public interface BinaryWriter {
 
     /**
      * @param fieldName Field name.
+     * @param <T> Type of elements in collection to write.
      * @param col Collection to write.
      * @throws BinaryObjectException In case of error.
      */
@@ -259,6 +260,8 @@ public interface BinaryWriter {
     /**
      * @param fieldName Field name.
      * @param map Map to write.
+     * @param <K> Type of keys in the map to write.
+     * @param <V> Type of mapped values in the map to write.
      * @throws BinaryObjectException In case of error.
      */
     public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws BinaryObjectException;
@@ -266,6 +269,7 @@ public interface BinaryWriter {
     /**
      * @param fieldName Field name.
      * @param val Value to write.
+     * @param <T> Type of the enum to write.
      * @throws BinaryObjectException In case of error.
      */
     public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException;
@@ -273,6 +277,7 @@ public interface BinaryWriter {
     /**
      * @param fieldName Field name.
      * @param val Value to write.
+     * @param <T> Type of the enum values in array to write.
      * @throws BinaryObjectException In case of error.
      */
     public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws BinaryObjectException;

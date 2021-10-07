@@ -376,6 +376,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             this.name = name;
         }
 
+        /** {@inheritDoc} */
         @Override public CacheStoreSessionListener create() {
             return new SessionListener(name);
         }
@@ -384,6 +385,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      */
     public static class Store extends CacheStoreAdapter<Integer, Integer> {
+        /** */
         public Store() {
         }
 

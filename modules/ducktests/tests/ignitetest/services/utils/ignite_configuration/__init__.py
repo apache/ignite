@@ -31,7 +31,6 @@ from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, 
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
-# pylint: disable=no-member
 class IgniteConfiguration(NamedTuple):
     """
     Ignite configuration.
@@ -98,7 +97,6 @@ class IgniteConfiguration(NamedTuple):
 
         return config
 
-    # pylint: disable=protected-access
     def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
@@ -141,7 +139,6 @@ class IgniteThinClientConfiguration(NamedTuple):
             return self._replace(ssl_params=ssl_params)
         return self
 
-    # pylint: disable=unused-argument,protected-access
     def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.

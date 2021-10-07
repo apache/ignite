@@ -33,28 +33,43 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\cache-identity.xml" />
-    <None Include="..\..\config\cache-identity-32.xml" />
-    <None Include="..\..\config\cache-identity-default.xml" />
-    <None Include="..\..\config\cache-query.xml" />
-    <None Include="..\..\config\cache-query-32.xml" />
-    <None Include="..\..\config\cache-query-default.xml" />
-    <None Include="..\..\config\cache-store.xml" />
-    <None Include="..\..\config\cache-store-32.xml" />
-    <None Include="..\..\config\cache-store-default.xml" />
-    <None Include="..\..\config\cache-test.xml" />
-    <None Include="..\..\config\cache-test-32.xml" />
-    <None Include="..\..\config\cache-test-default.xml" />
-    <None Include="..\..\config\cache-query-continuous.xml" />
-    <None Include="..\..\config\cache-query-continuous-32.xml" />
-    <None Include="..\..\config\cache-query-continuous-default.xml" />
-    <None Include="..\..\config\isolated.xml" />
-    <None Include="..\..\config\isolated-32.xml" />
-    <None Include="..\..\config\isolated-default.xml" />
-    <None Include="..\..\config\persistence-store.xml" />
-    <None Include="..\..\config\persistence-store-32.xml" />
-    <None Include="..\..\config\persistence-store-default.xml" />
-    <None Include="..\..\config\invalid.xml" />
+    <Xml Include="..\..\config\cache-identity.xml" />
+    <Xml Include="..\..\config\cache-identity-32.xml" />
+    <Xml Include="..\..\config\cache-identity-default.xml" />
+    <Xml Include="..\..\config\cache-query.xml" />
+    <Xml Include="..\..\config\cache-query-32.xml" />
+    <Xml Include="..\..\config\cache-query-default.xml" />
+    <Xml Include="..\..\config\cache-store.xml" />
+    <Xml Include="..\..\config\cache-store-32.xml" />
+    <Xml Include="..\..\config\cache-store-default.xml" />
+    <Xml Include="..\..\config\cache-test.xml" />
+    <Xml Include="..\..\config\cache-test-32.xml" />
+    <Xml Include="..\..\config\cache-test-default.xml" />
+    <Xml Include="..\..\config\cache-query-continuous.xml" />
+    <Xml Include="..\..\config\cache-query-continuous-32.xml" />
+    <Xml Include="..\..\config\cache-query-continuous-default.xml" />
+    <Xml Include="..\..\config\isolated.xml" />
+    <Xml Include="..\..\config\isolated-32.xml" />
+    <Xml Include="..\..\config\isolated-default.xml" />
+    <Xml Include="..\..\config\persistence-store.xml" />
+    <Xml Include="..\..\config\persistence-store-32.xml" />
+    <Xml Include="..\..\config\persistence-store-default.xml" />
+    <Xml Include="..\..\config\invalid.xml" />
+    <Xml Include="..\..\config\interop.xml" />
+    <Xml Include="..\..\config\interop-32.xml" />
+    <Xml Include="..\..\config\interop-default.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test-32.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test-default.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test.xml" />
+    <Xml Include="..\..\config\compute-client-32.xml" />
+    <Xml Include="..\..\config\compute-client-default.xml" />
+    <Xml Include="..\..\config\compute-client.xml" />
+    <Xml Include="..\..\config\compute-server0-32.xml" />
+    <Xml Include="..\..\config\compute-server0-default.xml" />
+    <Xml Include="..\..\config\compute-server0.xml" />
+    <Xml Include="..\..\config\compute-server1-32.xml" />
+    <Xml Include="..\..\config\compute-server1-default.xml" />
+    <Xml Include="..\..\config\compute-server1.xml" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\affinity_test.cpp" />
@@ -99,20 +114,6 @@
     <ClInclude Include="..\..\include\ignite\test_type.h" />
     <ClInclude Include="..\..\include\ignite\test_utils.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="..\..\config\cache-native-persistence-test-32.xml" />
-    <Xml Include="..\..\config\cache-native-persistence-test-default.xml" />
-    <Xml Include="..\..\config\cache-native-persistence-test.xml" />
-    <Xml Include="..\..\config\compute-client-32.xml" />
-    <Xml Include="..\..\config\compute-client-default.xml" />
-    <Xml Include="..\..\config\compute-client.xml" />
-    <Xml Include="..\..\config\compute-server0-32.xml" />
-    <Xml Include="..\..\config\compute-server0-default.xml" />
-    <Xml Include="..\..\config\compute-server0.xml" />
-    <Xml Include="..\..\config\compute-server1-32.xml" />
-    <Xml Include="..\..\config\compute-server1-default.xml" />
-    <Xml Include="..\..\config\compute-server1.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{133A22DB-FD60-44B9-B5E3-6CBB3EA5ABF0}</ProjectGuid>

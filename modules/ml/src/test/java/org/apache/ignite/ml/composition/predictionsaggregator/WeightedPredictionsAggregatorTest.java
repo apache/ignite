@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class WeightedPredictionsAggregatorTest {
-
+    /** */
     public static final double[] EMPTY_DOUBLE_ARRAY = {};
 
     /** */

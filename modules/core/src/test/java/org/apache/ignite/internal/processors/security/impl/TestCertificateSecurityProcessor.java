@@ -73,7 +73,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
                 .setId(node.id())
@@ -81,6 +81,10 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setLogin("")
                 .setPerms(ALLOW_ALL)
         );
+
+        secCtxs.put(res.subject().id(), res);
+
+        return res;
     }
 
     /** {@inheritDoc} */

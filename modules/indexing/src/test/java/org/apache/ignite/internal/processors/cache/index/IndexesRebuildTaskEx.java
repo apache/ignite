@@ -27,8 +27,8 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -60,7 +60,7 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
         GridCacheContext cctx,
         GridFutureAdapter<Void> rebuildIdxFut,
         SchemaIndexCacheVisitorClosure clo,
-        SchemaIndexOperationCancellationToken cancel
+        IndexRebuildCancelToken cancel
     ) {
         super.startRebuild(cctx, rebuildIdxFut, new SchemaIndexCacheVisitorClosure() {
             /** {@inheritDoc} */
@@ -76,10 +76,14 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
+    @Override @Nullable public IgniteInternalFuture<?> rebuild(
+        GridCacheContext cctx,
+        boolean force,
+        IndexRebuildCancelToken cancelTok
+    ) {
         cacheRebuildRunner.getOrDefault(nodeName(cctx), emptyMap()).getOrDefault(cctx.name(), () -> { }).run();
 
-        return super.rebuild(cctx, force);
+        return super.rebuild(cctx, force, cancelTok);
     }
 
     /**

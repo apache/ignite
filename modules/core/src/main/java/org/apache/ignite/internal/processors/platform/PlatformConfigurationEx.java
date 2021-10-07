@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  * Extended platform configuration.
  */
 public interface PlatformConfigurationEx {
-    /*
+    /**
      * @return Native gateway.
      */
     public PlatformCallbackGateway gate();
