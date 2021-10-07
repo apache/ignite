@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import java.util.*;
-import java.util.concurrent.*;
+//import java.util.*;
+//import java.util.concurrent.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.log4j.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * putClients - connect, put many times, disconnect, repeat
  * putAllClients - connect, putAll, disconnnet, repeat
  */
-
 enum ClientType {
     CONNECT,
     PUT,
@@ -108,6 +106,7 @@ class oneThinClient implements Runnable {
 
     @Override
     public void run() {
+        /**{@inheritDoc}*/
         long connectStart;
         cfg.setPartitionAwarenessEnabled(true);
         while (!Thread.currentThread().isInterrupted()) {

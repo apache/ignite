@@ -114,7 +114,7 @@ class ThinClientTest(IgniteTest):
         thin_clients.start_async()
 
         if test_params["freeze"]:
-            thin_clients.await_event("START WAITING", 120)
+            thin_clients.await_event("START WAITING", 120, True)
             for _ in range(4):
                 ignite.freeze_node(ignite.nodes[0])
                 time.sleep(3)
