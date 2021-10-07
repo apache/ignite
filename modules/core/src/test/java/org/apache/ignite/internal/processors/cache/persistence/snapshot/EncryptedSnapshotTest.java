@@ -66,7 +66,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks re-encryption fails during snapshot restoration. */
     @Test
     public void testReencryptDuringRestore() throws Exception {
-        checkActionFailsDuringSnapshotOperation(true, this::chageCacheGroupKey, "Cache group key change was " +
+        checkActionFailsDuringSnapshotOperation(true, this::chageCacheKey, "Cache group key change was " +
             "rejected.", IgniteException.class);
     }
 
@@ -80,7 +80,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks re-encryption fails during snapshot creation. */
     @Test
     public void testReencryptDuringSnapshot() throws Exception {
-        checkActionFailsDuringSnapshotOperation(false, this::chageCacheGroupKey, "Cache group key change was " +
+        checkActionFailsDuringSnapshotOperation(false, this::chageCacheKey, "Cache group key change was " +
             "rejected.", IgniteException.class);
     }
 
@@ -94,13 +94,13 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks snapshot action fail during cache group key change. */
     @Test
     public void testSnapshotFailsDuringCacheKeyChange() throws Exception {
-        checkSnapshotActionFailsDuringReencryption(this::chageCacheGroupKey);
+        checkSnapshotActionFailsDuringReencryption(this::chageCacheKey, "Caches re-encryption process is not finished yet");
     }
 
     /** Checks snapshot action fail during master key cnahge. */
     @Test
     public void testSnapshotFailsDuringMasterKeyChange() throws Exception {
-        checkSnapshotActionFailsDuringReencryption(this::chageMasterKey);
+        checkSnapshotActionFailsDuringReencryption(this::chageMasterKey, "Master key changing process is not finished yet.");
     }
 
     /** Checks snapshot restoration fails if different master key is contained in the snapshot. */
@@ -212,8 +212,10 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * Checks snapshot action is blocked during {@code reencryption}.
      *
      * @param reencryption Any kind of re-encryption action.
+     * @param expectedError Expected error text.
      */
-    private void checkSnapshotActionFailsDuringReencryption(Function<Integer, IgniteFuture<?>> reencryption) throws Exception {
+    private void checkSnapshotActionFailsDuringReencryption(Function<Integer, IgniteFuture<?>> reencryption, String expectedError)
+        throws Exception {
         startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         CacheConfiguration<?, ?> notEncrCacheCfg = addCache(false);
@@ -228,20 +230,20 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         BlockingCustomMessageDiscoverySpi discoSpi = discoSpi(grid(0));
 
-        discoSpi.block(msg -> msg instanceof FullMessage && ((FullMessage)msg).error().isEmpty());
+        discoSpi.block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
 
         IgniteFuture<?> fut = reencryption.apply(1);
 
         discoSpi.waitBlocked(TIMEOUT);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(CACHE2)).get(TIMEOUT),
+            () -> grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(CACHE2)).get(TIMEOUT),
             IgniteCheckedException.class,
-            "Cache group restore operation was rejected. Master key changing or caches re-encryption process is not finished yet");
+            expectedError);
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(2).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2").get(TIMEOUT), IgniteCheckedException.class,
-            "Snapshot operation has been rejected. Master key changing or caches re-encryption process is not finished yet");
+            expectedError);
 
         discoSpi.unblock();
 
@@ -277,7 +279,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /**
      * @return Cache group key change action.
      */
-    private IgniteFuture<?> chageCacheGroupKey(int gridNum) {
+    private IgniteFuture<?> chageCacheKey(int gridNum) {
         return grid(gridNum).encryption().changeCacheGroupKey(Collections.singletonList(dfltCacheCfg.getName()));
     }
 

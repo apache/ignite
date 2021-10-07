@@ -106,12 +106,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @RunWith(Parameterized.class)
 public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Iterable<Boolean> encryptionParams() {
-        return Arrays.asList(false, true);
-    }
-
     /** Default snapshot name. */
     protected static final String SNAPSHOT_NAME = "testSnapshot";
 
@@ -133,10 +127,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Master key name. */
     protected String masterKeyName;
 
-    /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
-    @Parameterized.Parameter
-    public boolean encryption;
-
     /** Cache value builder. */
     protected Function<Integer, Object> valBuilder = String::valueOf;
 
@@ -145,6 +135,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      */
     protected Function<Integer, Object> valueBuilder() {
         return valBuilder;
+    }
+
+    /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
+    @Parameterized.Parameter
+    public boolean encryption;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Encryption={0}")
+    public static Iterable<Boolean> encryptionParams() {
+        return Arrays.asList(false, true);
     }
 
     /** {@inheritDoc} */
@@ -180,14 +180,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
             encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
+
             if (masterKeyName != null)
                 encSpi.setMasterKeyName(masterKeyName);
 
             cfg.setEncryptionSpi(encSpi);
 
-            if (cfg.getCacheConfiguration() != null)
+            if (cfg.getCacheConfiguration() != null) {
                 for (CacheConfiguration<?, ?> cacheCfg : cfg.getCacheConfiguration())
                     cacheCfg.setEncryptionEnabled(true);
+            }
         }
 
         return super.startGrid(igniteInstanceName, cfg, ctx);
