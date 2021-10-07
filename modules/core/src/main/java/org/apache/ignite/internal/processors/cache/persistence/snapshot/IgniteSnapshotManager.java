@@ -238,7 +238,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
 
     /** Total number of thread to perform local snapshot. */
-    private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
+    private static final int SNAPSHOT_MIN_THREAD_POOL_SIZE = 4;
+
+    /** Total number of thread to perform local snapshot. */
+    private static final int SNAPSHOT_MAX_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -366,8 +369,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         snpRunner = new IgniteThreadPoolExecutor(SNAPSHOT_RUNNER_THREAD_PREFIX,
             cctx.igniteInstanceName(),
-            SNAPSHOT_THREAD_POOL_SIZE,
-            SNAPSHOT_THREAD_POOL_SIZE,
+            SNAPSHOT_MIN_THREAD_POOL_SIZE,
+            SNAPSHOT_MAX_THREAD_POOL_SIZE,
             IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
             new LinkedBlockingQueue<>(),
             SYSTEM_POOL,
