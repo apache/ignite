@@ -59,6 +59,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Enable logging to a list logger for checks and assertions. */
         private readonly bool _enableServerListLogging;
 
+        /** Server list log levels. */
+        private readonly LogLevel[] _serverListLoggerLevels;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -74,12 +77,14 @@ namespace Apache.Ignite.Core.Tests.Client
             int gridCount,
             bool enableSsl = false,
             bool enablePartitionAwareness = false,
-            bool enableServerListLogging = false)
+            bool enableServerListLogging = false,
+            LogLevel[] serverListLoggerLevels = null)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
             _enablePartitionAwareness = enablePartitionAwareness;
             _enableServerListLogging = enableServerListLogging;
+            _serverListLoggerLevels = serverListLoggerLevels ?? new[] { LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
         }
 
         /// <summary>
@@ -212,6 +217,9 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Logger = _enableServerListLogging
                     ? (ILogger) new ListLogger(new TestUtils.TestContextLogger())
+                    {
+                        EnabledLevels = _serverListLoggerLevels
+                    }
                     : new TestUtils.TestContextLogger(),
                 SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
             };
