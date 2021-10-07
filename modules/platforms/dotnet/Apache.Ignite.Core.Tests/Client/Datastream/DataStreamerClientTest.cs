@@ -447,6 +447,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.IsTrue(streamer.IsClosed);
         }
 
+#if NETCOREAPP // TODO: IGNITE-15710
         /// <summary>
         /// Tests that flush throws when exception happens in cache store.
         /// </summary>
@@ -474,6 +475,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             // Streamer is closed because of the flush failure.
             Assert.IsTrue(streamer.IsClosed);
         }
+#endif
 
         /// <summary>
         /// Tests that all add/remove operations throw <see cref="ObjectDisposedException"/> when streamer is closed.

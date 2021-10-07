@@ -150,6 +150,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(expected, ex.Message);
         }
 
+#if NETCOREAPP // TODO: IGNITE-15710
         [Test]
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToNewNode()
         {
@@ -185,6 +186,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }, 6000);
             }
         }
+#endif
 
         [Test]
         [TestCase(1, 1)]
