@@ -6021,6 +6021,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Thread local context of restore partition state progress.
      */
     private static class RestorePartitionStateThreadContext {
+        /** Field updater. */
         static final AtomicLongFieldUpdater<RestorePartitionStateThreadContext> PROCESSED_CNT_UPD =
             AtomicLongFieldUpdater.newUpdater(RestorePartitionStateThreadContext.class, "processedCnt");
 
