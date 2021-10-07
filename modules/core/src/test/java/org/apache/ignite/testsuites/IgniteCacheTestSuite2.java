@@ -348,6 +348,8 @@ public class IgniteCacheTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, ClusterNodeAttributeColocatedBackupFilterSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,
             com.sbt.sbergrid.extras.ClusterNodeAttributeColocatedBackupFilterSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,
+            com.sbt.sbergrid.extras.NodeConfigurationCheckTaskTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CachePartitionStateTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheComparatorTest.class, ignoredTests);
