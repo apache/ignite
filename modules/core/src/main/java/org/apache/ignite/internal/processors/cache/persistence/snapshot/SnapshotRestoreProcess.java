@@ -512,13 +512,13 @@ public class SnapshotRestoreProcess {
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             if (ctx.encryption().isMasterKeyChangeInProgress()) {
-                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing process is not finished " +
-                    "yet."));
+                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing " +
+                    "process is not finished yet."));
             }
 
             if (ctx.encryption().reencryptionInProgress()) {
-                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Caches re-encryption process is not finished " +
-                    "yet."));
+                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Caches re-encryption " +
+                    "process is not finished yet."));
             }
 
             for (UUID nodeId : req.nodes()) {

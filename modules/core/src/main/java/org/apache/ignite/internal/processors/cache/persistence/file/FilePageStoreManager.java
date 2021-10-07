@@ -679,8 +679,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
         if (encrypted) {
-            pageStoreFileIoFactory = getEncryptedFileIoFactory(this.pageStoreFileIoFactory, grpId);
-            pageStoreV1FileIoFactory = getEncryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId);
+            pageStoreFileIoFactory = encryptedFileIoFactory(this.pageStoreFileIoFactory, grpId);
+            pageStoreV1FileIoFactory = encryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId);
         }
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
@@ -704,7 +704,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheGrpId Cache group id.
      * @return Encrypted file IO factory.
      */
-    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+    public EncryptedFileIOFactory encryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
         return new EncryptedFileIOFactory(
             plainFileIOFactory,
             cacheGrpId,

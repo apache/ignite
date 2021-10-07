@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -66,8 +67,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks re-encryption fails during snapshot restoration. */
     @Test
     public void testReencryptDuringRestore() throws Exception {
-        checkActionFailsDuringSnapshotOperation(true, this::chageCacheKey, "Cache group key change was " +
-            "rejected.", IgniteException.class);
+        checkActionFailsDuringSnapshotOperation(true, this::chageCacheKey, "Cache group key change was rejected.",
+            IgniteException.class);
     }
 
     /** Checks master key changing fails during snapshot restoration. */
@@ -80,8 +81,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks re-encryption fails during snapshot creation. */
     @Test
     public void testReencryptDuringSnapshot() throws Exception {
-        checkActionFailsDuringSnapshotOperation(false, this::chageCacheKey, "Cache group key change was " +
-            "rejected.", IgniteException.class);
+        checkActionFailsDuringSnapshotOperation(false, this::chageCacheKey, "Cache group key change was rejected.",
+            IgniteException.class);
     }
 
     /** Checks master key changing fails during snapshot creation. */
@@ -94,13 +95,15 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks snapshot action fail during cache group key change. */
     @Test
     public void testSnapshotFailsDuringCacheKeyChange() throws Exception {
-        checkSnapshotActionFailsDuringReencryption(this::chageCacheKey, "Caches re-encryption process is not finished yet");
+        checkSnapshotActionFailsDuringReencryption(this::chageCacheKey, "Caches re-encryption process is not " +
+            "finished yet");
     }
 
     /** Checks snapshot action fail during master key change. */
     @Test
     public void testSnapshotFailsDuringMasterKeyChange() throws Exception {
-        checkSnapshotActionFailsDuringReencryption(this::chageMasterKey, "Master key changing process is not finished yet.");
+        checkSnapshotActionFailsDuringReencryption(this::chageMasterKey, "Master key changing process is not " +
+            "finished yet.");
     }
 
     /** Checks snapshot restoration fails if different master key is contained in the snapshot. */
@@ -121,7 +124,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> startGridsFromSnapshot(1, SNAPSHOT_NAME),
-            IgniteCheckedException.class,
+            IgniteSpiException.class,
             "bad key is used during decryption"
         );
     }
@@ -133,8 +136,9 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME, ig.localNode().id(), F.asMap(CU.cacheId(dfltCacheCfg.getName()), null),
-                false, snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME)).get(TIMEOUT),
+            () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME, ig.localNode().id(),
+                F.asMap(CU.cacheId(dfltCacheCfg.getName()), null), false,
+                snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME)).get(TIMEOUT),
             IgniteCheckedException.class,
             "Metastore is required because it contains encryption keys");
     }
@@ -142,7 +146,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /**
      * Ensures that same-name-cache is created after putting cache into snapshot and deleting.
      *
-     * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse order if {@code false}.
+     * @param encryptedFirst If {@code true}, creates encrypted cache before snapshoting and deleting. In reverse
+     *                       order if {@code false}.
      */
     private void testCacheCreatedAfterSnapshotting(boolean encryptedFirst) throws Exception {
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2);
@@ -169,11 +174,11 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @param errPrefix Prefix of error message text to search for.
      * @param errType Type of exception to search for.
      */
-    private void checkActionFailsDuringSnapshotOperation(boolean restore, Function<Integer, IgniteFuture<?>> action, String errPrefix,
-        Class<? extends Exception> errType) throws Exception {
+    private void checkActionFailsDuringSnapshotOperation(boolean restore, Function<Integer, IgniteFuture<?>> action,
+        String errPrefix, Class<? extends Exception> errType) throws Exception {
         startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        BlockingCustomMessageDiscoverySpi grid0Disco = discoSpi(grid(0));
+        BlockingCustomMessageDiscoverySpi spi0 = discoSpi(grid(0));
 
         IgniteFuture<Void> fut;
 
@@ -188,22 +193,23 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ensureCacheAbsent(notEncrCacheCfg);
 
-            grid0Disco.block((msg) -> msg instanceof FullMessage && ((FullMessage)msg).error().isEmpty());
+            spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
 
-            fut = grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(notEncrCacheCfg.getName()));
+            fut = grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME,
+                Collections.singletonList(notEncrCacheCfg.getName()));
         }
         else {
-            grid0Disco.block((msg) -> msg instanceof FullMessage && ((FullMessage)msg).error().isEmpty());
+            spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
 
             fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
         }
 
-        grid0Disco.waitBlocked(TIMEOUT);
+        spi0.waitBlocked(TIMEOUT);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> action.apply(2).get(TIMEOUT), errType,
             errPrefix + " Snapshot operation is in progress.");
 
-        grid0Disco.unblock();
+        spi0.unblock();
 
         fut.get(TIMEOUT);
     }
@@ -214,8 +220,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
      * @param reencryption Any kind of re-encryption action.
      * @param expectedError Expected error text.
      */
-    private void checkSnapshotActionFailsDuringReencryption(Function<Integer, IgniteFuture<?>> reencryption, String expectedError)
-        throws Exception {
+    private void checkSnapshotActionFailsDuringReencryption(Function<Integer, IgniteFuture<?>> reencryption,
+        String expectedError) throws Exception {
         startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         CacheConfiguration<?, ?> notEncrCacheCfg = addCache(false);

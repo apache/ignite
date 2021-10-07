@@ -619,8 +619,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             PageStore store = pageStore.getStore(grpId, partId);
 
-            partDeltaWriters.put(pair, new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId),
-                encGrpId));
+            partDeltaWriters.put(pair,
+                new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId), encGrpId));
 
             partFileLengths.put(pair, store.size());
         }
@@ -905,7 +905,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
                     if (deltaFileIo == null) {
                         deltaFileIo = (encryptedGrpId == null ? ioFactory :
-                            pageStore.getEncryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+                            pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
                     }
                 }
                 catch (IOException e) {

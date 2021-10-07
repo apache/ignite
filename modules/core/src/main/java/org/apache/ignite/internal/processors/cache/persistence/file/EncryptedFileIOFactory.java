@@ -66,7 +66,8 @@ public class EncryptedFileIOFactory implements FileIOFactory {
      * @param pageSize Size of plain data page in bytes.
      * @param encrKeyProvider Encryption keys provider.
      */
-    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, EncryptionCacheKeyProvider encrKeyProvider,
+    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize,
+        EncryptionCacheKeyProvider encrKeyProvider,
         EncryptionSpi encSpi) {
         this.plainIOFactory = plainIOFactory;
         this.groupId = groupId;
