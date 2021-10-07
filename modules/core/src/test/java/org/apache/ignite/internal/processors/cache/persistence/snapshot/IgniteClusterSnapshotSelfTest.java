@@ -329,11 +329,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
-        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
-
-        // To prevent encrypted cache creation from client, we create it on the server side.
-        if (encryption)
-            grid(0).getOrCreateCache(new CacheConfiguration<>(dfltCacheCfg).setEncryptionEnabled(true));
+        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg, dfltCacheCfg);
 
         Ignite client = startClientGrid(grids);
 
