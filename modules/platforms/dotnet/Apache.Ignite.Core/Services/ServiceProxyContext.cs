@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Services
 {
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Threading;
     using Apache.Ignite.Core.Impl.Services;
 
@@ -29,8 +28,7 @@ namespace Apache.Ignite.Core.Services
     public abstract class ServiceProxyContext
     {
         /** Global mapping of the thread ID to the service proxy context. */
-        protected static readonly ConcurrentDictionary<int, Hashtable> ProxyCtxs = 
-            new ConcurrentDictionary<int, Hashtable>();
+        protected static readonly ThreadLocal<Hashtable> ProxyCtxs = new ThreadLocal<Hashtable>();
 
         /** Empty context. */
         private static readonly ServiceProxyContext EmptyCtx = new ServiceProxyContextImpl();
@@ -48,9 +46,9 @@ namespace Apache.Ignite.Core.Services
         /// <returns>Service proxy context.</returns> 
         public static ServiceProxyContext Current()
         {
-            Hashtable attrs;
+            Hashtable attrs = ProxyCtxs.Value;
 
-            if (ProxyCtxs.TryGetValue(Thread.CurrentThread.ManagedThreadId, out attrs))
+            if (attrs != null)
                 return new ServiceProxyContextImpl(attrs);
 
             // Return an empty context.

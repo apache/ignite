@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System.Collections;
-    using System.Threading;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
@@ -62,12 +61,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="attrs">Context attributes.</param>
         internal static void Current(Hashtable attrs)
         {
-            int threadId = Thread.CurrentThread.ManagedThreadId;
-
-            if (attrs == null)
-                ((IDictionary) ProxyCtxs).Remove(threadId);
-            else
-                ProxyCtxs.AddOrUpdate(threadId, attrs, (k, v) => attrs);
+            ProxyCtxs.Value = attrs;
         }
 
         /// <summary>
