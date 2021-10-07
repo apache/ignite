@@ -658,6 +658,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (exception is SocketException || exception is IOException)
             {
+                Console.WriteLine("SHOULD_RETRY: TRUE 1: " + exception);
+
                 return true;
             }
 
@@ -665,8 +667,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (clientEx != null && clientEx.StatusCode == ClientStatusCode.InvalidNodeState)
             {
+                Console.WriteLine("SHOULD_RETRY: TRUE 2: " + exception);
+
                 return true;
             }
+
+            Console.WriteLine("SHOULD_RETRY: FALSE");
 
             return false;
         }

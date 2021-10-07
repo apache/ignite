@@ -720,7 +720,7 @@ namespace Apache.Ignite.Core.Tests
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
 
-                _listener.TestOutput(new TestOutput(text, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
+                _listener.TestOutput(new TestOutput(text + Environment.NewLine, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
             }
 
             /** <inheritdoc /> */
