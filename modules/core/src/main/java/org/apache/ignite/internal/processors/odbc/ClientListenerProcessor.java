@@ -140,7 +140,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     cliConnCfg.getThreadPoolSize(),
                     cliConnCfg.getThreadPoolSize(),
                     0,
-                    new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                     GridIoPolicy.UNDEFINED,
                     new OomExceptionHandler(ctx));
 
@@ -218,6 +218,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         super.onKernalStart(active);
+
+        ctx.metric().monitorExecutor("ThinClientConnector", execSvc);
+
+
 
         if (srv != null)
             srv.start();

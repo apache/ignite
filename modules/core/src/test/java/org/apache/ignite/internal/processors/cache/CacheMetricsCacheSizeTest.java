@@ -67,6 +67,8 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(0);
+
         startGrids(GRID_CNT);
     }
 

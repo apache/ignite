@@ -210,6 +210,7 @@ public class IgniteMBeansManager {
         registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
         registerExecutorMBean("GridRebalanceExecutor", rebalanceExecSvc);
         registerExecutorMBean("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
+//        registerExecutorMBean("ThinClientConnector", thinClientExecSvc);
 
         registerStripedExecutorMBean("GridDataStreamExecutor", dataStreamExecSvc);
 
@@ -274,7 +275,7 @@ public class IgniteMBeansManager {
      * @param exec executor to register a bean for
      * @throws IgniteCheckedException if registration fails.
      */
-    private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
+    public void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
         registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
     }
 

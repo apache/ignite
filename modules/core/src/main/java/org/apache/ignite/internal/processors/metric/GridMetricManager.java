@@ -614,6 +614,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         ExecutorService schemaExecSvc,
         ExecutorService rebalanceExecSvc,
         IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc,
+//        ExecutorService thinClientExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs
     ) {
         // Executors
@@ -629,6 +630,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
         monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
+//        monitorExecutor("ThinClientConnector", thinClientExecSvc);
 
         monitorStripedPool("GridDataStreamExecutor", dataStreamExecSvc);
 
@@ -655,7 +657,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Name of the bean to register.
      * @param execSvc Executor to register a bean for.
      */
-    private void monitorExecutor(String name, ExecutorService execSvc) {
+    public void monitorExecutor(String name, ExecutorService execSvc) {
         MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
