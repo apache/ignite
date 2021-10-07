@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     Assert.AreEqual(-1, GetClientRequestGridIndex());
 
                     return true;
-                }, 3000);
+                }, 6000);
             }
         }
 
