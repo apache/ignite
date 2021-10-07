@@ -5195,9 +5195,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** */
     protected enum BulkOperation {
+        /** */
         GET,
+
+        /** */
         PUT,
+
+        /** */
         INVOKE,
+
+        /** */
         REMOVE;
 
         /** */

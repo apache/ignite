@@ -258,6 +258,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         return (flags & RECOVERY_FLAG_MASK) != 0;
     }
 
+    /** */
     public boolean addReaders() {
         return (flags & ADD_READER_FLAG_MASK) != 0;
     }

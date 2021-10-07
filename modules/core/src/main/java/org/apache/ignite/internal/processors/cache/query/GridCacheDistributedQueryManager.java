@@ -280,6 +280,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.partition() == -1 ? null : req.partition(),
                 req.className(),
                 req.clause(),
+                req.idxQryDesc(),
                 req.limit(),
                 req.includeMetaData(),
                 req.keepBinary(),
@@ -541,8 +542,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             Boolean dataPageScanEnabled = qry.query().isDataPageScanEnabled();
             MvccSnapshot mvccSnapshot = qry.query().mvccSnapshot();
 
-            boolean deployFilterOrTransformer = (qry.query().scanFilter() != null || qry.query().transform() != null)
-                && cctx.gridDeploy().enabled();
+            boolean deployFilterOrTransformer = (qry.query().scanFilter() != null || qry.query().transform() != null
+                || qry.query().idxQryDesc() != null) && cctx.gridDeploy().enabled();
 
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
@@ -551,6 +552,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().type(),
                 false,
                 qry.query().clause(),
+                qry.query().idxQryDesc(),
                 qry.query().limit(),
                 clsName,
                 qry.query().scanFilter(),
@@ -796,6 +798,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().type(),
                 true,
                 qry.query().clause(),
+                null,
                 qry.query().limit(),
                 null,
                 null,

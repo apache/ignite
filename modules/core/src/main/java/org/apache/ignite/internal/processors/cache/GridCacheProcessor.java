@@ -48,6 +48,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -338,6 +340,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Cache configuration enricher. */
     private CacheConfigurationEnricher enricher;
+
+    /** */
+    public static final String EXPRITY_POLICY_MSG = "expiryPolicy=[type=%s, isEagerTtl=%s]";
 
     /**
      * @param ctx Kernal context.
@@ -2317,6 +2322,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+
             log.info("Started cache [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2324,7 +2331,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +
+                (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
         grp.onCacheStarted(cacheCtx);
@@ -2397,6 +2405,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2404,10 +2414,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +
+                (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
         return cacheCtx;
+    }
+
+    /**
+     * Build formatted string with expire policy info.
+     *
+     * @param cacheCtx - cache context.
+     * @return formatted expire policy info.
+     */
+    private String buildExpirePolicyInfo(@NotNull GridCacheContext cacheCtx) {
+        ExpiryPolicy expPlc = cacheCtx.expiry();
+        if (expPlc == null || expPlc instanceof EternalExpiryPolicy)
+            return null;
+
+        return String.format(EXPRITY_POLICY_MSG, expPlc.getClass().getName(), cacheCtx.ttl().eagerTtlEnabled());
     }
 
     /**

@@ -353,7 +353,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Gets partitions for query, in ascending order.
+     * @return Partitions for query, in ascending order.
      */
     @Nullable public int[] getPartitions() {
         return parts;

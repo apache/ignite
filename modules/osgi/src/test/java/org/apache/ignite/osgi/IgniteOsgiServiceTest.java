@@ -57,6 +57,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
     @Inject @Filter("(ignite.name=testGrid)")
     private Ignite ignite;
 
+    /** */
     @Inject
     private BundleContext bundleCtx;
 

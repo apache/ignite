@@ -3288,6 +3288,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final CacheGroupContext grp;
 
+        /** */
         private MvccMarkUpdatedHandler(CacheGroupContext grp) {
             this.grp = grp;
         }

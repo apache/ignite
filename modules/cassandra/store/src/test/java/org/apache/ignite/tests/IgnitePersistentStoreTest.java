@@ -798,7 +798,7 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("-----------------------------------------------------------------------------------");
     }
 
-    /*
+    /**
      * KeyValuePersistenceSettings is passed directly, not as a bean and should be
      * serialized and deserialized correctly
      */
@@ -859,6 +859,7 @@ public class IgnitePersistentStoreTest {
         }
     }
 
+    /** */
     private IgniteConfiguration igniteConfig() throws IOException {
         URL url = getClass().getClassLoader().getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml");
         String persistence = U.readFileToString(url.getFile(), "UTF-8");

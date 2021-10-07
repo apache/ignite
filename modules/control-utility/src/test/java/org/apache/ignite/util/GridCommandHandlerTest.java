@@ -270,6 +270,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
     }
 
+    /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
             .setAtomicityMode(TRANSACTIONAL)
@@ -1226,10 +1227,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testConnectivityCommandWithNodeExit() throws Exception {
         IgniteEx[] node3 = new IgniteEx[1];
 
+        /** */
         class KillNode3CommunicationSpi extends TcpCommunicationSpi {
             /** Fail check connection request and stop third node */
             boolean fail;
 
+            /** */
             public KillNode3CommunicationSpi(boolean fail) {
                 this.fail = fail;
             }
@@ -2290,8 +2293,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "found 2 conflict partitions: [counterConflicts=1, " +
-                "hashConflicts=1]");
+            assertContains(log, dumpWithConflicts, "conflict partitions has been found: [counterConflicts=1, " +
+                "hashConflicts=2]");
         }
         else
             fail("Should be found dump with conflicts");

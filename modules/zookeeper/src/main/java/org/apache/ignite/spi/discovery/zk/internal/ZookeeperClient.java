@@ -1164,6 +1164,7 @@ public class ZookeeperClient implements Watcher {
             this.op = op;
         }
 
+        /** {@inheritDoc} */
         @Override public void processResult(int rc, String path, Object ctx, String name) {
             if (closing)
                 return;

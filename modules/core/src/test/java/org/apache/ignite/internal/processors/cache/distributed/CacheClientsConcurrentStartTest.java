@@ -230,6 +230,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         return grid.getOrCreateCache(cacheConfiguration(cacheName));
     }
 
+    /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 

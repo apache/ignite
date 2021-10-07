@@ -49,6 +49,7 @@ class PreviousQueries {
             return init && (cntrs == null || cntrs.stream().allMatch(l -> l < 0));
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Node.class, this);
         }

@@ -18,7 +18,6 @@ This module contains the base class to build Ignite aware application written on
 """
 import re
 
-# pylint: disable=W0622
 from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
@@ -35,7 +34,6 @@ class IgniteApplicationService(IgniteAwareService):
     APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
     APP_BROKEN_EVT_MSG = "IGNITE_APPLICATION_BROKEN"
 
-    # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=60, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
                  full_jvm_opts=None):

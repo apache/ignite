@@ -137,6 +137,7 @@ public abstract class PagesList extends DataStructure {
      *
      */
     private final class CutTail extends PageHandler<Void, Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean run(
             int cacheId,
             long pageId,

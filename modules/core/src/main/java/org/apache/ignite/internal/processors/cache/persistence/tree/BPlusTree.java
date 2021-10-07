@@ -3121,10 +3121,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         void checkLockRetry() throws IgniteCheckedException {
             if (lockRetriesCnt == 0) {
-                IgniteCheckedException e = new IgniteCheckedException("Maximum number of retries " +
-                    getLockRetries() + " reached for " + getClass().getSimpleName() + " operation " +
-                    "(the tree may be corrupted). Increase " + IGNITE_BPLUS_TREE_LOCK_RETRIES + " system property " +
-                    "if you regularly see this message (current value is " + getLockRetries() + ").");
+                String errMsg = lockRetryErrorMessage(getClass().getSimpleName());
+
+                IgniteCheckedException e = new IgniteCheckedException(errMsg);
 
                 processFailure(FailureType.CRITICAL_ERROR, e);
 
@@ -3260,6 +3259,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             return true;
         }
 
+        /** */
         Result init(long pageId, long page, long fwdId) throws IgniteCheckedException {
             // Init args.
             this.pageId = pageId;
@@ -3435,6 +3435,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             doVisit(this); // restart from last read row
         }
 
+        /** */
         private void unlock(long pageId, long page, long pageAddr) {
             if (writing) {
                 writeUnlock(pageId, page, pageAddr, dirty);
@@ -3445,6 +3446,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 readUnlock(pageId, page, pageAddr);
         }
 
+        /** */
         private long lock(long pageId, long page) {
             if (writing = ((p.state() & TreeVisitorClosure.CAN_WRITE) != 0))
                 return writeLock(pageId, page);
@@ -6182,5 +6184,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public long getMetaPageId() {
         return metaPageId;
+    }
+
+    /**
+     * Create an error message when reaching the maximum
+     * number of repetitions to capture a lock in the B+Tree.
+     *
+     * @param op Operation name, for example: GET, PUT.
+     * @return Error message.
+     */
+    protected String lockRetryErrorMessage(String op) {
+        return "Maximum number of retries " +
+            getLockRetries() + " reached for " + op + " operation " +
+            "(the tree may be corrupted). Increase " + IGNITE_BPLUS_TREE_LOCK_RETRIES + " system property " +
+            "if you regularly see this message (current value is " + getLockRetries() + "). " +
+            getClass().getSimpleName() + " [grpName=" + grpName + ", treeName=" + name() + ", metaPageId=" +
+            U.hexLong(metaPageId) + "].";
     }
 }
