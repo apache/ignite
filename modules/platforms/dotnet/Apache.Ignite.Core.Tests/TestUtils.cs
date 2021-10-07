@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
+    using NUnit.Framework.Interfaces;
+    using NUnit.Framework.Internal;
+    using ILogger = Apache.Ignite.Core.Log.ILogger;
 
     /// <summary>
     /// Test utility methods.
@@ -691,6 +694,19 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class TestContextLogger : ILogger
         {
+            private readonly TestExecutionContext _ctx = TestExecutionContext.CurrentContext;
+
+            private readonly ITestListener _listener;
+
+            public TestContextLogger()
+            {
+                var prop = _ctx.GetType().GetProperty("Listener", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Debug.Assert(prop != null);
+
+                _listener = (ITestListener)prop.GetValue(_ctx);
+            }
+
             /** <inheritdoc /> */
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
                 string category, string nativeErrorInfo, Exception ex)
@@ -704,11 +720,7 @@ namespace Apache.Ignite.Core.Tests
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
 
-#if NETCOREAPP
-                TestContext.Progress.WriteLine(text);
-#else
-                Console.WriteLine(text);
-#endif
+                _listener.TestOutput(new TestOutput(text, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
             }
 
             /** <inheritdoc /> */
