@@ -28,7 +28,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task that collects nodes that have snapshot operation in progress.
+ * Task that collects information about a snapshot operation on nodes.
  */
 @GridInternal
 public class VisorSnapshotStatusTask extends VisorOneNodeTask<String, String> {
