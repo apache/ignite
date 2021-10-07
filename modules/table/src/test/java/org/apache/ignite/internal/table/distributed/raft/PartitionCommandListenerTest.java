@@ -29,7 +29,7 @@ import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
-import org.apache.ignite.internal.storage.basic.ConcurrentHashMapStorage;
+import org.apache.ignite.internal.storage.basic.ConcurrentHashMapPartitionStorage;
 import org.apache.ignite.internal.table.distributed.command.DeleteAllCommand;
 import org.apache.ignite.internal.table.distributed.command.DeleteCommand;
 import org.apache.ignite.internal.table.distributed.command.DeleteExactAllCommand;
@@ -84,7 +84,7 @@ public class PartitionCommandListenerTest {
      */
     @BeforeEach
     public void before() {
-        commandListener = new PartitionListener(new ConcurrentHashMapStorage());
+        commandListener = new PartitionListener(new ConcurrentHashMapPartitionStorage());
     }
 
     /**

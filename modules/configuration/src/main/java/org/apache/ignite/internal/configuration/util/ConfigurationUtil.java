@@ -57,7 +57,7 @@ import static java.util.stream.Collectors.toList;
 /** */
 public class ConfigurationUtil {
     /** Configuration source that copies values without modifying tham. */
-    static final ConfigurationSource EMPTY_CFG_SRC = new ConfigurationSource() {};
+    public static final ConfigurationSource EMPTY_CFG_SRC = new ConfigurationSource() {};
 
     /**
      * Replaces all {@code .} and {@code \} characters with {@code \.} and {@code \\} respectively.
@@ -445,19 +445,22 @@ public class ConfigurationUtil {
 
             /** {@inheritDoc} */
             @Override public Object visitInnerNode(String key, InnerNode innerNode) {
-                // Instantiate field in destination node before doing something else or copy it if it wasn't null.
-                node.construct(key, EMPTY_CFG_SRC, true);
+                InnerNode childNode = node.traverseChild(key, innerNodeVisitor(), true);
 
-                addDefaults(node.traverseChild(key, innerNodeVisitor(), true));
+                // Instantiate field in destination node before doing something else.
+                if (childNode == null) {
+                    node.construct(key, EMPTY_CFG_SRC, true);
+
+                    childNode = node.traverseChild(key, innerNodeVisitor(), true);
+                }
+
+                addDefaults(childNode);
 
                 return null;
             }
 
             /** {@inheritDoc} */
             @Override public Object visitNamedListNode(String key, NamedListNode<?> namedList) {
-                // Copy internal map.
-                node.construct(key, EMPTY_CFG_SRC, true);
-
                 namedList = node.traverseChild(key, namedListNodeVisitor(), true);
 
                 for (String namedListKey : namedList.namedListKeys()) {

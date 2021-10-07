@@ -173,6 +173,13 @@ public class ColumnFamily implements AutoCloseable {
     }
 
     /**
+     * @return Column family handle.
+     */
+    public ColumnFamilyHandle handle() {
+        return cfHandle;
+    }
+
+    /**
      * @return Name of the column family.
      */
     public String name() {

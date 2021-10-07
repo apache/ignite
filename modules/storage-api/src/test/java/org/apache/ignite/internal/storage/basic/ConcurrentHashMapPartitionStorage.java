@@ -36,8 +36,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.InvokeClosure;
+import org.apache.ignite.internal.storage.PartitionStorage;
 import org.apache.ignite.internal.storage.SearchRow;
-import org.apache.ignite.internal.storage.Storage;
 import org.apache.ignite.internal.storage.StorageException;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
@@ -50,7 +50,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Storage implementation based on {@link ConcurrentHashMap}.
  */
-public class ConcurrentHashMapStorage implements Storage {
+public class ConcurrentHashMapPartitionStorage implements PartitionStorage {
     /** Name of the snapshot file. */
     private static final String SNAPSHOT_FILE = "snapshot_file";
 

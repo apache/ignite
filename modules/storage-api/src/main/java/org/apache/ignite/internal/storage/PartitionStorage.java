@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Any locking is unnecessary as this storage is used within RAFT groups where all write operations are
  * serialized.
  */
-public interface Storage extends AutoCloseable {
+public interface PartitionStorage extends AutoCloseable {
     /**
      * Reads a DataRow for a given key.
      *

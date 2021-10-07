@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
+import org.apache.ignite.configuration.validation.OneOf;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.configuration.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 import org.apache.ignite.internal.configuration.validation.ImmutableValidator;
 import org.apache.ignite.internal.configuration.validation.MaxValidator;
 import org.apache.ignite.internal.configuration.validation.MinValidator;
+import org.apache.ignite.internal.configuration.validation.OneOfValidator;
 import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.lang.IgniteLogger;
 
@@ -114,9 +116,10 @@ public class ConfigurationRegistry implements IgniteComponent {
 
         Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators0 = new HashMap<>(validators);
 
-        validators0.computeIfAbsent(Min.class, a -> new HashSet<>()).add(new MinValidator());
-        validators0.computeIfAbsent(Max.class, a -> new HashSet<>()).add(new MaxValidator());
-        validators0.computeIfAbsent(Immutable.class, a -> new HashSet<>()).add(new ImmutableValidator());
+        validators0.computeIfAbsent(Min.class, a -> new HashSet<>(1)).add(new MinValidator());
+        validators0.computeIfAbsent(Max.class, a -> new HashSet<>(1)).add(new MaxValidator());
+        validators0.computeIfAbsent(Immutable.class, a -> new HashSet<>(1)).add(new ImmutableValidator());
+        validators0.computeIfAbsent(OneOf.class, a -> new HashSet<>(1)).add(new OneOfValidator());
 
         changer = new ConfigurationChanger(this::notificator, rootKeys, validators0, storage) {
             /** {@inheritDoc} */

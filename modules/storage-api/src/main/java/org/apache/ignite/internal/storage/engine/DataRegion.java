@@ -15,23 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.notifications;
+package org.apache.ignite.internal.storage.engine;
 
-import java.util.concurrent.CompletableFuture;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.manager.IgniteComponent;
 
 /**
- * Configuration property change listener.
- *
- * @param <VIEW> VIEW type configuration.
+ * Interface that represents Ignite data region. Data region is a memory segment of fixed size, usually located offheap,
+ * that caches user data in memory.
  */
-@FunctionalInterface
-public interface ConfigurationListener<VIEW> {
-    /**
-     * Called on property value update.
-     *
-     * @param ctx Notification context.
-     * @return Future that signifies the end of the listener execution.
-     */
-    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+public interface DataRegion extends IgniteComponent {
 }

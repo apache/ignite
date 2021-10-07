@@ -31,11 +31,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -467,27 +470,36 @@ public class IgniteUtils {
      * thrown exception will be propagated to the caller, after all other objects are closed, similar to
      * the try-with-resources block.
      *
+     * @param closeables Stream of objects to close.
+     * @throws Exception If failed to close.
+     */
+    public static void closeAll(Stream<? extends AutoCloseable> closeables) throws Exception {
+        AtomicReference<Exception> ex = new AtomicReference<>();
+
+        closeables.filter(Objects::nonNull).forEach(closeable -> {
+            try {
+                closeable.close();
+            }
+            catch (Exception e) {
+                if (!ex.compareAndSet(null, e))
+                    ex.get().addSuppressed(e);
+            }
+        });
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * Closes all provided objects. If any of the {@link AutoCloseable#close} methods throw an exception, only the first
+     * thrown exception will be propagated to the caller, after all other objects are closed, similar to
+     * the try-with-resources block.
+     *
      * @param closeables Collection of objects to close.
      * @throws Exception If failed to close.
      */
     public static void closeAll(Collection<? extends AutoCloseable> closeables) throws Exception {
-        Exception ex = null;
-
-        for (AutoCloseable closeable : closeables) {
-            try {
-                if (closeable != null)
-                    closeable.close();
-            }
-            catch (Exception e) {
-                if (ex == null)
-                    ex = e;
-                else
-                    ex.addSuppressed(e);
-            }
-        }
-
-        if (ex != null)
-            throw ex;
+        closeAll(closeables.stream());
     }
 
     /**
@@ -499,7 +511,7 @@ public class IgniteUtils {
      * @see #closeAll(Collection)
      */
     public static void closeAll(AutoCloseable... closeables) throws Exception {
-        closeAll(Arrays.asList(closeables));
+        closeAll(Arrays.stream(closeables));
     }
 
     /**

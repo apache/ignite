@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.table.distributed;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,10 +33,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.IntStream;
-
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
+import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
@@ -59,7 +57,10 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaUtils;
 import org.apache.ignite.internal.schema.marshaller.schema.SchemaSerializerImpl;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
-import org.apache.ignite.internal.storage.rocksdb.RocksDbStorage;
+import org.apache.ignite.internal.storage.engine.DataRegion;
+import org.apache.ignite.internal.storage.engine.StorageEngine;
+import org.apache.ignite.internal.storage.engine.TableStorage;
+import org.apache.ignite.internal.storage.rocksdb.RocksDbStorageEngine;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
@@ -107,6 +108,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Tables configuration. */
     private final TablesConfiguration tablesCfg;
 
+    /** Data storage configuration. */
+    private final DataStorageConfiguration dataStorageCfg;
+
     /** Raft manager. */
     private final Loza raftMgr;
 
@@ -117,6 +121,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     // TODO: instead of metastorage manager.
     /** Meta storage service. */
     private final MetaStorageManager metaStorageMgr;
+
+    /** Storage engine instance. Only one type is available right now, which is the {@link RocksDbStorageEngine}. */
+    private final StorageEngine engine;
 
     /** Partitions store directory. */
     private final Path partitionsStoreDir;
@@ -130,10 +137,18 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Resolver that resolves a network address to node id. */
     private final Function<NetworkAddress, String> netAddrResolver;
 
+    /** Default data region instance. */
+    private DataRegion defaultDataRegion;
+
+    //TODO: IGNITE-15161 These should go into TableImpl instances.
+    /** Instances of table storages that need to be stopped on component stop. */
+    private final Set<TableStorage> tableStorages = ConcurrentHashMap.newKeySet();
+
     /**
      * Creates a new table manager.
      *
      * @param tablesCfg Tables configuration.
+     * @param dataStorageCfg Data storage configuration.
      * @param raftMgr Raft manager.
      * @param baselineMgr Baseline manager.
      * @param metaStorageMgr Meta storage manager.
@@ -141,6 +156,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      */
     public TableManager(
         TablesConfiguration tablesCfg,
+        DataStorageConfiguration dataStorageCfg,
         Loza raftMgr,
         BaselineManager baselineMgr,
         TopologyService topologyService,
@@ -148,6 +164,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         Path partitionsStoreDir
     ) {
         this.tablesCfg = tablesCfg;
+        this.dataStorageCfg = dataStorageCfg;
         this.raftMgr = raftMgr;
         this.baselineMgr = baselineMgr;
         this.metaStorageMgr = metaStorageMgr;
@@ -161,6 +178,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
             return node.id();
         };
+
+        engine = new RocksDbStorageEngine();
     }
 
     /** {@inheritDoc} */
@@ -248,10 +267,30 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 return CompletableFuture.completedFuture(null);
             }
         });
+
+        this.defaultDataRegion = engine.createDataRegion(dataStorageCfg.defaultRegion());
+
+        defaultDataRegion.start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        for (TableStorage tableStorage : tableStorages) {
+            try {
+                tableStorage.stop();
+            }
+            catch (Exception e) {
+                LOG.error("Failed to stop table storage " + tableStorage, e);
+            }
+        }
+
+        try {
+            if (defaultDataRegion != null)
+                defaultDataRegion.stop();
+        }
+        catch (Exception e) {
+            LOG.error("Failed to stop data region " + defaultDataRegion, e);
+        }
         // TODO: IGNITE-15161 Implement component's stop.
     }
 
@@ -272,34 +311,42 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         var partitionsGroupsFutures = new ArrayList<CompletableFuture<RaftGroupService>>();
 
-        IntStream.range(0, partitions).forEach(p ->
+        Path storageDir = partitionsStoreDir.resolve(name);
+
+        try {
+            Files.createDirectories(storageDir);
+        }
+        catch (IOException e) {
+            throw new IgniteInternalException(
+                "Failed to create partitions store directory for " + name + ": " + e.getMessage(),
+                e
+            );
+        }
+
+        TableStorage tableStorage = engine.createTable(
+            storageDir,
+            tablesCfg.tables().get(name),
+            defaultDataRegion,
+            (tableCfgView, indexName) -> {
+                throw new UnsupportedOperationException("Not implemented yet.");
+            }
+        );
+
+        tableStorage.start();
+
+        tableStorages.add(tableStorage);
+
+        for (int p = 0; p < partitions; p++) {
+            int partId = p;
+
             partitionsGroupsFutures.add(
                 raftMgr.prepareRaftGroup(
                     raftGroupName(tblId, p),
                     assignment.get(p),
-                    () -> {
-                        Path storageDir = partitionsStoreDir.resolve(name);
-
-                        try {
-                            Files.createDirectories(storageDir);
-                        }
-                        catch (IOException e) {
-                            throw new IgniteInternalException(
-                                "Failed to create partitions store directory for " + name + ": " + e.getMessage(),
-                                e
-                            );
-                        }
-
-                        return new PartitionListener(
-                            new RocksDbStorage(
-                                storageDir.resolve(String.valueOf(p)),
-                                ByteBuffer::compareTo
-                            )
-                        );
-                    }
+                    () -> new PartitionListener(tableStorage.getOrCreatePartition(partId))
                 )
-            )
-        );
+            );
+        }
 
         CompletableFuture.allOf(partitionsGroupsFutures.toArray(CompletableFuture[]::new)).thenRun(() -> {
             try {

@@ -84,7 +84,7 @@ public class PersistentVaultService implements VaultService {
             .setCompressionType(CompressionType.LZ4_COMPRESSION)
             .setBottommostCompressionType(CompressionType.ZSTD_COMPRESSION)
             .setLevelCompactionDynamicLevelBytes(true)
-            .setBytesPerSync(1048576)
+            .setBytesPerSync(1024 * 1024)
             .setCompactionPriority(CompactionPriority.MinOverlappingRatio)
             .setTableFormatConfig(
                 new BlockBasedTableConfig()

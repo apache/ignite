@@ -32,8 +32,8 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.storage.DataRow;
-import org.apache.ignite.internal.storage.Storage;
-import org.apache.ignite.internal.storage.basic.ConcurrentHashMapStorage;
+import org.apache.ignite.internal.storage.PartitionStorage;
+import org.apache.ignite.internal.storage.basic.ConcurrentHashMapPartitionStorage;
 import org.apache.ignite.internal.storage.basic.SimpleDataRow;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
@@ -114,7 +114,7 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
 
     /** {@inheritDoc} */
     @Override public BooleanSupplier snapshotCheckClosure(JRaftServerImpl restarted, boolean interactedAfterSnapshot) {
-        Storage storage = getListener(restarted, raftGroupId()).getStorage();
+        PartitionStorage storage = getListener(restarted, raftGroupId()).getStorage();
 
         Row key = interactedAfterSnapshot ? SECOND_KEY : FIRST_KEY;
         Row value = interactedAfterSnapshot ? SECOND_VALUE : FIRST_VALUE;
@@ -144,7 +144,7 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
             .map(Map.Entry::getKey)
             .findAny()
             .orElseGet(() -> {
-                PartitionListener listener = new PartitionListener(new ConcurrentHashMapStorage());
+                PartitionListener listener = new PartitionListener(new ConcurrentHashMapPartitionStorage());
 
                 paths.put(listener, workDir);
 

@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.notifications;
+package org.apache.ignite.configuration.schemas.store;
 
-import java.util.concurrent.CompletableFuture;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.configuration.annotation.ConfigValue;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.ConfigurationType;
+import org.apache.ignite.configuration.annotation.NamedConfigValue;
 
 /**
- * Configuration property change listener.
- *
- * @param <VIEW> VIEW type configuration.
+ * Root configuration for data storages.
  */
-@FunctionalInterface
-public interface ConfigurationListener<VIEW> {
-    /**
-     * Called on property value update.
-     *
-     * @param ctx Notification context.
-     * @return Future that signifies the end of the listener execution.
-     */
-    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+@ConfigurationRoot(rootName = "db", type = ConfigurationType.DISTRIBUTED)
+public class DataStorageConfigurationSchema {
+    /** Default data region. */
+    @ConfigValue
+    public DataRegionConfigurationSchema defaultRegion;
+
+    /** Other data regions. */
+    @NamedConfigValue
+    public DataRegionConfigurationSchema regions;
 }

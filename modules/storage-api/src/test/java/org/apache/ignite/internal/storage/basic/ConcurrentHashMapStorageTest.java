@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.storage.basic;
 
-import org.apache.ignite.internal.storage.AbstractStorageTest;
+import org.apache.ignite.internal.storage.AbstractPartitionStorageTest;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Storage test implementation for {@link ConcurrentHashMapStorage}.
+ * Storage test implementation for {@link ConcurrentHashMapPartitionStorage}.
  */
-public class ConcurrentHashMapStorageTest extends AbstractStorageTest {
+public class ConcurrentHashMapStorageTest extends AbstractPartitionStorageTest {
     @BeforeEach
     public void setUp() {
-        storage = new ConcurrentHashMapStorage();
+        storage = new ConcurrentHashMapPartitionStorage();
     }
 }

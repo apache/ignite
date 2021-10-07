@@ -205,6 +205,8 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             superRoot.addRoot(rootKey, rootNode);
         }
 
+        ConfigurationUtil.addDefaults(superRoot);
+
         storageRoots = new StorageRoots(superRoot, data.changeId());
 
         storage.registerConfigurationListener(this::updateFromListener);
@@ -312,12 +314,14 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
 
         Map<String, ? extends Serializable> storageData = storage.readAllLatest(ConfigurationUtil.join(storagePath));
 
-        if (storageData.isEmpty())
-            throw new NoSuchElementException(ConfigurationUtil.join(path));
-
         InnerNode rootNode = new SuperRoot(rootCreator());
 
         fillFromPrefixMap(rootNode, toPrefixMap(storageData));
+
+        if (storageData.isEmpty())
+            rootNode.construct(path.get(0), ConfigurationUtil.EMPTY_CFG_SRC, true);
+
+        addDefaults(rootNode);
 
         try {
             T result = ConfigurationUtil.find(path, rootNode, true);

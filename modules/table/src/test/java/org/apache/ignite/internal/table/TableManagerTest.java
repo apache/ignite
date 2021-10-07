@@ -29,6 +29,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
+import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.affinity.AffinityUtils;
 import org.apache.ignite.internal.baseline.BaselineManager;
@@ -156,22 +157,19 @@ public class TableManagerTest {
             );
 
             clusterCfgMgr = new ConfigurationManager(
-                List.of(ClusterConfiguration.KEY, TablesConfiguration.KEY),
+                List.of(ClusterConfiguration.KEY, TablesConfiguration.KEY, DataStorageConfiguration.KEY),
                 Map.of(),
                 new TestConfigurationStorage(DISTRIBUTED),
                 Collections.singletonList(ExtendedTableConfigurationSchema.class)
             );
 
             nodeCfgMgr.start();
+
+            nodeCfgMgr.bootstrap("node.metastorageNodes = [" + NODE_NAME + "]");
+
             clusterCfgMgr.start();
 
-            nodeCfgMgr.bootstrap("{\n" +
-                "   \"node\":{\n" +
-                "      \"metastorageNodes\":[\n" +
-                "         \"" + NODE_NAME + "\"\n" +
-                "      ]\n" +
-                "   }\n" +
-                "}");
+            clusterCfgMgr.configurationRegistry().initializeDefaults();
         }
         catch (Exception e) {
             LOG.error("Failed to bootstrap the test configuration manager.", e);
@@ -195,6 +193,7 @@ public class TableManagerTest {
     public void testStaticTableConfigured() {
         TableManager tableManager = new TableManager(
             clusterCfgMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY),
+            clusterCfgMgr.configurationRegistry().getConfiguration(DataStorageConfiguration.KEY),
             rm,
             bm,
             ts,
@@ -365,6 +364,7 @@ public class TableManagerTest {
 
         TableManager tableManager = new TableManager(
             clusterCfgMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY),
+            clusterCfgMgr.configurationRegistry().getConfiguration(DataStorageConfiguration.KEY),
             rm,
             bm,
             ts,

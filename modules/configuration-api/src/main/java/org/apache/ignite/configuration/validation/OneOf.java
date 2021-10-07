@@ -15,23 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.notifications;
+package org.apache.ignite.configuration.validation;
 
-import java.util.concurrent.CompletableFuture;
-import org.jetbrains.annotations.NotNull;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Configuration property change listener.
- *
- * @param <VIEW> VIEW type configuration.
+ * Signifies that current {@code String} configuration values can only be equal to one of the listed values.
  */
-@FunctionalInterface
-public interface ConfigurationListener<VIEW> {
+@Target(FIELD)
+@Retention(RUNTIME)
+public @interface OneOf {
     /**
-     * Called on property value update.
-     *
-     * @param ctx Notification context.
-     * @return Future that signifies the end of the listener execution.
+     * @return List of possible values.
      */
-    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+    String[] value();
+
+    /**
+     * @return {@code true} if list is case sensitive.
+     */
+    boolean caseSensitive() default false;
 }

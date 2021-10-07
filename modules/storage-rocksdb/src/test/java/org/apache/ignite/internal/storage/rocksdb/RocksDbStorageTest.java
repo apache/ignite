@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import org.apache.ignite.internal.storage.AbstractStorageTest;
+import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
+import org.apache.ignite.configuration.schemas.table.TableConfiguration;
+import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
+import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
+import org.apache.ignite.internal.storage.AbstractPartitionStorageTest;
+import org.apache.ignite.internal.storage.engine.DataRegion;
+import org.apache.ignite.internal.storage.engine.TableStorage;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -27,20 +32,56 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 /**
- * Storage test implementation for {@link RocksDbStorage}.
+ * Storage test implementation for {@link RocksDbPartitionStorage}.
  */
 @ExtendWith(WorkDirectoryExtension.class)
-public class RocksDbStorageTest extends AbstractStorageTest {
+@ExtendWith(ConfigurationExtension.class)
+public class RocksDbStorageTest extends AbstractPartitionStorageTest {
+    /** */
+    private TableStorage table;
+
+    /** */
+    private DataRegion dataRegion;
+
     /** */
     @BeforeEach
-    public void setUp(@WorkDirectory Path workDir) {
-        storage = new RocksDbStorage(workDir, ByteBuffer::compareTo);
+    public void setUp(
+        @WorkDirectory Path workDir,
+        @InjectConfiguration DataRegionConfiguration dataRegionCfg,
+        @InjectConfiguration TableConfiguration tableCfg
+    ) throws Exception {
+        dataRegionCfg.change(cfg -> cfg.changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)).get();
+
+        RocksDbStorageEngine engine = new RocksDbStorageEngine();
+
+        dataRegion = engine.createDataRegion(dataRegionCfg);
+
+        assertThat(dataRegion, is(instanceOf(RocksDbDataRegion.class)));
+
+        dataRegion.start();
+
+        table = engine.createTable(workDir, tableCfg, dataRegion, (tableView, indexName) -> null);
+
+        assertThat(table, is(instanceOf(RocksDbTableStorage.class)));
+
+        table.start();
+
+        storage = table.getOrCreatePartition(0);
+
+        assertThat(storage, is(instanceOf(RocksDbPartitionStorage.class)));
     }
 
     /** */
     @AfterEach
     public void tearDown() throws Exception {
-        IgniteUtils.closeAll(storage);
+        IgniteUtils.closeAll(
+            table == null ? null : table::stop,
+            dataRegion == null ? null : dataRegion::stop
+        );
     }
 }

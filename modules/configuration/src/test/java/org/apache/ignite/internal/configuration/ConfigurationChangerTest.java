@@ -55,6 +55,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -236,7 +237,7 @@ public class ConfigurationChangerTest {
         storage.fail(true);
 
         assertThrows(ExecutionException.class, () -> changer.change(source(KEY, (AChange parent) -> parent
-            .changeChild(child -> child.changeIntCfg(1))
+            .changeChild(child -> child.changeIntCfg(1).changeStrCfg("1"))
         )).get(1, SECONDS));
 
         storage.fail(false);
@@ -247,7 +248,8 @@ public class ConfigurationChangerTest {
         assertEquals(0, dataMap.size());
 
         AView newRoot = (AView)changer.getRootNode(KEY);
-        assertNull(newRoot.child());
+        assertNotNull(newRoot.child());
+        assertNull(newRoot.child().strCfg());
     }
 
     /** */

@@ -15,23 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.notifications;
+package org.apache.ignite.internal.storage.engine;
 
-import java.util.concurrent.CompletableFuture;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.storage.PartitionStorage;
+import org.apache.ignite.internal.storage.StorageException;
 
 /**
- * Configuration property change listener.
- *
- * @param <VIEW> VIEW type configuration.
+ * Table storage that contains meta, partitions and SQL indexes.
  */
-@FunctionalInterface
-public interface ConfigurationListener<VIEW> {
+public interface TableStorage {
     /**
-     * Called on property value update.
+     * Gets or creates a partition for current table.
      *
-     * @param ctx Notification context.
-     * @return Future that signifies the end of the listener execution.
+     * @param partId Partition id.
+     * @return Partition storage.
      */
-    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+    PartitionStorage getOrCreatePartition(int partId);
+
+    /**
+     * Starts the storage.
+     *
+     * @throws StorageException If something went wrong.
+     */
+    public void start() throws StorageException;
+
+    /**
+     * Stops the storage.
+     *
+     * @throws StorageException If something went wrong.
+     */
+    void stop() throws StorageException;
 }

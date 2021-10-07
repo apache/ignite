@@ -27,6 +27,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -308,7 +309,9 @@ public class ConfigurationAsmGenerator {
 
             assert schemasInfo.containsKey(schemaClass) : schemaClass;
 
-            Field[] schemaFields = schemaClass.getDeclaredFields();
+            Field[] schemaFields = Arrays.stream(schemaClass.getDeclaredFields()).filter(
+                field -> isValue(field) || isConfigValue(field) || isNamedConfigValue(field)
+            ).toArray(Field[]::new);
 
             Set<Class<?>> schemaExtensions = internalSchemaExtensions.getOrDefault(schemaClass, Set.of());
             Set<Field> extensionsFields = extensionsFields(schemaExtensions);

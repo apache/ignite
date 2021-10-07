@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
+import org.apache.ignite.internal.tostring.S;
 
 /**
  * Holder for property value.
@@ -99,5 +100,10 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     /** {@inheritDoc} */
     @Override public String key() {
         return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DynamicProperty.class, this, "key", key, "value", value());
     }
 }
