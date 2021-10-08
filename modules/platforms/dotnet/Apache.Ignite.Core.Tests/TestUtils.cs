@@ -597,7 +597,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null, bool noLogger = false)
         {
             return new IgniteConfiguration
             {
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Tests
                 },
                 FailureHandler = new NoOpFailureHandler(),
                 WorkDirectory = WorkDir,
-                Logger = new TestContextLogger()
+                Logger = noLogger ? null : new TestContextLogger()
             };
         }
 
