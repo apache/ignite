@@ -81,6 +81,10 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             final Thread watchdog = delayedDumpClasspath();
 
+            File file = new File("modules/core/src/test/config").getAbsoluteFile();
+
+            X.println("@__@ " + file.getAbsolutePath());
+
             IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
 
             IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
