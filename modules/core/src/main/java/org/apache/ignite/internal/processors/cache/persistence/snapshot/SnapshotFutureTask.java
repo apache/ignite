@@ -851,7 +851,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         private final File deltaFile;
 
         /** Id of encrypted cache group. If {@code null}, no encrypted IO is used. */
-        private final Integer encGrpId;
+        private final Integer encryptedGrpId;
 
         /** Busy lock to protect write operations. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -877,9 +877,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
-         * @param encGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
+         * @param encryptedGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
          */
-        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encGrpId) {
+        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
             assert store != null;
             assert cctx.database().checkpointLockIsHeldByThread();
 
@@ -889,7 +889,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
             writtenPages = new AtomicBitSet(store.pages());
-            this.encGrpId = encGrpId;
+            this.encryptedGrpId = encryptedGrpId;
 
             store.addWriteListener(this);
         }
@@ -928,8 +928,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                         return;
 
                     if (deltaFileIo == null) {
-                        deltaFileIo = (encGrpId == null ? ioFactory :
-                            pageStore.encryptedFileIoFactory(ioFactory, encGrpId)).create(deltaFile);
+                        deltaFileIo = (encryptedGrpId == null ? ioFactory :
+                            pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
                     }
                 }
                 catch (IOException e) {

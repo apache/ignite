@@ -76,6 +76,7 @@ public class StoredCacheData implements Serializable {
         this.qryEntities = cacheData.qryEntities;
         this.sql = cacheData.sql;
         this.cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
+        this.grpKeyEncrypted = cacheData.grpKeyEncrypted;
     }
 
     /**

@@ -697,10 +697,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         );
 
         if (encrKeyProvider != null) {
-            int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
+            int hdrSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
 
-            ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
-            ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(headerSize);
+            ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(hdrSize);
+            ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(hdrSize);
         }
 
         return pageStoreFactory;
@@ -1135,6 +1135,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     public void writeCacheData(StoredCacheData cacheData, File conf) throws IgniteCheckedException {
+        // Pre-existing file will be truncated upon stream open.
         try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(conf))) {
             marshaller.marshal(cacheData, stream);
         }

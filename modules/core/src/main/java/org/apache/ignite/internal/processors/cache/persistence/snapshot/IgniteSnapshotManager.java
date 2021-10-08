@@ -600,7 +600,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() || !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+        if (cctx.kernalContext().clientNode() ||
+            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
@@ -1649,7 +1650,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         continue;
 
                     snpFutTask.onDone(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId +
-                        " but doesn't include metastore. Metastore is required because it contains encryption keys " +
+                        " but doesn't include metastore. Metastore is required because it holds encryption keys " +
                         "required to start with encrypted caches contained in the snapshot."));
 
                     return snpFutTask;
@@ -2224,9 +2225,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (cacheData.config().isEncryptionEnabled()) {
                     EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
 
-                    GroupKey grpKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
+                    GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
 
-                    cacheData.grpKeyEncrypted(new GroupKeyEncrypted(grpKey.id(), encSpi.encryptKey(grpKey.key())));
+                    cacheData.grpKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
 
                     storeMgr.writeCacheData(cacheData, targetCacheCfg);
                 }
