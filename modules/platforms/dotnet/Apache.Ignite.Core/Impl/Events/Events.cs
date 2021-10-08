@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Events
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
@@ -383,6 +384,11 @@ namespace Apache.Ignite.Core.Impl.Events
         public bool IsEnabled(int type)
         {
             return DoOutInOp((int) Op.IsEnabled, type) == True;
+        }
+
+        public override string ToString()
+        {
+            return string.Format(CultureInfo.CurrentCulture, "Events for Ignite - {0}", Ignite.Name);
         }
 
         /// <summary>

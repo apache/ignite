@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Event
 {
+    using System.Globalization;
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
@@ -80,6 +81,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         public CacheEntryEventType EventType
         {
             get { return CacheEntryEventType.Updated; }
+        }
+        
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        public override string ToString()
+        {
+            return string.Format(CultureInfo.CurrentCulture, 
+                "{0} type Cache Event [Key = {1}, HasValue = {2}, Value = {3}, HasOldValue = {4}, OldValue = {5}]", 
+                EventType.ToString(), Key, HasValue, Value, HasOldValue, OldValue);
         }
     }
 }

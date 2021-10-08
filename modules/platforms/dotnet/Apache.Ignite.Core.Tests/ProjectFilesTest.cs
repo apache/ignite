@@ -88,6 +88,36 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that all public types have <see cref="object.ToString"/> method overridden.
+        /// </summary>
+        [Test]
+        public void TestPublicTypesHaveToStringOverride()
+        {
+            var csFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+
+            var filesWithoutToString = csFiles.Where(f =>
+            {
+                if (f.FullName.Contains(".Tests") ||
+                    f.FullName.Contains(".Benchmark") ||
+                    f.FullName.Contains("examples") ||
+                    f.FullName.Contains("templates") ||
+                    f.Name.Contains("Exception"))
+                {
+                    return false;
+                }
+
+                var text = File.ReadAllText(f.FullName);
+
+                return (text.Contains("public class") || text.Contains("public struct")) &&
+                       !text.Contains("public override string ToString()");
+            });
+
+            var filesCsv = string.Join(", ", filesWithoutToString);
+
+            Assert.IsEmpty(filesCsv, "Missing ToString in public types");
+        }
+
+        /// <summary>
         /// Tests that there are no public types in Apache.Ignite.Core.Impl namespace.
         /// </summary>
         [Test]

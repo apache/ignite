@@ -1385,6 +1385,15 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        public override string ToString()
+        {
+            return ToXml();
+        }
+
+        /// <summary>
         /// Deserializes IgniteConfiguration from the XML reader.
         /// </summary>
         /// <param name="reader">The reader.</param>

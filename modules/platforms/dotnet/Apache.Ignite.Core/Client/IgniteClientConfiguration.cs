@@ -293,5 +293,14 @@ namespace Apache.Ignite.Core.Client
         {
             return IgniteConfigurationXmlSerializer.Deserialize<IgniteClientConfiguration>(xml);
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        public override string ToString()
+        {
+            return ToXml();
+        }
     }
 }
