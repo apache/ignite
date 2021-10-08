@@ -71,6 +71,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
         return val + 1;
     }
 
+    /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return reader.readString().length();
     }

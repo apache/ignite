@@ -42,6 +42,7 @@ public class SnapshotMetadataCollectorTask
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         @Nullable String snpName
@@ -63,6 +64,7 @@ public class SnapshotMetadataCollectorTask
         return map;
     }
 
+    /** {@inheritDoc} */
     @Override public @Nullable Map<ClusterNode, List<SnapshotMetadata>> reduce(
         List<ComputeJobResult> results
     ) throws IgniteException {

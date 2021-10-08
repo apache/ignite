@@ -211,6 +211,7 @@ public class PageLocksCommand extends AbstractCommand<PageLocksCommand.Arguments
         }
     }
 
+    /** */
     enum PageLocksCommandArg implements CommandArg {
         /** */
         DUMP("dump"),

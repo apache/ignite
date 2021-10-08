@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -166,6 +167,7 @@ public class CacheEvent extends EventAdapter {
      *      don't have it in deserialized form.
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
+     * @param taskName Name of the task if cache event was caused by an operation initiated within task execution.
      */
     public CacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
         boolean near, Object key, IgniteUuid xid, String txLbl, Object lockId, Object newVal, boolean hasNewVal,
@@ -227,6 +229,7 @@ public class CacheEvent extends EventAdapter {
     /**
      * Gets cache entry associated with event.
      *
+     * @param <K> Cache entry type.
      * @return Cache entry associated with event.
      */
     public <K> K key() {
@@ -304,14 +307,12 @@ public class CacheEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this cache event, if available. This property is available only for
-     * {@link EventType#EVT_CACHE_OBJECT_PUT}, {@link EventType#EVT_CACHE_OBJECT_REMOVED} and
-     * {@link EventType#EVT_CACHE_OBJECT_READ} cache events.
-     * <p>
-     * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated
-     * cache update or read.
+     * Gets security subject ID initiated this cache event, if security is enabled. This property is not available for
+     * {@link EventType#EVT_CACHE_NODES_LEFT}, {@link EventType#EVT_CACHE_ENTRY_EVICTED} and {@link
+     * EventType#EVT_CACHE_OBJECT_EXPIRED} cache events.
      *
-     * @return Subject ID.
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
      */
     public UUID subjectId() {
         return subjId;

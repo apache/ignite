@@ -125,7 +125,7 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "View/change re-encryption rate limit:", ENCRYPTION,
+        usage(log, "View/change re-encryption rate limit:", ENCRYPTION,
             singletonMap("new_limit", "Decimal value to change re-encryption rate limit (MB/s)."),
             REENCRYPTION_RATE.toString(), optional("new_limit"));
     }

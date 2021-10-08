@@ -49,6 +49,7 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
     /** Property: reservation batch size. */
     private static final String PROP_BATCH_SIZE = "ignite.jmh.sequence.batchSize";
 
+    /** */
     @State(Scope.Benchmark)
     public static class SequenceState {
         /** IP finder shared across nodes. */

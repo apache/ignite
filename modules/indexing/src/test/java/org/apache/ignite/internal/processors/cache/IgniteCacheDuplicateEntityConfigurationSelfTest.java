@@ -97,7 +97,9 @@ public class IgniteCacheDuplicateEntityConfigurationSelfTest extends GridCommonA
         }
     }
 
+    /** */
     private static class Person {
+        /** */
         @QuerySqlField
         private String name;
     }
