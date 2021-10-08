@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -341,6 +342,11 @@ public class IgniteImpl implements Ignite {
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaseline(Set<String> baselineNodes) {
+        distributedTblMgr.setBaseline(baselineNodes);
     }
 
     /**

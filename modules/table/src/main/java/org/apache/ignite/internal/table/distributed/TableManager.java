@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +34,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
@@ -81,6 +85,11 @@ import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.TopologyService;
+import org.apache.ignite.raft.client.Peer;
+import org.apache.ignite.raft.client.ReadCommand;
+import org.apache.ignite.raft.client.WriteCommand;
+import org.apache.ignite.raft.client.service.CommandClosure;
+import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -142,7 +151,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     //TODO: IGNITE-15161 These should go into TableImpl instances.
     /** Instances of table storages that need to be stopped on component stop. */
-    private final Set<TableStorage> tableStorages = ConcurrentHashMap.newKeySet();
+    private final Map<IgniteUuid, TableStorage> tableStorages = new ConcurrentHashMap<>();
 
     /**
      * Creates a new table manager.
@@ -232,6 +241,51 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         }
                     });
 
+                ((ExtendedTableConfiguration)tablesCfg.tables().get(ctx.newValue().name())).assignments().
+                    listen(assignmentsCtx -> {
+                        List<List<ClusterNode>> oldAssignments =
+                            (List<List<ClusterNode>>)ByteUtils.fromBytes(assignmentsCtx.oldValue());
+
+                        List<List<ClusterNode>> newAssignments =
+                            (List<List<ClusterNode>>)ByteUtils.fromBytes(assignmentsCtx.newValue());
+
+                        CompletableFuture<?>[] futures = new CompletableFuture<?>[oldAssignments.size()];
+
+                        // TODO: IGNITE-15554 Add logic for assignment recalculation in case of partitions or replicas changes
+                        // TODO: Until IGNITE-15554 is implemented it's safe to iterate over partitions and replicas cause there will
+                        // TODO: be exact same amount of partitions and replicas for both old and new assignments
+                        for (int i = 0; i < oldAssignments.size(); i++) {
+                            final int p = i;
+
+                            List<ClusterNode> oldPartitionAssignment = oldAssignments.get(p);
+                            List<ClusterNode> newPartitionAssignment = newAssignments.get(p);
+
+                            var toAdd = new HashSet<>(newPartitionAssignment);
+                            var toRemove = new HashSet<>(oldPartitionAssignment);
+
+                            toAdd.removeAll(oldPartitionAssignment);
+                            toRemove.removeAll(newPartitionAssignment);
+
+                            // Create new raft nodes according to new assignments.
+                            futures[i] = raftMgr.updateRaftGroup(
+                                raftGroupName(tblId, p),
+                                newPartitionAssignment,
+                                toAdd,
+                                () -> new PartitionListener(tableStorages.get(tblId).getOrCreatePartition(p))
+                            )
+                                .thenAccept(
+                                    updatedRaftGroupService -> tables.get(ctx.newValue().name()).updateInternalTableRaftGroupService(p, updatedRaftGroupService)
+                                ).thenRun(() -> raftMgr.stopRaftGroup(raftGroupName(tblId, p), new ArrayList<>(toRemove))
+                                ).exceptionally(th -> {
+                                        LOG.error("Failed to update raft groups one the node", th);
+                                        return null;
+                                    }
+                                );
+                        }
+
+                        return CompletableFuture.allOf(futures);
+                    });
+
                 createTableLocally(
                     ctx.newValue().name(),
                     IgniteUuid.fromString(((ExtendedTableView)ctx.newValue()).id()),
@@ -275,7 +329,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        for (TableStorage tableStorage : tableStorages) {
+        for (TableStorage tableStorage : tableStorages.values()) {
             try {
                 tableStorage.stop();
             }
@@ -334,7 +388,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         tableStorage.start();
 
-        tableStorages.add(tableStorage);
+        tableStorages.put(tblId, tableStorage);
 
         for (int p = 0; p < partitions; p++) {
             int partId = p;
@@ -870,5 +924,157 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      */
     private boolean isTableConfigured(String name) {
         return tableNamesConfigured().contains(name);
+    }
+
+    /**
+     * @see Ignite#setBaseline(Set)
+     */
+    public void setBaseline(Set<String> nodes) {
+        if (nodes == null || nodes.isEmpty())
+            throw new IgniteException("New baseline can't be null or empty");
+
+        var currClusterMembers = new HashSet<>(baselineMgr.nodes());
+
+        var currClusterMemberNames =
+            currClusterMembers.stream().map(ClusterNode::name).collect(Collectors.toSet());
+
+        for (String nodeName: nodes) {
+            if (!currClusterMemberNames.contains(nodeName))
+                throw new IgniteException("Node '" + nodeName + "' not in current network cluster membership. " +
+                    " Adding not alive nodes is not supported yet.");
+        }
+
+        var newBaseline = currClusterMembers
+            .stream().filter(n -> nodes.contains(n.name())).collect(Collectors.toSet());
+
+        updateAssignments(currClusterMembers);
+
+        if (!newBaseline.equals(currClusterMembers))
+            updateAssignments(newBaseline);
+    }
+
+    /**
+     * Update assignments for all current tables according to input nodes list.
+     * These approach has known issues {@link Ignite#setBaseline(Set)}.
+     *
+     * @param clusterNodes Set of nodes for assignment.
+     */
+    private void updateAssignments(Set<ClusterNode> clusterNodes) {
+        var setBaselineFut = new CompletableFuture<>();
+
+        var changePeersQueue = new ArrayList<Supplier<CompletableFuture<Void>>>();
+
+        tablesCfg.tables().change(
+            tbls -> {
+                changePeersQueue.clear();
+                for (int i = 0; i < tbls.size(); i++) {
+                    tbls.createOrUpdate(tbls.get(i).name(), changeX -> {
+                        ExtendedTableChange change = (ExtendedTableChange)changeX;
+                        byte[] currAssignments = change.assignments();
+
+                        List<List<ClusterNode>> recalculatedAssignments = AffinityUtils.calculateAssignments(
+                            clusterNodes,
+                            change.partitions(),
+                            change.replicas());
+
+                        if (!recalculatedAssignments.equals(ByteUtils.fromBytes(currAssignments))) {
+                            change.changeAssignments(ByteUtils.toBytes(recalculatedAssignments));
+                            changePeersQueue.add(() ->
+                                updateRaftTopology(
+                                    (List<List<ClusterNode>>)ByteUtils.fromBytes(currAssignments),
+                                    recalculatedAssignments,
+                                    IgniteUuid.fromString(change.id())));
+                        }
+                    });
+                }
+            }).thenCompose((v) -> {
+                CompletableFuture<?>[] changePeersFutures = new CompletableFuture<?>[changePeersQueue.size()];
+
+                int i = 0;
+                for (Supplier<CompletableFuture<Void>> task: changePeersQueue) {
+                    changePeersFutures[i++] = task.get();
+                }
+
+                return CompletableFuture.allOf(changePeersFutures);
+            }).whenComplete((res, th) -> {
+                if (th != null)
+                    setBaselineFut.completeExceptionally(th);
+                else
+                    setBaselineFut.complete(null);
+            });
+
+        setBaselineFut.join();
+    }
+
+    /**
+     * Update raft groups of table partitions to new peers list.
+     *
+     * @param oldAssignments Old assignment.
+     * @param newAssignments New assignment.
+     * @param tblId Table ID.
+     * @return Future, which completes, when update finished.
+     */
+    private CompletableFuture<Void> updateRaftTopology(
+        List<List<ClusterNode>> oldAssignments,
+        List<List<ClusterNode>> newAssignments,
+        IgniteUuid tblId) {
+        CompletableFuture<?>[] futures = new CompletableFuture<?>[oldAssignments.size()];
+
+        // TODO: IGNITE-15554 Add logic for assignment recalculation in case of partitions or replicas changes
+        // TODO: Until IGNITE-15554 is implemented it's safe to iterate over partitions and replicas cause there will
+        // TODO: be exact same amount of partitions and replicas for both old and new assignments
+        for (int i = 0; i < oldAssignments.size(); i++) {
+            final int p = i;
+
+            List<ClusterNode> oldPartitionAssignment = oldAssignments.get(p);
+            List<ClusterNode> newPartitionAssignment = newAssignments.get(p);
+
+            var toAdd = new HashSet<>(newPartitionAssignment);
+
+            toAdd.removeAll(oldPartitionAssignment);
+
+            futures[i] = raftMgr.prepareRaftGroup(
+                raftGroupName(tblId, p),
+                oldPartitionAssignment,
+                () -> new RaftGroupListener() {
+                    @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
+
+                    }
+
+                    @Override public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
+
+                    }
+
+                    @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
+
+                    }
+
+                    @Override public boolean onSnapshotLoad(Path path) {
+                        return false;
+                    }
+
+                    @Override public void onShutdown() {
+
+                    }
+                },
+                60000,
+                10000
+            )
+                .thenCompose(
+                    updatedRaftGroupService -> {
+                        return
+                            updatedRaftGroupService.
+                                changePeers(
+                                    newPartitionAssignment.stream().map(n -> new Peer(n.address())).collect(Collectors.toList()));
+                    }
+                ).exceptionally(th -> {
+                        LOG.error("Failed to update raft peers for group " + raftGroupName(tblId, p) +
+                            "from " + oldPartitionAssignment + " to " + newPartitionAssignment, th);
+                        return null;
+                    }
+                );
+        }
+
+        return CompletableFuture.allOf(futures);
     }
 }

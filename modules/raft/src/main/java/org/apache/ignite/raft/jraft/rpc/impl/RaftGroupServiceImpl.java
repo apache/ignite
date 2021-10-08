@@ -73,6 +73,9 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     /** */
     private volatile long timeout;
 
+    /** Timeout for network calls. */
+    private final long networkTimeout;
+
     /** */
     private final String groupId;
 
@@ -114,6 +117,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         ClusterService cluster,
         RaftMessagesFactory factory,
         int timeout,
+        int networkTimeout,
         List<Peer> peers,
         Peer leader,
         long retryDelay,
@@ -124,10 +128,49 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         this.learners = Collections.emptyList();
         this.factory = factory;
         this.timeout = timeout;
+        this.networkTimeout = networkTimeout;
         this.groupId = groupId;
         this.retryDelay = retryDelay;
         this.leader = leader;
         this.executor = executor;
+    }
+
+    /**
+     * Starts raft group service.
+     *
+     * @param groupId Raft group id.
+     * @param cluster Cluster service.
+     * @param factory Message factory.
+     * @param timeout Timeout.
+     * @param netTimeout Network call timeout.
+     * @param peers List of all peers.
+     * @param getLeader {@code True} to get the group's leader upon service creation.
+     * @param retryDelay Retry delay.
+     * @param executor Executor for retrying requests.
+     * @return Future representing pending completion of the operation.
+     */
+    public static CompletableFuture<RaftGroupService> start(
+        String groupId,
+        ClusterService cluster,
+        RaftMessagesFactory factory,
+        int timeout,
+        int netTimeout,
+        List<Peer> peers,
+        boolean getLeader,
+        long retryDelay,
+        ScheduledExecutorService executor
+    ) {
+        var service = new RaftGroupServiceImpl(groupId, cluster, factory, timeout, netTimeout, peers, null, retryDelay, executor);
+
+        if (!getLeader)
+            return CompletableFuture.completedFuture(service);
+
+        return service.refreshLeader().handle((unused, throwable) -> {
+            if (throwable != null)
+                LOG.error("Failed to refresh a leader", throwable);
+
+            return service;
+        });
     }
 
     /**
@@ -153,17 +196,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         long retryDelay,
         ScheduledExecutorService executor
     ) {
-        var service = new RaftGroupServiceImpl(groupId, cluster, factory, timeout, peers, null, retryDelay, executor);
-
-        if (!getLeader)
-            return CompletableFuture.completedFuture(service);
-
-        return service.refreshLeader().handle((unused, throwable) -> {
-            if (throwable != null)
-                LOG.error("Failed to refresh a leader", throwable);
-
-            return service;
-        });
+        return start(groupId, cluster, factory, timeout, timeout, peers, getLeader, retryDelay, executor);
     }
 
     /** {@inheritDoc} */
@@ -456,7 +489,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
             return;
         }
 
-        CompletableFuture<?> fut0 = cluster.messagingService().invoke(peer.address(), (NetworkMessage) req, timeout);
+        CompletableFuture<?> fut0 = cluster.messagingService().invoke(peer.address(), (NetworkMessage) req, networkTimeout);
 
         fut0.whenComplete(new BiConsumer<Object, Throwable>() {
             @Override public void accept(Object resp, Throwable err) {
@@ -487,7 +520,10 @@ public class RaftGroupServiceImpl implements RaftGroupService {
                             return null;
                         }, retryDelay, TimeUnit.MILLISECONDS);
                     }
-                    else if (resp0.errorCode() == RaftError.EPERM.getNumber()) {
+                    else if (resp0.errorCode() == RaftError.EPERM.getNumber() ||
+                        // TODO: IGNITE-15706
+                        resp0.errorCode() == RaftError.UNKNOWN.getNumber() ||
+                        resp0.errorCode() == RaftError.EINTERNAL.getNumber()) {
                         if (resp0.leaderId() == null) {
                             executor.schedule(() -> {
                                 sendWithRetry(randomNode(), req, stopTime, fut);

@@ -374,6 +374,16 @@ public class InternalTableImpl implements InternalTable {
                 });
     }
 
+    /**
+     * Updates internal table raft group service for given partition.
+     *
+     * @param p Partition.
+     * @param raftGrpSvc Raft group service.
+     */
+    public void updateInternalTableRaftGroupService(int p, RaftGroupService raftGrpSvc) {
+        partitionMap.put(p, raftGrpSvc);
+    }
+
     /** Partition scan publisher. */
     private class PartitionScanPublisher implements Publisher<BinaryRow> {
         /** {@link Publisher<BinaryRow>} that relatively notifies about partition rows.  */
