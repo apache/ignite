@@ -599,6 +599,7 @@
     <Compile Include="Plugin\PluginNotFoundException.cs" />
     <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\Cache\ICachePluginConfiguration.cs" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\StoreSessionResourceAttribute.cs" />

@@ -37,7 +37,6 @@ class ControlUtility:
     """
     BASE_COMMAND = "control.sh"
 
-    # pylint: disable=R0913
     def __init__(self, cluster, ssl_params=None, username=None, password=None):
         self._cluster = cluster
         self.logger = cluster.context.logger
