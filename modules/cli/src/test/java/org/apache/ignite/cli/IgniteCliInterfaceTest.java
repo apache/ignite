@@ -316,7 +316,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
             var node =
                 new NodeManager.RunningNode(1, nodeName, Path.of("logfile"));
 
-            when(nodeMgr.start(any(), any(), any(), any(), any()))
+            when(nodeMgr.start(any(), any(), any(), any(), any(), any()))
                 .thenReturn(node);
 
             when(cliPathsCfgLdr.loadIgnitePathsOrThrowError())
@@ -333,6 +333,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
                 ignitePaths.logDir,
                 ignitePaths.cliPidsDir(),
                 Path.of("conf.json"),
+                ignitePaths.serverJavaUtilLoggingPros(),
                 cli.getOut());
 
             assertEquals("\nNode is successfully started. To stop, type ignite node stop " + nodeName + "\n\n" +

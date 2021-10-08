@@ -133,6 +133,13 @@ public class IgnitePaths {
     }
 
     /**
+     * @return Path to default Ignite node config.
+     */
+    public Path serverJavaUtilLoggingPros() {
+        return cfgDir.resolve("ignite.java.util.logging.properties");
+    }
+
+    /**
      * Init or recovers Ignite distributive directories structure.
      */
     public void initOrRecover() {

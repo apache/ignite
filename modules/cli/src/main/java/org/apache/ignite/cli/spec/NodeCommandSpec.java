@@ -77,6 +77,7 @@ public class NodeCommandSpec extends CategorySpec {
             NodeManager.RunningNode node = nodeMgr.start(nodeName, ignitePaths.logDir,
                 ignitePaths.cliPidsDir(),
                 configPath,
+                ignitePaths.serverJavaUtilLoggingPros(),
                 out);
 
             out.println();

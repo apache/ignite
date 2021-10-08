@@ -17,6 +17,11 @@
 
 package org.apache.ignite.cli;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.spec.IgniteCliSpec;
 import org.fusesource.jansi.AnsiConsole;
@@ -26,6 +31,8 @@ import org.fusesource.jansi.AnsiConsole;
  */
 public class IgniteCliApp {
     public static void main(String... args) {
+        initJavaLoggerProps();
+
         ApplicationContext applicationCtx = ApplicationContext.run();
 
         int exitCode;
@@ -42,4 +49,26 @@ public class IgniteCliApp {
         System.exit(exitCode);
     }
 
+    /**
+     * This is a temporary solution to hide unnecessary java util logs that are produced by ivy.
+     * ConsoleHandler.level should be set to SEVERE.
+     * TODO: https://issues.apache.org/jira/browse/IGNITE-15713
+     */
+    private static void initJavaLoggerProps() {
+        InputStream propsFile = IgniteCliApp.class.getResourceAsStream("/cli.java.util.logging.properties");
+
+        Path props = null;
+
+        try {
+            props = Files.createTempFile("cli.java.util.logging.properties", "");
+
+            if (propsFile != null)
+                Files.copy(propsFile, props.toAbsolutePath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (IOException ignored) {
+        }
+
+        if (props != null)
+            System.setProperty("java.util.logging.config.file", props.toString());
+    }
 }

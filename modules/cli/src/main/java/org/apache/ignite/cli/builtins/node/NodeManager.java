@@ -77,12 +77,13 @@ public class NodeManager {
      * @param out PrintWriter for user messages.
      * @return Information about successfully started node
      */
-    public RunningNode start(String nodeName, Path logDir, Path pidsDir, Path srvCfg, PrintWriter out) {
+    public RunningNode start(String nodeName, Path logDir, Path pidsDir, Path srvCfg, Path javaLogProps, PrintWriter out) {
         if (getRunningNodes(logDir, pidsDir).stream().anyMatch(n -> n.name.equals(nodeName)))
             throw new IgniteCLIException("Node with nodeName " + nodeName + " is already exist");
 
         try {
             Path logFile = logFile(logDir, nodeName);
+
             if (Files.exists(logFile))
                 Files.delete(logFile);
 
@@ -91,6 +92,10 @@ public class NodeManager {
             var cmdArgs = new ArrayList<String>();
 
             cmdArgs.add("java");
+
+            if (javaLogProps != null)
+                cmdArgs.add("-Djava.util.logging.config.file=" + javaLogProps.toAbsolutePath());
+
             cmdArgs.add("-cp");
             cmdArgs.add(classpath());
             cmdArgs.add(MAIN_CLASS);
