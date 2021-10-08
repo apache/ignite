@@ -37,15 +37,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     {
         /** */
         private const int ServerCount = 3;
-        
+
         /** */
         private ICacheClient<int, int> _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
         /// </summary>
-        public PartitionAwarenessTest() 
-            : base(ServerCount)
+        public PartitionAwarenessTest()
+            : base(ServerCount, enableServerListLogging: true)
         {
             // No-op.
         }
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 .Select(l => GetServerRequestNames(l, RequestNamePrefixCache).ToArray())
                 .Where(x => x.Length > 0)
                 .ToArray();
-            
+
             // All requests should go to a single (default) node, because partition awareness is not applicable.
             Assert.AreEqual(1, reqs.Length);
 
@@ -326,23 +326,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        // ReSharper disable RedundantExplicitArrayCreation
         [Test]
         [TestCase(1, 1)]
         [TestCase(2, 0)]
         [TestCase((uint) 1, 1)]
-        [TestCase((uint) 2, 0)]
+        [TestCase(uint.MaxValue, 0)]
         [TestCase((byte) 1, 1)]
         [TestCase((byte) 2, 0)]
+        [TestCase((byte) 131, 1)]
         [TestCase((sbyte) 1, 1)]
-        [TestCase((sbyte) 2, 0)]
+        [TestCase((sbyte) -2, 1)]
         [TestCase((short) 1, 1)]
         [TestCase((short) 2, 0)]
         [TestCase((ushort) 1, 1)]
-        [TestCase((ushort) 2, 0)]
+        [TestCase(ushort.MaxValue, 0)]
         [TestCase((long) 1, 1)]
         [TestCase((long) 2, 0)]
         [TestCase((ulong) 1, 1)]
-        [TestCase((ulong) 2, 0)]
+        [TestCase(ulong.MaxValue, 0)]
         [TestCase((float) 1.3, 0)]
         [TestCase((float) 1.4, 2)]
         [TestCase((double) 51.3, 1)]
@@ -351,15 +353,34 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase((double) 255.5, 1)]
         [TestCase('1', 2)]
         [TestCase('2', 1)]
+        [TestCase("1", 2)]
+        [TestCase("2", 1)]
+        [TestCase("Hello World", 0)]
+        [TestCase("Тест1", 1)]
+        [TestCase("🙂🔥😎", 2)]
         [TestCase(true, 1)]
         [TestCase(false, 1)]
+        [TestCase(new[]{true, false}, 1)]
+        [TestCase(new byte[]{1, 2}, 2)]
+        [TestCase(new sbyte[]{1, -2}, 0)]
+        [TestCase(new short[]{1, 3}, 2)]
+        [TestCase(new ushort[]{1, 4}, 2)]
+        [TestCase(new int[]{1, 5}, 2)]
+        [TestCase(new uint[]{1, 6}, 1)]
+        [TestCase(new long[]{1, 7}, 0)]
+        [TestCase(new ulong[]{1, 8}, 0)]
+        [TestCase(new float[]{1.1f, 9.9f}, 1)]
+        [TestCase(new double[]{1.2f, 19.19f}, 1)]
+        [TestCase(new char[]{'x', 'y'}, 1)]
+        [TestCase(new string[]{"Hello", "World"}, 2)]
+        // ReSharper restore RedundantExplicitArrayCreation
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
 
             // Verify against real Affinity.
-            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key), "Actual primary node is different");
         }
 
         [Test]
@@ -422,6 +443,23 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
         }
 
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void DataStreamer_PrimitiveKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            using (var streamer = Client.GetDataStreamer<int, int>(_cache.Name))
+            {
+                streamer.Add(key, key);
+            }
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Start", RequestNamePrefixStreamer));
+        }
+
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
             var cfg = base.GetClientConfiguration();
@@ -433,7 +471,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             return cfg;
         }
 
-        private int GetClientRequestGridIndex(string message = null)
+        private int GetClientRequestGridIndex(string message = null, string prefix = null)
         {
             message = message ?? "Get";
 
@@ -441,7 +479,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 for (var i = 0; i < ServerCount; i++)
                 {
-                    var requests = GetServerRequestNames(i, RequestNamePrefixCache);
+                    var requests = GetServerRequestNames(i, prefix ?? RequestNamePrefixCache);
 
                     if (requests.Contains(message))
                     {

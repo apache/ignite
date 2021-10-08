@@ -23,8 +23,9 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import com.jcraft.jsch.ChannelExec;
@@ -71,7 +72,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     private static final String DFLT_SCRIPT_LINUX = "bin/ignite.sh -v";
 
     /** Date format for log file name. */
-    private static final SimpleDateFormat FILE_NAME_DATE_FORMAT = new SimpleDateFormat("MM-dd-yyyy--HH-mm-ss");
+    private static final DateTimeFormatter FILE_NAME_DATE_FORMAT =
+        DateTimeFormatter.ofPattern("MM-dd-yyyy--HH-mm-ss").withZone(ZoneId.systemDefault());
 
     /** Used to register successful node start in log */
     private static final String SUCCESSFUL_START_MSG = "Successfully bound to TCP port";
@@ -171,7 +173,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (cfg == null)
                 cfg = "";
 
-            String id = FILE_NAME_DATE_FORMAT.format(new Date()) + '-' + UUID.randomUUID().toString().substring(0, 8);
+            String id = FILE_NAME_DATE_FORMAT.format(Instant.now()) + '-' +
+                UUID.randomUUID().toString().substring(0, 8);
 
             String scriptOutputFileName = id + ".log";
 

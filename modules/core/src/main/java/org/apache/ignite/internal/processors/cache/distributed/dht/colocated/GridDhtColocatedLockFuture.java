@@ -550,7 +550,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -569,6 +571,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -1099,7 +1104,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncMode() == FULL_SYNC,
-                                        inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
@@ -1779,7 +1783,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         newVal != null,
                         null,
                         false,
-                        CU.subjectId(tx, cctx.shared()),
                         null,
                         tx == null ? null : tx.resolveTaskName(),
                         keepBinary);

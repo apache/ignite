@@ -19,6 +19,7 @@
 
 #include <ignite/ignition.h>
 #include <ignite/test_utils.h>
+#include <ignite/compute_types.h>
 
 using namespace ignite;
 using namespace ignite::common;
@@ -26,56 +27,6 @@ using namespace ignite::common::concurrent;
 using namespace ignite::cluster;
 
 using namespace boost::unit_test;
-
-/*
- * Check if cluster node contain the attribute with name provided.
- */
-class HasAttrName : public IgnitePredicate<ClusterNode>
-{
-public:
-    HasAttrName(std::string name) :
-        name(name)
-    {
-        // No-op.
-    }
-
-    bool operator()(ClusterNode& node)
-    {
-        std::vector<std::string> attrs = node.GetAttributes();
-
-        return std::find(attrs.begin(), attrs.end(), name) != attrs.end();
-    }
-
-private:
-    std::string name;
-};
-
-/*
- * Check if cluster node contain the attribute with value provided.
- */
-class HasAttrValue : public IgnitePredicate<ClusterNode>
-{
-public:
-    HasAttrValue(std::string name, std::string val) :
-        name(name), val(val)
-    {
-        // No-op.
-    }
-
-    bool operator()(ClusterNode& node)
-    {
-        try {
-            return node.GetAttribute<std::string>(name) == this->val;
-        }
-        catch (...) {}
-
-        return false;
-    }
-
-private:
-    std::string name;
-    std::string val;
-};
 
 /*
  * Predicate holder is required to demonstrate
@@ -397,8 +348,8 @@ BOOST_AUTO_TEST_CASE(IgniteForPredicate)
 
     ClusterGroup groupServers = group0.ForServers();
     ClusterGroup groupClients = group0.ForClients();
-    ClusterGroup group1 = groupServers.ForPredicate(new HasAttrValue("TestAttribute", "Value0"));
-    ClusterGroup group2 = groupServers.ForPredicate(new HasAttrValue("TestAttribute", "Value1"));
+    ClusterGroup group1 = groupServers.ForPredicate(new ignite_test::HasAttrValue("TestAttribute", "Value0"));
+    ClusterGroup group2 = groupServers.ForPredicate(new ignite_test::HasAttrValue("TestAttribute", "Value1"));
     ClusterGroup group3 = groupServers.ForClients();
 
     BOOST_REQUIRE(group0.GetNodes().size() == 4);
@@ -408,10 +359,10 @@ BOOST_AUTO_TEST_CASE(IgniteForPredicate)
     BOOST_REQUIRE(group2.GetNodes().size() == 2);
     BOOST_REQUIRE(group3.GetNodes().size() == 0);
 
-    ClusterGroup group4 = group0.ForPredicate(new HasAttrName("TestAttribute"));
-    ClusterGroup group5 = group4.ForPredicate(new HasAttrValue("TestAttribute", "Value0"));
-    ClusterGroup group6 = group4.ForPredicate(new HasAttrValue("TestAttribute", "Value1"));
-    ClusterGroup group7 = group4.ForPredicate(new HasAttrValue("TestAttribute", "ValueInvalid"));
+    ClusterGroup group4 = group0.ForPredicate(new ignite_test::HasAttrName("TestAttribute"));
+    ClusterGroup group5 = group4.ForPredicate(new ignite_test::HasAttrValue("TestAttribute", "Value0"));
+    ClusterGroup group6 = group4.ForPredicate(new ignite_test::HasAttrValue("TestAttribute", "Value1"));
+    ClusterGroup group7 = group4.ForPredicate(new ignite_test::HasAttrValue("TestAttribute", "ValueInvalid"));
 
     BOOST_REQUIRE(group4.GetNodes().size() == 3);
     BOOST_REQUIRE(group5.GetNodes().size() == 1);
@@ -534,7 +485,7 @@ BOOST_AUTO_TEST_CASE(IgniteGetPredicate)
 {
     IgniteCluster cluster = server1.GetCluster();
     ClusterGroup group0 = cluster.AsClusterGroup();
-    ClusterGroup group1 = group0.ForPredicate(new HasAttrValue("TestAttribute", "Value1"));
+    ClusterGroup group1 = group0.ForPredicate(new ignite_test::HasAttrValue("TestAttribute", "Value1"));
 
     std::vector<ClusterNode> nodes0 = group0.GetNodes();
     std::vector<ClusterNode> nodes1 = group1.GetNodes();

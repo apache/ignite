@@ -207,6 +207,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
             testLog.warningsTotal() < transactions);
     }
 
+    /** */
     @Test
     public void testDumpLongRunningOperationsWaitForFullyInitializedExchangeManager() throws Exception {
         long waitingTimeout = 5_000;

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -56,6 +57,8 @@ import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
+import org.apache.ignite.internal.processors.query.stat.ObjectStatistics;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -483,6 +486,22 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Get actual table statistics if exists.
+     *
+     * @return Table statistics or {@code null} if there is no statistics available.
+     */
+    public ObjectStatistics tableStatistics() {
+        GridCacheContext cacheContext = cacheInfo.cacheContext();
+
+        if (cacheContext == null)
+            return null;
+
+        IgniteH2Indexing indexing = (IgniteH2Indexing)cacheContext.kernalContext().query().getIndexing();
+
+        return indexing.statsManager().getLocalStatistics(new StatisticsKey(identifier.schema(), identifier.table()));
+    }
+
+    /**
      * @return Cache context.
      */
     @Nullable public GridCacheContext cacheContext() {
@@ -726,6 +745,11 @@ public class GridH2Table extends TableBase {
                 /** {@inheritDoc} */
                 @Override public IndexName idxName() {
                     return new IndexName(cacheName(), getSchema().getName(), tableName, idx.getName());
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+                    throw new UnsupportedOperationException("Hasn't be invoked for destroyed index.");
                 }
             };
 

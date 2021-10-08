@@ -4347,7 +4347,20 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      */
     private enum TestEnum {
-        A, B, C, D, E
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C,
+
+        /** */
+        D,
+
+        /** */
+        E
     }
 
     /** */
@@ -5050,15 +5063,20 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * Holder for non-stadard collections.
      */
     private static class CustomCollections {
+        /** */
         public List list = new ArrayList();
 
+        /** */
         public List customList = new CustomArrayList();
     }
 
+    /** */
     @SuppressWarnings("unchecked")
     private static class CustomCollectionsWithFactory implements Binarylizable {
+        /** */
         public List list = new CustomArrayList();
 
+        /** */
         public Map map = new CustomHashMap();
 
         /** {@inheritDoc} */
@@ -5406,6 +5424,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class MySingleton {
+        /** */
         public static final MySingleton INSTANCE = new MySingleton();
 
         /** */
@@ -5786,17 +5805,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /** */
     public enum DeclaredBodyEnum {
+        /** */
         ONE {
+            /** {@inheritDoc} */
             @Override boolean isSupported() {
                 return false;
             }
         },
+
+        /** */
         TWO {
+            /** {@inkheritDoc} */
             @Override boolean isSupported() {
                 return false;
             }
         };
 
+        /** */
         abstract boolean isSupported();
     }
 

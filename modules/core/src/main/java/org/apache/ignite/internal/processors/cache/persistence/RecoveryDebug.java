@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
-import java.util.TimeZone;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -44,16 +44,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class RecoveryDebug implements AutoCloseable {
     /** */
-    private static final ThreadLocal<SimpleDateFormat> sdf = new ThreadLocal<SimpleDateFormat>() {
-        /** {@inheritDoc} */
-        @Override protected SimpleDateFormat initialValue() {
-            SimpleDateFormat f = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss-SSS");
-
-            f.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            return f;
-        }
-    };
+    private static final DateTimeFormatter DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("dd-MM-yyyy-HH-mm-ss-SSS").withZone(ZoneId.of("UTC"));
 
     /** */
     @Nullable private final IgniteLogger log;
@@ -85,7 +77,7 @@ public class RecoveryDebug implements AutoCloseable {
                     return;
 
             File f = new File(tmpDir, "recovery-" +
-                sdf.get().format(new Date(time)) + "-" + constId + ".log");
+                DATE_FORMATTER.format(Instant.ofEpochMilli(time)) + "-" + constId + ".log");
 
             f.createNewFile();
 

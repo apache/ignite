@@ -78,14 +78,14 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
         CacheObject val,
         GridCacheVersion writeVer,
         long expireTime,
-        long updCntr
+        long updCntr,
+        boolean primary
     ) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
 
     /** {@inheritDoc} */
-    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
-        throws IgniteCheckedException {
+    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr) {
         return null;
     }
 

@@ -27,6 +27,7 @@ import org.junit.Test;
 /**
  */
 public class IgniteDataFrameSelfTest extends GridAbstractExamplesTest {
+    /** */
     static final String[] EMPTY_ARGS = new String[0];
 
     /**

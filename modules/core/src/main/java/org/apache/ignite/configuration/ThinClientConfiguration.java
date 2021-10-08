@@ -57,7 +57,7 @@ public class ThinClientConfiguration {
     }
 
     /**
-     * Gets active transactions count per connection limit.
+     * @return Active transactions count per connection limit.
      */
     public int getMaxActiveTxPerConnection() {
         return maxActiveTxPerConn;
@@ -66,6 +66,7 @@ public class ThinClientConfiguration {
     /**
      * Sets active transactions count per connection limit.
      *
+     * @param maxActiveTxPerConn Active transactions count per connection limit.
      * @return {@code this} for chaining.
      */
     public ThinClientConfiguration setMaxActiveTxPerConnection(int maxActiveTxPerConn) {
@@ -87,6 +88,7 @@ public class ThinClientConfiguration {
      * Sets active compute tasks per connection limit.
      * Value {@code 0} means that compute grid functionality is disabled for thin clients.
      *
+     * @param maxActiveComputeTasksPerConn Active compute tasks per connection limit.
      * @return {@code this} for chaining.
      */
     public ThinClientConfiguration setMaxActiveComputeTasksPerConnection(int maxActiveComputeTasksPerConn) {

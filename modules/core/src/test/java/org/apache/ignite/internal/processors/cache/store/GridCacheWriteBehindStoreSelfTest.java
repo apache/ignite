@@ -36,6 +36,21 @@ import org.junit.Test;
  * This class provides basic tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
+    /** Sizes set for {@link #testResolveFlusherByKeyHash()}. */
+    private static final int[] DISTRIBUTION_TESTING_SIZES = new int[] {
+        1, 2, 4, 8, 16, 32, 64, 128, 256, 0x10000, 0x80000,
+
+        3, 5, 7, 9, 10, 12, 15, 17, 19, 23, 29, 31, 37, 66, 146, 100500
+    };
+
+    /** Hashes set for {@link #testResolveFlusherByKeyHash()}. */
+    private static final int[] DISTRIBUTION_TESTING_HASHES = new int[] {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 17, 19, 23, 29, 31, 37, 123, 100500,
+        0xdeadbeef,
+        "abc".hashCode(),
+        "accb2e8ea33e4a89b4189463cacc3c4e".hashCode(),
+    };
+
     /**
      * Tests correct store (with write coalescing) shutdown when underlying store fails.
      *
@@ -308,9 +323,8 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             log().info(">>> [putCnt = " + actualPutCnt.get() + ", delegatePutCnt=" + delegatePutCnt + "]");
 
             assertTrue("No puts were made to the underlying store", delegatePutCnt > 0);
-            if (store.getWriteCoalescing()) {
+            if (store.getWriteCoalescing())
                 assertTrue("Too many puts were made to the underlying store", delegatePutCnt < actualPutCnt.get() / 10);
-            }
             else {
                 assertTrue(
                     "Too few puts cnt=" + actualPutCnt.get() + " << storePutCnt=" + delegatePutCnt,
@@ -452,5 +466,30 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         Map<Integer, String> underlyingMap = delegate.getMap();
 
         assertTrue("Store map key set: " + underlyingMap.keySet(), F.eqOrdered(underlyingMap.keySet(), intList));
+    }
+
+    /**
+     * Test to verify the {@link GridCacheWriteBehindStore#resolveFlusherByKeyHash(int)}.
+     */
+    @Test
+    public void testResolveFlusherByKeyHash() {
+        store = new GridCacheWriteBehindStore<>(null, "", "", log, delegate);
+
+        Arrays.stream(DISTRIBUTION_TESTING_SIZES).forEach(size -> {
+            store.setFlushThreadCount(size);
+
+            Arrays.stream(DISTRIBUTION_TESTING_HASHES).forEach(hash -> {
+                hashToIndexAdvancedDistributionAssertion(hash, size);
+                hashToIndexAdvancedDistributionAssertion((-1) * hash, size);
+            });
+        });
+    }
+
+    /** */
+    private void hashToIndexAdvancedDistributionAssertion(int hash, int size) {
+        int idx = store.resolveFlusherByKeyHash(hash);
+
+        assertTrue("index=" + idx + " is negative, when hash=" + hash + ", size=" + size, idx >= 0);
+        assertTrue("index=" + idx + " is bigger than " + size + " bound, when hash=" + hash + ", size=" + size, idx < size);
     }
 }

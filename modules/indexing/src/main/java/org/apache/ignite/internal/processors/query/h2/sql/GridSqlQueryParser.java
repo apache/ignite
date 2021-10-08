@@ -1091,7 +1091,14 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+            Boolean prev = flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+
+            if (prev != null) {
+                String prevCol = INDEX_COLUMN_NAME.get(col) + " " + (prev ? "ASC" : "DESC");
+
+                throw new IgniteSQLException("Already defined column in index: " + prevCol,
+                    IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS);
+            }
         }
 
         idx.setFields(flds);

@@ -20,11 +20,14 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.events.BaselineEventsLocalTest;
 import org.apache.ignite.events.BaselineEventsRemoteTest;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
+import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
 import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyTest;
 import org.apache.ignite.util.GridCommandHandlerDefragmentationTest;
 import org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest;
 import org.apache.ignite.util.GridCommandHandlerIndexListTest;
@@ -88,9 +91,14 @@ import org.junit.runners.Suite;
 
     GridCommandHandlerDefragmentationTest.class,
 
+    GridCommandHandlerConsistencyTest.class,
+    GridCommandHandlerConsistencyBinaryTest.class,
+
     SystemViewCommandTest.class,
     MetricCommandTest.class,
-    PerformanceStatisticsCommandTest.class
+    PerformanceStatisticsCommandTest.class,
+
+    IgniteIndexReaderTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }

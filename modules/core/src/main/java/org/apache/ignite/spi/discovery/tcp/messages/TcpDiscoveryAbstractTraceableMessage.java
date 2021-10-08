@@ -57,6 +57,8 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     /**
      * Restores spanContainer field to non-null value after deserialization.
      * This is needed for compatibility between nodes having Tracing SPI and not.
+     *
+     * @return Deserialized instance os the current class.
      */
     public Object readResolve() {
         if (spanContainer == null)

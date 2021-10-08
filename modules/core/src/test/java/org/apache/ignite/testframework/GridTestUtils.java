@@ -2021,10 +2021,12 @@ public final class GridTestUtils {
         return factory;
     }
 
+    /** */
     public static String keyStorePassword() {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
+    /** */
     @NotNull public static String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
@@ -2125,7 +2127,9 @@ public final class GridTestUtils {
     public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
         final AtomicBoolean stop = new AtomicBoolean();
 
+        /** */
         class Stopper extends TimerTask {
+            /** {@inheritDoc} */
             @Override public void run() {
                 stop.set(true);
             }
@@ -2197,6 +2201,23 @@ public final class GridTestUtils {
         for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
             new File(grp, "index.bin").delete();
         }
+    }
+
+    /**
+     * Removing the directory cache groups.
+     * Deletes all directory satisfy the {@code cacheGrpFilter}.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cacheGrpFilter Filter cache groups.
+     * @throws Exception If failed.
+     */
+    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        String nodeDirName = U.maskForFileName(igniteInstanceName);
+
+        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
+            U.delete(cacheGrpDir);
     }
 
     /**

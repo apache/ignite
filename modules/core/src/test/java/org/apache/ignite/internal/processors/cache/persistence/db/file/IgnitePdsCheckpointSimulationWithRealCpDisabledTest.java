@@ -358,7 +358,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
                 new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
                     0L,
-                    cctx.affinity().partition(i), i));
+                    cctx.affinity().partition(i), i, DataEntry.EMPTY_FLAGS));
         }
 
         UUID cpId = UUID.randomUUID();
@@ -1114,6 +1114,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      */
     private static class PartitionMetaStateRecordExcludeIterator
         extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+        /** */
         private PartitionMetaStateRecordExcludeIterator(
             GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
             super(it);

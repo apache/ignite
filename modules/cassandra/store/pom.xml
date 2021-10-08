@@ -26,19 +26,18 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-cassandra</artifactId>
-        <version>2.11.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>ignite-cassandra-store</artifactId>
-    <version>2.11.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <cassandra-driver.version>3.2.0</cassandra-driver.version>
         <cassandra-all.version>3.11.3</cassandra-all.version>
-        <netty.version>4.1.27.Final</netty.version>
         <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
 
@@ -52,26 +51,26 @@
 
         <!-- Ignite -->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -225,7 +224,7 @@
                             <overWriteIfNewer>true</overWriteIfNewer>
                             <excludeTransitive>true</excludeTransitive>
                             <excludeGroupIds>
-                                org.apache.ignite,org.springframework,org.gridgain
+                                ${project.groupId},org.springframework,org.gridgain
                             </excludeGroupIds>
                             <excludeArtifactIds>
                                 commons-logging,slf4j-api,cache-api,slf4j-api,aopalliance
