@@ -129,6 +129,9 @@
     </None>
     <None Remove="Examples\**" />
     <None Remove="Client\Compatibility\**" />
+    <None Update="Deployment\peer_assembly_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
