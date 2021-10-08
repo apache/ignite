@@ -15,9 +15,7 @@
 * limitations under the License.
 */
 
-using System;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
