@@ -36,7 +36,7 @@
  /**
   * <b>Tests in the class strongly depend on implementation of {@link GridEventStorageManager} and internal logic of
   * services and PME discovery listeners.</b>
-  * <p/>
+  * <p>
   * Tests that discovery listener registered by {@link ServiceDeploymentManager} will be notified earlier than discovery
   * listener registered by {@link GridCachePartitionExchangeManager}. It allows service manager capture custom message
   * because it may be nullified in PME process at the end of exchange in {@link GridDhtPartitionsExchangeFuture#onDone()}.
@@ -50,11 +50,11 @@
 
      /**
       * <b>Strongly depends on internal implementation of {@link GridEventStorageManager}.</b>
-      * <p/>
+      * <p>
       * Tests that discovery listener registered by {@link ServiceDeploymentManager} is in collection of hight priority
       * listeners, at the same time discovery listener registered by {@link GridCachePartitionExchangeManager} is in
       * collection of usual listeners.
-      * <p/>
+      * <p>
       * This guarantees that service deployment discovery listener will be notified earlier that PME's discovery listener
       * and will be able to capture custom messages which may be nullified in PME process.
       *

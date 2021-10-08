@@ -168,8 +168,9 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_J
  * Use {@link #start()} method to start grid with default configuration. You can also use
  * {@link IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with <strong>URI deployment</strong>.
- * <pre class="java">
+ * <pre class="java">{@code
  * GridConfiguration cfg = new GridConfiguration();
+ * }</pre>
  */
 public class IgnitionEx {
     /** Default configuration path relative to Ignite home. */

@@ -411,7 +411,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
     /**
      * Creates default cache and preload some data entries.
-     * <br/>
+     * <br>
      * <table class="doctable">
      * <th>Cache parameter</th>
      * <th>Value</th>

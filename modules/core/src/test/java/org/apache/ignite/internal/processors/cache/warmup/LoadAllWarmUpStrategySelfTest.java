@@ -87,7 +87,7 @@ public class LoadAllWarmUpStrategySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test checks that number of pages loaded is equal to number of pages warmed up.
-     * <p/>
+     * <p>
      * Steps:
      * 1)Start a node with static and dynamic caches and fill them in;
      * 2)Make a checkpoint and get number of pages loaded;
@@ -135,7 +135,7 @@ public class LoadAllWarmUpStrategySelfTest extends GridCommonAbstractTest {
     /**
      * Test checks that if memory is less than pds, not all pages in pds will warm-up.
      * There may be evictions during warm-up, so count of pages loaded is not maximum.
-     * <p/>
+     * <p>
      * Steps:
      * 1)Start node and fill it with data for first data region until it is 2 * {@code MIN_PAGE_MEMORY_SIZE};
      * 2)Make a checkpoint;

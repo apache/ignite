@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link java.util.Deque} decorator that uses {@link LongAdder} for faster size computation.
- * <p />
+ * <p>
  * Implementation is thread-safe if underlying {@link Deque} is thread-safe.
  *
  * @param <E> Deque element type
@@ -293,7 +293,7 @@ public class FastSizeDeque<E> implements Deque<E> {
 
     /**
      * Adds all of the elements in the specified collection at the end of this deque.
-     * <p />
+     * <p>
      * Note: If collection being added can mutate concurrently, or underlying deque implementation allows partial
      * insertion, then subsequent calls to {@link #size()} can report incorrect value.
      *

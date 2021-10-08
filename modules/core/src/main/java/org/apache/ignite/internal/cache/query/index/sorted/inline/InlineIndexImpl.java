@@ -157,7 +157,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /**
      * Checks both rows are the same.
-     * <p/>
+     * <p>
      * Primarly used to verify if the single row lookup optimization can be applied.
      *
      * @param r1 The first row.

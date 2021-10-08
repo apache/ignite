@@ -1296,14 +1296,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * Testing methods {@link IgniteUtils#writeLongString} and
      * {@link IgniteUtils#readLongString} using resource files, where each line is
      * needed to test different cases:
-     * 1){@code null}. <br/>
+     * 1){@code null}. <br>
      *
-     * 2)Empty line. <br/>
+     * 2)Empty line. <br>
      *
-     * 3)Simple strings. <br/>
+     * 3)Simple strings. <br>
      *
      * 4)Various combinations of strings with one, two, and three-byte
-     * characters with size greater than {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * characters with size greater than {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * @throws Exception If failed.
      */
@@ -1326,30 +1326,30 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /**
      * Testing method {@link IgniteUtils#writeCutString} using resource files,
-     * where each line is needed to test different cases: <br/>
-     * 1){@code null}. <br/>
+     * where each line is needed to test different cases: <br>
+     * 1){@code null}. <br>
      *
-     * 2)Empty line. <br/>
+     * 2)Empty line. <br>
      *
-     * 3)Simple strings. <br/>
+     * 3)Simple strings. <br>
      *
      * 4)String containing single-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * 5)String containing single-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * 6)String containing two-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * 7)String containing two-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * 8)String containing three-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * 9)String containing three-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br>
      *
      * @throws Exception If failed.
      */

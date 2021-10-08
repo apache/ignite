@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus
 /**
  * Holder of up-to-date information about cache index building operations (rebuilding indexes, building new indexes).
  * Avoids index inconsistency when operations have completed, a checkpoint has not occurred, and the node has been restarted.
- * <p/>
+ * <p>
  * For rebuild indexes, use {@link #onStartRebuildIndexes} and {@link #onFinishRebuildIndexes}.
  * For build new indexes, use {@link #onStartBuildNewIndex} and {@link #onFinishBuildNewIndex}.
  * Use {@link #rebuildCompleted} to check that the index rebuild is complete.
@@ -101,7 +101,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
     /**
      * Callback on the start of rebuilding cache indexes.
-     * <p/>
+     * <p>
      * Registers the start of rebuilding cache indexes, for persistent cache
      * writes a entry to the MetaStorage so that if a failure occurs,
      * the indexes are automatically rebuilt.
@@ -115,7 +115,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
     /**
      * Callback on the start of building a new cache index.
-     * <p/>
+     * <p>
      * Registers the start of building a new cache index, for persistent cache
      * writes a entry to the MetaStorage so that if a failure occurs,
      * the indexes are automatically rebuilt.
@@ -129,7 +129,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
     /**
      * Callback on the finish of rebuilding cache indexes.
-     * <p/>
+     * <p>
      * Registers the finish of rebuilding cache indexes, if all operations
      * have been completed for persistent cache, then the entry will be deleted
      * from the MetaStorage at the end of the checkpoint,
@@ -144,7 +144,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
     /**
      * Callback on the finish of building a new cache index.
-     * <p/>
+     * <p>
      * Registers the finish of building a new cache index, if all operations
      * have been completed for persistent cache, then the entry will be deleted
      * from the MetaStorage at the end of the checkpoint,
@@ -289,7 +289,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
     /**
      * Callback on the start of the cache index building operation.
-     * <p/>
+     * <p>
      * Registers the start of an index build operation, for persistent cache
      * writes a entry to the MetaStorage so that if a failure occurs,
      * the indexes are automatically rebuilt.
@@ -331,7 +331,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
     /**
      * Callback on the finish of the cache index building operation.
-     * <p/>
+     * <p>
      * Registers the finish of the index build operation, if all operations
      * have been completed for persistent cache, then the entry will be deleted
      * from the MetaStorage at the end of the checkpoint,

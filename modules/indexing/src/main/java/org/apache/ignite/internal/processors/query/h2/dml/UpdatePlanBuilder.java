@@ -799,9 +799,9 @@ public final class UpdatePlanBuilder {
     }
 
     /**
-     * Checks that DML query (insert, merge, update, bulk load aka copy) columns: <br/>
-     * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br/>
-     * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. <br/>
+     * Checks that DML query (insert, merge, update, bulk load aka copy) columns: <br>
+     * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br>
+     * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. <br>
      *
      * @param tab - updated table.
      * @param affectedCols - table's column names affected by dml query. Their order should be the same as in the

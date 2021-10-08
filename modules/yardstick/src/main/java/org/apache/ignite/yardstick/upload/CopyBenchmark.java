@@ -71,9 +71,9 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
     /**
      * Generate csv file with specified prefix and containing specified number
      * of records (lines).
-     * <br/>
+     * <br>
      * Each record contain incremental (starting 1) id and set of random values.
-     * <br/>
+     * <br>
      * File is created in current directory and is deleted on JVM exits.
      *
      * @param filePrefix prefix for csv to be generated.

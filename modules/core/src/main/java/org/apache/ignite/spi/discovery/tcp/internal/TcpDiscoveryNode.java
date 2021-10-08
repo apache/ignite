@@ -412,7 +412,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /**
-     * Gets node last update time. Used for logging purposes only.<br/>
+     * Gets node last update time. Used for logging purposes only.<br>
      * Note that this method tries to convert {@code nanoTime} internal JVM time format into a regular timestamp.
      * This might lead to errors if there was GC between measuring of current timestamp and current nano time,
      * but generally it might be ignored.

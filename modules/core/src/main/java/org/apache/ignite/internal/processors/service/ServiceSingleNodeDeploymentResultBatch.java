@@ -32,7 +32,7 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
 
 /**
  * Batch of service single node deployment result.
- * <p/>
+ * <p>
  * Contains collection of {@link ServiceSingleNodeDeploymentResult} mapped services ids.
  */
 public class ServiceSingleNodeDeploymentResultBatch implements Message {

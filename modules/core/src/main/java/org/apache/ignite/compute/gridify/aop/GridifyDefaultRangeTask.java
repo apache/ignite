@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.util.gridify.GridifyUtils.UNKNOWN_SIZE;
 
 /**
  * Default gridify task which simply executes a method on remote node.
- * <p/>
+ * <p>
  * See {@link org.apache.ignite.compute.gridify.Gridify} documentation for more information about execution of {@code gridified} methods.
  * @see GridifySetToSet
  * @see GridifySetToValue

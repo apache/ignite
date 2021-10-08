@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * |Next ptr|Rel ptr |              Empty                          |
  * +--------+--------+---------------------------------------------+
  * </pre>
- * <p/>
+ * <p>
  * When page is allocated and is in use:
  * <pre>
  * +--------+--------+--------+--------+---------------------------+

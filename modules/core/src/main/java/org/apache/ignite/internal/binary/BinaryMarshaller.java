@@ -70,7 +70,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /**
      * Sets {@link BinaryContext}.
-     * <p/>
+     * <p>
      * @param ctx Binary context.
      */
     private void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {

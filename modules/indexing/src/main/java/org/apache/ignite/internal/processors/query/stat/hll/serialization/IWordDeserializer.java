@@ -28,7 +28,7 @@ public interface IWordDeserializer {
     long readWord();
 
     /**
-     * Returns the number of words that could be encoded in the sequence.<p/>
+     * Returns the number of words that could be encoded in the sequence.<p>
      *
      * NOTE:  the sequence that was encoded may be shorter than the value this
      *        method returns due to padding issues within bytes. This guarantees

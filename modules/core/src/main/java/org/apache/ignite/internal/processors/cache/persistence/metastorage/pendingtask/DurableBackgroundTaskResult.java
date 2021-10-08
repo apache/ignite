@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Result of executing a durable background task.
- * <p/>
+ * <p>
  * There may be the following states:
  * <ul>
  *   <li>{@link #completed Completed} - the task has completed its execution and should be deleted.</li>

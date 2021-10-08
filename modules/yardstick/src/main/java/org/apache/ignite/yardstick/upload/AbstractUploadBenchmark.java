@@ -82,7 +82,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Method to warm up Benchmark server. <br/> In upload benchmarks we need warmup action and real test action to be
+     * Method to warm up Benchmark server. <br> In upload benchmarks we need warmup action and real test action to be
      * separated.
      */
     protected abstract void warmup(Connection warmupConn) throws Exception;

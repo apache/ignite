@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Service cluster deployment result.
- * <p/>
+ * <p>
  * Contains coint of deployed service and deployment errors across the cluster mapped to nodes ids.
  */
 public class ServiceClusterDeploymentResult implements Serializable {

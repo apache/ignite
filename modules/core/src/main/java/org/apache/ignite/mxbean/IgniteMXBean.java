@@ -390,7 +390,6 @@ public interface IgniteMXBean {
      *
      * @param active Activate/DeActivate flag.
      * @deprecated Use {@link #clusterState(String, boolean)} instead.
-     * @throws IgniteCheckedException if deactivation stopped.
      */
     @Deprecated
     @MXBeanDescription(
@@ -673,7 +672,6 @@ public interface IgniteMXBean {
      *
      * @param state String representation of new cluster state.
      * @deprecated Use {@link #clusterState(String, boolean)} instead.
-     * @throws IgniteCheckedException if deactivation stopped.
      */
     @Deprecated
     @MXBeanDescription("Changes current cluster state.")
@@ -689,7 +687,6 @@ public interface IgniteMXBean {
      *
      * @param state String representation of new cluster state.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-     * @throws IgniteCheckedException if deactivation stopped.
      */
     @MXBeanDescription("Changes current cluster state.")
     public void clusterState(

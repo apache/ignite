@@ -21,13 +21,13 @@ package org.apache.ignite.internal.processors.query.stat.hll.serialization;
  * a low bit in a byte. However, a high byte in a word is written at a lower index
  * in the array than a low byte in a word. The first word is written at the lowest
  * array index. Each serializer is one time use and returns its backing byte
- * array.<p/>
+ * array.<p>
  *
  * This encoding was chosen so that when reading bytes as octets in the typical
  * first-octet-is-the-high-nibble fashion, an octet-to-binary conversion
- * would yield a high-to-low, left-to-right view of the "short words".<p/>
+ * would yield a high-to-low, left-to-right view of the "short words".<p>
  *
- * Example:<p/>
+ * Example:<p>
  *
  * Say short words are 5 bits wide. Our word sequence is the values
  * <code>[31, 1, 5]</code>. In big-endian binary format, the values are

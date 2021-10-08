@@ -58,20 +58,20 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.inclu
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
- * <p/>
+ * <p>
  * The general purpose of this approach is to reduce cache store load under high
  * store update rate. The idea is to cache all write and remove operations in a pending
  * map and delegate these changes to the underlying store either after timeout or
  * if size of a pending map exceeded some pre-configured value. Another performance gain
  * is achieved due to combining a group of similar operations to a single batch update.
- * <p/>
+ * <p>
  * The essential flush size for the write-behind cache should be at least the estimated
  * count of simultaneously written keys. In case of significantly smaller value there would
  * be triggered a lot of flush events that will result in a high cache store load.
- * <p/>
+ * <p>
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
- * <p/>
+ * <p>
  * {@link GridCacheWriteBehindStore} doesn't support concurrent modifications of the same key.
  */
 public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, LifecycleAware {
@@ -204,7 +204,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /**
      * Gets the maximum size of the write-behind buffer. When the count of unique keys
      * in write buffer exceeds this value, the buffer is scheduled for write to the underlying store.
-     * <p/>
+     * <p>
      * If this value is {@code 0}, then flush is performed only on time-elapsing basis. However,
      * when this value is {@code 0}, the cache critical size is set to
      * {@link CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}.
@@ -265,7 +265,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /**
      * Gets the cache flush frequency. All pending operations on the underlying store will be performed
      * within time interval not less then this value.
-     * <p/>
+     * <p>
      * If this value is {@code 0}, then flush is performed only when buffer size exceeds flush size.
      *
      * @return Flush frequency in milliseconds.
@@ -844,7 +844,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /**
      * Tries to update store with the given values and returns {@code true} in case of success.
      *
-     * <p/> If any exception in underlying store is occurred, this method checks the map size.
+     * <p> If any exception in underlying store is occurred, this method checks the map size.
      * If map size exceeds some critical value, then it returns {@code true} and this value will
      * be lost. If map size does not exceed critical value, it will return false and value will
      * be retained in write cache.

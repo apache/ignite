@@ -126,7 +126,7 @@ public class GridTcpRouterConfiguration {
      * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
      * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
      * For more information, see {@link Socket#setTcpNoDelay(boolean)}
-     * <p/>
+     * <p>
      * If not specified, default value is {@code true}.
      *
      * @return Whether {@code TCP_NODELAY} option should be enabled.
@@ -138,7 +138,7 @@ public class GridTcpRouterConfiguration {
     /**
      * Gets timeout in milliseconds to consider connection idle. If no messages sent by client
      * within this interval router closes idling connection.
-     * <p/>
+     * <p>
      * If not specified, default value is {@link ConnectorConfiguration#DFLT_IDLE_TIMEOUT}.
      *
      * @return Idle timeout.

@@ -179,7 +179,7 @@ public class ServiceDeploymentManager {
 
     /**
      * Invokes {@link GridWorker#blockingSectionBegin()} for service deployment worker.
-     * <p/>
+     * <p>
      * Should be called from service deployment worker thread.
      */
     void deployerBlockingSectionBegin() {
@@ -190,7 +190,7 @@ public class ServiceDeploymentManager {
 
     /**
      * Invokes {@link GridWorker#blockingSectionEnd()} for service deployment worker.
-     * <p/>
+     * <p>
      * Should be called from service deployment worker thread.
      */
     void deployerBlockingSectionEnd() {
@@ -296,7 +296,7 @@ public class ServiceDeploymentManager {
 
     /**
      * Services discovery messages high priority listener.
-     * <p/>
+     * <p>
      * The listener should be notified earlier then PME's listener because of a custom message of {@link
      * DiscoveryCustomEvent} may be nullified in PME before the listener will be able to capture it.
      */

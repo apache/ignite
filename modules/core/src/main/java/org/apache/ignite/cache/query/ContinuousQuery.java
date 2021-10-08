@@ -61,7 +61,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * </pre>
  * <p>
  * You can create and execute a continuous query like so:
- * <pre class="java">
+ * <pre class="java">{@code
  * // Create a new continuous query.
  * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
@@ -84,14 +84,14 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  *
  * // Execute the query and get a cursor that iterates through the initial data.
  * QueryCursor&lt;Cache.Entry&lt;Long, Person&gt;&gt; cur = cache.query(qry);
- * </pre>
+ * }</pre>
  * This will execute query on all nodes that have the cache you are working with and
  * listener will start receiving notifications for cache updates.
  * <p>
  * To stop receiving updates call {@link QueryCursor#close()} method:
- * <pre class="java">
+ * <pre class="java">{@code
  * cur.close();
- * </pre>
+ * }</pre>
  * Note that this works even if you didn't provide the initial query. Cursor will
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.

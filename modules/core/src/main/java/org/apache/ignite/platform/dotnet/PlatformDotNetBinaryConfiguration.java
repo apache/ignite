@@ -168,7 +168,7 @@ public class PlatformDotNetBinaryConfiguration {
 
     /**
      * Sets default keep deserialized flag.
-     * <p />
+     * <p>
      * Can be overridden for particular type using
      * {@link PlatformDotNetBinaryTypeConfiguration#setKeepDeserialized(Boolean)}.
      *

@@ -30,7 +30,7 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
 
 /**
  * Service single node deployment result.
- * <p/>
+ * <p>
  * Contains count of deployed service instances on single node and deployment errors if exist.
  */
 public class ServiceSingleNodeDeploymentResult implements Message {

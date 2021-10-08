@@ -244,7 +244,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * Create all required listeners.
      */
     @Override public void start() throws IgniteCheckedException {
@@ -283,7 +283,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * For persistent cluster it will stop the async worker.
      *
      * @param cancel If {@code true} then ignore worker's queue and finish it as fast as possible. Otherwise
@@ -370,7 +370,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * For persistent nodes wait until worker's queue is empty and worker completed its job.
      */
     @Override public void onDeActivate(GridKernalContext kctx) {
@@ -607,7 +607,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * If local node is client then method should do nothing. It is expected that this method is invoked on coordinator
      * node, but there might be exceptions to this. Validation rules:
      * <ul>
@@ -775,7 +775,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * Since {@link #validateNode(ClusterNode, DiscoveryDataBag.JoiningNodeDiscoveryData)} has already been invoked we
      * can be sure that joining node has valid discovery data. Current method does something meaningful only if joining
      * node has bigger distributed metastorage version, in this case all required updates will be applied.
@@ -825,7 +825,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * Does nothing on client nodes. Also does nothinf if feature is not supported on some node in topology.
      * Otherwise it fills databag with data required for joining node so it could be consistent with the cluster.
      * There are 2 main cases: local node has enough history to send only updates or it doesn't. In first case
@@ -1004,7 +1004,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * {@inheritDoc}
-     * <br/>
+     * <br>
      * Applies received updates if they are present in response.
      *
      * @param data Grid discovery data.

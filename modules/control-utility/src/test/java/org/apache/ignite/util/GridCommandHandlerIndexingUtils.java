@@ -117,7 +117,7 @@ public class GridCommandHandlerIndexingUtils {
 
     /**
      * Create and fill cache.
-     * <br/>
+     * <br>
      * <table class="doctable">
      * <th>Cache parameter</th>
      * <th>Value</th>

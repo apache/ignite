@@ -3401,7 +3401,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Copy source file (or folder) to destination file (or folder). Supported source & destination:
+     * Copy source file (or folder) to destination file (or folder). Supported source &amp; destination:
      * <ul>
      * <li>File to File</li>
      * <li>File to Folder</li>
@@ -5374,7 +5374,6 @@ public abstract class IgniteUtils {
      *
      * @param out Output Binary writer.
      * @param uid UUID to write.
-     * @throws IOException If write failed.
      */
     public static void writeUuid(BinaryRawWriter out, UUID uid) {
         // Write null flag.
@@ -5393,7 +5392,6 @@ public abstract class IgniteUtils {
      *
      * @param in Binary reader.
      * @return Read UUID.
-     * @throws IOException If read failed.
      */
     @Nullable public static UUID readUuid(BinaryRawReader in) {
         // If UUID is not null.
@@ -5930,7 +5928,6 @@ public abstract class IgniteUtils {
      *         {@link #readString(DataInput)} method.
      *     </li>
      * </ul>
-     * </p>
      *
      * @param out Output stream to write to.
      * @param s String to write, possibly {@code null}.
@@ -7512,7 +7509,7 @@ public abstract class IgniteUtils {
     /**
      * Returns array which is the union of two arrays
      * (array of elements contained in any of provided arrays).
-     * <p/>
+     * <p>
      * Note: arrays must be increasing.
      *
      * @param a First array.
@@ -7554,7 +7551,7 @@ public abstract class IgniteUtils {
     /**
      * Returns array which is the difference between two arrays
      * (array of elements contained in first array but not contained in second).
-     * <p/>
+     * <p>
      * Note: arrays must be increasing.
      *
      * @param a First array.
@@ -10015,7 +10012,7 @@ public abstract class IgniteUtils {
 
     /**
      * Returns a capacity that is sufficient to keep the map from being resized as
-     * long as it grows no larger than expSize and the load factor is >= its
+     * long as it grows no larger than expSize and the load factor is &gt;= its
      * default (0.75).
      *
      * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)
@@ -10571,7 +10568,7 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
@@ -10601,7 +10598,7 @@ public abstract class IgniteUtils {
      * @param zipBytes Zip-compressed bytes.
      * @param clsLdr Class loader to use.
      * @return Unmarshalled object.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert marsh != null;
@@ -10652,7 +10649,7 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
@@ -10681,7 +10678,7 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
@@ -10710,7 +10707,7 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
@@ -10738,7 +10735,7 @@ public abstract class IgniteUtils {
 
     /**
      * Marshals object to byte array.
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param marsh Marshaller.
@@ -10762,7 +10759,7 @@ public abstract class IgniteUtils {
 
     /**
      * Marshals object to byte array.
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param marsh Marshaller.
@@ -10787,7 +10784,7 @@ public abstract class IgniteUtils {
 
     /**
      * Marshals object to byte array. Wrap marshaller
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param ctx Kernal context.
@@ -10803,7 +10800,7 @@ public abstract class IgniteUtils {
 
     /**
      * Marshals object to byte array. Wrap marshaller
-     * <p/>
+     * <p>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param ctx Cache context.
@@ -11853,7 +11850,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes string to output stream accounting for {@code null} values. <br/>
+     * Writes string to output stream accounting for {@code null} values. <br>
      *
      * This method can write string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
      *
@@ -11893,7 +11890,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads string from input stream accounting for {@code null} values. <br/>
+     * Reads string from input stream accounting for {@code null} values. <br>
      *
      * This method can read string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
      *
@@ -11956,7 +11953,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes string to output stream accounting for {@code null} values. <br/>
+     * Writes string to output stream accounting for {@code null} values. <br>
      *
      * <p>
      *     Uses {@link ObjectOutputStream#writeUTF(String)} to write the string under the hood
@@ -11993,14 +11990,14 @@ public abstract class IgniteUtils {
 
     /**
      * Get number of bytes for {@link DataOutput#writeUTF},
-     * depending on character: <br/>
+     * depending on character: <br>
      *
      * One byte - If a character <code>c</code> is in the range
-     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
+     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br>
      *
      * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
      * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
-     * <br/>
+     * <br>
      *
      * Three bytes - If a character <code>c</code> is in the range
      * <code>&#92;u0800</code> through <code>uffff</code>.
@@ -12152,7 +12149,7 @@ public abstract class IgniteUtils {
 
     /**
      * Converts count of bytes to a human-readable format.
-     * Examples: 10 -> 10.0 B, 2048 -> 2.0 KB, etc.
+     * Examples: 10 -&gt; 10.0 B, 2048 -&gt; 2.0 KB, etc.
      *
      * @param bytes Byte count.
      * @return Human readable format for count of bytes.
@@ -12168,7 +12165,7 @@ public abstract class IgniteUtils {
 
     /**
      * Converts duration to a human-readable format.
-     * Examples: 10 -> 10ms, 6_0000 -> 6s, 65_000 -> 1m5s, (65 * 60_000 + 32_000) -> 1h5m32s, etc.
+     * Examples: 10 -&gt; 10ms, 6_0000 -&gt; 6s, 65_000 -&gt; 1m5s, (65 * 60_000 + 32_000) -&gt; 1h5m32s, etc.
      *
      * @param millis Duration in milliseconds.
      * @return Human readable format for duration.

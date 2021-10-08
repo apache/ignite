@@ -173,7 +173,7 @@ public class PlatformDotNetBinaryTypeConfiguration {
 
     /**
      * Sets keep deserialized flag.
-     * <p />
+     * <p>
      * When set to {@code null} default value taken from
      * {@link PlatformDotNetBinaryConfiguration#isDefaultKeepDeserialized()} will be used.
      *

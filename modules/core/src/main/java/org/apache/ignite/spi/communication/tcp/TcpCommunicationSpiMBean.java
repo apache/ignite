@@ -297,7 +297,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
 
     /**
      * Gets slow client queue limit.
-     * <p/>
+     * <p>
      * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
      * those clients whose queue exceeded this limit.
      *

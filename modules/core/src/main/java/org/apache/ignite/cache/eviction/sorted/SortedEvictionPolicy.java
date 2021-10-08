@@ -370,7 +370,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
      *     <li>{@code #remove()}</li>
      *     <li>{@code #pollFirst()}</li>
      *     <li>{@code #clone()}</li>
-     * <ul/>
+     * </ul>
      */
     private static class GridConcurrentSkipListSetEx<K, V> extends GridConcurrentSkipListSet<Holder<K, V>> {
         /** */

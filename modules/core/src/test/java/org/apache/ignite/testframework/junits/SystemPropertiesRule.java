@@ -30,7 +30,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br/>
+ * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br>
  * Can be used as both {@link Rule} and {@link ClassRule}.
  *
  * @see WithSystemProperty

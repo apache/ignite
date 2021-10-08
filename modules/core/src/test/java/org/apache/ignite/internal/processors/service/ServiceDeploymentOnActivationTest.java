@@ -32,9 +32,9 @@ import org.junit.Test;
 
 /**
  * Tests check:
- * <p/>
+ * <p>
  * 1. Node restores services state on activation if it had been deactivated before;
- * <p/>
+ * <p>
  * 2. Node deploys static services configuration on post-startup activation;
  */
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {

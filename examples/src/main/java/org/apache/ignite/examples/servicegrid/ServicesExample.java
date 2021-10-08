@@ -34,7 +34,7 @@ import org.apache.ignite.resources.ServiceResource;
  * To start remote nodes, you must run {@link ExampleNodeStartup} in another JVM
  * which will start node with {@code examples/config/example-ignite.xml} configuration.
  * <p>
- * NOTE:<br/>
+ * NOTE:<br>
  * Starting {@code ignite.sh} directly will not work, as distributed services
  * cannot be peer-deployed and classes must be on the classpath for every node.
  */

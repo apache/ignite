@@ -98,7 +98,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 
 /**
  * Ignite service processor.
- * <p/>
+ * <p>
  * Event-driven implementation of the service processor. Service deployment is managed via {@link DiscoverySpi} and
  * {@link CommunicationSpi} messages.
  *
@@ -123,10 +123,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * Collection of services information that were registered in the cluster. <b>It is updated from discovery
      * thread</b>. It will be included in the initial data bag to be sent on newly joining node, it means a new node
      * will have all services' information to be able to work with services in the whole cluster.
-     * <p/>
+     * <p>
      * This collection is used, to make fast verification for requests of change service's state and prepare services
      * deployments actions (possible long-running) which will be processed from a queue by deployment worker.
-     * <p/>
+     * <p>
      * Collection reflects a services' state which will be reached as soon as a relevant deployment task will be
      * processed.
      *
@@ -138,10 +138,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Collection of services information that were processed by deployment worker. <b>It is updated from deployment
      * worker</b>.
-     * <p/>
+     * <p>
      * Collection reflects a state of deployed services for a moment of the latest deployment task processed by
      * deployment worker.
-     * <p/>
+     * <p>
      * It is catching up the state of {@link #registeredServices}.
      *
      * @see ServiceDeploymentManager#readyTopologyVersion()
@@ -170,9 +170,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * Operations lock. The main purpose is to avoid a hang of users operation futures.
-     * <p/>
+     * <p>
      * Read lock is being acquired on users operations (deploy, cancel).
-     * <p/>
+     * <p>
      * Write lock is being acquired on change service processor's state: {@link #onKernalStop}, {@link #onDisconnected),
      * {@link #onDeActivate(GridKernalContext)}} to guarantee that deployed services will be cancelled only once, also
      * it protects from registering new operations futures which may be missed during completion collections of users
@@ -415,7 +415,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * Invokes from services deployment worker.
-     * <p/>
+     * <p>
      * {@inheritDoc}
      */
     @Override public void onDeActivate(GridKernalContext kctx) {
@@ -1141,7 +1141,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * Redeploys local services based on assignments.
-     * <p/>
+     * <p>
      * Invokes from services deployment worker.
      *
      * @param srvcId Service id.
@@ -1351,7 +1351,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * Undeployes service with given id.
-     * <p/>
+     * <p>
      * Invokes from services deployment worker.
      *
      * @param srvcId Service id.
@@ -1439,7 +1439,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * Updates deployed services map according to deployment task.
-     * <p/>
+     * <p>
      * Invokes from services deployment worker.
      *
      * @param depActions Service deployment actions.

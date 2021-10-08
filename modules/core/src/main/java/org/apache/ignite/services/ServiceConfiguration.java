@@ -181,7 +181,7 @@ public class ServiceConfiguration implements Serializable {
      * Gets cache name used for key-to-node affinity calculation.
      * <p>
      * This parameter is optional and is set only when deploying service based on key-affinity.
-     * <p/>
+     * <p>
      * <b>NOTE:</b> If the cache is destroyed, the service will be undeployed automatically.
      *
      * @return Cache name, possibly {@code null}.

@@ -50,7 +50,7 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Default Cassandra keyspace options which should be used to create new keyspace.
      * <ul>
-     * <li> <b>SimpleStrategy</b> for replication work well for single data center Cassandra cluster.<br/>
+     * <li> <b>SimpleStrategy</b> for replication work well for single data center Cassandra cluster.<br>
      *      If your Cassandra cluster deployed across multiple data centers it's better to use <b>NetworkTopologyStrategy</b>.
      * </li>
      * <li> Three replicas will be created for each data block. </li>

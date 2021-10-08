@@ -223,7 +223,7 @@ public class GridFunc {
     /**
      * Calculates sum of all elements.
      * <p>
-     * <img src="{@docRoot}/img/sum.png">
+     * <img alt="Sum" src="{@docRoot}/img/sum.png">
      *
      * @param c Collection of elements.
      * @return Sum of all elements.
@@ -254,7 +254,7 @@ public class GridFunc {
     /**
      * Gets reducer closure that calculates sum of integer elements.
      * <p>
-     * <img src="{@docRoot}/img/sum.png">
+     * <img alt="Sum" src="{@docRoot}/img/sum.png">
      *
      * @return Reducer that calculates sum of integer elements.
      */
@@ -266,7 +266,7 @@ public class GridFunc {
     /**
      * Gets reducer closure that calculates sum of long integer elements.
      * <p>
-     * <img src="{@docRoot}/img/sum.png">
+     * <img alt="Sum" src="{@docRoot}/img/sum.png">
      *
      * @return Reducer that calculates sum of long integer elements.
      */

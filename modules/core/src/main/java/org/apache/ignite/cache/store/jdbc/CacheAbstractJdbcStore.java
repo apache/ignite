@@ -92,7 +92,6 @@ import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TY
  *     <li>{@link H2Dialect} - dialect for H2 database.</li>
  *     <li>{@link BasicJdbcDialect} - dialect for any database via plain JDBC.</li>
  * </ul>
- * <p>
  * <h2 class="header">Configuration</h2>
  * <ul>
  *     <li>Data source (see {@link #setDataSource(DataSource)}</li>
@@ -102,7 +101,7 @@ import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TY
  *     <li>Parallel load cache minimum threshold. (see {@link #setParallelLoadCacheMinimumThreshold(int)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * <pre class="java">
+ * <pre class="java">{@code
  *    ...
  *    // Create store factory.
  *    CacheJdbcPojoStoreFactory storeFactory = new CacheJdbcPojoStoreFactory();
@@ -116,7 +115,7 @@ import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TY
  *
  *    cfg.setCacheConfiguration(ccfg);
  *    ...
- * </pre>
+ * }</pre>
  */
 public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Connection attribute property name. */
@@ -1916,7 +1915,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /**
          * Get full table name.
          *
-         * @return &lt;schema&gt;.&lt;table name&gt
+         * @return &lt;schema&gt;.&lt;table name&gt;
          */
         protected String fullTableName() {
             return fullTblName;

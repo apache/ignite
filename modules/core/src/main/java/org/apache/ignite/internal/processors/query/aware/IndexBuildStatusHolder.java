@@ -26,7 +26,7 @@ import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus
 /**
  * Cache index build status.
  * The following operations affect the status: rebuilding indexes and building a new index.
- * <p/>
+ * <p>
  * If the operation starts executing, then the status is {@link Status#INIT INIT}.
  * If all operations are completed, then the status is {@link Status#COMPLETE COMPLETED}.
  * Status {@link Status#DELETE DELETE} is used for persistent cache to mark at the

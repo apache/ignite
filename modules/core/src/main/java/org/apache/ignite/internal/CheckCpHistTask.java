@@ -43,8 +43,8 @@ import org.apache.ignite.resources.LoggerResource;
  * Task that checks whether last checkpoint is applicable for providing history for all groups and partitions that are
  * passed as parameters. If at least one group or partition can't be supplied due to absence of last checkpoint, the task
  * enforces a checkpoint to ensure possibility of the historical rebalancing.
- * The task takes as parametes a collection by fillowing structure: Map{node id -> Map{Group id -> Set{Partition id}}}.
- * Each node that is mentioned in parameter is receiving own particular collection: Map{Group id -> Set{Partition id}}.
+ * The task takes as parametes a collection by fillowing structure: Map{node id -&gt; Map{Group id -&gt; Set{Partition id}}}.
+ * Each node that is mentioned in parameter is receiving own particular collection: Map{Group id -&gt; Set{Partition id}}.
  */
 @GridInternal
 public class CheckCpHistTask extends ComputeTaskAdapter<Map<UUID, Map<Integer, Set<Integer>>>, Boolean> {

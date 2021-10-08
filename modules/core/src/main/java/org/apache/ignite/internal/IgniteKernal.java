@@ -344,7 +344,6 @@ import static org.apache.ignite.mxbean.IgniteMXBean.VM_NAME_DESC;
  * <p>
  * Please, refer to the wiki <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a>
  * for the information on the misspelling.
- * <p>
  * <h3>Starting</h3>
  * The main entry point for all the Ignite instances creation is the method - {@link #start}.
  * <p>

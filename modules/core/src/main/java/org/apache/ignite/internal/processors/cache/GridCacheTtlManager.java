@@ -391,7 +391,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      *     <li>{@code #add()}</li>
      *     <li>{@code #remove()}</li>
      *     <li>{@code #pollFirst()}</li>
-     * <ul/>
+     * </ul>
      */
     private static class GridConcurrentSkipListSetEx extends GridConcurrentSkipListSet<EntryWrapper> {
         /** */

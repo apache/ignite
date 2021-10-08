@@ -401,8 +401,8 @@ public final class UpdatePlan {
      *
      * @param args Original query arguments.
      * @return {@link List} of rows from the plan for a single query.
-     * For example, if we have multiple args in a query: <br/>
-     * {@code INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3);} <br/>
+     * For example, if we have multiple args in a query: <br>
+     * {@code INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3);} <br>
      * we will get a {@link List} of {@link List} with items {@code {[k1, v1], [k2, v2], [k3, v3]}}.
      * @throws IgniteCheckedException if failed.
      */
@@ -423,15 +423,15 @@ public final class UpdatePlan {
      *
      * @param argss Batch of arguments.
      * @return {@link List} of rows from the plan for each query.
-     * For example, if we have a batch of queries with multiple args: <br/>
+     * For example, if we have a batch of queries with multiple args: <br>
      * <code>
-     * INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3); <br/>
-     * INSERT INTO person VALUES (k4, v4), (k5, v5), (k6, v6);<br/>
+     * INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3); <br>
+     * INSERT INTO person VALUES (k4, v4), (k5, v5), (k6, v6);<br>
      * </code>
-     * we will get a {@link List} of {@link List} of {@link List} with items: <br/>
+     * we will get a {@link List} of {@link List} of {@link List} with items: <br>
      * <code>
-     * {[k1, v1], [k2, v2], [k3, v3]},<br/>
-     * {[k4, v4], [k5, v5], [k6, v6]}<br/>
+     * {[k1, v1], [k2, v2], [k3, v3]},<br>
+     * {[k4, v4], [k5, v5], [k6, v6]}<br>
      *
      * @throws IgniteCheckedException If failed.
      */

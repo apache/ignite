@@ -197,7 +197,7 @@ public class BitVector implements Cloneable {
     /**
      * Sets the value of the specified index register if and only if the specified
      * value is greater than the current value in the register.  This is equivalent
-     * to but much more performant than:<p/>
+     * to but much more performant than:<p>
      *
      * <pre>vector.setRegister(index, Math.max(vector.getRegister(index), value));</pre>
      *

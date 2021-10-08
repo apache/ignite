@@ -163,9 +163,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /**
      * NOTE
-     * <br/>
+     * <br>
      * ====
-     * <br/>
+     * <br>
      * Make sure to recalculate this value any time when adding or removing fields from entry.
      * The size should be count as follows:
      * <ul>
@@ -174,7 +174,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * <li>Each nested object should be analyzed in the same way as above.</li>
      * </ul>
      * ====
-     * <br/>
+     * <br>
      * <ul>
      *     <li>Reference fields:<ul>
      *         <li>8 : {@link #cctx}</li>

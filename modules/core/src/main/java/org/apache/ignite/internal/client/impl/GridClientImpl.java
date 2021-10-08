@@ -137,7 +137,7 @@ public class GridClientImpl implements GridClient, GridClientBeforeNodeStart {
 
     /**
      * Creates a new client based on a given configuration.
-     * <p/>
+     * <p>
      * If {@code beforeNodeStart == true}, topology will not be received/updated,
      * and there will also be errors when trying to work with topology, compute, state and cache.
      *

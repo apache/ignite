@@ -822,7 +822,7 @@ class ServiceDeploymentTask {
 
     /**
      * Handles when this task is being added in deployment queue.
-     * <p/>
+     * <p>
      * Introduced to avoid overhead on calling of {@link Collection#contains(Object)}}.
      *
      * @return {@code true} if task is has not been added previously, otherwise {@code false}.

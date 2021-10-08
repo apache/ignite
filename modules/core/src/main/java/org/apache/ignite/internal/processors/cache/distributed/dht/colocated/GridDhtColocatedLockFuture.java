@@ -765,7 +765,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * will map on. Locking is performed within a user transaction, we must continue to map keys on the same
      * topology version as it started. If topology version is undefined, we get current topology future and wait
      * until it completes so the topology is ready to use.
-     * <p/>
+     * <p>
      * During the second part we map keys to primary nodes using topology snapshot we obtained during the first
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */

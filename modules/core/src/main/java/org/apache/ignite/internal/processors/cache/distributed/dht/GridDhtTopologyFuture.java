@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Future that implements a barrier after which dht topology is safe to use. Topology is considered to be
  * safe to use when all transactions that involve moving primary partitions are completed and partition map
  * exchange is also completed.
- * <p/>
+ * <p>
  * When new cache operation is started, it will wait for this future before acquiring new locks on particular
  * topology version.
  */

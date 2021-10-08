@@ -119,9 +119,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 
 /**
  * Grid service processor.
- * <p/>
+ * <p>
  * Obsolete implementation of service processor, based on replicated system cache.
- * <p/>
+ * <p>
  * NOTE: if you fix a bug in this class, please take a look in {@link IgniteServiceProcessor}, perhaps the class
  * contains a similar block of code which also should be updated.
  *

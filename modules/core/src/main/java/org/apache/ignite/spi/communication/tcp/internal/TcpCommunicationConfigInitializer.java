@@ -537,7 +537,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
 
     /**
      * Sets the count of selectors te be used in TCP server.
-     * <p/>
+     * <p>
      * If not provided, default value is {@link TcpCommunicationSpi#DFLT_SELECTORS_CNT}.
      *
      * @param selectorsCnt Selectors count.
@@ -784,10 +784,10 @@ cfg.socketSendBuffer(sockSndBuf);
 
     /**
      * Sets slow client queue limit.
-     * <p/>
+     * <p>
      * When set to a positive number, communication SPI will monitor clients outbound message queue sizes and will drop
      * those clients whose queue exceeded this limit.
-     * <p/>
+     * <p>
      * This value should be set to less or equal value than {@link #getMessageQueueLimit()} which controls
      * message back-pressure for server nodes. The default value for this parameter is {@code 0}
      * which means {@code unlimited}.

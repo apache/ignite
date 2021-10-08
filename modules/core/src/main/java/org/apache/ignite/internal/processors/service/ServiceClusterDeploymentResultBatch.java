@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Batch of services cluster deployment result.
- * <p/>
+ * <p>
  * Contains collection of {@link ServiceClusterDeploymentResult}.
  */
 public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessage {

@@ -424,14 +424,14 @@ public final class ClientCacheConfiguration implements Serializable {
     /**
      * @return Cache rebalance order. Rebalance order can be set to non-zero value for caches with
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
-     * <p/>
+     * <p>
      * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
      * all caches with smaller rebalance order will be completed.
-     * <p/>
+     * <p>
      * Note that cache with order {@code 0} does not participate in ordering. This means that cache with
      * rebalance order {@code 0} will never wait for any other caches. All caches with order {@code 0} will
      * be rebalanced right away concurrently with each other and ordered rebalance processes.
-     * <p/>
+     * <p>
      * If not set, cache order is 0, i.e. rebalancing is not ordered.
      */
     public int getRebalanceOrder() {

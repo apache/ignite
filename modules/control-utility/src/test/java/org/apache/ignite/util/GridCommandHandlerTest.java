@@ -3266,7 +3266,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /**
      * Verification of successful warm-up stop.
-     * <p/>
+     * <p>
      * Steps:
      * 1)Starting node with warm-up;
      * 2)Stop warm-up;
@@ -3304,7 +3304,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /**
      * Check that command will not be executed because node has already started.
-     * <p/>
+     * <p>
      * Steps:
      * 1)Starting node;
      * 2)Attempt to stop warm-up;

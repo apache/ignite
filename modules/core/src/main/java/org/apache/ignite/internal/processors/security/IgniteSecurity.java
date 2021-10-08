@@ -158,7 +158,7 @@ public interface IgniteSecurity {
 
     /**
      * Callback for local join events for which the regular events are not generated.
-     * <p/>
+     * <p>
      * Local join event is expected in cases of joining to topology or client reconnect.
      */
     public void onLocalJoin();

@@ -138,7 +138,7 @@ public class UploadBenchmarkArguments implements StreamerParams {
 
     /**
      * How many entries to collect before sending to java streamer api in either way: passing map to {@link
-     * IgniteDataStreamer#addData(Map)}, or set STREAMING sql command parameter. <br/> If set to 1, {@link
+     * IgniteDataStreamer#addData(Map)}, or set STREAMING sql command parameter. <br> If set to 1, {@link
      * IgniteDataStreamer#addData(Object, Object)} method will be used.
      */
     @Override @Nullable public Integer streamerLocalBatchSize() {

@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.DEFAULT;
 
 /**
  * Arguments for task {@link VisorIdleVerifyTask}.
- * <br/>
+ * <br>
  */
 public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** */

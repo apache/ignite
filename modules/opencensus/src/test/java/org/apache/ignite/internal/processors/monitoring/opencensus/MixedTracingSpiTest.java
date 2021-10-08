@@ -64,11 +64,11 @@ public class MixedTracingSpiTest extends GridCommonAbstractTest {
 
     /**
      * Start two nodes: one with noop tracing spi and another one with open census tracing spi.
-     * <p/>
+     * <p>
      * Cause both tracing spi instances are annotated with {@code @IgniteSpiConsistencyChecked(optional = true)}
      * 'Remote SPI with the same name is not configured: <TracingSpiInstance></>' warning message is expected on
      * node start.
-     * <p/>
+     * <p>
      * Besides that 'Failed to create span from serialized value' is expected, cause it's not possible
      * to deserialize {@code NoopSpan.INSTANCE} from {@link NoopTracingSpi} on the node
      * with {@link OpenCensusTracingSpi}.

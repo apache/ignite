@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
 /**
  * Annotation for setting mapping between java interface's method and platform service's method.
  * Platform service method name is defined in {@link PlatformServiceMethod#value}
- * <p/>
+ * <p>
  * For example, this annotated java inerface method:
  * <pre>
  * &#64;PlatformServiceMethod("SomeMethod")

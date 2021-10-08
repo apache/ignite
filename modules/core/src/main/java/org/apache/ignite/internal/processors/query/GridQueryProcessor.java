@@ -3957,10 +3957,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Callback on start of rebuild cache indexes.
-     * <p/>
+     * <p>
      * Adding an entry that rebuilding the cache indexes in progress.
      * If the cache is persistent, then add this entry to the MetaStorage.
-     * <p/>
+     * <p>
      * When restarting/reactivating the node, it will be possible to check if
      * the rebuilding of the indexes has been {@link #rebuildIndexesCompleted}.
      *
@@ -3974,7 +3974,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Callback on finish of rebuild cache indexes.
-     * <p/>
+     * <p>
      * If the cache is persistent, then we mark that the rebuilding of the
      * indexes is completed and the entry will be deleted from the MetaStorage
      * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
@@ -3997,7 +3997,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Force a mark that the index rebuild for the cache has completed.
-     * <p/>
+     * <p>
      * If the cache is persistent, then we mark that the rebuilding of the
      * indexes is completed and the entry will be deleted from the MetaStorage
      * at the end of the checkpoint. Otherwise, delete the index rebuild entry.

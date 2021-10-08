@@ -3002,7 +3002,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Clearing the static log for the class. <br/>
+     * Clearing the static log for the class. <br>
      * There is a situation when class logs cannot be listened to although they
      * are visible, for example, in a file. This happens when the test is in
      * one of the suites and the static log was installed earlier and is not

@@ -999,8 +999,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
     /**
      * Test if user specified partitions for query explicitly, such query is cancealble.
      *
-     * We check 3 scenarious in which partitions are belong to: 1) only first node <br/> 2) only second node <br/> 3)
-     * some to first, the others to second <br/>
+     * We check 3 scenarious in which partitions are belong to: 1) only first node <br> 2) only second node <br> 3)
+     * some to first, the others to second <br>
      */
     @Test
     public void testCancelQueryWithPartitions() throws Exception {

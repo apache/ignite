@@ -448,7 +448,7 @@ public interface EventType {
 
     /**
      * Built-in event type: entry created.
-     * <p/>
+     * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *

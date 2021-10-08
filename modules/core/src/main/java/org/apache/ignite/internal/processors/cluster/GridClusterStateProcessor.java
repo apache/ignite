@@ -1945,16 +1945,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /**
      * Gets state of given two with minimal number of features.
-     * <p/>
+     * <p>
      * The order: {@link ClusterState#ACTIVE} > {@link ClusterState#ACTIVE_READ_ONLY} > {@link ClusterState#INACTIVE}.
-     * <p/>
+     * <p>
      * Explain:
-     * <br/>
+     * <br>
      * {@link ClusterState#INACTIVE} has the smallast number of available features. You can't use caches in this state.
-     * <br/>
+     * <br>
      * In {@link ClusterState#ACTIVE_READ_ONLY} you have more available features than {@link ClusterState#INACTIVE} state,
      * such as reading from caches, but can't write into them.
-     * <br/> In {@link ClusterState#ACTIVE} you can update caches. It's a state with the biggest number of features.
+     * <br> In {@link ClusterState#ACTIVE} you can update caches. It's a state with the biggest number of features.
      *
      * @param state1 First given state.
      * @param state2 Second given state.
