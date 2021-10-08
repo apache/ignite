@@ -109,6 +109,7 @@ import org.junit.runners.Suite;
     EncryptedSnapshotTest.class,
     PlainSnapshotTest.class,
     IgniteClusterSnapshotHandlerTest.class,
+    EncryptedSnapshotTest.class,
 
     IgniteClusterIdTagTest.class,
     FullyConnectedComponentSearcherTest.class,

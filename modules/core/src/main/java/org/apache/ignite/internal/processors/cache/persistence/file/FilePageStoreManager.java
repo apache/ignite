@@ -686,8 +686,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
         if (encrKeyProvider != null) {
-            pageStoreFileIoFactory = getEncryptedFileIoFactory(this.pageStoreFileIoFactory, grpId, encrKeyProvider);
-            pageStoreV1FileIoFactory = getEncryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId, encrKeyProvider);
+            pageStoreFileIoFactory = encryptedFileIoFactory(this.pageStoreFileIoFactory, grpId, encrKeyProvider);
+            pageStoreV1FileIoFactory = encryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId, encrKeyProvider);
         }
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
@@ -712,7 +712,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param encrKeyProvider Encryption keys provider for encrypted IO. If {@code null}, no encryption is used.
      * @return Encrypted file IO factory.
      */
-    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId,
+    public EncryptedFileIOFactory encryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId,
         EncryptionCacheKeyProvider encrKeyProvider) {
         return new EncryptedFileIOFactory(
             plainFileIOFactory,
@@ -725,8 +725,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @return Encrypted file IO factory with stored internal encryption keys.
      */
-    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
-        return getEncryptedFileIoFactory(plainFileIOFactory, cacheGrpId, cctx.kernalContext().encryption());
+    public EncryptedFileIOFactory encryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+        return encryptedFileIoFactory(plainFileIOFactory, cacheGrpId, cctx.kernalContext().encryption());
     }
 
     /**

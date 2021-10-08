@@ -622,13 +622,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
      * @throws IgniteCheckedException If fails.
      */
     private void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
+        Integer encGrpId = cctx.cache().isEncrypted(grpId) ? grpId : null;
+
         for (int partId : parts) {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
 
-            partDeltaWriters.put(pair, new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId),
-                cctx.cache().isEncrypted(grpId) ? grpId : null));
+            partDeltaWriters.put(pair,
+                new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId), encGrpId));
 
             partFileLengths.put(pair, store.size());
         }
@@ -927,7 +929,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
                     if (deltaFileIo == null) {
                         deltaFileIo = (encGrpId == null ? ioFactory :
-                            pageStore.getEncryptedFileIoFactory(ioFactory, encGrpId)).create(deltaFile);
+                            pageStore.encryptedFileIoFactory(ioFactory, encGrpId)).create(deltaFile);
                     }
                 }
                 catch (IOException e) {
