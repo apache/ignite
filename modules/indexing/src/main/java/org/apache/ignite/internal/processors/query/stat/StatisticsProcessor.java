@@ -133,7 +133,7 @@ public class StatisticsProcessor {
      * (current task have newer configuration or topology).
      *
      * @param ctx Task to register.
-     * @return {@code true} if task was actually pushed as Gathering in progress task, {@code false} - othrewise.
+     * @return {@code true} if task was actually pushed as Gathering in progress task, {@code false} - otherwise.
      */
     private boolean registerNewTask(LocalStatisticsGatheringContext ctx) {
         boolean res[] = new boolean[1];
