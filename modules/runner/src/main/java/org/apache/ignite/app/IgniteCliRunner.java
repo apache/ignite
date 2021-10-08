@@ -59,7 +59,7 @@ public class IgniteCliRunner {
         ignition.start(
             parsedArgs.nodeName,
             parsedArgs.config != null ? parsedArgs.config.toAbsolutePath() : null,
-            Path.of("work"));
+            Path.of("work", parsedArgs.nodeName));
     }
 
     /**
