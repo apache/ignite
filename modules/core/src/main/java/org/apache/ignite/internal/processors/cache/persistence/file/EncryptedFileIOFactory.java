@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
@@ -51,9 +51,9 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     private int groupId;
 
     /**
-     * Encryption manager.
+     * Encryption keys provider.
      */
-    private GridEncryptionManager encMgr;
+    private EncryptionCacheKeyProvider encrKeyProvider;
 
     /**
      * Encryption spi.
@@ -64,14 +64,15 @@ public class EncryptedFileIOFactory implements FileIOFactory {
      * @param plainIOFactory Underlying file factory.
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
-     * @param encMgr Encryption manager.
+     * @param encrKeyProvider Encryption keys provider.
      */
-    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, GridEncryptionManager encMgr,
+    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize,
+        EncryptionCacheKeyProvider encrKeyProvider,
         EncryptionSpi encSpi) {
         this.plainIOFactory = plainIOFactory;
         this.groupId = groupId;
         this.pageSize = pageSize;
-        this.encMgr = encMgr;
+        this.encrKeyProvider = encrKeyProvider;
         this.encSpi = encSpi;
     }
 
@@ -79,7 +80,7 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO io = plainIOFactory.create(file, modes);
 
-        return new EncryptedFileIO(io, groupId, pageSize, headerSize, encMgr, encSpi);
+        return new EncryptedFileIO(io, groupId, pageSize, headerSize, encrKeyProvider, encSpi);
     }
 
     /**
