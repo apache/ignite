@@ -534,21 +534,29 @@ public class Checkpointer extends GridWorker {
 
         tracker.onPagesWriteStart();
 
-        for (int i = 0; i < checkpointWritePageThreads; i++) {
-            Runnable write = checkpointPagesWriterFactory.build(
-                tracker,
-                cpPages,
-                updStores,
-                doneWriteFut,
-                workProgressDispatcher::updateHeartbeat,
-                curCpProgress,
-                shutdownNow,
-                "checkpoint-pages-writer-worker-" + i
-            );
+        if (pageWritePool == null)
+            checkpointPagesWriterFactory.build(
+                    tracker,
+                    cpPages,
+                    updStores,
+                    doneWriteFut,
+                    workProgressDispatcher::updateHeartbeat,
+                    curCpProgress,
+                    shutdownNow
+            ).run();
+        else {
 
-            if (pageWritePool == null)
-                write.run();
-            else {
+            for (int i = 0; i < pageWritePool.getMaximumPoolSize(); i++) {
+                Runnable write = checkpointPagesWriterFactory.buildW(
+                        tracker,
+                        cpPages,
+                        updStores,
+                        doneWriteFut,
+                        curCpProgress,
+                        shutdownNow,
+                        "checkpoint-pages-writer-worker-" + i
+                );
+
                 try {
                     pageWritePool.execute(write);
                 }

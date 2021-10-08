@@ -39,8 +39,6 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -50,7 +48,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
 /**
  * Implementation of page writer which able to store pages to disk during checkpoint.
  */
-public class CheckpointPagesWriter extends GridWorker {
+public class CheckpointPagesWriter implements Runnable {
     /** Logger. */
     private final IgniteLogger log;
 
@@ -110,11 +108,6 @@ public class CheckpointPagesWriter extends GridWorker {
      * @param progress Checkpoint progress.
      * @param pageWriter File page store manager.
      * @param shutdownNow Shutdown supplier.
-     * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
-     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
-     * the two.
-     * @param lsnr Listener for life-cycle events.
      */
     CheckpointPagesWriter(
         CheckpointMetricsTracker tracker,
@@ -130,13 +123,8 @@ public class CheckpointPagesWriter extends GridWorker {
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         CheckpointProgressImpl progress,
         CheckpointPageWriter pageWriter,
-        BooleanSupplier shutdownNow,
-        String igniteInstanceName,
-        String name,
-        GridWorkerListener lsnr
+        BooleanSupplier shutdownNow
     ) {
-        super(igniteInstanceName, name, log, lsnr);
-
         this.tracker = tracker;
         this.writePageIds = writePageIds;
         this.updStores = updStores;
@@ -154,7 +142,7 @@ public class CheckpointPagesWriter extends GridWorker {
     }
 
     /** {@inheritDoc} */
-    @Override public void body() {
+    @Override public void run() {
         snapshotMgr.beforeCheckpointPageWritten();
 
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> writePageIds = this.writePageIds;

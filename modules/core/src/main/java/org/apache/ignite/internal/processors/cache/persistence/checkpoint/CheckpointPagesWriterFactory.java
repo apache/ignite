@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -116,20 +117,16 @@ public class CheckpointPagesWriterFactory {
      * @param beforePageWrite Before page write callback.
      * @param curCpProgress Current checkpoint data.
      * @param shutdownNow Checker of stop operation.
-     * @return Instance of page checkpint writer.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
-     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
-     * the two.
+     * @return Instance of page checkpoint writer.
      */
-    CheckpointPagesWriter build(
+    Runnable build(
         CheckpointMetricsTracker tracker,
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages,
         ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
         CountDownFuture doneWriteFut,
         Runnable beforePageWrite,
         CheckpointProgressImpl curCpProgress,
-        BooleanSupplier shutdownNow,
-        String name
+        BooleanSupplier shutdownNow
     ) {
         return new CheckpointPagesWriter(
             tracker,
@@ -145,11 +142,42 @@ public class CheckpointPagesWriterFactory {
             pageMemoryGroupResolver,
             curCpProgress,
             checkpointPageWriter,
-            shutdownNow,
-            igniteInstanceName,
-            name,
-            lsnr
+            shutdownNow
         );
+    }
+
+    /**
+     * @param tracker Checkpoint metrics tracker.
+     * @param cpPages List of pages to write.
+     * @param updStores Updated page store storage.
+     * @param doneWriteFut Write done future.
+     * @param curCpProgress Current checkpoint data.
+     * @param shutdownNow Checker of stop operation.
+     * @param threadName Thread name.
+     * @return Instance of page checkpoint writer.
+     */
+    Runnable buildW(
+        CheckpointMetricsTracker tracker,
+        GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages,
+        ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
+        CountDownFuture doneWriteFut,
+        CheckpointProgressImpl curCpProgress,
+        BooleanSupplier shutdownNow,
+        String threadName
+    ) {
+        return new GridWorker(igniteInstanceName, threadName, log, lsnr) {
+            @Override protected void body() {
+                build(
+                    tracker,
+                    cpPages,
+                    updStores,
+                    doneWriteFut,
+                    this::updateHeartbeat,
+                    curCpProgress,
+                    shutdownNow
+                ).run();
+            }
+        };
     }
 
     /**
