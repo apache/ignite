@@ -27,6 +27,7 @@ import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -97,6 +98,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
             .setName(CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(Long.class, Person.class, Long.class, SecondPerson.class)
             .setQueryParallelism(4);
 

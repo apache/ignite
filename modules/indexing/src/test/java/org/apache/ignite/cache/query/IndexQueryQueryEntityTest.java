@@ -29,6 +29,7 @@ import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -114,6 +115,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> ccfg1 = new CacheConfiguration<>()
             .setName(CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setQueryEntities(Collections.singletonList(e));
 
         QueryEntity entTableName = new QueryEntity(e);
@@ -121,6 +123,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> ccfg2 = new CacheConfiguration<>()
             .setName(CACHE_TBL_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setQueryEntities(Collections.singletonList(entTableName));
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);

@@ -27,6 +27,7 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -79,6 +80,7 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> ccfg1 = new CacheConfiguration<>()
             .setName(CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(Integer.class, Person.class);
 
         cfg.setCacheConfiguration(ccfg1);

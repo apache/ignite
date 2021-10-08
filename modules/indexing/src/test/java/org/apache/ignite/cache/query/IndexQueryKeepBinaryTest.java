@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,6 +70,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Long, Person> ccfg = new CacheConfiguration<Long, Person>()
             .setName(CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(Long.class, Person.class);
 
         cfg.setCacheConfiguration(ccfg);
