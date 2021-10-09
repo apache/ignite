@@ -30,224 +30,246 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
-import org.apache.ignite.table.Table;
 
 /**
- * This example demonstrates usage of Ignite JDBC driver.
+ * This example demonstrates the usage of the Apache Ignite JDBC driver.
  * <p>
  * To run the example, do the following:
  * <ol>
  *     <li>Import the examples project into you IDE.</li>
+ *     <li>
+ *         (optional) Run one or more standalone nodes using the CLI tool:<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1}<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2}<br>
+ *         {@code ...}<br>
+*          {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n}<br>
+ *     </li>
  *     <li>Run the example in the IDE.</li>
  * </ol>
  */
 public class SqlJdbcExample {
-    /**
-     * Executes example.
-     *
-     * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
-     */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = IgnitionManager.start(
+        System.out.println("Starting a server node... Logging to file: ignite.log");
+
+        System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
+
+        try (Ignite ignite = IgnitionManager.start(
             "node-0",
             Files.readString(Path.of("config", "ignite-config.json")),
             Path.of("work")
-        );
-
-        print("JDBC example started.");
-
-        // Open JDBC connection
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800/")) {
-            print("Connected to server.");
-
-            //---------------------------------------------------------------------------------
+        )) {
+            //--------------------------------------------------------------------------------------
             //
-            // Creating City table.
+            // Creating 'CITIES' table. The API call below is the equivalent of the following DDL:
             //
-            //     CREATE TABLE city (
-            //         id       INT PRIMARY KEY,
-            //         name     VARCHAR
+            //     CREATE TABLE cities (
+            //         ID   INT PRIMARY KEY,
+            //         NAME VARCHAR
             //     )
             //
-            //---------------------------------------------------------------------------------
-            TableDefinition cityTbl = SchemaBuilders.tableBuilder("PUBLIC", "CITY").columns(
-                SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build()
-            ).withPrimaryKey("ID").build();
+            //--------------------------------------------------------------------------------------
 
-            ignite.tables().createTable(cityTbl.canonicalName(), tblCh ->
-                SchemaConfigurationConverter.convert(cityTbl, tblCh)
+            System.out.println("\nCreating 'CITIES' table...");
+
+            TableDefinition citiesTableDef = SchemaBuilders.tableBuilder("PUBLIC", "CITIES")
+                .columns(
+                    SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
+                    SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build()
+                )
+                .withPrimaryKey("ID")
+                .build();
+
+            ignite.tables().createTable(citiesTableDef.canonicalName(), tableChange ->
+                SchemaConfigurationConverter.convert(citiesTableDef, tableChange)
                     .changeReplicas(1)
-                    .changePartitions(3)
+                    .changePartitions(10)
             );
-            //---------------------------------------------------------------------------------
+
+            //--------------------------------------------------------------------------------------
             //
-            // Creating accounts table.
+            // Creating 'ACCOUNTS' table. The API call below is the equivalent of the following DDL:
             //
-            //     CREATE TABLE accounts (
-            //         accountId INT PRIMARY KEY,
-            //         cityId        INT,
-            //         firstName     VARCHAR,
-            //         lastName      VARCHAR,
-            //         balance       DOUBLE
+            //     CREATE TABLE ACCOUNTS (
+            //         ACCOUNT_ID INT PRIMARY KEY,
+            //         CITY_ID    INT,
+            //         FIRST_NAME VARCHAR,
+            //         LAST_NAME  VARCHAR,
+            //         BALANCE    DOUBLE
             //     )
             //
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
 
-            TableDefinition accountsTbl = SchemaBuilders.tableBuilder("PUBLIC", "ACCOUNTS").columns(
-                SchemaBuilders.column("ACCOUNTID", ColumnType.INT32).asNonNull().build(),
-                SchemaBuilders.column("CITYID", ColumnType.INT32).asNonNull().build(),
-                SchemaBuilders.column("FIRSTNAME", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("LASTNAME", ColumnType.string()).asNullable().build(),
-                SchemaBuilders.column("BALANCE", ColumnType.DOUBLE).asNullable().build()
-            ).withPrimaryKey("ACCOUNTID").build();
+            System.out.println("\nCreating 'ACCOUNTS' table...");
 
-            ignite.tables().createTable(accountsTbl.canonicalName(), tblCh ->
-                SchemaConfigurationConverter.convert(accountsTbl, tblCh)
+            TableDefinition accountsTableDef = SchemaBuilders.tableBuilder("PUBLIC", "ACCOUNTS")
+                .columns(
+                    SchemaBuilders.column("ACCOUNT_ID", ColumnType.INT32).asNonNull().build(),
+                    SchemaBuilders.column("CITY_ID", ColumnType.INT32).asNonNull().build(),
+                    SchemaBuilders.column("FIRST_NAME", ColumnType.string()).asNullable().build(),
+                    SchemaBuilders.column("LAST_NAME", ColumnType.string()).asNullable().build(),
+                    SchemaBuilders.column("BALANCE", ColumnType.DOUBLE).asNullable().build()
+                )
+                .withPrimaryKey("ACCOUNT_ID")
+                .build();
+
+            ignite.tables().createTable(accountsTableDef.canonicalName(), tableChange ->
+                SchemaConfigurationConverter.convert(accountsTableDef, tableChange)
                     .changeReplicas(1)
-                    .changePartitions(3)
+                    .changePartitions(10)
             );
 
-            print("Created database objects.");
-
-            // Populate City table with PreparedStatement.
-            try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO city (id, name) VALUES (?, ?)")) {
-                stmt.setInt(1, 1);
-                stmt.setString(2, "Forest Hill");
-                stmt.executeUpdate();
-
-                stmt.setInt(1, 2);
-                stmt.setString(2, "Denver");
-                stmt.executeUpdate();
-
-                stmt.setInt(1, 3);
-                stmt.setString(2, "St. Petersburg");
-                stmt.executeUpdate();
-            }
-
-            // Populate Person table with PreparedStatement.
-            try (PreparedStatement stmt =
-                conn.prepareStatement("INSERT INTO accounts (accountId, cityId, firstName, lastName, balance)" +
-                    " values (?, ?, ?, ?, ?)")) {
-                stmt.setInt(1, 1);
-                stmt.setInt(2, 1);
-                stmt.setString(3, "John");
-                stmt.setString(4, "Doe");
-                stmt.setDouble(5, 1000.0d);
-                stmt.executeUpdate();
-
-                stmt.setInt(1, 2);
-                stmt.setInt(2, 1);
-                stmt.setString(3, "Jane");
-                stmt.setString(4, "Roe");
-                stmt.setDouble(5, 2000.0d);
-                stmt.executeUpdate();
-
-                stmt.setInt(1, 3);
-                stmt.setInt(2, 2);
-                stmt.setString(3, "Mary");
-                stmt.setString(4, "Major");
-                stmt.setDouble(5, 1500.0d);
-                stmt.executeUpdate();
-
-                stmt.setInt(1, 4);
-                stmt.setInt(2, 3);
-                stmt.setString(3, "Richard");
-                stmt.setString(4, "Miles");
-                stmt.setDouble(5, 1450.0d);
-                stmt.executeUpdate();
-            }
-
-            print("Accounts with city.");
-
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
             //
-            // Gets accounts joined with cities.
+            // Creating a JDBC connection to connect to the cluster.
             //
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
 
-            try (Statement stmt = conn.createStatement()) {
-                try (ResultSet rs =
-                    stmt.executeQuery("SELECT a.firstName, a.lastName, c.name FROM accounts a " +
-                        "INNER JOIN city c on c.id = a.cityId")) {
-                    print("Query results:");
+            System.out.println("\nConnecting to server...");
 
-                    while (rs.next()) {
-                        System.out.println(">>>    " + rs.getString(1) + ", " + rs.getString(2)
-                            + ", " + rs.getString(3));
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800/")) {
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Populating 'CITIES' table.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nPopulating 'CITIES' table...");
+
+                try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO CITIES (ID, NAME) VALUES (?, ?)")) {
+                    stmt.setInt(1, 1);
+                    stmt.setString(2, "Forest Hill");
+                    stmt.executeUpdate();
+
+                    stmt.setInt(1, 2);
+                    stmt.setString(2, "Denver");
+                    stmt.executeUpdate();
+
+                    stmt.setInt(1, 3);
+                    stmt.setString(2, "St. Petersburg");
+                    stmt.executeUpdate();
+                }
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Populating 'ACCOUNTS' table.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nPopulating 'ACCOUNTS' table...");
+
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO ACCOUNTS (ACCOUNT_ID, CITY_ID, FIRST_NAME, LAST_NAME, BALANCE) values (?, ?, ?, ?, ?)")) {
+                    stmt.setInt(1, 1);
+                    stmt.setInt(2, 1);
+                    stmt.setString(3, "John");
+                    stmt.setString(4, "Doe");
+                    stmt.setDouble(5, 1000.0d);
+                    stmt.executeUpdate();
+
+                    stmt.setInt(1, 2);
+                    stmt.setInt(2, 1);
+                    stmt.setString(3, "Jane");
+                    stmt.setString(4, "Roe");
+                    stmt.setDouble(5, 2000.0d);
+                    stmt.executeUpdate();
+
+                    stmt.setInt(1, 3);
+                    stmt.setInt(2, 2);
+                    stmt.setString(3, "Mary");
+                    stmt.setString(4, "Major");
+                    stmt.setDouble(5, 1500.0d);
+                    stmt.executeUpdate();
+
+                    stmt.setInt(1, 4);
+                    stmt.setInt(2, 3);
+                    stmt.setString(3, "Richard");
+                    stmt.setString(4, "Miles");
+                    stmt.setDouble(5, 1450.0d);
+                    stmt.executeUpdate();
+                }
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Requesting information about all account owners.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nAll accounts:");
+
+                try (Statement stmt = conn.createStatement()) {
+                    try (ResultSet rs = stmt.executeQuery(
+                            "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a " +
+                            "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
+                        while (rs.next()) {
+                            System.out.println("    " +
+                                rs.getString(1) + ", " +
+                                rs.getString(2) + ", " +
+                                rs.getString(3));
+                        }
+                    }
+                }
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Requesting accounts with balances lower than 1,500.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nAccounts with balance lower than 1,500:");
+
+                try (Statement stmt = conn.createStatement()) {
+                    try (ResultSet rs = stmt.executeQuery(
+                            "SELECT a.FIRST_NAME, a.LAST_NAME, a.BALANCE FROM ACCOUNTS a WHERE a.BALANCE < 1500.0")) {
+                        while (rs.next()) {
+                            System.out.println("    " +
+                                rs.getString(1) + ", " +
+                                rs.getString(2) + ", " +
+                                rs.getDouble(3));
+                        }
+                    }
+                }
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Deleting one of the accounts.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nDeleting one of the accounts...");
+
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM ACCOUNTS WHERE ACCOUNT_ID = ?")) {
+                    stmt.setInt(1, 1);
+                    stmt.executeUpdate();
+                }
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Requesting information about all account owners once again
+                // to verify that the account was actually deleted.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nAll accounts:");
+
+                try (Statement stmt = conn.createStatement()) {
+                    try (ResultSet rs = stmt.executeQuery(
+                            "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a " +
+                            "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
+                        while (rs.next()) {
+                            System.out.println("    " +
+                                rs.getString(1) + ", " +
+                                rs.getString(2) + ", " +
+                                rs.getString(3));
+                        }
                     }
                 }
             }
 
-            //---------------------------------------------------------------------------------
-            //
-            // Gets accounts with balance lower than 1500.
-            //
-            //---------------------------------------------------------------------------------
+            System.out.println("\nDropping tables and stopping the server...");
 
-            print("Accounts with low balance.");
-
-            try (Statement stmt = conn.createStatement()) {
-                try (ResultSet rs =
-                         stmt.executeQuery("SELECT a.firstName, a.lastName, a.balance FROM accounts a " +
-                             "WHERE a.balance < 1500.0")) {
-                    print("Query results:");
-
-                    while (rs.next()) {
-                        System.out.println(">>>    " + rs.getString(1) + ", " + rs.getString(2)
-                            + ", " + rs.getDouble(3));
-                    }
-                }
-            }
-
-            //---------------------------------------------------------------------------------
-            //
-            // Delete one of accounts.
-            //
-            //---------------------------------------------------------------------------------
-
-            print("Delete an account with id '1'.");
-
-            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM accounts WHERE accountId = ?")) {
-                stmt.setInt(1, 1);
-                stmt.executeUpdate();
-            }
-
-            print("Existing accounts.");
-
-            try (Statement stmt = conn.createStatement()) {
-                try (ResultSet rs =
-                         stmt.executeQuery("SELECT a.firstName, a.lastName, c.name FROM accounts a " +
-                             "INNER JOIN city c on c.id = a.cityId")) {
-                    print("Query results:");
-
-                    while (rs.next()) {
-                        System.out.println(">>>    " + rs.getString(1) + ", " + rs.getString(2)
-                            + ", " + rs.getString(3));
-                    }
-                }
-            }
-
-            // Drop database objects.
-            for (Table table : ignite.tables().tables()) {
-                print("Drop table: " + table.tableName());
-
-                ignite.tables().dropTable(table.tableName());
-            }
+            ignite.tables().dropTable(citiesTableDef.canonicalName());
+            ignite.tables().dropTable(accountsTableDef.canonicalName());
         }
-
-        print("JDBC example finished.");
-
-        ignite.close();
-    }
-
-    /**
-     * Prints message.
-     *
-     * @param msg Message to print before all objects are printed.
-     */
-    private static void print(String msg) {
-        System.out.println("\n>>> " + msg);
     }
 }

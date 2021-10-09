@@ -40,8 +40,8 @@ public class TableExamplesTest {
      */
     @Test
     public void testRecordViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutput(RecordViewExample::main, EMPTY_ARGS,
-            "Retrieved using Tuple API\n" +
+        ExampleTestUtils.assertConsoleOutputContains(RecordViewExample::main, EMPTY_ARGS,
+            "\nRetrieved record:\n" +
             "    Account Number: 123456\n" +
             "    Owner: Val Kulichenko\n" +
             "    Balance: $100.0\n");
@@ -54,8 +54,8 @@ public class TableExamplesTest {
      */
     @Test
     public void testKeyValueViewExample() throws Exception {
-        ExampleTestUtils.assertConsoleOutput(KeyValueViewExample::main, EMPTY_ARGS,
-            "Retrieved using Key-Value API\n" +
+        ExampleTestUtils.assertConsoleOutputContains(KeyValueViewExample::main, EMPTY_ARGS,
+            "\nRetrieved value:\n" +
             "    Account Number: 123456\n" +
             "    Owner: Val Kulichenko\n" +
             "    Balance: $100.0\n");

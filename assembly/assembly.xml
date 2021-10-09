@@ -65,7 +65,7 @@
             <outputDirectory>./examples</outputDirectory>
             <includes>
                 <include>config/**</include>
-                <include>src/**</include>
+                <include>src/main/**</include>
                 <include>README.md</include>
             </includes>
         </fileSet>

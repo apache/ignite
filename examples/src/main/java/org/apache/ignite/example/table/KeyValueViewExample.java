@@ -21,11 +21,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
+import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.KeyValueView;
-import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 
 /**
@@ -46,15 +47,18 @@ import org.apache.ignite.table.Tuple;
  */
 public class KeyValueViewExample {
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = IgnitionManager.start(
+        System.out.println("Starting a server node... Logging to file: ignite.log");
+
+        System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
+
+        try (Ignite server = IgnitionManager.start(
             "node-0",
             Files.readString(Path.of("config", "ignite-config.json")),
             Path.of("work")
         )) {
-
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
             //
-            // Creating a table. The API call below is the equivalent of the following DDL:
+            // Creating 'accounts' table. The API call below is the equivalent of the following DDL:
             //
             //     CREATE TABLE accounts (
             //         accountNumber INT PRIMARY KEY,
@@ -63,54 +67,84 @@ public class KeyValueViewExample {
             //         balance       DOUBLE
             //     )
             //
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
 
-            Table accounts = ignite.tables().createTable("PUBLIC.accounts", tbl ->
-                SchemaConfigurationConverter.convert(
-                    SchemaBuilders.tableBuilder("PUBLIC", "accounts")
-                        .columns(
-                            SchemaBuilders.column("accountNumber", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("firstName", ColumnType.string()).asNullable().build(),
-                            SchemaBuilders.column("lastName", ColumnType.string()).asNullable().build(),
-                            SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable().build()
-                        )
-                        .withPrimaryKey("accountNumber")
-                        .build(), tbl)
+            System.out.println("\nCreating 'accounts' table...");
+
+            TableDefinition accountsTableDef = SchemaBuilders.tableBuilder("PUBLIC", "accounts")
+                .columns(
+                    SchemaBuilders.column("accountNumber", ColumnType.INT32).asNonNull().build(),
+                    SchemaBuilders.column("firstName", ColumnType.string()).asNullable().build(),
+                    SchemaBuilders.column("lastName", ColumnType.string()).asNullable().build(),
+                    SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable().build()
+                )
+                .withPrimaryKey("accountNumber")
+                .build();
+
+            server.tables().createTable(accountsTableDef.canonicalName(), tableChange ->
+                SchemaConfigurationConverter.convert(accountsTableDef, tableChange)
                     .changeReplicas(1)
                     .changePartitions(10)
             );
 
-            KeyValueView<Tuple, Tuple> kvView = accounts.keyValueView();
-
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
             //
-            // Tuple API: insert operation.
+            // Creating a client to connect to the cluster.
             //
-            //---------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
 
-            Tuple key = Tuple.create()
-                .set("accountNumber", 123456);
+            System.out.println("\nConnecting to server...");
 
-            Tuple value = Tuple.create()
-                .set("firstName", "Val")
-                .set("lastName", "Kulichenko")
-                .set("balance", 100.00d);
+            try (IgniteClient client = IgniteClient.builder()
+                .addresses("127.0.0.1:10800")
+                .build()
+            ) {
+                //--------------------------------------------------------------------------------------
+                //
+                // Creating a key-value view for the 'accounts' table.
+                //
+                //--------------------------------------------------------------------------------------
 
-            kvView.put(key, value);
+                KeyValueView<Tuple, Tuple> kvView = client.tables().table("PUBLIC.accounts").keyValueView();
 
-            //---------------------------------------------------------------------------------
-            //
-            // Tuple API: get operation.
-            //
-            //---------------------------------------------------------------------------------
+                //--------------------------------------------------------------------------------------
+                //
+                // Performing the 'put' operation.
+                //
+                //--------------------------------------------------------------------------------------
 
-            value = accounts.recordView().get(key);
+                System.out.println("\nInserting a key-value pair into the 'accounts' table...");
 
-            System.out.println(
-                "Retrieved using Key-Value API\n" +
+                Tuple key = Tuple.create()
+                    .set("accountNumber", 123456);
+
+                Tuple value = Tuple.create()
+                    .set("firstName", "Val")
+                    .set("lastName", "Kulichenko")
+                    .set("balance", 100.00d);
+
+                kvView.put(key, value);
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Performing the 'get' operation.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nRetrieving a value using KeyValueView API...");
+
+                value = kvView.get(key);
+
+                System.out.println(
+                    "\nRetrieved value:\n" +
                     "    Account Number: " + key.intValue("accountNumber") + '\n' +
                     "    Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n' +
                     "    Balance: $" + value.doubleValue("balance"));
+            }
+
+            System.out.println("\nDropping the table and stopping the server...");
+
+            server.tables().dropTable(accountsTableDef.canonicalName());
         }
     }
 }
