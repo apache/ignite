@@ -96,8 +96,7 @@ public interface IgniteStatisticsStore {
     public void saveLocalPartitionStatistics(StatisticsKey key, ObjectPartitionStatisticsImpl statistics);
 
     /**
-     *
-     * @param obsolescence
+     * @param obsolescence Info.
      */
     public void saveObsolescenceInfo(
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> obsolescence

@@ -162,8 +162,8 @@ public class HLL implements Cloneable {
     /**
      * NOTE: Arguments here are named and structured identically to those in the
      *       PostgreSQL implementation, which can be found
-     *       <a href="https://github.com/aggregateknowledge/postgresql-hll/blob/master/
-     *       README.markdown#explanation-of-parameters-and-tuning">here</a>.
+     * <a href="https://github.com/aggregateknowledge/postgresql-hll/blob/master/README.markdown#explanation-of-parameters-and-tuning">
+     *           here</a>.
      *
      * @param log2m log-base-2 of the number of registers used in the HyperLogLog
      *        algorithm. Must be at least 4 and at most 30.
@@ -173,6 +173,7 @@ public class HLL implements Cloneable {
      *        {@link HLLType#SPARSE} promotion occurs,
      *        based on the set's cardinality. Must be at least -1 and at most 18.
      *        <table>
+     *        <caption>Parameters:</caption>
      *        <thead><tr><th><code>expthresh</code> value</th><th>Meaning</th></tr></thead>
      *        <tbody>
      *        <tr>

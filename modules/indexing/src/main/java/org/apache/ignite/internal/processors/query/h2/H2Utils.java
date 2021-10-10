@@ -1033,7 +1033,7 @@ public class H2Utils {
     }
 
     /**
-     * @param <T>
+     * @param <T> Value type.
      */
     public static class ValueRuntimeSimpleObject<T> extends Value {
         /** */

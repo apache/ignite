@@ -178,7 +178,7 @@ public final class LongRunningQueryManager {
      * - timeout * multiplier;
      * - timeout * multiplier * multiplier;
      * - etc...
-     * If the multiplier <= 1, the warning message is printed once.
+     * If the multiplier &lt;= 1, the warning message is printed once.
      *
      * @param timeoutMult Long query timeout multiplier.
      */
@@ -207,11 +207,11 @@ public final class LongRunningQueryManager {
 
     /**
      * Gets result set size threshold multiplier. The warning will be printed after:
-     *  - size of result set > threshold;
-     *  - size of result set > threshold * multiplier;
-     *  - size of result set > threshold * multiplier * multiplier;
+     *  - size of result set &gt; threshold;
+     *  - size of result set &gt; threshold * multiplier;
+     *  - size of result set &gt; threshold * multiplier * multiplier;
      *  - etc.
-     * If the multiplier <= 1, the warning message is printed once.
+     * If the multiplier &lt;= 1, the warning message is printed once.
      * @return Result set size threshold multiplier.
      */
     public int getResultSetSizeThresholdMultiplier() {

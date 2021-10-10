@@ -147,7 +147,7 @@ public final class HLLUtil {
      * The cutoff for using the "small range correction" formula, in the
      * HyperLogLog algorithm.
      *
-     * @param  m the number of registers in the HLL. <em>m<em> in the paper.
+     * @param  m the number of registers in the HLL. <em>m</em> in the paper.
      * @return the cutoff for the small range correction.
      * @see #smallEstimator(int, int)
      */
@@ -160,7 +160,7 @@ public final class HLLUtil {
      * appropriate if both the estimator is smaller than <pre>(5/2) * m</pre> and
      * there are still registers that have the zero value.
      *
-     * @param  m the number of registers in the HLL. <em>m<em> in the paper.
+     * @param  m the number of registers in the HLL. <em>m</em> in the paper.
      * @param  numberOfZeroes the number of registers with value zero. <em>V</em>
      *         in the paper.
      * @return a corrected cardinality estimate.
@@ -173,7 +173,7 @@ public final class HLLUtil {
      * The cutoff for using the "large range correction" formula, from the
      * HyperLogLog algorithm, adapted for 64 bit hashes.
      *
-     * @param  log2m log-base-2 of the number of registers in the HLL. <em>b<em> in the paper.
+     * @param  log2m log-base-2 of the number of registers in the HLL. <em>b</em> in the paper.
      * @param  registerSizeInBits the size of the HLL registers, in bits.
      * @return the cutoff for the large range correction.
      * @see #largeEstimator(int, int, double)
@@ -189,7 +189,7 @@ public final class HLLUtil {
      * for 64 bit hashes. Only appropriate for estimators whose value exceeds
      * the return of {@link #largeEstimatorCutoff(int, int)}.
      *
-     * @param  log2m log-base-2 of the number of registers in the HLL. <em>b<em> in the paper.
+     * @param  log2m log-base-2 of the number of registers in the HLL. <em>b</em> in the paper.
      * @param  registerSizeInBits the size of the HLL registers, in bits.
      * @param  estimator the original estimator ("E" in the paper).
      * @return a corrected cardinality estimate.
