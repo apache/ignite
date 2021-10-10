@@ -46,10 +46,10 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final HitRateMetric walWritingRate;
 
     /** */
-    private final HitRateMetric walFsyncTimeDuration;
+    private final HitRateMetric walFsyncDuration;
 
     /** */
-    private final HitRateMetric walFsyncTimeNum;
+    private final HitRateMetric walFsyncNum;
 
     /** */
     private final HitRateMetric walBuffPollSpinsNum;
@@ -199,14 +199,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeDuration = mreg.hitRateMetric(
+        walFsyncDuration = mreg.hitRateMetric(
             "WalFsyncDuration",
             "Total time operations spent in the fsync phase writing WAL records to the disk " +
                 "since the start of the node in milliseconds.",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeNum = mreg.hitRateMetric(
+        walFsyncNum = mreg.hitRateMetric(
             "WalFsyncNum",
             "Total number of fsync invocations for writing WAL records to the disk since the start of the node.",
             rateTimeInterval,
@@ -362,12 +362,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        long numRate = walFsyncTimeNum.value();
+        long numRate = walFsyncNum.value();
 
         if (numRate == 0)
             return 0;
 
-        return (float)walFsyncTimeDuration.value() / numRate;
+        return (float) walFsyncDuration.value() / numRate;
     }
 
     /** {@inheritDoc} */
@@ -831,8 +831,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     public void onFsync(long nanoTime) {
         long microseconds = nanoTime / 1_000;
 
-        walFsyncTimeDuration.add(microseconds);
-        walFsyncTimeNum.increment();
+        walFsyncDuration.add(microseconds);
+        walFsyncNum.increment();
     }
 
     /**
@@ -850,8 +850,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         walWritingRate.reset(rateTimeInterval, subInts);
         walBuffPollSpinsNum.reset(rateTimeInterval, subInts);
 
-        walFsyncTimeDuration.reset(rateTimeInterval, subInts);
-        walFsyncTimeNum.reset(rateTimeInterval, subInts);
+        walFsyncDuration.reset(rateTimeInterval, subInts);
+        walFsyncNum.reset(rateTimeInterval, subInts);
     }
 
     /** {@inheritDoc} */
