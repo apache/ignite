@@ -288,7 +288,7 @@ public abstract class SqlListenerUtils {
      * <p>Converts sql pattern wildcards into java regex wildcards.</p>
      * <p>Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").</p>
      * <p>All other characters are considered normal and will be escaped if necessary.</p>
-     * <pre>
+     * <pre>{@code
      * Example:
      *      som_    -->     som.
      *      so%     -->     so.*
@@ -296,7 +296,7 @@ public abstract class SqlListenerUtils {
      *      so\_me  -->     so_me
      *      some?   -->     some\?
      *      som\e   -->     som\\e
-     * </pre>
+     * }</pre>
      */
     public static String translateSqlWildcardsToRegex(String sqlPtrn) {
         if (F.isEmpty(sqlPtrn))

@@ -412,12 +412,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
             this.platformCtx = platformCtx;
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             platformCtx.writeEvent(writer, (EventAdapter)obj);
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return obj instanceof EventAdapter && err == null;
         }
@@ -441,7 +441,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
             this.platformCtx = platformCtx;
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             Collection<Event> evts = (Collection<Event>)obj;
 
@@ -455,7 +455,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 writer.writeInt(-1);
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return obj instanceof Collection && err == null;
         }

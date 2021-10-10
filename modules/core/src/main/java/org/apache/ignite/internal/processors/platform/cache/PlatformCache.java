@@ -1723,14 +1723,14 @@ public class PlatformCache extends PlatformAbstractTarget {
      * Writes error with EntryProcessorException cause.
      */
     private static class GetAllWriter implements PlatformFutureUtils.Writer {
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             assert obj instanceof Map;
 
             PlatformUtils.writeNullableMap(writer, (Map) obj);
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return err == null;
         }
@@ -1740,7 +1740,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * Writes error with EntryProcessorException cause.
      */
     private static class EntryProcessorInvokeWriter implements PlatformFutureUtils.Writer {
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             if (err == null) {
                 writer.writeBoolean(false);  // No error.
@@ -1754,7 +1754,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return true;
         }
@@ -1764,12 +1764,12 @@ public class PlatformCache extends PlatformAbstractTarget {
      * Writes results of InvokeAll method.
      */
     private static class EntryProcessorInvokeAllWriter implements PlatformFutureUtils.Writer {
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             writeInvokeAllResult(writer, (Map)obj);
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return obj != null && err == null;
         }

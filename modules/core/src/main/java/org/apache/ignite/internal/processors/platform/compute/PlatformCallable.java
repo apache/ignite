@@ -38,12 +38,12 @@ public class PlatformCallable extends PlatformAbstractFunc implements IgniteCall
         super(func, ptr);
     }
 
-    /** <inheritdoc /> */
+    /** {@inheritDoc} */
     @Override protected void platformCallback(PlatformCallbackGateway gate, long memPtr) {
         gate.computeOutFuncExecute(memPtr);
     }
 
-    /** <inheritdoc /> */
+    /** {@inheritDoc} */
     @Override public Object call() throws Exception {
         return invoke();
     }

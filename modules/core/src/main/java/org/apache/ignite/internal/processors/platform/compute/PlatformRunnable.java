@@ -39,12 +39,12 @@ public class PlatformRunnable extends PlatformAbstractFunc implements IgniteRunn
         super(func, ptr);
     }
 
-    /** <inheritdoc /> */
+    /** {@inheritDoc} */
     @Override protected void platformCallback(PlatformCallbackGateway gate, long memPtr) {
         gate.computeActionExecute(memPtr);
     }
 
-    /** <inheritdoc /> */
+    /** {@inheritDoc} */
     @Override public void run() {
         try {
             invoke();

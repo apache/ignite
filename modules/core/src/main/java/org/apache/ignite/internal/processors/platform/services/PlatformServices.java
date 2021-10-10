@@ -758,12 +758,12 @@ public class PlatformServices extends PlatformAbstractTarget {
      * Writes an EventBase.
      */
     private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             writeDeploymentResult(writer, err);
         }
 
-        /** <inheritDoc /> */
+        /** {@inheritDoc} */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return true;
         }
