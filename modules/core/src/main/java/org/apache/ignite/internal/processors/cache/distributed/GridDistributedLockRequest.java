@@ -332,8 +332,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return ctx.txLockMessageLogger();
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

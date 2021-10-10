@@ -61,12 +61,12 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      * </ul>
      * <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in binary format), you should acquire following projection to avoid deserialization:
-     * <pre>
+     * <pre>{@code
      * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * GridBinaryObject po = prj.get(1);
-     * </pre>
+     * }</pre>
      * <p> Note that this method makes sense only if cache is working in binary mode ({@code
      * CacheConfiguration#isBinaryEnabled()} returns {@code true}. If not, this method is no-op and will return
      * current projection.

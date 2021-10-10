@@ -161,8 +161,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

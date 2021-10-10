@@ -177,8 +177,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         this.err = err;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

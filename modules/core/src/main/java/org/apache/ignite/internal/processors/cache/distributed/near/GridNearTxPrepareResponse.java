@@ -262,8 +262,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         return ownedVals != null && ownedVals.containsKey(key);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

@@ -1191,7 +1191,7 @@ public class VisorTaskUtils {
     }
 
     /**
-     * Sort addresses: IPv4 & real addresses first.
+     * Sort addresses: IPv4 &amp; real addresses first.
      *
      * @param addrs Addresses to sort.
      * @return Sorted list.

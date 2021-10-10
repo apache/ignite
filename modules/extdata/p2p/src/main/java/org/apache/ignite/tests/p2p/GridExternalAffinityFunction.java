@@ -160,8 +160,7 @@ public class GridExternalAffinityFunction implements AffinityFunction {
         return key instanceof Integer ? 0 == (Integer)key ? 0 : 1 : 1;
     }
 
-    /** {@inheritDoc}
-     * @param nodeId*/
+    /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
         // No-op.
     }

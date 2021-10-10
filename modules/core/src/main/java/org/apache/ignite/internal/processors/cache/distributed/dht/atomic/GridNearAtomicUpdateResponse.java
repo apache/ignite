@@ -340,8 +340,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         errs.addFailedKeys(keys, e);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

@@ -68,7 +68,6 @@ public class JdbcThinSSLUtil {
      * @param addr Connection address.
      * @param connProps Connection properties.
      * @throws SQLException On connection error or reject.
-     * @throws IOException On IO error in handshake.
      * @return SSL socket.
      */
     public static SSLSocket createSSLSocket(InetSocketAddress addr, ConnectionProperties connProps) throws SQLException {

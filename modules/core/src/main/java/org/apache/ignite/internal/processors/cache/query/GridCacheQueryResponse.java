@@ -120,8 +120,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         finished = true;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

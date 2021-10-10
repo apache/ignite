@@ -1108,8 +1108,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         /**
          * @param dbMgr  Database manager.
          * @param pageStoreMgr Page store manager.
-         * @param log
-         *
+         * @param log Log.
          */
         public WALDisableContext(
             IgniteCacheDatabaseSharedManager dbMgr,

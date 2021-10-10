@@ -23,7 +23,7 @@ import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Exception is needed to distinguish WAL manager & page store critical I/O errors.
+ * Exception is needed to distinguish WAL manager &amp; page store critical I/O errors.
  */
 public class StorageException extends IgniteCheckedException implements InvalidEnvironmentException {
     /** */

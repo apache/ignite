@@ -87,8 +87,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

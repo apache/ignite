@@ -91,7 +91,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     /**
      * Applies counter update out of range. Update ranges must not intersect.
      *
-     * @param start Start (<= lwm).
+     * @param start Start {@code (<= lwm)}.
      * @param delta Delta.
      * @return {@code True} if update was actually applied.
      */

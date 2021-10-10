@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Wrapper around several collection, don't allow adding new elements.
- * @param <E>
+ * @param <E> Entry type.
  */
 public class GridMultiCollectionWrapper<E> implements Collection<E> {
     /** Collections. */

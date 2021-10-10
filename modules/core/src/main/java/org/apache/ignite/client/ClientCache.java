@@ -690,12 +690,12 @@ public interface ClientCache<K, V> {
      * For example, if you use {@link Integer} as a key and {@code Value} class as a value
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
-     * <pre>
+     * <pre>{@code
      * CacheClient<Integer, BinaryObject> prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);
-     * </pre>
+     * }</pre>
      * <p>
      * Note that this method makes sense only if cache is working in binary mode
      * if default marshaller is used.

@@ -95,7 +95,7 @@ import org.jetbrains.annotations.Nullable;
  * is used whenever full {@code ACID}-compliant transactions are not needed.
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
- * <pre class="java">
+ * <pre class="java">{@code
  * Ignite ignite = Ignition.ignite();
  *
  * IgniteCache&lt;String, Integer&gt; cache = ignite.cache(cacheName);
@@ -113,7 +113,7 @@ import org.jetbrains.annotations.Nullable;
  *     // Commit the transaction.
  *     tx.commit();
  * }
- * </pre>
+ * }</pre>
  */
 public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**

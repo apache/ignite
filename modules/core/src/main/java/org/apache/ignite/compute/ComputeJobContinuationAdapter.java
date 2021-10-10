@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, final String arg) throws IgniteCheckedException {
  *         List&lt;ComputeJobAdapter&lt;String&gt;&gt; jobs = new ArrayList&lt;ComputeJobAdapter&lt;String&gt;&gt;(gridSize);
  *
- *         for (int i = 0; i < gridSize; i++) {
+ *         for (int i = 0; i &lt; gridSize; i++) {
  *             jobs.add(new ComputeJobAdapter() {
  *                 // Job execution logic.
  *                 public Object execute() throws IgniteCheckedException {

@@ -53,7 +53,7 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
     /**
      * Constructor.
      *
-     * @param cctx
+     * @param cctx Cache context.
      * @param key Key.
      * @param snapshot Snapshot.
      */

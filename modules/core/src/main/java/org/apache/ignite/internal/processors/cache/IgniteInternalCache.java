@@ -252,12 +252,12 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * For example, if you use {@link Integer} as a key and {@code Value} class as a value
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
-     * <pre>
+     * <pre>{@code
      * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * GridBinaryObject po = prj.get(1);
-     * </pre>
+     * }</pre>
      * <p>
      * Note that this method makes sense only if cache is working in binary mode
      * (<code>org.apache.ignite.configuration.CacheConfiguration#isBinaryEnabled()</code> returns {@code true}. If not,

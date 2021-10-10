@@ -101,8 +101,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
         return nearThreadId;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
