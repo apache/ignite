@@ -100,7 +100,7 @@ public class CheckpointEntry {
 
     /**
      * @param wal Write ahead log manager.
-     * @return Group id -> group state map.
+     * @return Group id -&gt; group state map.
      */
     public Map<Integer, GroupState> groupState(
         IgniteWriteAheadLogManager wal

@@ -39,7 +39,7 @@ public class VisorFindAndDeleteGarbageInPersistenceJobResult extends IgniteDataT
     private Map<Integer, Map<Integer, Long>> result;
 
     /**
-     * @param result Results with founded garbage (GroupId -> (CacheId, Count of keys)).
+     * @param result Results with founded garbage (GroupId -&gt; (CacheId, Count of keys)).
      */
     public VisorFindAndDeleteGarbageInPersistenceJobResult(@NotNull Map<Integer, Map<Integer, Long>> result) {
         this.result = result;

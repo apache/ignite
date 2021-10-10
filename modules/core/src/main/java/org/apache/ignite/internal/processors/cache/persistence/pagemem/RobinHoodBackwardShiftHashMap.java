@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.putLong;
  * either an empty bucket, or a bucket with a DIB of 0 (distance to initial bucket).<br>
  *
  * Every deletion will shift backwards entries and therefore decrease their respective DIBs by 1
- * (all their initial DIB values would be >= 1)<br>
+ * (all their initial DIB values would be &gt;= 1)<br>
  *
  * This implementation stores ideal bucket with entry value itself.<br>
  *

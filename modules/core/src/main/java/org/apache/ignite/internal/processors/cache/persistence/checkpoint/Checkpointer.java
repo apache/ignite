@@ -82,7 +82,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 
 /**
  * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs -
- * now > 0 </code>. Method {@link #scheduleCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait.
+ * now &gt; 0 </code>. Method {@link #scheduleCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait.
  *
  * Checkpointer is one threaded which means that only one checkpoint at the one moment possible.
  *

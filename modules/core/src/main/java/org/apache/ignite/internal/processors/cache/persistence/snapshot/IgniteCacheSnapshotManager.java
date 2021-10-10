@@ -75,7 +75,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation>
 
     /**
      * @param snapshotOperation current snapshot operation.
-     * @param map  (cacheId, partId) -> (lastAllocatedIndex, count)
+     * @param map  (cacheId, partId) -&gt; (lastAllocatedIndex, count)
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */

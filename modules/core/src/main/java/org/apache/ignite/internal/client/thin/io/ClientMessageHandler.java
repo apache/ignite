@@ -20,7 +20,7 @@ package org.apache.ignite.internal.client.thin.io;
 import java.nio.ByteBuffer;
 
 /**
- * Handles thin client responses and server -> client notifications.
+ * Handles thin client responses and server -&gt; client notifications.
  */
 public interface ClientMessageHandler {
     /**

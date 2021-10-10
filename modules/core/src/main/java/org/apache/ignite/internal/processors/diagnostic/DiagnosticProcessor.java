@@ -147,7 +147,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
      *
      * @param dirPath Path to the directory where the file will be created.
      * @param ioFactory File I/O factory.
-     * @param pages Pages that could be corrupted. Mapping: cache group id -> page id.
+     * @param pages Pages that could be corrupted. Mapping: cache group id -&gt; page id.
      * @return Created and filled file.
      * @throws IOException If an I/O error occurs.
      */

@@ -1581,7 +1581,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * @return Map of affected partitions: cacheId -> partId.
+     * @return Map of affected partitions: cacheId -&gt; partId.
      */
     public Map<Integer, Set<Integer>> partsMap() {
         return null;

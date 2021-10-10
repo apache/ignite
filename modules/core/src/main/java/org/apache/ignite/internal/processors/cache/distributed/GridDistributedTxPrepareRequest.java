@@ -141,7 +141,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** Expected transaction size. */
     private int txSize;
 
-    /** Transaction nodes mapping (primary node -> related backup nodes). */
+    /** Transaction nodes mapping (primary node -&gt; related backup nodes). */
     @GridDirectTransient
     private Map<UUID, Collection<UUID>> txNodes;
 

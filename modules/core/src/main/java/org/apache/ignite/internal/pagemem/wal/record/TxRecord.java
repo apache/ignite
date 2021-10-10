@@ -45,8 +45,8 @@ public class TxRecord extends TimeStampRecord {
      * Transaction participating nodes.
      *
      * Structure:
-     * Primary node -> [Backup nodes...], where nodes are identified by compact ID for some baseline topology.
-     **/
+     * Primary node -&gt; [Backup nodes...], where nodes are identified by compact ID for some baseline topology.
+     */
     @Nullable private Map<Short, Collection<Short>> participatingNodes;
 
     /**
@@ -54,7 +54,7 @@ public class TxRecord extends TimeStampRecord {
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
-     * @param participatingNodes Primary -> Backup nodes compact IDs participating in transaction.
+     * @param participatingNodes Primary -&gt; Backup nodes compact IDs participating in transaction.
      */
     public TxRecord(
         TransactionState state,
@@ -72,7 +72,7 @@ public class TxRecord extends TimeStampRecord {
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
-     * @param participatingNodes Primary -> Backup nodes participating in transaction.
+     * @param participatingNodes Primary -&gt; Backup nodes participating in transaction.
      * @param ts TimeStamp.
      */
     public TxRecord(
@@ -117,7 +117,7 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @return Primary -> backup participating nodes compact IDs.
+     * @return Primary -&gt; backup participating nodes compact IDs.
      */
     public Map<Short, Collection<Short>> participatingNodes() {
         return participatingNodes;

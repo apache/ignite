@@ -49,7 +49,7 @@ public class StatisticsObjectConfiguration implements Serializable {
     @GridToStringInclude
     private final StatisticsKey key;
 
-    /** Map of the statistic configurations for columns (column_name -> configuration). */
+    /** Map of the statistic configurations for columns (column_name -&gt; configuration). */
     @GridToStringInclude
     private final Map<String, StatisticsColumnConfiguration> cols;
 
@@ -269,7 +269,7 @@ public class StatisticsObjectConfiguration implements Serializable {
         /**
          * Statistics columns to update.
          *
-         * @return Map of the statistic configuration for columns (column_name -> column_configuration).
+         * @return Map of the statistic configuration for columns (column_name -&gt; column_configuration).
          */
         public Map<String, StatisticsColumnConfiguration> updateCols() {
             return updateCols;

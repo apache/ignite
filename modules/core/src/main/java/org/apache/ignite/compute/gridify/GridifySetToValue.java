@@ -50,7 +50,7 @@ import java.lang.annotation.Target;
  * the result value. These are the types of functions that will be supported (defined in
  * terms of their properties):
  * <p>
- * F (S 1, S 2, ..., S k) => R, where F (S 1, S 2, ..., S k) == F (F (S 1), F (S 2), ..., F (S k))
+ * F (S 1, S 2, ..., S k) =&gt; R, where F (S 1, S 2, ..., S k) == F (F (S 1), F (S 2), ..., F (S k))
  * which basically defines a function over a set that produces the same result when applied
  * recursively over its results for a subsets of the original set.
  * <p>

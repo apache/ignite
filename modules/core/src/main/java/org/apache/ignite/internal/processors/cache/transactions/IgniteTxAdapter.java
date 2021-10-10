@@ -648,7 +648,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * @return True if transaction reflects changes in primary -> backup direction.
+     * @return True if transaction reflects changes in primary -&gt; backup direction.
      */
     public boolean remote() {
         return false;

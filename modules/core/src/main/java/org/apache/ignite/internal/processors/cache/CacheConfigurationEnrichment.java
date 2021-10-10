@@ -33,10 +33,10 @@ public class CacheConfigurationEnrichment implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Field name -> Field serialized value. */
+    /** Field name -&gt; Field serialized value. */
     private final Map<String, byte[]> enrichFields;
 
-    /** Field name -> Field value class name. */
+    /** Field name -&gt; Field value class name. */
     @GridToStringInclude
     private final Map<String, String> fieldClassNames;
 

@@ -321,7 +321,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Creates a future that will wait for finishing all remote transactions (primary -> backup)
+     * Creates a future that will wait for finishing all remote transactions (primary -&gt; backup)
      * with topology version less or equal to {@code topVer}.
      *
      * @param topVer Topology version.

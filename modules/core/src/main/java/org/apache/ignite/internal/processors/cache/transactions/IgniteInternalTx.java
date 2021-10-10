@@ -352,7 +352,7 @@ public interface IgniteInternalTx {
     @Nullable public GridCacheVersion nearXidVersion();
 
     /**
-     * @return Transaction nodes mapping (primary node -> related backup nodes).
+     * @return Transaction nodes mapping (primary node -&gt; related backup nodes).
      */
     @Nullable public Map<UUID, Collection<UUID>> transactionNodes();
 

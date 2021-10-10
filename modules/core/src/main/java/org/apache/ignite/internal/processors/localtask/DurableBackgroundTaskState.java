@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.processors.localtask.DurableBackgroundT
  * Class for storing the current state of a durable background task.
  *
  * Task execution state transitions:
- * INIT -> PREPARE -> STARTED -> COMPLETED
+ * INIT -&gt; PREPARE -&gt; STARTED -&gt; COMPLETED
  *
  * If the task needs to be restarted, it must have status INIT.
  */

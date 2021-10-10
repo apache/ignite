@@ -35,7 +35,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
+    /** Map of partitions that will be preloaded from history. (partId -&gt; (fromCntr, toCntr)). */
     private CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that will be preloaded from all it's current data. */

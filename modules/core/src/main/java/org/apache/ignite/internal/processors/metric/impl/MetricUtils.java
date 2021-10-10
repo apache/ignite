@@ -177,8 +177,8 @@ public class MetricUtils {
      * Build SQL-like name from Java code style name.
      * Some examples:
      *
-     * cacheName -> CACHE_NAME.
-     * affinitiKeyName -> AFFINITY_KEY_NAME.
+     * cacheName -&gt; CACHE_NAME.
+     * affinitiKeyName -&gt; AFFINITY_KEY_NAME.
      *
      * @param name Name to convert.
      * @return SQL compatible name.

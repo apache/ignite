@@ -105,10 +105,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
         return order;
     }
 
-    /**
-     *
-     * @return Collection with resolved pairs ip->hostname
-     */
+    /** @return Collection with resolved pairs ip-&gt;hostname */
     public @NotNull Collection<ResolvedAddresses> getAddrs() {
         return addrs;
     }

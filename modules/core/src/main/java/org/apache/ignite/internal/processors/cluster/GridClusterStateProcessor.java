@@ -1946,7 +1946,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      * Gets state of given two with minimal number of features.
      * <p>
-     * The order: {@link ClusterState#ACTIVE} > {@link ClusterState#ACTIVE_READ_ONLY} > {@link ClusterState#INACTIVE}.
+     * The order: {@link ClusterState#ACTIVE} &gt; {@link ClusterState#ACTIVE_READ_ONLY} &gt; {@link ClusterState#INACTIVE}.
      * <p>
      * Explain:
      * <br>

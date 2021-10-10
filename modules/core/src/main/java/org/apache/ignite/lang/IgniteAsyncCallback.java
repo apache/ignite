@@ -85,7 +85,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  *
  * // Callback that is called locally when update notifications are received.
  * // It simply prints out information about all created persons.
- * qry.setLocalListener((evts) -> {
+ * qry.setLocalListener((evts) -&gt; {
  *     for (CacheEntryEvent&lt;? extends Long, ? extends Person&gt; e : evts) {
  *         Person p = e.getValue();
  *
@@ -94,7 +94,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * });
  *
  * // Sets remote filter.
- * qry.setRemoteFilterFactory(() -> new ExampleCacheEntryFilter());
+ * qry.setRemoteFilterFactory(() -&gt; new ExampleCacheEntryFilter());
  *
  * // Execute query.
  * QueryCursor&lt;Cache.Entry&lt;Long, Person&gt;&gt; cur = cache.query(qry);

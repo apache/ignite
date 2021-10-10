@@ -80,12 +80,12 @@ public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinaryliza
     }
 
     /**
-     * Reverts partitions mappings from the form 'node id -> set of partition ids' to the form 'partition id -> node
+     * Reverts partitions mappings from the form 'node id -&gt; set of partition ids' to the form 'partition id -&gt; node
      * id'. First form is more compact, so it's preferred in case of data transferring, second form is easier to use on
      * client side, cause we mainly retrieve data using partition is as key.
      *
      * @param partsCnt Partitions count.
-     * @return Reverted form of partitions mapping: partition id -> node id.
+     * @return Reverted form of partitions mapping: partition id ->gt; node id.
      */
     public UUID[] revertMappings(int partsCnt) {
         if (partitionsMappings == null)

@@ -38,7 +38,7 @@ public class MvccTxRecord extends TxRecord implements WalRecordCacheGroupAware {
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
-     * @param participatingNodes Primary -> Backup nodes compact IDs participating in transaction.
+     * @param participatingNodes Primary -&gt; Backup nodes compact IDs participating in transaction.
      * @param mvccVer Transaction snapshot version.
      */
     public MvccTxRecord(
@@ -58,7 +58,7 @@ public class MvccTxRecord extends TxRecord implements WalRecordCacheGroupAware {
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
      * @param mvccVer Transaction snapshot version.
-     * @param participatingNodes Primary -> Backup nodes participating in transaction.
+     * @param participatingNodes Primary -&gt; Backup nodes participating in transaction.
      * @param ts TimeStamp.
      */
     public MvccTxRecord(

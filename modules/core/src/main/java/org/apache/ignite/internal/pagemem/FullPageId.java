@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Compound object used to address a page in the global page space.
- * <h3>Page ID structure</h3>
+ * <h1>Page ID structure</h1>
  * <p>
  * Generally, a full page ID consists of a cache ID and page ID. A page ID consists of
  * page index (32 bits), partition ID (16 bits) and flags.
@@ -37,8 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * +---------+-----------+------------+--------------------------+
  * |  OFFSET |   FLAGS   |PARTITION ID|       PAGE INDEX         |
  * +---------+-----------+------------+--------------------------+
- * <p>
- * <h3>Page ID rotation</h3>
+ * </pre>
+ * <h1>Page ID rotation</h1>
  * There are scenarios when we reference one page (B) from within another page (A) by page ID. It is also
  * possible that this first page (B) is concurrently reused for a different purpose. In this
  * case we should have a mechanism to determine that the reference from page (A) to page (B) is no longer valid.
