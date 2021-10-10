@@ -60,9 +60,9 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     private boolean closed;
 
     /**
-     * @param fullIterators
-     * @param historicalIterator
-     * @throws IgniteCheckedException
+     * @param fullIterators Full iterators map.
+     * @param historicalIterator Historical iterator.
+     * @throws IgniteCheckedException If failed.
      */
     public IgniteRebalanceIteratorImpl(
         NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators,

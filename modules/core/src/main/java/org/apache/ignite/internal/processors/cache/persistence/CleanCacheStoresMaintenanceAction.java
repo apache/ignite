@@ -39,8 +39,8 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
     private final String[] cacheStoreDirs;
 
     /**
-     * @param rootStoreDir
-     * @param cacheStoreDirs
+     * @param rootStoreDir Root dir.
+     * @param cacheStoreDirs Cache store dirs.
      */
     public CleanCacheStoresMaintenanceAction(File rootStoreDir, String[] cacheStoreDirs) {
         this.rootStoreDir = rootStoreDir;

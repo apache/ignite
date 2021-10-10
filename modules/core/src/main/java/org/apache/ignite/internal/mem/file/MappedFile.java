@@ -118,7 +118,7 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
      * @param start Mapping start offset within the file.
      * @param size Size of file to map.
      * @return Pointer to the mapped memory region.
-     * @throws IOException
+     * @throws IOException If failed.
      */
     public static long map(RandomAccessFile f, int mode, long start, long size) throws IOException {
         try {

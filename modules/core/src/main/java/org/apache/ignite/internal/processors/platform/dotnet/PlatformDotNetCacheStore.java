@@ -381,7 +381,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      *
      * @param ctx Context.
      * @param convertBinary Convert binary flag.
-     * @throws org.apache.ignite.IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
         A.ensure(typName != null || nativeFactory != null,

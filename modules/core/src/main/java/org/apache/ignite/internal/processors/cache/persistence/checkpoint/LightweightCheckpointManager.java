@@ -200,7 +200,7 @@ public class LightweightCheckpointManager {
 
     /**
      * @param lsnr Listener.
-     * @param dataRegion
+     * @param dataRegion Data region.
      */
     public void addCheckpointListener(CheckpointListener lsnr, DataRegion dataRegion) {
         checkpointWorkflow.addCheckpointListener(lsnr, dataRegion);

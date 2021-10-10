@@ -46,7 +46,7 @@ import java.util.TreeMap;
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost.
- * <pre name=code class=java>
+ * <pre class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
  * MyValue val = cache.get(new MyKey());

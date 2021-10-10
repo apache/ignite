@@ -37,8 +37,8 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
     private final List<String> cacheStoreDirs;
 
     /**
-     * @param workDir
-     * @param cacheStoreDirs
+     * @param workDir Work dir.
+     * @param cacheStoreDirs Cache store dirs.
      */
     public CorruptedPdsMaintenanceCallback(@NotNull File workDir,
                                            @NotNull List<String> cacheStoreDirs)

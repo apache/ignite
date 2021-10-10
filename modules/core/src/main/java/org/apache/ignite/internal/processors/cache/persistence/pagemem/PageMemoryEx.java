@@ -82,7 +82,7 @@ public interface PageMemoryEx extends PageMemory {
      * @param pageId Page ID.
      * @param pageAllocated Flag is set if new page was allocated in offheap memory.
      * @return Page.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public long acquirePage(int grpId, long pageId, AtomicBoolean pageAllocated) throws IgniteCheckedException;
 

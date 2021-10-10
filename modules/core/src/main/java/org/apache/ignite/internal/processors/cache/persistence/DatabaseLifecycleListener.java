@@ -51,8 +51,7 @@ public interface DatabaseLifecycleListener {
     /**
      * Callback executed when binary memory has fully restored and WAL logging is resumed.
      *
-     *
-     * @param mgr
+     * @param mgr Database manager.
      * @param restoreState Result of binary recovery.
      * @throws IgniteCheckedException If failed.
      */
@@ -62,8 +61,7 @@ public interface DatabaseLifecycleListener {
     /**
      * Callback executed when all logical updates were applied and page memory become to fully consistent state.
      *
-     *
-     * @param mgr
+     * @param mgr Database manager.
      * @param restoreState Result of logical recovery.
      * @throws IgniteCheckedException If failed.
      */

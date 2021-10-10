@@ -633,7 +633,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /**
      * @param entries Entries.
-     * @param useThreadBuffer
+     * @param useThreadBuffer Use thread buffer flag.
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries, boolean useThreadBuffer) {

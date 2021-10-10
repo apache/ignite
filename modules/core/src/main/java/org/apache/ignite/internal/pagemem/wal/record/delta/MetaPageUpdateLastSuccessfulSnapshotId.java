@@ -35,7 +35,7 @@ public class MetaPageUpdateLastSuccessfulSnapshotId extends PageDeltaRecord {
 
     /**
      * @param pageId Meta page ID.
-     * @param snapshotTag
+     * @param snapshotTag Snapshot tag.
      */
     public MetaPageUpdateLastSuccessfulSnapshotId(int grpId, long pageId, long lastSuccessfulSnapshotId, long snapshotTag) {
         super(grpId, pageId);

@@ -91,7 +91,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
-     * @param addDepInfo
+     * @param addDepInfo Add deployment info flag.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
         Throwable err, boolean addDepInfo) {

@@ -33,7 +33,7 @@ public interface PageMemory extends PageIdAllocator, PageSupport {
      * Stop page memory.
      *
      * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse on subsequent {@link #start()}
-     * @throws IgniteException
+     * @throws IgniteException If failed.
      */
     public void stop(boolean deallocate) throws IgniteException;
 

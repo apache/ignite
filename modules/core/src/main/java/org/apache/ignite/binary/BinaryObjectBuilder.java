@@ -35,14 +35,13 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Also builder can be initialized by existing binary object. This allows changing some fields without affecting
  * other fields.
- * <pre name=code class=java>
+ * <pre class=java>
  * BinaryObjectBuilder builder = Ignition.ignite().binary().builder(person);
  *
  * builder.setField("name", "John");
  *
  * person = builder.build();
  * </pre>
- * </p>
  *
  * If you need to modify nested binary object you can get an instance of a builder for nested binary object using
  * {@link #getField(String)}, changes made on nested builder will affect parent object,

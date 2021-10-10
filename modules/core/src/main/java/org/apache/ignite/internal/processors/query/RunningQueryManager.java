@@ -336,7 +336,7 @@ public class RunningQueryManager {
 
     /**
      * Gets info about running query by their id.
-     * @param qryId
+     * @param qryId Query id.
      * @return Running query info or {@code null} in case no running query for given id.
      */
     public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {

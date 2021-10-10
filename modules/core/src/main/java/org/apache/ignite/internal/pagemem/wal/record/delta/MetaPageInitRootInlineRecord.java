@@ -32,7 +32,7 @@ public class MetaPageInitRootInlineRecord extends MetaPageInitRootRecord {
     /**
      * @param grpId Cache group ID.
      * @param pageId Meta page ID.
-     * @param rootId
+     * @param rootId Root ID.
      * @param inlineSize Inline size.
      */
     public MetaPageInitRootInlineRecord(int grpId, long pageId, long rootId, int inlineSize) {

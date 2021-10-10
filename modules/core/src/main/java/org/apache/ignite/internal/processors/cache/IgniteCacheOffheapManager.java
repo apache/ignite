@@ -917,7 +917,7 @@ public interface IgniteCacheOffheapManager {
          * @param ver Version.
          * @param expireTime Expire time.
          * @param mvccVer Mvcc version.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         void mvccApplyUpdate(GridCacheContext cctx,
             KeyCacheObject key,

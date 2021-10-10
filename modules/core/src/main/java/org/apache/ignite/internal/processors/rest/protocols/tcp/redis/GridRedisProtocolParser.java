@@ -72,7 +72,7 @@ public class GridRedisProtocolParser {
      *
      * @param buf Buffer.
      * @return {@link GridRedisMessage}.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
         byte b = buf.get();
@@ -95,7 +95,7 @@ public class GridRedisProtocolParser {
      *
      * @param buf Buffer.
      * @return Bulk string.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
         byte b = buf.get();

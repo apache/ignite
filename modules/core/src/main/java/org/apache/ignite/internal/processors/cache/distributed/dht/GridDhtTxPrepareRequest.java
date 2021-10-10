@@ -333,11 +333,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return txLbl;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

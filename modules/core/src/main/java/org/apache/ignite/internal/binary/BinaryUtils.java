@@ -2480,7 +2480,7 @@ public class BinaryUtils {
      *
      * @param typeName Name of the type.
      * @param enumValues Enum name to ordinal mapping.
-     * @throws BinaryObjectException
+     * @throws BinaryObjectException If failed.
      */
     public static void validateEnumValues(String typeName, @Nullable Map<String, Integer> enumValues)
             throws BinaryObjectException {
