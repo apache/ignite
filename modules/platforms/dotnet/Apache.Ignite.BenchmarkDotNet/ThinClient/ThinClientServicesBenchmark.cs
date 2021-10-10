@@ -34,7 +34,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     public class ThinClientServicesBenchmark : ThinClientBenchmarkBase
     {
         /** */
-        private const string ServiceName = nameof(BenchService);
+        private const string ServiceName = "BenchService";
 
         /** */
         private IIgnite ThickClient { get; set; }

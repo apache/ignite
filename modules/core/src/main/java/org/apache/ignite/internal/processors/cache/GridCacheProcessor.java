@@ -123,6 +123,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -4059,6 +4060,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return CacheType.DATA_STRUCTURES;
         else
             return CacheType.USER;
+    }
+
+    /**
+     * @return {@code True} if cache group {@code cacheGrpId} is encrypted. {@code False} otherwise.
+     */
+    public boolean isEncrypted(int cacheGrpId) {
+        return cacheGrpId != MetaStorage.METASTORAGE_CACHE_ID && cacheGroup(cacheGrpId).config().isEncryptionEnabled();
     }
 
     /**
