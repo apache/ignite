@@ -823,9 +823,9 @@ public final class GridCacheMvcc {
      * Marks near-local candidate as ready and makes locks reassignment. Following reorderings are performed when
      * candidate is marked ready:
      * <ul>
-     *     <li/> All candidates preceding ready one are moved right after it.
-     *     <li/> Near local candidate is assigned a mapped dht version. All remote non-pending candidates with
-     *          version less then mapped dht version are marked as owned.
+     *     <li> All candidates preceding ready one are moved right after it.</li>
+     *     <li> Near local candidate is assigned a mapped dht version. All remote non-pending candidates with
+     *          version less then mapped dht version are marked as owned.</li>
      * </ul>
      *
      * @param ver Version to mark as ready.

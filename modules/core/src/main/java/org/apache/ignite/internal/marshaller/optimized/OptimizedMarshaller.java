@@ -47,7 +47,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * {@code OptimizedMarshaller} is tested only on Java HotSpot VM on other VMs
  * it could yield unexpected results. It is the default marshaller on Java HotSpot VMs
  * and will be used if no other marshaller was explicitly configured.
- * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.

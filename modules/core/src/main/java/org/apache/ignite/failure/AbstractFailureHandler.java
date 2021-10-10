@@ -63,8 +63,8 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     /**
      * Actual failure handling. This method is not called for ignored failure types.
      *
-     * @see #setIgnoredFailureTypes(Set).
-     * @see FailureHandler#onFailure(Ignite, FailureContext).
+     * @see #setIgnoredFailureTypes(Set)
+     * @see FailureHandler#onFailure(Ignite, FailureContext)
      */
     protected abstract boolean handle(Ignite ignite, FailureContext failureCtx);
 

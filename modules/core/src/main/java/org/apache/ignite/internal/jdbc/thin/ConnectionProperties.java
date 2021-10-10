@@ -179,7 +179,7 @@ public interface ConnectionProperties {
      * Gets SSL connection mode.
      *
      * @return Use SSL flag.
-     * @see #setSslMode(String).
+     * @see #setSslMode(String)
      */
     public String getSslMode();
 
@@ -238,7 +238,7 @@ public interface ConnectionProperties {
 
     /**
      * Sets key manager algorithm that will be used to create a key manager. Notice that in most cased default value
-     * suites well, however, on Android platform this value need to be set to <tt>X509<tt/>.
+     * suites well, however, on Android platform this value need to be set to <tt>X509</tt>.
      * Algorithms implementations supplied by JSEE: PKIX (X509 or SunPKIX), SunX509
      *
      * <p>See more at JSSE Reference Guide.

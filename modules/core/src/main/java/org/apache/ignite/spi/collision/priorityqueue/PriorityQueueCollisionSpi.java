@@ -105,7 +105,6 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- * <p>
  * <h1 class="header">Coding Example</h1>
  * Here is an example of a grid tasks that uses priority collision SPI configured in example above.
  * Note that priority collision resolution is absolutely transparent to the user and is simply a matter of proper

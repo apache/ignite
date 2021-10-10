@@ -659,7 +659,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      *
      * @param locAddr IP address.
      * @return {@code this} for chaining.
-     * @see IgniteConfiguration#setLocalHost(String).
+     * @see IgniteConfiguration#setLocalHost(String)
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setLocalAddress(String locAddr) {

@@ -32,7 +32,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
- * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.

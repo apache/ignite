@@ -121,7 +121,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     // Simple scenarios with in-memory cluster.
 
     /**
-     * @see #checkPropertyInMemory(ClusterState).
+     * @see #checkPropertyInMemory(ClusterState)
      */
     @Test
     public void testInactiveInMemory() throws Exception {
@@ -129,7 +129,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkPropertyInMemory(ClusterState).
+     * @see #checkPropertyInMemory(ClusterState)
      */
     @Test
     public void testActiveInMemory() throws Exception {
@@ -137,7 +137,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkPropertyInMemory(ClusterState).
+     * @see #checkPropertyInMemory(ClusterState)
      */
     @Test
     public void testReadOnlyInMemory() throws Exception {
@@ -147,7 +147,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     // Simple scenarios with persistent cluster.
 
     /**
-     * @see #checkPropertyPersistence(ClusterState).
+     * @see #checkPropertyPersistence(ClusterState)
      */
     @Test
     public void testInactivePersistence() throws Exception {
@@ -155,7 +155,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkPropertyPersistence(ClusterState).
+     * @see #checkPropertyPersistence(ClusterState)
      */
     @Test
     public void testActivePersistence() throws Exception {
@@ -163,7 +163,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkPropertyPersistence(ClusterState).
+     * @see #checkPropertyPersistence(ClusterState)
      */
     @Test
     public void testReadOnlyPersistence() throws Exception {
@@ -173,7 +173,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     // Scenarios for both (activeOnStart, clusterStateOnStart) properties with in-memory cluster.
 
     /**
-     * @see #checkBothPropertiesInMemory(ClusterState, boolean).
+     * @see #checkBothPropertiesInMemory(ClusterState, boolean)
      */
     @Test
     public void testInactiveInactiveOnStartInMemory() throws Exception {
@@ -181,7 +181,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesInMemory(ClusterState, boolean).
+     * @see #checkBothPropertiesInMemory(ClusterState, boolean)
      */
     @Test
     public void testInactiveActiveOnStartInMemory() throws Exception {
@@ -189,7 +189,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesInMemory(ClusterState, boolean).
+     * @see #checkBothPropertiesInMemory(ClusterState, boolean)
      */
     @Test
     public void testActiveInactiveOnStartInMemory() throws Exception {
@@ -197,7 +197,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesInMemory(ClusterState, boolean).
+     * @see #checkBothPropertiesInMemory(ClusterState, boolean)
      */
     @Test
     public void testActiveActiveOnStartInMemory() throws Exception {
@@ -205,7 +205,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesInMemory(ClusterState, boolean).
+     * @see #checkBothPropertiesInMemory(ClusterState, boolean)
      */
     @Test
     public void testReadOnlyInactiveOnStartInMemory() throws Exception {
@@ -213,7 +213,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesInMemory(ClusterState, boolean).
+     * @see #checkBothPropertiesInMemory(ClusterState, boolean)
      */
     @Test
     public void testReadOnlyActiveOnStartInMemory() throws Exception {
@@ -223,7 +223,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     // Scenarios for both (autoActivation, clusterStateOnStart) properties with persistent cluster.
 
     /**
-     * @see #checkBothPropertiesPersistent(ClusterState, boolean).
+     * @see #checkBothPropertiesPersistent(ClusterState, boolean)
      */
     @Test
     public void testInactiveDisableAutoActivation() throws Exception {
@@ -231,7 +231,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesPersistent(ClusterState, boolean).
+     * @see #checkBothPropertiesPersistent(ClusterState, boolean)
      */
     @Test
     public void testInactiveEnableAutoActivation() throws Exception {
@@ -239,7 +239,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesPersistent(ClusterState, boolean).
+     * @see #checkBothPropertiesPersistent(ClusterState, boolean)
      */
     @Test
     public void testActiveDisableAutoActivation() throws Exception {
@@ -247,7 +247,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesPersistent(ClusterState, boolean).
+     * @see #checkBothPropertiesPersistent(ClusterState, boolean)
      */
     @Test
     public void testActiveEnableAutoActivation() throws Exception {
@@ -255,7 +255,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesPersistent(ClusterState, boolean).
+     * @see #checkBothPropertiesPersistent(ClusterState, boolean)
      */
     @Test
     public void testReadOnlyDisableAutoActivation() throws Exception {
@@ -263,7 +263,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @see #checkBothPropertiesPersistent(ClusterState, boolean).
+     * @see #checkBothPropertiesPersistent(ClusterState, boolean)
      */
     @Test
     public void testReadOnlyEnableAutoActivation() throws Exception {

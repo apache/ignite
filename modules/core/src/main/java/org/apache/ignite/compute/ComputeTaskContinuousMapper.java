@@ -48,7 +48,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * <pre class="java">
  * ...
  * // This field will be injected with task continuous mapper.
- * &#64TaskContinuousMapperResource
+ * &#64;TaskContinuousMapperResource
  * private ComputeTaskContinuousMapper mapper;
  * ...
  * </pre>
@@ -56,7 +56,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * <pre class="java">
  * // This setter method will be automatically called by the system
  * // to set grid task continuous mapper.
- * &#64TaskContinuousMapperResource
+ * &#64;TaskContinuousMapperResource
  * void setSession(ComputeTaskContinuousMapper mapper) {
  *     this.mapper = mapper;
  * }

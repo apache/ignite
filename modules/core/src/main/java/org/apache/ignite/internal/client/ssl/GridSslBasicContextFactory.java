@@ -166,7 +166,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
 
     /**
      * Sets key manager algorithm that will be used to create a key manager. Notice that in most cased default value
-     * suites well, however, on Android platform this value need to be set to <tt>X509<tt/>.
+     * suites well, however, on Android platform this value need to be set to <tt>X509</tt>.
      *
      * @param keyAlgorithm Key algorithm name.
      */

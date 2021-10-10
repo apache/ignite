@@ -891,11 +891,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Creates a future that will wait for all ongoing transactions that maybe affected by topology update
      * to be finished. This set of transactions include
      * <ul>
-     *     <li/> All {@link TransactionConcurrency#PESSIMISTIC} transactions with topology version
-     *     less or equal to {@code topVer}.
-     *     <li/> {@link TransactionConcurrency#OPTIMISTIC} transactions in PREPARING state with topology
+     *     <li> All {@link TransactionConcurrency#PESSIMISTIC} transactions with topology version
+     *     less or equal to {@code topVer}.</li>
+     *     <li> {@link TransactionConcurrency#OPTIMISTIC} transactions in PREPARING state with topology
      *     version less or equal to {@code topVer} and having transaction key with entry that belongs to
-     *     one of partitions in {@code parts}.
+     *     one of partitions in {@code parts}.</li>
      * </ul>
      *
      * @param topVer Topology version.

@@ -44,7 +44,6 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  * <p>
  * Note that scripts {@code ${IGNITE_HOME}/bin/cdc.{sh|bat}} shipped with Ignite use
  * this startup and you can use them as an example.
- * <p>
  *
  * @see CdcMain
  */

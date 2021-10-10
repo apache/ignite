@@ -69,7 +69,6 @@ import java.lang.annotation.Target;
  * {@link Serializable} interface. If you cannot make the class {@code Serializable},
  * then you must implement custom grid task which will take care of proper state
  * initialization. In either case, Ignite must be able to serialize the state passed to remote node.
- * <p>
  * <h1 class="header">Java Example</h1>
  * <p>
  * Example for these types of functions would be any function that is looking for a subset of data
@@ -94,7 +93,6 @@ import java.lang.annotation.Target;
  * <li>Logic of the method must allow for concatenation of results from the same method apply
  * on a subset of the original collection</li>
  * </ul>
- * <p>
  * <h1 class="header">Jboss AOP</h1>
  * The following configuration needs to be applied to enable JBoss byte code
  * weaving. Note that Ignite is not shipped with JBoss and necessary
@@ -120,7 +118,6 @@ import java.lang.annotation.Target;
  *      </ul>
  * </li>
  * </ul>
- * <p>
  * <h1 class="header">AspectJ AOP</h1>
  * The following configuration needs to be applied to enable AspectJ byte code
  * weaving.
@@ -134,7 +131,6 @@ import java.lang.annotation.Target;
  *      The file should contain Gridify aspects and needed weaver options.
  * </li>
  * </ul>
- * <p>
  * <h1 class="header">Spring AOP</h1>
  * Spring AOP framework is based on dynamic proxy implementation and doesn't require
  * any specific runtime parameters for online weaving. All weaving is on-demand and should

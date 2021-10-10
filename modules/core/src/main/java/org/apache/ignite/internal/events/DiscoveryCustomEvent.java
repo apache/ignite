@@ -38,7 +38,6 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
      * Built-in event type: custom event sent.
      * <br>
      * Generated when someone invoke {@link GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)}.
-     * <p>
      *
      * @see DiscoveryCustomEvent
      */

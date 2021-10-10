@@ -149,7 +149,7 @@ public class CacheConfigurationEnricher {
     }
 
     /**
-     * @see #enrich(CacheConfiguration, CacheConfigurationEnrichment, boolean).
+     * @see #enrich(CacheConfiguration, CacheConfigurationEnrichment, boolean)
      * Does the same thing but without skipping any fields.
      *
      * @param ccfg Cache configuration to enrich.

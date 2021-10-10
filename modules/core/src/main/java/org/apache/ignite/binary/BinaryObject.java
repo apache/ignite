@@ -33,7 +33,7 @@ import java.util.TreeMap;
  * <p>
  * To work with the binary format directly, user should create a cache projection
  * over {@code BinaryObject} class and then retrieve individual fields as needed:
- * <pre name=code class=java>
+ * <pre class=java>
  * IgniteCache&lt;BinaryObject, BinaryObject&gt; prj = cache.withKeepBinary();
  *
  * // Convert instance of MyKey to binary format.
@@ -72,7 +72,7 @@ import java.util.TreeMap;
  * automatically.
  * <h1 class="header">Building Binary Objects</h1>
  * Ignite comes with {@link BinaryObjectBuilder} which allows to build binary objects dynamically:
- * <pre name=code class=java>
+ * <pre class=java>
  * BinaryObjectBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
@@ -156,11 +156,11 @@ public interface BinaryObject extends Serializable, Cloneable {
 
     /**
      * Creates a new {@link BinaryObjectBuilder} based on this binary object. The following code
-     * <pre name=code class=java>
+     * <pre class=java>
      * BinaryObjectBuilder builder = binaryObject.toBuilder();
      * </pre>
      * is equivalent to
-     * <pre name=code class=java>
+     * <pre class=java>
      * BinaryObjectBuilder builder = ignite.binary().builder(binaryObject);
      * </pre>
      *

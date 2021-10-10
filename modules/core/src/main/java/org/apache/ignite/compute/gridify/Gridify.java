@@ -72,7 +72,7 @@ import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
  *     &#64;Gridify(taskClass = GridifyHelloWorldTask.class, timeout = 3000)
  *     public static integer sayIt(String arg) {
  *         // Simply print out the argument.
- *         System.out.println(">>> Printing '" + arg + "' on this node from grid-enabled method.");
+ *         System.out.println("&gt;&gt;&gt; Printing '" + arg + "' on this node from grid-enabled method.");
  *
  *         return arg.length();
  *     }

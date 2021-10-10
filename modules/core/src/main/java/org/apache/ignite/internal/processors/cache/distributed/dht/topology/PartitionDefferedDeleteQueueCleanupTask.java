@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Task to periodically clean partition deffered delete queue.
  *
- * @see GridDhtLocalPartition#cleanupRemoveQueue().
+ * @see GridDhtLocalPartition#cleanupRemoveQueue()
  */
 public class PartitionDefferedDeleteQueueCleanupTask implements GridTimeoutObject {
     /** */

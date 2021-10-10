@@ -233,7 +233,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * <em>NOTE.</em> It is important to call <em>close()</em> method or use <em>try-with-resource</em>
  * statement to release all resources once you've done with the transmission session. This ensures that all
  * resources are released on remote node in a proper way (i.e. transmission handlers are closed).
- * <p>
  *
  * @see TcpCommunicationSpi
  * @see IgniteMessaging

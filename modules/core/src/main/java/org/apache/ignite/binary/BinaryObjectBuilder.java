@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * Binary object builder. Provides ability to build binary objects dynamically without having class definitions.
  * <p>
  * Here is an example of how a binary object can be built dynamically:
- * <pre name=code class=java>
+ * <pre class=java>
  * BinaryObjectBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #getField(String)}, changes made on nested builder will affect parent object,
  * for example:
  *
- * <pre name=code class=java>
+ * <pre class=java>
  * BinaryObjectBuilder personBuilder = grid.binary().createBuilder(personBinaryObj);
  * BinaryObjectBuilder addressBuilder = personBuilder.getField("address");
  *
