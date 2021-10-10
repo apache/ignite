@@ -94,8 +94,8 @@ public class Dataset<Row extends DatasetRow> implements Externalizable {
     /**
      * Creates new Dataset and initialized with empty data structure.
      *
-     * @param rowSize Amount of instances. Should be > 0.
-     * @param colSize Amount of attributes. Should be > 0
+     * @param rowSize Amount of instances. Should be &gt; 0.
+     * @param colSize Amount of attributes. Should be &gt; 0
      * @param featureNames Column names.
      */
     public Dataset(int rowSize, int colSize, String[] featureNames) {

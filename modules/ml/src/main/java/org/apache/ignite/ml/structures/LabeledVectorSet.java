@@ -36,8 +36,8 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     /**
      * Creates new Labeled Dataset and initialized with empty data structure.
      *
-     * @param rowSize Amount of instances. Should be > 0.
-     * @param colSize Amount of attributes. Should be > 0.
+     * @param rowSize Amount of instances. Should be &gt; 0.
+     * @param colSize Amount of attributes. Should be &gt; 0.
      */
     public LabeledVectorSet(int rowSize, int colSize) {
         this(rowSize, colSize, null);
@@ -46,8 +46,8 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     /**
      * Creates new Labeled Dataset and initialized with empty data structure.
      *
-     * @param rowSize Amount of instances. Should be > 0.
-     * @param colSize Amount of attributes. Should be > 0
+     * @param rowSize Amount of instances. Should be &gt; 0.
+     * @param colSize Amount of attributes. Should be &gt; 0
      * @param featureNames Column names.
      */
     public LabeledVectorSet(int rowSize, int colSize, String[] featureNames) {

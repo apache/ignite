@@ -91,7 +91,7 @@ public class RegressionDataStream implements DataStreamGenerator {
     /**
      * Creates two dimensional regression data stream.
      *
-     * @param function Double->double function.
+     * @param function Double-&gt;double function.
      * @param minXVal Min x value.
      * @param maxXVal Max x value.
      * @return RegressionDataStream instance.
@@ -105,7 +105,7 @@ public class RegressionDataStream implements DataStreamGenerator {
     /**
      * Creates two dimensional regression data stream.
      *
-     * @param function Double->double function.
+     * @param function Double-&gt;double function.
      * @param minXVal Min x value.
      * @param maxXVal Max x value.
      * @param seed Seed.

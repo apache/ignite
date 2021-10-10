@@ -32,7 +32,7 @@ public abstract class ConvergenceCheckerFactory {
     /**
      * Creates an instance of ConvergenceCheckerFactory.
      *
-     * @param precision Precision [0 <= precision < 1].
+     * @param precision Precision [0 &lt;= precision &lt; 1].
      */
     public ConvergenceCheckerFactory(double precision) {
         this.precision = precision;
