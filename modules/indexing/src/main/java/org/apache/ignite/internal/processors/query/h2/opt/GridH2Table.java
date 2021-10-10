@@ -395,7 +395,7 @@ public class GridH2Table extends TableBase {
      * For expression-based partition pruning on "emp" table on the <b>server side</b> we may use both "_KEY" and
      * "dept_id" columns, as passing them through standard affinity workflow will yield the same result:
      * dept_id -&gt; part
-     * _KEY -&gt; dept_id -> part
+     * _KEY -&gt; dept_id -&gt; part
      * <p>
      * But we cannot use "_KEY" on thin client side, as it doesn't know how to extract affinity key field properly.
      * Neither we can perform partition transfer in JOINs when "_KEY" is used.

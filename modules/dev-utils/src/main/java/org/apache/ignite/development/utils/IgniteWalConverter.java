@@ -54,7 +54,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 public class IgniteWalConverter {
     /**
      * @param args Args.
-     * @throws Exception If failed.
      */
     public static void main(String[] args) {
         final IgniteWalConverterArguments parameters = IgniteWalConverterArguments.parse(System.out, args);
