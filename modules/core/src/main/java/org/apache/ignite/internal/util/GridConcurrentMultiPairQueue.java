@@ -29,11 +29,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Concurrent queue that wraps collection of {@code Pair<K, V[]>}
  * The only garantee {@link #next} provided is sequentially emptify values per key array.
  * i.e. input like: <br>
- * p1 = new Pair<1, [1, 3, 5, 7]> <br>
- * p2 = new Pair<2, [2, 3]> <br>
- * p3 = new Pair<3, [200, 100]> <br>
+ * {@code p1 = new Pair<1, [1, 3, 5, 7]>} <br>
+ * {@code p2 = new Pair<2, [2, 3]>} <br>
+ * {@code p3 = new Pair<3, [200, 100]>} <br>
  * and further sequence of {@code poll} or {@code forEach} calls may produce output like: <br>
- * [3, 200], [3, 100], [1, 1], [1, 3], [1, 5], [1, 7], [2, 2], [2, 3]
+ * {@code [3, 200], [3, 100], [1, 1], [1, 3], [1, 5], [1, 7], [2, 2], [2, 3]}
  *
  * @param <K> The type of key in input pair collection.
  * @param <V> The type of value array.

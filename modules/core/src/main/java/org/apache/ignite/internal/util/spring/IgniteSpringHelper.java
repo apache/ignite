@@ -95,7 +95,7 @@ public interface IgniteSpringHelper {
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
      * @param beanClasses Beans classes.
-     * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
+     * @return Bean class -&gt; loaded bean instance map, if configuration does not contain bean with required type the
      *       map value is {@code null}.
      * @throws IgniteCheckedException If failed to load configuration.
      */
@@ -116,7 +116,7 @@ public interface IgniteSpringHelper {
      *
      * @param cfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
      * @param beanClasses Beans classes.
-     * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
+     * @return Bean class -&gt; loaded bean instance map, if configuration does not contain bean with required type the
      *       map value is {@code null}.
      * @throws IgniteCheckedException If failed to load configuration.
      */

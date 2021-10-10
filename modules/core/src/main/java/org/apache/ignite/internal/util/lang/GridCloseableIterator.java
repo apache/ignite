@@ -26,7 +26,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
  * Any instance of this interface should be closed when it's no longer needed.
  * <p>
  * Here is the common use of closable iterator.
- * <pre>
+ * <pre>{@code
  * GridCloseableIterator<T> iter = getIterator();
  *
  * try {
@@ -39,7 +39,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
  * finally {
  *     iter.close();
  * }
- * </pre>
+ * }</pre>
  */
 public interface GridCloseableIterator<T> extends GridIterator<T>, IgniteSpiCloseableIterator<T>, AutoCloseable {
     /**

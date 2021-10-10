@@ -1079,7 +1079,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (entryProcessor != null)
                     transform = true;
 
-            GridCacheVersion drVer = dataCenterId != null ? cacheCtx.cache().nextVersion(dataCenterId) : null;
+                GridCacheVersion drVer = dataCenterId != null ? cacheCtx.cache().nextVersion(dataCenterId) : null;
 
                 boolean loadMissed = enlistWriteEntry(cacheCtx,
                     entryTopVer,

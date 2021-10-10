@@ -37,11 +37,11 @@ public @interface TransientSerializable {
     /**
      * Name of the private static method that returns list of non-transient fields
      * that should not be serialized (String[]), and accepts {@link IgniteProductVersion}, e.g.
-     * <pre>
+     * <pre>{@code
      *     private static String[] fields(IgniteProductVersion ver){
      *         return ver.compareTo("1.5.30") < 0 ? EXCLUDED_FIELDS : null;
      *     }
-     * </pre>
+     * }</pre>
      * <p>
      *     On serialization version argument <tt>ver</tt> is receiver version and sender version on deserialization.
      * </p>

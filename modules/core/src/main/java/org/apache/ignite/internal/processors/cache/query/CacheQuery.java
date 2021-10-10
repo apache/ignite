@@ -29,8 +29,8 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Main API for configuring and executing cache queries.
- * <p>
+ * <p>Main API for configuring and executing cache queries.
+ * </p>
  * <h1 class="header">SQL Queries</h1>
  * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
@@ -168,7 +168,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Example of spatial query on the geo-indexed field from above:
- * <pre class="java">
+ * <pre class="java">{@code
  * org.locationtech.jts.geom.GeometryFactory factory = new org.locationtech.jts.geom.GeometryFactory();
  *
  * org.locationtech.jts.geom.Polygon square = factory.createPolygon(new Coordinate[] {
@@ -183,7 +183,7 @@ import org.jetbrains.annotations.Nullable;
  *     .queryArguments(square)
  *     .execute()
  *     .get();
- * </pre>
+ * }</pre>
  */
 public interface CacheQuery<T> {
     /**

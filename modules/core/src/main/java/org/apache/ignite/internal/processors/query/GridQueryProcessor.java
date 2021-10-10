@@ -3673,7 +3673,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param coctx Cache object context.
      * @param key Key.
      * @param val Value.
-     * @throws IgniteCheckedException, If error happens.
+     * @throws IgniteCheckedException If error happens.
      */
     public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {

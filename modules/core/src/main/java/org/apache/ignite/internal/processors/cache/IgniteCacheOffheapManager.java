@@ -93,7 +93,7 @@ public interface IgniteCacheOffheapManager {
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
      * @param partRecoveryStates Partition recovery states.
-     * @return Processed partitions: partition id -> processing time in millis.
+     * @return Processed partitions: partition id -&gt; processing time in millis.
      * @throws IgniteCheckedException If failed.
      */
     Map<Integer, Long> restorePartitionStates(
@@ -744,7 +744,7 @@ public interface IgniteCacheOffheapManager {
          *
          * @param cctx Cache context.
          * @param row Row.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
             throws IgniteCheckedException;
@@ -811,7 +811,7 @@ public interface IgniteCacheOffheapManager {
          * @param mvccVer Mvcc version.
          * @param newMvccVer New mvcc version.
          * @return {@code true} on success.
-         * @throws IgniteCheckedException, if failed.
+         * @throws IgniteCheckedException If failed.
          */
         boolean mvccUpdateRowWithPreloadInfo(
             GridCacheContext cctx,

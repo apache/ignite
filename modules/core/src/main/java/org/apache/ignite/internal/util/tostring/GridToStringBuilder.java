@@ -163,7 +163,7 @@ public class GridToStringBuilder {
      * <b>Important!</b> Changing the logic is possible only until the first
      * call of  {@link #includeSensitive} method. <br>
      *
-     * @param sup
+     * @param sup Include sensitive value supplier.
      */
     public static void setIncludeSensitiveSupplier(Supplier<Boolean> sup) {
         assert nonNull(sup);

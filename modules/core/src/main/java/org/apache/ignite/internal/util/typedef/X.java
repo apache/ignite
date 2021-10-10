@@ -699,7 +699,7 @@ public final class X {
      * The method searches for methods with specific names that return a {@code Throwable} object.
      * This will pick up most wrapping exceptions, including those from JDK 1.4.
      *
-     * The default list searched for are:</p> <ul> <li>{@code getCause()}</li>
+     * The default list searched for are:<br> <ul> <li>{@code getCause()}</li>
      * <li>{@code getNextException()}</li> <li>{@code getTargetException()}</li>
      * <li>{@code getException()}</li> <li>{@code getSourceException()}</li>
      * <li>{@code getRootCause()}</li> <li>{@code getCausedByException()}</li>
@@ -767,7 +767,7 @@ public final class X {
      *
      * This method handles recursive cause structures that might otherwise cause infinite loops.
      * The cause chain is processed until the end is reached, or until the next item in the chain
-     * is already in the result set.</p>
+     * is already in the result set.
      *
      * @param throwable The throwable to inspect, may be null.
      * @return The list of throwables, never null.

@@ -179,7 +179,7 @@ import org.jetbrains.annotations.Nullable;
  * format. User can choose to work either with the binary format or with the deserialized form (assuming
  * that class definitions are present in the classpath). By default, cache works with deserialized form
  * (example shows the case when {@link Integer} is used as a key for a binary object):
- * <pre>
+ * <pre>{@code
  * IgniteInternalCache<Integer, Value> prj = Ignition.grid().cache(null);
  *
  * // Value will be serialized and stored in cache in binary format.
@@ -187,17 +187,17 @@ import org.jetbrains.annotations.Nullable;
  *
  * // Value will be deserialized since it's stored in binary format.
  * Value val = prj.get(1);
- * </pre>
+ * }</pre>
  * You won't be able to work with deserialized form if class definition for the {@code Value} is not on
  * classpath. Even if you have the class definition, you should always avoid full deserialization if it's not
  * needed for performance reasons. To work with binary format directly you should create special projection
  * using {@link #keepBinary()} method:
- * <pre>
+ * <pre>{@code
  * IgniteInternalCache<Integer, GridBinaryObject> prj = Ignition.grid().cache(null).keepBinary();
  *
  * // Value is not deserialized and returned in binary format.
  * GridBinaryObject po = prj.get(1);
- * </pre>
+ * }</pre>
  * See {@link #keepBinary()} method JavaDoc for more details.
  */
 public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {

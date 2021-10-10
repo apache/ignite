@@ -88,7 +88,7 @@ public class CheckIndexInlineSizesResult extends IgniteDataTransferObject {
     }
 
     /**
-     * @return Information about secondary indexes inline size from the cluster nodes. (nodeId -> (index name, inline size)).
+     * @return Information about secondary indexes inline size from the cluster nodes. (nodeId -&gt; (index name, inline size)).
      */
     public Map<UUID, Map<String, Integer>> inlineSizes() {
         return nodeToIndexes;

@@ -246,12 +246,12 @@ public class DiscoCache {
         return daemonNodes;
     }
 
-    /** @return Consistent id map UUID -> Short (compacted consistent id). */
+    /** @return Consistent id map UUID -&gt; Short (compacted consistent id). */
     public Map<UUID, Short> consistentIdMap() {
         return nodeIdToConsIdx;
     }
 
-    /** @return Consistent id map Short (compacted consistent id) -> UUID. */
+    /** @return Consistent id map Short (compacted consistent id) -&gt; UUID. */
     public Map<Short, UUID> nodeIdMap() {
         return consIdxToNodeId;
     }

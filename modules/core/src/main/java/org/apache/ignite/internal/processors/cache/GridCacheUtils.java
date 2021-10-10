@@ -1578,7 +1578,7 @@ public class GridCacheUtils {
      * @param cacheKeyCfgs keyConfiguration to validate.
      * @param log Logger used to log warning message (used only if fail flag is not set).
      * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
-     * @return Affinity key maps (typeName -> fieldName)
+     * @return Affinity key maps (typeName -&gt; fieldName)
      * @throws IgniteCheckedException In case the affinity key configurations is not valid.
      */
     public static Map<String, String> validateKeyConfigiration(

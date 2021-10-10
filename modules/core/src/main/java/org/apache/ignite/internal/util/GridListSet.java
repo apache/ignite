@@ -389,7 +389,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      * Clones this set.
      *
      * @return Clone of this set.
-     * @throws CloneNotSupportedException
+     * @throws CloneNotSupportedException If failed.
      */
     @Override protected Object clone() throws CloneNotSupportedException {
         GridListSet<V> clone = (GridListSet<V>)super.clone();

@@ -49,7 +49,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @param lsnr Listener for events passed through chain.
      * @param head First filter in chain, it expected to be connected to actual endpoint.
      * @param filters Filters applied between listener and head. Will be inserted in the same order,
-     *      so chain will look like (lsnr) -> (filters[0]) -> ... -> (filters[n]) -> (head).
+     *      so chain will look like {@code (lsnr) -> (filters[0]) -> ... -> (filters[n]) -> (head)}.
      */
     public GridNioFilterChain(IgniteLogger log, GridNioServerListener<T> lsnr, GridNioFilter head,
         GridNioFilter... filters) {

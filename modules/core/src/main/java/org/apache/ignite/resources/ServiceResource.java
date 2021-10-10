@@ -52,7 +52,6 @@ import java.lang.annotation.Target;
  *     ...
  * }
  * }</pre>
- * <p>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

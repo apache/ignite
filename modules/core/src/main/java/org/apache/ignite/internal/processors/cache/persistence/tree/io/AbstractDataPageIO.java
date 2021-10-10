@@ -57,9 +57,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
  * to the number of direct items.
  * <p>
  * The row data is stored at the end of the page; newer rows are stored closer to the end of the items table.
- * <h3>Direct Items</h3>
+ * <h1>Direct Items</h1>
  * Direct items refer a stored row directly by offset in the page:
- * <pre>
+ * <pre>{@code
  *     +-----------------------------------------------------------------------------+
  *     | Direct Items             ..... (rows data)                                  |
  *     | (4000), (3800), (3600)   ..... row_2_cccc  row_1_bbbb   row_0_aaaa          |
@@ -69,13 +69,13 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
  *     | directCnt: 3                                                                |
  *     | indirectCnt: 0                                                              |
  *     +-----------------------------------------------------------------------------+
- * </pre>
+ * }</pre>
  * Direct item ID always matches it's index in the items table. The value of a direct item in the table is an
  * offset of the row data within the page.
- * <h3>Indirect Items</h3>
+ * <h1>Indirect Items</h1>
  * An indirect item explicitly stores the indirect item ID (1 byte) and the index of the direct item it refers to
  * (1 byte). The referred direct item (referrent) stores the actual offset of the row in the data page:
- * <pre>
+ * <pre>{@code
  *     +-----------------------------------------------------------------------------+
  *     |  Direct Items .. Indirect items .... (rows data)                            |
  *     |   ____________________                                                      |
@@ -86,7 +86,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
  *     | directCnt: 2                                                                |
  *     | indirectCount: 1                                                            |
  *     +-----------------------------------------------------------------------------+
- * </pre>
+ * }</pre>
  * An indirect item can only be created as a result of row deletion. Note that indirect item ID does not
  * necessarily match the item index in the items table, however, indirect item IDs are always stored in sorted order
  * by construction. In the picture above, the page contains two rows which are referred by two items:
@@ -113,7 +113,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
  *     <li>The last direct item is converted to an indirect item, pointing to the deleted item</li>
  * </ul>
  *
- * <pre>
+ * <pre>{@code
  *     remove(itemId=07)
  *     +-----------------------------------------------------------------------+
  *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 |         09 |
@@ -127,41 +127,41 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
  *     +--------------------------------------------------------------------------------+
  *     | Item        |  a |  b |  i |  d |  e |  f |  g |  j |  (08 -> 02) | (09 -> 07) |
  *     +--------------------------------------------------------------------------------+
- * </pre>
+ * }</pre>
  *
  * If the last direct item is already referred by an indirect item, that indirect item is updated and
  * all indirect items are shifted to the left by 1 effectively dropping last direct item:
- * <pre>
+ * <pre>{@code
  *      remove(itemId=00)
  *     +--------------------------------------------------------------------------------+
  *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 |          07 |         08 | 09 |
  *     +--------------------------------------------------------------------------------+
  *     | Item        |  j |  b |  i |  d |  e |  f |  g |  (08 -> 02) | (09 -> 00) |    |
  *     +--------------------------------------------------------------------------------+
- * </pre>
+ * }</pre>
  *
  * When adding a row to a page with indirect items, the item is added to the end of direct items in the table and
  * indirect items are shifted to the right:
- * <pre>
+ * <pre>{@code
  *      add(k)
  *     +-------------------------------------------------------------------------------+
  *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 |         08 |         09 |
  *     +-------------------------------------------------------------------------------+
  *     | Item        |  j |  b |  i |  d |  e |  f |  g |  k | (08 -> 02) | (09 -> 00) |
  *     +-------------------------------------------------------------------------------+
- * </pre>
+ * }</pre>
  *
  * If during an insert a newly added direct item ID matches with an existing indirect item ID, the corresponding
  * indirect item is converted to a direct item, and the row being inserted is represented by a direct item
  * with the referrent ID:
- * <pre>
+ * <pre>{@code
  *      add(l)
  *     +-----------------------------------------------------------------------+
  *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 |         09 |
  *     +-----------------------------------------------------------------------+
  *     | Item        |  j |  b |  l |  d |  e |  f |  g |  k |  i | (09 -> 00) |
  *     +-----------------------------------------------------------------------+
- * </pre>
+ * }</pre>
  */
 public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
     /** */

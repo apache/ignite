@@ -53,7 +53,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
  * while native byte order is big-endian. So it is client code responsibility to check native byte order before
  * invoking of this methods.</li>
  * </ul>
- * </p>
  */
 public abstract class GridUnsafe {
     /** */

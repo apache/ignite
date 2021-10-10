@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 /**
  * DateValue is a representation of a date in bit form:
  *
- * dv = (year << SHIFT_YEAR) | (month << SHIFT_MONTH) | day.
+ * {@code dv = (year << SHIFT_YEAR) | (month << SHIFT_MONTH) | day.}
  */
 public class DateValueConstants {
     /** Forbid instantiation of this class. Just hold constants there. */

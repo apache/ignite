@@ -325,7 +325,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * @param cacheName Cache name.
      * @param treeName Name of underlying index tree name.
      * @param segments Number of segments.
-     * @return Index root pages. Mapping: segment number -> index root page.
+     * @return Index root pages. Mapping: segment number -&gt; index root page.
      * @throws IgniteCheckedException If failed.
      */
     public static Map<Integer, RootPage> findIndexRootPages(
@@ -385,7 +385,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      * Create index root pages based on its trees.
      *
      * @param trees Index trees.
-     * @return Index root pages. Mapping: segment number -> index root page.
+     * @return Index root pages. Mapping: segment number -&gt; index root page.
      */
     public static Map<Integer, RootPage> toRootPages(InlineIndexTree[] trees) {
         if (F.isEmpty(trees))

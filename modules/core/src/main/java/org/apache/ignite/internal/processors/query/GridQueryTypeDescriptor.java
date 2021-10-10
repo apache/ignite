@@ -187,7 +187,7 @@ public interface GridQueryTypeDescriptor {
      *
      * @param key Key.
      * @param val Value.
-     * @throws IgniteCheckedException, If failure happens.
+     * @throws IgniteCheckedException If failure happens.
      */
     public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException;
 

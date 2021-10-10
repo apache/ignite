@@ -1186,7 +1186,7 @@ public interface GridCacheEntryEx {
      * Intended to be used instead of inherent java synchronization.
      * This allows to separate locking from unlocking in time and/or code units.
      *
-     * @see GridCacheEntryEx#unlockEntry().
+     * @see GridCacheEntryEx#unlockEntry()
      */
     public void lockEntry();
 
@@ -1202,15 +1202,15 @@ public interface GridCacheEntryEx {
      * @param timeout period of waiting in millis;
      * @return {@code true} if the lock was free and was acquired by the current thread, or the lock was already held by
      * the current thread; and {@code false} if the waiting time elapsed before the lock could be acquired
-     * @see GridCacheEntryEx#unlockEntry().
+     * @see GridCacheEntryEx#unlockEntry()
      */
     public boolean tryLockEntry(long timeout);
 
     /**
      * Tests whether the entry is locked currently.
      *
-     * @see GridCacheEntryEx#lockEntry().
-     * @see GridCacheEntryEx#unlockEntry().
+     * @see GridCacheEntryEx#lockEntry()
+     * @see GridCacheEntryEx#unlockEntry()
      *
      * @return {@code True} if the entry is locked.
      */
@@ -1227,8 +1227,8 @@ public interface GridCacheEntryEx {
      * @param futId Future id.
      * @param batchNum Batch number.
      * @return Update result.
-     * @throws IgniteCheckedException, If failed.
-     * @throws GridCacheEntryRemovedException, If entry has been removed.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult mvccUpdateRowsWithPreloadInfo(
         IgniteInternalTx tx,
@@ -1246,8 +1246,8 @@ public interface GridCacheEntryEx {
      *
      * @param entries Entries.
      * @return {@code True} if initial value was set.
-     * @throws IgniteCheckedException, If failed.
-     * @throws GridCacheEntryRemovedException, If entry has been removed.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entries)
         throws IgniteCheckedException, GridCacheEntryRemovedException;

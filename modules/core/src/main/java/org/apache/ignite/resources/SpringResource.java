@@ -37,7 +37,6 @@ import java.lang.annotation.Target;
  * <li>{@link org.apache.ignite.spi.IgniteSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * </ul>
- * <p>
  * <h1 class="header">Resource Name</h1>
  * This is a mandatory parameter. Resource name will be used to access
  * Spring resources from Spring {@code ApplicationContext} or XML configuration.
@@ -48,7 +47,6 @@ import java.lang.annotation.Target;
  * be declared as {@code transient}.
  * <p>
  * The lifecycle of Spring resources is controlled by Spring container.
- * <p>
  * <h1 class="header">Examples</h1>
  * Here is how injection would typically happen:
  * <pre class="java">

@@ -86,10 +86,10 @@ public class ConsistentIdMapper {
     }
 
     /**
-     * Map primary -> backup node compact ID accordingly to baseline topology..
+     * Map primary -&gt; backup node compact ID accordingly to baseline topology..
      *
-     * @param txNodes Primary -> backup UUID nodes.
-     * @return Primary -> backup compact ID nodes.
+     * @param txNodes Primary -&gt; backup UUID nodes.
+     * @return Primary -&gt; backup compact ID nodes.
      */
     public Map<Short, Collection<Short>> mapToCompactIds(
         AffinityTopologyVersion topVer,
