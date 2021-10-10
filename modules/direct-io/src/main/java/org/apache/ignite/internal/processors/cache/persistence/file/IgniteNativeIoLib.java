@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Native IO library based on *nix C library, enabled for Linux, kernel version >= 2.4.10. <br>
+ * Native IO library based on *nix C library, enabled for Linux, kernel version &gt;= 2.4.10. <br>
  * <br>
  * Uses JNA library (https://github.com/java-native-access/jna) to access native calls. <br>
  * <br>
