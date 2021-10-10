@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  *     <li>Cluster auto activation.</li>
  * </ol>
  *
- * <h2>Protection from conflicting updates</h2>
+ * <h1>Protection from conflicting updates</h1>
  * <p>
  *     Consider en example: there is a cluster of three nodes, A, B and C, all nodes store persistent data.
  *
@@ -86,9 +86,8 @@ import org.jetbrains.annotations.Nullable;
  *
  *      All new nodes joining a cluster should pass validation process before join; detailed algorithm of the process
  *      is described below.
- * </p>
  *
- * <h3>Joining node validation algorithm</h3>
+ * <h1>Joining node validation algorithm</h1>
  * Node joining a cluster firstly reads its local BaselineTopology from metastore and sends it to the cluster.
  *
  * <ol>

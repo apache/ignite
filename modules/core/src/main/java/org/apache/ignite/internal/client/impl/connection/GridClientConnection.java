@@ -229,6 +229,7 @@ public abstract class GridClientConnection {
 
     /**
      * <table>
+     *     <caption>Behaviour table:</caption>
      *     <tr><th>New value</th><th>Actual/old value</th><th>Behaviour</th></tr>
      *     <tr><td>null     </td><td>null   </td><td>Remove entry for key.</td></tr>
      *     <tr><td>newVal   </td><td>null   </td><td>Put newVal into cache if such key doesn't exist.</td></tr>

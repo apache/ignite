@@ -25,11 +25,11 @@ import org.jetbrains.annotations.Nullable;
  * Read only metric registry.
  * </p>
  *
- * <h2>Java example</h2>
+ * <h1>Java example</h1>
  * See the example below of how the internal metrics can be obtained through your application
  * using {@link ReadOnlyMetricRegistry}.
  *
- * <pre>
+ * <pre>{@code
  * JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
  *
  * Ignite ignite = Ignition.start(new IgniteConfiguration()
@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * System.out.println("The list of available data region metrics: " + listOfMetrics);
  * System.out.println("The 'default' data region MaxSize: " + ioReg.findMetric("MaxSize"));
- * </pre>
+ * }</pre>
  *
  * @see JmxMetricExporterSpi
  * @see MetricExporterSpi

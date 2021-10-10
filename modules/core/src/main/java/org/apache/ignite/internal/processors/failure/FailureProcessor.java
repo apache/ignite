@@ -122,7 +122,7 @@ public class FailureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return @{code True} if a node will be stopped by current handler in near time.
+     * @return {@code True} if a node will be stopped by current handler in near time.
      */
     public boolean nodeStopping() {
         return failureCtx != null && !(hnd instanceof NoOpFailureHandler);

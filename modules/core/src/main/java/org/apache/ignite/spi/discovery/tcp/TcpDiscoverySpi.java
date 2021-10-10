@@ -179,7 +179,6 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * </li>
  * </ul>
  * <ul>
- * </li>
  * <li>Local address (see {@link #setLocalAddress(String)})</li>
  * <li>Local port to bind to (see {@link #setLocalPort(int)})</li>
  * <li>Local port range to try binding to if previous ports are in use
@@ -405,14 +404,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
 
-    /** Default SO_LINGER to use for socket. Set negative to disable, non-negative to enable, default is {@DFLT_SO_LINGER }. */
+    /** Default SO_LINGER to use for socket. Set negative to disable, non-negative to enable, default is {@link #DFLT_SO_LINGER}. */
     private int soLinger = DFLT_SO_LINGER;
 
     /**
      * The frequency with which coordinator cleans IP finder and keeps it in the correct state, which means that
      * coordinator unregisters addresses of the nodes that have left the topology and re-registries missing addresses.
      *
-     * @see org.apache.ignite.spi.discovery.tcp.ServerImpl.IpFinderCleaner
+     * See also {@code org.apache.ignite.spi.discovery.tcp.ServerImpl.IpFinderCleaner}
      */
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
 

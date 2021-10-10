@@ -68,7 +68,6 @@ import org.jetbrains.annotations.Nullable;
  *             with call {@link MaintenanceRegistry#unregisterMaintenanceTask(String)}.
  *         </li>
  *     </ul>
- * </p>
  */
 @IgniteExperimental
 public interface MaintenanceRegistry {

@@ -83,7 +83,7 @@ import java.util.TreeMap;
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
  * convert it to binary format, like so:
- * <pre name=code class=java>
+ * <pre class=java>
  * MyObject obj = new MyObject();
  *
  * obj.setFieldA("A");

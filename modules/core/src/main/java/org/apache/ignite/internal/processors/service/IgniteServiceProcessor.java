@@ -1411,7 +1411,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * @param name Service name;
-     * @return @return Service's id if exists, otherwise {@code null};
+     * @return Service's id if exists, otherwise {@code null};
      */
     @Nullable private IgniteUuid lookupDeployedServiceId(String name) {
         for (ServiceInfo desc : deployedServices.values()) {

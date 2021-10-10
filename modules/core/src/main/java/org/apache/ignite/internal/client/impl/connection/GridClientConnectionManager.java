@@ -33,7 +33,7 @@ public interface GridClientConnectionManager {
     /**
      * Tries to open initial connection and fetch topology using given server addresses.
      *
-     * @param srvs Collection<InetSocketAddress> server addresses.
+     * @param srvs {@code Collection<InetSocketAddress>} server addresses.
      * @throws GridClientAuthenticationException If connection failed to authenticate on server.
      * @throws GridClientException If manager failed to initialise,
      * @throws InterruptedException If manager was interrupted while waiting for connection.

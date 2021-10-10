@@ -216,7 +216,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return @return Checkpoint buffer size in bytes.
+     * @return Checkpoint buffer size in bytes.
      */
     public long getCheckpointBufferSize() {
         return cpBufSz;

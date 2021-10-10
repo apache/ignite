@@ -180,6 +180,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * defines startup parameters for one host or for a range of hosts. The following
      * parameters are supported:
      *     <table class="doctable">
+     *         <caption>Startup parameters:</caption>
      *         <tr>
      *             <th>Name</th>
      *             <th>Type</th>
@@ -282,6 +283,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * defines startup parameters for one host or for a range of hosts. The following
      * parameters are supported:
      *     <table class="doctable">
+     *         <caption>Startup parameters:</caption>
      *         <tr>
      *             <th>Name</th>
      *             <th>Type</th>

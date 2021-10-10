@@ -79,7 +79,7 @@ public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObjec
     }
 
     /**
-     * Fills printer {@link Consumer <String>} by string view of this class.
+     * Fills printer {@code Consumer<String>} by string view of this class.
      */
     public void print(Consumer<String> printer) {
         printer.accept("Scope, Label, Sampling Rate, included scopes");

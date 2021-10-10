@@ -337,7 +337,6 @@ public class GridNioServerWrapper {
      * </ol>
      *
      * The handshaking process ends.
-     * </p>
      * <p>
      * <em>Note.</em> The {@link HandshakeTimeoutObject} is created to control execution timeout during the
      * whole handshaking process.

@@ -77,6 +77,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
  * Other properties can be defined in {@link Properties} object passed to
  * {@link DriverManager#getConnection(String, Properties)} method:
  * <table class="doctable">
+ *     <caption>Supported properties:</caption>
  *     <tr>
  *         <th>Name</th>
  *         <th>Description</th>

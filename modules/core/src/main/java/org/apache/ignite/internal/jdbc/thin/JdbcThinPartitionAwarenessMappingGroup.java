@@ -85,7 +85,7 @@ public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinaryliza
      * client side, cause we mainly retrieve data using partition is as key.
      *
      * @param partsCnt Partitions count.
-     * @return Reverted form of partitions mapping: partition id ->gt; node id.
+     * @return Reverted form of partitions mapping: partition id -&gt; node id.
      */
     public UUID[] revertMappings(int partsCnt) {
         if (partitionsMappings == null)

@@ -56,7 +56,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, Metad
     }
 
     /**
-     * Job for {@link CheckIndexInlineSizes} command.
+     * Job for {@code org.apache.ignite.internal.commandline.cache.CheckIndexInlineSizes} command.
      */
     private static class MetadataListJob extends VisorJob<MetadataTypeArgs, MetadataListResult> {
         /** */
