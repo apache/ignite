@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -84,9 +82,11 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         streams = new ConcurrentHashMap<>(nodes.size());
 
         for (ClusterNode node : nodes) {
-            NodePageStream<R> s = new NodePageStream<>(node.id(), () -> requestPages(node.id()));
+            NodePageStream<R> s = new NodePageStream<>(node.id(), () -> requestPages(node.id()), () -> cancelPages(node.id()));
 
             streams.put(node.id(), s);
+
+            startQuery(node.id());
         }
 
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
@@ -100,25 +100,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void cancelQuery(Throwable err) {
         firstPageLatch.countDown();
 
-        List<UUID> nodes = new ArrayList<>();
-
-        for (NodePageStream<R> s : streams.values()) {
-            if (s.hasRemotePages()) {
-                s.cancel(err);
-
-                nodes.add(s.nodeId());
-            }
-        }
-
-        try {
-            GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(cctx, reqId, fields());
-
-            qryMgr.sendRequest(null, req, nodes);
-        }
-        catch (IgniteCheckedException e) {
-            if (logger() != null)
-                U.error(logger(), "Failed to send cancel request (will cancel query in any case).", e);
-        }
+        for (NodePageStream<R> s : streams.values())
+            s.cancel(err);
 
         cctx.queries().onQueryFutureCanceled(reqId);
 
@@ -133,11 +116,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             onPage(nodeId, null,
                 new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onPageError(Throwable err) {
-        onError(err);
     }
 
     /** {@inheritDoc} */
@@ -223,23 +201,56 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /**
-     * Send request to fetch new pages.
+     * Send initial query request to specified node.
      *
-     * @param node Node to send request.
+     * @param nodeId Node to send request.
      */
-    private void requestPages(UUID node) {
+    private void startQuery(UUID nodeId) {
         try {
-            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(cctx, reqId, query().query(), fields());
+            GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, this);
 
-            qryMgr.sendRequest(null, req, Collections.singletonList(node));
+            qryMgr.sendRequest(this, req, Collections.singletonList(nodeId));
         }
         catch (IgniteCheckedException e) {
             onError(e);
         }
     }
 
-    /** Handle receiving error page. */
-    private void onError(Throwable err) {
+    /**
+     * Send request to fetch new pages.
+     *
+     * @param nodeId Node to send request.
+     */
+    private void requestPages(UUID nodeId) {
+        try {
+            GridCacheQueryRequest req = GridCacheQueryRequest.pageRequest(cctx, reqId, query().query(), fields());
+
+            qryMgr.sendRequest(null, req, Collections.singletonList(nodeId));
+        }
+        catch (IgniteCheckedException e) {
+            onError(e);
+        }
+    }
+
+    /**
+     * Cancels remote pages.
+     *
+     * @param nodeId Node to send request.
+     */
+    private void cancelPages(UUID nodeId) {
+        try {
+            GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(cctx, reqId, fields());
+
+            qryMgr.sendRequest(null, req, Collections.singletonList(nodeId));
+        }
+        catch (IgniteCheckedException e) {
+            if (logger() != null)
+                U.error(logger(), "Failed to send cancel request (will cancel query in any case).", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onError(Throwable err) {
         if (onDone(err)) {
             streams.values().forEach(s -> s.cancel(err));
 

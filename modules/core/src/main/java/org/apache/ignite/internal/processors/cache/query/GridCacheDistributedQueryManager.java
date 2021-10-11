@@ -525,13 +525,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     cctx.kernalContext().cluster().clientReconnectFuture(),
                     "Query was cancelled, client node disconnected.");
 
-                fut.onDone(err);
+                fut.onError(err);
             }
-
-            startQuery(reqId, fut, nodes);
         }
         catch (IgniteCheckedException e) {
-            fut.onDone(e);
+            fut.onError(e);
         }
 
         return fut;
@@ -701,24 +699,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     private Object topic(UUID nodeId, long reqId) {
         return TOPIC_CACHE.topic(TOPIC_PREFIX, nodeId, reqId);
-    }
-
-    /**
-     * Send initial query request to specified nodes.
-     *
-     * @param reqId Request (cache query) ID.
-     * @param fut Cache query future, contains query info.
-     */
-    private void startQuery(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut, Collection<ClusterNode> nodes)
-        throws IgniteCheckedException {
-        GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, fut);
-
-        List<UUID> sendNodes = new ArrayList<>();
-
-        for (ClusterNode n: nodes)
-            sendNodes.add(n.id());
-
-        sendRequest(fut, req, sendNodes);
     }
 
     /**

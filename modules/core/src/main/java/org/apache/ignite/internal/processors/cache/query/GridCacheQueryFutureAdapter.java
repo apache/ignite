@@ -232,7 +232,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                         err);
                 }
 
-                onPageError(err);
+                onError(err);
             }
             else {
                 if (data == null)
@@ -268,15 +268,15 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             }
         }
         catch (Throwable e) {
-            onPageError(e);
+            onError(e);
 
             if (e instanceof Error)
                 throw (Error)e;
         }
     }
 
-    /** Invokes in case of receiving error with new page from query node. */
-    protected abstract void onPageError(Throwable err);
+    /** Invokes in case of this future error. */
+    protected abstract void onError(Throwable err);
 
     /** Handles new data page from query node. */
     protected abstract void onPage(UUID nodeId, Collection<R> data, boolean lastPage);
@@ -364,7 +364,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        onPageError(new IgniteFutureTimeoutCheckedException("Query timed out."));
+        onError(new IgniteFutureTimeoutCheckedException("Query timed out."));
     }
 
     /** {@inheritDoc} */

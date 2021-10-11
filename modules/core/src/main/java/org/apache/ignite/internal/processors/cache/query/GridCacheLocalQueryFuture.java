@@ -54,7 +54,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         run = new LocalQueryRunnable();
 
-        stream = new NodePageStream<>(ctx.localNodeId(), () -> {});
+        stream = new NodePageStream<>(ctx.localNodeId(), () -> {}, () -> {});
 
         reducer = new LocalCacheQueryReducer<>(stream);
     }
@@ -90,7 +90,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void onPageError(Throwable err) {
+    @Override protected void onError(Throwable err) {
         onDone(err);
 
         stream.cancel(err);

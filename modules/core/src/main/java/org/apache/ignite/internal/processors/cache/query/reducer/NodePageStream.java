@@ -38,10 +38,14 @@ public class NodePageStream<R> {
     /** Request pages action. */
     private final Runnable reqPages;
 
+    /** Cancel remote pages action. */
+    private final Runnable cancelPages;
+
     /** */
-    public NodePageStream(UUID nodeId, Runnable reqPages) {
+    public NodePageStream(UUID nodeId, Runnable reqPages, Runnable cancelPages) {
         this.nodeId = nodeId;
         this.reqPages = reqPages;
+        this.cancelPages = cancelPages;
     }
 
     /** */
@@ -101,10 +105,13 @@ public class NodePageStream<R> {
      */
     public void cancel(Throwable err) {
         synchronized (this) {
-            noRemotePages = true;
-
-            if (head != null && !head.isDone())
+            if (!closed()) {
                 head.completeExceptionally(err);
+
+                cancelPages.run();
+
+                noRemotePages = true;
+            }
         }
     }
 
