@@ -115,6 +115,16 @@ public class IgniteStatisticsDummyStoreImpl implements IgniteStatisticsStore {
     }
 
     /** {@inheritDoc} */
+    @Override public void saveObsolescenceInfo(
+        StatisticsKey key,
+        int partId,
+        ObjectPartitionStatisticsObsolescence partObs
+    ) {
+        if (log.isInfoEnabled())
+            log.info("Unable to save statistics obsolescence info on non server node.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearObsolescenceInfo(StatisticsKey key, Collection<Integer> partIds) {
         if (log.isInfoEnabled())
             log.info("Unable to clear statistics obsolescence info on non server node.");
@@ -123,5 +133,10 @@ public class IgniteStatisticsDummyStoreImpl implements IgniteStatisticsStore {
     /** {@inheritDoc} */
     @Override public Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> loadAllObsolescence() {
         return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> loadLocalPartitionMap(StatisticsKey key) {
+        return Collections.emptySet();
     }
 }
