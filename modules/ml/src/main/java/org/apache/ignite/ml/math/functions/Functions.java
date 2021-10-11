@@ -223,7 +223,7 @@ public final class Functions {
     }
 
     /**
-     * Transform bi-function of the form (a, b) -> c into a function of form a -> (b -> c).
+     * Transform bi-function of the form {@code (a, b) -> c} into a function of form {@code a -> (b -> c)}.
      *
      * @param f Function to be curried.
      * @param <A> Type of first argument of function to be transformed.
@@ -236,7 +236,7 @@ public final class Functions {
     }
 
     /**
-     * Transform tri-function of the form (a, b, c) -> d into a function of form a -> (b -> (c -> d)).
+     * Transform tri-function of the form {@code (a, b, c) -> d} into a function of form {@code a -> (b -> (c -> d))}.
      *
      * @param f Function to be curried.
      * @param <A> Type of first argument of function to be transformed.
@@ -250,7 +250,7 @@ public final class Functions {
     }
 
     /**
-     * Transform function of form a -> b into a -> (() -> b).
+     * Transform function of form {@code a -> b} into {@code a -> (() -> b)}.
      *
      * @param f Function to be transformed.
      * @param <A> Type of input of function to be transformed.
@@ -265,7 +265,7 @@ public final class Functions {
     }
 
     /**
-     * Transform function of form (a, b) -> c into (a, b) - () -> c.
+     * Transform function of form {@code (a, b) -> c} into {@code (a, b) - () -> c}.
      *
      * @param f Function to be transformed.
      * @param <A> Type of first argument of function to be transformed.

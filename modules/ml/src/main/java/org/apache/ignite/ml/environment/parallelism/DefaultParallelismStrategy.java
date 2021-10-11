@@ -47,7 +47,7 @@ public class DefaultParallelismStrategy implements ParallelismStrategy {
     /**
      * Wrapper for future class.
      *
-     * @param <T>
+     * @param <T> Value type.
      */
     public static class FutureWrapper<T> implements Promise<T> {
         /** */

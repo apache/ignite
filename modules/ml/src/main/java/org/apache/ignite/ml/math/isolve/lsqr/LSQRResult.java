@@ -53,7 +53,7 @@ public class LSQRResult extends IterativeSolverResult {
 
     /**
      * If calc_var is True, estimates all diagonals of (A'A)^{-1} (if damp == 0) or more generally
-     * (A'A + damp^2*I)^{-1}. This is well defined if A has full column rank or damp > 0.
+     * (A'A + damp^2*I)^{-1}. This is well defined if A has full column rank or damp &gt; 0.
      */
     private final double[] var;
 

@@ -47,9 +47,9 @@ public interface LearningEnvironmentBuilder extends Serializable {
     }
 
     /**
-     * Specifies dependency (partition -> Parallelism Strategy Type for LearningEnvironment).
+     * Specifies dependency (partition -&gt; Parallelism Strategy Type for LearningEnvironment).
      *
-     * @param stgyType Function describing dependency (partition -> Parallelism Strategy Type).
+     * @param stgyType Function describing dependency (partition -&gt; Parallelism Strategy Type).
      * @return This object.
      */
     public LearningEnvironmentBuilder withParallelismStrategyTypeDependency(
@@ -66,9 +66,9 @@ public interface LearningEnvironmentBuilder extends Serializable {
     }
 
     /**
-     * Specifies dependency (partition -> Parallelism Strategy for LearningEnvironment).
+     * Specifies dependency (partition -&gt; Parallelism Strategy for LearningEnvironment).
      *
-     * @param stgy Function describing dependency (partition -> Parallelism Strategy).
+     * @param stgy Function describing dependency (partition -&gt; Parallelism Strategy).
      * @return This object.
      */
     public LearningEnvironmentBuilder withParallelismStrategyDependency(IgniteFunction<Integer, ParallelismStrategy> stgy);
@@ -85,9 +85,9 @@ public interface LearningEnvironmentBuilder extends Serializable {
     }
 
     /**
-     * Specify dependency (partition -> logging factory).
+     * Specify dependency (partition -&gt; logging factory).
      *
-     * @param loggingFactory Function describing (partition -> logging factory).
+     * @param loggingFactory Function describing (partition -&gt; logging factory).
      * @return This object.
      */
     public LearningEnvironmentBuilder withLoggingFactoryDependency(IgniteFunction<Integer, MLLogger.Factory> loggingFactory);
@@ -103,9 +103,9 @@ public interface LearningEnvironmentBuilder extends Serializable {
     }
 
     /**
-     * Specify dependency (partition -> seed for random number generator). Same seed will be used for all partitions.
+     * Specify dependency (partition -&gt; seed for random number generator). Same seed will be used for all partitions.
      *
-     * @param seed Function describing dependency (partition -> seed for random number generator).
+     * @param seed Function describing dependency (partition -&gt; seed for random number generator).
      * @return This object.
      */
     public LearningEnvironmentBuilder withRNGSeedDependency(IgniteFunction<Integer, Long> seed);
@@ -121,9 +121,9 @@ public interface LearningEnvironmentBuilder extends Serializable {
     }
 
     /**
-     * Specify dependency (partition -> random numbers generator).
+     * Specify dependency (partition -&gt; random numbers generator).
      *
-     * @param rngSupplier Function describing dependency (partition -> random numbers generator).
+     * @param rngSupplier Function describing dependency (partition -&gt; random numbers generator).
      * @return This object.
      */
     public LearningEnvironmentBuilder withRandomDependency(IgniteFunction<Integer, Random> rngSupplier);

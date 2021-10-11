@@ -37,11 +37,11 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
     }
 
     /**
-     * Get a composition model of the form {@code x -> after(mdl(x))}.
+     * Get a composition model of the form {@code x -&gt; after(mdl(x))}.
      *
      * @param after Model to apply after this model.
      * @param <V1> Type of output of function applied after this model.
-     * @return Composition model of the form {@code x -> after(mdl(x))}.
+     * @return Composition model of the form {@code x -&gt; after(mdl(x))}.
      */
     public default <V1> IgniteModel<T, V1> andThen(IgniteModel<V, V1> after) {
         IgniteModel<T, V> self = this;
@@ -60,7 +60,7 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
     }
 
     /**
-     * Get a composition model of the form {@code x -> after(mdl(x))}.
+     * Get a composition model of the form {@code x -&gt; after(mdl(x))}.
      *
      * @param after Function to apply after this model.
      * @param <V1> Type of input of function applied before this model.

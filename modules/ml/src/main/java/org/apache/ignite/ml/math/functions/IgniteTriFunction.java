@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.function.Function;
 
-/** Serializable TriFunction (A, B, C) -> R. */
+/** Serializable TriFunction {@code (A, B, C) -> R}. */
 @FunctionalInterface
 public interface IgniteTriFunction<A, B, C, R> extends Serializable {
     /** */

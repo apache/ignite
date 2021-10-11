@@ -19,7 +19,7 @@ package org.apache.ignite.ml.math.functions;
 
 import java.io.Serializable;
 
-/** BiFunction (int, double) -> double. */
+/** BiFunction {@code (int, double) -> double}. */
 @FunctionalInterface
 public interface IgniteIntDoubleToDoubleBiFunction extends Serializable {
     /** */

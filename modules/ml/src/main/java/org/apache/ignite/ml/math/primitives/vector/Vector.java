@@ -334,7 +334,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Creates new vector containing the normalized (L_power norm) values of this vector.
      * See http://en.wikipedia.org/wiki/Lp_space for details.
      *
-     * @param power The power to use. Must be >= 0. May also be {@link Double#POSITIVE_INFINITY}.
+     * @param power The power to use. Must be &gt;= 0. May also be {@link Double#POSITIVE_INFINITY}.
      * @return New vector {@code x} such that {@code norm(x, power) == 1}
      */
     public Vector normalize(double power);
@@ -349,7 +349,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Creates new vector with a normalized value calculated as {@code log_power(1 + entry) / L_power norm}.
      *
-     * @param power The power to use. Must be > 1. Cannot be {@link Double#POSITIVE_INFINITY}.
+     * @param power The power to use. Must be &gt; 1. Cannot be {@link Double#POSITIVE_INFINITY}.
      * @return New vector
      */
     public Vector logNormalize(double power);
@@ -527,7 +527,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal);
 
     /**
-     * Combines & maps two vector and folds them into a single value.
+     * Combines &amp; maps two vector and folds them into a single value.
      *
      * @param vec Another vector to combine with.
      * @param foldFun Folding function.

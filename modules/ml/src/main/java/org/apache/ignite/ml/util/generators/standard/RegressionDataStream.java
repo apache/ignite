@@ -26,7 +26,7 @@ import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 
 /**
- * Represents a generator of regression data stream based on Vector->Double function where each Vector
+ * Represents a generator of regression data stream based on Vector-&gt;Double function where each Vector
  * was produced from hypercube with sides = [minXValue, maxXValue].
  */
 public class RegressionDataStream implements DataStreamGenerator {

@@ -41,8 +41,8 @@ import org.apache.ignite.ml.util.Utils;
  * This trainer accepts some other trainer and returns bagged version of it.
  * Resulting model consists of submodels results of which are aggregated by a specified aggregator.
  * <p>Bagging is done
- * on both samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating"></a>Samples bagging</a>,
- * <a href="https://en.wikipedia.org/wiki/Random_subspace_method"></a>Features bagging</a>).</p>
+ * on both samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating">Samples bagging</a>,
+ * <a href="https://en.wikipedia.org/wiki/Random_subspace_method">Features bagging</a>).</p>
  *
  * @param <L> Type of labels.
  */
@@ -134,7 +134,7 @@ public class BaggedTrainer<L> extends
     }
 
     /**
-     * Get mapping R^featuresVectorSize -> R^maximumFeaturesCntPerMdl.
+     * Get mapping R^featuresVectorSize -&gt; R^maximumFeaturesCntPerMdl.
      *
      * @param featuresVectorSize Features vector size (Dimension of initial space).
      * @param maximumFeaturesCntPerMdl Dimension of target space.

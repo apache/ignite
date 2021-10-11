@@ -36,12 +36,12 @@ public interface UpstreamTransformerBuilder extends Serializable {
     /**
      * Combunes two builders (this and other respectfully)
      * <pre>
-     * env -> transformer1
-     * env -> transformer2
+     * env -&gt; transformer1
+     * env -&gt; transformer2
      * </pre>
      * into
      * <pre>
-     * env -> transformer2 . transformer1
+     * env -&gt; transformer2 . transformer1
      * </pre>
      *
      * @param other Builder to combine with.
