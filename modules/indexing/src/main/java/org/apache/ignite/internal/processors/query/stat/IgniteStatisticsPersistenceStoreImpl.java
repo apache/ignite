@@ -139,7 +139,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
         int objIdx = metaKey.indexOf(META_SEPARATOR, STAT_OBS_PREFIX.length() + 1);
         int partIdx = metaKey.indexOf(META_SEPARATOR, objIdx + 1);
 
-        return new StatisticsKey(metaKey.substring(STAT_DATA_PREFIX.length() + 1, objIdx),
+        return new StatisticsKey(metaKey.substring(STAT_DATA_PREFIX.length(), objIdx),
             metaKey.substring(objIdx + 1, partIdx));
     }
 

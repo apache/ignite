@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -164,19 +163,6 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Replace all object statistics with specified ones.
-     *
-     * @param key Object key.
-     * @param statistics Collection of tables partition statistics.
-     */
-    public void saveLocalPartitionsStatistics(
-        StatisticsKey key,
-        Collection<ObjectPartitionStatisticsImpl> statistics
-    ) {
-        store.replaceLocalPartitionsStatistics(key, statistics);
-    }
-
-    /**
      * Get partition statistics.
      *
      * @param key Object key.
@@ -185,17 +171,6 @@ public class IgniteStatisticsRepository {
      */
     public ObjectPartitionStatisticsImpl getLocalPartitionStatistics(StatisticsKey key, int partId) {
         return store.getLocalPartitionStatistics(key, partId);
-    }
-
-    /**
-     * Clear partition statistics.
-     *
-     * @param key Object key.
-     * @param partId Partition id.
-     */
-    public void clearLocalPartitionStatistics(StatisticsKey key, int partId) {
-        store.clearLocalPartitionStatistics(key, partId);
-
     }
 
     /**
@@ -254,76 +229,10 @@ public class IgniteStatisticsRepository {
     }
 
     /**
-     * Clear local object statistics.
-     *
-     * @param key Object key to clear local statistics by.
-     */
-    public void clearLocalStatistics(StatisticsKey key) {
-        locStats.remove(key);
-    }
-
-    /**
-     * Clear local object statistics.
-     *
-     * @param key Object key to clear local statistics by.
-     * @param colNames Only statistics by specified columns will be cleared.
-     */
-    public void clearLocalStatistics(StatisticsKey key, Set<String> colNames) {
-        if (log.isDebugEnabled()) {
-            log.debug("Clear local statistics [key=" + key +
-                ", columns=" + colNames + ']');
-        }
-
-        if (locStats == null) {
-            log.warning("Unable to clear local statistics for " + key + " on non server node.");
-
-            return;
-        }
-
-        locStats.computeIfPresent(key, (k, v) -> {
-            ObjectStatisticsImpl locStatNew = subtract(v, colNames);
-            return locStatNew.columnsStatistics().isEmpty() ? null : locStatNew;
-        });
-    }
-
-    /**
      * @return Ignite statistics store.
      */
     public IgniteStatisticsStore statisticsStore() {
         return store;
-    }
-
-    /**
-     * Merge new statistics into base one (with overlapping of existing data).
-     *
-     * @param base Old statistics.
-     * @param add Updated statistics.
-     * @param <T> Statistics type (partition or object one).
-     * @return Combined statistics.
-     */
-    public static <T extends ObjectStatisticsImpl> T merge(T base, T add) {
-        T res = (T)add.clone();
-
-        for (Map.Entry<String, ColumnStatistics> entry : base.columnsStatistics().entrySet())
-            res.columnsStatistics().putIfAbsent(entry.getKey(), entry.getValue());
-
-        return res;
-    }
-
-    /**
-     * Remove specified columns from clone of base ObjectStatistics object.
-     *
-     * @param base ObjectStatistics to remove columns from.
-     * @param cols Columns to remove.
-     * @return Cloned object without specified columns statistics.
-     */
-    public static <T extends ObjectStatisticsImpl> T subtract(T base, Set<String> cols) {
-        T res = (T)base.clone();
-
-        for (String col : cols)
-            res.columnsStatistics().remove(col);
-
-        return res;
     }
 
     /**
@@ -390,25 +299,6 @@ public class IgniteStatisticsRepository {
             return new IntHashMap<>(0);
         else
             return new IntHashMap<>(res);
-    }
-
-    /**
-     * Get all dirty partityions map.
-     *
-     * @return Map with all dirty partitions.
-     */
-    public synchronized Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> getDirtyObsolescenceInfo() {
-        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> dirtyObs = new HashMap<>();
-
-        for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : statObs.entrySet()) {
-            objObs.getValue().forEach((k, v) -> {
-                if (v.dirty())
-                    dirtyObs.computeIfAbsent(objObs.getKey(), k2 -> new IntHashMap<>()).put(k, v);
-
-            });
-        }
-
-        return dirtyObs;
     }
 
     /**

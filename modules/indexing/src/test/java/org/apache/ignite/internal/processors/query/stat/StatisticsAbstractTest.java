@@ -460,6 +460,19 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         );
     }
 
+    /**
+     * Get object statistics.
+     *
+     * @return Object statistics.
+     */
+    protected ObjectStatisticsImpl getStatistics() {
+        ColumnStatistics colStatistics = new ColumnStatistics(null, null, 100, 0,
+            100, 0, new byte[0], 0, U.currentTimeMillis());
+
+        return new ObjectStatisticsImpl(0, Collections.singletonMap("col1", colStatistics)
+        );
+    }
+
     /** Check that all statistics collections related tasks is empty in specified node. */
     protected void checkStatisticTasksEmpty(IgniteEx ign) {
         Map<StatisticsKey, LocalStatisticsGatheringContext> currColls = GridTestUtils.getFieldValue(
