@@ -39,9 +39,6 @@ public class NodePageStream<R> {
     /** Promise to notify the stream consumer about delivering new page. */
     private CompletableFuture<UUID> pageReady = new CompletableFuture<>();
 
-    /** This lock syncs {@link #head} and {@link #noRemotePages}. */
-    private final Object pagesLock = new Object();
-
     /** Request pages action. */
     private final Runnable reqPages;
 
@@ -74,7 +71,7 @@ public class NodePageStream<R> {
 
         NodePage<R> page;
 
-        synchronized (pagesLock) {
+        synchronized (this) {
             assert head != null;
 
             page = head;
@@ -101,7 +98,7 @@ public class NodePageStream<R> {
      * @param last Whether it is the last page from this node.
      */
     public void addPage(Collection<R> data, boolean last) {
-        synchronized (pagesLock) {
+        synchronized (this) {
             head = new NodePage<>(nodeId, data);
 
             if (last)
@@ -115,7 +112,7 @@ public class NodePageStream<R> {
      * Cancel query on all nodes.
      */
     public void cancel() {
-        synchronized (pagesLock) {
+        synchronized (this) {
             head = new NodePage<>(nodeId, Collections.emptyList());
 
             noRemotePages = true;
@@ -128,7 +125,7 @@ public class NodePageStream<R> {
      * @return {@code true} if there are some undelivered page from the node, otherwise {@code false}.
      */
     public boolean hasRemotePages() {
-        synchronized (pagesLock) {
+        synchronized (this) {
             return !noRemotePages;
         }
     }
@@ -137,7 +134,7 @@ public class NodePageStream<R> {
      * @return {@code true} if this stream delivers all query results from the node to a consumer.
      */
     public boolean closed() {
-        synchronized (pagesLock) {
+        synchronized (this) {
             return noRemotePages && (head == null);
         }
     }
