@@ -67,6 +67,7 @@
         <module>modules/codegen</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
+        <module>modules/numa-allocator</module>
         <module>modules/yarn</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
