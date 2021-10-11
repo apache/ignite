@@ -40,7 +40,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  * Run ANN multi-class classification trainer ({@link ANNClassificationTrainer}) over distributed dataset.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
- * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set">Iris dataset</a>).</p>
  * <p>
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> algorithm.</p>

@@ -34,7 +34,7 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
 /**
- * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes">
+ * Run naive Bayes classification model based on <a href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes">
  * naive Bayes classifier</a> algorithm ({@link DiscreteNaiveBayesTrainer}) over distributed cache.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points.

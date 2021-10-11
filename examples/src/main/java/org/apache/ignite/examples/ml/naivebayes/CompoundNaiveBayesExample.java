@@ -38,7 +38,7 @@ import static java.util.Arrays.asList;
 /**
  * Run naive Compound Bayes classification model based on <a href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier">
  * Nnaive Bayes classifier</a> algorithm ({@link GaussianNaiveBayesTrainer})and <a
- * href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes"> Discrete naive Bayes
+ * href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes"> Discrete naive Bayes
  * classifier</a> algorithm ({@link DiscreteNaiveBayesTrainer}) over distributed cache.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points.

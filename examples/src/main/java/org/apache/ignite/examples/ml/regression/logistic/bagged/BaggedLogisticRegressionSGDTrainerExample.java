@@ -42,11 +42,11 @@ import org.apache.ignite.ml.trainers.TrainerTransformers;
  * logistic regression is considered.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
- * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set">Iris dataset</a>).</p>
  * <p>
  * After that it trains bootstrapped (or bagged) version of logistic regression trainer. Bootstrapping is done on both
- * samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating"></a>Samples bagging</a>,
- * <a href="https://en.wikipedia.org/wiki/Random_subspace_method"></a>Features bagging</a>).</p>
+ * samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating">Samples bagging</a>,
+ * <a href="https://en.wikipedia.org/wiki/Random_subspace_method">Features bagging</a>).</p>
  * <p>
  * Finally, this example applies cross-validation to resulted model and prints accuracy if each fold.</p>
  */

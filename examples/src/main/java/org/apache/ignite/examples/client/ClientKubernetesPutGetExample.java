@@ -34,7 +34,6 @@ import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurat
  * <li>A thin client application should be run within the cluster to have access to Ignite nodes pods.</li>
  * <li>KubernetesConnectionConfiguration must be in sync with the Ignite nodes configuration.</li>
  * </ul>
- * </p>
  */
 public class ClientKubernetesPutGetExample {
     /**

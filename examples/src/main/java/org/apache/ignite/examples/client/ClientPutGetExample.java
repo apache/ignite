@@ -31,7 +31,6 @@ import org.apache.ignite.examples.model.Address;
  * <ul>
  * <li>An Ignite server node must be running on local host.</li>
  * </ul>
- * </p>
  */
 public class ClientPutGetExample {
     /**

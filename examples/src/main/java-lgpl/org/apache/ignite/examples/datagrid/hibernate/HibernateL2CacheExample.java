@@ -50,7 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * performance dramatically.
  * <p>
  * This example defines 2 entity classes: {@link User} and {@link Post}, with
- * 1 <-> N relation, and marks them with appropriate annotations for Hibernate
+ * 1 &lt;-&gt; N relation, and marks them with appropriate annotations for Hibernate
  * object-relational mapping to SQL tables of an underlying H2 in-memory database.
  * The example launches node in the same JVM and registers it in
  * Hibernate configuration as an L2 cache implementation. It then stores and

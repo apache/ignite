@@ -88,7 +88,7 @@ public class JmhPageLockTrackerBenchmark {
     }
 
     /**
-     *  Mesure cost for (beforelock -> lock -> unlock) operation.
+     *  Mesure cost for (beforelock -&gt; lock -&gt; unlock) operation.
      */
     @Benchmark
     @BenchmarkMode(Mode.Throughput)

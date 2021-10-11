@@ -1433,7 +1433,7 @@ public class GridSqlQueryParser {
      * @param addCol H2 statement.
      * @return Grid SQL statement.
      *
-     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add">ALTER TABLE</a>
      */
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
         assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
@@ -1483,7 +1483,7 @@ public class GridSqlQueryParser {
     /**
      * Parse {@code ALTER TABLE ... DROP COLUMN} statement.
      * @param dropCol H2 statement.
-     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add">ALTER TABLE</a>
      */
     private GridSqlStatement parseDropColumn(AlterTableAlterColumn dropCol) {
         assert dropCol.getType() == CommandInterface.ALTER_TABLE_DROP_COLUMN;
