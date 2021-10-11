@@ -17,50 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** Simple reducer for local queries. */
 public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Iterator provides access to result data. Local query returns all data in single page. */
-    private final GridFutureAdapter<Iterator<R>> pageFut;
+    /** Single page. */
+    private NodePage<R> page;
+
+    /** Local node stream with single page. */
+    private final NodePageStream<R> stream;
 
     /** */
-    private Iterator<R> page;
+    public LocalCacheQueryReducer(NodePageStream<R> stream) {
+        super(F.asMap(stream.nodeId(), stream));
 
-    /** */
-    private final GridCacheLocalQueryFuture<?, ?, R> fut;
-
-    /** */
-    public LocalCacheQueryReducer(GridCacheLocalQueryFuture<?, ?, R> fut, GridFutureAdapter<Iterator<R>> pageFut) {
-        this.pageFut = pageFut;
-        this.fut = fut;
+        this.stream = stream;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
-        Iterator<R> p = page;
+        if (page == null)
+            page = page(stream.headPage());
 
-        if (p == null) {
-            long waitTime = fut.query().query().timeout() == 0 ? Long.MAX_VALUE : fut.endTime() - U.currentTimeMillis();
-
-            try {
-                page = p = pageFut.get(waitTime, TimeUnit.MILLISECONDS);
-
-            } catch (IgniteCheckedException e) {
-                p = Collections.emptyIterator();
-            }
-        }
-
-        return p != null && p.hasNext();
+        return page.hasNext();
     }
 
     /** {@inheritDoc} */

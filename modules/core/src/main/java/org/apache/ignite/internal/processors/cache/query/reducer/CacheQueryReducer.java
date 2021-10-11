@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 
@@ -26,8 +30,36 @@ import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
  * <T> is a type of cache query result item.
  */
 public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Page streams collection. */
+    protected final Map<UUID, NodePageStream<T>> pageStreams;
+
+    /** */
+    protected CacheQueryReducer(final Map<UUID, NodePageStream<T>> pageStreams) {
+        this.pageStreams = pageStreams;
+    }
+
     /** {@inheritDoc} */
     @Override public void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException("CacheQueryReducer doesn't support removing items.");
+    }
+
+    /**
+     * @return Page with query results data from specified stream.
+     */
+    protected NodePage<T> page(CompletableFuture<?> pageFut) throws IgniteCheckedException {
+        try {
+            return (NodePage<T>) pageFut.get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteCheckedException("Query was interrupted.", e);
+        }
+        catch (ExecutionException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 }

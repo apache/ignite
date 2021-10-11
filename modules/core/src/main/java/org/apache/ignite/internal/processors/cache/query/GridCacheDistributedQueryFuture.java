@@ -89,22 +89,22 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             streams.put(node.id(), s);
         }
 
-        Map<UUID, NodePageStream<R>> unmodified = Collections.unmodifiableMap(streams);
+        Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
         reducer = qry.query().type() == TEXT ?
-            new MergeSortDistributedCacheQueryReducer<>(unmodified, endTime())
-            : new UnsortedDistributedCacheQueryReducer<>(unmodified, endTime());
+            new MergeSortDistributedCacheQueryReducer<>(streamsMap)
+            : new UnsortedDistributedCacheQueryReducer<>(streamsMap);
     }
 
     /** {@inheritDoc} */
-    @Override protected void cancelQuery() {
+    @Override protected void cancelQuery(Throwable err) {
         firstPageLatch.countDown();
 
         List<UUID> nodes = new ArrayList<>();
 
         for (NodePageStream<R> s : streams.values()) {
             if (s.hasRemotePages()) {
-                s.cancel();
+                s.cancel(err);
 
                 nodes.add(s.nodeId());
             }
@@ -240,10 +240,10 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** Handle receiving error page. */
     private void onError(Throwable err) {
-        streams.values().forEach(NodePageStream::cancel);
+        if (onDone(err)) {
+            streams.values().forEach(s -> s.cancel(err));
 
-        onDone(err);
-
-        firstPageLatch.countDown();
+            firstPageLatch.countDown();
+        }
     }
 }

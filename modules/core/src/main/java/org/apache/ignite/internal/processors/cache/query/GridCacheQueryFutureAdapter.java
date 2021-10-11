@@ -160,8 +160,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
             }
 
-            checkError();
-
             return next;
         }
         catch (IgniteCheckedException e) {
@@ -338,7 +336,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
         if (onCancelled()) {
-            cancelQuery();
+            cancelQuery(new IgniteCheckedException("Query was cancelled."));
 
             return true;
         }
@@ -347,9 +345,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Cancels query on remote nodes and cleanes owned resources.
+     *
+     * @param err If query was cancelled with error.
      * @throws IgniteCheckedException In case of error.
      */
-    protected abstract void cancelQuery() throws IgniteCheckedException;
+    protected abstract void cancelQuery(Throwable err) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public IgniteUuid timeoutId() {
@@ -363,13 +364,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        try {
-            if (onDone(new IgniteFutureTimeoutCheckedException("Query timed out.")))
-                cancelQuery();
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to cancel query on timeout.", e);
-        }
+        onPageError(new IgniteFutureTimeoutCheckedException("Query timed out."));
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
  * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node
  * returns pre-sorted collection of data.
  */
-public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
+public class MergeSortDistributedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,8 +43,8 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
     private UUID pendingNodeId;
 
     /** */
-    public MergeSortDistributedCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams, long endTime) {
-        super(pageStreams, endTime);
+    public MergeSortDistributedCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
+        super(pageStreams);
     }
 
     /** {@inheritDoc} */
@@ -52,12 +52,13 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
         // Initial sort.
         if (nodePages == null) {
             // Compares head pages from all nodes to get the lowest value at the moment.
-            Comparator<NodePage<R>> pageCmp = (o1, o2) -> textResultComparator.compare(o1.head(), o2.head());
+            Comparator<NodePage<R>> pageCmp = (o1, o2) -> textResultComparator.compare(
+                (ScoredCacheEntry<?, ?>)o1.head(), (ScoredCacheEntry<?, ?>)o2.head());
 
             nodePages = new PriorityQueue<>(pageStreams.size(), pageCmp);
 
             for (NodePageStream<R> s : pageStreams.values()) {
-                NodePage<R> p = page(s.nodeId(), s.pageReady());
+                NodePage<R> p = page(s.headPage());
 
                 if (p == null || !p.hasNext())
                     continue;
@@ -70,7 +71,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
             NodePageStream<R> stream = pageStreams.get(pendingNodeId);
 
             if (!stream.closed()) {
-                NodePage<R> p = page(pendingNodeId, pageStreams.get(pendingNodeId).pageReady());
+                NodePage<R> p = page(stream.headPage());
 
                 if (p != null && p.hasNext())
                     nodePages.add(p);
@@ -98,6 +99,6 @@ public class MergeSortDistributedCacheQueryReducer<R> extends DistributedCacheQu
     }
 
     /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
-    private static final Comparator textResultComparator = (c1, c2) ->
-        Float.compare(((ScoredCacheEntry)c2).score(), ((ScoredCacheEntry)c1).score());
+    private static final Comparator<ScoredCacheEntry<?, ?>> textResultComparator = (c1, c2) ->
+        Float.compare(c2.score(), c1.score());
 }

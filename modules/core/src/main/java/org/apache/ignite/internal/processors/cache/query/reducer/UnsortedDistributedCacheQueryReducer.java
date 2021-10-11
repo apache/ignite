@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
  */
-public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQueryReducer<R> {
+public class UnsortedDistributedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,14 +34,14 @@ public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQue
     private NodePage<R> page;
 
     /** */
-    public UnsortedDistributedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams, long endTime) {
-        super(pageStreams, endTime);
+    public UnsortedDistributedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams) {
+        super(pageStreams);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         while (page == null || !page.hasNext()) {
-            CompletableFuture<UUID>[] futs = new CompletableFuture[pageStreams.size()];
+            CompletableFuture<NodePage<R>>[] futs = new CompletableFuture[pageStreams.size()];
 
             int pendingNodesCnt = 0;
 
@@ -49,10 +49,10 @@ public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQue
                 if (s.closed())
                     continue;
 
-                CompletableFuture<UUID> f = s.pageReady();
+                CompletableFuture<NodePage<R>> f = s.headPage();
 
                 if (f.isDone()) {
-                    page = page(s.nodeId(), f);
+                    page = page(f);
 
                     if (page.hasNext())
                         return true;
@@ -63,7 +63,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends DistributedCacheQue
             if (pendingNodesCnt == 0)
                 return false;
 
-            page = page(null, CompletableFuture.anyOf(Arrays.copyOf(futs, pendingNodesCnt)));
+            page = page(CompletableFuture.anyOf(Arrays.copyOf(futs, pendingNodesCnt)));
         }
 
         return true;

@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This class provides an interface {@link #nextPage()} that returns a {@link NodePage} of cache query result from
- * single node. A new page requests when previous page was fetched by class consumer.
+ * This class provides an interface {@link #headPage()} that returns a future will be completed with {@link NodePage}
+ * of cache query result from single node. A new page requests when previous page was fetched by class consumer.
  */
 public class NodePageStream<R> {
     /** Node ID to stream pages */
@@ -33,11 +32,8 @@ public class NodePageStream<R> {
     /** Flags shows whether there are no available pages on a query node. */
     private boolean noRemotePages;
 
-    /** Last delivered page from the stream. */
-    private NodePage<R> head;
-
     /** Promise to notify the stream consumer about delivering new page. */
-    private CompletableFuture<UUID> pageReady = new CompletableFuture<>();
+    private CompletableFuture<NodePage<R>> head = new CompletableFuture<>();
 
     /** Request pages action. */
     private final Runnable reqPages;
@@ -54,41 +50,14 @@ public class NodePageStream<R> {
     }
 
     /**
-     * @return Future that will be completed when a new page delivered.
-     */
-    public CompletableFuture<UUID> pageReady() {
-        return pageReady;
-    }
-
-    /**
-     * Returns a last delivered page from this stream. Note, that this method has to be invoked after getting
-     * the future provided with {@link #pageReady()}.
+     * Returns a last delivered page from this stream.
      *
-     * @return Query result page.
+     * @return Future that will be completed with query result page.
      */
-    public NodePage<R> nextPage() {
-        boolean loadPage = false;
-
-        NodePage<R> page;
-
+    public CompletableFuture<NodePage<R>> headPage() {
         synchronized (this) {
-            assert head != null;
-
-            page = head;
-
-            head = null;
-
-            if (!noRemotePages)
-                loadPage = true;
+            return head;
         }
-
-        if (loadPage) {
-            pageReady = new CompletableFuture<>();
-
-            reqPages.run();
-        }
-
-        return page;
     }
 
     /**
@@ -99,26 +68,44 @@ public class NodePageStream<R> {
      */
     public void addPage(Collection<R> data, boolean last) {
         synchronized (this) {
-            head = new NodePage<>(nodeId, data);
+            head.complete(new NodePage<R>(nodeId, data) {
+                /** Flag shows whether the request for new page was triggered. */
+                private boolean reqNext;
+
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    if (!reqNext) {
+                        synchronized (NodePageStream.this) {
+                            if (!noRemotePages) {
+                                head = new CompletableFuture<>();
+
+                                reqPages.run();
+                            } else
+                                head = null;
+                        }
+
+                        reqNext = true;
+                    }
+
+                    return super.hasNext();
+                }
+            });
 
             if (last)
                 noRemotePages = true;
         }
-
-        pageReady.complete(nodeId);
     }
 
     /**
      * Cancel query on all nodes.
      */
-    public void cancel() {
+    public void cancel(Throwable err) {
         synchronized (this) {
-            head = new NodePage<>(nodeId, Collections.emptyList());
-
             noRemotePages = true;
-        }
 
-        pageReady.complete(nodeId);
+            if (head != null && !head.isDone())
+                head.completeExceptionally(err);
+        }
     }
 
     /**
