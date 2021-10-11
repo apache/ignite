@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -48,12 +48,12 @@ import org.jetbrains.annotations.NotNull;
  */
 @GridInternal
 @GridVisorManagementTask
-public class NodeConfigurationCheckTask implements ComputeTask<byte[], Map<UUID, List<Boolean>>> {
+public class NodeConfigurationCheckTask implements ComputeTask<byte[], Map<UUID, List<String>>> {
     /** {@inheritDoc} */
-    @Override public Map<UUID, List<Boolean>> reduce(
+    @Override public Map<UUID, List<String>> reduce(
         List<ComputeJobResult> results
     ) throws IgniteException {
-        Map<UUID, List<Boolean>> res = new HashMap<>();
+        Map<UUID, List<String>> res = new HashMap<>();
 
         for (ComputeJobResult jobRes : results) {
             if (jobRes.getException() != null)
@@ -72,11 +72,11 @@ public class NodeConfigurationCheckTask implements ComputeTask<byte[], Map<UUID,
     ) throws IgniteException {
         Map<NodeConfigurationCollectorJob, ClusterNode> res = new HashMap<>();
 
-        List<Predicate<IgniteConfiguration>> checks = new ArrayList<>();
+        List<Function<IgniteConfiguration, String>> checks = new ArrayList<>();
 
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(arg))) {
             while (true)
-                checks.add((Predicate<IgniteConfiguration>)((Class<?>)is.readObject()).newInstance());
+                checks.add((Function<IgniteConfiguration, String>)((Class<?>)is.readObject()).newInstance());
         }
         catch (EOFException ignore) {
             // No-op
@@ -105,14 +105,14 @@ public class NodeConfigurationCheckTask implements ComputeTask<byte[], Map<UUID,
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final List<Predicate<IgniteConfiguration>> checks;
+        private final List<Function<IgniteConfiguration, String>> checks;
 
         /** */
         @IgniteInstanceResource
         private IgniteEx ignite;
 
         /** @param checks Checks to check. */
-        public NodeConfigurationCollectorJob(List<Predicate<IgniteConfiguration>> checks) {
+        public NodeConfigurationCollectorJob(List<Function<IgniteConfiguration, String>> checks) {
             this.checks = checks;
         }
 
@@ -123,7 +123,7 @@ public class NodeConfigurationCheckTask implements ComputeTask<byte[], Map<UUID,
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            return checks.stream().map(check -> check.test(ignite.configuration())).collect(Collectors.toList());
+            return checks.stream().map(check -> check.apply(ignite.configuration())).collect(Collectors.toList());
         }
     }
 
@@ -131,10 +131,10 @@ public class NodeConfigurationCheckTask implements ComputeTask<byte[], Map<UUID,
      * @param checks Serializes checks to byte array.
      * @return Byte array.
      */
-    public static byte[] prepareChecks(List<Predicate<IgniteConfiguration>> checks) {
+    public static byte[] prepareChecks(List<Function<IgniteConfiguration, String>> checks) {
         try (ByteArrayOutputStream data = new ByteArrayOutputStream();
              ObjectOutputStream os = new ObjectOutputStream(data)) {
-            for (Predicate<IgniteConfiguration> check : checks)
+            for (Function<IgniteConfiguration, String> check : checks)
                 os.writeObject(check.getClass());
 
             return data.toByteArray();

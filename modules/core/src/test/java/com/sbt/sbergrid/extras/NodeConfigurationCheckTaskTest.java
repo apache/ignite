@@ -20,8 +20,9 @@ package com.sbt.sbergrid.extras;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -55,7 +56,7 @@ public class NodeConfigurationCheckTaskTest extends GridCommonAbstractTest {
              IgniteEx clientNode = startClientGrid(3);
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
 
-            Map<UUID, List<Boolean>> srvRes = client.compute().execute(
+            Map<UUID, List<String>> srvRes = client.compute().execute(
                 NodeConfigurationCheckTask.class.getName(),
                 prepareChecks(Arrays.asList(
                     new AlwayFailCheck(),
@@ -66,17 +67,17 @@ public class NodeConfigurationCheckTaskTest extends GridCommonAbstractTest {
 
             assertEquals(2, srvRes.size());
 
-            for (Map.Entry<UUID, List<Boolean>> entry : srvRes.entrySet()) {
-                List<Boolean> res = entry.getValue();
+            for (Map.Entry<UUID, List<String>> entry : srvRes.entrySet()) {
+                List<String> res = entry.getValue();
 
                 assertEquals(3, res.size());
 
-                assertFalse(res.get(0));
-                assertTrue(res.get(1));
-                assertFalse(res.get(2));
+                assertEquals("false", res.get(0));
+                assertNull(res.get(1));
+                assertEquals("false", res.get(2)); // isClient = false
             }
 
-            Map<UUID, List<Boolean>> cliRes = client.compute(client.cluster().forClients()).execute(
+            Map<UUID, List<String>> cliRes = client.compute(client.cluster().forClients()).execute(
                 NodeConfigurationCheckTask.class.getName(),
                 prepareChecks(Arrays.asList(
                     new AlwayFailCheck(),
@@ -87,37 +88,37 @@ public class NodeConfigurationCheckTaskTest extends GridCommonAbstractTest {
 
             assertEquals(1, cliRes.size());
 
-            List<Boolean> res = cliRes.get(clientNode.localNode().id());
+            List<String> res = cliRes.get(clientNode.localNode().id());
 
             assertEquals(3, res.size());
 
-            assertFalse(res.get(0));
-            assertTrue(res.get(1));
-            assertTrue(res.get(2));
+            assertEquals("false", res.get(0));
+            assertNull(res.get(1));
+            assertEquals("true", res.get(2)); // isClient = true
         }
     }
 
     /** First check. */
-    public static class AlwayFailCheck implements Predicate<IgniteConfiguration> {
+    public static class AlwayFailCheck implements Function<IgniteConfiguration, String> {
         /** {@inheritDoc} */
-        @Override public boolean test(IgniteConfiguration configuration) {
-            return false;
+        @Override public String apply(IgniteConfiguration configuration) {
+            return "false";
         }
     }
 
     /** Second check. */
-    public static class AlwayPassCheck implements Predicate<IgniteConfiguration> {
+    public static class AlwayPassCheck implements Function<IgniteConfiguration, String> {
         /** {@inheritDoc} */
-        @Override public boolean test(IgniteConfiguration configuration) {
-            return true;
+        @Override public String apply(IgniteConfiguration configuration) {
+            return null;
         }
     }
 
     /** Is client check. */
-    public static class IsClientCheck implements Predicate<IgniteConfiguration> {
+    public static class IsClientCheck implements Function<IgniteConfiguration, String> {
         /** {@inheritDoc} */
-        @Override public boolean test(IgniteConfiguration configuration) {
-            return configuration.isClientMode();
+        @Override public String apply(IgniteConfiguration configuration) {
+            return Objects.toString(configuration.isClientMode());
         }
     }
 }
