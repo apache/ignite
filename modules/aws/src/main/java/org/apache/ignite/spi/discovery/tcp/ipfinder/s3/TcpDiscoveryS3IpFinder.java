@@ -475,7 +475,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      * This can be thought of as the sub-folder within the bucket that will hold the node addresses.
      * <p>
      * For details visit
-     * <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html"/>
+     * <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html">ListingKeysHierarchy.html</a>
      *
      * @param keyPrefix AWS credentials provider.
      * @return {@code this} for chaining.

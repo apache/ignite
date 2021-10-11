@@ -62,7 +62,6 @@ import org.jetbrains.annotations.Nullable;
  * This class defines Amazon S3-based implementation for checkpoint SPI.
  * <p>
  * For information about Amazon S3 visit <a href="http://aws.amazon.com">aws.amazon.com</a>.
- * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has one mandatory configuration parameter:

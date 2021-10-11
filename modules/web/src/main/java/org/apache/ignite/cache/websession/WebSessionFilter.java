@@ -100,8 +100,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     &lt;servlet-name&gt;YourServletName&lt;/servlet-name&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
- * The filter has the following optional configuration parameters:
  * <table class="doctable">
+ *     <caption>The filter has the following optional configuration parameters:</caption>
  *     <tr>
  *         <th>Name</th>
  *         <th>Description</th>

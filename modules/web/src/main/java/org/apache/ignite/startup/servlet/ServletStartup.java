@@ -53,13 +53,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * Depending on the way this startup is deployed the Ignite instance can be accessed
  * by either all web applications or by only one. See web container class loading architecture:
  * <ul>
- * <li><a target=_blank href="
- * http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html">http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html</a></li>
- * <li><a target=_blank href="
- * http://docs.codehaus.org/display/JETTY/Classloading">http://docs.codehaus.org/display/JETTY/Classloading</a></li>
+ * <li><a target=_blank href="http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html">
+ *     http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html</a></li>
+ * <li><a target=_blank href="http://docs.codehaus.org/display/JETTY/Classloading">
+ *     http://docs.codehaus.org/display/JETTY/Classloading</a></li>
  * </ul>
- * <p>
- * <h2 class="header">Tomcat</h2>
+ * <h1 class="header">Tomcat</h1>
  * There are two ways to start Ignite on Tomcat.
  * <ul>
  * <li>Ignite started when web container starts and Ignite instance is accessible only to all web applications.
@@ -90,7 +89,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * be added in WAR file without changes in Tomcat configuration files.
  * </li>
  * </ul>
- * <p>
  * <h2 class="header">Jetty</h2>
  * Below is Java code example with Jetty API:
  * <pre class="java">
