@@ -71,7 +71,6 @@ import org.jclouds.location.reference.LocationConstants;
  *      <li>Regions (see {@link #setRegions(Collection)})</li>
  *      <li>Zones (see {@link #setZones(Collection)}</li>
  * </ul>
- * </p>
  * <p>
  * The finder forms nodes addresses, that possibly running Ignite, by getting private and public IPs of all
  * VMs in a cloud and adding a port number to them.
@@ -89,7 +88,7 @@ import org.jclouds.location.reference.LocationConstants;
  * or home network tests.
  * </p>
  * <h2 class="header">Java Example</h2>
- * <pre class="java">
+ * <pre class="java">{@code
  * String accountId = "your_account_id";
  * String accountKey = "your_account_key";
  *
@@ -100,7 +99,7 @@ import org.jclouds.location.reference.LocationConstants;
  * ipFinder.setCredential(accountKey);
  * ipFinder.setRegions(Collections.<String>emptyList().add("us-east-1"));
  * ipFinder.setZones(Arrays.asList("us-east-1b", "us-east-1e"));
- * </pre>
+ * }</pre>
  * <h2 class="header">Spring Example</h2>
  * TcpDiscoveryCloudIpFinder can be configured from Spring XML configuration file:
  * <pre class="xml">
@@ -115,8 +114,8 @@ import org.jclouds.location.reference.LocationConstants;
  *                         &lt;property name="credentialPath" value="path_to_json_key"/&gt;
  *                         &lt;property name="zones"&gt;
  *                             &lt;list&gt;
- *                                 &lt;value>us-central1-a&lt/value&gt;
- *                                 &lt;value>asia-east1-a&lt/value&gt;
+ *                                 &lt;value&gt;us-central1-a&lt;/value&gt;
+ *                                 &lt;value&gt;asia-east1-a&lt;/value&gt;
  *                             &lt;/list&gt;
  *                         &lt;/property&gt;
  *                     &lt;/bean&gt;

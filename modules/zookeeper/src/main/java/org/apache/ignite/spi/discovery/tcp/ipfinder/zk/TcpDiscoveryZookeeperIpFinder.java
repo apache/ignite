@@ -54,16 +54,16 @@ import org.codehaus.jackson.map.annotate.JsonRootName;
  *
  * <p>
  * There are several ways to instantiate the TcpDiscoveryZookeeperIpFinder:
- * <li>
- *     <ul>By providing an instance of {@link CuratorFramework} directly, in which case no ZK Connection String
- *     is required.</ul>
- *     <ul>By providing a ZK Connection String through {@link #setZkConnectionString(String)}, and optionally
+ * <ul>
+ *     <li>By providing an instance of {@link CuratorFramework} directly, in which case no ZK Connection String
+ *     is required.</li>
+ *     <li>By providing a ZK Connection String through {@link #setZkConnectionString(String)}, and optionally
  *     a {@link RetryPolicy} through the setter. If the latter is not provided, a default
- *     {@link ExponentialBackoffRetry} policy is used, with a base sleep time of 1000ms and 10 retries.</ul>
- *     <ul>By providing a ZK Connection String through system property {@link #PROP_ZK_CONNECTION_STRING}. If this
+ *     {@link ExponentialBackoffRetry} policy is used, with a base sleep time of 1000ms and 10 retries.</li>
+ *     <li>By providing a ZK Connection String through system property {@link #PROP_ZK_CONNECTION_STRING}. If this
  *     property is set, it overrides the ZK Connection String passed in as a property, but it does not override
- *     the {@link CuratorFramework} if provided.</ul>
- * </li>
+ *     the {@link CuratorFramework} if provided.</li>
+ * </ul>
  *
  * You may customise the base path for services, as well as the service name. By default {@link #BASE_PATH} and
  * {@link #SERVICE_NAME} are use respectively. You can also choose to enable or disable duplicate registrations. See
