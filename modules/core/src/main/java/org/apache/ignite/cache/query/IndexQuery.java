@@ -33,10 +33,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Index query runs over internal index structure and returns cache entries for index rows.
  *
- * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is following:
- * 1. If {@link #idxName} is set with constructor, then use it.
- * 2. If {@link #idxName} is not set, but criteria on value fields with {@link #setCriteria(List)}, then try to find an
- * index that matches criteria fields. Criteria fields have to be a prefix of an index. Order of fields in criteria doesn't matter.
+ * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is as following:
+ * 1. If {@link #idxName} is set, then use it.
+ * 2. If {@link #idxName} is not set, then find an index that matches criteria fields.
  * 3. If neither of {@link #idxName} or {@link #setCriteria(List)} used, then perform index scan over PK index for specified Value type.
  */
 @IgniteExperimental
