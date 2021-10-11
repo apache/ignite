@@ -175,6 +175,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * TODO: remote after IGNITE-15728.
+     *
      * Waits for the first item is available to return.
      *
      * @throws IgniteCheckedException If query execution failed with an error.
