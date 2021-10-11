@@ -30,7 +30,7 @@ sudo apt install gnupg ca-certificates --no-install-recommends -y
 [source, shell]
 ----
 sudo bash -c 'cat <<EOF > /etc/apt/sources.list.d/ignite.list
-deb https://apache.jfrog.io/artifactory/ignite-deb/ apache-ignite main
+deb http://apache.org/dist/ignite/deb/ apache-ignite main
 EOF'
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0EE62FB37A00258D
 sudo apt update
