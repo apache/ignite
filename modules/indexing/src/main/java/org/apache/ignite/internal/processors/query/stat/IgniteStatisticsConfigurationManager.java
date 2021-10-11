@@ -21,15 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterState;
@@ -42,21 +38,18 @@ import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnCon
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
-import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.ColumnConfigurationViewSupplier;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -86,92 +79,122 @@ public class IgniteStatisticsConfigurationManager {
     /** Distributed metastore. */
     private volatile DistributedMetaStorage distrMetaStorage;
 
-    /** Statistics repository.*/
-    private final IgniteStatisticsRepository repo;
-
-    /** Statistic gatherer. */
-    private final StatisticsGatherer gatherer;
+    /** Statistic processor. */
+    private final StatisticsProcessor statProc;
 
     /** */
-    private final IgniteThreadPoolExecutor mgmtPool;
+    private final BusyExecutor mgmtBusyExecutor;
+
+    /** Persistence enabled flag. */
+    private final boolean persistence;
 
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Started flag (used to skip updates of the distributed metastorage on start). */
-    private volatile boolean started;
+    /** Last ready topology version if {@code null} - used to skip updates of the distributed metastorage on start. */
+    private volatile AffinityTopologyVersion topVer;
 
-    /** Monitor to synchronize changes repository: aggregate after collects and drop statistics. */
-    private final Object mux = new Object();
-
-    /** */
+    /** Cluster state processor. */
     private final GridClusterStateProcessor cluster;
 
-    /** */
-    private final GridInternalSubscriptionProcessor subscriptionProcessor;
+    /** Is server node flag. */
+    private final boolean isServerNode;
 
-    /** */
-    private final GridCachePartitionExchangeManager exchange;
+    /** Change statistics configuration listener to update particular object statistics. */
+    private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
+        new DistributedMetastorageLifecycleListener() {
+            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                distrMetaStorage = metastorage;
 
-    /** */
-    private IgniteGlobalStatisticsManager globalStatMgr;
+                distrMetaStorage.listen(
+                    (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
+                    (k, oldV, newV) -> {
+                        // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
+                        // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
+                        // called on exchange done.
+                        if (topVer == null)
+                            return;
 
-    /** */
-    private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr = new DistributedMetastorageLifecycleListener() {
-        @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-            distrMetaStorage = (DistributedMetaStorage)metastorage;
+                        mgmtBusyExecutor.execute(() -> {
+                            StatisticsObjectConfiguration newStatCfg = (StatisticsObjectConfiguration)newV;
 
-            distrMetaStorage.listen(
-                (metaKey) -> metaKey.startsWith(STAT_OBJ_PREFIX),
-                (k, oldV, newV) -> {
-                    // Skip invoke on start node (see 'ReadableDistributedMetaStorage#listen' the second case)
-                    // The update statistics on start node is handled by 'scanAndCheckLocalStatistic' method
-                    // called on exchange done.
-                    if (!started)
-                        return;
-
-                    mgmtPool.submit(() -> {
-                        try {
-                            onChangeStatisticConfiguration(
-                                (StatisticsObjectConfiguration)oldV,
-                                (StatisticsObjectConfiguration)newV
-                            );
-                        }
-                        catch (Throwable e) {
-                            log.warning("Unexpected exception on change statistic configuration [old="
-                                + oldV + ", new=" + newV + ']', e);
-                        }
-                    });
-                }
-            );
-        }
-    };
-
-    /** Exchange listener. */
-    private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
-        @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-            started = true;
-
-            // Skip join/left client nodes.
-            if (fut.exchangeType() != GridDhtPartitionsExchangeFuture.ExchangeType.ALL ||
-                cluster.clusterState().lastState() != ClusterState.ACTIVE)
-                return;
-
-            DiscoveryEvent evt = fut.firstEvent();
-
-            // Skip create/destroy caches.
-            if (evt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
-
-                if (msg instanceof DynamicCacheChangeBatch)
-                    return;
+                            updateLocalStatistics(newStatCfg);
+                        });
+                    }
+                );
             }
+        };
 
-            scanAndCheckLocalStatistics(fut.topologyVersion());
+    /**
+     * Constructor.
+     *
+     * @param schemaMgr Schema manager.
+     * @param subscriptionProcessor Subscription processor.
+     * @param sysViewMgr System view manager.
+     * @param cluster Cluster state processor.
+     * @param statProc Staitistics processor.
+     * @param persistence Persistence enabled flag.
+     * @param mgmtPool Statistics management pool
+     * @param logSupplier Log supplier.
+     * @param isServerNode Server node flag.
+     */
+    public IgniteStatisticsConfigurationManager(
+        SchemaManager schemaMgr,
+        GridInternalSubscriptionProcessor subscriptionProcessor,
+        GridSystemViewManager sysViewMgr,
+        GridClusterStateProcessor cluster,
+        StatisticsProcessor statProc,
+        boolean persistence,
+        IgniteThreadPoolExecutor mgmtPool,
+        Function<Class<?>, IgniteLogger> logSupplier,
+        boolean isServerNode
+    ) {
+        this.schemaMgr = schemaMgr;
+        log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
+        this.persistence = persistence;
+        this.mgmtBusyExecutor = new BusyExecutor("configuration", mgmtPool, logSupplier);
+        this.statProc = statProc;
+        this.cluster = cluster;
+        this.isServerNode = isServerNode;
+
+        subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
+
+        ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
+            logSupplier);
+
+        sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
+            new StatisticsColumnConfigurationViewWalker(),
+            colCfgViewSupplier::columnConfigurationViewSupplier,
+            Function.identity());
+    }
+
+    /**
+     * Update statistics after topology change, if necessary.
+     *
+     * @param fut Topology change future.
+     */
+    public void afterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        topVer = fut.topologyVersion();
+
+        // Skip join/left client nodes.
+        if (fut.exchangeType() != GridDhtPartitionsExchangeFuture.ExchangeType.ALL ||
+            (persistence && cluster.clusterState().lastState() != ClusterState.ACTIVE))
+            return;
+
+        DiscoveryEvent evt = fut.firstEvent();
+
+        // Skip create/destroy caches.
+        if (evt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
+
+            if (msg instanceof DynamicCacheChangeBatch)
+                return;
         }
-    };
 
-    /** Drop columns listener. */
+        mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
+    }
+
+    /** Drop columns listener to clean its statistics configuration. */
     private final BiConsumer<GridH2Table, List<String>> dropColsLsnr = new BiConsumer<GridH2Table, List<String>>() {
         /**
          * Drop statistics after columns dropped.
@@ -181,21 +204,18 @@ public class IgniteStatisticsConfigurationManager {
          */
         @Override public void accept(GridH2Table tbl, List<String> cols) {
             assert !F.isEmpty(cols);
-
-            dropStatistics(
-                Collections.singletonList(
+            dropStatistics(Collections.singletonList(
                     new StatisticsTarget(
                         tbl.identifier().schema(),
                         tbl.getName(),
                         cols.toArray(EMPTY_STRINGS)
                     )
                 ),
-                false
-            );
+                false);
         }
     };
 
-    /** Drop table listener. */
+    /** Drop table listener to clear its statistics configuration. */
     private final BiConsumer<String, String> dropTblLsnr = new BiConsumer<String, String>() {
         /**
          * Drop statistics after table dropped.
@@ -221,82 +241,63 @@ public class IgniteStatisticsConfigurationManager {
         }
     };
 
-    /** */
-    public IgniteStatisticsConfigurationManager(
-        SchemaManager schemaMgr,
-        GridInternalSubscriptionProcessor subscriptionProc,
-        GridSystemViewManager sysViewMgr,
-        GridClusterStateProcessor cluster,
-        GridCachePartitionExchangeManager<?, ?> exchange,
-        IgniteStatisticsRepository repo,
-        StatisticsGatherer gatherer,
-        IgniteThreadPoolExecutor mgmtPool,
-        Function<Class<?>, IgniteLogger> logSupplier
-    ) {
-        this.schemaMgr = schemaMgr;
-        log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
-        this.repo = repo;
-        this.mgmtPool = mgmtPool;
-        this.gatherer = gatherer;
-        this.cluster = cluster;
-        this.subscriptionProcessor = subscriptionProc;
-        this.exchange = exchange;
-
-        this.subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
-
-        sysViewMgr.registerFiltrableView(STAT_CFG_VIEW_NAME, STAT_CFG_VIEW_DESCRIPTION,
-            new StatisticsColumnConfigurationViewWalker(), this::columnConfigurationViewSupplier, Function.identity());
-    }
-
     /**
-     * Set global statistics manager.
+     * Pass all necessary parameters to schedule statistics key update.
      *
-     * @param globalStatMgr Global statistics manager.
+     * @param cfg Statistics object configuration to update statistics by.
      */
-    public void setGlobalStatMgr(IgniteGlobalStatisticsManager globalStatMgr) {
-        this.globalStatMgr = globalStatMgr;
-    }
+    private void updateLocalStatistics(StatisticsObjectConfiguration cfg) {
+        GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
 
-    /**
-     * Statistics column configuration view filterable supplier.
-     *
-     * @param filter Filter.
-     * @return Iterable with selected statistics column configuration views.
-     */
-    private Iterable<StatisticsColumnConfigurationView> columnConfigurationViewSupplier(Map<String, Object> filter) {
-        String schema = (String)filter.get(StatisticsColumnConfigurationViewWalker.SCHEMA_FILTER);
-        String name = (String)filter.get(StatisticsColumnConfigurationViewWalker.NAME_FILTER);
-
-        Collection<StatisticsObjectConfiguration> configs;
-        try {
-            if (!F.isEmpty(schema) && !F.isEmpty(name)) {
-                StatisticsKey key = new StatisticsKey(schema, name);
-                StatisticsObjectConfiguration keyCfg = config(key);
-
-                if (keyCfg == null)
-                    return Collections.emptyList();
-
-                configs = Collections.singletonList(keyCfg);
+        if (tbl == null || cfg.columns().isEmpty()) {
+            // Can be drop table event, need to ensure that there is no stored data left for this table.
+            if (log.isDebugEnabled()) {
+                if (tbl == null)
+                    log.debug("Can't find table by key " + cfg.key() + ". Check statistics empty.");
+                else if (cfg == null)
+                    log.debug("Tombstone configuration by key " + cfg.key() + ". Check statistics empty.");
             }
-            else
-                configs = getAllConfig();
+
+            // Ensure to clean local metastorage.
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
+                Collections.emptySet(), topVer);
+
+            statProc.updateLocalStatistics(ctx);
+
+            if (tbl == null && !cfg.columns().isEmpty()) {
+                if (log.isDebugEnabled())
+                    log.debug("Removing config for non existing object " + cfg.key());
+
+                dropStatistics(Collections.singletonList(new StatisticsTarget(cfg.key())), false);
+            }
+
+            return;
+        }
+
+        GridCacheContext<?, ?> cctx = tbl.cacheContext();
+
+        if (cctx == null || !cctx.gate().enterIfNotStopped()) {
+            if (log.isDebugEnabled())
+                log.debug("Unable to lock table by key " + cfg.key() + ". Skipping statistics collection.");
+
+            return;
+        }
+
+        try {
+            AffinityTopologyVersion topVer0 = cctx.affinity().affinityReadyFuture(topVer).get();
+
+            final Set<Integer> primParts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
+
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
+                primParts, topVer0);
+            statProc.updateLocalStatistics(ctx);
         }
         catch (IgniteCheckedException e) {
-            log.warning("Error while getting statistics configuration: " + e.getMessage(), e);
-
-            configs = Collections.emptyList();
+            log.warning("Unexpected error during statistics collection: " + e.getMessage(), e);
         }
-
-        List<StatisticsColumnConfigurationView> res = new ArrayList<>();
-
-        for (StatisticsObjectConfiguration cfg : configs) {
-            for (StatisticsColumnConfiguration colCfg : cfg.columnsAll().values()) {
-                if (!colCfg.tombstone())
-                    res.add(new StatisticsColumnConfigurationView(cfg, colCfg));
-            }
+        finally {
+            cctx.gate().leave();
         }
-
-        return res;
     }
 
     /**
@@ -320,16 +321,34 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager starting...");
 
-        exchange.registerExchangeAwareComponent(exchAwareLsnr);
+        mgmtBusyExecutor.activate();
 
-        schemaMgr.registerDropColumnsListener(dropColsLsnr);
-        schemaMgr.registerDropTableListener(dropTblLsnr);
+        if (isServerNode) {
+            schemaMgr.registerDropColumnsListener(dropColsLsnr);
+            schemaMgr.registerDropTableListener(dropTblLsnr);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager started.");
 
-        if (distrMetaStorage != null)
-            scanAndCheckLocalStatistics(exchange.readyAffinityVersion());
+        if (distrMetaStorage != null && isServerNode)
+            mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
+    }
+
+    /**
+     * Scan statistics configuration and update each key it contains.
+     */
+    public void updateAllLocalStatistics() {
+        try {
+            distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {
+                StatisticsObjectConfiguration cfg = (StatisticsObjectConfiguration)v;
+
+                updateLocalStatistics(cfg);
+            });
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Unexpected statistics configuration processing error", e);
+        }
     }
 
     /**
@@ -339,47 +358,15 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager stopping...");
 
-        exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
+        if (isServerNode) {
+            schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
+            schemaMgr.unregisterDropTableListener(dropTblLsnr);
+        }
 
-        schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
-        schemaMgr.unregisterDropTableListener(dropTblLsnr);
+        mgmtBusyExecutor.deactivate(() -> {});
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager stopped.");
-    }
-
-    /**
-     * Iterate though local meta storage statistics keys and correct it to match specified topology version partitions
-     * distribution.
-     *
-     * @param topVer Target topology version to match with.
-     */
-    private void scanAndCheckLocalStatistics(AffinityTopologyVersion topVer) {
-        if (topVer == null) {
-            if (log.isDebugEnabled())
-                log.debug("Can't check local statistics due to lack of ready topology");
-
-            return;
-        }
-
-        mgmtPool.submit(() -> {
-            Map<StatisticsObjectConfiguration, Set<Integer>> res = new HashMap<>();
-
-            try {
-                distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {
-                    StatisticsObjectConfiguration cfg = (StatisticsObjectConfiguration)v;
-
-                    Set<Integer> parts = checkLocalStatistics(cfg, topVer);
-
-                    res.put(cfg, parts);
-                });
-
-                repo.checkObsolescenceInfo(res);
-            }
-            catch (IgniteCheckedException e) {
-                log.warning("Unexpected exception on check local statistic on start", e);
-            }
-        });
     }
 
     /**
@@ -400,12 +387,12 @@ public class IgniteStatisticsConfigurationManager {
 
             List<StatisticsColumnConfiguration> colCfgs;
 
-            if (F.isEmpty(target.columns())) {
+            if (F.isEmpty(target.columns()))
                 colCfgs = Arrays.stream(tbl.getColumns())
                     .filter(c -> c.getColumnId() >= QueryUtils.DEFAULT_COLUMNS_COUNT)
                     .map(c -> new StatisticsColumnConfiguration(c.getName(), null))
                     .collect(Collectors.toList());
-            } else
+            else
                 colCfgs = new ArrayList<>(target.columns().values());
 
             StatisticsObjectConfiguration newCfg = new StatisticsObjectConfiguration(target.key(), colCfgs,
@@ -419,16 +406,13 @@ public class IgniteStatisticsConfigurationManager {
                     StatisticsObjectConfiguration resultCfg = (oldCfg == null) ? newCfg :
                         StatisticsObjectConfiguration.merge(oldCfg, newCfg);
 
-                    if (distrMetaStorage.compareAndSet(key, oldCfg, resultCfg)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Statistics configuration updated to " + resultCfg);
-
+                    if (distrMetaStorage.compareAndSet(key, oldCfg, resultCfg))
                         break;
-                    }
                 }
             }
             catch (IgniteCheckedException ex) {
-                throw new IgniteSQLException("Error on get or update statistic schema", IgniteQueryErrorCode.UNKNOWN, ex);
+                throw new IgniteSQLException("Error on get or update statistic schema",
+                    IgniteQueryErrorCode.UNKNOWN, ex);
             }
         }
     }
@@ -457,18 +441,16 @@ public class IgniteStatisticsConfigurationManager {
                     if (oldCfg == null)
                         return;
 
-                    StatisticsObjectConfiguration newCfg = oldCfg.dropColumns(
-                        target.columns() != null ?
-                            Arrays.stream(target.columns()).collect(Collectors.toSet()) :
-                            Collections.emptySet()
-                    );
+                    Set<String> dropColNames = (target.columns() == null) ? Collections.emptySet() :
+                        Arrays.stream(target.columns()).collect(Collectors.toSet());
 
-                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Statistics configuration dropped to " + newCfg);
+                    StatisticsObjectConfiguration newCfg = oldCfg.dropColumns(dropColNames);
 
+                    if (oldCfg.equals(newCfg))
                         break;
-                    }
+
+                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg))
+                        break;
                 }
             }
             catch (IgniteCheckedException ex) {
@@ -531,12 +513,8 @@ public class IgniteStatisticsConfigurationManager {
 
                     StatisticsObjectConfiguration newCfg = oldCfg.refresh(cols);
 
-                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Statistics configuration refreshed to " + newCfg);
-
+                    if (distrMetaStorage.compareAndSet(key, oldCfg, newCfg))
                         break;
-                    }
                 }
             }
             catch (IgniteCheckedException ex) {
@@ -571,267 +549,6 @@ public class IgniteStatisticsConfigurationManager {
                         IgniteQueryErrorCode.COLUMN_NOT_FOUND
                     );
                 }
-            }
-        }
-    }
-
-    /**
-     * Scan local statistic saved at the local metastorage, compare ones to statistic configuration.
-     * The local statistics must be matched with configuration:
-     * - re-collect old statistics;
-     * - drop local statistics if ones dropped on cluster;
-     * - collect new statistics if it possible.
-     *
-     * The method is called on change affinity assignment (end of PME).
-     * @param cfg expected statistic configuration.
-     * @param topVer topology version.
-     * @return Set of local primary partitions.
-     */
-    public Set<Integer> checkLocalStatistics(StatisticsObjectConfiguration cfg, final AffinityTopologyVersion topVer) {
-        try {
-            GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
-
-            if (tbl == null) {
-                // Drop tables handle by onDropTable
-                return Collections.emptySet();
-            }
-
-            GridCacheContext<?, ?> cctx = tbl.cacheContext();
-
-            if (cctx == null)
-                return Collections.emptySet();
-
-            final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
-
-            if (F.isEmpty(parts)) {
-                // There is no data on the node for specified cache.
-                // Remove all data
-                dropColumnsOnLocalStatistics(cfg, cfg.columns().keySet());
-
-                return Collections.emptySet();
-            }
-
-            final Set<Integer> partsOwn = new HashSet<>(
-                cctx.affinity().backupPartitions(cctx.localNodeId(), topVer)
-            );
-
-            partsOwn.addAll(parts);
-
-            if (log.isDebugEnabled())
-                log.debug("Check local statistics [key=" + cfg + ", parts=" + parts + ']');
-
-            Collection<ObjectPartitionStatisticsImpl> partStats = repo.getLocalPartitionsStatistics(cfg.key());
-
-            Set<Integer> partsToRmv = new HashSet<>();
-            Set<Integer> partsToCollect = new HashSet<>(parts);
-            Map<String, StatisticsColumnConfiguration> colsToCollect = new HashMap<>();
-            Set<String> colsToRmv = new HashSet<>();
-
-            if (!F.isEmpty(partStats)) {
-                for (ObjectPartitionStatisticsImpl pstat : partStats) {
-                    if (!partsOwn.contains(pstat.partId()))
-                        partsToRmv.add(pstat.partId());
-
-                    boolean partExists = true;
-
-                    for (StatisticsColumnConfiguration colCfg : cfg.columnsAll().values()) {
-                        ColumnStatistics colStat = pstat.columnStatistics(colCfg.name());
-
-                        if (colCfg.tombstone()) {
-                            if (colStat != null)
-                                colsToRmv.add(colCfg.name());
-                        }
-                        else {
-                            if (colStat == null || colStat.version() < colCfg.version()) {
-                                colsToCollect.put(colCfg.name(), colCfg);
-
-                                partsToCollect.add(pstat.partId());
-
-                                partExists = false;
-                            }
-                        }
-                    }
-
-                    if (partExists)
-                        partsToCollect.remove(pstat.partId());
-                }
-            }
-
-            if (!F.isEmpty(partsToRmv)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Remove local partitioned statistics [key=" + cfg.key() +
-                        ", part=" + partsToRmv + ']');
-                }
-
-                partsToRmv.forEach(p -> {
-                    assert !partsToCollect.contains(p);
-
-                    repo.clearLocalPartitionStatistics(cfg.key(), p);
-                });
-            }
-
-            if (!F.isEmpty(colsToRmv))
-                dropColumnsOnLocalStatistics(cfg, colsToRmv);
-
-            if (!F.isEmpty(partsToCollect))
-                gatherLocalStatistics(cfg, tbl, parts, partsToCollect, colsToCollect, topVer);
-            else {
-                // All local statistics by partition are available.
-                // Only refresh aggregated local statistics.
-                gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), parts, topVer));
-            }
-
-            return parts;
-        }
-        catch (Throwable ex) {
-            log.error("Unexpected error on check local statistics", ex);
-
-            return Collections.emptySet();
-        }
-    }
-
-    /**
-     * Match local statistic with changes of statistic configuration:
-     * - update statistics;
-     * - drop columns;
-     * - add new columns to collect statistics.
-     *
-     * The method is called on change statistic configuration object at the distributed metastorage.
-     */
-    private void onChangeStatisticConfiguration(
-        StatisticsObjectConfiguration oldCfg,
-        StatisticsObjectConfiguration newCfg
-    ) {
-        synchronized (mux) {
-            if (log.isDebugEnabled())
-                log.debug("Statistic configuration changed [old=" + oldCfg + ", new=" + newCfg + ']');
-
-            StatisticsObjectConfiguration.Diff diff = StatisticsObjectConfiguration.diff(oldCfg, newCfg);
-
-            if (!F.isEmpty(diff.dropCols())) {
-                dropColumnsOnLocalStatistics(newCfg, diff.dropCols());
-                globalStatMgr.clearGlobalStatistics(oldCfg.key(), diff.dropCols());
-            }
-
-            if (!F.isEmpty(diff.updateCols())) {
-                globalStatMgr.clearGlobalStatistics(newCfg.key(), diff.updateCols().keySet());
-
-                GridH2Table tbl = schemaMgr.dataTable(newCfg.key().schema(), newCfg.key().obj());
-
-                // Drop table handles by dropTblLsnr.
-                if (tbl == null)
-                    return;
-
-                GridCacheContext<?, ?> cctx = tbl.cacheContext();
-
-                // Not affinity node (e.g. client node)
-                if (cctx == null)
-                    return;
-
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-                Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
-
-                if (parts.isEmpty()) {
-                    if (log.isDebugEnabled())
-                        log.debug("No local partition for key " + newCfg.key() +
-                            ". Skipping local statistics collection.");
-
-                    // Check no local statistics left in local meta storage.
-                    repo.clearLocalStatistics(newCfg.key());
-                    repo.clearLocalPartitionsStatistics(newCfg.key(), null);
-                } else {
-                    if (log.isDebugEnabled())
-                        log.debug("Scheduling local statistics collection for key " + newCfg.key());
-
-                    LocalStatisticsGatheringContext ctx = gatherLocalStatistics(newCfg, tbl, parts, parts, diff.updateCols(),
-                        topVer);
-
-                    ctx.futureAggregate().thenAccept(stat -> globalStatMgr.onLocalStatisticsAggregated(newCfg.key(), stat,
-                        topVer));
-                }
-            }
-        }
-
-        globalStatMgr.onConfigChanged(newCfg);
-    }
-
-    /** */
-    private void dropColumnsOnLocalStatistics(StatisticsObjectConfiguration cfg, Set<String> cols) {
-        if (log.isDebugEnabled()) {
-            log.debug("Remove local statistics [key=" + cfg.key() +
-                ", columns=" + cols + ']');
-        }
-
-        LocalStatisticsGatheringContext gCtx = gatherer.gatheringInProgress(cfg.key());
-
-        if (gCtx != null) {
-            gCtx.futureAggregate().thenAccept((v) -> {
-                repo.clearLocalStatistics(cfg.key(), cols);
-                repo.clearLocalPartitionsStatistics(cfg.key(), cols);
-
-            });
-        }
-        else {
-            repo.clearLocalStatistics(cfg.key(), cols);
-            repo.clearLocalPartitionsStatistics(cfg.key(), cols);
-        }
-    }
-
-    /**
-     * Gather local statistics for specified object and partitions.
-     *
-     * @param cfg Statistics object configuration.
-     * @param tbl Table.
-     * @param partsToAggregate Set of partition ids to aggregate.
-     * @param partsToCollect Set of partition ids to gather statistics from.
-     * @param colsToCollect If specified - collect statistics only for this columns,
-     *                      otherwise - collect to all columns from object configuration.
-     * @param topVer Topology version.
-     * @return Gathering context.
-     */
-    public LocalStatisticsGatheringContext gatherLocalStatistics(
-        StatisticsObjectConfiguration cfg,
-        GridH2Table tbl,
-        Set<Integer> partsToAggregate,
-        Set<Integer> partsToCollect,
-        Map<String, StatisticsColumnConfiguration> colsToCollect,
-        AffinityTopologyVersion topVer
-    ) {
-        if (F.isEmpty(colsToCollect))
-            colsToCollect = cfg.columns();
-
-        gatherer.gatherLocalObjectsStatisticsAsync(tbl, cfg, colsToCollect, partsToCollect);
-
-        return gatherer.aggregateStatisticsAsync(cfg.key(), () -> aggregateLocalGathering(cfg.key(), partsToAggregate,
-            topVer));
-    }
-
-    /**
-     * Aggregate local primary partitions statistics to local one.
-     *
-     * @param key Statistics key to aggregate statistics by.
-     * @param partsToAggregate Set of partition ids to aggregate.
-     * @param topVer Topology version.
-     * @return Aggregated local statistics.
-     */
-    private ObjectStatisticsImpl aggregateLocalGathering(
-        StatisticsKey key,
-        Set<Integer> partsToAggregate,
-        AffinityTopologyVersion topVer
-    ) {
-        synchronized (mux) {
-            try {
-                StatisticsObjectConfiguration cfg = distrMetaStorage.read(key2String(key));
-
-                return repo.aggregatedLocalStatistics(partsToAggregate, cfg, topVer);
-            }
-            catch (Throwable e) {
-                if (!X.hasCause(e, NodeStoppingException.class)) {
-                    log.error("Error on aggregate statistic on finish local statistics collection" +
-                        " [key=" + key + ", parts=" + partsToAggregate + " due to node stop.", e);
-                }
-
-                return null;
             }
         }
     }

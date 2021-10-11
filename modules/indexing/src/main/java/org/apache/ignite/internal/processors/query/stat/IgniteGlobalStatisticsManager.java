@@ -78,7 +78,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     private final IgniteStatisticsManagerImpl statMgr;
 
     /** Statistics gatherer. */
-    private final StatisticsGatherer gatherer;
+    private final StatisticsProcessor statProc;
 
     /** Pool to process statistics requests. */
     private final IgniteThreadPoolExecutor mgmtPool;
@@ -155,7 +155,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      *
      * @param statMgr Statistics manager.
      * @param sysViewMgr System view manager.
-     * @param gatherer Statistics gatherer.
+     * @param statProc Statistics processor.
      * @param mgmtPool Statistics management pool.
      * @param discoMgr Grid discovery manager.
      * @param cluster Cluster state processor.
@@ -167,7 +167,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     public IgniteGlobalStatisticsManager(
         IgniteStatisticsManagerImpl statMgr,
         GridSystemViewManager sysViewMgr,
-        StatisticsGatherer gatherer,
+        StatisticsProcessor statProc,
         IgniteThreadPoolExecutor mgmtPool,
         GridDiscoveryManager discoMgr,
         GridClusterStateProcessor cluster,
@@ -177,7 +177,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.statMgr = statMgr;
-        this.gatherer = gatherer;
+        this.statProc = statProc;
         this.mgmtPool = mgmtPool;
         this.discoMgr = discoMgr;
         this.cluster = cluster;
@@ -444,37 +444,38 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             log.debug("Got local statistics request from node " + nodeId + " : " + req);
 
         StatisticsKey key = new StatisticsKey(req.key().schema(), req.key().obj());
+
         ObjectStatisticsImpl objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
 
         if (StatisticsUtils.checkStatisticsVersions(objectStatistics, req.versions()))
             sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
-        else {
-            StatisticsObjectConfiguration cfg = statMgr.statisticConfiguration().config(key);
-            CacheGroupContext grpCtx = helper.groupContext(key);
-            AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
-
-            addToRequests(inLocalRequests, key, new StatisticsAddressedRequest(req, nodeId));
-
-            if (checkStatisticsCfg(cfg, req.versions()) && topVer.compareTo(req.topVer()) >= 0) {
-                statMgr.statisticConfiguration().checkLocalStatistics(cfg, topVer);
-                LocalStatisticsGatheringContext ctx = gatherer.gatheringInProgress(cfg.key());
-
-                if (ctx != null)
-                    // If there is no context = aggregation finished and data will be send at double check below
-                    ctx.futureAggregate().thenAccept(stat -> onLocalStatisticsAggregated(key, stat, topVer));
-            }
-
-            // Double check that we have no race with collection finishing.
-            objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
-
-            if (StatisticsUtils.checkStatisticsVersions(objectStatistics, req.versions())) {
-                StatisticsAddressedRequest removedReq = removeFromRequests(inLocalRequests, key, req.reqId());
-
-                if (removedReq != null)
-                    sendResponse(nodeId, removedReq.req().reqId(), key, StatisticsType.LOCAL, objectStatistics);
-                // else was already processed by on collect handler.
-            }
-        }
+//        else {
+//            StatisticsObjectConfiguration cfg = statMgr.statisticConfiguration().config(key);
+//            CacheGroupContext grpCtx = helper.groupContext(key);
+//            AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
+//
+//            addToRequests(inLocalRequests, key, new StatisticsAddressedRequest(req, nodeId));
+//
+//            if (checkStatisticsCfg(cfg, req.versions()) && topVer.compareTo(req.topVer()) >= 0) {
+//                statMgr.statisticConfiguration().checkLocalStatistics(cfg, topVer);
+//                LocalStatisticsGatheringContext ctx = statProc.gatheringInProgress(cfg.key());
+//
+//                if (ctx != null)
+//                    // If there is no context = aggregation finished and data will be send at double check below
+//                    ctx.futureAggregate().thenAccept(stat -> onLocalStatisticsAggregated(key, stat, topVer));
+//            }
+//
+//            // Double check that we have no race with collection finishing.
+//            objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
+//
+//            if (StatisticsUtils.checkStatisticsVersions(objectStatistics, req.versions())) {
+//                StatisticsAddressedRequest removedReq = removeFromRequests(inLocalRequests, key, req.reqId());
+//
+//                if (removedReq != null)
+//                    sendResponse(nodeId, removedReq.req().reqId(), key, StatisticsType.LOCAL, objectStatistics);
+//                // else was already processed by on collect handler.
+//            }
+//        }
     }
 
     /**

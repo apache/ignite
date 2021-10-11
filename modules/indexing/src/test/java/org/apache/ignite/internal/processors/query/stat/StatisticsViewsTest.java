@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnOverrides;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -203,13 +204,16 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
 
         cfgMgr.updateStatistics(smallCCfg);
 
-        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
+        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL' and COLUMN = 'C'", null,
             list -> !list.isEmpty());
 
-        smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            ObjectStatisticsImpl stat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-        assertNotNull(smallStat);
-        assertEquals(8, smallStat.rowCount());
+            return stat != null && stat.rowCount() == 8;
+        }, TIMEOUT));
+
+        smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         Timestamp tsA = new Timestamp(smallStat.columnStatistics("A").createdAt());
         Timestamp tsB = new Timestamp(smallStat.columnStatistics("B").createdAt());

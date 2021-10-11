@@ -593,6 +593,7 @@ public class CommandProcessor extends SqlCommandProcessor {
             .map(t -> {
                 if (t.key().schema() == null) {
                     StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+
                     return new StatisticsObjectConfiguration(key, t.columns().values(),
                         t.maxPartitionObsolescencePercent());
                 }

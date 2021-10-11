@@ -482,10 +482,23 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         );
     }
 
+    /**
+     * Get object statistics.
+     *
+     * @return Object statistics.
+     */
+    protected ObjectStatisticsImpl getStatistics() {
+        ColumnStatistics colStatistics = new ColumnStatistics(null, null, 100, 0,
+            100, 0, new byte[0], 0, U.currentTimeMillis());
+
+        return new ObjectStatisticsImpl(0, Collections.singletonMap("col1", colStatistics)
+        );
+    }
+
     /** Check that all statistics collections related tasks is empty in specified node. */
     protected void checkStatisticTasksEmpty(IgniteEx ign) {
         Map<StatisticsKey, LocalStatisticsGatheringContext> currColls = GridTestUtils.getFieldValue(
-            statisticsMgr(ign), "gatherer", "gatheringInProgress"
+            statisticsMgr(ign), "statProc", "gatheringInProgress"
         );
 
         assertTrue("Has statistics collection tasks on node " + ign.localNode().id() + ":" + currColls.toString(),
@@ -734,7 +747,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param vals Values to populate into the set.
      * @return Set of specified values.
      */
-    public <T> Set<T> setOf(T... vals) {
+    public static <T> Set<T> setOf(T... vals) {
         if (F.isEmpty(vals))
             return Collections.emptySet();
 
