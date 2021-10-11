@@ -21,85 +21,154 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Statistics gathering context.
  */
 public class LocalStatisticsGatheringContext {
+    /** Force recollect flag. */
+    private final boolean forceRecollect;
+
+    /** Table to process. */
+    private final GridH2Table tbl;
+
+    /** Statistics configuration to use. */
+    private final StatisticsObjectConfiguration cfg;
+
     /** Remaining partitions */
     private final Set<Integer> remainingParts;
 
-    /**
-     *  Complete gathering local partitioned statistics future.
-     *  Result:
-     *  {@code true} gathering complete (stats from all partitions are gathered),
-     *  {@code false} gathering incomplete: one or more partitions not available.
-     */
-    private final CompletableFuture<Boolean> futGather;
+    /** All partitions for aggregate. */
+    private final Set<Integer> allParts;
 
-    /** Aggregate local statistic future. */
-    private final CompletableFuture<ObjectStatisticsImpl> futAggregate;
+    /** Topology version. */
+    private final AffinityTopologyVersion topVer;
 
-    /** Successfully complete status. */
-    private boolean completeStatus = true;
+    /** Future with success status as a result. */
+    private final CompletableFuture<Void> future;
+
+    /** Context cancelled flag. */
+    private volatile boolean cancelled;
 
     /**
      * Constructor.
      *
+     * @param forceRecollect Force recollect flag.
+     * @param tbl Table to process.
+     * @param cfg Statistics configuration to use.
      * @param remainingParts Set of partition ids to collect.
      */
-    public LocalStatisticsGatheringContext(Set<Integer> remainingParts) {
+    public LocalStatisticsGatheringContext(
+        boolean forceRecollect,
+        GridH2Table tbl,
+        StatisticsObjectConfiguration cfg,
+        Set<Integer> remainingParts,
+        AffinityTopologyVersion topVer
+    ) {
+        this.forceRecollect = forceRecollect;
+        this.tbl = tbl;
+        this.cfg = cfg;
         this.remainingParts = new HashSet<>(remainingParts);
-        this.futGather = new CompletableFuture<>();
-        this.futAggregate = new CompletableFuture<>();
+        this.allParts = (forceRecollect) ? null : new HashSet<>(remainingParts);
+        this.topVer = topVer;
+        this.future = new CompletableFuture<>();
     }
 
     /**
-     * Decrement remaining due to successfully processed partition.
+     * @return Force recollect flag.
+     */
+    public boolean forceRecollect() {
+        return forceRecollect;
+    }
+
+    /**
+     * @return Table to process.
+     */
+    public GridH2Table table() {
+        return tbl;
+    }
+
+    /**
+     * @return Statistics configuration to collect with.
+     */
+    public StatisticsObjectConfiguration configuration() {
+        return cfg;
+    }
+
+    /**
+     * Decrement remaining partitions due to successfully processed partition.
      *
      * @param partId Partition id.
+     * @return {@code true} if no more partitions left, {@code false} - otherwise.
      */
-    public synchronized void partitionDone(int partId) {
+    public synchronized boolean partitionDone(int partId) {
         remainingParts.remove(partId);
-
-        if (remainingParts.isEmpty())
-            futGather.complete(completeStatus);
+        return remainingParts.isEmpty();
     }
 
     /**
-     * Decrement remaining due to unavailable partition.
+     * @return Set of remaining partitions.
+     */
+    public synchronized Set<Integer> remainingParts() {
+        return new HashSet<>(remainingParts);
+    }
+
+    /**
+     * @return All primary partitions or {@code null} if there was just byObsolescence recollection.
+     */
+    public Set<Integer> allParts() {
+        return allParts;
+    }
+
+    /**
+     * Decrement remaining partitions due to unavailable partition.
      *
      * @param partId Unavailable partition id.
      */
     public synchronized void partitionNotAvailable(int partId) {
         remainingParts.remove(partId);
 
-        completeStatus = false;
+        cancel();
 
-        if (remainingParts.isEmpty())
-            futGather.complete(completeStatus);
+        if (remainingParts.isEmpty()) {
+            future.cancel(true);
+
+            return;
+        }
+
+        return;
     }
 
     /**
-     *  Complete gathering local partitioned statistics future.
-     *  Result:
-     *  {@code true} gathering complete (stats from all partitions are gathered),
-     *  {@code false} gathering incomplete: one or more partitions not available.
-     *
-     * @return Gathering future.
+     * Cancel gathering.
      */
-    public CompletableFuture<Boolean> futureGather() {
-        return futGather;
+    public void cancel() {
+        cancelled = true;
     }
 
     /**
-     * Complete aggregation local statistics future.
-     *
-     * @return Aggregate future.
+     * @return Cancelled flag.
      */
-    public CompletableFuture<ObjectStatisticsImpl> futureAggregate() {
-        return futAggregate;
+    public boolean cancelled() {
+        return cancelled;
+    }
+
+    /**
+     * @return Gathering completable future.
+     */
+    public CompletableFuture<Void> future() {
+        return future;
+    }
+
+    /**
+     * @return Gathering topology version or {@code null} if it's just an obsolescence processing.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */

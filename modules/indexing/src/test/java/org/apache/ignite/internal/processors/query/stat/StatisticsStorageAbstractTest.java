@@ -45,9 +45,9 @@ public abstract class StatisticsStorageAbstractTest extends StatisticsAbstractTe
         super.beforeTestsStarted();
         cleanPersistenceDir();
 
-        //startGridsMultiThreaded(1);
         startGrid(0);
         startGrid(1);
+
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
