@@ -24,8 +24,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Basic interface in Preprocessor Hierarchy.
- * @param <K>
- * @param <V>
+ * @param <K> Key type.
+ * @param <V> Value type.
  */
 public interface Preprocessor<K, V> extends IgniteBiFunction<K, V, LabeledVector> {
     /**

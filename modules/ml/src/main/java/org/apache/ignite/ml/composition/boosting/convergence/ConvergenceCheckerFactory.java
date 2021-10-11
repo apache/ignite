@@ -26,7 +26,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  * Factory for ConvergenceChecker.
  */
 public abstract class ConvergenceCheckerFactory {
-    /** Precision of error checking. If error <= precision then it is equated to 0.0 */
+    /** Precision of error checking. If error &lt;= precision then it is equated to 0.0 */
     protected double precision;
 
     /**

@@ -52,10 +52,9 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  * builders: {@link PartitionContextBuilder} and {@link PartitionDataBuilder} correspondingly. To build a generic
  * dataset the following approach is used:
  *
- * <code>
- * {@code Dataset<C, D> dataset = DatasetFactory.create( ignite, cache, partitionContextBuilder, partitionDataBuilder );
- * }
- * </code>
+ * <pre>{@code
+ * Dataset<C, D> dataset = DatasetFactory.create( ignite, cache, partitionContextBuilder, partitionDataBuilder );
+ * }</pre>
  *
  * <p>As well as the generic building method {@code create} this factory provides methods that allow to create a
  * specific dataset types such as method {@code createSimpleDataset} to create {@link SimpleDataset} and method {@code

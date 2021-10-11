@@ -139,7 +139,7 @@ public class BaggedTrainer<L> extends
      * @param featuresVectorSize Features vector size (Dimension of initial space).
      * @param maximumFeaturesCntPerMdl Dimension of target space.
      * @param seed Seed.
-     * @return Mapping R^featuresVectorSize -> R^maximumFeaturesCntPerMdl.
+     * @return Mapping R^featuresVectorSize -&gt; R^maximumFeaturesCntPerMdl.
      */
     public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl, long seed) {
         return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));

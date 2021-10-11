@@ -38,16 +38,16 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     /** Default partition data TTL (infinite). */
     private static final long INFINITE_TTL = -1;
 
-    /** Dependency (partition -> Parallelism strategy). */
+    /** Dependency (partition -&gt; Parallelism strategy). */
     private IgniteFunction<Integer, ParallelismStrategy> parallelismStgy;
 
-    /** Dependency (partition -> Logging factory). */
+    /** Dependency (partition -&gt; Logging factory). */
     private IgniteFunction<Integer, MLLogger.Factory> loggingFactory;
 
-    /** Dependency (partition -> Random number generator seed). */
+    /** Dependency (partition -&gt; Random number generator seed). */
     private IgniteFunction<Integer, Long> seed;
 
-    /** Dependency (partition -> Random numbers generator supplier). */
+    /** Dependency (partition -&gt; Random numbers generator supplier). */
     private IgniteFunction<Integer, Random> rngSupplier;
 
     /** Partition data time-to-live in seconds (-1 for an infinite lifetime). */

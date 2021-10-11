@@ -131,7 +131,6 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * By default, all downloaded packages that have digital signature in {@code META-INF}
  * folder will be verified and deployed only if signature is valid.
- * <p>
  * <h1 class="header">URI</h1>
  * This SPI uses a hierarchical URI definition. For more information about standard URI
  * syntax refer to {@link URI java.net.URI} documentation.
@@ -147,7 +146,6 @@ import org.jetbrains.annotations.Nullable;
  * flag is set to {@code true} (see {@link #setEncodeUri(boolean)}), then
  * URI 'path' field will be automatically encoded. By default this flag is
  * set to {@code true}.
- * <p>
  * <h1 class="header">Code Example</h1>
  * The following example demonstrates how the deployment SPI can be used. It expects that you have a package file
  * in 'home/username/ignite/work/my_deployment/file' folder which contains 'myproject.HelloWorldTask' class.
@@ -203,14 +201,12 @@ import org.jetbrains.annotations.Nullable;
  * parameters for selected URI should be defined in URI. Different protocols
  * have different configuration parameters described below. Parameters are
  * separated by '{@code ;}' character.
- * <p>
  * <h1 class="header">File</h1>
  * For this protocol SPI will scan folder specified by URI on file system and
  * download any deplloyment files or directories that end with .jar or .gar from source
  * directory defined in URI. For file system URI must have scheme equal to {@code file}.
- * <p>
- * Following parameters are supported:
  * <table class="doctable">
+ *  <caption>Following parameters are supported:</caption>
  *  <tr>
  *      <th>Parameter</th>
  *      <th>Description</th>
@@ -238,9 +234,8 @@ import org.jetbrains.annotations.Nullable;
  * - this becomes the collection of URLs to deployment package files that should be deployed. It's important that
  * HTTP scanner uses {@code URLConnection.getLastModified()} method to check if there were any changes since last
  * iteration for each deployment file before redeploying.
- * <p>
- * Following parameters are supported:
  * <table class="doctable">
+ *  <caption>Following parameters are supported:</caption>
  *  <tr>
  *      <th>Parameter</th>
  *      <th>Description</th>
@@ -281,7 +276,6 @@ import org.jetbrains.annotations.Nullable;
  * //  Start grid.
  * Ignition.start(cfg);
  * </pre>
- * <p>
  * <h2 class="header">Spring Example</h2>
  * UriDeploymentSpi can be configured from Spring XML configuration file:
  * <pre class="xml">
