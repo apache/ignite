@@ -86,7 +86,7 @@ public class KeyValuePersistenceSettings implements Serializable {
 
     /**
      * TTL (time to leave) for rows inserted into Cassandra table
-     * {@link <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Expiring data</a>}.
+     * <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Expiring data</a>.
      */
     private Integer ttl;
 
@@ -98,13 +98,13 @@ public class KeyValuePersistenceSettings implements Serializable {
 
     /**
      * Cassandra table creation options
-     * {@link <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_table_r.html">CREATE TABLE</a>}.
+     * <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_table_r.html">CREATE TABLE</a>.
      */
     private String tblOptions;
 
     /**
      * Cassandra keyspace creation options
-     * {@link <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_keyspace_r.html">CREATE KEYSPACE</a>}.
+     * <a href="https://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_keyspace_r.html">CREATE KEYSPACE</a>.
      */
     private String keyspaceOptions = DFLT_KEYSPACE_OPTIONS;
 

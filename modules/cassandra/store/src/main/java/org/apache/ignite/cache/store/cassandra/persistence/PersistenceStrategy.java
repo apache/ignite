@@ -55,7 +55,7 @@ public enum PersistenceStrategy {
      * Object fields should be:
      * <ul>
      *     <li>Primitive java types like int, long, String and etc.</li>
-     *     <li>Collections of primitive java types like List<Integer>, Map<Integer, String>, Set<Long></li>
+     *     <li>Collections of primitive java types like {@code List<Integer>, Map<Integer, String>, Set<Long>}</li>
      * </ul>
      */
     POJO

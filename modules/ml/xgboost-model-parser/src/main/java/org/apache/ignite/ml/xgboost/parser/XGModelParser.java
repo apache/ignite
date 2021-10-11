@@ -28,7 +28,7 @@ import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
 
 /** XGBoost model parser. Uses the following ANTLR grammar to parse file:
- * <pre>
+ * <pre>{@code
  * grammar XGBoostModel;
  *
  * YES : 'yes' ;
@@ -61,7 +61,7 @@ import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
  *     | ((xgLeaf | xgNode) NEWLINE)* (xgLeaf | xgNode) EOF
  * ) ;
  * xgModel : xgTree+ ;
- * </pre>
+ * }</pre>
  */
 public class XGModelParser implements ModelParser<NamedVector, Double, XGModelComposition> {
     /** */
