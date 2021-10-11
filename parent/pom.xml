@@ -36,6 +36,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <revision>2.12.0-SNAPSHOT</revision>
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -110,7 +111,7 @@
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
-        <mysql.connector.version>8.0.13</mysql.connector.version>
+        <mysql.connector.version>8.0.26</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <osgi.core.version>5.0.0</osgi.core.version>
@@ -303,7 +304,7 @@
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                 <tagletArtifact>
-                                    <groupId>org.apache.ignite</groupId>
+                                    <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
                                     <version>${project.version}</version>
                                 </tagletArtifact>
@@ -618,7 +619,7 @@
                 </configuration>
                 <dependencies>
                     <dependency>
-                        <groupId>org.apache.ignite</groupId>
+                        <groupId>${project.groupId}</groupId>
                         <artifactId>ignite-tools</artifactId>
                         <version>${project.version}</version>
                     </dependency>
@@ -757,7 +758,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
+                            <excludeGroupIds>${project.groupId}</excludeGroupIds>
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>true</excludeTransitive>
@@ -1149,7 +1150,7 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
                     <version>${project.version}</version>
                     <scope>test</scope><!-- hack to have ignite-apache-license-gen at first place at mvn reactor -->
@@ -1169,7 +1170,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${project.version}
+                                        <resourceBundle>${project.groupId}:ignite-apache-license-gen:${project.version}
                                         </resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>

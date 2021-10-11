@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Licensed to the Apache Software Foundation (ASF) under one or more
 * contributor license agreements.  See the NOTICE file distributed with
 * this work for additional information regarding copyright ownership.
@@ -16,19 +16,13 @@
 */
 
 using System.Reflection;
-using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Apache.Ignite.Core.Tests.NuGet")]
-[assembly: AssemblyDescription("Apache Ignite.NET NuGet tests")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite.NET")]
 [assembly: AssemblyCopyright("Copyright 2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-
-[assembly: ComVisible(false)]
-[assembly: Guid("134707f6-155d-47f6-9eb2-c67abbf3c009")]
 
 [assembly: AssemblyVersion("2.12.0.56898")]
 [assembly: AssemblyFileVersion("2.12.0.56898")]

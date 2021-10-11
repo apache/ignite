@@ -30,6 +30,7 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
@@ -51,6 +52,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
+import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS;
@@ -77,6 +79,9 @@ public class KillCommand extends AbstractCommand<Object> {
     /** Task name. */
     private String taskName;
 
+    /** Node id. */
+    private UUID nodeId;
+
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -84,7 +89,7 @@ public class KillCommand extends AbstractCommand<Object> {
                 client,
                 taskName,
                 taskArgs,
-                null,
+                nodeId,
                 clientCfg
             );
         }
@@ -119,12 +124,16 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorComputeCancelSessionTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case SERVICE:
                 taskArgs = new VisorCancelServiceTaskArg(argIter.nextArg("Expected service name."));
 
                 taskName = VisorCancelServiceTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -135,6 +144,8 @@ public class KillCommand extends AbstractCommand<Object> {
                     null, null);
 
                 taskName = VisorTxTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -147,6 +158,8 @@ public class KillCommand extends AbstractCommand<Object> {
                 taskArgs = new VisorQueryCancelOnInitiatorTaskArg(ids.get1(), ids.get2());
 
                 taskName = VisorQueryCancelOnInitiatorTask.class.getName();
+
+                nodeId = null;
 
                 break;
 
@@ -163,6 +176,8 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorScanQueryCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case CONTINUOUS:
@@ -172,12 +187,25 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 taskName = VisorContinuousQueryCancelTask.class.getName();
 
+                nodeId = null;
+
                 break;
 
             case SNAPSHOT:
                 taskArgs = argIter.nextArg("Expected snapshot name.");
 
                 taskName = VisorSnapshotCancelTask.class.getName();
+
+                nodeId = null;
+
+                break;
+
+            case CONSISTENCY:
+                taskName = VisorConsistencyCancelTask.class.getName();
+
+                taskArgs = null;
+
+                nodeId = BROADCAST_UUID;
 
                 break;
 

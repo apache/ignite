@@ -189,6 +189,20 @@ public class GridArgumentCheck {
     }
 
     /**
+     * Checks that given String is nullable but not empty.
+     *
+     * @param str String.
+     * @param name Argument name.
+     */
+    public static void nullableNotEmpty(String str, String name) {
+        if (str == null)
+            return;
+
+        if (str.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
      * Checks that a String is not null or empty.
      *
      * @param value Value to check.

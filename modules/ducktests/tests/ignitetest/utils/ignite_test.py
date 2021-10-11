@@ -21,7 +21,6 @@ from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
 
-# pylint: disable=W0223
 from ignitetest.services.utils.ducktests_service import DucktestsService
 
 # globals:
@@ -52,7 +51,6 @@ class IgniteTest(Test):
         if not self.test_context.globals.get(JFR_ENABLED, False):
             self.logger.debug("Killing all runned services to speed-up the tearing down.")
 
-            # pylint: disable=W0212
             for service in self.test_context.services._services.values():
                 assert isinstance(service, DucktestsService)
 
