@@ -25,14 +25,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.ByteBufferHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static java.nio.ByteBuffer.allocate;
-import static java.nio.ByteBuffer.allocateDirect;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.MAPPED;
 
 /**
  * Segmented ring byte buffer that represents multi producer/single consumer queue that can be used by multiple writer
@@ -56,11 +54,8 @@ public class SegmentedRingByteBuffer {
     /** Capacity. */
     private final int cap;
 
-    /** Direct. */
-    private final BufferMode mode;
-
     /** Buffer. */
-    public final ByteBuffer buf;
+    private final ByteBufferHolder buf;
 
     /** Max segment size. */
     private final long maxSegmentSize;
@@ -90,22 +85,9 @@ public class SegmentedRingByteBuffer {
      *
      * @param cap Buffer's capacity.
      * @param maxSegmentSize Max segment size.
-     * @param mode Buffer mode.
      */
-    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, BufferMode mode) {
-        this(cap, maxSegmentSize, mode == DIRECT ? allocateDirect(cap) : allocate(cap), mode, null);
-    }
-
-    /**
-     * Creates ring buffer with given capacity.
-     *
-     * @param cap Buffer's capacity.
-     * @param maxSegmentSize Max segment size.
-     * @param mode Buffer mode.
-     * @param metrics Metrics.
-     */
-    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, BufferMode mode, DataStorageMetricsImpl metrics) {
-        this(cap, maxSegmentSize, mode == DIRECT ? allocateDirect(cap) : allocate(cap), mode, metrics);
+    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, ByteBufferHolder buf) {
+        this(cap, maxSegmentSize, buf, null);
     }
 
     /**
@@ -114,28 +96,24 @@ public class SegmentedRingByteBuffer {
      * @param buf {@link MappedByteBuffer} instance.
      * @param metrics Metrics.
      */
-    public SegmentedRingByteBuffer(MappedByteBuffer buf, DataStorageMetricsImpl metrics) {
-        this(buf.capacity(), buf.capacity(), buf, MAPPED, metrics);
+    public SegmentedRingByteBuffer(ByteBufferHolder buf, DataStorageMetricsImpl metrics) {
+        this(buf.capacity(), buf.capacity(), buf, metrics);
     }
 
     /**
      * @param cap Capacity.
      * @param maxSegmentSize Max segment size.
      * @param buf Buffer.
-     * @param mode Mode.
      * @param metrics Metrics.
      */
-    private SegmentedRingByteBuffer(
+    public SegmentedRingByteBuffer(
         int cap,
         long maxSegmentSize,
-        ByteBuffer buf,
-        BufferMode mode,
+        ByteBufferHolder buf,
         DataStorageMetricsImpl metrics
     ) {
         this.cap = cap;
-        this.mode = mode;
         this.buf = buf;
-        this.buf.order(ByteOrder.nativeOrder());
         this.maxSegmentSize = maxSegmentSize;
         this.metrics = metrics;
     }
@@ -151,12 +129,12 @@ public class SegmentedRingByteBuffer {
     }
 
     /**
-     * Returns buffer mode.
+     * Returns buffer type.
      *
-     * @return Buffer mode.
+     * @return Buffer type.
      */
-    public BufferMode mode() {
-        return mode;
+    public ByteBufferHolder.Type bufferType() {
+        return buf.type();
     }
 
     /**
@@ -165,7 +143,7 @@ public class SegmentedRingByteBuffer {
      * @return Buffer tail.
      */
     public long tail() {
-        return tail & SegmentedRingByteBuffer.OPEN_MASK;
+        return tail & OPEN_MASK;
     }
 
     /**
@@ -375,15 +353,34 @@ public class SegmentedRingByteBuffer {
      * Frees allocated memory in case of direct byte buffer.
      */
     public void free() {
-        if (mode == DIRECT || mode == MAPPED)
-            GridUnsafe.cleanDirectBuffer(buf);
+        buf.free();
+    }
+
+    /**
+     * Sync buffer to file.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void msync() throws IgniteCheckedException {
+        buf.msync();
+    }
+
+    /**
+     * Sync buffer to file.
+     *
+     * @param offset Offset within buffer.
+     * @param len Length of data to sync
+     * @throws IgniteCheckedException If failed.
+     */
+    public void msync(int offset, int len) throws IgniteCheckedException {
+        buf.msync(offset, len);
     }
 
     /**
      * Resets the state of the buffer and returns new instance but with the same underlying buffer.
      */
     public SegmentedRingByteBuffer reset() {
-        return new SegmentedRingByteBuffer(buf.capacity(), maxSegmentSize, buf, mode, metrics);
+        return new SegmentedRingByteBuffer(buf.capacity(), maxSegmentSize, buf, metrics);
     }
 
     /**
@@ -392,7 +389,8 @@ public class SegmentedRingByteBuffer {
      * @param readOnly Read only.
      */
     private ByteBuffer slice(int off, int len, boolean readOnly) {
-        ByteBuffer bb = readOnly ? buf.asReadOnlyBuffer() : buf.duplicate();
+        ByteBuffer buf0 = buf.buffer();
+        ByteBuffer bb = readOnly ? buf0.asReadOnlyBuffer() : buf0.duplicate();
 
         bb.order(ByteOrder.nativeOrder());
         bb.limit(off + len);
@@ -417,21 +415,20 @@ public class SegmentedRingByteBuffer {
      * @param len Length.
      */
     private void copy(ByteBuffer src, int srcPos, ByteBuffer dest, int destPos, int len) {
-        assert mode != MAPPED;
-
-        if (buf.isDirect()) {
-            ByteBuffer src0 = src.duplicate();
-            src0.limit(srcPos + len);
-            src0.position(srcPos);
-
-            ByteBuffer dest0 = dest.duplicate();
-            dest0.limit(destPos + len);
-            dest0.position(destPos);
-
-            dest0.put(src0);
+        if (!src.isDirect() && !dest.isDirect()) {
+            System.arraycopy(src.array(), srcPos, dest.array(), destPos, len);
+            return;
         }
-        else
-            System.arraycopy(src.array(), srcPos, buf.array(), destPos, len);
+
+        ByteBuffer src0 = src.duplicate();
+        src0.limit(srcPos + len);
+        src0.position(srcPos);
+
+        ByteBuffer dest0 = dest.duplicate();
+        dest0.limit(destPos + len);
+        dest0.position(destPos);
+
+        dest0.put(src0);
     }
 
     /**
@@ -526,9 +523,9 @@ public class SegmentedRingByteBuffer {
 
                 int len = cap - pos;
 
-                copy(seg, 0, buf, pos, len);
+                copy(seg, 0, buf.buffer(), pos, len);
 
-                copy(seg, len, buf, 0, seg.array().length - len);
+                copy(seg, len, buf.buffer(), 0, seg.array().length - len);
             }
 
             assert producersCnt >= 0;
@@ -575,19 +572,5 @@ public class SegmentedRingByteBuffer {
         @Override public String toString() {
             return S.toString(ReadSegment.class, this, "super", super.toString());
         }
-    }
-
-    /**
-     * Buffer mode.
-     */
-    public enum BufferMode {
-        /** Byte buffer on-heap. */
-        ONHEAP,
-
-        /** Direct byte buffer off-heap */
-        DIRECT,
-
-        /** Byte buffer mapped to file. */
-        MAPPED
     }
 }

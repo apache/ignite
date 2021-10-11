@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentationImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.MmapProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -358,6 +359,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private PerformanceStatisticsProcessor perfStatProc;
 
     /** */
+    @GridToStringExclude
+    private MmapProcessor mmapProc;
+
+    /** */
     private Thread.UncaughtExceptionHandler hnd;
 
     /** */
@@ -593,6 +598,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
+        else if (comp instanceof MmapProcessor)
+            mmapProc = (MmapProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -893,6 +900,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DiagnosticProcessor diagnostic() {
         return diagnosticProcessor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MmapProcessor mmap() {
+        return mmapProc;
     }
 
     /** {@inheritDoc} */

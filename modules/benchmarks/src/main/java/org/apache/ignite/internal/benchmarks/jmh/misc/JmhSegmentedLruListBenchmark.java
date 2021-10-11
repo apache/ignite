@@ -70,7 +70,7 @@ public class JmhSegmentedLruListBenchmark {
     public void setup() {
         rnd = new Random(0);
 
-        provider = new UnsafeMemoryProvider(null);
+        provider = new UnsafeMemoryProvider(null, null);
         provider.initialize(new long[] {SegmentedLruPageList.requiredMemory(PAGES_CNT)});
 
         DirectMemoryRegion region = provider.nextRegion();

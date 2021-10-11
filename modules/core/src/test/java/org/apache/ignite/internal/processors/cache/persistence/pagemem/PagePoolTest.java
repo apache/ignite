@@ -119,7 +119,7 @@ public class PagePoolTest extends GridCommonAbstractTest {
      */
     @Before
     public void prepare() {
-        provider = new UnsafeMemoryProvider(log);
+        provider = new UnsafeMemoryProvider(log, null);
         provider.initialize(new long[] {sysPageSize * PAGES + 16});
 
         region = provider.nextRegion();

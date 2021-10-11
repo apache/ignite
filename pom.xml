@@ -70,9 +70,11 @@
         <module>modules/azure</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
+        <module>modules/numa-allocator</module>
         <module>modules/yarn</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
+        <module>modules/optane</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>

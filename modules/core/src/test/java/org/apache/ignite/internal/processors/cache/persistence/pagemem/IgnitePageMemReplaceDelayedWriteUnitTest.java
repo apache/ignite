@@ -250,7 +250,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         long[] sizes = prepareSegmentSizes(regCfg.getMaxSize());
 
-        DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
+        DirectMemoryProvider provider = new UnsafeMemoryProvider(log, null);
 
         IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 

@@ -2934,7 +2934,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,

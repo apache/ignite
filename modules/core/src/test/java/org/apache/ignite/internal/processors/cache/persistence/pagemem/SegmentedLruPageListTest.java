@@ -58,7 +58,7 @@ public class SegmentedLruPageListTest extends GridCommonAbstractTest {
     /** */
     @BeforeClass
     public static void setUp() {
-        provider = new UnsafeMemoryProvider(log);
+        provider = new UnsafeMemoryProvider(log, null);
         provider.initialize(new long[] {SegmentedLruPageList.requiredMemory(MAX_PAGES_CNT)});
 
         region = provider.nextRegion();

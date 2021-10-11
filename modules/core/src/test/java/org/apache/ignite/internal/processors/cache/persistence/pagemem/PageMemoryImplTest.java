@@ -575,7 +575,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         sizes[4] = maxSize * MB / 4;
 
-        DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
+        DirectMemoryProvider provider = new UnsafeMemoryProvider(log, null);
 
         IgniteConfiguration igniteCfg = new IgniteConfiguration();
         igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration());

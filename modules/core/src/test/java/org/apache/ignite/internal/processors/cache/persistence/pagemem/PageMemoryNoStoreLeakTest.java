@@ -53,7 +53,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
         long initVMsize = D.getCommittedVirtualMemorySize();
 
         for (int i = 0; i < 1_000; i++) {
-            final DirectMemoryProvider provider = new UnsafeMemoryProvider(log());
+            final DirectMemoryProvider provider = new UnsafeMemoryProvider(log(), null);
 
             final DataRegionConfiguration plcCfg = new DataRegionConfiguration()
                 .setMaxSize(MAX_MEMORY_SIZE).setInitialSize(MAX_MEMORY_SIZE);

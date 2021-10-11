@@ -249,7 +249,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             new JavaLogger(),
-            new UnsafeMemoryProvider(new JavaLogger()),
+            new UnsafeMemoryProvider(new JavaLogger(), null),
             null,
             PAGE_SIZE,
             dataRegionConfiguration,

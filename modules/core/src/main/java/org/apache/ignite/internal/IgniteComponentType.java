@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.mmap.MmapProcessor;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,6 +103,13 @@ public enum IgniteComponentType {
         CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
+    ),
+
+    /** */
+    MMAP(
+        MmapProcessor.class.getName(),
+        "org.apache.ignite.internal.processors.cache.persistence.wal.mmap.OptaneMmapProcessor",
+        "ignite-optane"
     ),
 
     /** OpenCensus tracing implementation. */

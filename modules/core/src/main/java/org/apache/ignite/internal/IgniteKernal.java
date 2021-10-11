@@ -253,6 +253,7 @@ import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
 import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
+import static org.apache.ignite.internal.IgniteComponentType.MMAP;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
@@ -1206,6 +1207,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // be able to start receiving messages once discovery completes.
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
+                startProcessor(MMAP.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
                 startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));

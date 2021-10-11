@@ -95,7 +95,7 @@ public class LinkMapTest extends GridCommonAbstractTest {
 
         return new PageMemoryNoStoreImpl(
             log,
-            new UnsafeMemoryProvider(log),
+            new UnsafeMemoryProvider(log, null),
             null,
             PAGE_SIZE,
             plcCfg,

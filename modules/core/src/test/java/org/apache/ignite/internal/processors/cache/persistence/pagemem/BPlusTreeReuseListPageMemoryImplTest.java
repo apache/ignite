@@ -58,7 +58,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
 
         sizes[CPUS] = 10 * MB;
 
-        DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
+        DirectMemoryProvider provider = new UnsafeMemoryProvider(log, null);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 

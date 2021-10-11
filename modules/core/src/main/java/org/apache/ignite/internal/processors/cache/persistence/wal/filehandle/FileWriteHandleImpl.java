@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,37 +51,15 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.prepareSerializerVersionBuffer;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
-import static org.apache.ignite.internal.util.IgniteUtils.findField;
-import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 
 /**
  * File handle for one log segment.
  */
 @SuppressWarnings("SignalWithoutCorrespondingAwait")
 class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle {
-    /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
-    private static final Method force0 = findNonPublicMethod(
-        MappedByteBuffer.class, "force0",
-        java.io.FileDescriptor.class, long.class, long.class
-    );
-
     /** {@link FileWriteHandleImpl#written} atomic field updater. */
     private static final AtomicLongFieldUpdater<FileWriteHandleImpl> WRITTEN_UPD =
         AtomicLongFieldUpdater.newUpdater(FileWriteHandleImpl.class, "written");
-
-    /** {@link MappedByteBuffer#mappingOffset()}. */
-    private static final Method mappingOffset = findNonPublicMethod(MappedByteBuffer.class, "mappingOffset");
-
-    /** {@link MappedByteBuffer#mappingAddress(long)}. */
-    private static final Method mappingAddress = findNonPublicMethod(
-        MappedByteBuffer.class, "mappingAddress", long.class
-    );
-
-    /** {@link MappedByteBuffer#fd} */
-    private static final Field fd = findField(MappedByteBuffer.class, "fd");
-
-    /** Page size. */
-    private static final int PAGE_SIZE = GridUnsafe.pageSize();
 
     /** Serializer latest version to use. */
     private final int serializerVer =
@@ -415,7 +388,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                         int off = seg.buffer().position();
                         int len = seg.buffer().limit() - off;
 
-                        fsync((MappedByteBuffer)buf.buf, off, len);
+                        buf.msync(off, len);
 
                         seg.release();
                     }
@@ -436,30 +409,6 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         }
         finally {
             lock.unlock();
-        }
-    }
-
-    /**
-     * @param buf Mapped byte buffer.
-     * @param off Offset.
-     * @param len Length.
-     */
-    private void fsync(MappedByteBuffer buf, int off, int len) throws IgniteCheckedException {
-        try {
-            long mappedOff = (Long)mappingOffset.invoke(buf);
-
-            assert mappedOff == 0 : mappedOff;
-
-            long addr = (Long)mappingAddress.invoke(buf, mappedOff);
-
-            long delta = (addr + off) % PAGE_SIZE;
-
-            long alignedAddr = (addr + off) - delta;
-
-            force0.invoke(buf, fd.get(buf), alignedAddr, len + delta);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IgniteCheckedException(e);
         }
     }
 
@@ -513,7 +462,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     // Do the final fsync.
                     if (mode != WALMode.NONE) {
                         if (mmap)
-                            ((MappedByteBuffer)buf.buf).force();
+                            buf.msync();
                         else
                             fileIO.force();
 

@@ -1315,7 +1315,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File allocPath = buildAllocPath(plcCfg);
 
         return allocPath == null ?
-            new UnsafeMemoryProvider(log) :
+            new UnsafeMemoryProvider(log, plcCfg.getMemoryAllocator()) :
             new MappedFileMemoryProvider(
                 log,
                 allocPath);

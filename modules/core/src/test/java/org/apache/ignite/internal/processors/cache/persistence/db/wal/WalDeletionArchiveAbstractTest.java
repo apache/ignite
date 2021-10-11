@@ -305,8 +305,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         long maxWalArchiveSize = cfg.getDataStorageConfiguration().getMaxWalArchiveSize();
         assertTrue(waitForCondition(() -> walArchiveSize(n) < maxWalArchiveSize, getTestTimeout()));
-
-        assertEquals(logStrs.toString(), 1, logStrs.size());
+        assertTrue(logStrs.toString(), waitForCondition(() -> logStrs.size() == 1, getTestTimeout()));
     }
 
     /**

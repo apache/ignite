@@ -537,8 +537,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
+            boolean isPersistentMemory = cctx.kernalContext().mmap().isPersistentMemory(
+                walWorkDir.getAbsolutePath());
+
+            if (log.isInfoEnabled() && isPersistentMemory)
+                log.info("WAL working directory is located on persistent memory: " + walWorkDir);
+
             fileHandleManager = fileHandleManagerFactory.build(
-                cctx, metrics, mmap, serializer, this::currentHandle
+                cctx, metrics, mmap, isPersistentMemory, serializer, this::currentHandle
             );
 
             lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
@@ -1395,7 +1401,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         int len = lastReadPtr == null ? 0 : lastReadPtr.length();
 
         try {
-            SegmentIO fileIO = new SegmentIO(absIdx, ioFactory.create(curFile));
+            SegmentIO fileIO = new SegmentIO(absIdx, ioFactory.create(curFile), curFile.getAbsolutePath());
 
             IgniteInClosure<FileIO> lsnr = createWalFileListener;
 
@@ -1501,7 +1507,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             while (true) {
                 try {
-                    fileIO = new SegmentIO(cur.getSegmentId() + 1, ioFactory.create(nextFile));
+                    fileIO = new SegmentIO(cur.getSegmentId() + 1, ioFactory.create(nextFile), nextFile.getAbsolutePath());
 
                     IgniteInClosure<FileIO> lsnr = createWalFileListener;
                     if (lsnr != null)
@@ -2336,7 +2342,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             int serializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                serializerVer = readSegmentHeader(new SegmentIO(idx, fileIO), segmentFileInputFactory)
+                serializerVer = readSegmentHeader(new SegmentIO(idx, fileIO, raw.getAbsolutePath()), segmentFileInputFactory)
                     .getSerializerVersion();
             }
 
@@ -3429,7 +3435,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 for (int i = 0, j = 0; i < toFormat.size(); i++) {
                     FileDescriptor fd = toFormat.get(i);
 
-                    File tmpDst = new File(fd.file().getName() + TMP_SUFFIX);
+                    File tmpDst = new File(fd.file().getAbsolutePath() + TMP_SUFFIX);
 
                     try {
                         Files.copy(fd.file().toPath(), tmpDst.toPath());
