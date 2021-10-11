@@ -135,6 +135,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
 
+        boolean serverNode = !(ctx.config().isClientMode() || ctx.isDaemon());
+
         helper = new IgniteStatisticsHelper(ctx.localNodeId(), schemaMgr, ctx::log);
 
         log = ctx.log(IgniteStatisticsManagerImpl.class);
@@ -142,32 +144,37 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         IgniteCacheDatabaseSharedManager db = (GridCacheUtils.isPersistenceEnabled(ctx.config())) ?
             ctx.cache().context().database() : null;
 
-        gatherPool = new IgniteThreadPoolExecutor("stat-gather",
-            ctx.igniteInstanceName(),
-            0,
-            STATS_POOL_SIZE,
-            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.UNDEFINED,
-            ctx.uncaughtExceptionHandler()
-        );
+        if (serverNode) {
+            gatherPool = new IgniteThreadPoolExecutor("stat-gather",
+                ctx.igniteInstanceName(),
+                0,
+                STATS_POOL_SIZE,
+                IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                ctx.uncaughtExceptionHandler()
+            );
 
-        mgmtPool = new IgniteThreadPoolExecutor("stat-mgmt",
-            ctx.igniteInstanceName(),
-            0,
-            1,
-            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.UNDEFINED,
-            ctx.uncaughtExceptionHandler()
-        );
+            mgmtPool = new IgniteThreadPoolExecutor("stat-mgmt",
+                ctx.igniteInstanceName(),
+                0,
+                1,
+                IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                ctx.uncaughtExceptionHandler()
+            );
+        }
+        else {
+            gatherPool = null;
+            mgmtPool = null;
+        }
 
         obsolescenceBusyExecutor = new BusyExecutor("obsolescence", mgmtPool, ctx::log);
 
-        boolean storeData = !(ctx.config().isClientMode() || ctx.isDaemon());
-
         IgniteStatisticsStore store;
-        if (!storeData)
+
+        if (!serverNode)
             store = new IgniteStatisticsDummyStoreImpl(ctx::log);
         else if (db == null)
             store = new IgniteStatisticsInMemoryStoreImpl(ctx::log);
@@ -176,11 +183,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         statsRepos = new IgniteStatisticsRepository(store, ctx.systemView(), helper, ctx::log);
 
-        statProc = new StatisticsProcessor(
+        statProc = serverNode ? new StatisticsProcessor(
             statsRepos,
             gatherPool,
             ctx::log
-        );
+        ) : null;
 
         statCfgMgr = new IgniteStatisticsConfigurationManager(
             schemaMgr,
@@ -190,7 +197,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             statProc,
             db != null,
             mgmtPool,
-            ctx::log
+            ctx::log,
+            serverNode
         );
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
@@ -215,7 +223,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         tryStart();
 
-        if (!ctx.clientNode()) {
+        if (serverNode) {
             // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
             obsolescenceSchedule = ctx.timeout().schedule(() -> {
                 obsolescenceBusyExecutor.execute(() -> processObsolescence());
@@ -246,7 +254,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             log.debug("Stopping statistics subsystem");
 
         statCfgMgr.stop();
-        statProc.stop();
+
+        if (statProc != null)
+            statProc.stop();
+
         statsRepos.stop();
 
         obsolescenceBusyExecutor.deactivate(() -> {});
@@ -276,7 +287,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         obsolescenceBusyExecutor.activate();
 
         statsRepos.start();
-        statProc.start();
+
+        if (statProc != null)
+            statProc.start();
+
         statCfgMgr.start();
 
         started = true;

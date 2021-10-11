@@ -97,6 +97,9 @@ public class IgniteStatisticsConfigurationManager {
     /** Cluster state processor. */
     private final GridClusterStateProcessor cluster;
 
+    /** Is server node flag. */
+    private final boolean isServerNode;
+
     /** Change statistics configuration listener to update particular object statistics. */
     private final DistributedMetastorageLifecycleListener distrMetaStoreLsnr =
         new DistributedMetastorageLifecycleListener() {
@@ -133,6 +136,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param persistence Persistence enabled flag.
      * @param mgmtPool Statistics management pool
      * @param logSupplier Log supplier.
+     * @param isServerNode Server node flag.
      */
     public IgniteStatisticsConfigurationManager(
         SchemaManager schemaMgr,
@@ -142,7 +146,8 @@ public class IgniteStatisticsConfigurationManager {
         StatisticsProcessor statProc,
         boolean persistence,
         IgniteThreadPoolExecutor mgmtPool,
-        Function<Class<?>, IgniteLogger> logSupplier
+        Function<Class<?>, IgniteLogger> logSupplier,
+        boolean isServerNode
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
@@ -150,6 +155,8 @@ public class IgniteStatisticsConfigurationManager {
         this.mgmtBusyExecutor = new BusyExecutor("configuration", mgmtPool, logSupplier);
         this.statProc = statProc;
         this.cluster = cluster;
+        this.isServerNode = isServerNode;
+
         subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
         ColumnConfigurationViewSupplier colCfgViewSupplier = new ColumnConfigurationViewSupplier(this,
@@ -279,10 +286,10 @@ public class IgniteStatisticsConfigurationManager {
         try {
             AffinityTopologyVersion topVer0 = cctx.affinity().affinityReadyFuture(topVer).get();
 
-            final Set<Integer> parts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
+            final Set<Integer> primParts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
             LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
-                parts, topVer0);
+                primParts, topVer0);
             statProc.updateLocalStatistics(ctx);
         }
         catch (IgniteCheckedException e) {
@@ -316,13 +323,15 @@ public class IgniteStatisticsConfigurationManager {
 
         mgmtBusyExecutor.activate();
 
-        schemaMgr.registerDropColumnsListener(dropColsLsnr);
-        schemaMgr.registerDropTableListener(dropTblLsnr);
+        if (isServerNode) {
+            schemaMgr.registerDropColumnsListener(dropColsLsnr);
+            schemaMgr.registerDropTableListener(dropTblLsnr);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager started.");
 
-        if (distrMetaStorage != null)
+        if (distrMetaStorage != null && isServerNode)
             mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
     }
 
@@ -349,8 +358,10 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isTraceEnabled())
             log.trace("Statistics configuration manager stopping...");
 
-        schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
-        schemaMgr.unregisterDropTableListener(dropTblLsnr);
+        if (isServerNode) {
+            schemaMgr.unregisterDropColumnsListener(dropColsLsnr);
+            schemaMgr.unregisterDropTableListener(dropTblLsnr);
+        }
 
         mgmtBusyExecutor.deactivate(() -> {});
 
