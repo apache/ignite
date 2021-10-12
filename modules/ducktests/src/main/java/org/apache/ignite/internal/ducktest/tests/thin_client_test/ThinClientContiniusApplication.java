@@ -42,13 +42,20 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * putAllClients - connect, putAll, disconnnet, repeat
  */
 enum ClientType {
+    /** Just connect */
     CONNECT,
+    /** Make some puts */
     PUT,
+    /** Make putAll */
     PUTALL
 }
 
+/**
+ * Run multiple Thin Clients making some work for a given time
+ */
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
 
+    /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         int connectClients = jsonNode.get("connectClients").asInt();
         int putClients = jsonNode.get("putClients").asInt();
@@ -91,18 +98,31 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
     }
 }
 
+/**
+ * Start Thin Client making some operations for a given time.
+ *
+ * @param cfg Ignite Thin Client COnfiguration.
+ * @param connectTime external variable to save connection times
+ * @param enum defining client behaviour
+ */
 class oneThinClient implements Runnable {
 
+    /** Size of one entry. */
     private static final int DATA_SIZE = 15;
 
+    /** Time of one iteration. */
     private static final int RUN_TIME = 1000;
 
+    /** Size of Map to putAll. */
     private static final int PUT_ALL_SIZE = 1000;
 
+    /** Ignite Client configuration. */
     ClientConfiguration cfg;
 
+    /** Time of connection. */
     List<Long> connectTime;
 
+    /** Type of client. */
     ClientType type;
 
     /** {@inheritDoc} */
