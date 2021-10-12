@@ -700,6 +700,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param nodeIds Nodes.
      * @throws IgniteCheckedException In case of error.
      */
+    // TODO IGNITE-15731: Refactor how CacheQueryReducer handles remote nodes.
     public void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
         final GridCacheQueryRequest req,
@@ -769,42 +770,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     private Object topic(UUID nodeId, long reqId) {
         return TOPIC_CACHE.topic(TOPIC_PREFIX, nodeId, reqId);
-    }
-
-    /** */
-    private void sendNodeCancelRequest(UUID nodeId, GridCacheQueryRequest req) throws IgniteCheckedException {
-        try {
-            cctx.io().send(nodeId, req, GridIoPolicy.QUERY_POOL);
-        }
-        catch (IgniteCheckedException e) {
-            if (cctx.io().checkNodeLeft(nodeId, e, false)) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send cancel request, node failed: " + nodeId);
-            }
-            else
-                U.error(log, "Failed to send cancel request [node=" + nodeId + ']', e);
-        }
-    }
-
-    /**
-     * @return {@code true} if succeed to send request, {@code false} otherwise.
-     */
-    private boolean sendNodePageRequest(UUID nodeId, GridCacheQueryRequest req, GridCacheQueryFutureAdapter<?, ?, ?> fut)
-        throws IgniteCheckedException {
-        try {
-            cctx.io().send(nodeId, req, GridIoPolicy.QUERY_POOL);
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            if (cctx.io().checkNodeLeft(nodeId, e, true)) {
-                fut.onNodeLeft(nodeId);
-
-                return false;
-            }
-            else
-                throw e;
-        }
     }
 
     /**

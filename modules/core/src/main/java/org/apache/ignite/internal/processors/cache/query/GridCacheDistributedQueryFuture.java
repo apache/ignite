@@ -231,29 +231,33 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      *
      * @param nodeId Node to send request.
      */
+    // TODO IGNITE-15731: Refactor how CacheQueryReducer handles remote nodes.
     private void cancelPages(UUID nodeId) {
         try {
             GridCacheQueryRequest req = GridCacheQueryRequest.cancelRequest(cctx, reqId, fields());
 
-            // Process cancel query directly (without sending) for local node,
-            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                @Override public Object call() {
-                    qryMgr.processQueryRequest(cctx.localNodeId(), req);
+            if (nodeId.equals(cctx.localNodeId())) {
+                // Process cancel query directly (without sending) for local node,
+                cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+                    @Override public Object call() {
+                        qryMgr.processQueryRequest(cctx.localNodeId(), req);
 
-                    return null;
-                }
-            });
-
-            try {
-                cctx.io().send(nodeId, req, cctx.ioPolicy());
+                        return null;
+                    }
+                });
             }
-            catch (IgniteCheckedException e) {
-                if (cctx.io().checkNodeLeft(nodeId, e, false)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to send cancel request, node failed: " + nodeId);
+            else {
+                try {
+                    cctx.io().send(nodeId, req, cctx.ioPolicy());
                 }
-                else
-                    U.error(log, "Failed to send cancel request [node=" + nodeId + ']', e);
+                catch (IgniteCheckedException e) {
+                    if (cctx.io().checkNodeLeft(nodeId, e, false)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send cancel request, node failed: " + nodeId);
+                    }
+                    else
+                        U.error(log, "Failed to send cancel request [node=" + nodeId + ']', e);
+                }
             }
         }
         catch (IgniteCheckedException e) {
