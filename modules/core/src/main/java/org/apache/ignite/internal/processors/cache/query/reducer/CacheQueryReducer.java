@@ -59,7 +59,12 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
             throw new IgniteCheckedException("Query was interrupted.", e);
         }
         catch (ExecutionException e) {
-            throw new IgniteCheckedException(e);
+            Throwable t = e.getCause();
+
+            if (t instanceof IgniteCheckedException)
+                throw (IgniteCheckedException) t;
+
+            throw new IgniteCheckedException("Page future was completed with unexpected error.", e);
         }
     }
 }
