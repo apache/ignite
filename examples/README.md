@@ -11,13 +11,12 @@ The following examples are included:
 * `SqlJdbcExample` - demonstrates the usage of the Apache Ignite JDBC driver.
 * `RebalanceExample` - demonstrates the data rebalancing process.
 
-To run an example, do the following:
+To run the `RebalanceExample`, refer to its JavaDoc for instructions.
+
+To run any other example, do the following:
 1. Import the examples project into you IDE.
-2. (optional) Run one or more standalone nodes using the CLI tool:
+2. Start a server node using the CLI tool:
    ```
-   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1
-   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2
-   ...
-   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n
+   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-first-node
    ```
 3. Run the preferred example in the IDE.

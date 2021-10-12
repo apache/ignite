@@ -71,9 +71,9 @@ public class RebalanceExample {
         System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
 
         try (Ignite server = IgnitionManager.start(
-                "example-node",
-                Files.readString(Path.of("config", "ignite-config.json")),
-                Path.of("work")
+            "example-node",
+            Files.readString(Path.of("config", "ignite-config.json")),
+            Path.of("work")
         )) {
             //--------------------------------------------------------------------------------------
             //
@@ -89,17 +89,17 @@ public class RebalanceExample {
             System.out.println("\nCreating a table...");
 
             TableDefinition tableDef = SchemaBuilders.tableBuilder("PUBLIC", "rebalance")
-                    .columns(
-                            SchemaBuilders.column("key", ColumnType.INT32).asNonNull().build(),
-                            SchemaBuilders.column("value", ColumnType.string()).asNullable().build()
-                    )
-                    .withPrimaryKey("key")
-                    .build();
+                .columns(
+                    SchemaBuilders.column("key", ColumnType.INT32).asNonNull().build(),
+                    SchemaBuilders.column("value", ColumnType.string()).asNullable().build()
+                )
+                .withPrimaryKey("key")
+                .build();
 
             server.tables().createTable(tableDef.canonicalName(), tableChange ->
-                    SchemaConfigurationConverter.convert(tableDef, tableChange)
-                            .changeReplicas(5)
-                            .changePartitions(1)
+                SchemaConfigurationConverter.convert(tableDef, tableChange)
+                    .changeReplicas(5)
+                    .changePartitions(1)
             );
 
             //--------------------------------------------------------------------------------------
@@ -111,8 +111,8 @@ public class RebalanceExample {
             System.out.println("\nConnecting to server...");
 
             try (IgniteClient client = IgniteClient.builder()
-                    .addresses("127.0.0.1:10800")
-                    .build()
+                .addresses("127.0.0.1:10800")
+                .build()
             ) {
                 KeyValueView<Tuple, Tuple> kvView = client.tables().table("PUBLIC.rebalance").keyValueView();
 
