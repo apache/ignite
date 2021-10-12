@@ -527,6 +527,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 fut.onError(err);
             }
+
+            fut.startQuery();
         }
         catch (IgniteCheckedException e) {
             fut.onError(e);

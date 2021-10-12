@@ -82,11 +82,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         streams = new ConcurrentHashMap<>(nodes.size());
 
         for (ClusterNode node : nodes) {
-            NodePageStream<R> s = new NodePageStream<>(node.id(), () -> requestPages(node.id()), () -> cancelPages(node.id()));
-
-            streams.put(node.id(), s);
-
-            startQuery(node.id());
+            streams.computeIfAbsent(node.id(), nodeId ->
+                new NodePageStream<>(nodeId, () -> requestPages(nodeId), () -> cancelPages(nodeId)));
         }
 
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
@@ -112,10 +109,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void onNodeLeft(UUID nodeId) {
         boolean hasRemotePages = streams.get(nodeId).hasRemotePages();
 
-        if (hasRemotePages) {
-            onPage(nodeId, null,
-                new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
-        }
+        if (hasRemotePages)
+            onError(new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId));
     }
 
     /** {@inheritDoc} */
@@ -201,15 +196,13 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /**
-     * Send initial query request to specified node.
-     *
-     * @param nodeId Node to send request.
+     * Send initial query request to query nodes.
      */
-    private void startQuery(UUID nodeId) {
+    public void startQuery() {
         try {
             GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, this);
 
-            qryMgr.sendRequest(this, req, Collections.singletonList(nodeId));
+            qryMgr.sendRequest(this, req, streams.keySet());
         }
         catch (IgniteCheckedException e) {
             onError(e);
@@ -244,8 +237,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             qryMgr.sendRequest(null, req, Collections.singletonList(nodeId));
         }
         catch (IgniteCheckedException e) {
-            if (logger() != null)
-                U.error(logger(), "Failed to send cancel request (will cancel query in any case).", e);
+            U.error(logger(), "Failed to send cancel request (will cancel query in any case).", e);
         }
     }
 

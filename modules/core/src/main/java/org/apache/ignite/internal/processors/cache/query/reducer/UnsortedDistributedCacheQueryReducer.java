@@ -52,7 +52,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends CacheQueryReducer<R
                 CompletableFuture<NodePage<R>> f = s.headPage();
 
                 if (f.isDone()) {
-                    page = page(f);
+                    page = get(f);
 
                     if (page.hasNext())
                         return true;
@@ -63,7 +63,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends CacheQueryReducer<R
             if (pendingNodesCnt == 0)
                 return false;
 
-            page = page(CompletableFuture.anyOf(Arrays.copyOf(futs, pendingNodesCnt)));
+            page = get(CompletableFuture.anyOf(Arrays.copyOf(futs, pendingNodesCnt)));
         }
 
         return true;

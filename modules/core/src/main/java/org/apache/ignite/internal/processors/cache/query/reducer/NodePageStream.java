@@ -26,20 +26,20 @@ import java.util.concurrent.CompletableFuture;
  * of cache query result from single node. A new page requests when previous page was fetched by class consumer.
  */
 public class NodePageStream<R> {
-    /** Node ID to stream pages */
+    /** Node ID to stream pages. */
     private final UUID nodeId;
-
-    /** Flags shows whether there are no available pages on a query node. */
-    private boolean noRemotePages;
-
-    /** Promise to notify the stream consumer about delivering new page. */
-    private CompletableFuture<NodePage<R>> head = new CompletableFuture<>();
 
     /** Request pages action. */
     private final Runnable reqPages;
 
     /** Cancel remote pages action. */
     private final Runnable cancelPages;
+
+    /** Flags shows whether there are available pages on a query node. */
+    private boolean hasRemotePages = true;
+
+    /** Promise to notify the stream consumer about delivering new page. */
+    private CompletableFuture<NodePage<R>> head = new CompletableFuture<>();
 
     /** */
     public NodePageStream(UUID nodeId, Runnable reqPages, Runnable cancelPages) {
@@ -58,10 +58,8 @@ public class NodePageStream<R> {
      *
      * @return Future that will be completed with query result page.
      */
-    public CompletableFuture<NodePage<R>> headPage() {
-        synchronized (this) {
-            return head;
-        }
+    public synchronized CompletableFuture<NodePage<R>> headPage() {
+        return head;
     }
 
     /**
@@ -70,66 +68,60 @@ public class NodePageStream<R> {
      * @param data Collection of query result items.
      * @param last Whether it is the last page from this node.
      */
-    public void addPage(Collection<R> data, boolean last) {
-        synchronized (this) {
-            head.complete(new NodePage<R>(nodeId, data) {
-                /** Flag shows whether the request for new page was triggered. */
-                private boolean reqNext;
+    public synchronized void addPage(Collection<R> data, boolean last) {
+        head.complete(new NodePage<R>(nodeId, data) {
+            /** Flag shows whether the request for new page was triggered. */
+            private boolean reqNext;
 
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    if (!reqNext) {
-                        synchronized (NodePageStream.this) {
-                            if (!noRemotePages) {
-                                head = new CompletableFuture<>();
+            /** {@inheritDoc} */
+            @Override public boolean hasNext() {
+                if (!reqNext) {
+                    synchronized (NodePageStream.this) {
+                        if (hasRemotePages) {
+                            head = new CompletableFuture<>();
 
-                                reqPages.run();
-                            } else
-                                head = null;
+                            reqPages.run();
                         }
-
-                        reqNext = true;
+                        else
+                            head = null;
                     }
 
-                    return super.hasNext();
+                    reqNext = true;
                 }
-            });
 
-            if (last)
-                noRemotePages = true;
-        }
+                return super.hasNext();
+            }
+        });
+
+        if (last)
+            hasRemotePages = false;
     }
 
     /**
      * Cancel query on all nodes.
      */
-    public void cancel(Throwable err) {
-        synchronized (this) {
-            if (!closed()) {
-                head.completeExceptionally(err);
+    public synchronized void cancel(Throwable err) {
+        if (closed())
+            return;
 
-                cancelPages.run();
+        head.completeExceptionally(err);
 
-                noRemotePages = true;
-            }
-        }
+        cancelPages.run();
+
+        hasRemotePages = false;
     }
 
     /**
      * @return {@code true} if there are some undelivered page from the node, otherwise {@code false}.
      */
-    public boolean hasRemotePages() {
-        synchronized (this) {
-            return !noRemotePages;
-        }
+    public synchronized boolean hasRemotePages() {
+        return hasRemotePages;
     }
 
     /**
      * @return {@code true} if this stream delivers all query results from the node to a consumer.
      */
-    public boolean closed() {
-        synchronized (this) {
-            return noRemotePages && (head == null);
-        }
+    public synchronized boolean closed() {
+        return !hasRemotePages && (head == null);
     }
 }

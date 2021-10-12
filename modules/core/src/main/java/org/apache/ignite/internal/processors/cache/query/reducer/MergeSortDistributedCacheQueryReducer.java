@@ -58,7 +58,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends CacheQueryReducer<
             nodePages = new PriorityQueue<>(pageStreams.size(), pageCmp);
 
             for (NodePageStream<R> s : pageStreams.values()) {
-                NodePage<R> p = page(s.headPage());
+                NodePage<R> p = get(s.headPage());
 
                 if (p == null || !p.hasNext())
                     continue;
@@ -71,7 +71,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends CacheQueryReducer<
             NodePageStream<R> stream = pageStreams.get(pendingNodeId);
 
             if (!stream.closed()) {
-                NodePage<R> p = page(stream.headPage());
+                NodePage<R> p = get(stream.headPage());
 
                 if (p != null && p.hasNext())
                     nodePages.add(p);

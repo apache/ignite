@@ -175,7 +175,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * TODO: remote after IGNITE-15728.
+     * TODO: IGNITE-15728 Provide custom reducer for ScanQueryFallbackClosableIterator.
      *
      * Waits for the first item is available to return.
      *

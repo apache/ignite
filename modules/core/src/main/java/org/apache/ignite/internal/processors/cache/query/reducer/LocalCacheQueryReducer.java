@@ -41,7 +41,7 @@ public class LocalCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         if (page == null)
-            page = page(stream.headPage());
+            page = get(stream.headPage());
 
         return page.hasNext();
     }

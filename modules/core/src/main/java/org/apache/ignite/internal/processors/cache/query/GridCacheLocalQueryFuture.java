@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.LocalCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -76,24 +76,13 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
     /** {@inheritDoc} */
     @Override public void awaitFirstItemAvailable() throws IgniteCheckedException {
-        try {
-            stream.headPage().get();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteCheckedException("Query was interrupted.", e);
-        }
-        catch (ExecutionException e) {
-            throw new IgniteCheckedException(e);
-        }
+        CacheQueryReducer.get(stream.headPage());
     }
 
     /** {@inheritDoc} */
     @Override protected void onError(Throwable err) {
-        onDone(err);
-
-        stream.cancel(err);
+        if (onDone(err))
+            stream.cancel(err);
     }
 
     /** {@inheritDoc} */

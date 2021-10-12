@@ -49,7 +49,7 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
     /**
      * @return Page with query results data from specified stream.
      */
-    protected NodePage<T> page(CompletableFuture<?> pageFut) throws IgniteCheckedException {
+    public static <T> NodePage<T> get(CompletableFuture<?> pageFut) throws IgniteCheckedException {
         try {
             return (NodePage<T>) pageFut.get();
         }
