@@ -693,6 +693,74 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /**
+     * Sends query request.
+     *
+     * @param fut Distributed future.
+     * @param req Request.
+     * @param nodeIds Nodes.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void sendRequest(
+        final GridCacheDistributedQueryFuture<?, ?, ?> fut,
+        final GridCacheQueryRequest req,
+        Collection<UUID> nodeIds
+    ) throws IgniteCheckedException {
+        assert fut != null;
+        assert req != null;
+        assert nodeIds != null;
+
+        final UUID locNodeId = cctx.localNodeId();
+
+        boolean locNode = false;
+
+        Collection<UUID> rmtNodes = null;
+
+        for (UUID nodeId: nodeIds) {
+            if (nodeId.equals(locNodeId))
+                locNode = true;
+            else {
+                if (rmtNodes == null)
+                    rmtNodes = new ArrayList<>(nodeIds.size());
+
+                rmtNodes.add(nodeId);
+            }
+        }
+
+        // Request should be sent to remote nodes before the query is processed on the local node.
+        // For example, a remote reducer has a state, we should not serialize and then send
+        // the reducer changed by the local node.
+        if (!F.isEmpty(rmtNodes)) {
+            for (UUID node : rmtNodes) {
+                try {
+                    cctx.io().send(node, req, GridIoPolicy.QUERY_POOL);
+                }
+                catch (IgniteCheckedException e) {
+                    if (cctx.io().checkNodeLeft(node, e, true)) {
+                        fut.onNodeLeft(node);
+
+                        if (fut.isDone())
+                            return;
+                    }
+                    else
+                        throw e;
+                }
+            }
+        }
+
+        if (locNode) {
+            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    req.beforeLocalExecution(cctx);
+
+                    processQueryRequest(locNodeId, req);
+
+                    return null;
+                }
+            }, GridIoPolicy.QUERY_POOL);
+        }
+    }
+
+    /**
      * Gets topic for ordered response messages.
      *
      * @param nodeId Node ID.
@@ -701,50 +769,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     private Object topic(UUID nodeId, long reqId) {
         return TOPIC_CACHE.topic(TOPIC_PREFIX, nodeId, reqId);
-    }
-
-    /**
-     * Sends query request.
-     *
-     * @param fut Cache query future. {@code null} in case of cancel request.
-     * @param req Request.
-     * @param nodes Nodes.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void sendRequest(
-        @Nullable GridCacheQueryFutureAdapter<?, ?, ?> fut,
-        GridCacheQueryRequest req,
-        Collection<UUID> nodes
-    ) throws IgniteCheckedException {
-        assert req != null;
-        assert nodes != null;
-
-        UUID locNodeId = cctx.localNodeId();
-
-        for (UUID nodeId : nodes) {
-            if (nodeId.equals(locNodeId)) {
-                cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                    @Override public Object call() throws Exception {
-                        req.beforeLocalExecution(cctx);
-
-                        processQueryRequest(cctx.localNodeId(), req);
-
-                        return null;
-                    }
-                }, GridIoPolicy.QUERY_POOL);
-
-                continue;
-            }
-
-            if (req.cancel()) {
-                sendNodeCancelRequest(nodeId, req);
-
-                continue;
-            }
-
-            if (!sendNodePageRequest(nodeId, req, fut))
-                return;
-        }
     }
 
     /** */
