@@ -148,8 +148,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             R next = null;
 
-            if (reducer.hasNext()) {
-                next = unmaskNull(reducer.next());
+            if (reducer.hasNextX()) {
+                next = unmaskNull(reducer.nextX());
 
                 if (!limitDisabled) {
                     cnt++;
