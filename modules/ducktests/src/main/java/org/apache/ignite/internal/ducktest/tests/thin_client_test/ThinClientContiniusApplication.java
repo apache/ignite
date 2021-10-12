@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-//import java.util.*;
-//import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,10 +48,8 @@ enum ClientType {
 }
 
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
-    /**{@inheritDoc}*/
 
-    @Override
-    protected void run(JsonNode jsonNode) throws Exception {
+    @Override protected void run(JsonNode jsonNode) throws Exception {
         int connectClients = jsonNode.get("connectClients").asInt();
         int putClients = jsonNode.get("putClients").asInt();
         int putAllClients = jsonNode.get("putAllClients").asInt();
@@ -88,25 +92,28 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 }
 
 class oneThinClient implements Runnable {
-    /**{@inheritDoc}*/
 
     private static final int DATA_SIZE = 15;
+
     private static final int RUN_TIME = 1000;
+
     private static final int PUT_ALL_SIZE = 1000;
 
     ClientConfiguration cfg;
+
     List<Long> connectTime;
+
     ClientType type;
 
+    /** {@inheritDoc} */
     oneThinClient(ClientConfiguration cfg, List<Long> connectTime, ClientType type) {
         this.cfg = cfg;
         this.type = type;
         this.connectTime = connectTime;
     }
 
-    @Override
-    public void run() {
-        /**{@inheritDoc}*/
+    /** {@inheritDoc} */
+    @Override public void run() {
         long connectStart;
         cfg.setPartitionAwarenessEnabled(true);
         while (!Thread.currentThread().isInterrupted()) {
