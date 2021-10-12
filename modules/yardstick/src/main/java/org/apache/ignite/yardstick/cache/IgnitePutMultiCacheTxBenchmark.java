@@ -18,43 +18,61 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
-/**
- * Ignite benchmark that performs transactional put operations.
- */
-public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+/** Multi cache transactional put benchmark. */
+public class IgnitePutMultiCacheTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
     private IgniteTransactions txs;
 
     /** */
     private Callable<Void> clo;
 
+    /** Num of cache operations.*/
+    private int cacheOperations;
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        if (cachesCnt() <= 1)
+            throw new IllegalArgumentException("Please configure --cachesCnt" +
+                " param, need to be more that 1.");
 
         if (!IgniteSystemProperties.getBoolean("SKIP_MAP_CHECK"))
             ignite().compute().broadcast(new WaitMapExchangeFinishCallable());
 
         txs = ignite().transactions();
 
-        clo = new Callable<Void>() {
-            @Override public Void call() {
-                IgniteCache<Integer, Object> cache = cacheForOperation();
+        cacheOperations = args.opsPerCache();
 
-                int key = nextRandom(args.range());
+        for (IgniteCache<?, ?> cache : testCaches) {
+            if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() != TRANSACTIONAL)
+                throw new IllegalArgumentException("Only transactional caches need to be present.");
+        }
 
-                cache.put(key, new SampleValue(key));
+        clo = () -> {
+            int key = nextRandom(args.range());
 
-                return null;
+            int shift = 0;
+
+            for (int i = 0; i < cacheOperations; ++i) {
+                for (IgniteCache cache : testCaches) {
+                    cache.put(key, new SampleValue(key + shift, UUID.randomUUID()));
+                    ++shift;
+                }
             }
+
+            return null;
         };
     }
 
@@ -68,5 +86,27 @@ public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("tx");
+    }
+
+    /** */
+    private static class SampleValue {
+        /** */
+        @QuerySqlField
+        private int id;
+
+        /** */
+        @QuerySqlField
+        private UUID uid;
+
+        /** */
+        private SampleValue() {
+            // No-op.
+        }
+
+        /** */
+        public SampleValue(int id, UUID uid) {
+            this.id = id;
+            this.uid = uid;
+        }
     }
 }
