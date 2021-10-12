@@ -131,11 +131,16 @@ public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer,
             }
         }
 
+        putData(vals);
+
+        return true;
+    }
+
+    /** Put operations.*/
+    protected void putData(Map<Integer, Integer> vals) throws Exception {
         IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.putAll(vals);
-
-        return true;
     }
 
     /** {@inheritDoc} */
