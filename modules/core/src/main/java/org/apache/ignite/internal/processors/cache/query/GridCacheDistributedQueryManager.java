@@ -721,29 +721,29 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         UUID locNodeId = cctx.localNodeId();
 
-        boolean loc = false;
-
         for (UUID nodeId : nodes) {
-            if (nodeId.equals(locNodeId))
-                loc = true;
-            else {
-                if (req.cancel())
-                    sendNodeCancelRequest(nodeId, req);
-                else if (!sendNodePageRequest(nodeId, req, fut))
-                    return;
+            if (nodeId.equals(locNodeId)) {
+                cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+                    @Override public Object call() throws Exception {
+                        req.beforeLocalExecution(cctx);
+
+                        processQueryRequest(cctx.localNodeId(), req);
+
+                        return null;
+                    }
+                }, GridIoPolicy.QUERY_POOL);
+
+                continue;
             }
-        }
 
-        if (loc) {
-            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                @Override public Object call() throws Exception {
-                    req.beforeLocalExecution(cctx);
+            if (req.cancel()) {
+                sendNodeCancelRequest(nodeId, req);
 
-                    processQueryRequest(cctx.localNodeId(), req);
+                continue;
+            }
 
-                    return null;
-                }
-            }, GridIoPolicy.QUERY_POOL);
+            if (!sendNodePageRequest(nodeId, req, fut))
+                return;
         }
     }
 

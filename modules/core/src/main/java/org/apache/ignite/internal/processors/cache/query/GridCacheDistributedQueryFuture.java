@@ -31,9 +31,9 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortDistributedCacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
-import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedDistributedCacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -89,8 +89,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
         reducer = qry.query().type() == TEXT ?
-            new MergeSortDistributedCacheQueryReducer<>(streamsMap)
-            : new UnsortedDistributedCacheQueryReducer<>(streamsMap);
+            new MergeSortCacheQueryReducer<>(streamsMap)
+            : new UnsortedCacheQueryReducer<>(streamsMap);
     }
 
     /** {@inheritDoc} */

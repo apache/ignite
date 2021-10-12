@@ -26,10 +26,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
 
 /**
- * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node
+ * Reducer of cache query results that sort result through all nodes. Note that it's assumed that every node
  * returns pre-sorted collection of data.
  */
-public class MergeSortDistributedCacheQueryReducer<R> extends CacheQueryReducer<R> {
+public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends CacheQueryReducer<
     private UUID pendingNodeId;
 
     /** */
-    public MergeSortDistributedCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
+    public MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
         super(pageStreams);
     }
 

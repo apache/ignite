@@ -24,9 +24,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
-import org.apache.ignite.internal.processors.cache.query.reducer.LocalCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
+import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -56,7 +57,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         stream = new NodePageStream<>(ctx.localNodeId(), () -> {}, () -> {});
 
-        reducer = new LocalCacheQueryReducer<>(stream);
+        reducer = new UnsortedCacheQueryReducer<>(F.asMap(stream.nodeId(), stream));
     }
 
     /**

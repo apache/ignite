@@ -24,25 +24,28 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
+ * Reducer of cache query results, no ordering of results is provided.
  */
-public class UnsortedDistributedCacheQueryReducer<R> extends CacheQueryReducer<R> {
+public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Current page to return data to user. */
     private NodePage<R> page;
 
+    /** Pending futures for requeseted pages. */
+    private final CompletableFuture<NodePage<R>>[] futs;
+
     /** */
-    public UnsortedDistributedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams) {
+    public UnsortedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams) {
         super(pageStreams);
+
+        futs = new CompletableFuture[pageStreams.size()];
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         while (page == null || !page.hasNext()) {
-            CompletableFuture<NodePage<R>>[] futs = new CompletableFuture[pageStreams.size()];
-
             int pendingNodesCnt = 0;
 
             for (NodePageStream<R> s: pageStreams.values()) {
@@ -63,7 +66,11 @@ public class UnsortedDistributedCacheQueryReducer<R> extends CacheQueryReducer<R
             if (pendingNodesCnt == 0)
                 return false;
 
-            page = get(CompletableFuture.anyOf(Arrays.copyOf(futs, pendingNodesCnt)));
+            CompletableFuture[] pendingFuts = Arrays.copyOf(futs, pendingNodesCnt);
+
+            Arrays.fill(futs, 0, pendingNodesCnt, null);
+
+            page = get(CompletableFuture.anyOf(pendingFuts));
         }
 
         return true;
