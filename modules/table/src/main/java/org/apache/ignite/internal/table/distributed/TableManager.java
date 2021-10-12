@@ -37,6 +37,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DirectConfigurationProperty;
+import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
@@ -825,17 +827,20 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         return tableAsync(name, true);
     }
 
-    /**
-     * Gets a table if it exists or {@code null} if it was not created or was removed before.
-     *
-     * @param id Table ID.
-     * @return A table or {@code null} if table does not exist.
-     */
+    /** {@inheritDoc} */
     @Override public TableImpl table(IgniteUuid id) {
+        return tableAsync(id).join();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<TableImpl> tableAsync(IgniteUuid id) {
+        if (!isTableConfigured(id))
+            return CompletableFuture.completedFuture(null);
+
         var tbl = tablesById.get(id);
 
         if (tbl != null)
-            return tbl;
+            return CompletableFuture.completedFuture(tbl);
 
         CompletableFuture<TableImpl> getTblFut = new CompletableFuture<>();
 
@@ -861,10 +866,32 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         tbl = tablesById.get(id);
 
-        if (tbl != null && getTblFut.complete(tbl) || getTblFut.complete(null))
+        if (tbl != null && getTblFut.complete(tbl) ||
+            !isTableConfigured(id) && getTblFut.complete(null))
             removeListener(TableEvent.CREATE, clo, null);
 
-        return getTblFut.join();
+        return getTblFut;
+    }
+
+    /**
+     * Checks that the table is configured with specific id.
+     *
+     * @param id Table id.
+     * @return True when the table is configured into cluster, false otherwise.
+     */
+    private boolean isTableConfigured(IgniteUuid id) {
+        NamedListView<TableView> directTablesCfg = ((DirectConfigurationProperty<NamedListView<TableView>>)tablesCfg.tables()).directValue();
+
+        // TODO: IGNITE-15721 Need to review this approach after the ticket would be fixed.
+        // Probably, it won't be required getting configuration of all tables from Metastor.
+        for (String name : directTablesCfg.namedListKeys()) {
+            ExtendedTableView tView = (ExtendedTableView)directTablesCfg.get(name);
+
+            if (tView != null && id.equals(IgniteUuid.fromString(tView.id())))
+                return true;
+        }
+
+        return false;
     }
 
     /**

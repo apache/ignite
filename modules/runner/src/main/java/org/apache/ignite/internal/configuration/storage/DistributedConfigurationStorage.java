@@ -124,6 +124,9 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
                 ByteArray key = entry.key();
                 byte[] value = entry.value();
 
+                if (entry.tombstone())
+                    continue;
+
                 // Meta Storage should not return nulls as values
                 assert value != null;
 

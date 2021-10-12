@@ -168,4 +168,9 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
     @Override public TableImpl table(IgniteUuid id) {
         return tablesById.get(id);
     }
+
+    /** {@inheritDoc} */
+    @Override public CompletableFuture<TableImpl> tableAsync(IgniteUuid id) {
+        return CompletableFuture.completedFuture(tablesById.get(id));
+    }
 }
