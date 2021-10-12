@@ -19,56 +19,62 @@ package org.apache.ignite.example.rebalance;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.KeyValueView;
-import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 
 /**
  * This example demonstrates the data rebalance process.
- * The following sequence of events is emulated:
- *
- * <ul>
- * <li>Start 3 nodes (A, B and C)</li>
- * <li>Insert some data</li>
- * <li>Add 2 more nodes (D and E)</li>
- * <li>Set new baseline to (A, D, E)</li>
- * <li>Stop nodes B and C</li>
- * <li>Check that data is still available on the new configuration</li>
- * </ul>
- *
+ * <p>
+ * The example emulates the basic scenario when one starts a three-node topology,
+ * inserts some data, and then scales out by adding two more nodes. After the
+ * topology is changed, the data is rebalanced and verified for correctness.
  * <p>
  * To run the example, do the following:
  * <ol>
  *     <li>Import the examples project into you IDE.</li>
+ *     <li>
+ *         Start <b>two</b> nodes using the CLI tool:<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-first-node}<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-second-node}
+ *     </li>
  *     <li>Run the example in the IDE.</li>
+ *     <li>
+ *         When requested, start another two nodes using the CLI tool:
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-first-additional-node}<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-second-additional-node}
+ *     </li>
+ *     <li>Press {@code Enter} to resume the example.</li>
  * </ol>
  */
 public class RebalanceExample {
     public static void main(String[] args) throws Exception {
-        List<Ignite> nodes = new ArrayList<>();
+        //--------------------------------------------------------------------------------------
+        //
+        // Starting a server node.
+        //
+        // NOTE: An embedded server node is only needed to invoke the 'createTable' API.
+        //       In the future releases, this API will be available on the client,
+        //       eliminating the need to start an embedded server node in this example.
+        //
+        //--------------------------------------------------------------------------------------
 
-        try {
-            System.out.println("Starting server nodes... Logging to file: ignite.log");
+        System.out.println("Starting a server node... Logging to file: example-node.log");
 
-            System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
+        System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
 
-            for (int i = 0; i < 3; i++) {
-                nodes.add(IgnitionManager.start("node-" + i,
-                    Files.readString(Path.of("config", "rebalance", "ignite-config-" + i + ".json")),
-                    Path.of("work" + i)));
-            }
-
-            Ignite node0 = nodes.get(0);
-
+        try (Ignite server = IgnitionManager.start(
+                "example-node",
+                Files.readString(Path.of("config", "ignite-config.json")),
+                Path.of("work")
+        )) {
             //--------------------------------------------------------------------------------------
             //
             // Creating a table. The API call below is the equivalent of the following DDL:
@@ -83,75 +89,122 @@ public class RebalanceExample {
             System.out.println("\nCreating a table...");
 
             TableDefinition tableDef = SchemaBuilders.tableBuilder("PUBLIC", "rebalance")
-                .columns(
-                    SchemaBuilders.column("key", ColumnType.INT32).asNonNull().build(),
-                    SchemaBuilders.column("value", ColumnType.string()).asNullable().build()
-                )
-                .withPrimaryKey("key")
-                .build();
+                    .columns(
+                            SchemaBuilders.column("key", ColumnType.INT32).asNonNull().build(),
+                            SchemaBuilders.column("value", ColumnType.string()).asNullable().build()
+                    )
+                    .withPrimaryKey("key")
+                    .build();
 
-            Table testTable = node0.tables().createTable("PUBLIC.rebalance", tableChange ->
-                SchemaConfigurationConverter.convert(tableDef, tableChange)
-                    .changeReplicas(5)
-                    .changePartitions(1)
+            server.tables().createTable(tableDef.canonicalName(), tableChange ->
+                    SchemaConfigurationConverter.convert(tableDef, tableChange)
+                            .changeReplicas(5)
+                            .changePartitions(1)
             );
 
             //--------------------------------------------------------------------------------------
             //
-            // Inserting a key-value pair into the table.
+            // Creating a client to connect to the cluster.
             //
             //--------------------------------------------------------------------------------------
 
-            System.out.println("\nInserting a key-value pair...");
+            System.out.println("\nConnecting to server...");
 
-            KeyValueView<Tuple, Tuple> kvView = testTable.keyValueView();
+            try (IgniteClient client = IgniteClient.builder()
+                    .addresses("127.0.0.1:10800")
+                    .build()
+            ) {
+                KeyValueView<Tuple, Tuple> kvView = client.tables().table("PUBLIC.rebalance").keyValueView();
 
-            Tuple key = Tuple.create().set("key", 1);
-            Tuple value = Tuple.create().set("value", "test");
+                //--------------------------------------------------------------------------------------
+                //
+                // Inserting several key-value pairs into the table.
+                //
+                //--------------------------------------------------------------------------------------
 
-            kvView.put(key, value);
+                System.out.println("\nInserting key-value pairs...");
 
-            System.out.println("\nCurrent value: " + kvView.get(key).value("value"));
+                for (int i = 0; i < 10; i++) {
+                    Tuple key = Tuple.create().set("key", i);
+                    Tuple value = Tuple.create().set("value", "test_" + i);
 
-            //--------------------------------------------------------------------------------------
-            //
-            // Changing the topology and updating the baseline.
-            //
-            //--------------------------------------------------------------------------------------
+                    kvView.put(key, value);
+                }
 
-            System.out.println("\nChanging the topology...");
+                //--------------------------------------------------------------------------------------
+                //
+                // Retrieving the newly inserted data.
+                //
+                //--------------------------------------------------------------------------------------
 
-            for (int i = 3; i < 5; i++) {
-                nodes.add(IgnitionManager.start("node-" + i,
-                    Files.readString(Path.of("config", "rebalance", "ignite-config-" + i + ".json")),
-                    Path.of("work" + i)));
+                System.out.println("\nRetrieved key-value pairs:");
+
+                for (int i = 0; i < 10; i++) {
+                    Tuple key = Tuple.create().set("key", i);
+                    Tuple value = kvView.get(key);
+
+                    System.out.println("    " + i + " -> " + value.stringValue("value"));
+                }
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Scaling out by adding two more nodes into the topology.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\n" +
+                        "Run the following commands using the CLI tool to start two more nodes, and then press 'Enter' to continue...\n" +
+                        "    ignite node start --config=examples/config/ignite-config.json my-first-additional-node\n" +
+                        "    ignite node start --config=examples/config/ignite-config.json my-second-additional-node");
+
+                System.in.read();
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Updating baseline to initiate the data rebalancing process.
+                //
+                // New topology includes the following five nodes:
+                //     1. 'my-first-node' -- the first node started prior to running the example
+                //     2. 'my-second-node' -- the second node started prior to running the example
+                //     3. 'example-node' -- node that is embedded into the example
+                //     4. 'additional-node-1' -- the first node added to the topology
+                //     5. 'additional-node-2' -- the second node added to the topology
+                //
+                // NOTE: In the future releases, this API will be provided by the clients as well.
+                //       In addition, the process will be automated where applicable to eliminate
+                //       the need for this manual step.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nUpdating the baseline and rebalancing the data...");
+
+                server.setBaseline(Set.of(
+                        "my-first-node",
+                        "my-second-node",
+                        "example-node",
+                        "my-first-additional-node",
+                        "my-second-additional-node"
+                ));
+
+                //--------------------------------------------------------------------------------------
+                //
+                // Retrieving data again to validate correctness.
+                //
+                //--------------------------------------------------------------------------------------
+
+                System.out.println("\nKey-value pairs retrieved after the topology change:");
+
+                for (int i = 0; i < 10; i++) {
+                    Tuple key = Tuple.create().set("key", i);
+                    Tuple value = kvView.get(key);
+
+                    System.out.println("    " + i + " -> " + value.stringValue("value"));
+                }
             }
 
-            node0.setBaseline(Set.of("node-0", "node-3", "node-4"));
+            System.out.println("\nDropping the table and stopping the server...");
 
-            IgnitionManager.stop(nodes.get(1).name());
-            IgnitionManager.stop(nodes.get(2).name());
-
-            //--------------------------------------------------------------------------------------
-            //
-            // Retrieving the value from one of the new nodes.
-            //
-            //--------------------------------------------------------------------------------------
-
-            System.out.println("\nRetrieving the value from one of the new nodes...");
-
-            String valueOnNewNode = nodes.get(4).tables().table("PUBLIC.rebalance").keyValueView().get(key).value("value");
-
-            System.out.println("\nRetrieved value: " + valueOnNewNode);
-
-            System.out.println("\nDropping the table and stopping the cluster...");
-
-            node0.tables().dropTable(tableDef.canonicalName());
-        }
-        finally {
-            IgnitionManager.stop(nodes.get(0).name());
-            IgnitionManager.stop(nodes.get(3).name());
-            IgnitionManager.stop(nodes.get(4).name());
+            server.tables().dropTable(tableDef.canonicalName());
         }
     }
 }

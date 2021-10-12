@@ -36,23 +36,30 @@ import org.apache.ignite.table.Tuple;
  * <ol>
  *     <li>Import the examples project into you IDE.</li>
  *     <li>
- *         (optional) Run one or more standalone nodes using the CLI tool:<br>
- *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1}<br>
- *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2}<br>
- *         {@code ...}<br>
-*          {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n}<br>
+ *         Start a server node using the CLI tool:<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-first-node}
  *     </li>
  *     <li>Run the example in the IDE.</li>
  * </ol>
  */
 public class RecordViewExample {
     public static void main(String[] args) throws Exception {
-        System.out.println("Starting a server node... Logging to file: ignite.log");
+        //--------------------------------------------------------------------------------------
+        //
+        // Starting a server node.
+        //
+        // NOTE: An embedded server node is only needed to invoke the 'createTable' API.
+        //       In the future releases, this API will be available on the client,
+        //       eliminating the need to start an embedded server node in this example.
+        //
+        //--------------------------------------------------------------------------------------
+
+        System.out.println("Starting a server node... Logging to file: example-node.log");
 
         System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
 
         try (Ignite server = IgnitionManager.start(
-            "node-0",
+            "example-node",
             Files.readString(Path.of("config", "ignite-config.json")),
             Path.of("work")
         )) {

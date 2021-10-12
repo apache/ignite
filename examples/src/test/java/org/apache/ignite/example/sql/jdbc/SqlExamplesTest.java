@@ -17,9 +17,11 @@
 
 package org.apache.ignite.example.sql.jdbc;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.example.ExampleTestUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +58,30 @@ public class SqlExamplesTest {
             "    Mary, Major, Denver\n" +
             "    Richard, Miles, St. Petersburg\n"
         );
+    }
+
+    @BeforeEach
+    private void startNode() throws IOException {
+        Path workDir = Path.of("my-first-node-work");
+
+        if (Files.exists(workDir))
+            IgniteUtils.deleteIfExists(workDir);
+
+        IgnitionManager.start(
+            "my-first-node",
+            Files.readString(Path.of("config", "ignite-config.json")),
+            workDir
+        );
+    }
+
+    @AfterEach
+    private void stopNode() {
+        IgnitionManager.stop("my-first-node");
+
+        Path workDir = Path.of("my-first-node-work");
+
+        if (Files.exists(workDir))
+            IgniteUtils.deleteIfExists(workDir);
     }
 
     /**
