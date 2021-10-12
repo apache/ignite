@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -160,6 +161,10 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setQueryParallelism(qryParallelism)
             .setBackups(backups);
 
+        // TODO: remove after IGNITE-15671.
+        if (atomicityMode == ATOMIC)
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -253,8 +258,8 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeDescQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 

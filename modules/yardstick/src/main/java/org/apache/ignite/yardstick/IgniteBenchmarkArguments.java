@@ -254,6 +254,10 @@ public class IgniteBenchmarkArguments {
     private int cachesCnt = 1;
 
     /** */
+    @Parameter(names = {"-opc", "--operationsPerCache"}, description = "Number of cache operations")
+    private int opsPerCache = 1;
+
+    /** */
     @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
     private boolean persistentStoreEnabled;
 
@@ -816,6 +820,13 @@ public class IgniteBenchmarkArguments {
      */
     public Map<String, String> systemProperties() {
         return sysProps;
+    }
+
+    /**
+     * @return Operations per cache.
+     */
+    public int opsPerCache() {
+        return opsPerCache;
     }
 
     /** {@inheritDoc} */
