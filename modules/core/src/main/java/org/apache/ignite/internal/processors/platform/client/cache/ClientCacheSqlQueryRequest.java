@@ -22,9 +22,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 
 /**
@@ -73,7 +77,8 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
         catch (Exception e) {
             ctx.decrementCursors();
 
-            throw e;
+            String sqlState = IgniteQueryErrorCode.codeToSqlState(SqlListenerUtils.exceptionToSqlErrorCode(e));
+            throw new IgniteClientException(ClientStatus.FAILED, sqlState + ": " + e.getMessage());
         }
     }
 }
