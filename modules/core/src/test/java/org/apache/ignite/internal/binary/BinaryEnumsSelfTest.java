@@ -335,8 +335,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         BinaryObject resBinary1 = (BinaryObject)cacheBinary1.get(key);
         BinaryObject resBinary2 = (BinaryObject)cacheBinary2.get(key);
 
-        validate((BinaryObject)resBinary1.field("val"), val);
-        validate((BinaryObject)resBinary2.field("val"), val);
+        validate(resBinary1.field("val"), val);
+        validate(resBinary2.field("val"), val);
     }
 
     /**
