@@ -17,26 +17,20 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.yardstick.cache.model.PersonTextIndex;
 import org.yardstickframework.BenchmarkConfiguration;
 
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Benchmark runs cache queries (scan, text or index).
+ * Base class for cache queries benchmarks.
  */
-public class IgniteCacheQueryBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
-    /** Available options are: SCAN, TEXT, INDEX. */
-    private String qryType;
+abstract class IgniteCacheQueryGetAllBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** */
+    protected static final String namePrefix = "personName";
 
     /** Cache query keep binary flag. */
     private boolean keepBinary;
@@ -48,11 +42,10 @@ public class IgniteCacheQueryBenchmark extends IgniteCacheAbstractBenchmark<Inte
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        qryType = args.getStringParameter("qryType", "SCAN");
         keepBinary = args.getBooleanParameter("keepBinary", false);
         pageSize = args.getIntParameter("pageSize", Query.DFLT_PAGE_SIZE);
 
-        println("Parameters of test: [qryType=" + qryType + "; keepBinary=" + keepBinary + "; pageSize=" + pageSize + "].");
+        println("Parameters of test: [keepBinary=" + keepBinary + "; pageSize=" + pageSize + "].");
 
         loadCachesData();
     }
@@ -60,11 +53,8 @@ public class IgniteCacheQueryBenchmark extends IgniteCacheAbstractBenchmark<Inte
     /** {@inheritDoc} */
     @Override protected void loadCacheData(String cacheName) {
         try (IgniteDataStreamer<Integer, PersonTextIndex> dataLdr = ignite().dataStreamer(cacheName)) {
-            for (int i = 0; i < args.range(); i++) {
-                if (i % 100 == 0 && Thread.currentThread().isInterrupted())
-                    break;
-
-                dataLdr.addData(i, new PersonTextIndex(i, "name" + i));
+            for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
+                dataLdr.addData(i, new PersonTextIndex(i, namePrefix + i));
 
                 if (i % 100000 == 0)
                     println(cfg, "Populated persons: " + i);
@@ -72,26 +62,8 @@ public class IgniteCacheQueryBenchmark extends IgniteCacheAbstractBenchmark<Inte
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        switch (qryType.toUpperCase()) {
-            case "SCAN":
-                return testCacheQuery(new ScanQuery<>());
-
-            case "TEXT":
-                return testCacheQuery(new TextQuery<>(PersonTextIndex.class, "name1000*"));
-
-            case "INDEX":
-                return testCacheQuery(new IndexQuery<Integer, PersonTextIndex>(PersonTextIndex.class)
-                    .setCriteria(lt("id", Integer.MAX_VALUE)));
-
-            default:
-                throw new UnsupportedOperationException("Illegal operation type: " + qryType);
-        }
-    }
-
     /** */
-    private boolean testCacheQuery(Query<?> cacheQry) {
+    protected boolean testCacheQuery(Query<?> cacheQry) {
         IgniteCache<Integer, Object> cache = cacheForOperation();
 
         if (keepBinary)
@@ -99,11 +71,7 @@ public class IgniteCacheQueryBenchmark extends IgniteCacheAbstractBenchmark<Inte
 
         cacheQry.setPageSize(pageSize);
 
-        try (QueryCursor<?> cursor = cache.query(cacheQry)) {
-            for (Object o : cursor) {
-                // No-op.
-            }
-        }
+        cache.query(cacheQry).getAll();
 
         return true;
     }
