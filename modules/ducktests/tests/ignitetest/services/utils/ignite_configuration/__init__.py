@@ -21,6 +21,7 @@ from typing import NamedTuple
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
+from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
@@ -63,6 +64,7 @@ class IgniteConfiguration(NamedTuple):
     local_event_listeners: str = None
     include_event_types: str = None
     event_storage_spi: str = None
+    log4j_config: str = IgnitePathAware.IGNITE_LOG_CONFIG_NAME
 
     def __prepare_ssl(self, test_globals, shared_root):
         """

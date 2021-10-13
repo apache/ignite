@@ -90,7 +90,6 @@ class IgniteSpec(metaclass=ABCMeta):
                                                 oom_path=os.path.join(service.log_dir, "ignite_out_of_mem.hprof"))
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
-                            "-Dlog4j.configuration=file:" + self.service.log_config_file,
                             "-Dlog4j.configDebug=true"])
 
         if service.context.globals.get(JFR_ENABLED, False):
@@ -162,7 +161,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return {
             'EXCLUDE_TEST_CLASSES': 'true',
-            'IGNITE_LOG_DIR': self.service.persistent_root,
+            'IGNITE_LOG_DIR': self.service.log_dir,
             'USER_LIBS': ":".join(self.libs())
         }
 
