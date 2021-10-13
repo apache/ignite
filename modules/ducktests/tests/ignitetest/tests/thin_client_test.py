@@ -68,7 +68,8 @@ class ThinClientTest(IgniteTest):
         thin_clients.run()
         ignite.stop()
 
-    JAVA_CLIENT_CLASS_NAME_CON = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientContiniusApplication"
+    JAVA_CLIENT_CLASS_NAME_CON = \
+        "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientContiniusApplication"
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
