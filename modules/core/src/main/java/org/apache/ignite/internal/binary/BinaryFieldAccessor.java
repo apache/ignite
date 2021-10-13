@@ -872,12 +872,10 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case OBJECT_ARR:
+                case OBJECT_ARR_WRAPPER:
                     val = reader.readObjectArray(id);
 
                     break;
-
-                case OBJECT_ARR_WRAPPER:
-                    throw new IllegalArgumentException("OBJECT_ARR_WRAPPER");
 
                 case COL:
                     val = reader.readCollection(id, null);

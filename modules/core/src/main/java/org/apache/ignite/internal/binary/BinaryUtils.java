@@ -75,7 +75,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
-import static org.apache.ignite.internal.binary.BinaryMarshaller.USE_ARRAY_BINARY_WRAPPER;
 
 /**
  * Binary utils.
@@ -1163,7 +1162,7 @@ public class BinaryUtils {
         else if (cls.isArray())
             return cls.getComponentType().isEnum()
                 ? BinaryWriteMode.ENUM_ARR
-                : (USE_ARRAY_BINARY_WRAPPER ? BinaryWriteMode.OBJECT_ARR_WRAPPER : BinaryWriteMode.OBJECT_ARR);
+                : BinaryWriteMode.OBJECT_ARR_WRAPPER;
         else if (cls == BinaryArrayWrapper.class)
             return BinaryWriteMode.OBJECT_ARR_WRAPPER;
         else if (cls == BinaryObjectImpl.class)
@@ -1649,19 +1648,29 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-            boolean useCache = GridBinaryMarshaller.USE_CACHE.get();
 
-            try {
-                cls = U.forName(clsName, ldr, null);
-            }
-            catch (ClassNotFoundException e) {
-                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
-            }
-
-            // forces registering of class by type id, at least locally
-            if (useCache)
-                ctx.registerClass(cls, false, false);
+            cls = classForName(ctx, ldr, clsName);
         }
+
+        return cls;
+    }
+
+    /** */
+    private static Class classForName(BinaryContext ctx, ClassLoader ldr, String clsName) {
+        boolean useCache = GridBinaryMarshaller.USE_CACHE.get();
+
+        Class cls;
+
+        try {
+            cls = U.forName(clsName, ldr, null);
+        }
+        catch (ClassNotFoundException e) {
+            throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
+        }
+
+        // forces registering of class by type id, at least locally
+        if (useCache)
+            ctx.registerClass(cls, false, false);
 
         return cls;
     }
@@ -2009,13 +2018,8 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                if (USE_ARRAY_BINARY_WRAPPER)
-                    return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, deserialize);
-                else
-                    return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
-
             case GridBinaryMarshaller.OBJ_ARR_WRAPPER:
-                return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, deserialize);
+                return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, false);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2092,15 +2096,24 @@ public class BinaryUtils {
         int hPos = positionForHandle(in);
 
         int compTypeId = in.readInt();
-
         String compClsName = null;
 
         if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             compClsName = doReadClassName(in);
 
         int len = in.readInt();
+        
+        Object[] arr;
 
-        Object[] arr = new Object[len];
+        if (deserialize) {
+            Class arrCompCls = compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+                ? ctx.descriptorForTypeId(true, compTypeId, ldr, false).describedClass()
+                : classForName(ctx, ldr, compClsName);
+
+            arr = (Object[])Array.newInstance(arrCompCls, len);
+        }
+        else
+            arr = new Object[len];
 
         handles.setHandle(arr, hPos);
 

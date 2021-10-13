@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
@@ -57,7 +56,6 @@ import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_C
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
-import static org.apache.ignite.internal.binary.BinaryMarshaller.DFLT_USE_ARRAY_BINARY_WRAPPER;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
@@ -2016,14 +2014,6 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Count of rows, being processed within a single checkpoint lock when indexes are rebuilt",
         type = Integer.class, defaults = "" + DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE)
     public static final String IGNITE_INDEX_REBUILD_BATCH_SIZE = "IGNITE_INDEX_REBUILD_BATCH_SIZE";
-
-    /**
-     * If {@code true} then array binary wrapper will be used to keep array component type.
-     * The default value is {@link BinaryMarshaller#DFLT_USE_ARRAY_BINARY_WRAPPER}.
-     */
-    @SystemProperty(value = "If true then array binary wrapper will be used to keep array component type",
-        defaults = "" + DFLT_USE_ARRAY_BINARY_WRAPPER)
-    public static final String IGNITE_USE_ARRAY_BINARY_WRAPPER = "IGNITE_USE_ARRAY_BINARY_WRAPPER";
 
     /**
      * Enforces singleton.

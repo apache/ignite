@@ -27,7 +27,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,7 +101,12 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
         try {
             Class compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
-            return (T)PlatformUtils.unwrapBinariesInArray(arr, compType);
+            Object[] res = (Object[])Array.newInstance(compType, arr.length);
+
+            for (int i = 0; i < arr.length; i++)
+                res[i] = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+
+            return (T)res;
         }
         finally {
             GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);

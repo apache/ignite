@@ -605,12 +605,7 @@ public class BinaryClassDescriptor {
             assert writer != null;
             assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
-            if (BinaryMarshaller.USE_ARRAY_BINARY_WRAPPER)
-                writer.typeId(typeId);
-            else if (mode != BinaryWriteMode.OBJECT_ARR_WRAPPER)
-                writer.typeId(typeId);
-            else
-                writer.typeId(GridBinaryMarshaller.OBJ_ARR);
+            writer.typeId(typeId);
 
             switch (mode) {
                 case P_BYTE:
@@ -768,7 +763,7 @@ public class BinaryClassDescriptor {
 
                 case OBJECT_ARR_WRAPPER:
                     if (obj instanceof BinaryArrayWrapper)
-                        writer.doWriteObjectArray(((BinaryArrayWrapper)obj).array());
+                        writer.doWriteBinaryArrayWrapper(((BinaryArrayWrapper)obj));
                     else
                         writer.doWriteObjectArray((Object[])obj);
 

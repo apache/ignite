@@ -19,40 +19,116 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-@WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_ARRAY_BINARY_WRAPPER, value = "true")
 public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
     /** */
-    @Test
-    public void testArray() throws Exception {
-        Ignite ign = startGrid();
+    private static Ignite server;
 
-        IgniteCache<Integer, TestClass1[]> cache = ign.createCache("my-cache");
+    /** */
+    private static Ignite client;
 
-        cache.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
-        TestClass1[] obj = cache.get(1);
+    /** */
+    private static IgniteCache<Integer, TestClass1[]> srvCache;
 
-        assertEquals(TestClass1[].class, obj.getClass());
+    /** */
+    private static IgniteCache<Integer, TestClass1[]> cliCache;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        server = startGrid(0);
+        client = startClientGrid(1);
+
+        srvCache = server.createCache("my-cache");
+        cliCache = client.getOrCreateCache("my-cache");
     }
 
     /** */
     @Test
-    public void testBinaryModeArray() throws Exception {
-        Ignite ign = startGrid();
+    public void testArray() throws Exception {
+        doTestArray(srvCache);
+        doTestArray(cliCache);
 
-        IgniteCache<Integer, TestClass1[]> cache = ign.createCache("my-cache");
+    }
 
-        cache.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
-        BinaryObject obj = (BinaryObject)cache.withKeepBinary().get(1);
+    /** */
+    private void doTestArray(IgniteCache<Integer, TestClass1[]> c) {
+        c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
+        TestClass1[] obj = c.get(1);
+
+        assertEquals(TestClass1[].class, obj.getClass());
+
+        assertTrue(c.remove(1));
+    }
+
+    /** */
+    @Test
+    public void testBinaryModeArray() {
+        doTestBinaryModeArray(srvCache);
+        doTestBinaryModeArray(cliCache);
+    }
+
+    /** */
+    private void doTestBinaryModeArray(IgniteCache<Integer, TestClass1[]> c) {
+        c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
+        Object obj = c.withKeepBinary().get(1);
 
         assertEquals(BinaryArrayWrapper.class, obj.getClass());
-        assertEquals(TestClass1[].class, obj.deserialize().getClass());
+        assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
+
+        assertTrue(c.remove(1));
+    }
+
+    /** */
+    @Test
+    public void testBinaryArraySerDe() {
+        TestClass1[] arr = {new TestClass1(), new TestClass1()};
+
+        BinaryObject obj = server.binary().toBinary(arr);
+
+        assertEquals(BinaryArrayWrapper.class, obj.getClass());
+
+        Object deser = obj.deserialize();
+
+        assertEquals(TestClass1[].class, deser.getClass());
+        assertEquals(2, ((TestClass1[])deser).length);
+    }
+
+    /** */
+    @Test
+    public void testBinaryArrayFieldSerDe() {
+        TestClass1 src = new TestClass1();
+
+        BinaryMarshallerSelfTest.SimpleObject sobj = GridTestUtils.getFieldValue(src, "obj");
+
+        GridTestUtils.setFieldValue(sobj, "objArr", new Object[] {"string", 1L, null});
+
+        BinaryObject obj = server.binary().toBinary(src);
+
+        BinaryObject simpleObj = obj.field("obj");
+        BinaryObject objArr = simpleObj.field("objArr");
+
+        assertEquals(BinaryArrayWrapper.class, objArr.getClass());
+
+        Object deser = obj.deserialize();
+
+        assertEquals(TestClass1.class, deser.getClass());
+
+        sobj = GridTestUtils.getFieldValue(deser, "obj");
+
+        Object[] arr = GridTestUtils.getFieldValue(sobj, "objArr");
+
+        assertNotNull(arr);
+        assertEquals(3, arr.length);
+        assertEquals("string", arr[0]);
+        assertEquals(1L, arr[1]);
+        assertNull(arr[2]);
     }
 }

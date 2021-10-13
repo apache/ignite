@@ -127,7 +127,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
-import static org.apache.ignite.internal.binary.BinaryMarshaller.USE_ARRAY_BINARY_WRAPPER;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -493,7 +492,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (BinaryUtils.isBinaryType(obj.getClass()))
             return obj;
 
-        if (obj.getClass().isArray() && !USE_ARRAY_BINARY_WRAPPER) {
+/*
+        if (obj.getClass().isArray()) {
             Object[] arr = (Object[])obj;
 
             Object[] pArr = new Object[arr.length];
@@ -503,7 +503,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             return pArr;
         }
-
+*/
         if (obj instanceof IgniteBiTuple) {
             IgniteBiTuple tup = (IgniteBiTuple)obj;
 

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -31,19 +30,11 @@ import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_ARRAY_BINARY_WRAPPER;
-
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
  * in the binary format.
  */
 public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
-    /** Default value for {@link IgniteSystemProperties#IGNITE_USE_ARRAY_BINARY_WRAPPER}. */
-    public static final boolean DFLT_USE_ARRAY_BINARY_WRAPPER = false;
-
-    public static final boolean USE_ARRAY_BINARY_WRAPPER =
-        IgniteSystemProperties.getBoolean(IGNITE_USE_ARRAY_BINARY_WRAPPER, DFLT_USE_ARRAY_BINARY_WRAPPER);
-
     /** */
     @GridToStringExclude
     private GridBinaryMarshaller impl;

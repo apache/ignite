@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.binary.BinaryArrayWrapper;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reader for binary objects used in {@link Binarylizable} implementations.

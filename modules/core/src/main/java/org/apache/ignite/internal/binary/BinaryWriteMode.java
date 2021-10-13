@@ -170,11 +170,7 @@ public enum BinaryWriteMode {
     /** */
     EXCLUSION(GridBinaryMarshaller.OBJ),
 
-    /**
-     * Binary wrapper for {@code Object[]}.
-     *
-     * @see IgniteSystemProperties#IGNITE_USE_ARRAY_BINARY_WRAPPER
-     */
+    /** Binary wrapper for {@code Object[]}. */
     OBJECT_ARR_WRAPPER(GridBinaryMarshaller.OBJ_ARR_WRAPPER);
 
     /** Type ID. */

@@ -4364,7 +4364,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class SimpleObject {
+    public static class SimpleObject {
         /** */
         private byte b;
 

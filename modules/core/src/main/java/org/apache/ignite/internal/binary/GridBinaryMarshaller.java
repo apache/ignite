@@ -157,7 +157,6 @@ public class GridBinaryMarshaller {
     /**
      * Binary wrapper for {@code Object[]}.
      * This wrapper used to store array component type id during serde process.
-     * @see IgniteSystemProperties#IGNITE_USE_ARRAY_BINARY_WRAPPER
      */
     public static final byte OBJ_ARR_WRAPPER = 39;
 
