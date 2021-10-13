@@ -102,6 +102,8 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
 
     /**
      * Returns cache name.
+     *
+     * @return Cache name.
      */
     public String getCacheName() {
         return cacheName;
