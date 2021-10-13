@@ -62,7 +62,7 @@ public class SampleValue implements Externalizable, Binarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         id = in.readInt();
     }
 

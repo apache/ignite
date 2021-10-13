@@ -127,13 +127,8 @@ public class IgniteStatisticsHelper {
             for (Column col : selectedCols) {
                 ColumnStatistics colPartStat = partStat.columnStatistics(col.getName());
 
-                if (colPartStat != null) {
-                    colPartStats.computeIfPresent(col, (k, v) -> {
-                        v.add(colPartStat);
-
-                        return v;
-                    });
-                }
+                if (colPartStat != null)
+                    colPartStats.get(col).add(colPartStat);
             }
 
             rowCnt += partStat.rowCount();
@@ -143,7 +138,8 @@ public class IgniteStatisticsHelper {
 
         for (Column col : selectedCols) {
             StatisticsColumnConfiguration colCfg = cfg.columns().get(col.getName());
-            ColumnStatistics stat = ColumnStatisticsCollector.aggregate(tbl::compareTypeSafe, colPartStats.get(col), colCfg.overrides());
+            ColumnStatistics stat = ColumnStatisticsCollector.aggregate(tbl::compareTypeSafe, colPartStats.get(col),
+                colCfg.overrides());
 
             if (log.isDebugEnabled())
                 log.debug("Aggregate column statistic done [col=" + col.getName() + ", stat=" + stat + ']');
@@ -151,6 +147,20 @@ public class IgniteStatisticsHelper {
             colStats.put(col.getName(), stat);
         }
 
+        rowCnt = calculateRowCount(cfg, rowCnt);
+
+        return new ObjectStatisticsImpl(rowCnt, colStats);
+    }
+
+    /**
+     * Calculate effective row count. If there are some overrides in statistics configuration - maximum value will be
+     * choosen. If not - will return actualRowCount.
+     *
+     * @param cfg Statistics configuration to dig overrides row count from.
+     * @param actualRowCount Actual row count.
+     * @return Effective row count.
+     */
+    public static long calculateRowCount(StatisticsObjectConfiguration cfg, long actualRowCount) {
         long overridedRowCnt = -1;
 
         for (StatisticsColumnConfiguration ccfg : cfg.columns().values()) {
@@ -161,11 +171,7 @@ public class IgniteStatisticsHelper {
             }
         }
 
-        rowCnt = (overridedRowCnt == -1) ? rowCnt : overridedRowCnt;
-
-        ObjectStatisticsImpl tblStats = new ObjectStatisticsImpl(rowCnt, colStats);
-
-        return tblStats;
+        return (overridedRowCnt == -1) ? actualRowCount : overridedRowCnt;
     }
 
     /**
