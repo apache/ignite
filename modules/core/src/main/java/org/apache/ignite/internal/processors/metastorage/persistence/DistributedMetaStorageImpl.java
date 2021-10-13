@@ -1277,6 +1277,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             return;
         }
+        log.info("Write history item: " + histItem);
 
         ver = ver.nextVersion(histItem);
 
