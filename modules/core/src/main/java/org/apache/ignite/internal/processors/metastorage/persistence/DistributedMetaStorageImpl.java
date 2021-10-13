@@ -1269,6 +1269,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert lock.writeLock().isHeldByCurrentThread();
 
+        if (log.isInfoEnabled())
+            log.info("Try to write metastorage item=" + histItem);
+
         histItem = optimizeHistoryItem(histItem);
 
         if (histItem == null) {

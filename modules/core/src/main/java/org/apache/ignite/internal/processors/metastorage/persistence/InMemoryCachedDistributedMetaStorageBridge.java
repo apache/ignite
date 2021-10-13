@@ -97,8 +97,10 @@ class InMemoryCachedDistributedMetaStorageBridge {
     public void write(String globalKey, @Nullable byte[] valBytes) {
         if (valBytes == null)
             cache.remove(globalKey);
-        else
+        else {
             cache.put(globalKey, valBytes);
+            System.err.println("++++ put1 " + globalKey);
+        }
     }
 
     /**
@@ -119,8 +121,10 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
         cache.clear();
 
-        for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
+        for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData) {
             cache.put(item.key, item.valBytes);
+            System.err.println("++++ put2 " + item.key);
+        }
     }
 
     /** */
@@ -151,11 +155,15 @@ class InMemoryCachedDistributedMetaStorageBridge {
             else
                 lastHistItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id()));
 
+            System.err.println("++++ readInitialData start");
+
             metastorage.iterate(
                 localKeyPrefix(),
                 (key, val) -> cache.put(globalKey(key), (byte[])val),
                 false
             );
+
+            System.err.println("++++ readInitialData stop " + cache.size());
 
             // Last item rollover.
             if (lastHistItem != null) {
@@ -163,10 +171,14 @@ class InMemoryCachedDistributedMetaStorageBridge {
                     String key = lastHistItem.keys()[i];
                     byte[] valBytes = lastHistItem.valuesBytesArray()[i];
 
-                    if (valBytes == null)
+                    if (valBytes == null) {
                         cache.remove(key);
-                    else
+                        System.err.println("++++ remove " + key);
+                    }
+                    else {
                         cache.put(key, valBytes);
+                        System.err.println("++++ put " + key);
+                    }
                 }
             }
 

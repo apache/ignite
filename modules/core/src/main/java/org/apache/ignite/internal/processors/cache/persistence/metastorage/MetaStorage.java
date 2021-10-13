@@ -350,6 +350,8 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             curUpdatesEntry = updatesIter.next();
         }
 
+        System.err.println("++++ readInitialData start curUpdatesEntry=" + curUpdatesEntry);
+
         MetastorageSearchRow lower = new MetastorageSearchRow(keyPrefix);
 
         MetastorageSearchRow upper = new MetastorageSearchRow(keyPrefix + "\uFFFF");
@@ -359,22 +361,32 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
 
+            System.err.println("++++ readInitialData row " + row);
+
             String key = row.key();
             byte[] valBytes = partStorage.readRow(row.link());
 
             int c = 0;
 
-            while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0)
+            while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0) {
                 curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+                System.err.println("++++ readInitialData row 1" + curUpdatesEntry.getKey());
+            }
 
-            if (curUpdatesEntry != null && c == 0)
+            if (curUpdatesEntry != null && c == 0) {
                 curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
-            else
+                System.err.println("++++ readInitialData row 2" + curUpdatesEntry.getKey());
+            }
+            else {
                 applyCallback(cb, unmarshal, key, valBytes);
+                System.err.println("++++ readInitialData row 3" + key);
+            }
         }
 
-        while (curUpdatesEntry != null)
+        while (curUpdatesEntry != null) {
             curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+            System.err.println("++++ readInitialData row 4" + curUpdatesEntry.getKey());
+        }
     }
 
     /** */
