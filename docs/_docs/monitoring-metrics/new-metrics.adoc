@@ -77,6 +77,7 @@ Register name: `cache.{cache_name}.{near}`
 |EntryProcessorReadOnlyInvocations   |long|The total number of cache invocations, caused no updates.
 |EntryProcessorRemovals  |long|The total number of cache invocations, caused removals.
 |EstimatedRebalancingKeys|long|Number estimated to rebalance keys.
+|GetAllTime | histogram | GetAll time in nanoseconds.
 |GetTime |histogram|   Get time in nanoseconds.
 |GetTimeTotal|long|The total time of cache gets, in nanoseconds.
 |HeapEntriesCount|long|Onheap entries count.
@@ -91,6 +92,7 @@ Register name: `cache.{cache_name}.{near}`
 |OffHeapPrimaryEntriesCount|long|Offheap primary entries count.
 |OffHeapPuts |long|The total number of put requests to the off-heap memory.
 |OffHeapRemovals |long|The total number of removals from the off-heap memory.
+|PutAllTime | histogram | PutAll time in nanoseconds.
 |PutTime | histogram|   Put time in nanoseconds.
 |PutTimeTotal|long|The total time of cache puts, in nanoseconds.
 |QueryCompleted  |long|Count of completed queries.
@@ -104,6 +106,7 @@ Register name: `cache.{cache_name}.{near}`
 |RebalancedKeys |long| Number of already rebalanced keys.
 |RebalancingBytesRate|long|Estimated rebalancing speed in bytes.
 |RebalancingKeysRate |long|Estimated rebalancing speed in keys.
+|RemoveAllTime | histogram | RemoveAll time in nanoseconds.
 |RemoveTime  |histogram|   Remove time in nanoseconds.
 |RemoveTimeTotal |long|The total time of cache removal, in nanoseconds.
 |RollbackTime|histogram|   Rollback time in nanoseconds.
