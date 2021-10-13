@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +40,7 @@ final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     private String[] keys;
 
     /** */
-    @GridToStringInclude
+    @GridToStringExclude
     private byte[][] valBytesArr;
 
     /** */

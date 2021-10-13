@@ -1271,8 +1271,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         histItem = optimizeHistoryItem(histItem);
 
-        if (histItem == null)
+        if (histItem == null) {
+            if (log.isInfoEnabled())
+                log.info("Skipped to write metastorage item=" + histItem);
+
             return;
+        }
 
         ver = ver.nextVersion(histItem);
 
