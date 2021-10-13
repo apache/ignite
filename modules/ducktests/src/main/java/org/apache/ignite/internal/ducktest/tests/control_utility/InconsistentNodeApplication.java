@@ -40,9 +40,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  *
  */
 public class InconsistentNodeApplication extends IgniteAwareApplication {
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         String cacheName = jsonNode.get("cacheName").asText();
         int amount = jsonNode.get("amount").asInt();
