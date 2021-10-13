@@ -15,7 +15,6 @@
  limitations under the License.
 #}
 
-{% for kev, val in settings.config %}
+{% for key, val in settings.kafka_props.items() %}
 {{ key }}={{ val }}
 {% endfor %}
-

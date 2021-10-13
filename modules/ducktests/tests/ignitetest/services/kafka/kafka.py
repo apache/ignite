@@ -34,7 +34,8 @@ class KafkaSettings:
     Settings for kafka cluster.
     """
     def __init__(self, version=None, props: dict = None):
-        self.config = {
+        """ Default kafka.properties. """
+        self.kafka_props = {
             "broker.id": 0,
             "listeners": "PLAINTEXT://:9092",
             "num.network.threads": 3,
@@ -57,7 +58,7 @@ class KafkaSettings:
         }
 
         if props:
-            self.config.update(props)
+            self.kafka_props.update(props)
 
         if version:
             if isinstance(version, str):
@@ -71,15 +72,40 @@ class KafkaService(DucktestsService, PathAware):
     """
     Kafka service.
     """
-    ZOOKEEPER_LOG = "zookeeper.log"
     KAFKA_LOG = "kafka.log"
 
-    def __init__(self, context, num_nodes, settings=KafkaSettings(), start_timeout_sec=60, start_with_zk=False):
+    def __init__(self, context, num_nodes, settings=KafkaSettings(), start_timeout_sec=60):
         super().__init__(context, num_nodes)
         self.settings = settings
         self.start_timeout_sec = start_timeout_sec
         self.init_logs_attribute()
-        self.start_with_zk = start_with_zk
+
+        """ Default JVM parameters. """
+        self.jvm_param = [
+            "-Xmx1G",
+            "-Xms1G",
+            "-server",
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=20",
+            "-XX:InitiatingHeapOccupancyPercent=35",
+            "-XX:+ExplicitGCInvokesConcurrent",
+            "-XX:MaxInlineLevel=15",
+            "-Djava.awt.headless=true",
+            f"-Xloggc:{os.path.join(self.log_dir, 'kafkaServer-gc.log')}",
+            "-verbose:gc",
+            "-XX:+PrintGCDetails",
+            "-XX:+PrintGCDateStamps",
+            "-XX:+PrintGCTimeStamps",
+            "-XX:+UseGCLogFileRotation",
+            "-XX:NumberOfGCLogFiles=10",
+            "-XX:GCLogFileSize=100M",
+            "-XX:MaxGCPauseMillis=20",
+            "-Dcom.sun.management.jmxremote",
+            "-Dcom.sun.management.jmxremote.authenticate=false",
+            "-Dcom.sun.management.jmxremote.ssl=false",
+            f"-Dkafka.logs.dir={self.log_dir}",
+            f"-Dlog4j.configuration=file:{self.log_config_file}"
+        ]
 
     @property
     def product(self):
@@ -91,38 +117,46 @@ class KafkaService(DucktestsService, PathAware):
 
     @property
     def log_config_file(self):
-        return os.path.join(self.persistent_root, "log4j.properties")
+        return os.path.join(self.config_dir, "log4j.properties")
 
     @property
     def config_file(self):
-        return os.path.join(self.persistent_root, "kafka.properties")
+        return os.path.join(self.config_dir, "kafka.properties")
+
+    @property
+    def data_dir(self):
+        return os.path.join(self.log_dir, "data")
 
     def start(self, **kwargs):
+        self.settings.kafka_props.update({"log.dirs": self.data_dir})
+
         super().start(**kwargs)
-        self.logger.info("Waiting for Zookeeper quorum...")
+        self.logger.info("Waiting for kafka started...")
 
         for node in self.nodes:
             self.await_quorum(node, self.start_timeout_sec)
 
-        self.logger.info("Zookeeper quorum is formed.")
+        self.logger.info("Kafka service is started.")
 
     def start_node(self, node, **kwargs):
         idx = self.idx(node)
 
-        self.logger.info("Starting Zookeeper node %d on %s", idx, node.account.hostname)
+        self.logger.info("Starting kafka server node %d on %s", idx, node.account.hostname)
 
         self.init_persistent(node)
         node.account.ssh(f"echo {idx} > {self.work_dir}/myid")
 
+        self.update_config(self.settings, node)
+
         config_file = self.render('kafka.properties.j2', settings=self.settings, data_dir=self.work_dir)
         node.account.create_file(self.config_file, config_file)
-        self.logger.info("ZK config %s", config_file)
+        self.logger.info("kafka config %s", config_file)
 
         log_config_file = self.render('log4j.properties.j2', log_dir=self.log_dir)
         node.account.create_file(self.log_config_file, log_config_file)
 
-        start_cmd = f"nohup java -cp {os.path.join(self.home_dir, 'lib')}/*:{self.persistent_root} " \
-                    f"org.apache.zookeeper.server.quorum.QuorumPeerMain {self.config_file} >/dev/null 2>&1 &"
+        start_cmd = f"nohup java {' '.join(self.jvm_param)} -cp \"{os.path.join(self.home_dir, 'libs')}/*\" " \
+                    f"{self.java_class_name()} {self.config_file} > {self.log_file} 2>&1 &"
 
         node.account.ssh(start_cmd)
 
@@ -133,15 +167,15 @@ class KafkaService(DucktestsService, PathAware):
 
     def await_quorum(self, node, timeout):
         """
-        Await quorum formed on node (leader election ready).
-        :param node:  Zookeeper service node.
+        Await KafkaServer is started.
+        :param node:  Kafka broker node.
         :param timeout: Wait timeout.
         """
         with monitor_log(node, self.log_file, from_the_beginning=True) as monitor:
             monitor.wait_until(
-                "LEADER ELECTION TOOK",
+                "started (kafka.server.KafkaServer)",
                 timeout_sec=timeout,
-                err_msg=f"Zookeeper quorum was not formed on {node.account.hostname}"
+                err_msg=f"Kafka server are not started on {node.account.hostname}"
             )
 
     @property
@@ -172,12 +206,20 @@ class KafkaService(DucktestsService, PathAware):
         """
         return len(self.pids(node)) > 0
 
-    def zk_connection_string(self):
+    def connection_string(self):
         """
-        Form a connection string to zookeeper cluster.
+        Form a connection string to kafka service.
         :return: Connection string.
         """
-        return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
+        return ','.join([node.account.hostname + ":" + str(9092) for node in self.nodes])
+
+    def update_config(self, settings, node):
+        """
+        Update config for node.
+        :param settings: KafkaSettings.
+        :param node: Kafka service node.
+        """
+        settings.kafka_props.update({"broker.id": self.idx(node)})
 
     def stop_node(self, node, force_stop=False, **kwargs):
         idx = self.idx(node)

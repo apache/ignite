@@ -68,7 +68,6 @@ RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELE
 RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
 #Install kafka.
-#https://archive.apache.org/dist/kafka/2.8.1/
 ARG KAFKA_VERSION="2.8.1"
 ARG SCALA_VERSION="2.13"
 ARG KAFKA_NAME="kafka-$KAFKA_VERSION"
