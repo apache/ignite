@@ -954,7 +954,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void doSqlQuery(IgniteCache<Object, Object> cache) throws Exception {
+    private void doSqlQuery(IgniteCache<Object, Object> cache) {
         List<SqlCacheDescriptor> descriptors = cacheSqlDescriptors.get(cache.getName());
 
         if (descriptors != null) {
