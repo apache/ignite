@@ -97,8 +97,6 @@ class SmokeServicesTest(IgniteTest):
         kafka = KafkaService(self.test_context,
                              num_nodes=2,
                              settings=KafkaSettings(props={"zookeeper.connect": zookeeper.connection_string()}))
-        kafka.connection_string()
-
         kafka.start()
 
         kafka.stop()

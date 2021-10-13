@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-This module contains classes and utilities to start kafka cluster.
+This module contains classes and utilities to start kafka service.
 """
 
 import os.path
@@ -74,7 +74,7 @@ class KafkaService(DucktestsService, PathAware):
     """
     KAFKA_LOG = "kafka.log"
 
-    def __init__(self, context, num_nodes, settings=KafkaSettings(), start_timeout_sec=60):
+    def __init__(self, context, num_nodes, settings, start_timeout_sec=60):
         super().__init__(context, num_nodes)
         self.settings = settings
         self.start_timeout_sec = start_timeout_sec
@@ -134,7 +134,7 @@ class KafkaService(DucktestsService, PathAware):
         self.logger.info("Waiting for kafka started...")
 
         for node in self.nodes:
-            self.await_quorum(node, self.start_timeout_sec)
+            self.await_broker(node, self.start_timeout_sec)
 
         self.logger.info("Kafka service is started.")
 
@@ -165,23 +165,23 @@ class KafkaService(DucktestsService, PathAware):
 
         return not self.alive(node)
 
-    def await_quorum(self, node, timeout):
+    def await_broker(self, node, timeout):
         """
         Await KafkaServer is started.
-        :param node:  Kafka broker node.
+        :param node:  Kafka service node.
         :param timeout: Wait timeout.
         """
         with monitor_log(node, self.log_file, from_the_beginning=True) as monitor:
             monitor.wait_until(
                 "started (kafka.server.KafkaServer)",
                 timeout_sec=timeout,
-                err_msg=f"Kafka server are not started on {node.account.hostname}"
+                err_msg=f"Kafka broker are not started on {node.account.hostname}"
             )
 
     @property
     def log_file(self):
         """
-        :return: current log file of node.
+        :return: Current log file of node.
         """
         return os.path.join(self.log_dir, self.KAFKA_LOG)
 
@@ -202,7 +202,7 @@ class KafkaService(DucktestsService, PathAware):
         """
         Check if kafka service node is alive.
         :param node: Kafka service node.
-        :return: True if node is alive
+        :return: True if node is alive.
         """
         return len(self.pids(node)) > 0
 
