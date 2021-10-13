@@ -44,7 +44,7 @@ public class InconsistentNodeApplication extends IgniteAwareApplication {
     @Override protected void run(JsonNode jsonNode) throws Exception {
         String cacheName = jsonNode.get("cacheName").asText();
         int amount = jsonNode.get("amount").asInt();
-        int parts =  jsonNode.get("parts").asInt();
+        int parts = jsonNode.get("parts").asInt();
         boolean tx = jsonNode.get("tx").asBoolean();
 
         markInitialized();
