@@ -3360,7 +3360,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         boolean rmv = remove0(key, filter);
 
-        if (statsEnabled && rmv)
+        if (statsEnabled)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)
