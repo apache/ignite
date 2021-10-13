@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.yardstick.cache.model.PersonTextIndex;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -71,7 +72,11 @@ abstract class IgniteCacheQueryGetAllBenchmark extends IgniteCacheAbstractBenchm
 
         cacheQry.setPageSize(pageSize);
 
-        cache.query(cacheQry).getAll();
+        QueryCursor<?> cursor = cache.query(cacheQry);
+
+        for (Object o: cursor) {
+            // No-op.
+        }
 
         return true;
     }
