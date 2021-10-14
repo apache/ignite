@@ -86,8 +86,8 @@ class IgniteSpec(metaclass=ABCMeta):
                 self._add_jvm_opts(jvm_opts)
         else:
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
-                                                gc_dump_path=os.path.join(service.log_dir, "ignite_gc.log"),
-                                                oom_path=os.path.join(service.log_dir, "ignite_out_of_mem.hprof"))
+                                                gc_dump_path=os.path.join(service.log_dir, "gc.log"),
+                                                oom_path=os.path.join(service.log_dir, "out_of_mem.hprof"))
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
                             "-Dlog4j.configDebug=true"])
