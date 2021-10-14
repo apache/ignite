@@ -1517,6 +1517,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0, removeTimeTotal.value());
 
+        // 1. Check remove of a non-existing key.
         cache.remove(-1);
 
         assertTrue(removeTimeTotal.value() > 0);
@@ -1524,6 +1525,21 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         removeTimeTotal.reset();
 
         cache.removeAsync(-1).get();
+
+        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+
+        removeTimeTotal.reset();
+
+        // 2. Check remove of an existing key.
+        cache.put(1, 1);
+        cache.remove(1);
+
+        assertTrue(removeTimeTotal.value() > 0);
+
+        removeTimeTotal.reset();
+
+        cache.put(1, 1);
+        cache.removeAsync(1).get();
 
         assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
     }
