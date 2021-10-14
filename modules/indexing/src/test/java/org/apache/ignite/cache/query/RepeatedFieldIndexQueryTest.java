@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -32,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -127,6 +129,19 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testMergeMultipleCriteriaForSingleField() {
+        int lower = new Random().nextInt(CNT / 2);
+        int upper = CNT / 2 + new Random().nextInt(CNT / 2 - 1);
+
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+            .setCriteria(gt(fldName, lower), gt(fldName, lower - 1), gt(fldName, lower - 2),
+                lt(fldName, upper), lt(fldName, upper + 1), lt(fldName, upper + 2));
+
+        check(null, cache.query(qry), lower + 1, upper);
+    }
+
+    /** */
+    @Test
     public void testMultipleEqualsCriteria() {
         int lower = new Random().nextInt(CNT / 2);
         int upper = CNT / 2 + new Random().nextInt(CNT / 2 - 1);
@@ -139,10 +154,12 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     private void checkEqualsCriteria(int eq1, int eq2, int from, int to) {
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(eq(fldName, eq1), eq(fldName, eq2), between(fldName, from, to));
+        GridTestUtils.assertThrows(null, () -> {
+            IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(eq(fldName, eq1), eq(fldName, eq2), between(fldName, from, to));
 
-        assertTrue(qry.getCriteria().toString(), cache.query(qry).getAll().isEmpty());
+            return cache.query(qry).getAll();
+        }, CacheException.class, "Criterion is invalid: lower boundary is greater than upper");
     }
 
     /** */
@@ -270,8 +287,10 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
         String errMsg = "Fail crit pair: " + c1 + ", " + c2 + ". Lower=" + lower + ", upper=" + upper;
 
-        if (lower >= upper)
-            assertTrue(errMsg, cache.query(qry).getAll().isEmpty());
+        if (lower > upper) {
+            GridTestUtils.assertThrows(null, () -> cache.query(qry).getAll(),
+                CacheException.class, "Criterion is invalid: lower boundary is greater than upper");
+        }
         else
             check(errMsg, cache.query(qry), lower, upper);
     }

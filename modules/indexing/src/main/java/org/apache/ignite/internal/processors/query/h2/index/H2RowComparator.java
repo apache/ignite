@@ -141,7 +141,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
      */
     public int compareValues(Value v1, Value v2) throws IgniteCheckedException {
         try {
-            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+            return table.compareTypeSafe(v1, v2);
 
         } catch (DbException ex) {
             throw new IgniteCheckedException("Rows cannot be compared", ex);

@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -50,6 +49,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
@@ -71,7 +71,7 @@ public class IndexQueryProcessor {
         GridCacheContext<K, V> cctx, IndexQueryDesc idxQryDesc, IndexQueryContext qryCtx, boolean keepBinary)
         throws IgniteCheckedException {
 
-        Index idx = index(cctx, idxQryDesc);
+        Index idx = getAndValidateIndex(cctx, idxQryDesc);
 
         GridCursor<IndexRow> cursor = query(cctx, idx, idxQryDesc, qryCtx);
 
@@ -112,12 +112,28 @@ public class IndexQueryProcessor {
         };
     }
 
-    /** Get index to run query by specified description. */
-    private Index index(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
-        String tableName = cctx.kernalContext().query().tableName(cctx.name(), idxQryDesc.valType());
+    /**
+     * Get index to run query by specified description. Validates that criteria fields matches a prefix of fields
+     * of found index.
+     */
+    private Index getAndValidateIndex(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
+        final String tableName = cctx.kernalContext().query().tableName(cctx.name(), idxQryDesc.valType());
 
         if (tableName == null)
             throw failIndexQuery("No table found for type: " + idxQryDesc.valType(), null, idxQryDesc);
+
+        // Collect both fields (original and normalized).
+        final Map<String, String> critFlds = idxQryDesc.criteria().stream()
+            .map(IndexQueryCriterion::field)
+            .flatMap(f -> {
+                String norm = QueryUtils.normalizeObjectName(f, false);
+
+                if (f.equals(norm))
+                    return Stream.of(new T2<>(f, f));
+                else
+                    return Stream.of(new T2<>(f, norm), new T2<>(norm, f));
+            })
+            .collect(Collectors.toMap(IgniteBiTuple::get1, IgniteBiTuple::get2, (l, r) -> l));
 
         if (idxQryDesc.idxName() != null) {
             Index idx = indexByName(cctx, idxQryDesc, tableName);
@@ -125,10 +141,13 @@ public class IndexQueryProcessor {
             if (idx == null)
                 throw failIndexQuery("No index found for name: " + idxQryDesc.idxName(), null, idxQryDesc);
 
+            if (!checkIndex(idxProc.indexDefinition(idx.id()), critFlds))
+                throw failIndexQuery("Index doesn't match criteria", null, idxQryDesc);
+
             return idx;
         }
 
-        Index idx = indexByCriteria(cctx, idxQryDesc, tableName);
+        Index idx = indexByCriteria(cctx, critFlds, tableName);
 
         if (idx == null)
             throw failIndexQuery("No index found for criteria", null, idxQryDesc);
@@ -160,14 +179,8 @@ public class IndexQueryProcessor {
     /**
      * Get index by list of fields to query, or return {@code null}.
      */
-    private Index indexByCriteria(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc, String tableName) {
+    private Index indexByCriteria(GridCacheContext<?, ?> cctx, final Map<String, String> criteriaFlds, String tableName) {
         Collection<Index> idxs = idxProc.indexes(cctx);
-
-        // Check both fields (original and normalized).
-        final Set<String> critFields = idxQryDesc.criteria().stream()
-            .map(IndexQueryCriterion::field)
-            .flatMap(f -> Stream.of(f, QueryUtils.normalizeObjectName(f, false)))
-            .collect(Collectors.toSet());
 
         for (Index idx: idxs) {
             IndexDefinition idxDef = idxProc.indexDefinition(idx.id());
@@ -175,7 +188,7 @@ public class IndexQueryProcessor {
             if (!tableName.equals(idxDef.idxName().tableName()))
                 continue;
 
-            if (checkIndex(idxDef, idxQryDesc.criteria().size(), critFields))
+            if (checkIndex(idxDef, criteriaFlds))
                 return idx;
         }
 
@@ -187,26 +200,25 @@ public class IndexQueryProcessor {
      *
      * Criteria fields have to match to a prefix of the index. Order of fields in criteria doesn't matter.
      */
-    private boolean checkIndex(IndexDefinition idxDef, int critLen, final Set<String> criteriaFlds) {
-        if (critLen > idxDef.indexKeyDefinitions().size())
-            return false;
-
-        int matches = 0;
+    private boolean checkIndex(IndexDefinition idxDef, Map<String, String> criteriaFlds) {
+        Map<String, String> flds = new HashMap<>(criteriaFlds);
 
         for (String idxFldName: idxDef.indexKeyDefinitions().keySet()) {
-            if (!criteriaFlds.contains(idxFldName))
+            String alias = flds.remove(idxFldName);
+
+            // Has not to be null, as criteriaFlds contains both original and normalized field names.
+            if (alias == null)
                 return false;
 
-            if (++matches == critLen)
+            flds.remove(alias);
+
+            // Matches prefix.
+            if (flds.isEmpty())
                 return true;
         }
 
-        return false;
-    }
-
-    /** */
-    private IgniteCheckedException failIndexQueryCriteria(IndexDefinition idxDef, IndexQueryDesc idxQryDesc) {
-        return failIndexQuery( "Index doesn't match query", idxDef, idxQryDesc);
+        // Full match.
+        return flds.isEmpty();
     }
 
     /** */
@@ -220,8 +232,11 @@ public class IndexQueryProcessor {
     }
 
     /** Merges multiple criteria for the same field into single criterion. */
-    private Map<String, RangeIndexQueryCriterion> mergeIndexQueryCriteria(InlineIndexImpl idx, SortedIndexDefinition idxDef,
-        IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
+    private Map<String, RangeIndexQueryCriterion> mergeIndexQueryCriteria(
+        InlineIndexImpl idx,
+        SortedIndexDefinition idxDef,
+        IndexQueryDesc idxQryDesc
+    ) throws IgniteCheckedException {
         Map<String, RangeIndexQueryCriterion> mergedCriteria = new HashMap<>();
 
         Map<String, IndexKeyDefinition> idxFlds = idxDef.indexKeyDefinitions();
@@ -239,7 +254,7 @@ public class IndexQueryProcessor {
             IndexKeyDefinition keyDef = idxFlds.get(fldName);
 
             if (keyDef == null)
-                throw failIndexQueryCriteria(idxDef, idxQryDesc);
+                throw failIndexQuery("Index doesn't match criteria", idxDef, idxQryDesc);
 
             IndexKey l = key(crit.lower(), crit.lowerNull(), keyDef, keyTypeSettings, coctx);
             IndexKey u = key(crit.upper(), crit.upperNull(), keyDef, keyTypeSettings, coctx);
@@ -272,6 +287,10 @@ public class IndexQueryProcessor {
                 }
             }
 
+            if (l != null && u != null && idxDef.rowComparator().compareKey(l, u) > 0)
+                throw failIndexQuery("Criterion is invalid: lower boundary is greater than upper. Field=" + fldName +
+                    ", lower=" + l.key() + ", upper=" + u.key(), idxDef, idxQryDesc);
+
             RangeIndexQueryCriterion idxKeyCrit = new RangeIndexQueryCriterion(fldName, l, u);
             idxKeyCrit.lowerIncl(lowIncl);
             idxKeyCrit.upperIncl(upIncl);
@@ -285,8 +304,11 @@ public class IndexQueryProcessor {
     }
 
     /** Checks that specified index matches index query criteria. */
-    private IndexRangeQuery alignCriteriaWithIndex(InlineIndexImpl idx, Map<String, RangeIndexQueryCriterion> criteria,
-        IndexDefinition idxDef, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
+    private IndexRangeQuery alignCriteriaWithIndex(
+        InlineIndexImpl idx,
+        Map<String, RangeIndexQueryCriterion> criteria,
+        IndexDefinition idxDef
+    ) {
         // Size of bounds array has to be equal to count of indexed fields.
         IndexKey[] lowerBounds = new IndexKey[idxDef.indexKeyDefinitions().size()];
         IndexKey[] upperBounds = new IndexKey[idxDef.indexKeyDefinitions().size()];
@@ -301,9 +323,6 @@ public class IndexQueryProcessor {
 
         for (Map.Entry<String, IndexKeyDefinition> keyDef: idxDef.indexKeyDefinitions().entrySet()) {
             RangeIndexQueryCriterion criterion = criteria.remove(keyDef.getKey());
-
-            if (criterion == null)
-                throw failIndexQueryCriteria(idxDef, idxQryDesc);
 
             if (keyDef.getValue().order().sortOrder() == DESC)
                 criterion = criterion.swap();
@@ -325,9 +344,6 @@ public class IndexQueryProcessor {
             if (criteria.isEmpty())
                 break;
         }
-
-        if (!criteria.isEmpty())
-            throw failIndexQueryCriteria(idxDef, idxQryDesc);
 
         InlineIndexRowHandler hnd = idx.segment(0).rowHandler();
 
@@ -364,7 +380,7 @@ public class IndexQueryProcessor {
 
         Map<String, RangeIndexQueryCriterion> merged = mergeIndexQueryCriteria(idx, idxDef, idxQryDesc);
 
-        IndexRangeQuery qry = alignCriteriaWithIndex(idx, merged, idxDef, idxQryDesc);
+        IndexRangeQuery qry = alignCriteriaWithIndex(idx, merged, idxDef);
 
         int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
 
