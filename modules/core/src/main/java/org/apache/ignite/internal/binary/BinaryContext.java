@@ -240,7 +240,6 @@ public class BinaryContext {
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         registerPredefinedType(Time[].class, GridBinaryMarshaller.TIME_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
-        registerPredefinedType(BinaryArray.class, GridBinaryMarshaller.BINARY_ARR);
 
         // Special collections.
         registerPredefinedType(ArrayList.class, 0);
@@ -269,6 +268,7 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
+        registerPredefinedType(BinaryArray.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);

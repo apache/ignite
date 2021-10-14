@@ -1160,11 +1160,7 @@ public class BinaryUtils {
         else if (cls == Time[].class)
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
-            return cls.getComponentType().isEnum()
-                ? BinaryWriteMode.ENUM_ARR
-                : BinaryWriteMode.BINARY_ARR;
-        else if (cls == BinaryArray.class)
-            return BinaryWriteMode.BINARY_ARR;
+            return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -2018,7 +2014,6 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-            case GridBinaryMarshaller.BINARY_ARR:
                 return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, false);
 
             case GridBinaryMarshaller.COL:

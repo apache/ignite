@@ -779,7 +779,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Array wrapper.
      * @throws BinaryObjectException In case of error.
      */
-    void doWriteBinaryArrayWrapper(BinaryArray val) throws BinaryObjectException {
+    void doWriteBinaryArray(BinaryArray val) throws BinaryObjectException {
         if (val.array() == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -787,7 +787,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 return;
 
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.OBJ_ARR);
             out.unsafeWriteInt(val.componentTypeId());
 
             if (val.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)

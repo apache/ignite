@@ -151,7 +151,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return GridBinaryMarshaller.BINARY_ARR;
+        return GridBinaryMarshaller.OBJ_ARR;
     }
 
     /** {@inheritDoc} */

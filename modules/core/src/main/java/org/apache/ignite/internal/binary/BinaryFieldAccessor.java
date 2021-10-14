@@ -111,7 +111,6 @@ public abstract class BinaryFieldAccessor {
             case TIME_ARR:
             case ENUM_ARR:
             case OBJECT_ARR:
-            case BINARY_ARR:
             case BINARY_OBJ:
             case BINARY:
                 return new DefaultFinalClassAccessor(field, id, mode, false);
@@ -648,11 +647,6 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case OBJECT_ARR:
-                    writer.writeObjectArrayField((Object[])val);
-
-                    break;
-
-                case BINARY_ARR:
                     if (obj instanceof BinaryArray)
                         writer.writeObjectArrayField(((BinaryArray)val).array());
                     else
@@ -872,7 +866,6 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case OBJECT_ARR:
-                case BINARY_ARR:
                     val = reader.readObjectArray(id);
 
                     break;
