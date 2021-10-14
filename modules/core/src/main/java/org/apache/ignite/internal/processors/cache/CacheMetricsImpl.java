@@ -189,11 +189,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Get time. */
     private final HistogramMetricImpl getTime;
 
+    /** GetAll time. */
+    private final HistogramMetricImpl getAllTime;
+
     /** Put time. */
     private final HistogramMetricImpl putTime;
 
+    /** PutAll time. */
+    private final HistogramMetricImpl putAllTime;
+
     /** Remove time. */
     private final HistogramMetricImpl rmvTime;
+
+    /** RemoveAll time. */
+    private final HistogramMetricImpl rmvAllTime;
 
     /** Commit time. */
     private final HistogramMetricImpl commitTime;
@@ -381,9 +390,15 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
 
+        getAllTime = mreg.histogram("GetAllTime", HISTOGRAM_BUCKETS, "GetAll time in nanoseconds.");
+
         putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS, "Put time in nanoseconds.");
 
+        putAllTime = mreg.histogram("PutAllTime", HISTOGRAM_BUCKETS, "PutAll time in nanoseconds.");
+
         rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS, "Remove time in nanoseconds.");
+
+        rmvAllTime = mreg.histogram("RemoveAllTime", HISTOGRAM_BUCKETS, "RemoveAll time in nanoseconds.");
 
         commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
 
@@ -714,8 +729,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapEvicts.reset();
 
         getTime.reset();
+        getAllTime.reset();
         putTime.reset();
+        putAllTime.reset();
         rmvTime.reset();
+        rmvAllTime.reset();
         commitTime.reset();
         rollbackTime.reset();
 
@@ -1134,6 +1152,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the getAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addGetAllTimeNanos(long duration) {
+        getTimeTotal.add(duration);
+
+        getAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addGetAllTimeNanos(duration);
+    }
+
+    /**
      * Increments the put time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1148,6 +1180,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the putAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutAllTimeNanos(long duration) {
+        putTimeTotal.add(duration);
+
+        putAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addPutAllTimeNanos(duration);
+    }
+
+    /**
      * Increments the remove time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1159,6 +1205,20 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
+    }
+
+    /**
+     * Increments the removeAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAllTimeNanos(long duration) {
+        rmvTimeTotal.add(duration);
+
+        rmvAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addRemoveAllTimeNanos(duration);
     }
 
     /**

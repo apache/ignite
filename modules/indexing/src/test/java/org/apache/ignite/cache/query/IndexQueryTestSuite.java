@@ -27,6 +27,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     IndexQueryAllTypesTest.class,
     IndexQueryFailoverTest.class,
+    IndexQueryFilterTest.class,
     IndexQueryKeepBinaryTest.class,
     IndexQueryLocalTest.class,
     IndexQueryQueryEntityTest.class,
