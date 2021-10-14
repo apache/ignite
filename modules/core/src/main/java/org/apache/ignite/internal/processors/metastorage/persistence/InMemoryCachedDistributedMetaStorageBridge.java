@@ -188,7 +188,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
                     }
                     else {
                         cache.put(key, valBytes);
-                        System.err.println("++++ put " + key  + " " + unmarshal(marshaller, valBytes));
+                        System.err.println("++++ put " + key + " " + unmarshal(marshaller, valBytes));
                     }
                 }
             }

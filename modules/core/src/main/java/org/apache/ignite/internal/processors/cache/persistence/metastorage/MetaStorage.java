@@ -347,11 +347,11 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
         System.err.println("lastUpdates: ");
         if (lastUpdates != null)
-            lastUpdates.forEach((k,v) -> System.err.println("lastUpdates+++ " + k));
+            lastUpdates.forEach((k, v) -> System.err.println("lastUpdates+++ " + k));
 
         System.err.println("prefixedSubmap: ");
         if (prefixedSubmap != null)
-            prefixedSubmap.forEach((k,v) -> System.err.println("prefixedSubmap+++ " + k));
+            prefixedSubmap.forEach((k, v) -> System.err.println("prefixedSubmap+++ " + k));
 
         Map.Entry<String, byte[]> curUpdatesEntry = null;
 
@@ -380,7 +380,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             try {
                 System.err.println("+++ readInitialData val " + unmarshal(JdkMarshaller.DEFAULT, valBytes));
             } catch (Throwable e) {
-
+                System.err.println();
             }
 
             int c = 0;
