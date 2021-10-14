@@ -44,7 +44,7 @@ public class InconsistentNodeApplication extends IgniteAwareApplication {
     @Override protected void run(JsonNode jsonNode) throws Exception {
         String cacheName = jsonNode.get("cacheName").asText();
         int amount = jsonNode.get("amount").asInt();
-        int parts =  jsonNode.get("parts").asInt();
+        int parts = jsonNode.get("parts").asInt();
         boolean tx = jsonNode.get("tx").asBoolean();
 
         markInitialized();
@@ -67,7 +67,7 @@ public class InconsistentNodeApplication extends IgniteAwareApplication {
         for (int key = 0; key < amount; key += ThreadLocalRandom.current().nextInt(1, 3)) { // Random shift.
             IgniteInternalCache<?, ?> cache = ((IgniteEx)ignite).cachex(cacheName);
 
-            GridCacheAdapter<?,?> adapter = (GridCacheAdapter)cache.cache();
+            GridCacheAdapter<?, ?> adapter = (GridCacheAdapter)cache.cache();
 
             GridCacheEntryEx entry = adapter.entryEx(key);
 
