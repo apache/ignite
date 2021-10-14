@@ -334,17 +334,27 @@ namespace ignite
                     SqlFieldsQueryRequest req(id, qry);
                     SqlFieldsQueryResponse rsp;
 
-                    SP_DataChannel channel = SyncMessage(req, rsp);
+                    try
+                    {
+                        SP_DataChannel channel = SyncMessage(req, rsp);
 
-                    query::SP_QueryFieldsCursorImpl cursorImpl(
-                        new query::QueryFieldsCursorImpl(
-                            rsp.GetCursorId(),
-                            rsp.GetColumns(),
-                            rsp.GetCursorPage(),
-                            channel,
-                            static_cast<int32_t>(qry.GetTimeout())));
+                        query::SP_QueryFieldsCursorImpl cursorImpl(
+                            new query::QueryFieldsCursorImpl(
+                                rsp.GetCursorId(),
+                                rsp.GetColumns(),
+                                rsp.GetCursorPage(),
+                                channel,
+                                static_cast<int32_t>(qry.GetTimeout())));
 
-                    return cursorImpl;
+                        return cursorImpl;
+                    }
+                    catch (IgniteError& err)
+                    {
+                        std::string msg("08001: ");
+                        msg += err.GetText();
+
+                        throw IgniteError(err.GetCode(), msg.c_str());
+                    }
                 }
             }
         }
