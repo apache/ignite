@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /** */
-final class DistributedMetaStorageUtil {
+public final class DistributedMetaStorageUtil {
     /**
      *
      */

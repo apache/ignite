@@ -99,7 +99,12 @@ class InMemoryCachedDistributedMetaStorageBridge {
             cache.remove(globalKey);
         else {
             cache.put(globalKey, valBytes);
-            System.err.println("++++ put1 " + globalKey);
+            try {
+                System.err.println("++++ put1 " + globalKey + " " + unmarshal(marshaller, valBytes));
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -123,7 +128,12 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
         for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData) {
             cache.put(item.key, item.valBytes);
-            System.err.println("++++ put2 " + item.key);
+            try {
+                System.err.println("++++ put2 " + item.key + " " + unmarshal(marshaller, item.valBytes));
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -163,7 +173,8 @@ class InMemoryCachedDistributedMetaStorageBridge {
                 false
             );
 
-            System.err.println("++++ readInitialData stop " + cache.size());
+            System.err.println("++++ readInitialData stop cache size=" + cache.size());
+            cache.forEach((k, v) -> System.err.println(k));
 
             // Last item rollover.
             if (lastHistItem != null) {
@@ -177,7 +188,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
                     }
                     else {
                         cache.put(key, valBytes);
-                        System.err.println("++++ put " + key);
+                        System.err.println("++++ put " + key  + " " + unmarshal(marshaller, valBytes));
                     }
                 }
             }

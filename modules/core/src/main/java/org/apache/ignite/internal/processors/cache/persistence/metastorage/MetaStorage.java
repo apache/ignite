@@ -75,6 +75,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
 /**
  * General purpose key-value local-only storage.
@@ -333,14 +334,24 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
         Iterator<Map.Entry<String, byte[]>> updatesIter = null;
 
+        SortedMap<String, byte[]> prefixedSubmap = null;
+
         if (readOnly) {
             if (lastUpdates != null) {
-                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
+                prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
 
                 if (!prefixedSubmap.isEmpty())
                     updatesIter = prefixedSubmap.entrySet().iterator();
             }
         }
+
+        System.err.println("lastUpdates: ");
+        if (lastUpdates != null)
+            lastUpdates.forEach((k,v) -> System.err.println("lastUpdates+++ " + k));
+
+        System.err.println("prefixedSubmap: ");
+        if (prefixedSubmap != null)
+            prefixedSubmap.forEach((k,v) -> System.err.println("prefixedSubmap+++ " + k));
 
         Map.Entry<String, byte[]> curUpdatesEntry = null;
 
@@ -366,16 +377,22 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             String key = row.key();
             byte[] valBytes = partStorage.readRow(row.link());
 
+            try {
+                System.err.println("+++ readInitialData val " + unmarshal(JdkMarshaller.DEFAULT, valBytes));
+            } catch (Throwable e) {
+
+            }
+
             int c = 0;
 
             while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0) {
                 curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
-                System.err.println("++++ readInitialData row 1" + curUpdatesEntry.getKey());
+                System.err.println("++++ readInitialData row 1" + (curUpdatesEntry == null ? "<null>" : curUpdatesEntry.getKey()));
             }
 
             if (curUpdatesEntry != null && c == 0) {
                 curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
-                System.err.println("++++ readInitialData row 2" + curUpdatesEntry.getKey());
+                System.err.println("++++ readInitialData row 2" + (curUpdatesEntry == null ? "<null>" : curUpdatesEntry.getKey()));
             }
             else {
                 applyCallback(cb, unmarshal, key, valBytes);
