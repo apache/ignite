@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -27,6 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
 public class IndexQueryWrongIndexTest extends GridCommonAbstractTest {
@@ -37,14 +39,23 @@ public class IndexQueryWrongIndexTest extends GridCommonAbstractTest {
     private static final String DESC_ID_IDX = "DESC_ID_IDX";
 
     /** */
-    @Test
-    public void testWrongIndexAndFieldsMatching() throws Exception {
+    private static IgniteCache<Integer, Person> cache;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         Ignite crd = startGrids(2);
 
-        IgniteCache<Integer, Person> cache = crd.getOrCreateCache(new CacheConfiguration<Integer, Person>()
+        cache = crd.getOrCreateCache(new CacheConfiguration<Integer, Person>()
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setName("CACHE")
             .setIndexedTypes(Integer.class, Person.class));
+    }
 
+    /** */
+    @Test
+    public void testWrongIndexAndFieldsMatching() {
         // Wrong fields in query.
         GridTestUtils.assertThrows(null, () -> {
             IndexQuery<Integer, Person> wrongQry = new IndexQuery<Integer, Person>(Person.class, DESC_ID_IDX)
@@ -64,6 +75,29 @@ public class IndexQueryWrongIndexTest extends GridCommonAbstractTest {
 
             return null;
         }, CacheException.class, null);
+    }
+
+    /** */
+    @Test
+    public void testSimilarIndexName() {
+        cache.query(new SqlFieldsQuery("create index \"aA\" on Person (descId);")).getAll();
+        cache.query(new SqlFieldsQuery("create index \"AA\" on Person (id);")).getAll();
+        cache.query(new SqlFieldsQuery("create index \"Aa\" on Person (descId);")).getAll();
+
+        cache.query(new SqlFieldsQuery("insert into Person (_KEY, id, descId) values (1, 1, 1);")).getAll();
+
+        checkIndex("aA", "descId");
+        checkIndex("AA", "id");
+        checkIndex("Aa", "descId");
+        checkIndex("aa", "id");
+    }
+
+    /** */
+    private void checkIndex(String idxName, String fldName) {
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(lte(fldName, Integer.MAX_VALUE));
+
+        assertEquals(1, cache.query(qry).getAll().size());
     }
 
     /** */

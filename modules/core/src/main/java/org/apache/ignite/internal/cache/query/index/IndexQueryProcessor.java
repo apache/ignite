@@ -157,21 +157,24 @@ public class IndexQueryProcessor {
 
     /** Get index by name, or return {@code null}. */
     private Index indexByName(GridCacheContext<?, ?> cctx, String idxName, String tableName) {
-        String origIdxName = idxName;
-
-        if (!QueryUtils.PRIMARY_KEY_INDEX.equals(idxName))
-            idxName = idxName.toUpperCase();
-
         String schema = cctx.kernalContext().query().schemaName(cctx);
 
-        IndexName normIdxName = new IndexName(cctx.name(), schema, tableName, idxName);
+        IndexName name = new IndexName(cctx.name(), schema, tableName, idxName);
 
-        Index idx = idxProc.index(normIdxName);
+        Index idx = idxProc.index(name);
 
         if (idx != null)
             return idx;
 
-        IndexName name = new IndexName(cctx.name(), schema, tableName, origIdxName);
+        String normIdxName = idxName;
+
+        if (!QueryUtils.PRIMARY_KEY_INDEX.equals(idxName))
+            normIdxName = QueryUtils.normalizeObjectName(idxName, false);
+
+        if (normIdxName.equals(idxName))
+            return null;
+
+        name = new IndexName(cctx.name(), schema, tableName, normIdxName);
 
         return idxProc.index(name);
     }
