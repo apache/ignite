@@ -57,7 +57,7 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
         assertStringFormContains(new TestIntContainer(123), "i=123");
 
         assertStringFormContains(new TestContainer(new int[]{1, 2}), "x=[1, 2]");
-        assertStringFormContains(new TestContainer(new Integer[]{1, 2}), "x=[1, 2]");
+        assertStringFormContains(new TestContainer(new Integer[]{1, 2}), "[1, 2]");
         assertStringFormContains(new TestContainer(new ArrayList<>(Arrays.asList(1, 2))), "x=ArrayList {1, 2}");
         assertStringFormContains(new TestContainer(new HashSet<>(Arrays.asList(1, 2))), "x=HashSet {1, 2}");
         assertStringFormContains(new TestContainer(new HashMap<>(ImmutableMap.of(1, 2))), "x=HashMap {1=2}");
@@ -129,10 +129,10 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
 
         String str = asBinaryObjectString(cache, o);
 
-        assertTrue(str.contains(s0));
+        assertTrue("'" + str + "' should contain '" + s0 + "'", str.contains(s0));
 
         for (String s : ss)
-            assertTrue(str.contains(s));
+            assertTrue("'" + str + "' should contain '" + s + "'", str.contains(s));
     }
 
     /** */

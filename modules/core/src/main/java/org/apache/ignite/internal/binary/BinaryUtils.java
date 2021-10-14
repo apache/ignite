@@ -1162,9 +1162,9 @@ public class BinaryUtils {
         else if (cls.isArray())
             return cls.getComponentType().isEnum()
                 ? BinaryWriteMode.ENUM_ARR
-                : BinaryWriteMode.OBJECT_ARR_WRAPPER;
-        else if (cls == BinaryArrayWrapper.class)
-            return BinaryWriteMode.OBJECT_ARR_WRAPPER;
+                : BinaryWriteMode.BINARY_ARR;
+        else if (cls == BinaryArray.class)
+            return BinaryWriteMode.BINARY_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -2018,7 +2018,7 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-            case GridBinaryMarshaller.OBJ_ARR_WRAPPER:
+            case GridBinaryMarshaller.BINARY_ARR:
                 return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, false);
 
             case GridBinaryMarshaller.COL:
@@ -2091,7 +2091,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static BinaryArrayWrapper doReadObjectArrayWrapper(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static BinaryArray doReadObjectArrayWrapper(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
         int hPos = positionForHandle(in);
 
@@ -2106,9 +2106,9 @@ public class BinaryUtils {
         Object[] arr;
 
         if (deserialize) {
-            Class arrCompCls = compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-                ? ctx.descriptorForTypeId(true, compTypeId, ldr, false).describedClass()
-                : classForName(ctx, ldr, compClsName);
+            Class<?> arrCompCls = compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+                ? classForName(ctx, ldr, compClsName)
+                : ctx.descriptorForTypeId(true, compTypeId, ldr, false).describedClass();
 
             arr = (Object[])Array.newInstance(arrCompCls, len);
         }
@@ -2120,7 +2120,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr, in.position() - hPos);
+        return new BinaryArray(ctx, compTypeId, compClsName, arr);
     }
 
     /**

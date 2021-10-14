@@ -617,8 +617,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(EnumType.TWO, arr2[1]);
         }
 
-        BinaryArrayWrapper arrBinary1 = (BinaryArrayWrapper)cacheBinary1.get(1);
-        BinaryArrayWrapper arrBinary2 = (BinaryArrayWrapper)cacheBinary2.get(1);
+        BinaryArray arrBinary1 = (BinaryArray)cacheBinary1.get(1);
+        BinaryArray arrBinary2 = (BinaryArray)cacheBinary2.get(1);
 
         assertEquals(2, arrBinary1.array().length);
         assertEquals(2, arrBinary2.array().length);

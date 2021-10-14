@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -158,7 +157,7 @@ public class GridBinaryMarshaller {
      * Binary wrapper for {@code Object[]}.
      * This wrapper used to store array component type id during serde process.
      */
-    public static final byte OBJ_ARR_WRAPPER = 39;
+    public static final byte BINARY_ARR = 39;
 
     /** */
     public static final byte NULL = (byte)101;

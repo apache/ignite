@@ -279,7 +279,7 @@ public class BinaryClassDescriptor {
             case TIMESTAMP_ARR:
             case TIME_ARR:
             case OBJECT_ARR:
-            case OBJECT_ARR_WRAPPER:
+            case BINARY_ARR:
             case COL:
             case MAP:
             case BINARY_OBJ:
@@ -761,9 +761,9 @@ public class BinaryClassDescriptor {
 
                     break;
 
-                case OBJECT_ARR_WRAPPER:
-                    if (obj instanceof BinaryArrayWrapper)
-                        writer.doWriteBinaryArrayWrapper(((BinaryArrayWrapper)obj));
+                case BINARY_ARR:
+                    if (obj instanceof BinaryArray)
+                        writer.doWriteBinaryArrayWrapper(((BinaryArray)obj));
                     else
                         writer.doWriteObjectArray((Object[])obj);
 

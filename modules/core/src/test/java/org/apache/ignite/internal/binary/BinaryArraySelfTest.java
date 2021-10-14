@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
+public class BinaryArraySelfTest extends GridCommonAbstractTest {
     /** */
     private static Ignite server;
 
@@ -80,7 +80,7 @@ public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         Object obj = c.withKeepBinary().get(1);
 
-        assertEquals(BinaryArrayWrapper.class, obj.getClass());
+        assertEquals(BinaryArray.class, obj.getClass());
         assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
 
         assertTrue(c.remove(1));
@@ -93,7 +93,7 @@ public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
 
         BinaryObject obj = server.binary().toBinary(arr);
 
-        assertEquals(BinaryArrayWrapper.class, obj.getClass());
+        assertEquals(BinaryArray.class, obj.getClass());
 
         Object deser = obj.deserialize();
 
@@ -115,7 +115,7 @@ public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
         BinaryObject simpleObj = obj.field("obj");
         BinaryObject objArr = simpleObj.field("objArr");
 
-        assertEquals(BinaryArrayWrapper.class, objArr.getClass());
+        assertEquals(BinaryArray.class, objArr.getClass());
 
         Object deser = obj.deserialize();
 

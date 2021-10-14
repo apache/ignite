@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_ENUM;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN;
@@ -74,7 +75,6 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.MAP;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR_WRAPPER;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PROXY;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
@@ -1914,8 +1914,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ_ARR:
-            case OBJ_ARR_WRAPPER:
-                obj = BinaryUtils.doReadObjectArrayWrapper(in, ctx, ldr, this, false, true);
+            case BINARY_ARR:
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, false, true);
+                //obj = BinaryUtils.doReadObjectArrayWrapper(in, ctx, ldr, this, false, true);
 
                 break;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.binary.BinaryArrayWrapper;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -181,8 +181,8 @@ public class CacheObjectUtils {
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
-        else if (o instanceof BinaryArrayWrapper && !keepBinary)
-            return ((BinaryArrayWrapper)o).deserialize(ldr);
+        else if (o instanceof BinaryArray && !keepBinary)
+            return ((BinaryArray)o).deserialize(ldr);
 
         return o;
     }

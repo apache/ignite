@@ -60,6 +60,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
@@ -492,8 +493,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (BinaryUtils.isBinaryType(obj.getClass()))
             return obj;
 
-/*
-        if (obj.getClass().isArray()) {
+        if (obj instanceof Object[]) {
+            Class<?> compCls = obj.getClass().getComponentType();
+
             Object[] arr = (Object[])obj;
 
             Object[] pArr = new Object[arr.length];
@@ -501,9 +503,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            return pArr;
+            boolean isBinaryElemArr = BinaryObject.class.isAssignableFrom(compCls);
+
+            return new BinaryArray(
+                binaryCtx,
+                binaryCtx.typeId(!isBinaryElemArr ? compCls.getName() : Object.class.getName()),
+                !isBinaryElemArr ? compCls.getName() : Object.class.getName(),
+                pArr
+            );
         }
-*/
+
         if (obj instanceof IgniteBiTuple) {
             IgniteBiTuple tup = (IgniteBiTuple)obj;
 

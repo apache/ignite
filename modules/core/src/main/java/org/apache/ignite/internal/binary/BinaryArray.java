@@ -28,36 +28,37 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary object representing array.
  */
-public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
+public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Context. */
     @GridDirectTransient
+    @GridToStringExclude
     private BinaryContext ctx;
 
     /** Type ID. */
     private int compTypeId;
 
-    /** Raw data. */
-    private String compClsName;
+    /** Type class name. */
+    @Nullable private String compClsName;
 
-    /** Value bytes. */
+    /** Values. */
+    @GridToStringInclude
     private Object[] arr;
-
-    /** Size of the object */
-    private int size;
 
     /**
      * {@link Externalizable} support.
      */
-    public BinaryArrayWrapper() {
+    public BinaryArray() {
         // No-op.
     }
 
@@ -66,14 +67,12 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
      * @param compTypeId Component type id.
      * @param compClsName Component class name.
      * @param arr Array.
-     * @param size Size of the object.
      */
-    public BinaryArrayWrapper(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr, int size) {
+    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr) {
         this.ctx = ctx;
         this.compTypeId = compTypeId;
         this.compClsName = compClsName;
         this.arr = arr;
-        this.size = size;
     }
 
     /** {@inheritDoc} */
@@ -99,12 +98,18 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
             GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
 
         try {
-            Class compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
+            Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
             Object[] res = (Object[])Array.newInstance(compType, arr.length);
 
             for (int i = 0; i < arr.length; i++)
-                res[i] = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+                try {
+                    res[i] = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+                }
+                catch (ArrayStoreException e ) {
+                    System.out.println("BinaryArray.deserialize");
+                    throw e;
+                }
 
             return (T)res;
         }
@@ -136,12 +141,12 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
-        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr.clone(), size);
+        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone());
     }
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return GridBinaryMarshaller.OBJ_ARR_WRAPPER;
+        return GridBinaryMarshaller.BINARY_ARR;
     }
 
     /** {@inheritDoc} */
@@ -149,8 +154,6 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
         out.writeInt(compTypeId);
         out.writeObject(compClsName);
         out.writeObject(arr);
-        out.writeInt(size);
-
     }
 
     /** {@inheritDoc} */
@@ -160,7 +163,6 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
         compTypeId = in.readInt();
         compClsName = (String)in.readObject();
         arr = (Object[])in.readObject();
-        size = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -180,7 +182,7 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return size;
+        return -1; //TODO: fixme
     }
 
     /** {@inheritDoc} */
@@ -200,6 +202,6 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BinaryArrayWrapper.class, this);
+        return S.toString(BinaryArray.class, this);
     }
 }

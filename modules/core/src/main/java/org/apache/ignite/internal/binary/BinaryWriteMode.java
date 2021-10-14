@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteSystemProperties;
-
 /**
  * Various write modes for binary objects.
  */
@@ -171,7 +169,7 @@ public enum BinaryWriteMode {
     EXCLUSION(GridBinaryMarshaller.OBJ),
 
     /** Binary wrapper for {@code Object[]}. */
-    OBJECT_ARR_WRAPPER(GridBinaryMarshaller.OBJ_ARR_WRAPPER);
+    BINARY_ARR(GridBinaryMarshaller.BINARY_ARR);
 
     /** Type ID. */
     private final int typeId;
