@@ -1161,6 +1161,8 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryArray.class)
+            return BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))

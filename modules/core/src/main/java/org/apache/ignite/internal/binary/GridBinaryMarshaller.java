@@ -153,12 +153,6 @@ public class GridBinaryMarshaller {
     /** Binary enum. */
     public static final byte BINARY_ENUM = 38;
 
-    /**
-     * Binary wrapper for {@code Object[]}.
-     * This wrapper used to store array component type id during serde process.
-     */
-    public static final byte BINARY_ARR = 39;
-
     /** */
     public static final byte NULL = (byte)101;
 
