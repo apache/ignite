@@ -100,21 +100,16 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
-            Object[] res = (Object[])Array.newInstance(compType, arr.length);
+            Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 
-            for (int i = 0; i < arr.length; i++)
-                try {
-                    Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+            for (int i = 0; i < arr.length; i++) {
+                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
 
-                    if (BinaryObject.class.isAssignableFrom(obj.getClass()))
-                        obj = ((BinaryObject)obj).deserialize(ldr);
+                if (obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
+                    obj = ((BinaryObject)obj).deserialize(ldr);
 
-                    res[i] = obj;
-                }
-                catch (ArrayStoreException e ) {
-                    System.out.println("BinaryArray.deserialize");
-                    throw e;
-                }
+                res[i] = obj;
+            }
 
             return (T)res;
         }

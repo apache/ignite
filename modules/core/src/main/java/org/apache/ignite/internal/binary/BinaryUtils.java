@@ -1646,29 +1646,19 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
+            boolean useCache = GridBinaryMarshaller.USE_CACHE.get();
 
-            cls = classForName(ctx, ldr, clsName);
+            try {
+                cls = U.forName(clsName, ldr, null);
+            }
+            catch (ClassNotFoundException e) {
+                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
+            }
+
+            // forces registering of class by type id, at least locally
+            if (useCache)
+                ctx.registerClass(cls, false, false);
         }
-
-        return cls;
-    }
-
-    /** */
-    private static Class classForName(BinaryContext ctx, ClassLoader ldr, String clsName) {
-        boolean useCache = GridBinaryMarshaller.USE_CACHE.get();
-
-        Class cls;
-
-        try {
-            cls = U.forName(clsName, ldr, null);
-        }
-        catch (ClassNotFoundException e) {
-            throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
-        }
-
-        // forces registering of class by type id, at least locally
-        if (useCache)
-            ctx.registerClass(cls, false, false);
 
         return cls;
     }
@@ -2016,7 +2006,7 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, false);
+                return doReadBinaryArray(in, ctx, ldr, handles, detach, false);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2060,35 +2050,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
-        int hPos = positionForHandle(in);
-
-        Class compType = doReadClass(in, ctx, ldr, deserialize);
-
-        int len = in.readInt();
-
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
-
-        handles.setHandle(arr, hPos);
-
-        for (int i = 0; i < len; i++)
-            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
-
-        return arr;
-    }
-
-    /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
-     * @param handles Holder for handles.
-     * @param detach Detach flag.
-     * @param deserialize Deep flag.
-     * @return Value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public static BinaryArray doReadObjectArrayWrapper(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
         int hPos = positionForHandle(in);
 
@@ -2100,17 +2062,7 @@ public class BinaryUtils {
 
         int len = in.readInt();
         
-        Object[] arr;
-
-        if (deserialize) {
-            Class<?> arrCompCls = compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-                ? classForName(ctx, ldr, compClsName)
-                : ctx.descriptorForTypeId(true, compTypeId, ldr, false).describedClass();
-
-            arr = (Object[])Array.newInstance(arrCompCls, len);
-        }
-        else
-            arr = new Object[len];
+        Object[] arr = new Object[len];
 
         handles.setHandle(arr, hPos);
 

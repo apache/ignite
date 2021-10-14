@@ -1400,6 +1400,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         GridBinaryTestClasses.TestObjectContainer res = toBinary(obj).deserialize();
 
+        // TODO: fixme
         Object[] resArr = (Object[])res.foo;
 
         assertSame(((Object[])resArr[0])[0], resArr);
