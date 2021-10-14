@@ -3053,11 +3053,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
 
         testReadDetachObjectProperly(arr, obj -> {
-            assertArrayEquals(arr, ((BinaryArray)obj).array());
+            assertArrayEquals(arr, ((BinaryArray)obj).deserialize());
 
             Object[] args = new Object[] {obj};
 
-            assertTrue(args[0] instanceof Value[]);
+            assertTrue(args[0] instanceof BinaryArray);
 
             args = PlatformUtils.unwrapBinariesInArray(args, null);
 
@@ -3071,11 +3071,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testReadArrayOfCollections() throws Exception {
         Collection[] arr = new Collection[] { Arrays.asList(new Value(1), new Value(2), new Value(3)) };
         testReadDetachObjectProperly(arr, obj -> {
-            assertArrayEquals(arr, ((BinaryArray)obj).array());
+            assertArrayEquals(arr, ((BinaryArray)obj).deserialize());
 
             Object[] args = new Object[] {obj};
 
-            assertTrue(args[0] instanceof Collection[]);
+            assertTrue(args[0] instanceof BinaryArray);
 
             args = PlatformUtils.unwrapBinariesInArray(args, null);
 

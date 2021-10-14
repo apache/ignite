@@ -104,7 +104,12 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
             for (int i = 0; i < arr.length; i++)
                 try {
-                    res[i] = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+                    Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+
+                    if (BinaryObject.class.isAssignableFrom(obj.getClass()))
+                        obj = ((BinaryObject)obj).deserialize(ldr);
+
+                    res[i] = obj;
                 }
                 catch (ArrayStoreException e ) {
                     System.out.println("BinaryArray.deserialize");
