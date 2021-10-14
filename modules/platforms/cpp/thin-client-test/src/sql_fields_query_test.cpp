@@ -76,10 +76,6 @@ public:
 
             std::string sqlState(msg.substr(0, msg.find(':')));
 
-            std::cout << "-----------------------------" << std::endl;
-            std::cout << msg << std::endl;
-            std::cout << "-----------------------------" << std::endl;
-
             BOOST_CHECK_EQUAL(expectedSqlState, sqlState);
         }
     }
