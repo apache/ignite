@@ -54,7 +54,7 @@ public class VisorConsistencyRepairTask extends
     private static final long serialVersionUID = 0L;
 
     /** Nothing found. */
-    private static final String NOTHING_FOUND = "Consistency violations were NOT found";
+    public static final String NOTHING_FOUND = "Consistency violations were NOT found";
 
     /** Found. */
     public static final String CONSISTENCY_VIOLATIONS_FOUND = "Consistency violations were FOUND";
