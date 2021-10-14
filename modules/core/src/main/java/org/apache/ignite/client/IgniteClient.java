@@ -216,4 +216,9 @@ public interface IgniteClient extends AutoCloseable {
      * @return {@code Services} functionality over given cluster group.
      */
     public ClientServices services(ClientClusterGroup grp);
+
+    /**
+     * Closes this client's open connections and relinquishes all underlying resources.
+     */
+    @Override public void close();
 }

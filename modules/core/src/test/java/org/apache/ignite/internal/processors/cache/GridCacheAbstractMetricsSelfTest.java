@@ -1510,6 +1510,24 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
     /** */
     @Test
+    public void testGetAllOutTx() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl getAllTime = metric("GetAllTime");
+
+        assertTrue(stream(getAllTime.value()).allMatch(v -> v == 0));
+
+        cache.getAllOutTx(singleton(1));
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 1, getTestTimeout()));
+
+        cache.getAllOutTxAsync(singleton(1)).get();
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 2, getTestTimeout()));
+    }
+
+    /** */
+    @Test
     public void testRemoveTimeTotal() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
