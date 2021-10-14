@@ -61,6 +61,7 @@ class ConsistencyTest(IgniteTest):
             self.test_context,
             IgniteConfiguration(
                 version=IgniteVersion(ignite_version),
+                cluster_state="INACTIVE",
                 properties=self.PROPERTIES,
                 log4j_config=cfg_filename  # default AI config (will be generated below)
             ),
