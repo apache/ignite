@@ -322,7 +322,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         return res;
     }
 
-
     /** {@inheritDoc} */
     @Override public void iterate(
         String keyPrefix,
@@ -402,7 +401,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
         while (curUpdatesEntry != null) {
             curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
-            System.err.println("++++ readInitialData row 4" + curUpdatesEntry.getKey());
+            System.err.println("++++ readInitialData row 4" + (curUpdatesEntry == null ? "<null>" : curUpdatesEntry.getKey()));
         }
     }
 
