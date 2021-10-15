@@ -235,13 +235,11 @@ public class IndexQueryProcessor {
 
             flds.remove(alias);
 
-            // Matches prefix.
             if (flds.isEmpty())
                 return true;
         }
 
-        // Full match.
-        return flds.isEmpty();
+        return false;
     }
 
     /** */
