@@ -556,7 +556,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
             if (m instanceof BinaryMarshaller)
                 // To avoid deserializing of enum types.
-                params = ((BinaryArray)((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr)).deserialize();
+            {
+                Object obj = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
+
+                if (obj instanceof BinaryArray)
+                    params = ((BinaryArray)obj).deserialize();
+                else // This can happen if user pass special array type to arguments, String[], for example.
+                    params = (Object[])obj;
+            }
             else
                 params = U.unmarshal(m, paramsBytes, ldr);
         }

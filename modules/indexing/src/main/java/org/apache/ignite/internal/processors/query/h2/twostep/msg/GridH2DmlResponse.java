@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -131,10 +132,15 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         try {
             final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller)
+            if (m instanceof BinaryMarshaller) {
                 // To avoid deserializing of enum types.
-                errKeys = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr);
-            else
+                Object obj = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr);
+
+                if (obj instanceof BinaryArray)
+                    errKeys = ((BinaryArray)obj).deserialize();
+                else // This can happen if user pass special array type to arguments, String[], for example.
+                    errKeys = (Object[])obj;
+            } else
                 errKeys = U.unmarshal(m, errKeysBytes, ldr);
         }
         catch (IgniteCheckedException e) {
