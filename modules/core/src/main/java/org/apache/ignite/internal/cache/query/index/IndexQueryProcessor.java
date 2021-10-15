@@ -50,8 +50,8 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -171,7 +171,6 @@ public class IndexQueryProcessor {
 
         if (!critFlds.isEmpty() && !checkIndex(idxProc.indexDefinition(idx.id()), critFlds))
             throw failIndexQuery("Index doesn't match criteria", null, idxQryDesc);
-
 
         return idx;
     }

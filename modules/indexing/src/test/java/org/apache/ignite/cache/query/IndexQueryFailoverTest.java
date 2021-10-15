@@ -17,9 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -169,39 +171,23 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             },
             IgniteCheckedException.class, errMsg);
 
-        errMsg = "Criterion is invalid: lower boundary is greater than upper";
+        Stream.of(
+            Arrays.asList(lt("id", 100), gt("id", 101)),
+            Arrays.asList(eq("id", 100), eq("id", 101)),
+            Arrays.asList(eq("id", 101), eq("id", 100)),
+            Arrays.asList(eq("id", 101), between("id", 19, 40)),
+            Arrays.asList(between("id", 432, 40))
+        ).forEach(crit -> {
+            String msg = "Criterion is invalid: lower boundary is greater than upper";
 
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(
-                        lt("id", 100),
-                        gt("id", 101));
+            GridTestUtils.assertThrowsAnyCause(null, () -> {
+                    IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                        .setCriteria(crit);
 
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, errMsg);
-
-        errMsg = "Criterion is invalid: lower boundary is greater than upper";
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(
-                        eq("id", 100),
-                        eq("id", 101));
-
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, errMsg);
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(
-                        eq("id", 101),
-                        eq("id", 100));
-
-                return cache.query(qry).getAll();
-            },
-            IgniteCheckedException.class, errMsg);
+                    return cache.query(qry).getAll();
+                },
+                IgniteCheckedException.class, msg);
+        });
     }
 
     /** */
