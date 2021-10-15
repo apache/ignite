@@ -1299,8 +1299,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         addToHistoryCache(ver.id(), histItem);
 
-        if (isPersistenceEnabled)
+        if (isPersistenceEnabled) {
+            System.err.println("+++ want to write:");
+            for (int i = 0, len = histItem.keys().length; i < len; i++)
+                System.err.println("+++ wtw key:" + histItem.keys()[i]);
             worker.update(histItem);
+        }
 
         // Shrink history so that its estimating size doesn't exceed {@link #histMaxBytes}.
         while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {

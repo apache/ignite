@@ -116,6 +116,7 @@ public class DmsDataWriterWorker extends GridWorker {
      * @param compFut Future which should be completed when worker may proceed with updates.
      */
     public void suspend(IgniteInternalFuture<?> compFut) {
+        System.err.println("dms worker suspended");
         if (isCancelled())
             suspendFut = CompletableFuture.completedFuture(AWAIT);
         else {

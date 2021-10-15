@@ -165,7 +165,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
             else
                 lastHistItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id()));
 
-            System.err.println("++++ readInitialData start");
+            System.err.println("++++ readInitialData start !!!");
 
             metastorage.iterate(
                 localKeyPrefix(),

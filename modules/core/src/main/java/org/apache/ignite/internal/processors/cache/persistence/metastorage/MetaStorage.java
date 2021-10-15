@@ -344,13 +344,15 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             }
         }
 
-        System.err.println("lastUpdates: ");
+        System.err.println("+++prefix: " + keyPrefix);
+
+/*        System.err.println("lastUpdates: ");
         if (lastUpdates != null)
             lastUpdates.forEach((k, v) -> System.err.println("lastUpdates+++ " + k));
 
         System.err.println("prefixedSubmap: ");
         if (prefixedSubmap != null)
-            prefixedSubmap.forEach((k, v) -> System.err.println("prefixedSubmap+++ " + k));
+            prefixedSubmap.forEach((k, v) -> System.err.println("prefixedSubmap+++ " + k));*/
 
         Map.Entry<String, byte[]> curUpdatesEntry = null;
 
@@ -452,9 +454,12 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     @Override public void writeRaw(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             WALPointer ptr;
+            System.err.println("+++ writeRaw0 ");
 
             synchronized (this) {
                 ptr = wal.log(new MetastoreDataRecord(key, data));
+
+                System.err.println("+++ writeRaw " + key + " " + unmarshal(JdkMarshaller.DEFAULT, data));
 
                 MetastorageDataRow oldRow = tree.findOne(new MetastorageSearchRow(key));
 
