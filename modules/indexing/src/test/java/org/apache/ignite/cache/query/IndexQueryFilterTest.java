@@ -31,14 +31,18 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
+@RunWith(Parameterized.class)
 public class IndexQueryFilterTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -51,6 +55,16 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
 
     /** */
     private static final int MAX_AGE = 100;
+
+    /** */
+    @Parameterized.Parameter
+    public String idxName;
+
+    /** */
+    @Parameterized.Parameters(name = "idxName={0}")
+    public static List<String> params() {
+        return F.asList(null, IDX);
+    }
 
     /** */
     private static IgniteCache<Integer, Person> cache;
@@ -93,17 +107,22 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
     public void testNonIndexedFieldFilter() {
         IgniteBiPredicate<Integer, Person> nameFilter = (k, v) -> v.name.contains("0");
 
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", MAX_AGE))
             .setFilter(nameFilter);
 
         check(cache.query(qry), nameFilter);
 
-        qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", 18))
             .setFilter(nameFilter);
 
         check(cache.query(qry), (k, v) -> v.age < 18 && nameFilter.apply(k, v));
+
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+            .setFilter(nameFilter);
+
+        check(cache.query(qry), nameFilter);
     }
 
     /** */
@@ -111,17 +130,22 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
     public void testIndexedFieldFilter() {
         IgniteBiPredicate<Integer, Person> ageFilter = (k, v) -> v.age > 18;
 
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", MAX_AGE))
             .setFilter(ageFilter);
 
         check(cache.query(qry), ageFilter);
 
-        qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", 18))
             .setFilter(ageFilter);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
+
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+            .setFilter(ageFilter);
+
+        check(cache.query(qry), ageFilter);
     }
 
     /** */
@@ -129,17 +153,22 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
     public void testKeyFilter() {
         IgniteBiPredicate<Integer, Person> keyFilter = (k, v) -> k > CNT / 2;
 
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", MAX_AGE))
             .setFilter(keyFilter);
 
         check(cache.query(qry), keyFilter);
 
-        qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", 18))
             .setFilter(keyFilter);
 
         check(cache.query(qry), (k, v) -> v.age < 18 && keyFilter.apply(k, v));
+
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+            .setFilter(keyFilter);
+
+        check(cache.query(qry), keyFilter);
     }
 
     /** */
@@ -148,8 +177,13 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
         IgniteBiPredicate<Integer, Person> valFilter = (k, v) ->
             v.equals(persons.values().stream().findFirst().orElse(null));
 
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", MAX_AGE))
+            .setFilter(valFilter);
+
+        check(cache.query(qry), valFilter);
+
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setFilter(valFilter);
 
         check(cache.query(qry), valFilter);
@@ -158,20 +192,25 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testAllowOrDisallowAll() {
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", MAX_AGE))
             .setFilter((k, v) -> true);
 
         assertEquals(CNT, cache.query(qry).getAll().size());
 
-        qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", 18))
             .setFilter((k, v) -> true);
 
         check(cache.query(qry), (k, v) -> v.age < 18);
 
-        qry = new IndexQuery<Integer, Person>(Person.class, IDX)
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(lt("age", MAX_AGE))
+            .setFilter((k, v) -> false);
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        qry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setFilter((k, v) -> false);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
@@ -184,11 +223,11 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
             throw new RuntimeException();
         };
 
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, IDX)
-            .setCriteria(lt("age", MAX_AGE))
-            .setFilter(nameFilter);
-
         GridTestUtils.assertThrows(null, () -> {
+            IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(lt("age", MAX_AGE))
+                .setFilter(nameFilter);
+
             cache.query(qry).getAll();
 
             return null;
