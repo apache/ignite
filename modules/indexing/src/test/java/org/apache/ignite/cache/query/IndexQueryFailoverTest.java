@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -99,13 +98,6 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testQueryWithWrongCriteria() {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryNoCriteria = new IndexQuery<>(Person.class, qryIdx);
-
-                return cache.query(qryNoCriteria);
-            },
-            NullPointerException.class, "Ouch! Argument cannot be null: criteria");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class, qryIdx)
                     .setCriteria(lt(null, 12));
 
@@ -163,22 +155,6 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testQueryWrongQuery() {
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria();
-
-                return cache.query(qry).getAll();
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(Collections.emptyList());
-
-                return cache.query(qry).getAll();
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
-
         String errMsg = qryIdx != null ? "Index doesn't match query." : "No index found for criteria.";
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {

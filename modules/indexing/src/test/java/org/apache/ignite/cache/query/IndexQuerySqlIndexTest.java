@@ -104,6 +104,10 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             .setCriteria(lte("descId", Integer.MAX_VALUE));
 
         assertTrue(tblCache.query(qry).getAll().isEmpty());
+
+        qry = new IndexQuery<>(Person.class.getName(), qryDescIdxName);
+
+        assertTrue(tblCache.query(qry).getAll().isEmpty());
     }
 
     /** */
@@ -152,6 +156,10 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             .setCriteria(lt("DESCID", pivot));
 
         check(tblCache.query(qry), 0, pivot);
+
+        qry = new IndexQuery<>(Person.class.getName(), qryDescIdxName);
+
+        check(tblCache.query(qry), 0, CNT);
     }
 
     /** Should support only original field. */

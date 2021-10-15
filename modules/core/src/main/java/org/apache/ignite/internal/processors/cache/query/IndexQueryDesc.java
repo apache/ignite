@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /** Internal representation of {@link IndexQuery}. */
 public class IndexQueryDesc implements Serializable {
@@ -40,8 +39,6 @@ public class IndexQueryDesc implements Serializable {
 
     /** */
     public IndexQueryDesc(List<IndexQueryCriterion> criteria, String idxName, String valType) {
-        A.notNull(criteria, "criteria");
-
         this.criteria = criteria;
         this.idxName = idxName;
         this.valType = valType;
@@ -64,7 +61,7 @@ public class IndexQueryDesc implements Serializable {
 
     /** */
     @Override public String toString() {
-        List<String> fields = criteria.stream().map(IndexQueryCriterion::field).collect(Collectors.toList());
+        List<String> fields = criteria == null ? null : criteria.stream().map(IndexQueryCriterion::field).collect(Collectors.toList());
 
         return "IndexQuery[" +
             "idxName=" + idxName + ", " +

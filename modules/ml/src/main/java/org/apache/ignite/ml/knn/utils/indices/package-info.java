@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Spring-based cache store implementation.
+ * Contains utils functionality for indices in kNN algorithms.
  */
-package org.apache.ignite.examples.datagrid.store.spring;
+package org.apache.ignite.ml.knn.utils.indices;
