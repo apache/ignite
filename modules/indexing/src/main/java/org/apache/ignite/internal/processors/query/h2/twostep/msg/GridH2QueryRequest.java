@@ -560,7 +560,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 Object obj = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
 
                 if (obj instanceof BinaryArray)
-                    params = ((BinaryArray)obj).deserialize();
+                    params = ((BinaryArray)obj).array();
                 else // This can happen if user pass special array type to arguments, String[], for example.
                     params = (Object[])obj;
             }
