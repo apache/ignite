@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * Test REST with cache node filter.
  */
-public class JettyRestProcessorNodeFilterTest extends JettyRestProcessorCommonSelfTest {
+public class JettyRestProcessorCacheNodeFilterTest extends JettyRestProcessorCommonSelfTest {
     /** {@inheritDoc} */
     @Override protected String signature() {
         return null;
