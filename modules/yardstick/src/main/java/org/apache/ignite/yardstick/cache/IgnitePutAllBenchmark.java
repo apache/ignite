@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -47,6 +48,14 @@ public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer,
 
     /** Predefined batches.*/
     List<Map<Integer, Map<Integer, Integer>>> batchMaps;
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        super.tearDown();
+
+        if (threadIdent.get() != batchMaps.size())
+            throw new IgniteException("Some workers are not initialized.");
+    }
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
