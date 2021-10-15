@@ -120,7 +120,7 @@ public class Checkpointer extends GridWorker {
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
 
     /** Avoid the start checkpoint if checkpointer was canceled. */
-    private volatile boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, true);
+    private volatile boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
     /** Long JVM pause threshold. */
     private final int longJvmPauseThreshold =
