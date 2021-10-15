@@ -17,42 +17,27 @@
 
 package org.apache.ignite.configuration.schemas.network;
 
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
+import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
 
-/**
- * Configuration schema for network endpoint subtree.
+/** Client socket configuration. See <a href="https://man7.org/linux/man-pages/man7/tcp.7.html">TCP docs</a> and
+ * <a href="https://man7.org/linux/man-pages/man7/socket.7.html">socket docs</a>.
  */
-@ConfigurationRoot(rootName = "network", type = ConfigurationType.LOCAL)
-public class NetworkConfigurationSchema {
-    /** Network port. */
-    @Min(1024)
+@Config
+public class OutboundConfigurationSchema {
+    /** Keep-alive flag. */
+    @Value(hasDefault = true)
+    public final boolean soKeepAlive = true;
+
+    /** Socket close linger value. */
+    @Min(0)
     @Max(0xFFFF)
     @Value(hasDefault = true)
-    public final int port = 47500;
+    public final int soLinger = 0;
 
-    /** Network port range. */
-    @Min(0)
+    /** TCP no delay flag */
     @Value(hasDefault = true)
-    public final int portRange = 0;
-
-    /** Server configuration. */
-    @ConfigValue
-    public InboundConfigurationSchema inbound;
-
-    /** Client configuration. */
-    @ConfigValue
-    public OutboundConfigurationSchema outbound;
-
-    /** Membership configuration. */
-    @ConfigValue
-    public ClusterMembershipConfigurationSchema membership;
-
-    /** NodeFinder configuration. */
-    @ConfigValue
-    public NodeFinderConfigurationSchema nodeFinder;
+    public final boolean tcpNoDelay = true;
 }

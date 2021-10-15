@@ -109,7 +109,7 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
 
         String startCfg = "network: {\n" +
             "  port:3344,\n" +
-            "  netClusterNodes:[ \"localhost:3344\" ]\n" +
+            "  nodeFinder: {netClusterNodes:[ \"localhost:3344\" ]}\n" +
             "}";
 
         IgniteImpl ignite = (IgniteImpl)IgnitionManager.start(nodeName, startCfg, workDir);
@@ -121,14 +121,14 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
 
         assertArrayEquals(
             new String[] {"localhost:3344"},
-            ignite.nodeConfiguration().getConfiguration(NetworkConfiguration.KEY).netClusterNodes().value()
+            ignite.nodeConfiguration().getConfiguration(NetworkConfiguration.KEY).nodeFinder().netClusterNodes().value()
         );
 
         IgnitionManager.stop(ignite.name());
 
         ignite = (IgniteImpl)IgnitionManager.start(
             nodeName,
-            "network.netClusterNodes=[ \"localhost:3344\", \"localhost:3343\" ]",
+            "network.nodeFinder.netClusterNodes=[ \"localhost:3344\", \"localhost:3343\" ]",
             workDir
         );
 
@@ -139,7 +139,7 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
 
         assertArrayEquals(
             new String[] {"localhost:3344", "localhost:3343"},
-            ignite.nodeConfiguration().getConfiguration(NetworkConfiguration.KEY).netClusterNodes().value()
+            ignite.nodeConfiguration().getConfiguration(NetworkConfiguration.KEY).nodeFinder().netClusterNodes().value()
         );
 
         IgnitionManager.stop(ignite.name());
@@ -159,7 +159,9 @@ public class ITIgniteNodeRestartTest extends IgniteAbstractTest {
             "  },\n" +
             "  \"network\": {\n" +
             "    \"port\":3344,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\" ]\n" +
+            "    \"nodeFinder\": {\n" +
+            "      \"netClusterNodes\":[ \"localhost:3344\" ] \n" +
+            "    }\n" +
             "  }\n" +
             "}", workDir);
 

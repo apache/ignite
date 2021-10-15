@@ -76,34 +76,40 @@ class ITDynamicTableCreationTest {
         nodesBootstrapCfg.put(
             node0Name,
             "{\n" +
-                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
-                "  network: {\n" +
-                "    port: " + PORTS[0] + "\n" +
-                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-                "  }\n" +
-                "}"
+            "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+            "  network: {\n" +
+            "    port: " + PORTS[0] + ",\n" +
+            "    nodeFinder:{\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ] \n" +
+            "    }\n" +
+            "  }\n" +
+            "}"
         );
 
         nodesBootstrapCfg.put(
             node1Name,
             "{\n" +
-                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
-                "  network: {\n" +
-                "    port: " + PORTS[1] + "\n" +
-                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-                "  }\n" +
-                "}"
+            "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+            "  network: {\n" +
+            "    port: " + PORTS[1] + ",\n" +
+            "    nodeFinder:{\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}"
         );
 
         nodesBootstrapCfg.put(
             node2Name,
             "{\n" +
-                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
-                "  network: {\n" +
-                "    port: " + PORTS[2] + "\n" +
-                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
-                "  }\n" +
-                "}"
+            "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+            "  network: {\n" +
+            "    port: " + PORTS[2] + ",\n" +
+            "    nodeFinder:{\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}"
         );
     }
 

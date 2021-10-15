@@ -63,7 +63,6 @@ import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
-import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
 import org.apache.ignite.rest.RestModule;
 import org.apache.ignite.table.manager.IgniteTables;
@@ -163,9 +162,7 @@ public class IgniteImpl implements Ignite {
                 name,
                 new MessageSerializationRegistryImpl()
             ),
-            nodeCfgMgr,
-            () -> StaticNodeFinder.fromConfiguration(nodeCfgMgr.configurationRegistry().
-                getConfiguration(NetworkConfiguration.KEY).value())
+            nodeCfgMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY)
         );
 
         raftMgr = new Loza(clusterSvc, workDir);

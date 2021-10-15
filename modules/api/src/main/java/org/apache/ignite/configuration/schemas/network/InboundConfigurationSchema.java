@@ -17,42 +17,37 @@
 
 package org.apache.ignite.configuration.schemas.network;
 
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
+import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
 
 /**
- * Configuration schema for network endpoint subtree.
+ * Server socket configuration. See <a href="https://man7.org/linux/man-pages/man7/tcp.7.html">TCP docs</a> and
+ * <a href="https://man7.org/linux/man-pages/man7/socket.7.html">socket docs</a>.
  */
-@ConfigurationRoot(rootName = "network", type = ConfigurationType.LOCAL)
-public class NetworkConfigurationSchema {
-    /** Network port. */
-    @Min(1024)
-    @Max(0xFFFF)
-    @Value(hasDefault = true)
-    public final int port = 47500;
-
-    /** Network port range. */
+@Config
+public class InboundConfigurationSchema {
+    /** Backlog value */
     @Min(0)
     @Value(hasDefault = true)
-    public final int portRange = 0;
+    public final int soBacklog = 128;
 
-    /** Server configuration. */
-    @ConfigValue
-    public InboundConfigurationSchema inbound;
+    /** Reuse address flag. */
+    @Value(hasDefault = true)
+    public final boolean soReuseAddr = true;
 
-    /** Client configuration. */
-    @ConfigValue
-    public OutboundConfigurationSchema outbound;
+    /** Keep-alive flag. */
+    @Value(hasDefault = true)
+    public final boolean soKeepAlive = true;
 
-    /** Membership configuration. */
-    @ConfigValue
-    public ClusterMembershipConfigurationSchema membership;
+    /** Socket close linger value. */
+    @Min(0)
+    @Max(0xFFFF)
+    @Value(hasDefault = true)
+    public final int soLinger = 0;
 
-    /** NodeFinder configuration. */
-    @ConfigValue
-    public NodeFinderConfigurationSchema nodeFinder;
+    /** TCP no delay flag. */
+    @Value(hasDefault = true)
+    public final boolean tcpNoDelay = true;
 }

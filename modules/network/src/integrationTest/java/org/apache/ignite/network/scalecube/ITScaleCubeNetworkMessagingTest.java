@@ -36,10 +36,10 @@ import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NodeFinder;
+import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.TestMessageTypes;
@@ -54,6 +54,7 @@ import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Mono;
 
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
+import static org.apache.ignite.utils.ClusterServiceTestUtils.findLocalAddresses;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -421,6 +422,9 @@ class ITScaleCubeNetworkMessagingTest {
         /** Latch that is locked until all members are visible in the topology. */
         private final CountDownLatch startupLatch;
 
+        /** Node finder. */
+        private final NodeFinder nodeFinder;
+
         /**
          * Creates a test cluster with the given amount of members.
          *
@@ -432,12 +436,14 @@ class ITScaleCubeNetworkMessagingTest {
 
             int initialPort = 3344;
 
-            var nodeFinder = new LocalPortRangeNodeFinder(initialPort, initialPort + numOfNodes);
+            List<NetworkAddress> addresses = findLocalAddresses(initialPort, initialPort + numOfNodes);
+
+            this.nodeFinder = new StaticNodeFinder(addresses);
 
             var isInitial = new AtomicBoolean(true);
 
-            members = nodeFinder.findNodes().stream()
-                .map(addr -> startNode(testInfo, addr, nodeFinder, isInitial.getAndSet(false)))
+            members = addresses.stream()
+                .map(addr -> startNode(testInfo, addr, isInitial.getAndSet(false)))
                 .collect(Collectors.toUnmodifiableList());
         }
 
@@ -446,12 +452,11 @@ class ITScaleCubeNetworkMessagingTest {
          *
          * @param testInfo Test info.
          * @param addr Node address.
-         * @param nodeFinder Node finder.
          * @param initial Whether this node is the first one.
          * @return Started cluster node.
          */
         private ClusterService startNode(
-            TestInfo testInfo, NetworkAddress addr, NodeFinder nodeFinder, boolean initial
+            TestInfo testInfo, NetworkAddress addr, boolean initial
         ) {
             ClusterService clusterSvc = ClusterServiceTestUtils.clusterService(
                 testInfo,

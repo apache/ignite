@@ -36,7 +36,7 @@ import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
-import org.apache.ignite.network.NodeFinder;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.CliService;
@@ -59,7 +59,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.lang.Thread.sleep;
-import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -120,17 +119,17 @@ public class ITCliServiceTest {
         clientExecutor = JRaftUtils.createClientExecutor(opts, "client");
         opts.setClientExecutor(clientExecutor);
 
-        NodeFinder nodeFinder = peers.stream()
+        List<NetworkAddress> addressList = peers.stream()
             .map(PeerId::getEndpoint)
             .map(JRaftUtils::addressFromEndpoint)
-            .collect(collectingAndThen(toList(), StaticNodeFinder::new));
+            .collect(toList());
 
         var registry = new MessageSerializationRegistryImpl();
 
         ClusterService clientSvc = ClusterServiceTestUtils.clusterService(
             testInfo,
             TestUtils.INIT_PORT - 1,
-            nodeFinder,
+            new StaticNodeFinder(addressList),
             registry,
             new TestScaleCubeClusterServiceFactory()
         );

@@ -17,13 +17,14 @@
 package org.apache.ignite.network.scalecube;
 
 import io.scalecube.cluster.ClusterConfig;
+import org.apache.ignite.configuration.schemas.network.ClusterMembershipView;
 
 /**
  * Scalecube test factory. Provides fast detection time.
  */
 public class TestScaleCubeClusterServiceFactory extends ScaleCubeClusterServiceFactory {
     /** {@inheritDoc} */
-    @Override protected ClusterConfig clusterConfig() {
+    @Override protected ClusterConfig clusterConfig(ClusterMembershipView unused) {
         return ClusterConfig.defaultLocalConfig()
             // Theoretical suspicious timeout for 5 node cluster: 500 * 1 * log(5) = 349ms
             // Short sync interval is required for faster convergence on node restarts.

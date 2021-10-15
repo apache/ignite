@@ -24,6 +24,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import io.netty.channel.Channel;
+import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
+import org.apache.ignite.configuration.schemas.network.NetworkView;
+import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
+import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
@@ -34,6 +38,7 @@ import org.apache.ignite.network.TestMessagesFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -55,11 +60,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Recovery protocol handshake tests.
  */
+@ExtendWith(ConfigurationExtension.class)
 public class ITRecoveryHandshakeTest {
     /** Started connection managers. */
     private final List<ConnectionManager> startedManagers = new ArrayList<>();
 
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
+
+    /** Reusable network configuration object. */
+    @InjectConfiguration
+    private NetworkConfiguration networkConfiguration;
 
     /** */
     @AfterEach
@@ -373,8 +383,12 @@ public class ITRecoveryHandshakeTest {
         UUID launchId = UUID.randomUUID();
         String consistentId = UUID.randomUUID().toString();
 
+        networkConfiguration.port().update(port).join();
+
+        NetworkView cfg = networkConfiguration.value();
+
         var manager = new ConnectionManager(
-            port,
+            cfg,
             registry,
             consistentId,
             () -> new FailingRecoveryServerHandshakeManager(launchId, consistentId, serverHandshakeFailAt, messageFactory),
@@ -402,8 +416,12 @@ public class ITRecoveryHandshakeTest {
         UUID launchId = UUID.randomUUID();
         String consistentId = UUID.randomUUID().toString();
 
+        networkConfiguration.port().update(port).join();
+
+        NetworkView cfg = networkConfiguration.value();
+
         var manager = new ConnectionManager(
-            port,
+            cfg,
             registry,
             consistentId,
             () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),

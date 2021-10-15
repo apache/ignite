@@ -37,6 +37,8 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.apache.ignite.configuration.schemas.network.NetworkView;
+import org.apache.ignite.configuration.schemas.network.OutboundView;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
@@ -91,14 +93,14 @@ public class ConnectionManager {
     /**
      * Constructor.
      *
-     * @param port Server port.
+     * @param networkConfiguration Network configuration.
      * @param registry Serialization registry.
      * @param consistentId Consistent id of this node.
      * @param serverHandshakeManagerFactory Server handshake manager factory.
      * @param clientHandshakeManagerFactory Client handshake manager factory.
      */
     public ConnectionManager(
-        int port,
+        NetworkView networkConfiguration,
         MessageSerializationRegistry registry,
         String consistentId,
         Supplier<HandshakeManager> serverHandshakeManagerFactory,
@@ -108,13 +110,13 @@ public class ConnectionManager {
         this.consistentId = consistentId;
         this.clientHandshakeManagerFactory = clientHandshakeManagerFactory;
         this.server = new NettyServer(
-            port,
+            networkConfiguration,
             serverHandshakeManagerFactory,
             this::onNewIncomingChannel,
             this::onMessage,
             serializationRegistry
         );
-        this.clientBootstrap = createClientBootstrap(clientWorkerGroup, serializationRegistry);
+        this.clientBootstrap = createClientBootstrap(clientWorkerGroup, networkConfiguration.outbound());
     }
 
     /**
@@ -303,24 +305,24 @@ public class ConnectionManager {
     }
 
     /**
-     * Creates a {@link Bootstrap} for clients, providing channel handlers and options.
+     * Creates a {@link Bootstrap} for clients with channel options provided by a {@link OutboundView}.
      *
      * @param eventLoopGroup Event loop group for channel handling.
-     * @param serializationRegistry Serialization registry.
+     * @param clientConfiguration Client configuration.
      * @return Bootstrap for clients.
      */
     public static Bootstrap createClientBootstrap(
         EventLoopGroup eventLoopGroup,
-        MessageSerializationRegistry serializationRegistry
+        OutboundView clientConfiguration
     ) {
         Bootstrap clientBootstrap = new Bootstrap();
 
         clientBootstrap.group(eventLoopGroup)
             .channel(NioSocketChannel.class)
             // See NettyServer#start for netty configuration details.
-            .option(ChannelOption.SO_KEEPALIVE, true)
-            .option(ChannelOption.SO_LINGER, 0)
-            .option(ChannelOption.TCP_NODELAY, true);
+            .option(ChannelOption.SO_KEEPALIVE, clientConfiguration.soKeepAlive())
+            .option(ChannelOption.SO_LINGER, clientConfiguration.soLinger())
+            .option(ChannelOption.TCP_NODELAY, clientConfiguration.tcpNoDelay());
 
         return clientBootstrap;
     }

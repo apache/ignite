@@ -32,6 +32,9 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
+import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
+import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -42,6 +45,7 @@ import org.apache.ignite.network.serialization.MessageReader;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
@@ -57,9 +61,14 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for {@link NettyServer}.
  */
+@ExtendWith(ConfigurationExtension.class)
 public class NettyServerTest {
     /** Server. */
     private NettyServer server;
+
+    /** Server configuration. */
+    @InjectConfiguration
+    private NetworkConfiguration serverCfg;
 
     /** */
     @AfterEach
@@ -201,7 +210,13 @@ public class NettyServerTest {
                 }
             });
 
-        server = new NettyServer(4000, () -> handshakeManager, sender -> {}, (socketAddress, message) -> {}, registry);
+        server = new NettyServer(
+            serverCfg.value(),
+            () -> handshakeManager,
+            sender -> {},
+            (socketAddress, message) -> {},
+            registry
+        );
 
         server.start().get(3, TimeUnit.SECONDS);
 
@@ -251,14 +266,20 @@ public class NettyServerTest {
      * @param future Server channel future.
      * @param shouldStart {@code true} if a server should start successfully
      * @return NettyServer.
-     * @throws Exception If failed.
      */
-    private static NettyServer getServer(ChannelFuture future, boolean shouldStart) throws Exception {
+    private NettyServer getServer(ChannelFuture future, boolean shouldStart) {
         ServerBootstrap bootstrap = Mockito.spy(new ServerBootstrap());
 
         Mockito.doReturn(future).when(bootstrap).bind(Mockito.anyInt());
 
-        var server = new NettyServer(bootstrap, 0, () -> mock(HandshakeManager.class), null, null, null);
+        var server = new NettyServer(
+            bootstrap,
+            serverCfg.value(),
+            () -> mock(HandshakeManager.class),
+            null,
+            null,
+            null
+        );
 
         try {
             server.start().get(3, TimeUnit.SECONDS);

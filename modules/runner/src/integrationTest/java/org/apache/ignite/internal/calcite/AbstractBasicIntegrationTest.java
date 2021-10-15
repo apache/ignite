@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
@@ -65,7 +64,9 @@ public class AbstractBasicIntegrationTest {
             "  },\n" +
             "  \"network\": {\n" +
             "    \"port\":3344,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    \"nodeFinder\": {\n" +
+            "      \"netClusterNodes\": [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
             "  }\n" +
             "}");
 
@@ -75,7 +76,9 @@ public class AbstractBasicIntegrationTest {
             "  },\n" +
             "  \"network\": {\n" +
             "    \"port\":3345,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    \"nodeFinder\":{\n" +
+            "      \"netClusterNodes\": [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
             "  }\n" +
             "}");
 
@@ -85,7 +88,9 @@ public class AbstractBasicIntegrationTest {
             "  },\n" +
             "  \"network\": {\n" +
             "    \"port\":3346,\n" +
-            "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    \"nodeFinder\":{\n" +
+            "      \"netClusterNodes\": [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
             "  }\n" +
             "}");
     }};

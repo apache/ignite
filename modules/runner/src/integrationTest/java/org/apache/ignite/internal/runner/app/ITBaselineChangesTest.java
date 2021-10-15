@@ -155,8 +155,10 @@ public class ITBaselineChangesTest {
         return "{\n" +
             "  node.metastorageNodes: [ \"" + metastoreNodeName + "\" ],\n" +
             "  network: {\n" +
-            "    port: " + nodePort(nodeIdx) + "\n" +
-            "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    port: " + nodePort(nodeIdx) + ",\n" +
+            "    nodeFinder: {\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ] \n" +
+            "    }\n" +
             "  }\n" +
             "}";
     }

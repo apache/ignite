@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.NodeFinder;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
@@ -64,7 +64,6 @@ import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.TestInfo;
 
-import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -299,17 +298,17 @@ public class TestCluster {
             if (!emptyPeers)
                 nodeOptions.setInitialConf(new Configuration(this.peers, this.learners));
 
-            NodeFinder nodeFinder = (emptyPeers ? Stream.<PeerId>empty() : peers.stream())
+            List<NetworkAddress> addressList = (emptyPeers ? Stream.<PeerId>empty() : peers.stream())
                     .map(PeerId::getEndpoint)
                     .map(JRaftUtils::addressFromEndpoint)
-                    .collect(collectingAndThen(toList(), StaticNodeFinder::new));
+                    .collect(toList());
 
             NodeManager nodeManager = new NodeManager();
 
             ClusterService clusterService = ClusterServiceTestUtils.clusterService(
                 testInfo,
                 listenAddr.getPort(),
-                nodeFinder,
+                new StaticNodeFinder(addressList),
                 new TestMessageSerializationRegistryImpl(),
                 new TestScaleCubeClusterServiceFactory()
             );

@@ -17,42 +17,24 @@
 
 package org.apache.ignite.configuration.schemas.network;
 
+import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.validation.Max;
-import org.apache.ignite.configuration.validation.Min;
 
 /**
- * Configuration schema for network endpoint subtree.
+ * Cluster membership configuration.
  */
-@ConfigurationRoot(rootName = "network", type = ConfigurationType.LOCAL)
-public class NetworkConfigurationSchema {
-    /** Network port. */
-    @Min(1024)
-    @Max(0xFFFF)
+@Config
+public class ClusterMembershipConfigurationSchema {
+    /** Periodic membership data sync interval. */
     @Value(hasDefault = true)
-    public final int port = 47500;
+    public final int membershipSyncInterval = 1000;
 
-    /** Network port range. */
-    @Min(0)
+    /** Failure detector ping interval. */
     @Value(hasDefault = true)
-    public final int portRange = 0;
+    public final int failurePingInterval = 500;
 
-    /** Server configuration. */
+    /** ScaleCube-specific configuration. */
     @ConfigValue
-    public InboundConfigurationSchema inbound;
-
-    /** Client configuration. */
-    @ConfigValue
-    public OutboundConfigurationSchema outbound;
-
-    /** Membership configuration. */
-    @ConfigValue
-    public ClusterMembershipConfigurationSchema membership;
-
-    /** NodeFinder configuration. */
-    @ConfigValue
-    public NodeFinderConfigurationSchema nodeFinder;
+    public ScaleCubeConfigurationSchema scaleCube;
 }

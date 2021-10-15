@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
+import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import static org.apache.ignite.utils.ClusterServiceTestUtils.findLocalAddresses;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -64,9 +65,11 @@ class ITNodeRestartsTest {
     public void testRestarts(TestInfo testInfo) {
         final int initPort = 3344;
 
-        var nodeFinder = new LocalPortRangeNodeFinder(initPort, initPort + 5);
+        List<NetworkAddress> addresses = findLocalAddresses(initPort, initPort + 5);
 
-        services = nodeFinder.findNodes().stream()
+        var nodeFinder = new StaticNodeFinder(addresses);
+
+        services = addresses.stream()
             .map(addr -> startNetwork(testInfo, addr, nodeFinder))
             .collect(Collectors.toCollection(ArrayList::new)); // ensure mutability
 
@@ -77,8 +80,6 @@ class ITNodeRestartsTest {
 
         int idx0 = 0;
         int idx1 = 2;
-
-        List<NetworkAddress> addresses = nodeFinder.findNodes();
 
         LOG.info("Shutdown {}", addresses.get(idx0));
         services.get(idx0).stop();

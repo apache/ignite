@@ -58,10 +58,10 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.LocalPortRangeNodeFinder;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
+import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.Peer;
@@ -136,10 +136,12 @@ public class ITDistributedTableTest {
      */
     @BeforeEach
     public void beforeTest(TestInfo testInfo) {
-        var nodeFinder = new LocalPortRangeNodeFinder(NODE_PORT_BASE, NODE_PORT_BASE + NODES);
+        List<NetworkAddress> addresses = ClusterServiceTestUtils.findLocalAddresses(NODE_PORT_BASE, NODE_PORT_BASE + NODES);
 
-        nodeFinder.findNodes().stream()
-            .map(addr -> startClient(testInfo, addr.port(), nodeFinder))
+        var finder = new StaticNodeFinder(addresses);
+
+        addresses.stream()
+            .map(addr -> startClient(testInfo, addr.port(), finder))
             .forEach(cluster::add);
 
         for (ClusterService node : cluster)
@@ -147,7 +149,7 @@ public class ITDistributedTableTest {
 
         LOG.info("Cluster started.");
 
-        client = startClient(testInfo, NODE_PORT_BASE + NODES, nodeFinder);
+        client = startClient(testInfo, NODE_PORT_BASE + NODES, finder);
 
         assertTrue(waitForTopology(client, NODES + 1, 1000));
 

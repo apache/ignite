@@ -331,12 +331,10 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
      * Creates a cluster service.
      */
     private ClusterService clusterService(TestInfo testInfo, int port, NetworkAddress otherPeer) {
-        var nodeFinder = new StaticNodeFinder(List.of(otherPeer));
-
         var network = ClusterServiceTestUtils.clusterService(
             testInfo,
             port,
-            nodeFinder,
+            new StaticNodeFinder(List.of(otherPeer)),
             SERIALIZATION_REGISTRY,
             NETWORK_FACTORY
         );

@@ -73,23 +73,27 @@ public class ITThinClientConnectionTest extends IgniteAbstractTest {
         nodesBootstrapCfg.put(
             node0Name,
             "{\n" +
-                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
-                "  network: {\n" +
-                "    port: " + 3344 + "\n" +
-                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\" ]\n" +
-                "  }\n" +
-                "}"
+            "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+            "  network: {\n" +
+            "    port: " + 3344 + ",\n" +
+            "    nodeFinder: {\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\" ]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}"
         );
 
         nodesBootstrapCfg.put(
             node1Name,
             "{\n" +
-                "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
-                "  network: {\n" +
-                "    port: " + 3345 + "\n" +
-                "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\" ]\n" +
-                "  }\n" +
-                "}"
+            "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
+            "  network: {\n" +
+            "    port: " + 3345 + ",\n" +
+            "    nodeFinder: {\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\" ]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}"
         );
     }
 

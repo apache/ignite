@@ -29,6 +29,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import io.netty.handler.codec.DecoderException;
+import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
+import org.apache.ignite.configuration.schemas.network.NetworkView;
+import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
+import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManager;
@@ -40,6 +44,7 @@ import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isA;
@@ -55,12 +60,17 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for {@link ConnectionManager}.
  */
+@ExtendWith(ConfigurationExtension.class)
 public class ITConnectionManagerTest {
     /** Started connection managers. */
     private final List<ConnectionManager> startedManagers = new ArrayList<>();
 
     /** Message factory. */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
+
+    /** Reusable network configuration object. */
+    @InjectConfiguration
+    private NetworkConfiguration networkConfiguration;
 
     /** */
     @AfterEach
@@ -319,8 +329,12 @@ public class ITConnectionManagerTest {
 
         var messageFactory = new NetworkMessagesFactory();
 
+        networkConfiguration.port().update(port).join();
+
+        NetworkView cfg = networkConfiguration.value();
+
         var manager = new ConnectionManager(
-            port,
+            cfg,
             registry,
             consistentId,
             () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),

@@ -22,8 +22,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.nio.file.Path;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.env.Environment;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.cli.spec.IgniteCliSpec;
 import org.junit.jupiter.api.AfterEach;
@@ -35,6 +40,7 @@ import picocli.CommandLine;
 
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -59,6 +65,9 @@ public class ITConfigCommandTest extends AbstractCliTest {
     /** Network port. */
     private int networkPort;
 
+    /** Node. */
+    private Ignite node;
+
     /** */
     @BeforeEach
     void setup(@TempDir Path workDir, TestInfo testInfo) throws IOException {
@@ -68,11 +77,15 @@ public class ITConfigCommandTest extends AbstractCliTest {
         clientPort = getAvailablePort();
         networkPort = getAvailablePort();
 
-        String configStr = "network.port=" + networkPort + "\n" +
-            "rest.port=" + restPort + "\n" + "rest.portRange=0" + "\n" +
-            "clientConnector.port=" + clientPort + "\n" + "clientConnector.portRange=0";
+        String configStr = String.join("\n",
+            "network.port=" + networkPort,
+            "rest.port=" + restPort,
+            "rest.portRange=0",
+            "clientConnector.port=" + clientPort,
+            "clientConnector.portRange=0"
+        );
 
-        IgnitionManager.start(testNodeName(testInfo, networkPort), configStr, workDir);
+        this.node = IgnitionManager.start(testNodeName(testInfo, networkPort), configStr, workDir);
 
         ctx = ApplicationContext.run(Environment.TEST);
 
@@ -119,15 +132,9 @@ public class ITConfigCommandTest extends AbstractCliTest {
 
         assertEquals(0, exitCode);
 
-        String unescapedOut = unescapeQuotes(out.toString());
+        DocumentContext document = JsonPath.parse(removeTrailingQuotes(unescapeQuotes(out.toString())));
 
-        assertTrue(unescapedOut.contains(
-            "\"clientConnector\":{\"connectTimeout\":5000,\"port\":" + clientPort + ",\"portRange\":0}"
-        ), unescapedOut);
-
-        assertTrue(unescapedOut.contains(
-            "\"rest\":{\"port\":" + restPort + ",\"portRange\":0}}\""
-        ), unescapedOut);
+        assertEquals("localhost1", document.read("$.node.metastorageNodes[0]"));
     }
 
     @Test
@@ -143,10 +150,12 @@ public class ITConfigCommandTest extends AbstractCliTest {
         );
 
         assertEquals(0, exitCode);
-        assertEquals(
-            "\"{\"netClusterNodes\":[],\"port\":" + networkPort + "}\"" + System.lineSeparator(),
-            unescapeQuotes(out.toString())
-        );
+
+        JSONObject outResult = (JSONObject) JSONValue.parse(removeTrailingQuotes(unescapeQuotes(out.toString())));
+
+        assertTrue(outResult.containsKey("inbound"));
+
+        assertFalse(outResult.containsKey("node"));
     }
 
     /**
@@ -180,7 +189,23 @@ public class ITConfigCommandTest extends AbstractCliTest {
         out.reset();
     }
 
-    private String unescapeQuotes(String input) {
+    /**
+     * Unescapes quotes in the input string.
+     *
+     * @param input String.
+     * @return String with unescaped quotes.
+     */
+    private static String unescapeQuotes(String input) {
         return input.replace("\\\"", "\"");
+    }
+
+    /**
+     * Removes trailing quotes from the input string.
+     *
+     * @param input String.
+     * @return String without trailing quotes.
+     */
+    private static String removeTrailingQuotes(String input) {
+        return input.substring(1, input.length() - 1);
     }
 }

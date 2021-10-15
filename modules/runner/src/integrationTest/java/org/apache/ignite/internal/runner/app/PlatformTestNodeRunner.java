@@ -60,7 +60,9 @@ public class PlatformTestNodeRunner {
                 "  \"clientConnector\":{\"port\": 10942,\"portRange\":10}," +
                 "  \"network\": {\n" +
                 "    \"port\":3344,\n" +
-                "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\" ]\n" +
+                "    \"nodeFinder\": {\n" +
+                "      \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\" ]\n" +
+                "    }\n" +
                 "  }\n" +
                 "}");
     }};

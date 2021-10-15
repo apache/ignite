@@ -79,8 +79,10 @@ abstract class AbstractSchemaChangeTest {
             "{\n" +
             "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
             "  network: {\n" +
-            "    port: " + PORTS[0] + "\n" +
-            "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    port: " + PORTS[0] + ",\n" +
+            "    nodeFinder: {\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
             "  }\n" +
             "}"
         );
@@ -90,8 +92,10 @@ abstract class AbstractSchemaChangeTest {
             "{\n" +
             "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
             "  network: {\n" +
-            "    port: " + PORTS[1] + "\n" +
-            "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    port: " + PORTS[1] + ",\n" +
+            "    nodeFinder: {\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
             "  }\n" +
             "}"
         );
@@ -101,8 +105,10 @@ abstract class AbstractSchemaChangeTest {
             "{\n" +
             "  node.metastorageNodes: [ \"" + node0Name + "\" ],\n" +
             "  network: {\n" +
-            "    port: " + PORTS[2] + "\n" +
-            "    netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    port: " + PORTS[2] + ",\n" +
+            "    nodeFinder: {\n" +
+            "      netClusterNodes: [ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
+            "    }\n" +
             "  }\n" +
             "}"
         );

@@ -6,8 +6,10 @@
     },
     "network": {
         "port": 3344,
-        "netClusterNodes": [
-            "localhost:3344"
-        ]
+        "nodeFinder": {
+            "netClusterNodes": [
+                "localhost:3344"
+            ]
+        }
     }
 }
