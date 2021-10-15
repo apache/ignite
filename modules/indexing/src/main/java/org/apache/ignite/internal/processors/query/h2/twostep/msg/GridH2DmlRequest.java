@@ -350,6 +350,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 Object obj = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
 
                 if (obj instanceof BinaryArray)
+                    // We want raw data(no deserialization), because, all actions with params happens in binary format.
                     params = ((BinaryArray)obj).array();
                 else // This can happen if user pass special array type to arguments, String[], for example.
                     params = (Object[])obj;

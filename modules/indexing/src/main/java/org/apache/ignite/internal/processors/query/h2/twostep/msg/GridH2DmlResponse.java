@@ -137,6 +137,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 Object obj = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr);
 
                 if (obj instanceof BinaryArray)
+                    // We want raw data(no deserialization), because, all actions with params happens in binary format.
                     errKeys = ((BinaryArray)obj).array();
                 else // This can happen if user pass special array type to arguments, String[], for example.
                     errKeys = (Object[])obj;
