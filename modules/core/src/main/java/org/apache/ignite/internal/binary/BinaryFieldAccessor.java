@@ -647,10 +647,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case OBJECT_ARR:
-                    if (obj instanceof BinaryArray)
-                        writer.writeObjectArrayField(((BinaryArray)val).array());
-                    else
-                        writer.writeObjectArrayField((Object[])val);
+                    writer.writeObjectArrayField((Object[])val);
 
                     break;
 
