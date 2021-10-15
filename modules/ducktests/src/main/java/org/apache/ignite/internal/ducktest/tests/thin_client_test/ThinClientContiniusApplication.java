@@ -44,25 +44,26 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 enum ClientType {
     /** Just connect */
     CONNECT,
+
     /** Make some puts */
     PUT,
+
     /** Make putAll */
     PUTALL
 }
 
-/**
- * Run multiple Thin Clients making some work for a given time
- */
+/** Run multiple Thin Clients making some work for a given time */
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
-
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) throws Exception {
+    @Override
+    protected void run(JsonNode jsonNode) throws Exception {
         int connectClients = jsonNode.get("connectClients").asInt();
         int putClients = jsonNode.get("putClients").asInt();
         int putAllClients = jsonNode.get("putAllClients").asInt();
         int runTime = jsonNode.get("runTime").asInt();
 
         client.close();
+
         markInitialized();
 
         log.info("RUN CLIENTS");
@@ -101,12 +102,11 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 /**
  * Start Thin Client making some operations for a given time.
  *
- * @param cfg Ignite Thin Client COnfiguration.
+ * @param cfg         Ignite Thin Client COnfiguration.
  * @param connectTime external variable to save connection times
- * @param enum defining client behaviour
+ * @param enum        defining client behaviour
  */
 class oneThinClient implements Runnable {
-
     /** Size of one entry. */
     private static final int DATA_SIZE = 15;
 
@@ -133,8 +133,10 @@ class oneThinClient implements Runnable {
     }
 
     /** {@inheritDoc} */
-    @Override public void run() {
+    @Override
+    public void run() {
         long connectStart;
+
         cfg.setPartitionAwarenessEnabled(true);
         while (!Thread.currentThread().isInterrupted()) {
             connectStart = System.currentTimeMillis();

@@ -80,7 +80,7 @@ class ThinClientTest(IgniteTest):
     def test_thin_client_connect_time(self, ignite_version, test_params):
         """
         Thin client connect time test.
-        Determain how thin client connection time depend on cluster load
+        Determine how thin client connection time depend on cluster load
         Demonstrate 4 situations:
         - Cluster have too much clients
         - Cluster have many put's

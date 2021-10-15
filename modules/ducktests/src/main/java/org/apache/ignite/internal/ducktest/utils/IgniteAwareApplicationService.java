@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Base64;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
