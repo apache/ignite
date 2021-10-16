@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -625,27 +626,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             }
 
             if (validateTypes && propVal != null) {
-                if (!(propVal instanceof BinaryObject)) {
-                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
-                        // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[]) propVal).
-                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
-                            throw new IgniteSQLException("Type for a column '" + prop.name() +
-                                "' is not compatible with table definition. Expected '" +
-                                prop.type().getSimpleName() + "', actual type '" +
-                                propVal.getClass().getSimpleName() + "'");
-                        }
-                    }
+                if (propVal instanceof BinaryArray) {
+                    // Some reference type arrays end up being converted to Object[]
+                    if (!checkArray(propVal, prop.type()))
+                        throwTypeNotCompatible(prop, propVal.getClass().getSimpleName());
+                }
+                else if (!(propVal instanceof BinaryObject)) {
+                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass())))
+                        throwTypeNotCompatible(prop, propVal.getClass().getSimpleName());
                 }
                 else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
-                        ((BinaryObject)propVal).type().typeId()) {
-                    throw new IgniteSQLException("Type for a column '" + prop.name() +
-                        "' is not compatible with table definition. Expected '" +
-                        prop.type().getSimpleName() + "', actual type '" +
-                        ((BinaryObject)propVal).type().typeName() + "'");
-                }
+                        ((BinaryObject)propVal).type().typeId())
+                    throwTypeNotCompatible(prop, ((BinaryObject)propVal).type().typeName());
             }
 
             if (propVal == null || prop.precision() == -1)
@@ -677,6 +669,31 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
             }
         }
+    }
+
+    /** Throw not compatible type exception. */
+    private void throwTypeNotCompatible(GridQueryProperty prop, String actualType) {
+        throw new IgniteSQLException("Type for a column '" + prop.name() +
+            "' is not compatible with table definition. Expected '" +
+            prop.type().getSimpleName() + "', actual type '" +
+            actualType + "'");
+    }
+
+    /** Checks property is array and contains elements of expected type. */
+    private boolean checkArray(Object propVal, Class<?> type) {
+        if (!type.isArray())
+            return false;
+
+        if (propVal.getClass() != BinaryArray.class)
+            return false;
+
+        return checkArrayElements(((BinaryArray)propVal).array(), type);
+    }
+
+    /** */
+    private boolean checkArrayElements(Object[] propVal, Class<?> type) {
+        return Arrays.stream(propVal).
+            noneMatch(x -> x != null && !U.box(type.getComponentType()).isAssignableFrom(U.box(x.getClass())));
     }
 
     /** Validate indexed values. */
@@ -713,9 +730,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (!(propVal instanceof BinaryObject)) {
                     if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(propType.isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[]) propVal).
-                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        if (!(checkArray(propVal, propType)))
                         {
                             throw new IgniteSQLException("Type for a column '" + idxField +
                                 "' is not compatible with index definition. Expected '" +

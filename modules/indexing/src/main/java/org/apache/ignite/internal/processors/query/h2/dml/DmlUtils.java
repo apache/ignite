@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.lang.reflect.Array;
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -33,6 +32,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -77,7 +77,7 @@ public class DmlUtils {
      * @param type Expected column type to convert to.
      * @return Converted object.
      */
-    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
+    @SuppressWarnings({"ConstantConditions"})
     public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls,
         int type, String columnName) {
         if (val == null)
@@ -111,23 +111,8 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
-            if (type == Value.ARRAY && currCls != expCls) {
-                if (currCls != Object[].class) {
-                    throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] " +
-                        "is assumed");
-                }
-
-                // Why would otherwise type be Value.ARRAY?
-                assert expCls.isArray();
-
-                Object[] curr = (Object[])val;
-
-                Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
-
-                System.arraycopy(curr, 0, newArr, 0, curr.length);
-
-                return newArr;
-            }
+            if (type == Value.ARRAY)
+                return ((BinaryArray)val).deserialize();
 
             Object res = H2Utils.convert(val, desc.indexing(), type);
 
