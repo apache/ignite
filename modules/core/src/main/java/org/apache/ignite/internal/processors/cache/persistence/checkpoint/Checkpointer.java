@@ -541,6 +541,7 @@ public class Checkpointer extends GridWorker {
                     updStores,
                     doneWriteFut,
                     workProgressDispatcher::updateHeartbeat,
+                    workProgressDispatcher,
                     curCpProgress,
                     shutdownNow
             ).run();

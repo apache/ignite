@@ -39,6 +39,8 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -66,6 +68,8 @@ public class CheckpointPagesWriter implements Runnable {
 
     /** Some action which will be executed every time before page will be written. */
     private final Runnable beforePageWrite;
+
+    private final WorkProgressDispatcher workProgressDispatcher;
 
     /** Snapshot manager. */
     private final IgniteCacheSnapshotManager snapshotMgr;
@@ -115,6 +119,7 @@ public class CheckpointPagesWriter implements Runnable {
         ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
         CountDownFuture doneFut,
         Runnable beforePageWrite,
+        WorkProgressDispatcher workProgressDispatcher,
         IgniteCacheSnapshotManager snapshotManager,
         IgniteLogger log,
         DataStorageMetricsImpl dsMetrics,
@@ -130,6 +135,7 @@ public class CheckpointPagesWriter implements Runnable {
         this.updStores = updStores;
         this.doneFut = doneFut;
         this.beforePageWrite = beforePageWrite;
+        this.workProgressDispatcher = workProgressDispatcher;
         this.snapshotMgr = snapshotManager;
         this.log = log;
         this.persStoreMetrics = dsMetrics;
@@ -191,7 +197,8 @@ public class CheckpointPagesWriter implements Runnable {
             if (shutdownNow.getAsBoolean())
                 break;
 
-            beforePageWrite.run();
+            //beforePageWrite.run();
+            workProgressDispatcher.updateHeartbeat();
 
             FullPageId fullId = res.getValue();
 
@@ -204,7 +211,10 @@ public class CheckpointPagesWriter implements Runnable {
             PageStoreWriter pageStoreWriter =
                 pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
+
+            //workProgressDispatcher.blockingSectionBegin();
             pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
+            //workProgressDispatcher.blockingSectionEnd();
 
             if (throttlingEnabled) {
                 while (pageMem.shouldThrottle()) {
@@ -217,7 +227,9 @@ public class CheckpointPagesWriter implements Runnable {
 
                     tmpWriteBuf.rewind();
 
+                    //workProgressDispatcher.blockingSectionBegin();
                     pageMem.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, tracker);
+                    //workProgressDispatcher.blockingSectionEnd();
                 }
             }
         }

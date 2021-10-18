@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
@@ -125,6 +126,7 @@ public class CheckpointPagesWriterFactory {
         ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
         CountDownFuture doneWriteFut,
         Runnable beforePageWrite,
+        WorkProgressDispatcher workProgressDispatcher,
         CheckpointProgressImpl curCpProgress,
         BooleanSupplier shutdownNow
     ) {
@@ -134,6 +136,7 @@ public class CheckpointPagesWriterFactory {
             updStores,
             doneWriteFut,
             beforePageWrite,
+            workProgressDispatcher,
             snapshotMgr,
             log,
             persStoreMetrics,
@@ -173,9 +176,12 @@ public class CheckpointPagesWriterFactory {
                     updStores,
                     doneWriteFut,
                     this::updateHeartbeat,
+                    this,
                     curCpProgress,
                     shutdownNow
                 ).run();
+
+                cancel();
             }
         };
     }
