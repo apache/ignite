@@ -78,7 +78,7 @@ public class IndexQueryProcessor {
         IndexQueryContext qryCtx,
         boolean keepBinary
     ) throws IgniteCheckedException {
-        Index idx = getAndValidateIndex(cctx, idxQryDesc);
+        Index idx = index(cctx, idxQryDesc);
 
         GridCursor<IndexRow> cursor = query(cctx, idx, idxQryDesc, qryCtx);
 
@@ -124,10 +124,12 @@ public class IndexQueryProcessor {
     }
 
     /**
-     * Get index to run query by specified description. Validates that criteria fields matches a prefix of fields
-     * of found index.
+     * Finds index to run query and validates that criteria fields match a prefix of fields.
+     *
+     * @return Index to run query by specified description.
+     * @throws IgniteCheckedException If index not found.
      */
-    private Index getAndValidateIndex(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
+    private Index index(GridCacheContext<?, ?> cctx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
         final String tableName = cctx.kernalContext().query().tableName(cctx.name(), idxQryDesc.valType());
 
         if (tableName == null)
@@ -152,36 +154,31 @@ public class IndexQueryProcessor {
         else
             critFlds = Collections.emptyMap();
 
-        if (idxQryDesc.idxName() == null && !critFlds.isEmpty()) {
-            Index idx = indexByCriteria(cctx, critFlds, tableName);
-
-            if (idx == null)
-                throw failIndexQuery("No index found for criteria", null, idxQryDesc);
-
-            return idx;
-        }
+        if (idxQryDesc.idxName() == null && !critFlds.isEmpty())
+            return indexByCriteria(cctx, critFlds, tableName, idxQryDesc);
 
         // If index name isn't specified and criteria aren't set then use the PK index.
         String idxName = idxQryDesc.idxName() == null ? QueryUtils.PRIMARY_KEY_INDEX : idxQryDesc.idxName();
 
-        Index idx = indexByName(cctx, idxName, tableName);
-
-        if (idx == null)
-            throw failIndexQuery("No index found for name: " + idxName, null, idxQryDesc);
-
-        if (!critFlds.isEmpty() && !checkIndex(idxProc.indexDefinition(idx.id()), critFlds))
-            throw failIndexQuery("Index doesn't match criteria", null, idxQryDesc);
-
-        return idx;
+        return indexByName(cctx, idxName, tableName, idxQryDesc, critFlds);
     }
 
-    /** Get index by name, or return {@code null}. */
-    private Index indexByName(GridCacheContext<?, ?> cctx, String idxName, String tableName) {
+    /**
+     * @return Index found by name.
+     * @throws IgniteCheckedException If index not found.
+     */
+    private Index indexByName(
+        GridCacheContext<?, ?> cctx,
+        String idxName,
+        String tableName,
+        IndexQueryDesc idxQryDesc,
+        final Map<String, String> criteriaFlds
+    ) throws IgniteCheckedException {
         String schema = cctx.kernalContext().query().schemaName(cctx);
 
         IndexName name = new IndexName(cctx.name(), schema, tableName, idxName);
 
-        Index idx = idxProc.index(name);
+        Index idx = getAndValidateIndex(name, idxQryDesc, criteriaFlds, false);
 
         if (idx != null)
             return idx;
@@ -191,18 +188,39 @@ public class IndexQueryProcessor {
         if (!QueryUtils.PRIMARY_KEY_INDEX.equals(idxName))
             normIdxName = QueryUtils.normalizeObjectName(idxName, false);
 
-        if (normIdxName.equals(idxName))
-            return null;
-
         name = new IndexName(cctx.name(), schema, tableName, normIdxName);
 
-        return idxProc.index(name);
+        return getAndValidateIndex(name, idxQryDesc, criteriaFlds, true);
+    }
+
+    /** */
+    private @Nullable Index getAndValidateIndex(
+        IndexName name,
+        IndexQueryDesc idxQryDesc,
+        final Map<String, String> critFlds,
+        boolean failOnNotFound
+    ) throws IgniteCheckedException {
+        Index idx = idxProc.index(name);
+
+        if (idx != null && !critFlds.isEmpty() && !checkIndex(idxProc.indexDefinition(idx.id()), critFlds))
+            throw failIndexQuery("Index doesn't match criteria", null, idxQryDesc);
+
+        if (idx == null && failOnNotFound)
+            throw failIndexQuery("No index found for name: " + name.idxName(), null, idxQryDesc);
+
+        return idx;
     }
 
     /**
-     * Get index by list of fields to query, or return {@code null}.
+     * @return Index found by list of criteria fields.
+     * @throws IgniteCheckedException if suitable index not found.
      */
-    private Index indexByCriteria(GridCacheContext<?, ?> cctx, final Map<String, String> criteriaFlds, String tableName) {
+    private Index indexByCriteria(
+        GridCacheContext<?, ?> cctx,
+        final Map<String, String> criteriaFlds,
+        String tableName,
+        IndexQueryDesc idxQryDesc
+    ) throws IgniteCheckedException {
         Collection<Index> idxs = idxProc.indexes(cctx);
 
         for (Index idx: idxs) {
@@ -215,7 +233,7 @@ public class IndexQueryProcessor {
                 return idx;
         }
 
-        return null;
+        throw failIndexQuery("No index found for criteria", null, idxQryDesc);
     }
 
     /**
