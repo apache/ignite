@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteLogger;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.processors.query.stat.view.ColumnLocalDataView
 import org.apache.ignite.internal.processors.query.stat.view.ColumnPartitionDataViewSupplier;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -68,6 +71,10 @@ public class IgniteStatisticsRepository {
 
     /** Statistics helper (msg converter). */
     private final IgniteStatisticsHelper helper;
+
+    /** Local statistics subscribers. */
+    private final List<Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>>> subscribers =
+        new CopyOnWriteArrayList<>();
 
     /**
      * Constructor.
@@ -187,6 +194,12 @@ public class IgniteStatisticsRepository {
         AffinityTopologyVersion topVer
     ) {
         locStats.put(key, new VersionedStatistics(topVer, statistics));
+
+        GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion> newLocalStat =
+            new GridTuple3<>(key, statistics,topVer);
+
+        for (Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber : subscribers)
+            subscriber.accept(newLocalStat);
     }
 
     /**
@@ -333,6 +346,17 @@ public class IgniteStatisticsRepository {
                 v.dirty(false);
             }
         });
+    }
+
+    /**
+     * Subscribe to all local statistics changes.
+     *
+     * @param subscriber Local statitics subscriber.
+     */
+    public void subscribeToLocalStatistics(
+        Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber
+    ) {
+        subscribers.add(subscriber);
     }
 
     /**

@@ -62,47 +62,47 @@ public class StatisticsUtilsTest extends GridCommonAbstractTest {
     private static final Map<String, Long> VERSIONS = F.asMap("COL1", 1L, "COL2", 2L);
 
     /**
-     * Test checkStatisticsVersions with stat equals to {@code null} returns {@code false}.
+     * Test compareVersions with stat equals to {@code null} returns {@code false}.
      */
     @Test
-    public void testCheckStatisticsVersionsNullStat() {
-        assertFalse(StatisticsUtils.checkStatisticsVersions(null, VERSIONS));
+    public void testCompareStatisticsNullStat() {
+        assertTrue(StatisticsUtils.compareVersions((ObjectStatisticsImpl)null, VERSIONS) < 0);
     }
 
     /**
-     * Test checkStatisticsVersions with stat contains no columns returns {@code false}.
+     * Test compareVersions with stat contains no columns returns {@code false}.
      */
     @Test
-    public void testtestCheckStatisticsVersionsEmptyStat() {
+    public void testCompareStatisticsVersionsEmptyStat() {
         ObjectStatisticsImpl objStat = new ObjectStatisticsImpl(100, Collections.emptyMap());
 
-        assertFalse(StatisticsUtils.checkStatisticsVersions(objStat, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objStat, VERSIONS) < 0);
     }
 
     /**
-     * Test checkStatisticsVersions with stat contains all columns returns {@code true}.
+     * Test compareVersions with stat contains all columns returns {@code true}.
      */
     @Test
-    public void testCheckStatisticsVersionsAllStat() {
+    public void testCompareVersionsAllStat() {
         Map<String, ColumnStatistics> colStats = F.asMap("COL1", COL_1_STAT, "COL2", COL_2_STAT);
         ObjectStatisticsImpl objStat = new ObjectStatisticsImpl(100, colStats);
 
-        assertTrue(StatisticsUtils.checkStatisticsVersions(objStat, VERSIONS));
+        assertEquals(0, StatisticsUtils.compareVersions(objStat, VERSIONS));
     }
 
     /**
-     * Test checkStatisticsVersions with stat with never columns returns {@code true}.
+     * Test compareVersions with stat with never columns returns {@code true}.
      */
     @Test
-    public void testCheckStatisticsVersionsNeverStat() {
+    public void testCompareVersionsNeverStat() {
         Map<String, ColumnStatistics> colStats = F.asMap("COL1", COL_1_STAT, "COL2", COL_3_STAT);
         ObjectStatisticsImpl objStat = new ObjectStatisticsImpl(100, colStats);
 
-        assertTrue(StatisticsUtils.checkStatisticsVersions(objStat, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objStat, VERSIONS) > 0);
     }
 
     /**
-     * Test checkStatisticsVersions with stat with extra columns returns {@code true}.
+     * Test compareVersions with stat with extra columns returns {@code true}.
      */
     @Test
     public void testCheckStatisticsVersionsExtraColumn() {
@@ -110,58 +110,49 @@ public class StatisticsUtilsTest extends GridCommonAbstractTest {
             F.asMap("COL1", COL_1_STAT, "COL2", COL_3_STAT, "COL3", COL_2_STAT);
         ObjectStatisticsImpl objStat = new ObjectStatisticsImpl(100, colStats);
 
-        assertTrue(StatisticsUtils.checkStatisticsVersions(objStat, VERSIONS));
+        assertEquals(0, StatisticsUtils.compareVersions(objStat, VERSIONS));
     }
 
     /**
-     * Test checkStatisticsConfigurationVersions with statistics configuration equals to {@code null}
-     * returns {@code false}.
+     * Test compareVersions with stat contains no columns returns {@code false}.
      */
     @Test
-    public void testCheckStatisticsConfigurationVersionsNull() {
-        assertFalse(StatisticsUtils.checkStatisticsConfigurationVersions(null, VERSIONS));
-    }
-
-    /**
-     * Test checkStatisticsConfigurationVersions with stat contains no columns returns {@code false}.
-     */
-    @Test
-    public void testtestCheckStatisticsConfigurationVersionsEmptyStat() {
+    public void testCompareObjVersionsEmptyStat() {
         StatisticsObjectConfiguration objCfg = new StatisticsObjectConfiguration(KEY);
 
-        assertFalse(StatisticsUtils.checkStatisticsConfigurationVersions(objCfg, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) < 0);
     }
 
     /**
      * Test checkStatisticsConfigurationVersions with stat contains all columns returns {@code true}.
      */
     @Test
-    public void testCheckStatisticsConfigurationVersionsAllStat() {
+    public void testCompareObjVersionsAllStat() {
         List<StatisticsColumnConfiguration> colCfgs = Arrays.asList(COL_1_CFG, COL_2_CFG);
         StatisticsObjectConfiguration objCfg = new StatisticsObjectConfiguration(KEY, colCfgs, (byte)50);
 
-        assertTrue(StatisticsUtils.checkStatisticsConfigurationVersions(objCfg, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) == 0);
     }
 
     /**
      * Test checkStatisticsConfigurationVersions with stat with never columns returns {@code true}.
      */
     @Test
-    public void testCheckStatisticsConfigurationVersionsNeverStat() {
+    public void testCompareObjVersionsNewerStat() {
         List<StatisticsColumnConfiguration> colCfgs = Arrays.asList(COL_1_CFG, COL_2_CFG.refresh());
         StatisticsObjectConfiguration objCfg = new StatisticsObjectConfiguration(KEY, colCfgs, (byte)50);
 
-        assertTrue(StatisticsUtils.checkStatisticsConfigurationVersions(objCfg, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) > 1);
     }
 
     /**
      * Test checkStatisticsConfigurationVersions with stat with extra columns returns {@code true}.
      */
     @Test
-    public void testCheckStatisticsConfigurationVersionsExtraColumn() {
+    public void testCompareObjVersionsExtraColumn() {
         List<StatisticsColumnConfiguration> colCfgs = Arrays.asList(COL_1_CFG, COL_2_CFG, COL_3_CFG);
         StatisticsObjectConfiguration objCfg = new StatisticsObjectConfiguration(KEY, colCfgs, (byte)50);
 
-        assertTrue(StatisticsUtils.checkStatisticsConfigurationVersions(objCfg, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) > 0);
     }
 }

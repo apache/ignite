@@ -184,21 +184,24 @@ public class StatisticsUtils {
      * @param versions Map of column name to required version.
      * @return {@code true} if it is, {@code false} otherwise.
      */
-    public static boolean checkStatisticsVersions(
+    public static int compareVersions(
         ObjectStatisticsImpl stat,
         Map<String, Long> versions
     ) {
         if (stat == null)
-            return false;
+            return -1;
 
         for (Map.Entry<String, Long> version : versions.entrySet()) {
             ColumnStatistics colStat = stat.columnsStatistics().get(version.getKey());
 
             if (colStat == null || colStat.version() < version.getValue())
-                return false;
+                return -1;
+
+            if (colStat.version() > version.getValue())
+                return 1;
         }
 
-        return true;
+        return 0;
     }
 
     /**
@@ -209,20 +212,23 @@ public class StatisticsUtils {
      * @param versions Map of column name to required version.
      * @return {@code true} if it is, {@code talse} otherwise.
      */
-    public static boolean checkStatisticsConfigurationVersions(
+    public static int compareVersions(
         StatisticsObjectConfiguration cfg,
         Map<String, Long> versions
     ) {
         if (cfg == null)
-            return false;
+            return -1;
 
-        for (Map.Entry<String, Long> version : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
+        for (Map.Entry<String, Long> colVersion : versions.entrySet()) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(colVersion.getKey());
 
-            if (colCfg == null || colCfg.version() < version.getValue())
-                return false;
+            if (colCfg == null || colCfg.version() < colVersion.getValue())
+                return -1;
+
+            if (colCfg.version() > colVersion.getValue())
+                return 1;
         }
 
-        return true;
+        return 0;
     }
 }

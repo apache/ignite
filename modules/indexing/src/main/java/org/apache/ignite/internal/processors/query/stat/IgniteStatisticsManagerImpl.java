@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
@@ -208,7 +210,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         globalStatsMgr = new IgniteGlobalStatisticsManager(
             this,
             ctx.systemView(),
-            statProc,
             mgmtPool,
             ctx.discovery(),
             ctx.state(),
@@ -533,5 +534,25 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         if (ctx.state().clusterState().state() != ClusterState.ACTIVE)
             throw new IgniteException(String.format(
                 "Unable to perform %s due to cluster state [state=%s]", op, ctx.state().clusterState().state()));
+    }
+
+    /**
+     * Subscribe to all local statistics changes.
+     *
+     * @param subscriber Local statitics subscriber.
+     */
+    public void subscribeToLocalStatistics(
+        Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber
+    ) {
+        statsRepos.subscribeToLocalStatistics(subscriber);
+    }
+
+    /**
+     * Subscribe to all statistics configuration changed.
+     *
+     * @param subscriber Statistics configuration subscriber.
+     */
+    public void subscribeToStatisticsConfig(Consumer<StatisticsObjectConfiguration> subscriber) {
+        statCfgMgr.subscribe(subscriber);
     }
 }
