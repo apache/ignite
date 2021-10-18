@@ -17,15 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -34,6 +25,15 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Thin clients.
@@ -58,8 +58,11 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
     @Override
     protected void run(JsonNode jsonNode) throws Exception {
         int connectClients = jsonNode.get("connectClients").asInt();
+
         int putClients = jsonNode.get("putClients").asInt();
+
         int putAllClients = jsonNode.get("putAllClients").asInt();
+
         int runTime = jsonNode.get("runTime").asInt();
 
         client.close();
@@ -69,44 +72,43 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
         log.info("RUN CLIENTS");
 
         ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
+
         ExecutorService executor = Executors.newFixedThreadPool(connectClients + putClients + putAllClients);
+
         List<List<Long>> connectTimes = new ArrayList<>();
 
-        for (int i = 0; i < connectClients; i++) {
-            List<Long> connectTime = new ArrayList<>();
-            connectTimes.add(connectTime);
-            executor.submit(new oneThinClient(cfg, connectTime, ClientType.CONNECT));
-        }
-        for (int i = 0; i < putClients; i++) {
-            List<Long> connectTime = new ArrayList<>();
-            connectTimes.add(connectTime);
-            executor.submit(new oneThinClient(cfg, connectTime, ClientType.PUT));
-        }
-        for (int i = 0; i < putAllClients; i++) {
-            List<Long> connectTime = new ArrayList<>();
-            connectTimes.add(connectTime);
-            executor.submit(new oneThinClient(cfg, connectTime, ClientType.PUTALL));
-        }
+        startClients(ClientType.CONNECT, connectClients, connectTimes, executor,cfg);
+
+        startClients(ClientType.PUT, putClients, connectTimes, executor,cfg);
+
+        startClients(ClientType.PUTALL, putAllClients, connectTimes, executor,cfg);
 
         log.info("START WAITING");
+
         TimeUnit.SECONDS.sleep(runTime);
+
         log.info("STOP WAITING");
-        client.close();
 
         connectTimes.forEach(log::info);
 
         markFinished();
     }
+
+    /** Internal function to start clients */
+    private void startClients(ClientType type, int count, List<List<Long>> times, ExecutorService executor,
+                              ClientConfiguration cfg){
+        for (int i = 0; i < count; i++) {
+            List<Long> connectTime = new ArrayList<>();
+
+            times.add(connectTime);
+
+            executor.submit(new OneThinClient(cfg, connectTime, ClientType.PUTALL));
+        }
+    }
 }
 
-/**
- * Start Thin Client making some operations for a given time.
- *
- * @param cfg         Ignite Thin Client COnfiguration.
- * @param connectTime external variable to save connection times
- * @param enum        defining client behaviour
- */
-class oneThinClient implements Runnable {
+/** Start Thin Client making some operations for a given time. */
+class OneThinClient implements Runnable {
     /** Size of one entry. */
     private static final int DATA_SIZE = 15;
 
@@ -117,18 +119,20 @@ class oneThinClient implements Runnable {
     private static final int PUT_ALL_SIZE = 1000;
 
     /** Ignite Client configuration. */
-    ClientConfiguration cfg;
+    private ClientConfiguration cfg;
 
     /** Time of connection. */
-    List<Long> connectTime;
+    private List<Long> connectTime;
 
     /** Type of client. */
-    ClientType type;
+    private ClientType type;
 
     /** {@inheritDoc} */
-    oneThinClient(ClientConfiguration cfg, List<Long> connectTime, ClientType type) {
+    OneThinClient(ClientConfiguration cfg, List<Long> connectTime, ClientType type) {
         this.cfg = cfg;
+
         this.type = type;
+
         this.connectTime = connectTime;
     }
 
@@ -138,34 +142,49 @@ class oneThinClient implements Runnable {
         long connectStart;
 
         cfg.setPartitionAwarenessEnabled(true);
+
         while (!Thread.currentThread().isInterrupted()) {
+
             connectStart = System.currentTimeMillis();
+
             try (IgniteClient client = Ignition.startClient(cfg)) {
                 connectTime.add(System.currentTimeMillis() - connectStart);
+
                 ClientCache<UUID, byte[]> cache = client.getOrCreateCache("testCache");
+
                 long stopTyme = System.currentTimeMillis() + RUN_TIME;
+
                 switch (type) {
                     case CONNECT:
                         TimeUnit.MILLISECONDS.sleep(RUN_TIME);
                         break;
+
                     case PUT:
                         while (stopTyme > System.currentTimeMillis()) {
                             cache.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
                         }
                         break;
+
                     case PUTALL:
                         while (stopTyme > System.currentTimeMillis()) {
+
                             Map<UUID, byte[]> data = new HashMap<>();
+
                             for (int i = 0; i < PUT_ALL_SIZE; i++) {
                                 data.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
                             }
+
                             cache.putAll(data);
                         }
                         break;
+
                     default:
                         throw new IgniteCheckedException("Unknown operation: " + type + ".");
                 }
-            } catch (Exception e) {
+            } catch (InterruptedException interruptedException){
+                Thread.currentThread().interrupt();
+            }
+            catch (Exception e) {
                 System.out.println(e);
             }
         }
