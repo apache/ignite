@@ -286,7 +286,7 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Tests that empty port range causes an exception.
+        /// Tests that invalid protocol causes a socket exception.
         /// </summary>
         [Test]
         public void TestInvalidProtocolThrowsSocketException()
