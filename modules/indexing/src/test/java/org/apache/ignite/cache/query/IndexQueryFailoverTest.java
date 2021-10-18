@@ -171,14 +171,23 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             },
             IgniteCheckedException.class, errMsg);
 
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                    .setCriteria(between("id", 432, 40));
+
+                return cache.query(qry).getAll();
+            },
+            IgniteCheckedException.class, "Illegal criterion: lower boundary is greater than the upper boundary: " +
+                "id[432; 40]");
+
         Stream.of(
             Arrays.asList(lt("id", 100), gt("id", 101)),
             Arrays.asList(eq("id", 100), eq("id", 101)),
             Arrays.asList(eq("id", 101), eq("id", 100)),
-            Arrays.asList(eq("id", 101), between("id", 19, 40)),
-            Arrays.asList(between("id", 432, 40))
+            Arrays.asList(eq("id", 101), between("id", 19, 40))
         ).forEach(crit -> {
-            String msg = "Failed to merge criteria into valid tree index range";
+            String msg = "Failed to merge criterion " + crit.get(1) + " with previous criteria range " +
+                crit.get(0).toString().replace("id", "ID");
 
             GridTestUtils.assertThrowsAnyCause(null, () -> {
                     IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)

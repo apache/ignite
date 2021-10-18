@@ -304,14 +304,36 @@ public class IndexQueryProcessor {
             boolean lowNull = crit.lowerNull();
             boolean upNull = crit.upperNull();
 
+            if (l != null && u != null && keyCmp.compareKey(l, u) > 0)
+                throw failIndexQuery("Illegal criterion: lower boundary is greater than the upper boundary: " + crit, idxDef, idxQryDesc);
+
             if (mergedCriteria.containsKey(fldName)) {
                 RangeIndexQueryCriterion prev = mergedCriteria.get(fldName);
+
+                IndexKey prevLower = (IndexKey)prev.lower();
+                IndexKey prevUpper = (IndexKey)prev.upper();
+
+                // Validate merged criteria.
+                if (!checkBoundaries(l, prevUpper, crit.lowerIncl(), prev.upperIncl(), keyCmp) ||
+                    !checkBoundaries(prevLower, u, prev.lowerIncl(), crit.upperIncl(), keyCmp)) {
+
+                    // Create a criterion with friedly-readable boundaries in exception message.
+                    RangeIndexQueryCriterion p = new RangeIndexQueryCriterion(
+                        prev.field(),
+                        prevLower == null ? null : prevLower.key(),
+                        prevUpper == null ? null : prevUpper.key());
+
+                    p.lowerIncl(prev.lowerIncl());
+                    p.upperIncl(prev.upperIncl());
+
+                    throw failIndexQuery("Failed to merge criterion " + crit + " with previous criteria range " + p, idxDef, idxQryDesc);
+                }
 
                 int lowCmp = 0;
 
                 // Use previous lower boudary, as it's greater than the current.
-                if (l == null || (prev.lower() != null && (lowCmp = keyCmp.compareKey((IndexKey)prev.lower(), l)) >= 0)) {
-                    l = (IndexKey)prev.lower();
+                if (l == null || (prevLower != null && (lowCmp = keyCmp.compareKey(prevLower, l)) >= 0)) {
+                    l = prevLower;
                     lowIncl = lowCmp != 0 ? prev.lowerIncl() : prev.lowerIncl() ? lowIncl : prev.lowerIncl();
                     lowNull = prev.lowerNull();
                 }
@@ -319,16 +341,12 @@ public class IndexQueryProcessor {
                 int upCmp = 0;
 
                 // Use previous upper boudary, as it's less than the current.
-                if (u == null || (prev.upper() != null && (upCmp = keyCmp.compareKey((IndexKey)prev.upper(), u)) <= 0)) {
-                    u = (IndexKey)prev.upper();
+                if (u == null || (prevUpper != null && (upCmp = keyCmp.compareKey(prevUpper, u)) <= 0)) {
+                    u = prevUpper;
                     upIncl = upCmp != 0 ? prev.upperIncl() : prev.upperIncl() ? upIncl : prev.upperIncl();
                     upNull = prev.upperNull();
                 }
             }
-
-            if (l != null && u != null && idxDef.rowComparator().compareKey(l, u) > 0)
-                throw failIndexQuery("Failed to merge criteria into valid tree index range. " +
-                    "Field=" + fldName + ", lower=" + l.key() + ", upper=" + u.key(), idxDef, idxQryDesc);
 
             RangeIndexQueryCriterion idxKeyCrit = new RangeIndexQueryCriterion(fldName, l, u);
             idxKeyCrit.lowerIncl(lowIncl);
@@ -340,6 +358,27 @@ public class IndexQueryProcessor {
         }
 
         return mergedCriteria;
+    }
+
+    /**
+     * @return {@code} true if boudaries are intersected, otherwise {@code false}.
+     */
+    private boolean checkBoundaries(
+        IndexKey left,
+        IndexKey right,
+        boolean leftIncl,
+        boolean rightIncl,
+        IndexRowComparator keyCmp
+    ) throws IgniteCheckedException {
+        boolean boundaryCheck = left != null && right != null;
+
+        if (boundaryCheck) {
+            int cmp = keyCmp.compareKey(left, right);
+
+            return cmp < 0 || (cmp == 0 && leftIncl && rightIncl);
+        }
+
+        return true;
     }
 
     /** Checks that specified index matches index query criteria. */

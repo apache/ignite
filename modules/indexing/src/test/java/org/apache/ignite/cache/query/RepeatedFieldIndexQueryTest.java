@@ -110,16 +110,15 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         int lower = new Random().nextInt(CNT / 2);
         int upper = CNT / 2 + new Random().nextInt(CNT / 2 - 1);
 
-        List<IndexQueryCriterion> criteria1 = criteria(fldName, lower, upper);
-        List<IndexQueryCriterion> criteria2 = criteria(fldName, upper, lower);
+        List<IndexQueryCriterion> criteria = criteria(fldName, lower, upper);
 
         List<T2<RangeIndexQueryCriterion, RangeIndexQueryCriterion>> checks = new ArrayList<>();
 
-        for (int i = 0; i < criteria1.size(); i++) {
-            for (int j = 0; j < criteria2.size(); j++) {
+        for (int i = 0; i < criteria.size(); i++) {
+            for (int j = 0; j < criteria.size(); j++) {
                 checks.add(new T2<>(
-                    (RangeIndexQueryCriterion)criteria1.get(i),
-                    (RangeIndexQueryCriterion)criteria2.get(j)));
+                    (RangeIndexQueryCriterion)criteria.get(i),
+                    (RangeIndexQueryCriterion)criteria.get(j)));
             }
 
         }
@@ -159,7 +158,7 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
                 .setCriteria(eq(fldName, eq1), eq(fldName, eq2), between(fldName, from, to));
 
             return cache.query(qry).getAll();
-        }, CacheException.class, "Failed to merge criteria into valid tree index range");
+        }, CacheException.class, "Failed to merge criterion");
     }
 
     /** */
@@ -184,10 +183,12 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     private void checkEmptyForCommonBoundary(IndexQueryCriterion c1, IndexQueryCriterion c2) {
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
-            .setCriteria(c1, c2);
+        GridTestUtils.assertThrows(null, () -> {
+            IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(c1, c2);
 
-        assertTrue(qry.getCriteria().toString(), cache.query(qry).getAll().isEmpty());
+            return cache.query(qry).getAll();
+        }, CacheException.class, "Failed to merge criterion");
     }
 
     /** */
@@ -287,9 +288,10 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
         String errMsg = "Fail crit pair: " + c1 + ", " + c2 + ". Lower=" + lower + ", upper=" + upper;
 
-        if (lower > upper) {
+        if (!expRange.valid()) {
             GridTestUtils.assertThrows(null, () -> cache.query(qry).getAll(),
-                CacheException.class, "Failed to merge criteria into valid tree index range");
+                CacheException.class, "Failed to merge criterion",
+                "Not thrown for " + c1 + " " + c2);
         }
         else
             check(errMsg, cache.query(qry), lower, upper);
@@ -348,6 +350,11 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
         /** */
         int upper() {
             return rightIncl ? right == CNT ? CNT : right + 1 : right;
+        }
+
+        /** */
+        boolean valid() {
+            return left < right || (left == right && leftIncl && rightIncl);
         }
     }
 }
