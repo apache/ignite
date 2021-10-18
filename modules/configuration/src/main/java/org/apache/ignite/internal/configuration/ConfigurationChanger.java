@@ -205,7 +205,8 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             superRoot.addRoot(rootKey, rootNode);
         }
 
-        ConfigurationUtil.addDefaults(superRoot);
+        //Workaround for distributed configuration.
+        addDefaults(superRoot);
 
         storageRoots = new StorageRoots(superRoot, data.changeId());
 
@@ -321,6 +322,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
         if (storageData.isEmpty())
             rootNode.construct(path.get(0), ConfigurationUtil.EMPTY_CFG_SRC, true);
 
+        // Workaround for distributed configuration.
         addDefaults(rootNode);
 
         try {

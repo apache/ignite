@@ -24,6 +24,7 @@ import java.lang.annotation.Target;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationChanger;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.intellij.lang.annotations.Language;
 
 /**
  * Annotation for injecting configuration instances into tests.
@@ -54,6 +55,7 @@ public @interface InjectConfiguration {
      *
      * @return Initial configuration values in HOCON format.
      */
+    @Language("HOCON")
     String value() default "mock : {}";
 
     /**

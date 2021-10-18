@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
+import org.apache.ignite.configuration.validation.ExceptKeys;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationNotificationsUtil;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
+import org.apache.ignite.internal.configuration.validation.ExceptKeysValidator;
 import org.apache.ignite.internal.configuration.validation.ImmutableValidator;
 import org.apache.ignite.internal.configuration.validation.MaxValidator;
 import org.apache.ignite.internal.configuration.validation.MinValidator;
@@ -116,10 +118,11 @@ public class ConfigurationRegistry implements IgniteComponent {
 
         Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators0 = new HashMap<>(validators);
 
-        validators0.computeIfAbsent(Min.class, a -> new HashSet<>(1)).add(new MinValidator());
-        validators0.computeIfAbsent(Max.class, a -> new HashSet<>(1)).add(new MaxValidator());
-        validators0.computeIfAbsent(Immutable.class, a -> new HashSet<>(1)).add(new ImmutableValidator());
-        validators0.computeIfAbsent(OneOf.class, a -> new HashSet<>(1)).add(new OneOfValidator());
+        addDefaultValidator(validators0, Min.class, new MinValidator());
+        addDefaultValidator(validators0, Max.class, new MaxValidator());
+        addDefaultValidator(validators0, Immutable.class, new ImmutableValidator());
+        addDefaultValidator(validators0, OneOf.class, new OneOfValidator());
+        addDefaultValidator(validators0, ExceptKeys.class, new ExceptKeysValidator());
 
         changer = new ConfigurationChanger(this::notificator, rootKeys, validators0, storage) {
             /** {@inheritDoc} */
@@ -135,6 +138,22 @@ public class ConfigurationRegistry implements IgniteComponent {
 
             configs.put(rootKey.key(), cfg);
         });
+    }
+
+    /**
+     * Registers default validator implementation to the validators map.
+     *
+     * @param validators Validators map.
+     * @param annotatopnType Annotation type instance for the validator.
+     * @param validator Validator instance.
+     * @param <A> Annotation type.
+     */
+    private static <A extends Annotation> void addDefaultValidator(
+        Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators,
+        Class<A> annotatopnType,
+        Validator<A, ?> validator
+    ) {
+        validators.computeIfAbsent(annotatopnType, a -> new HashSet<>(1)).add(validator);
     }
 
     /** {@inheritDoc} */

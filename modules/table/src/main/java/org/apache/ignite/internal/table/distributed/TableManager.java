@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.notifications.ConfigurationNamedListListe
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableChange;
+import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.affinity.AffinityUtils;
@@ -98,6 +99,8 @@ import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.schemas.store.DataStorageConfigurationSchema.DEFAULT_DATA_REGION_NAME;
+
 /**
  * Table manager.
  */
@@ -148,8 +151,8 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     /** Resolver that resolves a network address to node id. */
     private final Function<NetworkAddress, String> netAddrResolver;
 
-    /** Default data region instance. */
-    private DataRegion defaultDataRegion;
+    /** Data region instances. */
+    private final Map<String, DataRegion> dataRegions = new ConcurrentHashMap<>();
 
     //TODO: IGNITE-15161 These should go into TableImpl instances.
     /** Instances of table storages that need to be stopped on component stop. */
@@ -324,7 +327,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             }
         });
 
-        this.defaultDataRegion = engine.createDataRegion(dataStorageCfg.defaultRegion());
+        DataRegion defaultDataRegion = engine.createDataRegion(dataStorageCfg.defaultRegion());
+
+        dataRegions.put(DEFAULT_DATA_REGION_NAME, defaultDataRegion);
 
         defaultDataRegion.start();
     }
@@ -340,12 +345,13 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             }
         }
 
-        try {
-            if (defaultDataRegion != null)
-                defaultDataRegion.stop();
-        }
-        catch (Exception e) {
-            LOG.error("Failed to stop data region " + defaultDataRegion, e);
+        for (Map.Entry<String, DataRegion> entry : dataRegions.entrySet()) {
+            try {
+                entry.getValue().stop();
+            }
+            catch (Exception e) {
+                LOG.error("Failed to stop data region " + entry.getKey(), e);
+            }
         }
         // TODO: IGNITE-15161 Implement component's stop.
     }
@@ -379,10 +385,32 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             );
         }
 
+        TableConfiguration tableCfg = tablesCfg.tables().get(name);
+
+        DataRegion dataRegion = dataRegions.computeIfAbsent(tableCfg.dataRegion().value(), dataRegionName -> {
+            DataRegion newDataRegion = engine.createDataRegion(dataStorageCfg.regions().get(dataRegionName));
+
+            try {
+                newDataRegion.start();
+            }
+            catch (Exception e) {
+                try {
+                    newDataRegion.stop();
+                }
+                catch (Exception stopException) {
+                    e.addSuppressed(stopException);
+                }
+
+                throw e;
+            }
+
+            return newDataRegion;
+        });
+
         TableStorage tableStorage = engine.createTable(
             storageDir,
-            tablesCfg.tables().get(name),
-            defaultDataRegion,
+            tableCfg,
+            dataRegion,
             (tableCfgView, indexName) -> {
                 throw new UnsupportedOperationException("Not implemented yet.");
             }

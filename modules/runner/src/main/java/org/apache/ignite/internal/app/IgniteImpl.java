@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
 import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
+import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.metastorage.server.persistence.RocksDBKeyValue
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.internal.raft.Loza;
+import org.apache.ignite.internal.schema.configuration.TableValidatorImpl;
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.VaultService;
@@ -182,7 +184,7 @@ public class IgniteImpl implements Ignite {
                 TablesConfiguration.KEY,
                 DataStorageConfiguration.KEY
             ),
-            Map.of(),
+            Map.of(TableValidator.class, Set.of(TableValidatorImpl.INSTANCE)),
             new DistributedConfigurationStorage(metaStorageMgr, vaultMgr),
             Collections.singletonList(ExtendedTableConfigurationSchema.class)
         );

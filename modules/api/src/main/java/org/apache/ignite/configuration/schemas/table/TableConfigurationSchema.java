@@ -26,6 +26,8 @@ import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
 
+import static org.apache.ignite.configuration.schemas.store.DataStorageConfigurationSchema.DEFAULT_DATA_REGION_NAME;
+
 /**
  * Table configuration schema class.
  */
@@ -47,6 +49,10 @@ public class TableConfigurationSchema {
     @Min(1)
     @Value(hasDefault = true)
     public int replicas = 1;
+
+    /** Data region. */
+    @Value(hasDefault = true)
+    public String dataRegion = DEFAULT_DATA_REGION_NAME;
 
     /** Columns configuration. */
     @NamedConfigValue

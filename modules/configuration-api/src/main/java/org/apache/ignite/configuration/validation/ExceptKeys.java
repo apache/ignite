@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.schemas.store;
+package org.apache.ignite.configuration.validation;
 
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.ConfigurationType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
-import org.apache.ignite.configuration.validation.ExceptKeys;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Root configuration for data storages.
+ * Signifies that a {@link NamedConfigValue} can't have elements with provided names.
  */
-@ConfigurationRoot(rootName = "db", type = ConfigurationType.DISTRIBUTED)
-public class DataStorageConfigurationSchema {
-    /** Name of the default data region. */
-    public static final String DEFAULT_DATA_REGION_NAME = "default";
-
-    /** Default data region. */
-    @ConfigValue
-    public DataRegionConfigurationSchema defaultRegion;
-
-    /** Other data regions. */
-    @ExceptKeys(DEFAULT_DATA_REGION_NAME)
-    @NamedConfigValue
-    public DataRegionConfigurationSchema regions;
+@Target(FIELD)
+@Retention(RUNTIME)
+public @interface ExceptKeys {
+    /**
+     * @return List of reserved names.
+     */
+    String[] value();
 }

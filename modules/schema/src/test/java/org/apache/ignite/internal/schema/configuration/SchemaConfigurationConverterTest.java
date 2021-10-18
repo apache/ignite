@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
@@ -72,7 +73,7 @@ public class SchemaConfigurationConverterTest {
     @BeforeEach
     public void createRegistry() throws ExecutionException, InterruptedException {
         confRegistry = new ConfigurationRegistry(
-            List.of(TablesConfiguration.KEY),
+            List.of(TablesConfiguration.KEY, DataStorageConfiguration.KEY),
             Map.of(TableValidator.class, Set.of(TableValidatorImpl.INSTANCE)),
             new TestConfigurationStorage(DISTRIBUTED),
             List.of()
