@@ -3032,12 +3032,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         int keysCnt = 100;
         String snpName = "snapshot_02052020";
 
-        IgniteEx ig = startGrid(0);
-        startGrid(1);
+        int nodesCnt = 2;
+
+        IgniteEx ig = startGrids(nodesCnt);
 
         ig.cluster().state(ACTIVE);
-
-        int size = ig.cluster().nodes().size();
 
         createCacheAndPreload(ig, keysCnt);
 
@@ -3045,30 +3044,20 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
 
         TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
-        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
 
         spi0.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == END_SNAPSHOT.ordinal());
 
-        spi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
-            ((SingleNodeMessage<?>)msg).type() == END_SNAPSHOT.ordinal());
-
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", snpName));
 
-        assertTrue(waitForCondition(() -> {
-            assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
-
-            return size == countMatches(h.getLastOperationResult().toString(), "Creating the snapshot with name: " + snpName);
-        }, 10_000));
-
-        assertTrue(h.getLastOperationResult().toString()
-                .contains(ig.context().discovery().localNode().consistentId().toString()));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "Creating the snapshot with name: " + snpName));
+        assertTrue(h.getLastOperationResult().toString().contains(ig.context().discovery().localNode().consistentId().toString()));
 
         spi0.stopBlock();
-        spi1.stopBlock();
 
         assertTrue("Waiting for snapshot operation end failed.",
                 waitForCondition(() ->
@@ -3078,25 +3067,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
 
         ig.cache(DEFAULT_CACHE_NAME).destroy();
 
-        spi0.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
-            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
 
-        spi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
-            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+        IgniteBiPredicate<ClusterNode, Message> blockP = (node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal();
+
+        spi0.blockMessages(blockP);
+        spi1.blockMessages(blockP);
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start"));
 
         assertContains(log, h.getLastOperationResult().toString(),
             "Snapshot cache group restore operation started [snapshot=" + snpName);
 
-        assertTrue(waitForCondition(() -> {
+       assertTrue(waitForCondition(() -> {
             assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-            return size == countMatches(h.getLastOperationResult().toString(),
+            return nodesCnt == countMatches(h.getLastOperationResult().toString(),
                 "Restoring to snapshot with name: " + snpName );
         }, getTestTimeout()));
 
@@ -3106,8 +3097,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(waitForCondition(() -> ig.cache(DEFAULT_CACHE_NAME) != null, getTestTimeout()));
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
-
-        assertEquals(size, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
+        assertEquals(nodesCnt, countMatches(h.getLastOperationResult().toString(), "No snapshot operation."));
     }
 
     /** @throws Exception If failed. */

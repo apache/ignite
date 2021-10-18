@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,12 +71,4 @@ public interface IgniteSnapshot {
      * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
      */
     public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
-
-    /**
-     * Status snapshot operation.
-     * Checks if running snapshot operations exist on nodes.
-     *
-     * @return Future which Map contains Consistent ID's and description snapshot operation.
-     */
-    public IgniteFuture<Map<Object, String>> statusSnapshot();
 }

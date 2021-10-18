@@ -878,19 +878,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return Snapshot name if the snapshot create operation is in progress or {@code null}.
      */
-    public @Nullable String getCreatingSnapshotName() {
-        if (clusterSnpReq != null)
-            return clusterSnpReq.snapshotName();
+    protected @Nullable String getCreatingSnapshotName() {
+        SnapshotOperationRequest req = clusterSnpReq;
 
-        synchronized (snpOpMux) {
-            if (clusterSnpReq != null)
-                return clusterSnpReq.snapshotName();
+        if (req != null)
+            return req.snapshotName();
 
-            if (clusterSnpFut != null)
-                return clusterSnpFut.name;
+        ClusterSnapshotFuture fut = clusterSnpFut;
 
-            return null;
-        }
+        if (fut != null)
+            return fut.name;
+
+        return null;
     }
 
     /**
@@ -905,7 +904,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return Snapshot name if the snapshot restore operation is in progress or {@code null}.
      */
-    public @Nullable String getRestoringSnapshotName() {
+    protected @Nullable String getRestoringSnapshotName() {
         return restoreCacheGrpProc.restoringSnapshotName();
     }
 
@@ -939,7 +938,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * not running on all nodes.
      */
     public IgniteFuture<Boolean> restoreStatus(String snpName) {
-        return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
+        return executeSnapshotManagementTask(SnapshotRestoreStatusTask.class, snpName);
     }
 
     /**
@@ -1030,7 +1029,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
-        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
+        return executeSnapshotManagementTask(SnapshotRestoreCancelTask.class, name);
     }
 
     /**
@@ -1043,17 +1042,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<Object, String>> statusSnapshot() {
-        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
-
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
-
-        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
-        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
-
-        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(new SnapshotStatusTask(), null));
+    /**
+     * Status snapshot operation.
+     * Checks if running snapshot operations exist on nodes.
+     *
+     * @return Future which Map contains Consistent ID's and description snapshot operation.
+     */
+   public IgniteFuture<Map<Object, String>> snapshotStatus() {
+        return executeSnapshotManagementTask(SnapshotStatusTask.class, null);
     }
 
     /**
@@ -1770,12 +1766,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param taskCls Snapshot restore operation management task class.
-     * @param snpName Snapshot name.
+     * @param taskCls Snapshot operation management task class.
+     * @param arg Task argument.
      */
-    private IgniteFuture<Boolean> executeRestoreManagementTask(
-        Class<? extends ComputeTask<String, Boolean>> taskCls,
-        String snpName
+    private <K, V> IgniteFuture<V> executeSnapshotManagementTask(
+        Class<? extends ComputeTask<K, V>> taskCls,
+        K arg
     ) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
@@ -1785,7 +1781,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
 
-        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, arg));
     }
 
     /** @return Snapshot handlers. */

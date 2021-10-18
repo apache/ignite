@@ -136,8 +136,8 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.START.cmdName(), optional("group1,...groupN"));
 
-        usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
-            "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
+        usage(log, "Snapshot restore operation status (deprecated. Use " + SNAPSHOT + " " + STATUS + " instead):",
+            SNAPSHOT, commonParams, RESTORE.toString(), "snapshot_name", VisorSnapshotRestoreTaskAction.STATUS.cmdName());
 
         usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
             "snapshot_name", VisorSnapshotRestoreTaskAction.CANCEL.cmdName());

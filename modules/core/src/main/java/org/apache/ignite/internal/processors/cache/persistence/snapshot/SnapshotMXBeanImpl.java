@@ -51,6 +51,6 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public Map<Object, String> statusSnapshot() {
-        return mgr.statusSnapshot().get();
+        return mgr.snapshotStatus().get();
     }
 }
