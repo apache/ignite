@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -69,6 +68,7 @@ public class CheckpointPagesWriter implements Runnable {
     /** Some action which will be executed every time before page will be written. */
     private final Runnable beforePageWrite;
 
+    /** WorkProgressDispatcher TODO */
     private final WorkProgressDispatcher workProgressDispatcher;
 
     /** Snapshot manager. */
@@ -210,7 +210,6 @@ public class CheckpointPagesWriter implements Runnable {
 
             PageStoreWriter pageStoreWriter =
                 pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
-
 
             //workProgressDispatcher.blockingSectionBegin();
             pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
