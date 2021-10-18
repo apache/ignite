@@ -289,15 +289,11 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests that empty port range causes an exception.
         /// </summary>
         [Test]
-        public void TestInvalidProtocolThrows()
+        public void TestInvalidProtocolThrowsSocketException()
         {
             var cfg = new IgniteClientConfiguration("bad_proto://foo.bar:12345");
 
-            var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(cfg));
-
-            Assert.AreEqual(
-                "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700",
-                ex.Message);
+            Assert.Catch<SocketException>(() => Ignition.StartClient(cfg));
         }
 
         /// <summary>
