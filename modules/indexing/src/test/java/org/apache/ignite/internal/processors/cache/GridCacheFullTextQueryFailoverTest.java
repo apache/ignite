@@ -24,39 +24,14 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.cache.query.annotations.QueryTextField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class GridCacheFullTextQueryFailoverTest extends GridCommonAbstractTest {
-    /** Cache name */
-    private static final String PERSON_CACHE = "Person";
-
-    /** */
-    private static IgniteCache<Integer, Person> cache;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration<Integer, Person> cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg
-            .setName(PERSON_CACHE)
-            .setIndexedTypes(Integer.class, Person.class);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
-    }
-
+public class GridCacheFullTextQueryFailoverTest extends GridCacheFullTextQueryAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cache = startGrids(2).cache(PERSON_CACHE);
+        IgniteCache<Integer, Person> cache = startGrids(2).cache(PERSON_CACHE);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, new Person("str" + i));
@@ -68,7 +43,7 @@ public class GridCacheFullTextQueryFailoverTest extends GridCommonAbstractTest {
         TextQuery<Integer, Person> qry = new TextQuery<Integer, Person>(Person.class, "str~")
             .setPageSize(10);
 
-        Iterator<Cache.Entry<Integer, Person>> iter = cache.query(qry).iterator();
+        Iterator<Cache.Entry<Integer, Person>> iter = cache().query(qry).iterator();
 
         // Initialize internal structures.
         iter.next();
@@ -77,11 +52,7 @@ public class GridCacheFullTextQueryFailoverTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.assertThrows(null, () -> {
-            iter.hasNext();
-
-            return null;
-        }, CacheException.class, "Remote node has left topology");
+        GridTestUtils.assertThrows(log, iter::hasNext, CacheException.class, "Remote node has left topology");
     }
 
     /** */
@@ -90,7 +61,7 @@ public class GridCacheFullTextQueryFailoverTest extends GridCommonAbstractTest {
         TextQuery<Integer, Person> qry = new TextQuery<Integer, Person>(Person.class, "str~")
             .setPageSize(10);
 
-        QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry);
+        QueryCursor<Cache.Entry<Integer, Person>> cursor = cache().query(qry);
 
         Iterator<Cache.Entry<Integer, Person>> iter = cursor.iterator();
 
@@ -101,22 +72,6 @@ public class GridCacheFullTextQueryFailoverTest extends GridCommonAbstractTest {
 
         assertFalse(iter.hasNext());
 
-        GridTestUtils.assertThrows(null, () -> {
-            iter.next();
-
-            return null;
-        }, NoSuchElementException.class, null);
-    }
-
-    /** */
-    public static class Person {
-        /** */
-        @QueryTextField
-        private final String name;
-
-        /** */
-        public Person(String name) {
-            this.name = name;
-        }
+        GridTestUtils.assertThrows(log, iter::next, NoSuchElementException.class, null);
     }
 }
