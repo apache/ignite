@@ -24,18 +24,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -88,6 +97,9 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
 
     /** */
     private Consumer<Runnable> shouldSucceed = Runnable::run;
+
+    /** */
+    private AtomicInteger cntr = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -697,6 +709,33 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
 
                 for (EntryProcessorResult<?> result : map.values())
                     log.info(">>> " + result.get());
+            },
+            () -> {
+                IgniteEx ign = grid(0);
+
+                IgniteInternalCache<K, V> cachex = ign.cachex(cache.getName());
+
+                try {
+                    cachex.putAllConflict(Arrays.stream(entries).collect(Collectors.toMap(
+                        entry -> new KeyCacheObjectImpl(entry.get1(), null, cachex.affinity().partition(entry.get1())),
+                        entry -> {
+                            try {
+                                CacheObject val =
+                                    new CacheObjectImpl(entry.get2(), null);
+
+                                val.prepareMarshal(cachex.context().cacheObjectContext());
+
+                                return new GridCacheDrInfo(val, new GridCacheVersion(1, cntr.incrementAndGet(), 1, 1));
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
+                        }
+                    )));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         );
 
