@@ -298,14 +298,16 @@ public class IndexQueryProcessor {
             IndexKey l = key(crit.lower(), crit.lowerNull(), keyDef, keyTypeSettings, coctx);
             IndexKey u = key(crit.upper(), crit.upperNull(), keyDef, keyTypeSettings, coctx);
 
+            if (l != null && u != null && keyCmp.compareKey(l, u) > 0) {
+                throw failIndexQuery("Illegal criterion: lower boundary is greater than the upper boundary: " +
+                    rangeDesc(crit, fldName, null, null), idxDef, idxQryDesc);
+            }
+
             boolean lowIncl = crit.lowerIncl();
             boolean upIncl = crit.upperIncl();
 
             boolean lowNull = crit.lowerNull();
             boolean upNull = crit.upperNull();
-
-            if (l != null && u != null && keyCmp.compareKey(l, u) > 0)
-                throw failIndexQuery("Illegal criterion: lower boundary is greater than the upper boundary: " + crit, idxDef, idxQryDesc);
 
             if (mergedCriteria.containsKey(fldName)) {
                 RangeIndexQueryCriterion prev = mergedCriteria.get(fldName);
@@ -317,16 +319,12 @@ public class IndexQueryProcessor {
                 if (!checkBoundaries(l, prevUpper, crit.lowerIncl(), prev.upperIncl(), keyCmp) ||
                     !checkBoundaries(prevLower, u, prev.lowerIncl(), crit.upperIncl(), keyCmp)) {
 
-                    // Create a criterion with friedly-readable boundaries in exception message.
-                    RangeIndexQueryCriterion p = new RangeIndexQueryCriterion(
-                        prev.field(),
+                    String prevDesc = rangeDesc(prev, null,
                         prevLower == null ? null : prevLower.key(),
                         prevUpper == null ? null : prevUpper.key());
 
-                    p.lowerIncl(prev.lowerIncl());
-                    p.upperIncl(prev.upperIncl());
-
-                    throw failIndexQuery("Failed to merge criterion " + crit + " with previous criteria range " + p, idxDef, idxQryDesc);
+                    throw failIndexQuery("Failed to merge criterion " + rangeDesc(crit, fldName, null, null) +
+                        " with previous criteria range " + prevDesc, idxDef, idxQryDesc);
                 }
 
                 int lowCmp = 0;
@@ -629,6 +627,23 @@ public class IndexQueryProcessor {
         @Override public IndexRow get() throws IgniteCheckedException {
             return head;
         }
+    }
+
+    /**
+     * @return Modified description for criterion in case of error.
+     */
+    private static String rangeDesc(RangeIndexQueryCriterion c, String fldName, Object lower, Object upper) {
+        String fld = fldName == null ? c.field() : fldName;
+
+        Object l = lower == null ? c.lower() : lower;
+        Object u = upper == null ? c.upper() : upper;
+
+        RangeIndexQueryCriterion r = new RangeIndexQueryCriterion(fld, l, u);
+
+        r.lowerIncl(c.lowerIncl());
+        r.upperIncl(c.upperIncl());
+
+        return r.toString();
     }
 
     /** */
