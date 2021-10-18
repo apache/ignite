@@ -159,7 +159,7 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
                 .setCriteria(eq(fldName, eq1), eq(fldName, eq2), between(fldName, from, to));
 
             return cache.query(qry).getAll();
-        }, CacheException.class, "Criterion is invalid: lower boundary is greater than upper");
+        }, CacheException.class, "Failed to merge criteria into valid tree index range");
     }
 
     /** */
@@ -289,7 +289,7 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
         if (lower > upper) {
             GridTestUtils.assertThrows(null, () -> cache.query(qry).getAll(),
-                CacheException.class, "Criterion is invalid: lower boundary is greater than upper");
+                CacheException.class, "Failed to merge criteria into valid tree index range");
         }
         else
             check(errMsg, cache.query(qry), lower, upper);

@@ -178,7 +178,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
             Arrays.asList(eq("id", 101), between("id", 19, 40)),
             Arrays.asList(between("id", 432, 40))
         ).forEach(crit -> {
-            String msg = "Criterion is invalid: lower boundary is greater than upper";
+            String msg = "Failed to merge criteria into valid tree index range";
 
             GridTestUtils.assertThrowsAnyCause(null, () -> {
                     IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)

@@ -327,8 +327,8 @@ public class IndexQueryProcessor {
             }
 
             if (l != null && u != null && idxDef.rowComparator().compareKey(l, u) > 0)
-                throw failIndexQuery("Criterion is invalid: lower boundary is greater than upper. Field=" + fldName +
-                    ", lower=" + l.key() + ", upper=" + u.key(), idxDef, idxQryDesc);
+                throw failIndexQuery("Failed to merge criteria into valid tree index range. " +
+                    "Field=" + fldName + ", lower=" + l.key() + ", upper=" + u.key(), idxDef, idxQryDesc);
 
             RangeIndexQueryCriterion idxKeyCrit = new RangeIndexQueryCriterion(fldName, l, u);
             idxKeyCrit.lowerIncl(lowIncl);
@@ -400,10 +400,10 @@ public class IndexQueryProcessor {
     private GridCursor<IndexRow> query(GridCacheContext<?, ?> cctx, Index idx, IndexQueryDesc idxQryDesc, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
-        if (F.isEmpty(idxQryDesc.criteria()) || idxQryDesc.criteria().get(0) instanceof RangeIndexQueryCriterion)
-            return querySortedIndex(cctx, (InlineIndexImpl) idx, idxQryDesc, qryCtx);
+        IndexQueryCriterion c = F.isEmpty(idxQryDesc.criteria()) ? null : idxQryDesc.criteria().get(0);
 
-        IndexQueryCriterion c = idxQryDesc.criteria().get(0);
+        if (c == null || c instanceof RangeIndexQueryCriterion)
+            return querySortedIndex(cctx, (InlineIndexImpl) idx, idxQryDesc, qryCtx);
 
         throw new IllegalStateException("Doesn't support index query criteria: " + c.getClass().getName());
     }
