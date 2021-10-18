@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointBindException;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
@@ -225,7 +226,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
             boolean accepted = false;
 
             try {
-                sock = srvSock.accept();
+                sock = IgniteUtils.acceptServerSocket(srvSock);
 
                 accepted = true;
 
