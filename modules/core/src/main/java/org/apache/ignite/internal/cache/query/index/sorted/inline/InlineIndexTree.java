@@ -221,10 +221,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             return metaInfo.inlineObjectSupported();
         else {
             try {
-                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions())) {
+                if (InlineObjectBytesDetector.objectMayBeInlined(metaInfo.inlineSize(), def.indexKeyDefinitions().values())) {
                     try {
                         InlineObjectBytesDetector inlineObjDetector = new InlineObjectBytesDetector(
-                            metaInfo.inlineSize(), def.indexKeyDefinitions(), def.idxName(), log);
+                            metaInfo.inlineSize(), def.indexKeyDefinitions().values(), def.idxName(), log);
 
                         // Create a settings for case where java objects inilned as byte array.
                         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
@@ -273,7 +273,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int off = io.offset(idx);
 
-        List<IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
+        List<IndexKeyDefinition> keyDefs = rowHnd.indexKeyDefinitions();
 
         List<InlineIndexKeyType> keyTypes = rowHandler().inlineIndexKeyTypes();
 
@@ -355,10 +355,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             if (row.key(i) == null)
                 return 0;
 
-            int c = def.rowComparator().compareKey(currRow, row, i);
+            int c = def.rowComparator().compareRow(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), def.indexKeyDefinitions().get(i).order().sortOrder());
+                return applySortOrder(Integer.signum(c), rowHnd.indexKeyDefinitions().get(i).order().sortOrder());
         }
 
         return 0;
