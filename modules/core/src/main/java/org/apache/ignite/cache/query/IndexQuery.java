@@ -20,9 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -178,16 +176,10 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
         Class<?> critCls = criteria.get(0).getClass();
 
-        Set<String> fields = new HashSet<>();
-
         for (IndexQueryCriterion c: criteria) {
             A.notNull(c, "criteria");
             A.ensure(c.getClass() == critCls,
                 "Expect a the same criteria class for merging criteria. Exp=" + critCls + ", act=" + c.getClass());
-
-            A.ensure(!fields.contains(c.field()), "Duplicated field in criteria: " + c.field() + ".");
-
-            fields.add(c.field());
         }
 
         this.criteria = Collections.unmodifiableList(criteria);
