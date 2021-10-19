@@ -949,7 +949,10 @@ public class H2Utils {
 
             GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
 
-            assert cctx != null;
+            if (cctx == null) {
+                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            }
 
             if (!cctx.isPartitioned())
                 continue;

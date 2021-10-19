@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -439,17 +440,28 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                         cursor.getAll();
                     }
                     catch (Exception e) {
-                        if (e.getMessage().contains("Failed to find cache")
-                            || e.getMessage().contains("Failed to parse query. Table \"TEST\" not found")
-                            || e.getMessage().contains("Cache not found on local node (was concurrently destroyed?)")
-                            || e.getMessage().contains("Getting affinity for too old topology version that is already out of history")
-                            || e.getMessage().contains("Failed to find partitioned cache")
-                            || e.getMessage().contains("Table \"TEST\" not found")
-                            || e.getMessage().contains("Table PUBLIC.TEST already destroyed")
+                        String msg = e.getMessage();
+
+                        if (msg != null && (msg.contains("Failed to find cache")
+                            || msg.contains("Failed to perform cache operation (cache is stopped)")
+                            || msg.contains("Failed to parse query. Table \"TEST\" not found")
+                            || msg.contains("Cache not found on local node (was concurrently destroyed?)")
+                            || msg.contains("Getting affinity for too old topology version that is already out of history")
+                            || msg.contains("Failed to find partitioned cache")
+                            || msg.contains("Table \"TEST\" not found")
+                            || msg.contains("Table not found")
+                            || msg.contains("Table PUBLIC.TEST already destroyed"))
                         ) {
                             // Swallow exception when table is dropped.
                         }
                         else if (X.cause(e, IgniteInterruptedCheckedException.class) != null) {
+                            // Swallow exception when table is dropped.
+                        }
+                        //TODO: remove after https://issues.apache.org/jira/browse/IGNITE-15796
+                        else if (X.cause(e, NullPointerException.class) != null) {
+                            // Swallow exception when table is dropped.
+                        }
+                        else if (X.cause(e, CacheException.class) != null) {
                             // Swallow exception when table is dropped.
                         }
                         else if (X.cause(e, QueryRetryException.class) == null) {
