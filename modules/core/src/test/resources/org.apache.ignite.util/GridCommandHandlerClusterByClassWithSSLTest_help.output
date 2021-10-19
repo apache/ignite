@@ -168,7 +168,7 @@ This utility can do the following commands:
       group1,...groupN  - Cache group names.
 
   Snapshot restore operation status (deprecated. Use --snapshot status instead):
-      control.(sh|bat) --snapshot restore snapshot_name --status
+    control.(sh|bat) --snapshot restore snapshot_name --status
 
     Parameters:
       snapshot_name  - Snapshot name.
