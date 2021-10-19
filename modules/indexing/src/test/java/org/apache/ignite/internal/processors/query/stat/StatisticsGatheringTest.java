@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.util.Map;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.ignite.IgniteCheckedException;

@@ -79,7 +79,7 @@ public class StatisticsObjectConfiguration implements Serializable, Comparable<S
      * @param key Statistics key.
      */
     public StatisticsObjectConfiguration(StatisticsKey key) {
-        this(key, null, DEFAULT_OBSOLESCENCE_MAX_PERCENT);
+        this(key, Collections.emptyList(), DEFAULT_OBSOLESCENCE_MAX_PERCENT);
     }
 
     /**

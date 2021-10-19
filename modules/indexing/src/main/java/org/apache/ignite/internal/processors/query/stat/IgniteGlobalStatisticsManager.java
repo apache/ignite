@@ -833,7 +833,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      * @param statistics Collected statistics by key.
      * @param topVer Topology version which aggregated statistics stands for.
      */
-    public void onLocalStatisticsAggregated (
+    public void onLocalStatisticsAggregated(
         StatisticsKey key,
         ObjectStatisticsImpl statistics,
         AffinityTopologyVersion topVer

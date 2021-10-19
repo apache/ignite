@@ -110,7 +110,7 @@ public class StatisticsUtilsTest extends GridCommonAbstractTest {
             F.asMap("COL1", COL_1_STAT, "COL2", COL_3_STAT, "COL3", COL_2_STAT);
         ObjectStatisticsImpl objStat = new ObjectStatisticsImpl(100, colStats);
 
-        assertEquals(0, StatisticsUtils.compareVersions(objStat, VERSIONS));
+        assertTrue(StatisticsUtils.compareVersions(objStat, VERSIONS) > 0);
     }
 
     /**
@@ -142,7 +142,7 @@ public class StatisticsUtilsTest extends GridCommonAbstractTest {
         List<StatisticsColumnConfiguration> colCfgs = Arrays.asList(COL_1_CFG, COL_2_CFG.refresh());
         StatisticsObjectConfiguration objCfg = new StatisticsObjectConfiguration(KEY, colCfgs, (byte)50);
 
-        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) > 1);
+        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) > 0);
     }
 
     /**
@@ -153,6 +153,6 @@ public class StatisticsUtilsTest extends GridCommonAbstractTest {
         List<StatisticsColumnConfiguration> colCfgs = Arrays.asList(COL_1_CFG, COL_2_CFG, COL_3_CFG);
         StatisticsObjectConfiguration objCfg = new StatisticsObjectConfiguration(KEY, colCfgs, (byte)50);
 
-        assertTrue(StatisticsUtils.compareVersions(objCfg, VERSIONS) > 0);
+        assertEquals(0, StatisticsUtils.compareVersions(objCfg, VERSIONS));
     }
 }

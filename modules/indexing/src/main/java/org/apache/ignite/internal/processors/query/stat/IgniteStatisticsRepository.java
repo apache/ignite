@@ -196,7 +196,7 @@ public class IgniteStatisticsRepository {
         locStats.put(key, new VersionedStatistics(topVer, statistics));
 
         GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion> newLocalStat =
-            new GridTuple3<>(key, statistics,topVer);
+            new GridTuple3<>(key, statistics, topVer);
 
         for (Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber : subscribers)
             subscriber.accept(newLocalStat);

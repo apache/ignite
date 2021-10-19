@@ -29,8 +29,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.junit.Test;
 
 /**
@@ -160,7 +158,6 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      */
     @Test
     public void testDropStatistics() throws IgniteInterruptedCheckedException {
-        Logger.getLogger(StatisticsProcessor.class).setLevel(Level.TRACE);
         sql("ANALYZE PUBLIC.TEST, test2");
 
         testStatistics(SCHEMA, "TEST", false);
