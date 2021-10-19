@@ -25,9 +25,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
  * Defines a signle index key.
  */
 public class IndexKeyDefinition {
-    /** Index key name. */
-    private final String name;
-
     /** Index key type. {@link IndexKeyTypes}. */
     private final int idxType;
 
@@ -38,10 +35,9 @@ public class IndexKeyDefinition {
     private final int precision;
 
     /** */
-    public IndexKeyDefinition(String name, int idxType, Order order, long precision) {
+    public IndexKeyDefinition(int idxType, Order order, long precision) {
         this.idxType = idxType;
         this.order = order;
-        this.name = name;
 
         // Workaround due to wrong type conversion (int -> long).
         if (precision >= Integer.MAX_VALUE)
@@ -58,11 +54,6 @@ public class IndexKeyDefinition {
     /** */
     public int idxType() {
         return idxType;
-    }
-
-    /** */
-    public String name() {
-        return name;
     }
 
     /** */

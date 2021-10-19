@@ -295,6 +295,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         evtMgr.record(new CacheConsistencyViolationEvent(
+            ctx.name(),
             ctx.discovery().localNode(),
             "Consistency violation fixed.",
             originalMap));

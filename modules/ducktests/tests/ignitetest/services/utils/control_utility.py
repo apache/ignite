@@ -175,6 +175,14 @@ class ControlUtility:
 
         return re.search(r'/.*.txt', data).group(0)
 
+    def check_consistency(self, args):
+        """
+        Consistency check.
+        """
+        data = self.__run(f"--consistency {args} --enable-experimental")
+
+        assert ('Command [CONSISTENCY] finished with code: 0' in data), data
+
     def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """
         Create snapshot.

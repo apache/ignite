@@ -104,6 +104,10 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             .setCriteria(lte("descId", Integer.MAX_VALUE));
 
         assertTrue(tblCache.query(qry).getAll().isEmpty());
+
+        qry = new IndexQuery<>(Person.class.getName(), qryDescIdxName);
+
+        assertTrue(tblCache.query(qry).getAll().isEmpty());
     }
 
     /** */
@@ -121,7 +125,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
                 return tblCache.query(wrongQry).getAll();
 
-            }, IgniteCheckedException.class, "Index doesn't match query.");
+            }, IgniteCheckedException.class, "Index doesn't match criteria.");
         }
 
         // Wrong cache.
@@ -152,6 +156,10 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             .setCriteria(lt("DESCID", pivot));
 
         check(tblCache.query(qry), 0, pivot);
+
+        qry = new IndexQuery<>(Person.class.getName(), qryDescIdxName);
+
+        check(tblCache.query(qry), 0, CNT);
     }
 
     /** Should support only original field. */
@@ -168,7 +176,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         check(tblCache.query(qry), 0, pivot);
 
-        String errMsg = qryDescIdxName != null ? "Index doesn't match query." : "No index found for criteria.";
+        String errMsg = qryDescIdxName != null ? "Index doesn't match criteria." : "No index found for criteria.";
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(Person.class.getName(), qryDescIdxName)

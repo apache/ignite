@@ -69,19 +69,25 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     /** Represents original values of entries.*/
     final Map<Object, Map<ClusterNode, EntryInfo>> entries;
 
+    /** Cache name. */
+    final String cacheName;
+
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
      *
+     * @param cacheName Cache name.
      * @param node Local node.
      * @param msg Event message.
      * @param entries Collection of original entries.
      */
     public CacheConsistencyViolationEvent(
+        String cacheName,
         ClusterNode node,
         String msg,
         Map<Object, Map<ClusterNode, EntryInfo>> entries) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
+        this.cacheName = cacheName;
         this.entries = entries;
     }
 
@@ -92,6 +98,15 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      */
     public Map<Object, Map<ClusterNode, EntryInfo>> getEntries() {
         return entries;
+    }
+
+    /**
+     * Returns cache name.
+     *
+     * @return Cache name.
+     */
+    public String getCacheName() {
+        return cacheName;
     }
 
     /**

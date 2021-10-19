@@ -205,14 +205,18 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Add data
         insertData();
 
+        qry = new IndexQuery<>(Person.class, IDX);
+
+        check(cache.query(qry), 0, CNT);
+
+        // Range queries.
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
@@ -258,14 +262,18 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeDescQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(lt("descId", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, DESC_IDX);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Add data
         insertData();
 
+        qry = new IndexQuery<>(Person.class, DESC_IDX);
+
+        check(cache.query(qry), 0, CNT);
+
+        // Range queries.
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
