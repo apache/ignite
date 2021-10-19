@@ -824,24 +824,18 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         Assert.assertEquals("Result set mismatch", exp, act);
 
-        List <String> expFieldNames = new ArrayList<>();
-        List <String> actualFieldNames = new ArrayList<>();
-        List <String> expFieldTypes = new ArrayList<>();
-        List <String> actualFieldTypes = new ArrayList<>();
+        List<String> expFieldTypes = new ArrayList<>();
+        List<String> actualFieldTypes = new ArrayList<>();
 
         for (int i = 0; i < expMetaList.size(); i++) {
             GridQueryFieldMetadata expMeta = expMetaList.get(i);
             GridQueryFieldMetadata actMeta = actMetaList.get(i);
 
-            expFieldNames.add(expMeta.fieldName());
-            actualFieldNames.add(actMeta.fieldName());
-
             expFieldTypes.add(expMeta.fieldName() + ":" + expMeta.fieldTypeName());
             actualFieldTypes.add(actMeta.fieldName() + ":" + actMeta.fieldTypeName());
         }
 
-        Assert.assertEquals("Result set field names mismatch", expFieldNames, actualFieldNames);
-        Assert.assertEquals("Result set field types mismatch", expFieldTypes, actualFieldTypes);
+        Assert.assertEquals("Result set field names or field types mismatch", expFieldTypes, actualFieldTypes);
 
         String plan = cache.query(new SqlFieldsQuery("explain " + sql)).getAll().get(0).get(0).toString();
 
