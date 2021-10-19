@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
@@ -76,11 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionMixedModeException;
-import org.apache.ignite.transactions.TransactionSerializationException;
-import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
@@ -1322,22 +1318,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse exceptionToResult(Throwable e) {
-        if (e instanceof QueryCancelledException)
-            return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
-        if (e instanceof TransactionSerializationException)
-            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
-        if (e instanceof TransactionAlreadyCompletedException)
-            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
-        if (e instanceof TransactionDuplicateKeyException)
-            return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
-        if (e instanceof TransactionMixedModeException)
-            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e.getMessage());
-        if (e instanceof TransactionUnsupportedConcurrencyException)
-            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, e.getMessage());
-        if (e instanceof IgniteSQLException)
-            return new JdbcResponse(((IgniteSQLException)e).statusCode(), e.getMessage());
-        else
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage());
+        return new JdbcResponse(SqlListenerUtils.exceptionToSqlErrorCode(e), e.getMessage());
     }
 
     /**

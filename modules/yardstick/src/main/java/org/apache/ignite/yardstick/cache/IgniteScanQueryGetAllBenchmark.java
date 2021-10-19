@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.yardstick.cache;
 
-import java.util.LinkedHashMap;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import java.util.Map;
+import org.apache.ignite.cache.query.ScanQuery;
 
 /**
- * Basic interface for index description required to create or destroy index.
+ * Benchmark for ScanQuery.
  */
-public interface IndexDefinition {
-    /**
-     * @return Index name.
-     */
-    public IndexName idxName();
-
-    /**
-     * @return Ordered map of index field names to index key definitions.
-     */
-    public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions();
+public class IgniteScanQueryGetAllBenchmark extends IgniteCacheQueryGetAllBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        return testCacheQuery(new ScanQuery<>());
+    }
 }

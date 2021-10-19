@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -1505,6 +1506,60 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertTrue(waitForCondition(() -> stream(removeAllTime.value()).sum() == 2, getTestTimeout()));
         assertEquals(2, stream(removeTime.value()).sum());
+    }
+
+    /** */
+    @Test
+    public void testGetAllOutTx() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl getAllTime = metric("GetAllTime");
+
+        assertTrue(stream(getAllTime.value()).allMatch(v -> v == 0));
+
+        cache.getAllOutTx(singleton(1));
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 1, getTestTimeout()));
+
+        cache.getAllOutTxAsync(singleton(1)).get();
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 2, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testRemoveTimeTotal() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        LongMetric removeTimeTotal = metric("RemoveTimeTotal");
+
+        assertEquals(0, removeTimeTotal.value());
+
+        // 1. Check remove of a non-existing key.
+        cache.remove(-1);
+
+        assertTrue(removeTimeTotal.value() > 0);
+
+        removeTimeTotal.reset();
+
+        cache.removeAsync(-1).get();
+
+        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+
+        removeTimeTotal.reset();
+
+        // 2. Check remove of an existing key.
+        cache.put(1, 1);
+        cache.remove(1);
+
+        assertTrue(removeTimeTotal.value() > 0);
+
+        removeTimeTotal.reset();
+
+        cache.put(1, 1);
+        cache.removeAsync(1).get();
+
+        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
     }
 
     /**

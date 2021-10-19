@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.yardstick.cache;
+
+import java.util.Map;
+import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.yardstick.cache.model.PersonTextIndex;
+
 /**
- * <!-- Package description. -->
- * Contains Spring-based cache store implementation.
+ * Benchmark for TextQuery.
  */
-package org.apache.ignite.examples.datagrid.store.spring;
+public class IgniteTextQueryGetAllBenchmark extends IgniteCacheQueryGetAllBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        return testCacheQuery(new TextQuery<>(PersonTextIndex.class, namePrefix + "1000*"));
+    }
+}

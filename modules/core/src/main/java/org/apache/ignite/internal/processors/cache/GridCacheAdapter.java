@@ -1418,11 +1418,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+        final boolean performanceStatsEnabled = ctx.kernalContext().performanceStatistics().enabled();
+
+        final long start = statsEnabled || performanceStatsEnabled ? System.nanoTime() : 0L;
+
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        return repairableGetAllAsync(keys,
+        IgniteInternalFuture<Map<K, V>> fut = repairableGetAllAsync(keys,
             !ctx.config().isReadFromBackup(),
             /*skip tx*/true,
             taskName,
@@ -1431,6 +1436,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             opCtx != null && opCtx.readRepair(),
             /*skip values*/false,
             /*need ver*/false);
+
+        if (statsEnabled)
+            fut.listen(new UpdateGetAllTimeStatClosure<>(metrics0(), start));
+
+        if (performanceStatsEnabled)
+            fut.listen(f -> writeStatistics(OperationType.CACHE_GET_ALL, start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -3360,7 +3373,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         boolean rmv = remove0(key, filter);
 
-        if (statsEnabled && rmv)
+        if (statsEnabled)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         if (performanceStatsEnabled)

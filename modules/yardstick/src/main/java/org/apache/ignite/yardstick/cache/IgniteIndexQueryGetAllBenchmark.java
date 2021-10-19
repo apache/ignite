@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.yardstick.cache;
 
-import java.util.LinkedHashMap;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import java.util.Map;
+import org.apache.ignite.cache.query.IndexQuery;
+import org.apache.ignite.yardstick.cache.model.PersonTextIndex;
+
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /**
- * Basic interface for index description required to create or destroy index.
+ * Benchmark for IndexQuery.
  */
-public interface IndexDefinition {
-    /**
-     * @return Index name.
-     */
-    public IndexName idxName();
-
-    /**
-     * @return Ordered map of index field names to index key definitions.
-     */
-    public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions();
+public class IgniteIndexQueryGetAllBenchmark extends IgniteCacheQueryGetAllBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        return testCacheQuery(new IndexQuery<>(PersonTextIndex.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE)));
+    }
 }
