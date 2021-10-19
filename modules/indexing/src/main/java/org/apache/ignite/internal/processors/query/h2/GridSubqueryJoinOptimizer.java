@@ -396,6 +396,7 @@ public class GridSubqueryJoinOptimizer {
             target.child(childInd, subTbl);
 
         GridSqlAst where = subSel.where();
+
         if (where != null) {
             if (target != null) {
                 GridSqlJoin join = (GridSqlJoin)target;
@@ -474,14 +475,9 @@ public class GridSubqueryJoinOptimizer {
 
             ASTNodeFinder.Result aliasOrPred = findNode(subSelect, constPred.or(aliasPred));
 
-            if (aliasOrPred != null) {
-                GridSqlAst child = aliasOrPred.getEl().child(aliasOrPred.getIdx());
-
-                if (!(child instanceof GridSqlAlias) || !underAlias)
-                    res.getEl().child(res.getIdx(), child);
-                else
-                    res.getEl().child(res.getIdx(), child.child());
-            } else {
+            if (aliasOrPred != null)
+                res.getEl().child(res.getIdx(),  GridSqlAlias.unwrap(aliasOrPred.getEl().child(aliasOrPred.getIdx())));
+            else {
                 res.getEl().child(
                     res.getIdx(),
                     new GridSqlColumn(

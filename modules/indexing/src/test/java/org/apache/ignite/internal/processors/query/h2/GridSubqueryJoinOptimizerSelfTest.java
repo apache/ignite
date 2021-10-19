@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -823,15 +824,23 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         Assert.assertEquals("Result set mismatch", exp, act);
 
-        Assert.assertEquals("Result set column size mismatch", expMetaList.size(), actMetaList.size());
+        List <String> expFieldNames = new ArrayList<>();
+        List <String> actualFieldNames = new ArrayList<>();
+        List <String> expFieldTypes = new ArrayList<>();
+        List <String> actualFieldTypes = new ArrayList<>();
 
         for (int i = 0; i < expMetaList.size(); i++) {
             GridQueryFieldMetadata expMeta = expMetaList.get(i);
             GridQueryFieldMetadata actMeta = actMetaList.get(i);
 
-            Assert.assertEquals("Field name mistmatch", expMeta.fieldName(), actMeta.fieldName());
-            Assert.assertEquals("Field type mistmatch", expMeta.fieldTypeName(), actMeta.fieldTypeName());
+            expFieldNames.add(expMeta.fieldName());
+            expFieldTypes.add(expMeta.fieldTypeName());
+            actualFieldNames.add(actMeta.fieldName());
+            actualFieldTypes.add(actMeta.fieldTypeName());
         }
+
+        Assert.assertEquals("Result set field names mismatch", expFieldNames, actualFieldNames);
+        Assert.assertEquals("Result set field types mismatch", expFieldTypes, actualFieldTypes);
 
         String plan = cache.query(new SqlFieldsQuery("explain " + sql)).getAll().get(0).get(0).toString();
 
