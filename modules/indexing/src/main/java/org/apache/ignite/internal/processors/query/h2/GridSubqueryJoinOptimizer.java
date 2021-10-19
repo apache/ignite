@@ -399,16 +399,10 @@ public class GridSubqueryJoinOptimizer {
         GridSqlAst where = subSel.where();
 
         if (where != null) {
-            ASTNodeFinder.Result joinNode = findNode(parent, (p, c) -> c instanceof GridSqlJoin);
+            if (target != null) {
+                GridSqlJoin join = (GridSqlJoin)target;
 
-            if (joinNode != null) {
-                GridSqlJoin join = joinNode.getEl().child(joinNode.getIdx());
-
-                ASTNodeFinder.Result opOrConst = findNode(join,
-                    (p, c) -> c instanceof GridSqlOperation || c instanceof GridSqlConst
-                );
-
-                join.child(opOrConst.getIdx(), new GridSqlOperation(AND, join.on(), where));
+                join.child(GridSqlJoin.ON_CHILD, new GridSqlOperation(AND, join.on(), where));
             }
             else
                 parent.where(parent.where() == null ? where : new GridSqlOperation(AND, parent.where(), where));
