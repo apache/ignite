@@ -88,4 +88,11 @@ public @interface ServiceResource {
      * @return {@code True} if a sticky instance of a service proxy should be injected.
      */
     public boolean proxySticky() default false;
+
+    /**
+     * Flag indicating that the service request attributes should be passed to the injected service.
+     *
+     * @return {@code True} if the service request attributes should be passed to the injected service.
+     */
+    public boolean forwardRequestAttributes() default false;
 }

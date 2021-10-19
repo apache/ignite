@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -81,7 +82,6 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.services.ServiceProxyContext;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -945,7 +945,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        ServiceProxyContext proxyCtx, long timeout)
+        Supplier<Map<String, Object>> attrSupplier, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -955,7 +955,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (ctx != null) {
                 Service srvc = ctx.service();
 
-                if (srvc != null && proxyCtx == null) {
+                if (srvc != null && attrSupplier == null) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
@@ -966,9 +966,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        Map<String, Object> opCtx = proxyCtx != null ? ((ServiceProxyContextImpl)proxyCtx).values() : null;
-
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, opCtx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, attrSupplier).proxy();
     }
 
     /**

@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
@@ -49,6 +50,9 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
 
     /** Service name. */
     private static final String SVC_NAME = "test-svc";
+
+    /** Injected service name. */
+    private static final String SVC_NAME_INJECTED = "test-svc-injected";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -83,8 +87,19 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setServiceConfiguration(
-            new ServiceConfiguration().setName(SVC_NAME).setTotalCount(clusterSingleton ? 1 : NODES_CNT * SVC_PER_NODE)
-                .setMaxPerNodeCount(SVC_PER_NODE).setService(new TestServiceImpl()));
+            serviceCfg(SVC_NAME_INJECTED, true),
+            serviceCfg(SVC_NAME, clusterSingleton)
+        );
+    }
+
+    /**
+     * @param name Service name.
+     * @param clusterSingleton Flag to deploy single service instance per cluster.
+     * @return Service configuration.
+     */
+    private ServiceConfiguration serviceCfg(String name, boolean clusterSingleton) {
+        return new ServiceConfiguration().setName(name).setTotalCount(clusterSingleton ? 1 : NODES_CNT * SVC_PER_NODE)
+            .setMaxPerNodeCount(SVC_PER_NODE).setService(new TestServiceImpl());
     }
 
     /**
@@ -92,8 +107,12 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
      */
     @Test
     public void testContextAttribute() {
-        for (int i = 0; i < NODES_CNT; i++)
-            assertEquals(i, createProxyWithContext(grid(i), i).attribute());
+        for (int i = 0; i < NODES_CNT; i++) {
+            TestService proxy = createProxyWithContext(grid(i), i);
+
+            assertEquals(i, proxy.attribute(false));
+            assertEquals(i, proxy.attribute(true));
+        }
     }
 
     /**
@@ -118,8 +137,10 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
                 startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-                for (int i = 0; i < 1_000; i++)
-                    assertEquals(e.getValue(), e.getKey().attribute());
+                for (int i = 0; i < 1_000; i++) {
+                    assertEquals(e.getValue(), e.getKey().attribute(false));
+                    assertEquals(e.getValue(), e.getKey().attribute(true));
+                }
 
                 return true;
             }, 2, "worker");
@@ -147,16 +168,23 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
     /** */
     private static interface TestService extends Service {
         /**
-         * @return Context attribute.
+         * @param useInjectedSvc Get attribute from the injected service.
+         * @return Context attribute value.
          */
-        public Object attribute();
+        public Object attribute(boolean useInjectedSvc);
     }
 
     /** */
     private static class TestServiceImpl implements TestService {
+        /** Injected service. */
+        @ServiceResource(serviceName = SVC_NAME_INJECTED, proxyInterface = TestService.class, forwardRequestAttributes = true)
+        private TestService injected;
+
         /** {@inheritDoc} */
-        @Override public Object attribute() {
-            return ServiceProxyContext.current().attribute(ATTR_NAME);
+        @Override public Object attribute(boolean useInjectedSvc) {
+            assert injected != null;
+
+            return useInjectedSvc ? injected.attribute(false) : ServiceProxyContext.current().attribute(ATTR_NAME);
         }
 
         /** {@inheritDoc} */

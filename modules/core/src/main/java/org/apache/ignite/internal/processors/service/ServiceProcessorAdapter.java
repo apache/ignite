@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.services.ServiceProxyContext;
 
 /**
  * Adapter for different service processor implementations.
@@ -121,13 +121,13 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
-     * @param proxyCtx Service proxy context.
+     * @param attrSupplier Service request attributes supplier.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
     public abstract <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        ServiceProxyContext proxyCtx, long timeout) throws IgniteException;
+        Supplier<Map<String, Object>> attrSupplier, long timeout) throws IgniteException;
 
     /**
      * @param name Service name.

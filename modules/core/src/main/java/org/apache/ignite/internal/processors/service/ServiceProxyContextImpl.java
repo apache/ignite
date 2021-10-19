@@ -54,7 +54,7 @@ public class ServiceProxyContextImpl extends ServiceProxyContext {
     /**
      * @return Context attributes.
      */
-    protected Map<String, Object> values() {
+    public Map<String, Object> values() {
         return attrs;
     }
 

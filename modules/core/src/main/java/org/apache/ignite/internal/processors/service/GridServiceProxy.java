@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -113,7 +114,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @param svc Service type class.
      * @param sticky Whether multi-node request should be done.
      * @param timeout Service availability wait timeout. Cannot be negative.
-     * @param opCtx Service operation context.
+     * @param attrSupplier Service request attributes supplier.
      * @param ctx Context.
      */
     public GridServiceProxy(ClusterGroup prj,
@@ -122,7 +123,7 @@ public class GridServiceProxy<T> implements Serializable {
         boolean sticky,
         long timeout,
         GridKernalContext ctx,
-        Map<String, Object> opCtx)
+        Supplier<Map<String, Object>> attrSupplier)
     {
         assert timeout >= 0 : timeout;
 
@@ -139,7 +140,7 @@ public class GridServiceProxy<T> implements Serializable {
         proxy = (T)Proxy.newProxyInstance(
             svc.getClassLoader(),
             new Class[] {svc},
-            new ProxyInvocationHandler(opCtx)
+            new ProxyInvocationHandler(attrSupplier)
         );
     }
 
@@ -425,19 +426,19 @@ public class GridServiceProxy<T> implements Serializable {
      * Invocation handler for service proxy.
      */
     private class ProxyInvocationHandler implements InvocationHandler {
-        /** Service operation context. */
-        private final Map<String, Object> opCtx;
+        /** Service request attributes supplier. */
+        private final Supplier<Map<String, Object>> attrSupplier;
 
         /**
-         * @param opCtx Service operation context.
+         * @param attrSupplier Service request attributes supplier.
          */
-        public ProxyInvocationHandler(Map<String, Object> opCtx) {
-            this.opCtx = opCtx;
+        public ProxyInvocationHandler(Supplier<Map<String, Object>> attrSupplier) {
+            this.attrSupplier = attrSupplier;
         }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
-            return invokeMethod(mtd, args, opCtx);
+            return invokeMethod(mtd, args, attrSupplier != null ? attrSupplier.get() : null);
         }
     }
 
