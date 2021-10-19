@@ -45,7 +45,6 @@ public interface SnapshotMXBean {
     /**
      * Status snapshot.
      * Check the snapshot operation on server nodes.
-     * @see IgniteSnapshot#statusSnapshot()
      *
      * @return Map from Consistent ID's to status of the snapshot operation.
      */
