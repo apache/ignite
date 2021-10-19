@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -748,7 +749,7 @@ public class GridH2Table extends TableBase {
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+                @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
                     throw new UnsupportedOperationException("Hasn't be invoked for destroyed index.");
                 }
             };
