@@ -721,7 +721,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
                     Map<KeyCacheObject, GridCacheDrInfo> data = Arrays.stream(entries)
                         .map(e -> F.t(ign.binary().toBinary(e.get1()), ign.binary().toBinary(e.get2())))
                         .collect(Collectors.toMap(
-                            entry -> new KeyCacheObjectImpl(
+                            entry -> entry.get1() instanceof KeyCacheObject ? (KeyCacheObject)entry.get1() : new KeyCacheObjectImpl(
                                 entry.get1(),
                                 null,
                                 cachex.affinity().partition((K)entry.get1())
