@@ -41,10 +41,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -716,22 +718,31 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
                 IgniteInternalCache<K, V> cachex = ign.cachex(cache.getName());
 
                 try {
-                    cachex.putAllConflict(Arrays.stream(entries).collect(Collectors.toMap(
-                        entry -> new KeyCacheObjectImpl(entry.get1(), null, cachex.affinity().partition(entry.get1())),
-                        entry -> {
-                            try {
-                                CacheObject val =
-                                    new CacheObjectImpl(entry.get2(), null);
+                    Map<KeyCacheObject, GridCacheDrInfo> data = Arrays.stream(entries)
+                        .map(e -> F.t(ign.binary().toBinary(e.get1()), ign.binary().toBinary(e.get2())))
+                        .collect(Collectors.toMap(
+                            entry -> new KeyCacheObjectImpl(
+                                entry.get1(),
+                                null,
+                                cachex.affinity().partition((K)entry.get1())
+                            ),
+                            entry -> {
+                                try {
+                                    CacheObject val = entry.get2() instanceof CacheObject
+                                        ? (CacheObject)entry.get2()
+                                        : new CacheObjectImpl(entry.get2(), null);
 
-                                val.prepareMarshal(cachex.context().cacheObjectContext());
+                                    val.prepareMarshal(cachex.context().cacheObjectContext());
 
-                                return new GridCacheDrInfo(val, new GridCacheVersion(1, cntr.incrementAndGet(), 1, 1));
+                                    return new GridCacheDrInfo(val, new GridCacheVersion(1, cntr.incrementAndGet(), 1, 1));
+                                }
+                                catch (IgniteCheckedException e) {
+                                    throw new IgniteException(e);
+                                }
                             }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteException(e);
-                            }
-                        }
-                    )));
+                        ));
+
+                    cachex.putAllConflict(data);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
