@@ -37,6 +37,7 @@ import org.junit.Test;
  * It should lead to the full transaction rollback.
  */
 public class TxRollbackDuringPreparingTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
@@ -69,7 +70,12 @@ public class TxRollbackDuringPreparingTest extends GridCommonAbstractTest {
         long txTimeout = 1_000;
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            Transaction tx = client.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, txTimeout, 1);
+            Transaction tx = client.transactions().txStart(
+                TransactionConcurrency.OPTIMISTIC,
+                TransactionIsolation.SERIALIZABLE,
+                txTimeout,
+                1
+            );
 
             cache.put(key, key);
 
