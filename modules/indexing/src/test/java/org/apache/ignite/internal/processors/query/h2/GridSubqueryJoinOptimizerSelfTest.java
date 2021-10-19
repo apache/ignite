@@ -834,8 +834,9 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
             GridQueryFieldMetadata actMeta = actMetaList.get(i);
 
             expFieldNames.add(expMeta.fieldName());
-            expFieldTypes.add(expMeta.fieldTypeName());
-            actualFieldNames.add(expMeta.fieldName() + ":" + actMeta.fieldName());
+            actualFieldNames.add(actMeta.fieldName());
+
+            expFieldTypes.add(expMeta.fieldName() + ":" + expMeta.fieldTypeName());
             actualFieldTypes.add(actMeta.fieldName() + ":" + actMeta.fieldTypeName());
         }
 
