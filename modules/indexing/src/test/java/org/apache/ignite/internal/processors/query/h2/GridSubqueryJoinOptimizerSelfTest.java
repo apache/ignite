@@ -840,7 +840,8 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
         }
 
         Assert.assertEquals("Result set field names mismatch", expFieldNames, actualFieldNames);
-        Assert.assertEquals("Result set field types mismatch", expFieldTypes, actualFieldTypes);
+        Assert.assertEquals("Result set field types for column names[" + expFieldNames + "] mismatch",
+            expFieldTypes, actualFieldTypes);
 
         String plan = cache.query(new SqlFieldsQuery("explain " + sql)).getAll().get(0).get(0).toString();
 
