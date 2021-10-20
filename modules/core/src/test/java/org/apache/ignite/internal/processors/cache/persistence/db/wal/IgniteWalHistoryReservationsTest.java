@@ -400,8 +400,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     public void testWalHistoryPartiallyRemoved() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
 
-        stopAllGrids();
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
