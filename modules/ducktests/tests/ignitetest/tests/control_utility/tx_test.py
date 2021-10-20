@@ -31,7 +31,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
-# pylint: disable=W0223
 class TransactionsTests(IgniteTest):
     """
     Tests control.sh transaction management command.

@@ -117,6 +117,23 @@
         <level value="WARN"/>
     </category>
 
+    <!--
+        Consistency repair section.
+        Repaired data should not be logged to the same log file by default.
+    -->
+    <category name="org.apache.ignite.internal.visor.consistency" additivity="false">
+        <appender-ref ref="CONSISTENCY"/>
+        <level value="INFO"/>
+    </category>
+
+    <appender name="CONSISTENCY" class="org.apache.log4j.FileAppender">
+        <param name="File" value="${IGNITE_HOME}/work/log/consistency.log"/>
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        </layout>
+    </appender>
+
     <!-- Default settings. -->
     <root>
         <!-- Print out all info by default. -->

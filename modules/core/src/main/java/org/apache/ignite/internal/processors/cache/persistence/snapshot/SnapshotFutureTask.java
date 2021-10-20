@@ -266,9 +266,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
-                if (gctx.config().isEncryptionEnabled())
-                    throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshot: " + grpId);
-
                 // Create cache group snapshot directory on start in a single thread.
                 U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
@@ -547,14 +544,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
      * @throws IgniteCheckedException If fails.
      */
     private void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
+        Integer encGrpId = cctx.cache().isEncrypted(grpId) ? grpId : null;
+
         for (int partId : parts) {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
 
             partDeltaWriters.put(pair,
-                new PageStoreSerialWriter(store,
-                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId)));
+                new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId), encGrpId));
 
             partFileLengths.put(pair, store.size());
         }
@@ -773,6 +771,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         /** Partition delta file to store delta pages into. */
         private final File deltaFile;
 
+        /** Id of encrypted cache group. If {@code null}, no encrypted IO is used. */
+        private final Integer encryptedGrpId;
+
         /** Busy lock to protect write operations. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -797,8 +798,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
+         * @param encryptedGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
          */
-        public PageStoreSerialWriter(PageStore store, File deltaFile) {
+        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
             assert store != null;
             assert cctx.database().checkpointLockIsHeldByThread();
 
@@ -808,6 +810,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
             writtenPages = new AtomicBitSet(store.pages());
+            this.encryptedGrpId = encryptedGrpId;
 
             store.addWriteListener(this);
         }
@@ -845,8 +848,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (stopped())
                         return;
 
-                    if (deltaFileIo == null)
-                        deltaFileIo = ioFactory.create(deltaFile);
+                    if (deltaFileIo == null) {
+                        deltaFileIo = (encryptedGrpId == null ? ioFactory :
+                            pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+                    }
                 }
                 catch (IOException e) {
                     acceptException(e);

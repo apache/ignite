@@ -226,7 +226,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             GridCacheAdapter<Integer, String> cache1 = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME);
 
             // Cache rebalancing events should not be fired for this cache.
-            CacheConfiguration ccfg = cacheConfiguration(((IgniteKernal)g1).getInstanceName())
+            CacheConfiguration ccfg = cacheConfiguration(g1.name())
                 .setName(DEFAULT_CACHE_NAME + "_evts_disabled")
                 .setEventsDisabled(true);
 

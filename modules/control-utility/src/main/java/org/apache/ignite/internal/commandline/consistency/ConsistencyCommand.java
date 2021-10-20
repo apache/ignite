@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.consistency;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskArg;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
@@ -46,8 +48,12 @@ public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTa
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        boolean failed = false;
+
+        StringBuilder sb = new StringBuilder();
+
         try (GridClient client = Command.startClient(clientCfg)) {
-            Object res = executeTaskByNameOnNode(
+            VisorConsistencyRepairTaskResult res = executeTaskByNameOnNode(
                 client,
                 cmd.taskName(),
                 arg(),
@@ -55,9 +61,22 @@ public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTa
                 clientCfg
             );
 
-            log.info(String.valueOf(res));
+            if (res.cancelled()) {
+                sb.append("Operation execution cancelled.\n\n");
 
-            return res;
+                failed = true;
+            }
+
+            if (res.failed()) {
+                sb.append("Operation execution failed.\n\n");
+
+                failed = true;
+            }
+
+            if (failed)
+                sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
+
+            sb.append(res.message());
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -65,6 +84,15 @@ public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTa
 
             throw e;
         }
+
+        String output = sb.toString();
+
+        if (failed)
+            throw new IgniteCheckedException(output);
+        else
+            log.info(output);
+
+        return output;
     }
 
     /** {@inheritDoc} */
