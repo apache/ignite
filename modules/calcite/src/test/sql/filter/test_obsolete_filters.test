@@ -191,14 +191,6 @@ query II
 SELECT * FROM integers WHERE a<>2 AND a=2
 ----
 
-query II
-SELECT * FROM integers WHERE 0
-----
-
-query II
-SELECT * FROM integers WHERE a<2 AND 0
-----
-
 # Test string expressions with obsolete filters
 statement ok
 CREATE TABLE strings(s VARCHAR)
@@ -277,4 +269,3 @@ query T
 SELECT * FROM strings WHERE s<>'world' AND s>='hello'
 ----
 hello
-

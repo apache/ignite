@@ -19,26 +19,10 @@ SELECT a FROM test ORDER BY a
 12
 13
 
-# we can change the default with a pragma
-statement ok
-PRAGMA default_order='DESCENDING'
-
 query I
-SELECT a FROM test ORDER BY a
+SELECT a FROM test ORDER BY a desc
 ----
 13
 12
 11
-
-statement ok
-PRAGMA default_order='ASC'
-
-statement error
-PRAGMA default_order())
-
-statement error
-PRAGMA default_order=UNKNOWN)
-
-statement error
-PRAGMA default_order=3)
 
