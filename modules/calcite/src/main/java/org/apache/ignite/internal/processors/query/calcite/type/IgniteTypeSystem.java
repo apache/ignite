@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.io.Serializable;
-
+import java.math.BigDecimal;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
+import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  * Ignite type system.
@@ -37,5 +41,64 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
     /** {@inheritDoc} */
     @Override public int getMaxNumericPrecision() {
         return Short.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType deriveSumType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
+        RelDataType sumType;
+        if (argumentType instanceof BasicSqlType) {
+            switch (argumentType.getSqlTypeName()) {
+                case INTEGER:
+                case TINYINT:
+                case SMALLINT:
+                    sumType = typeFactory.createSqlType(SqlTypeName.BIGINT);
+
+                    break;
+
+                case BIGINT:
+                case DECIMAL:
+                    sumType = typeFactory.createSqlType(SqlTypeName.DECIMAL);
+
+                    break;
+
+                case REAL:
+                case FLOAT:
+                case DOUBLE:
+                    sumType = typeFactory.createSqlType(SqlTypeName.DOUBLE);
+
+                    break;
+
+                default:
+                    return super.deriveSumType(typeFactory, argumentType);
+            }
+        }
+        else {
+            switch (argumentType.getSqlTypeName()) {
+                case INTEGER:
+                case TINYINT:
+                case SMALLINT:
+                    sumType = typeFactory.createJavaType(Long.class);
+
+                    break;
+
+                case BIGINT:
+                case DECIMAL:
+                    sumType = typeFactory.createJavaType(BigDecimal.class);
+
+                    break;
+
+                case REAL:
+                case FLOAT:
+                case DOUBLE:
+                    sumType = typeFactory.createJavaType(Double.class);
+
+                    break;
+
+                default:
+                    return super.deriveSumType(typeFactory, argumentType);
+            }
+        }
+
+        return typeFactory.createTypeWithNullability(sumType, argumentType.isNullable());
     }
 }
