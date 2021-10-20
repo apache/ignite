@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -122,7 +123,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testReservedOnExchange() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -281,7 +282,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
 
@@ -333,7 +334,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
 
@@ -402,7 +403,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         int entryCnt = 9_500;
 
-        IgniteEx ig0 = (IgniteEx)startGrids(2);
+        IgniteEx ig0 = startGrids(2);
 
         ig0.cluster().active(true);
 
@@ -428,9 +429,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
             nodeId0, false));
 
-        log.info("Deleted: " + U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
-            nodeId0, false));
-
         startGrid(0);
 
         Ignite ig1 = startGrid(1);
@@ -441,7 +439,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-//    @Test
+    @Test
     public void testNodeLeftDuringExchange() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -530,8 +528,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-//    @Test
-//    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
     public void testCheckpointsNotReserveWithWalModeNone() throws Exception {
         walMode = WALMode.NONE;
 
