@@ -2864,7 +2864,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (start != null) {
                 if (!F.isEmpty(descs)) {
                     if (descs[0].idx() > start.index()) {
-                        log.info("ZZZZZ " + walArchiveDir + ", startIndex=" + start.index() + ", descs[0].idx=" + descs[0].idx());
+                        log.info("ZZZZZ " + walArchiveDir + ", startIndex=" + start.index() + ", descs=" + Arrays.asList(descs));
                         throw new IgniteCheckedException("WAL history is too short " +
                             "[descs=" + Arrays.asList(descs) + ", start=" + start + ']');
                     }
