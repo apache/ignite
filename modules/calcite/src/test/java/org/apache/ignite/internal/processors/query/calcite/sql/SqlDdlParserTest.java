@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -58,7 +57,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(columnWithName("ID")));
         assertThat(createTable.columnList(), hasItem(columnWithName("VAL")));
@@ -77,7 +76,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("My_Table")));
+        assertThat(createTable.name().names, is(List.of("My_Table")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(columnWithName("Id")));
         assertThat(createTable.columnList(), hasItem(columnWithName("Val")));
@@ -96,7 +95,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(true));
         assertThat(createTable.columnList(), hasItem(columnWithName("ID")));
         assertThat(createTable.columnList(), hasItem(columnWithName("VAL")));
@@ -116,7 +115,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
             "PK constraint with name \"ID\"", SqlKeyConstraint.class,
@@ -140,7 +139,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
             "PK constraint without name containing column \"ID\"", SqlKeyConstraint.class,
@@ -164,7 +163,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
             "PK constraint with name \"PK_KEY\" containing column \"ID\"", SqlKeyConstraint.class,
@@ -188,7 +187,7 @@ public class SqlDdlParserTest {
 
         IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
 
-        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.name().names, is(List.of("MY_TABLE")));
         assertThat(createTable.ifNotExists, is(false));
         assertThat(createTable.columnList(), hasItem(ofTypeMatching(
             "PK constraint with two columns", SqlKeyConstraint.class,

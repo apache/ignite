@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -110,7 +109,7 @@ public class IgniteReduceHashAggregate extends IgniteReduceAggregateBase impleme
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(inTraits.get(0).replace(RelCollations.EMPTY))));
+        return List.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            List.of(inTraits.get(0).replace(RelCollations.EMPTY))));
     }
 }

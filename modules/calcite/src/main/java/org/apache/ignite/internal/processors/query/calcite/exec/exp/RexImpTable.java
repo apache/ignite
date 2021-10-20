@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -1107,7 +1106,7 @@ public class RexImpTable {
          * Types that can be arguments to comparison operators such as {@code <}.
          */
         private static final List<Primitive> COMP_OP_TYPES =
-            ImmutableList.of(
+            List.of(
                 Primitive.BYTE,
                 Primitive.CHAR,
                 Primitive.SHORT,
@@ -1118,7 +1117,7 @@ public class RexImpTable {
 
         /** */
         private static final List<SqlBinaryOperator> COMPARISON_OPERATORS =
-            ImmutableList.of(
+            List.of(
                 SqlStdOperatorTable.LESS_THAN,
                 SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
                 SqlStdOperatorTable.GREATER_THAN,
@@ -1126,7 +1125,7 @@ public class RexImpTable {
 
         /** */
         private static final List<SqlBinaryOperator> EQUALS_OPERATORS =
-            ImmutableList.of(
+            List.of(
                 SqlStdOperatorTable.EQUALS,
                 SqlStdOperatorTable.NOT_EQUALS);
 

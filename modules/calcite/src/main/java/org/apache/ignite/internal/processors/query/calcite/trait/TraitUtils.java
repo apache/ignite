@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +27,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -387,7 +387,7 @@ public class TraitUtils {
         List<RelTraitSet> inTraits = Collections.nCopies(rel.getInputs().size(),
             rel.getCluster().traitSetOf(IgniteConvention.INSTANCE));
 
-        List<Pair<RelTraitSet, List<RelTraitSet>>> traits = new PropagationContext(ImmutableSet.of(Pair.of(requiredTraits, inTraits)))
+        List<Pair<RelTraitSet, List<RelTraitSet>>> traits = new PropagationContext(Set.of(Pair.of(requiredTraits, inTraits)))
             .propagate((in, outs) -> singletonListFromNullable(rel.passThroughCollation(in, outs)))
             .propagate((in, outs) -> singletonListFromNullable(rel.passThroughDistribution(in, outs)))
             .propagate((in, outs) -> singletonListFromNullable(rel.passThroughRewindability(in, outs)))
@@ -407,7 +407,7 @@ public class TraitUtils {
         Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations = combinations(outTraits, inTraits);
 
         if (combinations.isEmpty())
-            return ImmutableList.of();
+            return List.of();
 
         return new PropagationContext(combinations)
             .propagate(rel::deriveCollation)
@@ -443,7 +443,7 @@ public class TraitUtils {
             combination[idx] = t;
 
             if (last)
-                result.add(Pair.of(outTraits, ImmutableList.copyOf(combination)));
+                result.add(Pair.of(outTraits, List.of(combination)));
             else if (!fillRecursive(outTraits, inTraits, result, combination, idx + 1))
                 return false;
         }
@@ -497,10 +497,12 @@ public class TraitUtils {
             if (combinations.isEmpty())
                 return this;
 
-            ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableSet.builder();
+            Set<Pair<RelTraitSet, List<RelTraitSet>>> b = new HashSet<>();
+
             for (Pair<RelTraitSet, List<RelTraitSet>> variant : combinations)
                 b.addAll(processor.propagate(variant.left, variant.right));
-            return new PropagationContext(b.build());
+
+            return new PropagationContext(Set.copyOf(b));
         }
 
         /**
@@ -508,17 +510,19 @@ public class TraitUtils {
          */
         public List<RelNode> nodes(RelFactory nodesCreator) {
             if (combinations.isEmpty())
-                return ImmutableList.of();
+                return List.of();
 
-            ImmutableList.Builder<RelNode> b = ImmutableList.builder();
+            List<RelNode> nodes = new ArrayList<>();
+
             for (Pair<RelTraitSet, List<RelTraitSet>> variant : combinations)
-                b.add(nodesCreator.create(variant.left, variant.right));
-            return b.build();
+                nodes.add(nodesCreator.create(variant.left, variant.right));
+
+            return List.copyOf(nodes);
         }
 
         /** */
         public List<Pair<RelTraitSet, List<RelTraitSet>>> combinations() {
-            return ImmutableList.copyOf(combinations);
+            return List.copyOf(combinations);
         }
     }
 

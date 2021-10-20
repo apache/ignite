@@ -29,9 +29,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.linq4j.function.Function1;
@@ -65,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.processors.query.calcite.util.Primitives;
 
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
@@ -119,7 +117,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             return null;
         else if (collation.getFieldCollations().size() == 1)
             return comparator(collation.getFieldCollations().get(0));
-        return Ordering.compound(collation.getFieldCollations()
+
+        return Commons.compoundComparator(collation.getFieldCollations()
             .stream()
             .map(this::comparator)
             .collect(Collectors.toList()));
@@ -136,7 +135,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         for (int i = 0; i < left.size(); i++)
             comparators.add(comparator(left.get(i), right.get(i)));
 
-        return Ordering.compound(comparators);
+        return Commons.compoundComparator(comparators);
     }
 
     /** */
@@ -291,7 +290,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         MethodDeclaration decl = Expressions.methodDecl(
             Modifier.PUBLIC, void.class, IgniteMethod.SCALAR_EXECUTE.method().getName(),
-            ImmutableList.of(ctx_, in_, out_), builder.toBlock());
+            List.of(ctx_, in_, out_), builder.toBlock());
 
         return Commons.compile(Scalar.class, Expressions.toString(List.of(decl), "\n", false));
     }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -113,7 +112,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
+        super(cluster, traits, List.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
 
         this.sourceId = sourceId;
     }

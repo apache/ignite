@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
@@ -35,7 +36,7 @@ public class IgniteMetadata {
     /** */
     public static final RelMetadataProvider METADATA_PROVIDER =
         ChainedRelMetadataProvider.of(
-            ImmutableList.of(
+            List.of(
                 // Ignite specific providers
                 IgniteMdFragmentMapping.SOURCE,
 

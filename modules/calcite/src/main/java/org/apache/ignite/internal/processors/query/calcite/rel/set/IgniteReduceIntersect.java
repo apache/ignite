@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -44,7 +43,7 @@ public class IgniteReduceIntersect extends IgniteIntersect implements IgniteRedu
         boolean all,
         RelDataType rowType
     ) {
-        super(cluster, traitSet, ImmutableList.of(input), all);
+        super(cluster, traitSet, List.of(input), all);
 
         this.rowType = rowType;
     }

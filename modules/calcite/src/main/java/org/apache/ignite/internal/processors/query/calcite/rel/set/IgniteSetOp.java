@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
@@ -52,7 +51,7 @@ public interface IgniteSetOp extends TraitsAwareIgniteRel {
     @Override public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits) {
         // Operation erases collation.
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+        return List.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 

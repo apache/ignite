@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -69,7 +69,7 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
         assert rowType != null;
         this.groupSet = groupSet;
         if (groupSets == null)
-            groupSets = ImmutableList.of(groupSet);
+            groupSets = List.of(groupSet);
         this.groupSets = groupSets;
         this.aggCalls = aggCalls;
         this.rowType = rowType;
@@ -137,8 +137,8 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
-        return ImmutableList.of(
-            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), ImmutableList.of(inputTraits.get(0))));
+        return List.of(
+            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), List.of(inputTraits.get(0))));
     }
 
     /** {@inheritDoc} */
@@ -148,10 +148,10 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
     ) {
         RelTraitSet in = inputTraits.get(0);
 
-        return ImmutableList.of(
+        return List.of(
             Pair.of(
                 nodeTraits.replace(IgniteDistributions.single()),
-                ImmutableList.of(in.replace(IgniteDistributions.single()))
+                List.of(in.replace(IgniteDistributions.single()))
             )
         );
     }
@@ -161,7 +161,7 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
         RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits
     ) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
+        return List.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
             inTraits));
     }
 

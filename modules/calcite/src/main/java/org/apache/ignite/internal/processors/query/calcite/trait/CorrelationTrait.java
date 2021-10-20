@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
@@ -49,11 +48,11 @@ public class CorrelationTrait implements RelTrait {
     public static final CorrelationTrait UNCORRELATED = canonize(new CorrelationTrait(Collections.emptyList()));
 
     /** */
-    private final ImmutableSet<CorrelationId> correlations;
+    private final Set<CorrelationId> correlations;
 
     /** */
     public CorrelationTrait(Collection<CorrelationId> correlationIds) {
-        correlations = ImmutableSet.copyOf(correlationIds);
+        correlations = Set.copyOf(correlationIds);
     }
 
     /** */

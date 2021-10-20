@@ -23,9 +23,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import com.google.common.collect.Lists;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.ITUtils;
 import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -117,7 +118,7 @@ abstract class AbstractSchemaChangeTest {
     /** */
     @AfterEach
     void afterEach() throws Exception {
-        IgniteUtils.closeAll(Lists.reverse(clusterNodes));
+        IgniteUtils.closeAll(ITUtils.reverse(clusterNodes));
     }
 
     /**

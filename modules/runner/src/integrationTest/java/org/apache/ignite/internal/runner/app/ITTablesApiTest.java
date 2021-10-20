@@ -25,9 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import com.google.common.collect.Lists;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.ITUtils;
 import org.apache.ignite.internal.app.IgniteImpl;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.metastorage.client.WatchEvent;
@@ -137,7 +138,7 @@ public class ITTablesApiTest extends IgniteAbstractTest {
      */
     @AfterEach
     void afterEach() throws Exception {
-        IgniteUtils.closeAll(Lists.reverse(clusterNodes));
+        IgniteUtils.closeAll(ITUtils.reverse(clusterNodes));
     }
 
     /**

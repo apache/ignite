@@ -19,15 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
@@ -52,7 +46,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.internal.processors.query.calcite.util.LocalCache;
+import org.apache.ignite.internal.processors.query.calcite.util.Primitives;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.createRowType;
@@ -61,8 +56,8 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 /** */
 public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrapper<Row>>> {
     /** */
-    private static final LoadingCache<Pair<RelDataType, RelDataType>, Function<Object, Object>> CACHE =
-        CacheBuilder.newBuilder().build(CacheLoader.from(AccumulatorsFactory::cast0));
+    private static final LocalCache<Pair<RelDataType, RelDataType>, Function<Object, Object>> CACHE =
+        new LocalCache<>(AccumulatorsFactory::cast0);
 
     /** */
     public static interface CastFunction extends Function<Object, Object> {
@@ -79,12 +74,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
     /** */
     private static Function<Object, Object> cast(Pair<RelDataType, RelDataType> types) {
-        try {
-            return CACHE.get(types);
-        }
-        catch (ExecutionException e) {
-            throw new IgniteInternalException(e);
-        }
+        return CACHE.get(types);
     }
 
     /** */
@@ -114,7 +104,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         RexToLixTranslator.InputGetter getter =
             new RexToLixTranslator.InputGetterImpl(
-                ImmutableList.of(
+                List.of(
                     Pair.of(EnumUtils.convert(in_, Object.class, typeFactory.getJavaClass(from)),
                         PhysTypeImpl.of(typeFactory, rowType,
                             JavaRowFormat.SCALAR, false))));
@@ -130,7 +120,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         list.add(projects.get(0));
 
         MethodDeclaration decl = Expressions.methodDecl(
-            Modifier.PUBLIC, Object.class, "apply", ImmutableList.of(in_), list.toBlock());
+            Modifier.PUBLIC, Object.class, "apply", List.of(in_), list.toBlock());
 
         return Commons.compile(CastFunction.class, Expressions.toString(List.of(decl), "\n", false));
     }

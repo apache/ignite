@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -69,7 +68,7 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
             input.getInputs().get(0),
             input.getInputs().get(1),
             input.getExpression("condition"),
-            ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
+            Set.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
             input.getEnum("joinType", JoinRelType.class));
     }
 

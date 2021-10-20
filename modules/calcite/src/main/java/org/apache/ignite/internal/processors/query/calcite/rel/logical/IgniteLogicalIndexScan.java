@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -105,6 +104,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
+        super(cluster, traits, List.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
     }
 }

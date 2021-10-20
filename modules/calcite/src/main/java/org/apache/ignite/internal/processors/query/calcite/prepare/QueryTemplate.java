@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
@@ -43,7 +42,7 @@ public class QueryTemplate {
     private final MappingService mappingService;
 
     /** */
-    private final ImmutableList<Fragment> fragments;
+    private final List<Fragment> fragments;
 
     /** */
     private final AtomicReference<ExecutionPlan> executionPlan = new AtomicReference<>();
@@ -52,11 +51,11 @@ public class QueryTemplate {
     public QueryTemplate(MappingService mappingService, List<Fragment> fragments) {
         this.mappingService = mappingService;
 
-        ImmutableList.Builder<Fragment> b = ImmutableList.builder();
+        List<Fragment> frgs = new ArrayList<>(fragments.size());
         for (Fragment fragment : fragments)
-            b.add(fragment.detach());
+            frgs.add(fragment.detach());
 
-        this.fragments = b.build();
+        this.fragments = List.copyOf(frgs);
     }
 
     /** */
@@ -93,11 +92,12 @@ public class QueryTemplate {
 
     /** */
     @NotNull private List<Fragment> map(List<Fragment> fragments, PlanningContext ctx, RelMetadataQuery mq) {
-        ImmutableList.Builder<Fragment> b = ImmutableList.builder();
-        for (Fragment fragment : fragments)
-            b.add(fragment.map(mappingService, ctx, mq).detach());
+        List<Fragment> frgs = new ArrayList<>();
 
-        return b.build();
+        for (Fragment fragment : fragments)
+            frgs.add(fragment.map(mappingService, ctx, mq).detach());
+
+        return List.copyOf(frgs);
     }
 
     /** */

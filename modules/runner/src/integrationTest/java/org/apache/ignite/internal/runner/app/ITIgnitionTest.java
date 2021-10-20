@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.google.common.collect.Lists;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.ITUtils;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
@@ -109,7 +110,7 @@ class ITIgnitionTest {
     /** */
     @AfterEach
     void tearDown() throws Exception {
-        IgniteUtils.closeAll(Lists.reverse(startedNodes));
+        IgniteUtils.closeAll(ITUtils.reverse(startedNodes));
     }
 
     /**

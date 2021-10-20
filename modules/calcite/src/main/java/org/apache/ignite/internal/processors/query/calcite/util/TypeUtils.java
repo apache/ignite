@@ -29,7 +29,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.plan.RelOptSchema;
@@ -65,7 +64,7 @@ public class TypeUtils {
     );
 
     /** */
-    private static final Set<Type> CONVERTABLE_TYPES = ImmutableSet.of(
+    private static final Set<Type> CONVERTABLE_TYPES = Set.of(
         java.util.Date.class,
         java.sql.Date.class,
         java.sql.Time.class,

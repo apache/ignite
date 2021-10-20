@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -88,9 +88,9 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
             .allMatch(RewindabilityTrait::rewindable);
 
         if (rewindable)
-            return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
+            return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
+        return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
             Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
     }
 
@@ -102,20 +102,20 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
             .map(TraitUtils::distribution)
             .collect(Collectors.toSet());
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        List<Pair<RelTraitSet, List<RelTraitSet>>> deriveTraits = new ArrayList<>();
 
         for (IgniteDistribution distribution : distributions)
-            b.add(Pair.of(nodeTraits.replace(distribution),
+            deriveTraits.add(Pair.of(nodeTraits.replace(distribution),
                 Commons.transform(inputTraits, t -> t.replace(distribution))));
 
-        return b.build();
+        return List.copyOf(deriveTraits);
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Union node erases collation. TODO union all using merge sort algorythm
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+        return List.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 
@@ -128,7 +128,7 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
             .flatMap(corrTr -> corrTr.correlationIds().stream())
             .collect(Collectors.toSet());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
+        return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
             inTraits));
     }
 

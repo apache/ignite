@@ -15,33 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
-/**
- *
- */
-class ExecutionPlan {
+/** */
+public class LocalCache<K, V> {
     /** */
-    private final long ver;
-
-    /** */
-    private final List<Fragment> fragments;
+    private final ConcurrentMap<K, V> map = new ConcurrentHashMap<>();
 
     /** */
-    ExecutionPlan(long ver, List<Fragment> fragments) {
-        this.ver = ver;
-        this.fragments = List.copyOf(fragments);
+    private final Function<K, V> builder;
+
+    /** */
+    public LocalCache() {
+        this(null);
     }
 
     /** */
-    public long topologyVersion() {
-        return ver;
+    public LocalCache(Function<K, V> builder) {
+        this.builder = builder;
     }
 
     /** */
-    public List<Fragment> fragments() {
-        return fragments;
+    public V get(K key) {
+        if (builder != null)
+            return map.computeIfAbsent(key, builder);
+        else
+            return map.get(key);
+    }
+
+    /** */
+    public void put(K key, V val) {
+        map.put(key, val);
+    }
+
+    /** */
+    public void clear() {
+        map.clear();
     }
 }

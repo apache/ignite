@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
@@ -1181,7 +1180,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                     builder.makeLiteral(fieldName, typeFactory.createType(String.class), true);
                 RexCall accessCall = (RexCall)builder.makeCall(
                     fieldAccess.getType(), SqlStdOperatorTable.STRUCT_ACCESS,
-                    ImmutableList.of(target, rxIndex, rxName));
+                    List.of(target, rxIndex, rxName));
                 final Result result2 = accessCall.accept(this);
                 rexWithStorageTypeResultMap.put(key, result2);
                 return result2;

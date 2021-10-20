@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -93,7 +92,7 @@ public class IgniteSort extends Sort implements IgniteRel {
 
         RelCollation collation = TraitUtils.collation(required);
 
-        return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        return Pair.of(required.replace(collation), List.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -103,7 +102,7 @@ public class IgniteSort extends Sort implements IgniteRel {
         if (isEnforcer() || childTraits.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits));
+        return Pair.of(childTraits.replace(collation()), List.of(childTraits));
     }
 
     /** {@inheritDoc} */

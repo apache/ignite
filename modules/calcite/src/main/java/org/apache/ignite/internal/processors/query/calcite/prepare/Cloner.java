@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -58,7 +60,7 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
     private final RelOptCluster cluster;
 
     /** */
-    private ImmutableList.Builder<IgniteReceiver> remotes;
+    private List<IgniteReceiver> remotes;
 
     /** */
     Cloner(RelOptCluster cluster) {
@@ -73,12 +75,11 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
      */
     public Fragment go(Fragment src) {
         try {
-            remotes = ImmutableList.builder();
+            remotes = new ArrayList<>();
 
             IgniteRel newRoot = visit(src.root());
-            ImmutableList<IgniteReceiver> remotes = this.remotes.build();
 
-            return new Fragment(src.fragmentId(), newRoot, remotes, src.serialized(), src.mapping());
+            return new Fragment(src.fragmentId(), newRoot, List.copyOf(remotes), src.serialized(), src.mapping());
         }
         finally {
             remotes = null;

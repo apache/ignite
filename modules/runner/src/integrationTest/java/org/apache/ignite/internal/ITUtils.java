@@ -15,33 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- *
+ * Utilities methods for integration tests.
  */
-class ExecutionPlan {
-    /** */
-    private final long ver;
-
-    /** */
-    private final List<Fragment> fragments;
-
-    /** */
-    ExecutionPlan(long ver, List<Fragment> fragments) {
-        this.ver = ver;
-        this.fragments = List.copyOf(fragments);
+public class ITUtils {
+    private ITUtils() {
+        // No-op;
     }
 
-    /** */
-    public long topologyVersion() {
-        return ver;
-    }
+    /**
+     * Returns a reversed list of the specified list.
+     */
+    public static <T> List<T> reverse(List<T> lst) {
+        List<T> res = new ArrayList<>(lst);
 
-    /** */
-    public List<Fragment> fragments() {
-        return fragments;
+        Collections.reverse(res);
+
+        return res;
     }
 }

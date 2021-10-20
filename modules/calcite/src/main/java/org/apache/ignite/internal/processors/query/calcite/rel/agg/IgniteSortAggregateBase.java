@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -49,7 +48,7 @@ interface IgniteSortAggregateBase extends TraitsAwareIgniteRel {
         RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(getGroupSet().asList()));
 
         return Pair.of(nodeTraits.replace(collation),
-            ImmutableList.of(inputTraits.get(0).replace(collation)));
+            List.of(inputTraits.get(0).replace(collation)));
     }
 
     /** {@inheritDoc} */
@@ -61,9 +60,9 @@ interface IgniteSortAggregateBase extends TraitsAwareIgniteRel {
         List<Integer> newCollation = maxPrefix(inputCollation.getKeys(), getGroupSet().asSet());
 
         if (newCollation.size() < getGroupSet().cardinality())
-            return ImmutableList.of();
+            return List.of();
 
-        return ImmutableList.of(Pair.of(
+        return List.of(Pair.of(
             nodeTraits.replace(RelCollations.of(ImmutableIntList.copyOf(newCollation))),
             inputTraits
         ));

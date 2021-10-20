@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -104,7 +104,7 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, proj, cond, requiredColunms);
+        super(cluster, traits, List.of(), tbl, proj, cond, requiredColunms);
         this.sourceId = sourceId;
     }
 

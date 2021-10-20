@@ -21,7 +21,6 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -51,7 +50,7 @@ public class IgniteTableFunctionScan extends TableFunctionScan implements Ignite
         RexNode call,
         RelDataType rowType
     ) {
-        super(cluster, traits, ImmutableList.of(), call, null, rowType, null);
+        super(cluster, traits, List.of(), call, null, rowType, null);
     }
 
     /**

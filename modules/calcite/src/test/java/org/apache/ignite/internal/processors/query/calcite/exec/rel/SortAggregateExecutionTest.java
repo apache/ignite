@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -41,7 +41,7 @@ public class SortAggregateExecutionTest extends BaseAggregateTest {
     /** {@inheritDoc} */
     @Override protected SingleNode<Object[]> createSingleAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
-        ImmutableList<ImmutableBitSet> grpSets,
+        List<ImmutableBitSet> grpSets,
         AggregateCall call,
         RelDataType inRowType,
         RelDataType aggRowType,
@@ -80,7 +80,7 @@ public class SortAggregateExecutionTest extends BaseAggregateTest {
     /** {@inheritDoc} */
     @Override protected SingleNode<Object[]> createMapReduceAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
-        ImmutableList<ImmutableBitSet> grpSets,
+        List<ImmutableBitSet> grpSets,
         AggregateCall call,
         RelDataType inRowType,
         RelDataType aggRowType,

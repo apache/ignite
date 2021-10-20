@@ -156,7 +156,7 @@ public class RelJsonReader {
         @Override public List<RelNode> getInputs() {
             List<String> jsonInputs = getStringList("inputs");
             if (jsonInputs == null)
-                return ImmutableList.of(lastRel);
+                return List.of(lastRel);
             List<RelNode> inputs = new ArrayList<>();
             for (String jsonInput : jsonInputs)
                 inputs.add(lookupInput(jsonInput));
@@ -176,13 +176,16 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public List<ImmutableBitSet> getBitSetList(String tag) {
             List<List<Integer>> list = getIntegerListList(tag);
+
             if (list == null)
                 return null;
-            ImmutableList.Builder<ImmutableBitSet> builder =
-                ImmutableList.builder();
+
+            List<ImmutableBitSet> bitSets = new ArrayList<>();
+
             for (List<Integer> integers : list)
-                builder.add(ImmutableBitSet.of(integers));
-            return builder.build();
+                bitSets.add(ImmutableBitSet.of(integers));
+
+            return List.copyOf(bitSets);
         }
 
         /** {@inheritDoc} */
@@ -289,8 +292,10 @@ public class RelJsonReader {
             List<List> jsonTuples = (List)get(tag);
             ImmutableList.Builder<ImmutableList<RexLiteral>> builder =
                 ImmutableList.builder();
+
             for (List jsonTuple : jsonTuples)
                 builder.add(getTuple(jsonTuple));
+
             return builder.build();
         }
 
@@ -307,8 +312,10 @@ public class RelJsonReader {
         private ImmutableList<RexLiteral> getTuple(List jsonTuple) {
             ImmutableList.Builder<RexLiteral> builder =
                 ImmutableList.builder();
+
             for (Object jsonValue : jsonTuple)
                 builder.add((RexLiteral)relJson.toRex(this, jsonValue));
+
             return builder.build();
         }
 

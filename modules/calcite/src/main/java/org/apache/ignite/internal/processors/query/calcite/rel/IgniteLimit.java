@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -105,7 +104,7 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         if (required.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        return Pair.of(required, ImmutableList.of(required));
+        return Pair.of(required, List.of(required));
     }
 
     /** {@inheritDoc} */
@@ -115,7 +114,7 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         if (childTraits.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        return Pair.of(childTraits, ImmutableList.of(childTraits));
+        return Pair.of(childTraits, List.of(childTraits));
     }
 
     /** {@inheritDoc} */

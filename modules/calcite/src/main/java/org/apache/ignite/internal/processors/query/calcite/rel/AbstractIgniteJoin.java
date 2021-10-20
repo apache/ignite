@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
@@ -99,7 +98,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         RelTraitSet leftTraits = left.replace(collation);
         RelTraitSet rightTraits = right.replace(RelCollations.EMPTY);
 
-        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        return List.of(Pair.of(outTraits, List.of(leftTraits, rightTraits)));
     }
 
     /** {@inheritDoc} */
@@ -114,13 +113,13 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         List<Pair<RelTraitSet, List<RelTraitSet>>> pairs = new ArrayList<>();
 
         pairs.add(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
-            ImmutableList.of(left.replace(RewindabilityTrait.ONE_WAY), right.replace(RewindabilityTrait.ONE_WAY))));
+            List.of(left.replace(RewindabilityTrait.ONE_WAY), right.replace(RewindabilityTrait.ONE_WAY))));
 
         if (leftRewindability.rewindable() && rightRewindability.rewindable())
             pairs.add(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE),
-                ImmutableList.of(left.replace(RewindabilityTrait.REWINDABLE), right.replace(RewindabilityTrait.REWINDABLE))));
+                List.of(left.replace(RewindabilityTrait.REWINDABLE), right.replace(RewindabilityTrait.REWINDABLE))));
 
-        return ImmutableList.copyOf(pairs);
+        return List.copyOf(pairs);
     }
 
     /** {@inheritDoc} */
@@ -159,17 +158,17 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
             rightTraits = right.replace(single());
         }
 
-        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        res.add(Pair.of(outTraits, List.of(leftTraits, rightTraits)));
 
         if (nullOrEmpty(joinInfo.pairs()))
-            return ImmutableList.copyOf(res);
+            return List.copyOf(res);
 
         if (leftDistr.getType() == HASH_DISTRIBUTED && left2rightProjectedDistr != random()) {
             outTraits = nodeTraits.replace(leftDistr);
             leftTraits = left.replace(leftDistr);
             rightTraits = right.replace(left2rightProjectedDistr);
 
-            res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            res.add(Pair.of(outTraits, List.of(leftTraits, rightTraits)));
         }
 
         if (rightDistr.getType() == HASH_DISTRIBUTED && right2leftProjectedDistr != random()) {
@@ -177,19 +176,19 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
             leftTraits = left.replace(right2leftProjectedDistr);
             rightTraits = right.replace(rightDistr);
 
-            res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            res.add(Pair.of(outTraits, List.of(leftTraits, rightTraits)));
         }
 
         leftTraits = left.replace(hash(joinInfo.leftKeys, DistributionFunction.hash()));
         rightTraits = right.replace(hash(joinInfo.rightKeys, DistributionFunction.hash()));
 
         outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, DistributionFunction.hash()));
-        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        res.add(Pair.of(outTraits, List.of(leftTraits, rightTraits)));
 
         outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, DistributionFunction.hash()));
-        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        res.add(Pair.of(outTraits, List.of(leftTraits, rightTraits)));
 
-        return ImmutableList.copyOf(res);
+        return List.copyOf(res);
     }
 
     /** {@inheritDoc} */
@@ -200,7 +199,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         // right correlations
         corrIds.addAll(TraitUtils.correlation(inTraits.get(1)).correlationIds());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+        return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */
@@ -215,7 +214,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
 
         if (collation.equals(RelCollations.EMPTY))
             return Pair.of(nodeTraits,
-                ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY)));
+                List.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY)));
 
         if (!projectsLeft(collation))
             collation = RelCollations.EMPTY;
@@ -229,7 +228,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         }
 
         return Pair.of(nodeTraits.replace(collation),
-            ImmutableList.of(left.replace(collation), right.replace(RelCollations.EMPTY)));
+            List.of(left.replace(collation), right.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -273,7 +272,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
 
                 if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
                     return Pair.of(nodeTraits.replace(outDistr),
-                        ImmutableList.of(left.replace(outDistr), right.replace(hash(joinInfo.rightKeys, function))));
+                        List.of(left.replace(outDistr), right.replace(hash(joinInfo.rightKeys, function))));
                 }
 
                 break;

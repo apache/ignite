@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
@@ -1230,7 +1230,7 @@ public class PlannerTest extends AbstractPlannerTest {
         RelRoot relRoot;
 
         try (IgnitePlanner planner = ctx.planner()) {
-            planner.setDisabledRules(ImmutableSet.of("CorrelatedNestedLoopJoin"));
+            planner.setDisabledRules(Set.of("CorrelatedNestedLoopJoin"));
 
             assertNotNull(planner);
 

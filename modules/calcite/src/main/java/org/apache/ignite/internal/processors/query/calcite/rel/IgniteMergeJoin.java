@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -85,7 +83,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             input.getInputs().get(0),
             input.getInputs().get(1),
             input.getExpression("condition"),
-            ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
+            Set.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
             input.getEnum("joinType", JoinRelType.class),
             ((RelInputEx)input).getCollation("leftCollation"),
             ((RelInputEx)input).getCollation("rightCollation")
@@ -147,10 +145,10 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             rightCollation = RelCollations.of(joinInfo.rightKeys);
         }
 
-        return ImmutableList.of(
+        return List.of(
             Pair.of(
                 nodeTraits.replace(leftCollation),
-                ImmutableList.of(
+                List.of(
                     left.replace(leftCollation),
                     right.replace(rightCollation)
                 )
@@ -228,7 +226,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         return Pair.of(
             nodeTraits.replace(preserveNodeCollation ? collation : leftCollation),
-            ImmutableList.of(
+            List.of(
                 left.replace(leftCollation),
                 right.replace(rightCollation)
             )

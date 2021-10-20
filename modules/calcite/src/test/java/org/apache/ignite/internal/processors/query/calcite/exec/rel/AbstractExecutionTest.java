@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -74,7 +74,7 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
             UUID.randomUUID(),
             fragmentDesc,
             ArrayRowHandler.INSTANCE,
-            ImmutableMap.of()
+            Map.of()
         );
     }
 

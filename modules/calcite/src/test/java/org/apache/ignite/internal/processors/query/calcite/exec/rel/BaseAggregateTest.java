@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
@@ -78,7 +77,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             tf.createJavaType(int.class),
             null);
 
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+        List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
         RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -129,7 +128,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             tf.createJavaType(int.class),
             null);
 
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+        List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
         RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -180,7 +179,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             tf.createJavaType(int.class),
             null);
 
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+        List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
         RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -231,7 +230,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             tf.createJavaType(int.class),
             null);
 
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+        List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
         RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -323,7 +322,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             tf.createJavaType(Integer.class),
             null);
 
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+        List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
         RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -386,7 +385,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
             tf.createJavaType(int.class),
             null);
 
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+        List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
         RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -451,7 +450,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
                     tf.createJavaType(int.class),
                     null);
 
-                ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+                List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of(0));
 
                 RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
 
@@ -488,7 +487,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     private SingleNode<Object[]> createAggregateNodesChain(
         TestAggregateType testAgg,
         ExecutionContext<Object[]> ctx,
-        ImmutableList<ImmutableBitSet> grpSets,
+        List<ImmutableBitSet> grpSets,
         AggregateCall aggCall,
         RelDataType inRowType,
         RelDataType aggRowType,
@@ -512,7 +511,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     /** */
     protected abstract SingleNode<Object[]> createSingleAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
-        ImmutableList<ImmutableBitSet> grpSets,
+        List<ImmutableBitSet> grpSets,
         AggregateCall aggCall,
         RelDataType inRowType,
         RelDataType aggRowType,
@@ -523,7 +522,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     /** */
     protected abstract SingleNode<Object[]> createMapReduceAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
-        ImmutableList<ImmutableBitSet> grpSets,
+        List<ImmutableBitSet> grpSets,
         AggregateCall call,
         RelDataType inRowType,
         RelDataType aggRowType,

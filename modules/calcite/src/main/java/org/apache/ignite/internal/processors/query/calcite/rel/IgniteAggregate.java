@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -48,7 +47,7 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls
     ) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, List.of(), input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */

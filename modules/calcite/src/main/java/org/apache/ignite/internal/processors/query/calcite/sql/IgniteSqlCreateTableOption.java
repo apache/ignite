@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -60,7 +59,7 @@ public class IgniteSqlCreateTableOption extends SqlCall {
 
     /** {@inheritDoc} */
     @NotNull @Override public List<SqlNode> getOperandList() {
-        return ImmutableList.of(key, value);
+        return List.of(key, value);
     }
 
     /** {@inheritDoc} */

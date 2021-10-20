@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -75,7 +74,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final SqlOperatorTable operatorTbl;
 
     /** */
-    private final ImmutableList<Program> programs;
+    private final List<Program> programs;
 
     /** */
     private final FrameworkConfig frameworkCfg;
@@ -85,7 +84,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     @SuppressWarnings("rawtypes")
-    private final ImmutableList<RelTraitDef> traitDefs;
+    private final List<RelTraitDef> traitDefs;
 
     /** */
     private final SqlParser.Config parserCfg;
@@ -314,7 +313,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     private List<RelOptLattice> latices() {
-        return ImmutableList.of(); // TODO
+        return List.of(); // TODO
     }
 
     /**
@@ -322,7 +321,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return Materializations.
      */
     private List<RelOptMaterialization> materializations() {
-        return ImmutableList.of(); // TODO
+        return List.of(); // TODO
     }
 
     /**

@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
@@ -307,7 +306,7 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
 
     /** */
     private List<QueryPlan> prepareFragment(PlanningContext ctx) {
-        return ImmutableList.of(new FragmentPlan(fromJson(ctx, ctx.query())));
+        return List.of(new FragmentPlan(fromJson(ctx, ctx.query())));
     }
 
     /** */

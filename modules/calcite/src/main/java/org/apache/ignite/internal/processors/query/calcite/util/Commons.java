@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -547,5 +548,20 @@ public final class Commons {
             default:
                 throw new IllegalArgumentException("Unsupported type " + type.spec());
         }
+    }
+
+    /** */
+    public static <T> Comparator<T> compoundComparator(Iterable<Comparator<T>> cmps) {
+        return (r1, r2) -> {
+            for (Comparator<T> cmp : cmps) {
+                int result = cmp.compare(r1, r2);
+
+                if (result != 0) {
+                    return result;
+                }
+            }
+
+            return 0;
+        };
     }
 }

@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -68,7 +69,7 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
         RelNode rel0 = createUnionAll(cluster, input, operands.get(0), operands.get(1));
 
-        call.transformTo(rel0, ImmutableMap.of(
+        call.transformTo(rel0, Map.of(
             createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
         ));
     }

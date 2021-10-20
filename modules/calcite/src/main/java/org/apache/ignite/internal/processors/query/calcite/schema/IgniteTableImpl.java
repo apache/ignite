@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -154,12 +153,12 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
         /** {@inheritDoc} */
         @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-            return ImmutableList.of();
+            return List.of();
         }
 
         /** {@inheritDoc} */
         @Override public List<RelCollation> getCollations() {
-            return ImmutableList.of(); // The method isn't used
+            return List.of(); // The method isn't used
         }
 
         /** {@inheritDoc} */

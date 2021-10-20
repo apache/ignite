@@ -22,7 +22,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -128,7 +127,7 @@ public class FragmentSplitter extends IgniteRelShuttle {
         private IgniteRel root;
 
         /** */
-        private final ImmutableList.Builder<IgniteReceiver> remotes = ImmutableList.builder();
+        private final List<IgniteReceiver> remotes = new ArrayList<>();
 
         /** */
         private FragmentProto(long id, IgniteRel root) {
@@ -138,7 +137,7 @@ public class FragmentSplitter extends IgniteRelShuttle {
 
         /** */
         Fragment build() {
-            return new Fragment(id, root, remotes.build());
+            return new Fragment(id, root, List.copyOf(remotes));
         }
     }
 }

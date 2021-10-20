@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -94,7 +94,7 @@ public class PlannerHelper {
                 igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects, root.validatedRowType);
             }
 
-            if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
+            if (sqlNode.isA(Set.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
             return igniteRel;
@@ -208,7 +208,7 @@ public class PlannerHelper {
             if (scan instanceof IgniteTableScan)
                 return (IgniteRel)scan;
 
-            ImmutableSet<Integer> indexedCols = ImmutableSet.copyOf(
+            Set<Integer> indexedCols = Set.copyOf(
                 tbl.getIndex(((AbstractIndexScan)scan).indexName()).collation().getKeys());
 
             spoolNeeded = modifyNode.getUpdateColumnList().stream()

@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -462,7 +462,7 @@ public class ExecutionTest extends AbstractExecutionTest {
             ctx,
             joinRowType,
             r -> r[0].equals(r[3]),
-            ImmutableSet.of(new CorrelationId(0)),
+            Set.of(new CorrelationId(0)),
             joinType
         );
 

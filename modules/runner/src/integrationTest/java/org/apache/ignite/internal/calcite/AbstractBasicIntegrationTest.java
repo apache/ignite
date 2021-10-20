@@ -23,9 +23,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.google.common.collect.Lists;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.internal.ITUtils;
 import org.apache.ignite.internal.app.IgniteImpl;
 import org.apache.ignite.internal.calcite.util.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
@@ -123,7 +124,7 @@ public class AbstractBasicIntegrationTest {
         if (LOG.isInfoEnabled())
             LOG.info("Start tearDown()");
 
-        IgniteUtils.closeAll(Lists.reverse(CLUSTER_NODES));
+        IgniteUtils.closeAll(ITUtils.reverse(CLUSTER_NODES));
 
         CLUSTER_NODES.clear();
 

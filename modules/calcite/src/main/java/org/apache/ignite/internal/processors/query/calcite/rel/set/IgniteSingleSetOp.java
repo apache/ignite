@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.util.Pair;
@@ -46,9 +45,9 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
             .allMatch(RewindabilityTrait::rewindable);
 
         if (rewindable)
-            return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
+            return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
+        return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
             Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
     }
 
@@ -71,9 +70,9 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
             .allMatch(d -> d.satisfies(IgniteDistributions.single()));
 
         if (!single)
-            return ImmutableList.of();
+            return List.of();
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), inputTraits));
+        return List.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), inputTraits));
     }
 
     /** {@inheritDoc} */
@@ -86,7 +85,7 @@ public interface IgniteSingleSetOp extends IgniteSetOp {
             .flatMap(corrTr -> corrTr.correlationIds().stream())
             .collect(Collectors.toSet());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
+        return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
             inTraits));
     }
 

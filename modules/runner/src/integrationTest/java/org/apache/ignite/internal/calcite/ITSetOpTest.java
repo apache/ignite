@@ -19,8 +19,8 @@ package org.apache.ignite.internal.calcite;
 
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
-import com.google.common.collect.Streams;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
@@ -277,6 +277,6 @@ public class ITSetOpTest extends AbstractBasicIntegrationTest {
     }
 
     private <T> long countIf(Iterable<T> it, Predicate<T> pred) {
-        return Streams.stream(it).filter(pred).count();
+        return StreamSupport.stream(it.spliterator(), false).filter(pred).count();
     }
 }

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -60,7 +59,7 @@ public class Fragment {
     private final FragmentMapping mapping;
 
     /** */
-    private final ImmutableList<IgniteReceiver> remotes;
+    private final List<IgniteReceiver> remotes;
 
     /**
      * @param id Fragment id.
@@ -75,7 +74,7 @@ public class Fragment {
     Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer, @Nullable FragmentMapping mapping) {
         this.id = id;
         this.root = root;
-        this.remotes = ImmutableList.copyOf(remotes);
+        this.remotes = List.copyOf(remotes);
         this.rootSer = rootSer != null ? rootSer : toJson(root);
         this.mapping = mapping;
     }

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -101,7 +100,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
         if (distribution.getType() != HASH_DISTRIBUTED)
-            return Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution)));
+            return Pair.of(nodeTraits, List.of(in.replace(distribution)));
 
         Mappings.TargetMapping mapping = getPartialMapping(
             input.getRowType().getFieldCount(), getProjects());
@@ -119,9 +118,9 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         }
 
         if (srcKeys.size() == keys.size())
-            return Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function()))));
+            return Pair.of(nodeTraits, List.of(in.replace(hash(srcKeys, distribution.function()))));
 
-        return Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single())));
+        return Pair.of(nodeTraits.replace(single()), List.of(in.replace(single())));
     }
 
     /** {@inheritDoc} */
@@ -134,7 +133,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         List<RelFieldCollation> fieldCollations = TraitUtils.collation(nodeTraits).getFieldCollations();
 
         if (fieldCollations.isEmpty())
-            return Pair.of(nodeTraits, ImmutableList.of(in.replace(RelCollations.EMPTY)));
+            return Pair.of(nodeTraits, List.of(in.replace(RelCollations.EMPTY)));
 
         Map<Integer, Integer> targets = new HashMap<>();
         for (Ord<RexNode> project : Ord.zip(getProjects())) {
@@ -152,9 +151,9 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         }
 
         if (inFieldCollations.size() == fieldCollations.size())
-            return Pair.of(nodeTraits, ImmutableList.of(in.replace(RelCollations.of(inFieldCollations))));
+            return Pair.of(nodeTraits, List.of(in.replace(RelCollations.of(inFieldCollations))));
 
-        return Pair.of(nodeTraits.replace(RelCollations.EMPTY), ImmutableList.of(in.replace(RelCollations.EMPTY)));
+        return Pair.of(nodeTraits.replace(RelCollations.EMPTY), List.of(in.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -164,7 +163,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         RelTraitSet in = inputTraits.get(0);
         RewindabilityTrait rewindability = TraitUtils.rewindability(in);
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability), ImmutableList.of(in)));
+        return List.of(Pair.of(nodeTraits.replace(rewindability), List.of(in)));
     }
 
     /** {@inheritDoc} */
@@ -174,7 +173,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         IgniteDistribution distribution = TraitUtils.projectDistribution(
             TraitUtils.distribution(in), getProjects(), getInput().getRowType());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(distribution), ImmutableList.of(in)));
+        return List.of(Pair.of(nodeTraits.replace(distribution), List.of(in)));
     }
 
     /** {@inheritDoc} */
@@ -184,7 +183,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         RelCollation collation = TraitUtils.projectCollation(
             TraitUtils.collation(in), getProjects(), getInput().getRowType());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(collation), ImmutableList.of(in)));
+        return List.of(Pair.of(nodeTraits.replace(collation), List.of(in)));
     }
 
     /** */
@@ -196,7 +195,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         if (!traitCorrIds.containsAll(corrIds))
             return null;
 
-        return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits))));
+        return Pair.of(nodeTraits, List.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits))));
     }
 
     /** */
@@ -206,7 +205,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
         corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+        return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */

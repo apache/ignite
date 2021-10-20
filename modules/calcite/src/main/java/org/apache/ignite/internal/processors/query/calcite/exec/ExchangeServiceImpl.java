@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
@@ -257,7 +257,7 @@ public class ExchangeServiceImpl implements ExchangeService {
                 null,
                 null),
             null,
-            ImmutableMap.of());
+            Map.of());
     }
 
     /** {@inheritDoc} */

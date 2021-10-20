@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -111,7 +110,7 @@ public interface ExpressionFactory<Row> {
      * @return Scalar.
      */
     default Scalar scalar(RexNode node, RelDataType type) {
-        return scalar(ImmutableList.of(node), type);
+        return scalar(List.of(node), type);
     }
 
     /**

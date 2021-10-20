@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -80,23 +79,23 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition()))
-            return ImmutableList.of();
+            return List.of();
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
+        return List.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
             inTraits));
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.distribution(inTraits.get(0))),
+        return List.of(Pair.of(nodeTraits.replace(TraitUtils.distribution(inTraits.get(0))),
             inTraits));
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
+        return List.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
             inTraits));
     }
 
@@ -108,7 +107,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
 
         if (corrSet.isEmpty() || correlation.correlationIds().containsAll(corrSet))
-            return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0).replace(correlation)));
+            return Pair.of(nodeTraits, List.of(inTraits.get(0).replace(correlation)));
 
         return null;
     }
@@ -120,7 +119,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
 
         corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+        return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */

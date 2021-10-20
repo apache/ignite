@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -29,11 +30,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -103,6 +100,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.LocalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteException;
 
@@ -126,8 +124,7 @@ class RelJson {
     }
 
     /** */
-    private static final LoadingCache<String, RelFactory> FACTORIES_CACHE = CacheBuilder.newBuilder()
-        .build(CacheLoader.from(RelJson::relFactory));
+    private static final LocalCache<String, RelFactory> FACTORIES_CACHE = new LocalCache<>(RelJson::relFactory);
 
     /** */
     private static RelFactory relFactory(String typeName) {
@@ -164,15 +161,14 @@ class RelJson {
     }
 
     /** */
-    private static final ImmutableMap<String, Enum<?>> ENUM_BY_NAME;
+    private static final Map<String, Enum<?>> ENUM_BY_NAME;
 
     /** */
     static {
         // Build a mapping from enum constants (e.g. LEADING) to the enum
         // that contains them (e.g. SqlTrimFunction.Flag). If there two
         // enum constants have the same name, the builder will throw.
-        final ImmutableMap.Builder<String, Enum<?>> enumByName =
-            ImmutableMap.builder();
+        final Map<String, Enum<?>> enumByName = new HashMap<>();
 
         register(enumByName, JoinConditionType.class);
         register(enumByName, JoinType.class);
@@ -193,14 +189,14 @@ class RelJson {
         register(enumByName, SqlTrimFunction.Flag.class);
         register(enumByName, TimeUnitRange.class);
 
-        ENUM_BY_NAME = enumByName.build();
+        ENUM_BY_NAME = Map.copyOf(enumByName);
     }
 
     /** */
-    private static void register(ImmutableMap.Builder<String, Enum<?>> builder, Class<? extends Enum> aClass) {
+    private static void register(Map<String, Enum<?>> map, Class<? extends Enum> aClass) {
         String preffix = aClass.getSimpleName() + "#";
         for (Enum enumConstant : aClass.getEnumConstants())
-            builder.put(preffix + enumConstant.name(), enumConstant);
+            map.put(preffix + enumConstant.name(), enumConstant);
     }
 
     /** */
@@ -218,7 +214,7 @@ class RelJson {
 
     /** */
     private static final List<String> PACKAGES =
-        ImmutableList.of(
+        List.of(
             "org.apache.ignite.internal.processors.query.calcite.rel.",
             "org.apache.ignite.internal.processors.query.calcite.rel.agg.",
             "org.apache.ignite.internal.processors.query.calcite.rel.set.",
@@ -235,7 +231,7 @@ class RelJson {
 
     /** */
     Function<RelInput, RelNode> factory(String type) {
-        return FACTORIES_CACHE.getUnchecked(type);
+        return FACTORIES_CACHE.get(type);
     }
 
     /** */

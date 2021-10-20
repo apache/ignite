@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.BiRel;
@@ -108,8 +109,8 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
             IgniteExchange lExch = new IgniteExchange(rel.getCluster(), left.getTraitSet(), left, TraitUtils.distribution(left));
             IgniteExchange rExch = new IgniteExchange(rel.getCluster(), right.getTraitSet(), right, TraitUtils.distribution(right));
 
-            RelNode lVar = rel.copy(rel.getTraitSet(), ImmutableList.of(lExch, right));
-            RelNode rVar = rel.copy(rel.getTraitSet(), ImmutableList.of(left, rExch));
+            RelNode lVar = rel.copy(rel.getTraitSet(), List.of(lExch, right));
+            RelNode rVar = rel.copy(rel.getTraitSet(), List.of(left, rExch));
 
             RelOptCost lVarCost = mq.getCumulativeCost(lVar);
             RelOptCost rVarCost = mq.getCumulativeCost(rVar);

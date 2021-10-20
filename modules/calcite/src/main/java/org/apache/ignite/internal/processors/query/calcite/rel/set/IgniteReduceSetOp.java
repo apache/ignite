@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
@@ -37,8 +36,8 @@ public interface IgniteReduceSetOp extends IgniteSetOp {
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
-        return ImmutableList.of(
-            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), ImmutableList.of(inputTraits.get(0))));
+        return List.of(
+            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), List.of(inputTraits.get(0))));
     }
 
     /** {@inheritDoc} */
@@ -55,8 +54,8 @@ public interface IgniteReduceSetOp extends IgniteSetOp {
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()),
-            ImmutableList.of(inputTraits.get(0).replace(IgniteDistributions.single()))));
+        return List.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()),
+            List.of(inputTraits.get(0).replace(IgniteDistributions.single()))));
     }
 
     /** {@inheritDoc} */
@@ -64,7 +63,7 @@ public interface IgniteReduceSetOp extends IgniteSetOp {
         RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits
     ) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
+        return List.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
             inTraits));
     }
 
