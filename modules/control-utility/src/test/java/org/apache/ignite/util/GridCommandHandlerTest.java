@@ -680,12 +680,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         //because cluster is inactive
         assertTrue(out.contains("Error has occurred during tag update:"));
 
-        cl.cluster().active(true);
+        cl.cluster().state(ACTIVE);
 
         //because new tag should be non-empty string
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--change-tag", ""));
 
         assertEquals(EXIT_CODE_OK, execute("--change-tag", newTag));
+        assertEquals(newTag, cl.cluster().tag());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> newTag.equals(cl.cluster().tag()), 10_000);
         assertTrue("Tag has not been updated in 10 seconds", tagUpdated);

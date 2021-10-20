@@ -24,7 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
  *
  */
 public interface ReadOnlyMetastorage {
-    /** */
+    /**
+     * Returns deserialized value or null if key not found.
+     */
     Serializable read(String key) throws IgniteCheckedException;
 
     /** */

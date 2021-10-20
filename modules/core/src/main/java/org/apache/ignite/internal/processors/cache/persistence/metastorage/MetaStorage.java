@@ -100,7 +100,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         Collections.unmodifiableSet(new HashSet<>(Arrays.asList(OLD_METASTORE_PARTITION, METASTORE_PARTITION)));
 
     /** This flag is used ONLY FOR TESTING the migration of a metastorage from Part 0 to Part 1. */
-    public static boolean PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
+    public static boolean PRESERVE_LEGACY_METASTORAGE_PARTITION_ID;
 
     /** Marker for removed entry. */
     private static final byte[] TOMBSTONE = new byte[0];
