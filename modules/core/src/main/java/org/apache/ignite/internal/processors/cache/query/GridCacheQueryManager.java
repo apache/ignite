@@ -319,10 +319,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         cctx.events().removeListener(lsnr);
 
-        if (cancel)
-            onCancelAtStop();
-        else
-            onWaitAtStop();
+        onCancelAtStop();
     }
 
     /**
@@ -363,13 +360,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cancel flag handler at stop.
      */
     void onCancelAtStop() {
-        // No-op.
-    }
-
-    /**
-     * Wait flag handler at stop.
-     */
-    void onWaitAtStop() {
         // No-op.
     }
 
@@ -513,16 +503,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public abstract GridCloseableIterator scanQueryDistributed(GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException;
-
-    /**
-     * Loads page.
-     *
-     * @param id Query ID.
-     * @param qry Query.
-     * @param nodes Nodes.
-     * @param all Whether to load all pages.
-     */
-    public abstract void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<ClusterNode> nodes, boolean all);
 
     /**
      * Executes distributed fields query.
@@ -1224,7 +1204,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         final K key = row.getKey();
 
-                        V val = row.getValue();
+                        final V val = row.getValue();
 
                         if (log.isDebugEnabled()) {
                             ClusterNode primaryNode = cctx.affinity().primaryByKey(key,
@@ -1324,8 +1304,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             else
                                 continue;
                         }
-                        else
-                            data.add(new T2<>(key, val));
+                        else {
+                            if (type == TEXT)
+                                // (K, V, score). Value transfers as BinaryObject.
+                                data.add(row0);
+                            else
+                                data.add(new T2<>(key, val));
+                        }
                     }
 
                     if (!loc) {
@@ -2851,11 +2836,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param clsName Query class name.
      * @param search Search clause.
      * @param limit Limits response records count. If 0 or less, considered to be no limit.
+     * @param pageSize Query page size.
      * @param keepBinary Keep binary flag.
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-        String search, int limit, boolean keepBinary) {
+        String search, int limit, int pageSize, boolean keepBinary) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
@@ -2867,7 +2853,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
-            null).limit(limit);
+            null)
+            .limit(limit)
+            .pageSize(pageSize);
     }
 
     /**
