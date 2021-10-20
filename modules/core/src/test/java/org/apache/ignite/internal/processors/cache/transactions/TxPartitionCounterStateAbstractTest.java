@@ -1132,8 +1132,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /** */
     private enum TxState {
-        /** Prepare. */ PREPARE,
-        /** Assign. */ ASSIGN,
-        /** Commit. */COMMIT
+        /** Prepare. */
+        PREPARE,
+
+        /** Assign. */
+        ASSIGN,
+
+        /** Commit. */
+        COMMIT
     }
 }

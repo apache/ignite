@@ -1086,6 +1086,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestMassivePut(true);
     }
 
+    /** */
     @Test
     public void testMassivePut2_false() throws Exception {
         MAX_PER_PAGE = 2;
@@ -1103,6 +1104,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestMassivePut(true);
     }
 
+    /** */
     @Test
     public void testMassivePut3_false() throws Exception {
         MAX_PER_PAGE = 3;
@@ -1257,6 +1259,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertNoLocks();
     }
 
+    /** */
     private void doTestCursor(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
@@ -1441,6 +1444,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestSizeForRandomPutRmvMultithreaded(4);
     }
 
+    /** */
     @Test
     public void testSizeForRandomPutRmvMultithreaded_3_256() throws Exception {
         MAX_PER_PAGE = 3;
@@ -3055,6 +3059,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class TestPageLockListener implements PageLockListener {
         /** */
         static ConcurrentMap<Object, Long> beforeReadLock = new ConcurrentHashMap<>();

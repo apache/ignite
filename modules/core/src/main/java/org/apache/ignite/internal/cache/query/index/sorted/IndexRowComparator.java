@@ -31,16 +31,24 @@ public interface IndexRowComparator {
      * @param off offset of an index key.
      * @param maxSize max size to read.
      * @param key key to compare with.
-     * @param curType type of an index key.
+     * @param curType type of index key.
      */
     public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) throws IgniteCheckedException;
 
     /**
      * Compare index keys.
      *
+     * @param left index key.
+     * @param right index key.
+     */
+    public int compareKey(IndexKey left, IndexKey right) throws IgniteCheckedException;
+
+    /**
+     * Compare index rows by key specified with {@code idx}.
+     *
      * @param left index row.
      * @param right index row.
      * @param idx offset of index key.
      */
-    public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException;
+    public int compareRow(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException;
 }

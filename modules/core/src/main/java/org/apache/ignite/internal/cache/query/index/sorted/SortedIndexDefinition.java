@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 
 /**
@@ -26,9 +25,6 @@ import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 public interface SortedIndexDefinition extends IndexDefinition {
     /** Represents an index tree name. */
     public String treeName();
-
-    /** List of index key definitions. */
-    public List<IndexKeyDefinition> indexKeyDefinitions();
 
     /** Comparator for comparing index rows. */
     public IndexRowComparator rowComparator();

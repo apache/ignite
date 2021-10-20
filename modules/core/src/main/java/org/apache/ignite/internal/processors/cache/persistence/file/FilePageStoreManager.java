@@ -586,12 +586,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionCreated(int grpId, int partId) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+    @Override public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException {
         assert partId <= MAX_PARTITION_ID;
 
         PageStore store = getStore(grpId, partId);
@@ -684,19 +679,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
         if (encrypted) {
-            pageStoreFileIoFactory = new EncryptedFileIOFactory(
-                this.pageStoreFileIoFactory,
-                grpId,
-                pageSize(),
-                cctx.kernalContext().encryption(),
-                cctx.gridConfig().getEncryptionSpi());
-
-            pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
-                this.pageStoreV1FileIoFactory,
-                grpId,
-                pageSize(),
-                cctx.kernalContext().encryption(),
-                cctx.gridConfig().getEncryptionSpi());
+            pageStoreFileIoFactory = encryptedFileIoFactory(this.pageStoreFileIoFactory, grpId);
+            pageStoreV1FileIoFactory = encryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId);
         }
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
@@ -713,6 +697,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         return pageStoreFactory;
+    }
+
+    /**
+     * @param plainFileIOFactory Not-encrypting file io factory.
+     * @param cacheGrpId Cache group id.
+     * @return Encrypted file IO factory.
+     */
+    public EncryptedFileIOFactory encryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+        return new EncryptedFileIOFactory(
+            plainFileIOFactory,
+            cacheGrpId,
+            pageSize(),
+            cctx.kernalContext().encryption(),
+            cctx.gridConfig().getEncryptionSpi());
     }
 
     /**

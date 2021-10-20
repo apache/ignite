@@ -458,6 +458,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
      */
     @IgniteAsyncCallback
     private static class LocalEventListenerAsync extends LocalEventListener {
+        /** */
         LocalEventListenerAsync(AtomicInteger transCnt, CountDownLatch transUpdCnt) {
             super(transCnt, transUpdCnt);
         }

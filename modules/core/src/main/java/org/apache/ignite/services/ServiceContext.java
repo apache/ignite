@@ -61,6 +61,7 @@ public interface ServiceContext extends Serializable {
      * Gets affinity key used for key-to-node affinity calculation. This parameter is optional
      * and is set only when key-affinity service was deployed.
      *
+     * @param <K> Affinity key type.
      * @return Affinity key, possibly {@code null}.
      */
     @Nullable public <K> K affinityKey();

@@ -16,11 +16,10 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  * limitations under the License.
  */
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -32,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlockBlobClient;
@@ -45,8 +45,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
-
-import static com.nimbusds.oauth2.sdk.util.URLUtils.CHARSET;
 
 /**
  * Azure Blob Storage based IP Finder
@@ -154,33 +152,19 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         init();
 
         for (InetSocketAddress addr : addrs) {
-            String key = keyFromAddr(addr);
             try {
-                key = URLEncoder.encode(key, CHARSET);
-            } catch (UnsupportedEncodingException e) {
-                throw new IgniteSpiException("Unable to encode URL due to error "
-                        + e.getMessage());
+                String key = URLEncoder.encode(keyFromAddr(addr), StandardCharsets.UTF_8.name());
+                BlockBlobClient blobClient = blobContainerClient.getBlobClient(key).getBlockBlobClient();
+
+                blobClient.upload(new ByteArrayInputStream(OBJECT_CONTENT), OBJECT_CONTENT.length);
             }
-
-            BlockBlobClient blobClient = blobContainerClient.getBlobClient(key).getBlockBlobClient();
-            InputStream dataStream = new ByteArrayInputStream(OBJECT_CONTENT);
-
-            try {
-                blobClient.upload(dataStream, OBJECT_CONTENT.length);
+            catch (UnsupportedEncodingException e) {
+                throw new IgniteSpiException("Unable to encode URL due to error " + e.getMessage(), e);
             }
             catch (BlobStorageException e) {
                 // If the blob already exists, ignore
-                if (!(e.getStatusCode() == 409)) {
-                    throw new IgniteSpiException("Failed to upload blob with exception " +
-                            e.getMessage());
-                }
-            }
-
-            try {
-                dataStream.close();
-            }
-            catch (IOException e) {
-                throw new IgniteSpiException(e.getMessage());
+                if (e.getStatusCode() != 409)
+                    throw new IgniteSpiException("Failed to upload blob with exception " + e.getMessage(), e);
             }
         }
     }
@@ -199,9 +183,9 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
             } catch (Exception e) {
                 // https://github.com/Azure/azure-sdk-for-java/issues/20551
                 if ((!(e.getMessage().contains("InterruptedException"))) || (e instanceof BlobStorageException
-                && (!((BlobStorageException) e).getErrorCode().equals(404)))) {
+                    && (((BlobStorageException)e).getErrorCode() != BlobErrorCode.BLOB_NOT_FOUND))) {
                     throw new IgniteSpiException("Failed to delete entry [containerName=" + containerName +
-                            ", entry=" + key + ']', e);
+                        ", entry=" + key + ']', e);
                 }
             }
         }
@@ -350,22 +334,6 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
     private String keyFromAddr(InetSocketAddress addr) {
         // TODO: This needs to move out to a generic helper class
         return addr.getAddress().getHostAddress() + "#" + addr.getPort();
-    }
-
-    /**
-     * Used by TEST SUITES only. Called through reflection.
-     *
-     * @param containerName Container to delete
-     */
-    private void removeContainer(String containerName) {
-        init();
-
-        try {
-            blobServiceClient.getBlobContainerClient(containerName).delete();
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException("Failed to remove the container: " + containerName, e);
-        }
     }
 
     /** {@inheritDoc} */

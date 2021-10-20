@@ -35,6 +35,9 @@ public interface IgniteClient extends AutoCloseable {
      * Gets the existing cache or creates a new cache with default configuration if it does not exist.
      *
      * @param name Cache name.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
+     * @return Client cache instance.
      */
     public <K, V> ClientCache<K, V> getOrCreateCache(String name) throws ClientException;
 
@@ -42,6 +45,8 @@ public interface IgniteClient extends AutoCloseable {
      * Gets the existing cache or creates a new cache with default configuration if it does not exist.
      *
      * @param name Cache name.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
      * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name) throws ClientException;
@@ -50,6 +55,9 @@ public interface IgniteClient extends AutoCloseable {
      * Gets the existing cache or creates a new cache if it does not exist.
      *
      * @param cfg Cache configuration. If the cache exists, this configuration is ignored.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
+     * @return Client cache instance.
      */
     public <K, V> ClientCache<K, V> getOrCreateCache(ClientCacheConfiguration cfg) throws ClientException;
 
@@ -57,6 +65,8 @@ public interface IgniteClient extends AutoCloseable {
      * Gets the existing cache or creates a new cache if it does not exist.
      *
      * @param cfg Cache configuration. If the cache exists, this configuration is ignored.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
      * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(ClientCacheConfiguration cfg)
@@ -66,6 +76,9 @@ public interface IgniteClient extends AutoCloseable {
      * Get existing cache.
      *
      * @param name Cache name.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
+     * @return Client cache instance.
      */
     public <K, V> ClientCache<K, V> cache(String name);
 
@@ -85,12 +98,16 @@ public interface IgniteClient extends AutoCloseable {
     /**
      * Destroys the cache with the given name.
      * Throws {@link ClientException} if the cache does not exist.
+     *
+     * @param name Name of the cache to destroy.
      */
     public void destroyCache(String name) throws ClientException;
 
     /**
      * Destroys the cache with the given name.
      * Throws {@link ClientException} if the cache does not exist.
+     *
+     * @param name Name of the cache to destroy.
      * @return a Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException;
@@ -99,6 +116,8 @@ public interface IgniteClient extends AutoCloseable {
      * Creates a cache with a default configuration.
      *
      * @param name Cache name.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
      * @return Resulting cache.
      */
     public <K, V> ClientCache<K, V> createCache(String name) throws ClientException;
@@ -107,6 +126,8 @@ public interface IgniteClient extends AutoCloseable {
      * Creates a cache with a default configuration.
      *
      * @param name Cache name.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
      * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException;
@@ -115,6 +136,8 @@ public interface IgniteClient extends AutoCloseable {
      * Creates a cache with the specified configuration.
      *
      * @param cfg Cache configuration.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
      * @return Resulting cache.
      */
     public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException;
@@ -123,6 +146,8 @@ public interface IgniteClient extends AutoCloseable {
      * Creates a cache with the specified configuration.
      *
      * @param cfg Cache configuration.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
      * @return a Future representing pending completion of the operation, which wraps the resulting cache.
      */
     public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg)
@@ -191,4 +216,9 @@ public interface IgniteClient extends AutoCloseable {
      * @return {@code Services} functionality over given cluster group.
      */
     public ClientServices services(ClientClusterGroup grp);
+
+    /**
+     * Closes this client's open connections and relinquishes all underlying resources.
+     */
+    @Override public void close();
 }

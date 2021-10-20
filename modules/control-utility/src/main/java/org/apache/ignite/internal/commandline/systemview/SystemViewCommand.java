@@ -207,7 +207,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
             " Both \"SQL\" and \"Java\" styles of system view name are supported" +
             " (e.g. SQL_TABLES and sql.tables will be handled similarly).");
 
-        Command.usage(log, "Print system view content:", SYSTEM_VIEW, params, optional(NODE_ID, "node_id"),
+        usage(log, "Print system view content:", SYSTEM_VIEW, params, optional(NODE_ID, "node_id"),
             "system_view_name");
     }
 

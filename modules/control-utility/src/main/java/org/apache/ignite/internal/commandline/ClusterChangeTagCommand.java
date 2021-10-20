@@ -83,7 +83,7 @@ public class ClusterChangeTagCommand extends AbstractCommand<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG,
+        usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG,
             "newTagValue", optional(CMD_AUTO_CONFIRMATION));
     }
 

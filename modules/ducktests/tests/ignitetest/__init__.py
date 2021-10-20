@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=missing-module-docstring
 # This determines the version of ignitetest that can be published to PyPi and installed with pip
 #
 # Note that in development, this version name can't follow Ignite's convention of having a trailing "-SNAPSHOT"

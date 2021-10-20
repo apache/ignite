@@ -44,6 +44,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -63,6 +64,7 @@ import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Cache re-encryption tests.
@@ -809,7 +811,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @param node Grid.
      * @param finished Expected reencryption status.
      */
-    private void validateMetrics(IgniteEx node, boolean finished) {
+    private void validateMetrics(IgniteEx node, boolean finished) throws IgniteInterruptedCheckedException {
         MetricRegistry registry =
             node.context().metric().registry(metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheName()));
 
@@ -818,7 +820,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         if (finished)
             assertEquals(0, bytesLeft.value());
         else
-            assertTrue(bytesLeft.value() > 0);
+            assertTrue(waitForCondition(() -> bytesLeft.value() > 0, MAX_AWAIT_MILLIS));
 
         BooleanMetric reencryptionFinished = registry.findMetric("ReencryptionFinished");
 

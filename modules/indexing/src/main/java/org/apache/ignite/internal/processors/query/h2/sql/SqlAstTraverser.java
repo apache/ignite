@@ -198,7 +198,7 @@ class SqlAstTraverser {
         if (!joinIsValid) {
             log.warning(
                 String.format(
-                    "For join two partitioned tables join condition should be the equality operation of affinity keys." +
+                    "For join two partitioned tables join condition should contain the equality operation of affinity keys." +
                         " Left side: %s; right side: %s", left.getName(), right.getName())
             );
         }
@@ -297,52 +297,29 @@ class SqlAstTraverser {
         if (!(equalOp.child(1) instanceof GridSqlColumn))
             return;
 
-        String leftCol = ((GridSqlColumn) equalOp.child(0)).columnName();
-        String rightCol = ((GridSqlColumn) equalOp.child(1)).columnName();
-
         String leftTblAls = ((GridSqlColumn) equalOp.child(0)).tableAlias();
         String rightTblAls = ((GridSqlColumn) equalOp.child(1)).tableAlias();
 
-        Set<String> actLeftCols;
-        Set<String> actRightCols;
+        int leftColIdx = leftTbl.equals(leftTblAls) ? 0 : leftTbl.equals(rightTblAls) ? 1 : -1;
+        int rightColIdx = rightTbl.equals(rightTblAls) ? 1 : rightTbl.equals(leftTblAls) ? 0 : -1;
 
-        if (leftTbl.equals(leftTblAls))
-            actLeftCols = leftCols;
-        else if (leftTbl.equals(rightTblAls))
-            actLeftCols = rightCols;
-        else
+        if (leftColIdx == -1 || rightColIdx == -1)
             return;
 
-        if (rightTbl.equals(rightTblAls))
-            actRightCols = rightCols;
-        else if (rightTbl.equals(leftTblAls))
-            actRightCols = leftCols;
-        else
-            return;
+        String leftCol = ((GridSqlColumn) equalOp.child(leftColIdx)).columnName();
+        String rightCol = ((GridSqlColumn) equalOp.child(rightColIdx)).columnName();
 
         // This is part of the affinity join condition.
-        if (actLeftCols.contains(leftCol) && actRightCols.contains(rightCol)) {
-            if (pkLeft && "_KEY".equals(leftCol))
-                actLeftCols.clear();
-            else if (pkLeft) {
-                actLeftCols.remove(leftCol);
-                // Only _KEY is there.
-                if (actLeftCols.size() == 1)
-                    actLeftCols.clear();
-            }
-            else
-                actLeftCols.remove(leftCol);
+        if (leftCols.contains(leftCol) && rightCols.contains(rightCol)) {
+            leftCols.remove(leftCol);
+            rightCols.remove(rightCol);
 
-            if (pkRight && "_KEY".equals(rightCol))
-                actRightCols.clear();
-            else if (pkRight) {
-                actRightCols.remove(rightCol);
-                // Only _KEY is there.
-                if (actRightCols.size() == 1)
-                    actRightCols.clear();
-            }
-            else
-                actRightCols.remove(rightCol);
+            // Only _KEY is there.
+            if (pkLeft && (leftCols.size() == 1 || "_KEY".equals(leftCol)))
+                leftCols.clear();
+
+            if (pkRight && (rightCols.size() == 1 || "_KEY".equals(rightCol)))
+                rightCols.clear();
         }
     }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest;
 
+/** */
 public class GridCachePartitionedNearDisabledAtomicOnheapMultiJvmFullApiSelfTest
     extends GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */

@@ -25,39 +25,86 @@ import org.h2.util.StringUtils;
  */
 public enum GridSqlOperationType {
     // from org.h2.expression.Operation
+
+    /** */
     CONCAT(2, new BiExpressionSqlGenerator("||")),
+
+    /** */
     PLUS(2, new BiExpressionSqlGenerator("+")),
+
+    /** */
     MINUS(2, new BiExpressionSqlGenerator("-")),
+
+    /** */
     MULTIPLY(2, new BiExpressionSqlGenerator("*")),
+
+    /** */
     DIVIDE(2, new BiExpressionSqlGenerator("/")),
+
+    /** */
     MODULUS(2, new BiExpressionSqlGenerator("%")),
+
+    /** */
     NEGATE(1, new PrefixSqlGenerator("-", true)),
 
     // from org.h2.expression.Comparison
+
+    /** */
     EQUAL(2, new BiExpressionSqlGenerator("=")),
+
+    /** */
     EQUAL_NULL_SAFE(2, new BiExpressionSqlGenerator("IS")),
+
+    /** */
     BIGGER_EQUAL(2, new BiExpressionSqlGenerator(">=")),
+
+    /** */
     BIGGER(2, new BiExpressionSqlGenerator(">")),
+
+    /** */
     SMALLER_EQUAL(2, new BiExpressionSqlGenerator("<=")),
+
+    /** */
     SMALLER(2, new BiExpressionSqlGenerator("<")),
+
+    /** */
     NOT_EQUAL(2, new BiExpressionSqlGenerator("<>")),
+
+    /** */
     NOT_EQUAL_NULL_SAFE(2, new BiExpressionSqlGenerator("IS NOT")),
 
+    /** */
     SPATIAL_INTERSECTS(2, new IntersectsSqlGenerator()),
+
+    /** */
     IS_NULL(1, new SuffixSqlGenerator("IS NULL")),
+
+    /** */
     IS_NOT_NULL(1, new SuffixSqlGenerator("IS NOT NULL")),
 
+    /** */
     NOT(1, new PrefixSqlGenerator("NOT", true)),
 
     // from org.h2.expression.ConditionAndOr
+
+    /** */
     AND(2, new BiExpressionSqlGenerator("AND")),
+
+    /** */
     OR(2, new BiExpressionSqlGenerator("OR")),
 
     // from
+
+    /** */
     REGEXP(2, new BiExpressionSqlGenerator("REGEXP")),
+
+    /** */
     LIKE(2, new BiExpressionSqlGenerator("LIKE")),
 
+    /** */
     IN(-1, new ConditionInSqlGenerator()),
+
+    /** */
     EXISTS(1, new PrefixSqlGenerator("EXISTS", false));
 
     /** */
