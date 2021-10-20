@@ -41,58 +41,41 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     private final String schemaName;
 
     /** Key columns. */
-    private final LinkedHashMap<String, ColumnDefinition> cols;
+    private final LinkedHashMap<String, ColumnDefinition> colMap;
 
     /** Indices. */
     private final Map<String, IndexDefinition> indices;
 
     /** Cached key columns. */
-    private final List<ColumnDefinition> keyCols;
+    private final Set<String> keyCols;
 
     /** Cached key affinity columns. */
-    private final List<ColumnDefinition> affCols;
-
-    /** Cached value columns. */
-    private final List<ColumnDefinition> valCols;
+    private final Set<String> affCols;
 
     /**
      * Constructor.
      *
      * @param schemaName Schema name.
      * @param tableName Table name.
-     * @param cols Columns.
+     * @param colMap Columns.
      * @param primaryKeyDefinition Primary key.
      * @param indices Indices.
      */
     public TableDefinitionImpl(
         String schemaName,
         String tableName,
-        LinkedHashMap<String, ColumnDefinition> cols,
+        LinkedHashMap<String, ColumnDefinition> colMap,
         PrimaryKeyDefinition primaryKeyDefinition,
         Map<String, IndexDefinition> indices
     ) {
         super(tableName);
 
         this.schemaName = schemaName;
-        this.cols = cols;
+        this.colMap = colMap;
         this.indices = indices;
 
-        Set<String> pkCols = primaryKeyDefinition.columns();
-        Set<String> pkAffCols = primaryKeyDefinition.affinityColumns();
-
-        keyCols = new ArrayList<>(pkCols.size());
-        affCols = new ArrayList<>(pkAffCols.size());
-        valCols = new ArrayList<>(cols.size() - pkCols.size());
-
-        for (Map.Entry<String, ColumnDefinition> e : cols.entrySet()) {
-            if (pkCols.contains(e.getKey())) {
-                keyCols.add(e.getValue());
-
-                if (pkAffCols.contains(e.getValue().name()))
-                    affCols.add(e.getValue());
-            } else
-                valCols.add(e.getValue());
-        }
+        keyCols = primaryKeyDefinition.columns();
+        affCols = primaryKeyDefinition.affinityColumns();
     }
 
     /** {@inheritDoc} */
@@ -101,18 +84,18 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ColumnDefinition> keyColumns() {
+    @Override public Set<String> keyColumns() {
         return keyCols;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ColumnDefinition> affinityColumns() {
+    @Override public Set<String> affinityColumns() {
         return affCols;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ColumnDefinition> valueColumns() {
-        return valCols;
+    @Override public List<ColumnDefinition> columns() {
+        return new ArrayList<>(colMap.values());
     }
 
     /** {@inheritDoc} */
@@ -130,7 +113,7 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
      * @return {@code True} if column with given name already exists, {@code false} otherwise.
      */
     public boolean hasColumn(String name) {
-        return cols.containsKey(name);
+        return colMap.containsKey(name);
     }
 
     /**
@@ -138,7 +121,7 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
      * @return {@code True} if key column with given name already exists, {@code false} otherwise.
      */
     public boolean hasKeyColumn(String name) {
-        return keyCols.stream().anyMatch(c -> c.name().equals(name));
+        return keyCols.contains(name);
     }
 
     /** {@inheritDoc} */

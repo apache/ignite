@@ -189,6 +189,7 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
      */
     private int getColumnSize(Column col) {
         return INT +                      //Schema index
+            INT +                      //Column order
             BYTE +                         //nullable flag
             getStringSize(col.name()) +
             getNativeTypeSize(col.type()) +
@@ -341,6 +342,7 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
      */
     private void appendColumn(Column col, ByteBuffer buf) {
         buf.putInt(col.schemaIndex());
+        buf.putInt(col.columnOrder());
         buf.put((byte)(col.nullable() ? 1 : 0));
 
         appendString(col.name(), buf);        
@@ -567,6 +569,7 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
      */
     private Column readColumn(ByteBuffer buf) {
         int schemaIdx = buf.getInt();
+        int columnOrder = buf.getInt();
         boolean nullable = buf.get() == 1;
         String name = readString(buf);
 
@@ -574,7 +577,7 @@ public class SchemaSerializerImpl extends AbstractSchemaSerializer {
 
         Object object = readDefaultValue(buf, nativeType);
 
-        return new Column(name, nativeType, nullable, () -> object).copy(schemaIdx);
+        return new Column(columnOrder, name, nativeType, nullable, () -> object).copy(schemaIdx);
     }
 
     /**

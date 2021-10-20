@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import java.util.Arrays;
 import java.util.function.Function;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
@@ -30,6 +31,7 @@ import org.apache.ignite.schema.definition.builder.ColumnDefinitionBuilder;
 import org.apache.ignite.schema.definition.builder.TableSchemaBuilder;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -96,6 +98,43 @@ public class SchemaDescriptorConverterTest {
     }
 
     /**
+     * Convert table with complex primary key and check it.
+     */
+    @Test
+    public void testColumnOrder() {
+        ColumnDefinition[] cols = {
+            SchemaBuilders.column("ID", ColumnType.UUID).build(),
+            SchemaBuilders.column("STRING", ColumnType.string()).build(),
+            SchemaBuilders.column("INT32", ColumnType.INT32).build(),
+            SchemaBuilders.column("INT64", ColumnType.INT64).build(),
+            SchemaBuilders.column("DOUBLE", ColumnType.DOUBLE).build(),
+            SchemaBuilders.column("UUID", ColumnType.UUID).build(),
+            SchemaBuilders.column("INT16", ColumnType.INT16).build(),
+            SchemaBuilders.column("BITMASK_FS10", ColumnType.bitmaskOf(10)).build()
+        };
+
+        TableDefinition tblSchm = SchemaBuilders.tableBuilder("SCHEMA", "TABLE")
+            .columns(cols)
+            .withPrimaryKey(
+                SchemaBuilders.primaryKey()
+                    .withColumns("INT32", "ID")
+                    .withAffinityColumns("INT32")
+                    .build()
+            ).build();
+
+        SchemaDescriptor tblDscr = SchemaDescriptorConverter.convert(1, tblSchm);
+
+        for (int i = 0; i < cols.length; i++) {
+            Column col = tblDscr.column(i);
+
+            assertEquals(col.name(), cols[col.columnOrder()].name());
+        }
+
+        assertArrayEquals(Arrays.stream(cols).map(ColumnDefinition::name).toArray(String[]::new),
+            tblDscr.columnNames().toArray(String[]::new));
+    }
+
+    /**
      * Test set of columns.
      *
      * @param nullable Nullable flag.
@@ -155,7 +194,7 @@ public class SchemaDescriptorConverterTest {
                 postProcess.apply(SchemaBuilders.column("STRING_FS10", ColumnType.stringOf(10))),
                 postProcess.apply(SchemaBuilders.column("BLOB", ColumnType.blobOf())),
                 postProcess.apply(SchemaBuilders.column("BLOB_FS10", ColumnType.blobOf(10))),
-                postProcess.apply(SchemaBuilders.column("DECIMAL", ColumnType.decimalOf(1,1))),
+                postProcess.apply(SchemaBuilders.column("DECIMAL", ColumnType.decimalOf(1, 1))),
                 postProcess.apply(SchemaBuilders.column("NUMBER", ColumnType.numberOf(12))),
                 postProcess.apply(SchemaBuilders.column("BITMASK_FS10", ColumnType.bitmaskOf(10)))
                 // TODO: IGNITE-13750 uncomment after unsigned types available

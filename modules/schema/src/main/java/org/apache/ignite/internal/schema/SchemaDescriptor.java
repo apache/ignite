@@ -20,9 +20,11 @@ package org.apache.ignite.internal.schema;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.mapping.ColumnMapping;
 import org.apache.ignite.internal.tostring.S;
@@ -75,10 +77,11 @@ public class SchemaDescriptor implements Serializable {
         this.keyCols = new Columns(0, keyCols);
         this.valCols = new Columns(keyCols.length, valCols);
 
-        colMap = new HashMap<>(keyCols.length + valCols.length);
+        colMap = new LinkedHashMap<>(keyCols.length + valCols.length);
 
-        Arrays.stream(this.keyCols.columns()).forEach(c -> colMap.put(c.name(), c));
-        Arrays.stream(this.valCols.columns()).forEach(c -> colMap.put(c.name(), c));
+        Stream.concat(Arrays.stream(this.keyCols.columns()), Arrays.stream(this.valCols.columns()))
+            .sorted(Comparator.comparingInt(Column::columnOrder))
+            .forEach(c -> colMap.put(c.name(), c));
 
         // Preserving key chunk column order is not actually required.
         // It is sufficient to has same column order for all nodes.
@@ -98,6 +101,8 @@ public class SchemaDescriptor implements Serializable {
      * @return {@code true} if the column belongs to the key chunk, {@code false} otherwise.
      */
     public boolean isKeyColumn(int idx) {
+        validateColumnIndex(idx);
+
         return idx < keyCols.length();
     }
 

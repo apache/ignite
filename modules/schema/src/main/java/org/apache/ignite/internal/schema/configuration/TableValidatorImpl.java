@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.store.DataRegionView;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
@@ -33,7 +29,6 @@ import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.schema.definition.TableDefinitionImpl;
 import org.apache.ignite.internal.schema.definition.builder.TableSchemaBuilderImpl;
-import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.schemas.store.DataStorageConfigurationSchema.DEFAULT_DATA_REGION_NAME;
@@ -59,14 +54,7 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
                 assert !tbl.keyColumns().isEmpty();
                 assert !tbl.affinityColumns().isEmpty();
 
-                Collection<ColumnDefinition> allColumns = new ArrayList<>(tbl.keyColumns());
-                allColumns.addAll(tbl.valueColumns());
-
-                Set<String> affinityColumnNames = tbl.affinityColumns().stream()
-                    .map(ColumnDefinition::name)
-                    .collect(Collectors.toSet());
-
-                TableSchemaBuilderImpl.validateIndices(tbl.indices(), allColumns, affinityColumnNames);
+                TableSchemaBuilderImpl.validateIndices(tbl.indices(), tbl.columns(), tbl.affinityColumns());
             }
             catch (IllegalArgumentException e) {
                 ctx.addIssue(new ValidationIssue("Validator works success by key " + ctx.currentKey() + ". Found "

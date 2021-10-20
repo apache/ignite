@@ -27,16 +27,16 @@ public interface PrimaryKeyDefinition extends SchemaObject {
     String PRIMARY_KEY_NAME = "PK";
 
     /**
-     * Configured index columns.
+     * Returns key columns.
      *
-     * @return Index columns.
+     * @return Key columns.
      */
     Set<String> columns();
 
     /**
      * Returns affinity columns.
      *
-     * @return Columns list.
+     * @return Affinity columns.
      */
     Set<String> affinityColumns();
 }

@@ -246,7 +246,7 @@ public class SchemaConfigurationConverterTest {
         assertEquals(tbl.indices().size(), tbl2.indices().size());
         assertEquals(tbl.keyColumns().size(), tbl2.keyColumns().size());
         assertEquals(tbl.affinityColumns().size(), tbl2.affinityColumns().size());
-        assertEquals(tbl.valueColumns().size(), tbl2.valueColumns().size());
+        assertEquals(tbl.columns().size(), tbl2.columns().size());
     }
 
     /**

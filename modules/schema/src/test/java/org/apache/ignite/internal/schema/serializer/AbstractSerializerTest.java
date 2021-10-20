@@ -19,7 +19,9 @@ package org.apache.ignite.internal.schema.serializer;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeTypes;
@@ -76,6 +78,45 @@ public class AbstractSerializerTest {
         assertArrayEquals(desc.keyColumns().columns(), deserialize.keyColumns().columns());
         assertArrayEquals(desc.valueColumns().columns(), deserialize.valueColumns().columns());
         assertArrayEquals(desc.affinityColumns(), deserialize.affinityColumns());
+    }
+
+    /**
+     * (de)Serialize schema test.
+     */
+    @Test
+    public void columnOrderSerializeTest() {
+        AbstractSchemaSerializer assembler = SchemaSerializerImpl.INSTANCE;
+
+        Column[] keyCols = {
+            new Column(0, "A", NativeTypes.UUID, false, () -> null),
+            new Column(1, "B", NativeTypes.INT64, false, () -> null),
+            new Column(2, "C", NativeTypes.INT8, false, () -> null),
+        };
+
+        Column[] valCols = {
+            new Column(3, "A1", NativeTypes.stringOf(128), false, () -> null),
+            new Column(4, "B1", NativeTypes.INT64, false, () -> null),
+        };
+
+        SchemaDescriptor desc = new SchemaDescriptor(100500, keyCols, valCols);
+
+        byte[] serialize = assembler.serialize(desc);
+
+        SchemaDescriptor deserialize = assembler.deserialize(serialize);
+
+        assertEquals(desc.version(), deserialize.version());
+
+        ArrayList<Column> columns = new ArrayList<>();
+        Collections.addAll(columns, keyCols);
+        Collections.addAll(columns, valCols);
+
+        for (int i = 0; i < columns.size(); i++) {
+            Column col = deserialize.column(i);
+
+            assertEquals(columns.get(col.columnOrder()), col);
+        }
+
+        assertArrayEquals(columns.stream().map(Column::name).toArray(String[]::new), desc.columnNames().toArray(String[]::new));
     }
 
     /**

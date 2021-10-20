@@ -43,7 +43,7 @@ public class ColumnDefinitionTest {
             new Column("AA", STRING, false),
         };
 
-        Arrays.sort(cols);
+        Arrays.sort(cols, Columns.COLUMN_COMPARATOR);
 
         assertEquals("A", cols[0].name());
         assertEquals("B", cols[1].name());

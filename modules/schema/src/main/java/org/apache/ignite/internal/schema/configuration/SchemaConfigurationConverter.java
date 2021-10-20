@@ -402,16 +402,13 @@ public class SchemaConfigurationConverter {
         tblChg.changeColumns(colsChg -> {
             int colIdx = 0;
 
-            for (ColumnDefinition col : tbl.keyColumns())
-                colsChg.create(String.valueOf(colIdx++), colChg -> convert(col, colChg));
-
-            for (ColumnDefinition col : tbl.valueColumns())
+            for (ColumnDefinition col : tbl.columns())
                 colsChg.create(String.valueOf(colIdx++), colChg -> convert(col, colChg));
         });
 
         tblChg.changePrimaryKey(pkCng -> {
-            pkCng.changeColumns(tbl.keyColumns().stream().map(ColumnDefinition::name).toArray(String[]::new))
-                .changeAffinityColumns(tbl.affinityColumns().stream().map(ColumnDefinition::name).toArray(String[]::new));
+            pkCng.changeColumns(tbl.keyColumns().toArray(String[]::new))
+                .changeAffinityColumns(tbl.affinityColumns().toArray(String[]::new));
         });
 
         return tblChg;

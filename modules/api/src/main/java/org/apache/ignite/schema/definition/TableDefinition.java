@@ -18,6 +18,8 @@
 package org.apache.ignite.schema.definition;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.schema.definition.index.IndexDefinition;
 import org.apache.ignite.schema.modification.TableModificationBuilder;
 
@@ -38,21 +40,21 @@ public interface TableDefinition extends SchemaObject {
      *
      * @return List of columns.
      */
-    Collection<ColumnDefinition> keyColumns();
+    Set<String> keyColumns();
 
     /**
      * Returns affinity columns.
      *
      * @return List of columns.
      */
-    Collection<ColumnDefinition> affinityColumns();
+    Set<String> affinityColumns();
 
     /**
-     * Returns value columns.
+     * Returns table columns in user-defined order.
      *
      * @return List of columns.
      */
-    Collection<ColumnDefinition> valueColumns();
+    List<ColumnDefinition> columns();
 
     /**
      * Returns table indices.

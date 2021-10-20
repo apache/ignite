@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.schema.definition.index.PrimaryKeyDefinitionImpl;
 import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.util.ArrayUtils;
 import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
 import org.apache.ignite.schema.definition.builder.PrimaryKeyDefinitionBuilder;
 import org.apache.ignite.schema.definition.builder.SchemaObjectBuilder;
@@ -70,13 +71,14 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
 
         Set<String> affCols;
 
-        if (affinityColumns != null) {
+        if (ArrayUtils.nullOrEmpty(affinityColumns))
+            affCols = cols;
+        else {
             affCols = Set.of(affinityColumns);
 
             if (!cols.containsAll(affCols))
                 throw new IllegalStateException("Schema definition error: All affinity columns must be part of key.");
-        } else
-            affCols = cols;
+        }
 
         return new PrimaryKeyDefinitionImpl(cols, affCols);
     }
