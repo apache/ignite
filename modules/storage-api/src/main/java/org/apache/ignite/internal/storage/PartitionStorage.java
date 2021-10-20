@@ -33,6 +33,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface PartitionStorage extends AutoCloseable {
     /**
+     * Returns the partition id.
+     *
+     * @return Partition id.
+     */
+    public int partitionId();
+
+    /**
      * Reads a DataRow for a given key.
      *
      * @param key Search row.

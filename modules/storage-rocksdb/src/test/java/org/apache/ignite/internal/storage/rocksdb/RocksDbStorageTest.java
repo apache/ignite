@@ -80,6 +80,7 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
     @AfterEach
     public void tearDown() throws Exception {
         IgniteUtils.closeAll(
+            storage,
             table == null ? null : table::stop,
             dataRegion == null ? null : dataRegion::stop
         );

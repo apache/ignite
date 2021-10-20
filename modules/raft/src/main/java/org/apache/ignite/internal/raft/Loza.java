@@ -175,14 +175,18 @@ public class Loza implements IgniteComponent {
      *
      * @param groupId Raft group id.
      * @param nodes Raft group nodes.
+     * @return {@code true} if group has been stopped.
      */
-    public void stopRaftGroup(String groupId, List<ClusterNode> nodes) {
-        assert !nodes.isEmpty();
-
+    public boolean stopRaftGroup(String groupId, List<ClusterNode> nodes) {
         String locNodeName = clusterNetSvc.topologyService().localMember().name();
 
-        if (nodes.stream().anyMatch(n -> locNodeName.equals(n.name())))
+        if (nodes.stream().anyMatch(n -> locNodeName.equals(n.name()))) {
             raftServer.stopRaftGroup(groupId);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

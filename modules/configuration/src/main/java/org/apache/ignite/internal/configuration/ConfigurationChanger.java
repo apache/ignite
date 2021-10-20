@@ -298,7 +298,7 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
             }
 
             /**
-             * Visits a Named List node. This method ends the tree traversal even of the last key in the path has not
+             * Visits a Named List node. This method ends the tree traversal even if the last key in the path has not
              * been reached yet for the reasons described above.
              */
             @Override

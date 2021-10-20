@@ -58,6 +58,11 @@ public class ConcurrentHashMapPartitionStorage implements PartitionStorage {
     private final ConcurrentMap<ByteArray, byte[]> map = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
+    @Override public int partitionId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public DataRow read(SearchRow key) throws StorageException {
         byte[] keyBytes = key.keyBytes();
 
