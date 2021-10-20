@@ -3029,10 +3029,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotStatus() throws Exception {
+        int nodesCnt = 2;
         int keysCnt = 100;
         String snpName = "snapshot_02052020";
-
-        int nodesCnt = 2;
 
         IgniteEx ig = startGrids(nodesCnt);
 
