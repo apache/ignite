@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -279,8 +280,15 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (reader.readBoolean()) {
                     args = new Object[reader.readInt()];
 
-                    for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
+                    for (int i = 0; i < args.length; i++) {
+                        args[i] = reader.readObjectDetached();
+
+                        if (args[i] instanceof BinaryArray) {
+                            args[i] = (!srvKeepBinary && !svc.isPlatformService())
+                                ? ((BinaryArray)args[i]).deserialize()
+                                : ((BinaryArray)args[i]).array();
+                        }
+                    }
                 }
                 else
                     args = null;
