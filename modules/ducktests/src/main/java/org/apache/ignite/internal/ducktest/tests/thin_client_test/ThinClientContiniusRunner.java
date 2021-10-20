@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 /** Start Thin Client making some operations for a given time. */
 public class ThinClientContiniusRunner implements Runnable {
@@ -79,12 +78,14 @@ public class ThinClientContiniusRunner implements Runnable {
                 switch (type) {
                     case CONNECT:
                         TimeUnit.MILLISECONDS.sleep(RUN_TIME);
+
                         break;
 
                     case PUT:
                         while (stopTyme > System.currentTimeMillis()) {
                             cache.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
                         }
+
                         break;
 
                     case PUTALL:
@@ -98,6 +99,7 @@ public class ThinClientContiniusRunner implements Runnable {
 
                             cache.putAll(data);
                         }
+                        
                         break;
 
                     default:
