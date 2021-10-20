@@ -210,6 +210,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         Integer cnt,
         boolean raw,
         boolean async,
+        boolean misses,
         Consumer<ReadRepairData> c)
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -218,7 +219,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             Map<Integer, InconsistentMapping> results = new HashMap<>();
 
             for (int j = 0; j < cnt; j++) {
-                InconsistentMapping res = setDifferentValuesForSameKey(++iterableKey);
+                InconsistentMapping res = setDifferentValuesForSameKey(++iterableKey, misses);
 
                 results.put(iterableKey, res);
             }
@@ -247,8 +248,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private InconsistentMapping setDifferentValuesForSameKey(
-        int key) throws Exception {
+    private InconsistentMapping setDifferentValuesForSameKey(int key, boolean misses) throws Exception {
         List<Ignite> nodes = new ArrayList<>();
         Map<Ignite, Integer> mapping = new HashMap<>();
 
@@ -270,7 +270,10 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             ((GridCacheAdapter)(grid(1)).cachex(DEFAULT_CACHE_NAME).cache()).context().shared().versions();
 
         int val = 0;
-        int primVal = -1;
+        Integer primVal = null;
+
+        if (misses)
+            nodes = nodes.subList(0, ThreadLocalRandom.current().nextInt(1, nodes.size()));
 
         for (Ignite node : nodes) {
             IgniteInternalCache cache = ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
@@ -300,7 +303,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         assertEquals(nodes.size(), new HashSet<>(mapping.values()).size()); // Each node have unique value.
 
-        assertTrue(primVal != -1); // Primary value set.
+        if (!misses)
+            assertTrue(primVal != null); // Primary value set.
 
         return new InconsistentMapping(mapping, primVal, val);
     }

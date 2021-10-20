@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -73,14 +75,25 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, T2<EntryGetResult, Object>> newestMap = new HashMap<>();
-        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>();
+        Map<KeyCacheObject, T2<EntryGetResult, Object>> newestMap = new HashMap<>(); // Newest entries (by version).
+        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(); // Newest entries required to be committed to fix consistency violations.
+
+        Set<KeyCacheObject> nullKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
+            for (KeyCacheObject key : fut.keys()) {
+                EntryGetResult candidateRes = fut.result().get(key);
 
-                EntryGetResult candidateRes = entry.getValue();
+                if (candidateRes == null) {
+                    nullKeys.add(key);
+
+                    T2<EntryGetResult, Object> newest = newestMap.get(key);
+
+                    if (newest != null)
+                        fixedMap.put(key, newest.get1());
+
+                    continue;
+                }
 
                 Object candidateVal = ctx.unwrapBinaryIfNeeded(candidateRes.value(), !deserializeBinary, false, null);
 
@@ -97,10 +110,10 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                     newestMap.put(key, new T2<>(candidateRes, candidateVal));
                     fixedMap.put(key, candidateRes);
                 }
-                else if (verCompareRes > 0)
+                else if (verCompareRes > 0
+                    || !newestVal.equals(candidateVal) // Same version, fixing values inconsistency.
+                    || nullKeys.contains(key)) // Equals, but the missed value has been found previously. Existing data always wins.
                     fixedMap.put(key, newestRes);
-                else if (!newestVal.equals(candidateVal)) // Same version.
-                    fixedMap.put(key, /*random from entries with same version*/ candidateRes); // Fixing values inconsistency.
             }
         }
 

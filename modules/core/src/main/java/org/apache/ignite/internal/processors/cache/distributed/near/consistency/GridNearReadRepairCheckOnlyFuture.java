@@ -99,27 +99,42 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         Map<KeyCacheObject, T2<Object, CacheEntryVersion>> prevMap = new HashMap<>();
 
         Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
+        Set<KeyCacheObject> nullKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject curKey = entry.getKey();
-                EntryGetResult curRes = entry.getValue();
+            for (KeyCacheObject key : fut.keys()) {
+                T2<Object, CacheEntryVersion> prev = prevMap.get(key);
+
+                EntryGetResult curRes = fut.result().get(key);
+
+                if (curRes == null) {
+                    nullKeys.add(key);
+
+                    if (prev != null)
+                        inconsistentKeys.add(key);
+
+                    continue;
+                }
+
+                if (nullKeys.contains(key)) {
+                    inconsistentKeys.add(key);
+
+                    continue;
+                }
 
                 Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), !deserializeBinary, false, null);
-
-                T2<Object, CacheEntryVersion> prev = prevMap.get(curKey);
 
                 if (prev != null) {
                     Object prevVal = prev.get1();
                     CacheEntryVersion prevVer = prev.get2();
 
                     if (prevVer.compareTo(curRes.version()) != 0 || !prevVal.equals(curVal))
-                        inconsistentKeys.add(curKey);
+                        inconsistentKeys.add(key);
                 }
                 else {
-                    resMap.put(curKey, curRes);
+                    resMap.put(key, curRes);
 
-                    prevMap.put(curKey, new T2<>(curVal, curRes.version()));
+                    prevMap.put(key, new T2<>(curVal, curRes.version()));
                 }
             }
         }
