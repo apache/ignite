@@ -195,7 +195,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryCloseMessage msg) {
-        Query qry = qryRegistry.query(msg.queryId());
+        Query<?> qry = qryRegistry.query(msg.queryId());
 
         if (qry != null)
             qry.cancel();

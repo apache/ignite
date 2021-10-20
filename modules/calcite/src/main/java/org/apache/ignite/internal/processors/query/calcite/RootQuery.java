@@ -115,8 +115,8 @@ public class RootQuery<Row> extends Query<Row> {
     }
 
     /** */
-    public RootQuery childQuery(SchemaPlus schema) {
-        return new RootQuery(sql, schema, params, null, exch, unregister, log);
+    public RootQuery<Row> childQuery(SchemaPlus schema) {
+        return new RootQuery<>(sql, schema, params, null, exch, unregister, log);
     }
 
     /** */
@@ -136,31 +136,33 @@ public class RootQuery<Row> extends Query<Row> {
 
     /** */
     public void run(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
-        if (state == QueryState.CLOSED) {
-            throw new IgniteSQLException(
-                "The query was cancelled while executing.",
-                IgniteQueryErrorCode.QUERY_CANCELED
-            );
+        synchronized (this) {
+            if (state == QueryState.CLOSED) {
+                throw new IgniteSQLException(
+                    "The query was cancelled while executing.",
+                    IgniteQueryErrorCode.QUERY_CANCELED
+                );
+            }
+
+            RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
+            rootNode.register(root);
+
+            addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));
+
+            this.root = rootNode;
+
+            for (int i = 1; i < plan.fragments().size(); i++) {
+                Fragment fragment = plan.fragments().get(i);
+                List<UUID> nodes = plan.mapping(fragment).nodeIds();
+
+                remotes.addAll(nodes);
+
+                for (UUID node : nodes)
+                    waiting.add(new RemoteFragmentKey(node, fragment.fragmentId()));
+            }
+
+            state = QueryState.EXECUTION;
         }
-
-        RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
-        rootNode.register(root);
-
-        addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));
-
-        this.root = rootNode;
-
-        for (int i = 1; i < plan.fragments().size(); i++) {
-            Fragment fragment = plan.fragments().get(i);
-            List<UUID> nodes = plan.mapping(fragment).nodeIds();
-
-            remotes.addAll(nodes);
-
-            for (UUID node : nodes)
-                waiting.add(new RemoteFragmentKey(node, fragment.fragmentId()));
-        }
-
-        state = QueryState.EXECUTION;
     }
 
     /**

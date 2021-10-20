@@ -139,7 +139,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private ClosableIteratorsHolder iteratorsHolder;
 
     /** */
-    private QueryRegistry qryReg;
+    private QueryRegistry<Row> qryReg;
 
     /** */
     private final RowHandler<Row> handler;
@@ -157,7 +157,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
 
         ddlCmdHnd = new DdlCommandHandler(
-            ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema()
+            ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema(null)
         );
     }
 
@@ -351,18 +351,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    public QueryRegistry queryRegistry() {
+    public QueryRegistry<Row> queryRegistry() {
         return qryReg;
     }
 
     /** */
-    public void queryRegistry(QueryRegistry qryReg) {
+    public void queryRegistry(QueryRegistry<Row> qryReg) {
         this.qryReg = qryReg;
     }
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID qryId) {
-        Query qry = qryReg.query(qryId);
+        Query<Row> qry = qryReg.query(qryId);
 
         if (qry != null)
             qry.cancel();
@@ -422,7 +422,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .parentContext(parent)
             .frameworkConfig(
                 Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schemaHolder().getDefaultSchema(schema))
+                    .defaultSchema(schemaHolder().schema(schema))
                     .build()
             )
             .logger(log)
@@ -480,8 +480,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryReg.unregister(qry.id());
         }
 
-        if (plan.command() instanceof CreateTableCommand && ((CreateTableCommand)plan.command()).insertStatement() != null) {
-            RootQuery insQry = qry.childQuery(schemaHolder.getDefaultSchema(qry.context().schemaName()));
+        if (plan.command() instanceof CreateTableCommand
+            && ((CreateTableCommand)plan.command()).insertStatement() != null) {
+            RootQuery<Row> insQry = qry.childQuery(schemaHolder.schema(qry.context().schemaName()));
 
             SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
@@ -584,7 +585,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void executeFragment(Query qry, FragmentPlan plan, ExecutionContext<Row> ectx) {
+    private void executeFragment(Query<Row> qry, FragmentPlan plan, ExecutionContext<Row> ectx) {
         UUID origNodeId = ectx.originatingNodeId();
 
         Outbox<Row> node = new LogicalRelImplementor<>(
@@ -679,7 +680,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartResponse msg) {
         assert nodeId != null && msg != null;
 
-        Query qry = qryReg.query(msg.queryId());
+        Query<Row> qry = qryReg.query(msg.queryId());
 
         if (qry != null) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;
@@ -692,7 +693,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, ErrorMessage msg) {
         assert nodeId != null && msg != null;
 
-        Query qry = qryReg.query(msg.queryId());
+        Query<Row> qry = qryReg.query(msg.queryId());
 
         if (qry != null && qry.state() != QueryState.CLOSED) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;

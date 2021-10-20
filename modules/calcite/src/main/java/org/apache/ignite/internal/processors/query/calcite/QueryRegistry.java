@@ -24,14 +24,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 /**
  *
  */
-public interface QueryRegistry extends Service {
+public interface QueryRegistry<Row> extends Service {
     /**
      * Register the query or return the exists query with the same identifier.
      *
      * @param qry Query to register.
      * @return registered query.
      */
-    Query register(Query qry);
+    Query<Row> register(Query<Row> qry);
 
     /**
      * Lookup query by identifier.
@@ -39,7 +39,7 @@ public interface QueryRegistry extends Service {
      * @param id Query identified.
      * @return registered query or {@code null} if the query with specified identifier isn't found.
      */
-    Query query(UUID id);
+    Query<Row> query(UUID id);
 
     /**
      * Unregister query by identifier.
@@ -49,5 +49,5 @@ public interface QueryRegistry extends Service {
     void unregister(UUID id);
 
     /** */
-    Collection<Query> runningQueries();
+    Collection<Query<Row>> runningQueries();
 }

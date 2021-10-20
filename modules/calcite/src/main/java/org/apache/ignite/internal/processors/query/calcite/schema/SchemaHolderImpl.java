@@ -153,11 +153,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaPlus schema() {
-        return calciteSchema;
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized void onSchemaCreated(String schemaName) {
         igniteSchemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
         rebuild();
@@ -270,8 +265,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaPlus getDefaultSchema(String schema) {
-        return schema != null ? schema().getSubSchema(schema) : schema();
+    @Override public SchemaPlus schema(String schema) {
+        return schema != null ? calciteSchema.getSubSchema(schema) : calciteSchema;
     }
 
     /** */

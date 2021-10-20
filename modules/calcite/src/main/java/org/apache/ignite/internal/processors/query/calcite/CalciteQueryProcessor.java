@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine, QueryRegistry {
+public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine, QueryRegistry<Object[]> {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
@@ -176,7 +176,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final PrepareServiceImpl prepareSvc;
 
     /** */
-    private final ConcurrentMap<UUID, Query> runningQrys = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, Query<Object[]>> runningQrys = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -300,12 +300,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
         String sql, Object... params) throws IgniteSQLException {
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schemaHolder.getDefaultSchema(schemaName).getName(), sql));
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schemaHolder.schema(schemaName).getName(), sql));
 
         if (plan != null) {
             RootQuery<Object[]> qry = new RootQuery<>(
                 sql,
-                schemaHolder.getDefaultSchema(schemaName),
+                schemaHolder.schema(schemaName),
                 params,
                 qryCtx,
                 exchangeSvc,
@@ -327,7 +327,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         for (final SqlNode sqlNode: qryList) {
             RootQuery<Object[]> qry = new RootQuery<>(
                 sqlNode.toString(),
-                schemaHolder.getDefaultSchema(schemaName),
+                schemaHolder.schema(schemaName),
                 params,
                 qryCtx,
                 exchangeSvc,
@@ -377,14 +377,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public Query register(Query qry) {
-        Query old = runningQrys.putIfAbsent(qry.id(), qry);
+    @Override public Query<Object[]> register(Query<Object[]> qry) {
+        Query<Object[]> old = runningQrys.putIfAbsent(qry.id(), qry);
 
         return old != null ? old : qry;
     }
 
     /** {@inheritDoc} */
-    @Override public Query query(UUID id) {
+    @Override public Query<Object[]> query(UUID id) {
         return runningQrys.get(id);
     }
 
@@ -394,7 +394,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Query> runningQueries() {
+    @Override public Collection<Query<Object[]>> runningQueries() {
         return runningQrys.values();
     }
 
@@ -404,7 +404,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    public QueryRegistry queryRegistry() {
-        return this;
+    public <Row> QueryRegistry<Row> queryRegistry() {
+        return (QueryRegistry<Row>)this;
     }
 }

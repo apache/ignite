@@ -27,8 +27,5 @@ public interface SchemaHolder extends Service {
     /**
      * @return Schema.
      */
-    SchemaPlus schema();
-
-    /** */
-    public SchemaPlus getDefaultSchema(String schema);
+    SchemaPlus schema(String schema);
 }
