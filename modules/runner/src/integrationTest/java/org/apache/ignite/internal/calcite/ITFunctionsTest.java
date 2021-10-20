@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.function.LongFunction;
 
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
-import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
@@ -121,10 +122,19 @@ public class ITFunctionsTest extends AbstractBasicIntegrationTest {
 
         assertEquals(0, sql("SELECT * FROM table(system_range(null, 1))").size());
 
-        IgniteInternalException ex = assertThrows(IgniteInternalException.class,
+        IgniteException ex = assertThrows(IgniteException.class,
             () -> sql("SELECT * FROM table(system_range(1, 1, 0))"));
 
-        assertEquals("Increment can't be 0", ex.getMessage());
+        assertTrue(
+            ex.getCause() instanceof IllegalArgumentException,
+            LoggerMessageHelper.format(
+                "Expected cause is {}, but was {}",
+                IllegalArgumentException.class.getSimpleName(),
+                ex.getCause() == null ? null : ex.getCause().getClass().getSimpleName()
+            )
+        );
+
+        assertEquals("Increment can't be 0", ex.getCause().getMessage());
     }
 
     /** */

@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
@@ -46,7 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.LocalCache;
 import org.apache.ignite.internal.processors.query.calcite.util.Primitives;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,11 +57,11 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 /** */
 public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrapper<Row>>> {
     /** */
-    private static final LocalCache<Pair<RelDataType, RelDataType>, Function<Object, Object>> CACHE =
-        new LocalCache<>(AccumulatorsFactory::cast0);
+    private static final LoadingCache<Pair<RelDataType, RelDataType>, Function<Object, Object>> CACHE =
+        Caffeine.newBuilder().build(AccumulatorsFactory::cast0);
 
     /** */
-    public static interface CastFunction extends Function<Object, Object> {
+    public interface CastFunction extends Function<Object, Object> {
         @Override Object apply(Object o);
     }
 

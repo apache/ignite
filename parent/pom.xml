@@ -82,6 +82,7 @@
         <metrics.version>4.0.2</metrics.version>
         <jctools.version>3.3.0</jctools.version>
         <msgpack.version>0.8.21</msgpack.version>
+        <caffeine.version>3.0.4</caffeine.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -439,6 +440,12 @@
                 <groupId>org.msgpack</groupId>
                 <artifactId>jackson-dataformat-msgpack</artifactId>
                 <version>${msgpack.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
 
             <!-- Test dependencies -->

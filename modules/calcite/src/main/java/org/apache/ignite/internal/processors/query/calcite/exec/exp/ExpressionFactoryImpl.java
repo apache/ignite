@@ -24,11 +24,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.linq4j.function.Function1;
@@ -71,8 +73,14 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
  * Each expression compiles into a class and a wrapper over it is returned.
  */
 public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
-//    /** */
-//    private static final Map<String, Scalar> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
+    /** */
+    private static final int CACHE_SIZE = 1024;
+
+    /** */
+    private static final ConcurrentMap<String, Scalar> SCALAR_CACHE = Caffeine.newBuilder()
+        .maximumSize(CACHE_SIZE)
+        .<String, Scalar>build()
+        .asMap();
 
     /** */
     private final IgniteTypeFactory typeFactory;
@@ -240,7 +248,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** {@inheritDoc} */
     @Override public Scalar scalar(List<RexNode> nodes, RelDataType type) {
-        return compile(nodes, type);
+        return SCALAR_CACHE.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
     }
 
     /** */

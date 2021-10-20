@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -100,7 +102,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.LocalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteException;
 
@@ -118,13 +119,14 @@ class RelJson {
 
     /** */
     @SuppressWarnings("PublicInnerClass") @FunctionalInterface
-    public static interface RelFactory extends Function<RelInput, RelNode> {
+    public interface RelFactory extends Function<RelInput, RelNode> {
         /** {@inheritDoc} */
         @Override RelNode apply(RelInput input);
     }
 
     /** */
-    private static final LocalCache<String, RelFactory> FACTORIES_CACHE = new LocalCache<>(RelJson::relFactory);
+    private static final LoadingCache<String, RelFactory> FACTORIES_CACHE = Caffeine.newBuilder()
+        .build(RelJson::relFactory);
 
     /** */
     private static RelFactory relFactory(String typeName) {

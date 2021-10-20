@@ -30,7 +30,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
-import org.apache.ignite.internal.processors.query.calcite.prepare.DummyPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.table.event.TableEvent;
@@ -44,6 +45,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class SqlQueryProcessor implements QueryProcessor {
+    /** Size of the cache for query plans. */
+    public static final int PLAN_CACHE_SIZE = 1024;
+
     private volatile ExecutionService executionSrvc;
 
     private volatile MessageService msgSrvc;
@@ -56,6 +60,9 @@ public class SqlQueryProcessor implements QueryProcessor {
 
     /** Busy lock for stop synchronisation. */
     private final IgniteSpinBusyLock busyLock = new IgniteSpinBusyLock();
+
+    /** Keeps queries plans to avoid expensive planning of the same queries. */
+    private final QueryPlanCache planCache = new QueryPlanCacheImpl(PLAN_CACHE_SIZE);
 
     /** Event listeners to close. */
     private final List<Pair<TableEvent, EventListener>> evtLsnrs = new ArrayList<>();
@@ -78,12 +85,12 @@ public class SqlQueryProcessor implements QueryProcessor {
             taskExecutor
         );
 
-        SchemaHolderImpl schemaHolder = new SchemaHolderImpl();
+        SchemaHolderImpl schemaHolder = new SchemaHolderImpl(planCache::clear);
 
         executionSrvc = new ExecutionServiceImpl<>(
             clusterSrvc.topologyService(),
             msgSrvc,
-            new DummyPlanCache(),
+            planCache,
             schemaHolder,
             taskExecutor,
             ArrayRowHandler.INSTANCE
@@ -96,6 +103,7 @@ public class SqlQueryProcessor implements QueryProcessor {
         taskExecutor.start();
         msgSrvc.start();
         executionSrvc.start();
+        planCache.start();
     }
 
     /** */
@@ -110,10 +118,11 @@ public class SqlQueryProcessor implements QueryProcessor {
     @Override public void stop() throws Exception {
         busyLock.block();
 
-        List<AutoCloseable> toClose = new ArrayList<AutoCloseable>(Arrays.asList(
+        List<AutoCloseable> toClose = new ArrayList<>(Arrays.asList(
             executionSrvc::stop,
             msgSrvc::stop,
-            taskExecutor::stop
+            taskExecutor::stop,
+            planCache::stop
         ));
 
         toClose.addAll(evtLsnrs.stream()

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.calcite;
 
 import java.util.List;
 
-import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -113,17 +113,17 @@ public class ITAggregatesTest extends AbstractBasicIntegrationTest {
     @Test
     public void testMultipleRowsFromSingleAggr() {
         assertThrows(
-            IgniteInternalException.class,
+            IgniteException.class,
             () -> assertQuery("SELECT (SELECT name FROM person)").check()
         );
 
         assertThrows(
-            IgniteInternalException.class,
+            IgniteException.class,
             () -> assertQuery("SELECT t.id, (SELECT x FROM TABLE(system_range(1, 5))) FROM person t").check()
         );
 
         assertThrows(
-            IgniteInternalException.class,
+            IgniteException.class,
             () -> assertQuery("SELECT t.id, (SELECT x FROM " +
                 "TABLE(system_range(t.id, t.id + 1))) FROM person t").check()
         );

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.calcite;
 
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
-import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
@@ -140,17 +140,17 @@ public class ITProjectScanMergeRuleTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertThrows(
-            IgniteInternalException.class,
+            IgniteException.class,
             () -> assertQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 11)").check()
         );
 
         assertThrows(
-            IgniteInternalException.class,
+            IgniteException.class,
             () -> assertQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT 2 UNION ALL SELECT 1)").check()
         );
 
         assertThrows(
-            IgniteInternalException.class,
+            IgniteException.class,
             () -> assertQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT null UNION ALL SELECT 1)").check()
         );
     }

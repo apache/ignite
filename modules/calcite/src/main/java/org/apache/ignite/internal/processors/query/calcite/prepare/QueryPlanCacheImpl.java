@@ -17,16 +17,37 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
-public class DummyPlanCache implements QueryPlanCache {
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+/**
+ * Implementation of {@link QueryPlanCache} that simply wraps
+ * a {@link Caffeine} cache.
+ */
+public class QueryPlanCacheImpl implements QueryPlanCache {
+    private final ConcurrentMap<CacheKey, List<QueryPlan>> cache;
+
+    /**
+     * Creates a plan cache of provided size.
+     *
+     * @param cacheSize Desired cache size.
+     */
+    public QueryPlanCacheImpl(int cacheSize) {
+        cache = Caffeine.newBuilder()
+            .maximumSize(cacheSize)
+            .<CacheKey, List<QueryPlan>>build()
+            .asMap();
+    }
+
     /** {@inheritDoc} */
     @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
-        return factory.create(ctx);
+        return cache.computeIfAbsent(key, k -> factory.create(ctx));
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        // No-op.
+        cache.clear();
     }
 
     /** {@inheritDoc} */
