@@ -26,6 +26,16 @@ public class DummyPlanCache implements QueryPlanCache {
 
     /** {@inheritDoc} */
     @Override public void clear() {
+        // No-op.
+    }
 
+    /** {@inheritDoc} */
+    @Override public void start() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        clear();
     }
 }

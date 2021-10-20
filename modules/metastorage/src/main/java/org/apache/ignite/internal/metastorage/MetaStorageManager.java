@@ -278,7 +278,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public synchronized void deployWatches() throws NodeStoppingException {
         if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            throw new NodeStoppingException();
 
         try {
             var watch = watchAggregator.watch(
@@ -318,7 +318,7 @@ public class MetaStorageManager implements IgniteComponent {
         @NotNull WatchListener lsnr
     ) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return waitForReDeploy(watchAggregator.add(key, lsnr));
@@ -340,7 +340,7 @@ public class MetaStorageManager implements IgniteComponent {
         @NotNull WatchListener lsnr
     ) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return waitForReDeploy(watchAggregator.addPrefix(key, lsnr));
@@ -363,7 +363,7 @@ public class MetaStorageManager implements IgniteComponent {
         @NotNull WatchListener lsnr
     ) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return waitForReDeploy(watchAggregator.add(keys, lsnr));
@@ -387,7 +387,7 @@ public class MetaStorageManager implements IgniteComponent {
         @NotNull WatchListener lsnr
     ) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return waitForReDeploy(watchAggregator.add(from, to, lsnr));
@@ -405,7 +405,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public synchronized CompletableFuture<Void> unregisterWatch(long id) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             watchAggregator.cancel(id);
@@ -424,7 +424,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.get(key));
@@ -439,7 +439,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key, long revUpperBound) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.get(key, revUpperBound));
@@ -454,7 +454,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.getAll(keys));
@@ -469,7 +469,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys, long revUpperBound) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.getAll(keys, revUpperBound));
@@ -484,7 +484,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, byte[] val) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.put(key, val));
@@ -499,7 +499,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Entry> getAndPut(@NotNull ByteArray key, byte[] val) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.getAndPut(key, val));
@@ -514,7 +514,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.putAll(vals));
@@ -529,7 +529,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndPutAll(@NotNull Map<ByteArray, byte[]> vals) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.getAndPutAll(vals));
@@ -544,7 +544,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Void> remove(@NotNull ByteArray key) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.remove(key));
@@ -559,7 +559,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull ByteArray key) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.getAndRemove(key));
@@ -574,7 +574,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Void> removeAll(@NotNull Set<ByteArray> keys) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.removeAll(keys));
@@ -589,7 +589,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndRemoveAll(@NotNull Set<ByteArray> keys) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.getAndRemoveAll(keys));
@@ -610,7 +610,7 @@ public class MetaStorageManager implements IgniteComponent {
         @NotNull Operation failure
     ) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, success, failure));
@@ -629,7 +629,7 @@ public class MetaStorageManager implements IgniteComponent {
             @NotNull Collection<Operation> failure
     ) {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, success, failure));
@@ -644,7 +644,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) throws NodeStoppingException {
         if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            throw new NodeStoppingException();
 
         try {
             return new CursorWrapper<>(
@@ -671,7 +671,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull Cursor<Entry> rangeWithAppliedRevision(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) throws NodeStoppingException {
         if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            throw new NodeStoppingException();
 
         try {
             return new CursorWrapper<>(
@@ -688,7 +688,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) throws NodeStoppingException {
         if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            throw new NodeStoppingException();
 
         try {
             return new CursorWrapper<>(
@@ -716,7 +716,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull Cursor<Entry> prefixWithAppliedRevision(@NotNull ByteArray keyPrefix) throws NodeStoppingException {
         if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            throw new NodeStoppingException();
 
         try {
             var rangeCriterion = KeyCriterion.RangeCriterion.fromPrefixKey(keyPrefix);
@@ -761,7 +761,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull Cursor<Entry> prefix(@NotNull ByteArray keyPrefix, long revUpperBound) throws NodeStoppingException {
         if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            throw new NodeStoppingException();
 
         try {
             var rangeCriterion = KeyCriterion.RangeCriterion.fromPrefixKey(keyPrefix);
@@ -779,7 +779,7 @@ public class MetaStorageManager implements IgniteComponent {
      */
     public @NotNull CompletableFuture<Void> compact() {
         if (!busyLock.enterBusy())
-            return CompletableFuture.failedFuture(new NodeStoppingException("Operation has been cancelled (node is stopping)."));
+            return CompletableFuture.failedFuture(new NodeStoppingException());
 
         try {
             return metaStorageSvcFut.thenCompose(MetaStorageService::compact);
@@ -920,7 +920,7 @@ public class MetaStorageManager implements IgniteComponent {
             /** {@inheritDoc} */
         @Override public void close() throws Exception {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw new NodeStoppingException();
 
             try {
                 innerCursorFut.thenApply(cursor -> {

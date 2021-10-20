@@ -16,8 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService;
@@ -31,17 +35,15 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderIm
 import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
-import org.apache.ignite.internal.thread.NamedThreadFactory;
-import org.apache.ignite.internal.thread.StripedThreadPoolExecutor;
+import org.apache.ignite.internal.util.IgniteSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class SqlQueryProcessor implements QueryProcessor {
-    /** Default Ignite thread keep alive time. */
-    public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
-
     private volatile ExecutionService executionSrvc;
 
     private volatile MessageService msgSrvc;
@@ -51,6 +53,12 @@ public class SqlQueryProcessor implements QueryProcessor {
     private final ClusterService clusterSrvc;
 
     private final TableManager tableManager;
+
+    /** Busy lock for stop synchronisation. */
+    private final IgniteSpinBusyLock busyLock = new IgniteSpinBusyLock();
+
+    /** Event listeners to close. */
+    private final List<Pair<TableEvent, EventListener>> evtLsnrs = new ArrayList<>();
 
     public SqlQueryProcessor(
         ClusterService clusterSrvc,
@@ -62,17 +70,7 @@ public class SqlQueryProcessor implements QueryProcessor {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        String nodeName = clusterSrvc.localConfiguration().getName();
-
-        taskExecutor = new QueryTaskExecutorImpl(
-            new StripedThreadPoolExecutor(
-                4,
-                NamedThreadFactory.threadPrefix(nodeName, "calciteQry"),
-                null,
-                true,
-                DFLT_THREAD_KEEP_ALIVE_TIME
-            )
-        );
+        taskExecutor = new QueryTaskExecutorImpl(clusterSrvc.localConfiguration().getName());
 
         msgSrvc = new MessageServiceImpl(
             clusterSrvc.topologyService(),
@@ -91,20 +89,51 @@ public class SqlQueryProcessor implements QueryProcessor {
             ArrayRowHandler.INSTANCE
         );
 
-        tableManager.listen(TableEvent.CREATE, new TableCreatedListener(schemaHolder));
-        tableManager.listen(TableEvent.ALTER, new TableUpdatedListener(schemaHolder));
-        tableManager.listen(TableEvent.DROP, new TableDroppedListener(schemaHolder));
+        registerTableListener(TableEvent.CREATE, new TableCreatedListener(schemaHolder));
+        registerTableListener(TableEvent.ALTER, new TableUpdatedListener(schemaHolder));
+        registerTableListener(TableEvent.DROP, new TableDroppedListener(schemaHolder));
+
+        taskExecutor.start();
+        msgSrvc.start();
+        executionSrvc.start();
     }
 
+    /** */
+    private void registerTableListener(TableEvent evt, AbstractTableEventListener lsnr) {
+        evtLsnrs.add(Pair.of(evt, lsnr));
+
+        tableManager.listen(evt, lsnr);
+    }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws NodeStoppingException {
-        // TODO: IGNITE-15161 Implement component's stop.
+    @SuppressWarnings("unchecked")
+    @Override public void stop() throws Exception {
+        busyLock.block();
+
+        List<AutoCloseable> toClose = new ArrayList<AutoCloseable>(Arrays.asList(
+            executionSrvc::stop,
+            msgSrvc::stop,
+            taskExecutor::stop
+        ));
+
+        toClose.addAll(evtLsnrs.stream()
+            .map((p) -> (AutoCloseable)() -> tableManager.removeListener(p.left, p.right))
+            .collect(Collectors.toList()));
+
+        IgniteUtils.closeAll(toClose);
     }
 
     /** {@inheritDoc} */
     @Override public List<SqlCursor<List<?>>> query(String schemaName, String qry, Object... params) {
-        return executionSrvc.executeQuery(schemaName, qry, params);
+        if (!busyLock.enterBusy())
+            throw new IgniteException(new NodeStoppingException());
+
+        try {
+            return executionSrvc.executeQuery(schemaName, qry, params);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     private abstract static class AbstractTableEventListener implements EventListener<TableEventParameters> {
@@ -118,7 +147,7 @@ public class SqlQueryProcessor implements QueryProcessor {
 
         /** {@inheritDoc} */
         @Override public void remove(@NotNull Throwable exception) {
-            throw new IllegalStateException();
+            // No-op.
         }
     }
 

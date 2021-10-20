@@ -17,31 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-
 /**
- *
+ * SQL query engine service life cycle mark interface.
  */
-public interface QueryTaskExecutor extends LifecycleAware {
+public interface LifecycleAware {
     /**
-     * Executes a query task in a thread, responsible for particular query fragment.
-     *
-     * @param qryId Query ID.
-     * @param fragmentId Fragment ID.
-     * @param qryTask Query task.
+     * Initialize the service.
      */
-    void execute(UUID qryId, long fragmentId, Runnable qryTask);
+    void start();
 
     /**
-     * Returns a new CompletableFuture that is asynchronously completed
-     * by a task running in the given executor after it runs the given
-     * action.
+     * Stop the service.
      *
-     * @param qryId Id of the query this task created for.
-     * @param fragmentId Id of the particular fragment this task created for.
-     * @param qryTask The task to submit.
-     * @return the new CompletableFuture
+     * @throws Exception on eny error during the stopping.
      */
-    CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask);
+    void stop() throws Exception;
 }

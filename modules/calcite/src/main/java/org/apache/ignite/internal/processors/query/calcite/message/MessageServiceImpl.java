@@ -54,7 +54,7 @@ public class MessageServiceImpl implements MessageService {
     private final QueryTaskExecutor taskExecutor;
 
     /** */
-    private Map<Short, MessageListener> lsnrs;
+    private volatile Map<Short, MessageListener> lsnrs;
 
     /** */
     public MessageServiceImpl(
@@ -67,7 +67,10 @@ public class MessageServiceImpl implements MessageService {
         this.taskExecutor = taskExecutor;
 
         locNodeId = topSrvc.localMember().id();
+    }
 
+    /** {@inheritDoc} */
+    @Override public void start() {
         messagingSrvc.addMessageHandler(SqlQueryMessageGroup.class, this::onMessage);
     }
 
@@ -147,5 +150,11 @@ public class MessageServiceImpl implements MessageService {
         );
 
         lsnr.onMessage(nodeId, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        if (lsnrs != null)
+            lsnrs.clear();
     }
 }

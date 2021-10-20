@@ -99,7 +99,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         lock.lock();
         try {
-            if (waiting != -1)
+            if (waiting != -1 || !outBuff.isEmpty())
                 ex.compareAndSet(null, new IgniteException("Query was cancelled"));
 
             closed = true; // an exception has to be set first to get right check order
@@ -229,7 +229,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                     outBuff = tmp;
                 }
 
-                if (waiting == -1)
+                if (waiting == -1 && outBuff.isEmpty())
                     close();
                 else if (inBuff.isEmpty() && waiting == 0) {
                     int req = waiting = inBufSize;
@@ -259,7 +259,10 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         if (e == null)
             return;
 
-        throw new IgniteInternalException(e);
+        if (e instanceof IgniteException)
+            throw (IgniteException)e;
+        else
+            throw new IgniteException("An error occurred while query executing.", e);
 // TODO: rework with SQL error code
 //        if (e instanceof IgniteSQLException)
 //            throw (IgniteSQLException)e;

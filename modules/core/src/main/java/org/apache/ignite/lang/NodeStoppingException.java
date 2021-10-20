@@ -30,7 +30,7 @@ public class NodeStoppingException extends IgniteInternalCheckedException {
      * Creates an empty node stopping exception.
      */
     public NodeStoppingException() {
-        super("Node is stopping.");
+        super("Operation has been cancelled (node is stopping).");
     }
 
     /**

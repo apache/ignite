@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import org.apache.ignite.internal.processors.query.calcite.exec.LifecycleAware;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.network.NetworkMessage;
 
 /**
  *
  */
-public interface MessageService {
+public interface MessageService extends LifecycleAware {
     /**
      * Sends a message to given node.
      *

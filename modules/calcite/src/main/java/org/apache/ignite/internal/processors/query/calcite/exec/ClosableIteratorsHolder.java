@@ -26,12 +26,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.thread.IgniteThread;
 import org.apache.ignite.lang.IgniteLogger;
 
 /**
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ClosableIteratorsHolder {
+public class ClosableIteratorsHolder implements LifecycleAware {
+    /** */
+    private final String nodeName;
+
     /** */
     private final ReferenceQueue refQueue;
 
@@ -45,14 +49,22 @@ public class ClosableIteratorsHolder {
     private volatile boolean stopped;
 
     /** */
-    private Thread cleanWorker;
+    private volatile IgniteThread cleanWorker;
 
     /** */
-    public ClosableIteratorsHolder(IgniteLogger log) {
+    public ClosableIteratorsHolder(String nodeName, IgniteLogger log) {
+        this.nodeName = nodeName;
         this.log = log;
 
         refQueue = new ReferenceQueue<>();
         refMap = new ConcurrentHashMap<>();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        cleanWorker = new IgniteThread(nodeName, "calciteIteratorsCleanWorker", () -> cleanUp(true));
+        cleanWorker.setDaemon(true);
+        cleanWorker.start();
     }
 
     /**
@@ -63,24 +75,6 @@ public class ClosableIteratorsHolder {
         cleanUp(false);
 
         return new DelegatingIterator<>(src);
-    }
-
-    /** */
-    public void init() {
-        cleanWorker = new Thread(null, () -> cleanUp(true), "calciteIteratorsCleanWorker");
-        cleanWorker.setDaemon(true);
-        cleanWorker.start();
-    }
-
-    /** */
-    public void tearDown() {
-        stopped = true;
-        refMap.clear();
-
-        Thread t = cleanWorker;
-
-        if (t != null)
-            t.interrupt();
     }
 
     /** */
@@ -105,6 +99,20 @@ public class ClosableIteratorsHolder {
             return null;
 
         return new CloseableReference(referent, resource);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        stopped = true;
+
+        refMap.values().forEach(o -> Commons.close(o, log));
+
+        refMap.clear();
+
+        IgniteThread t = cleanWorker;
+
+        if (t != null)
+            t.interrupt();
     }
 
     /** */

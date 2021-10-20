@@ -117,6 +117,9 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
     private static final SqlQueryMessagesFactory FACTORY = new SqlQueryMessagesFactory();
 
     /** */
+    private final TopologyService topSrvc;
+
+    /** */
     private final MessageService msgSrvc;
 
     /** */
@@ -163,6 +166,7 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
         QueryTaskExecutor taskExecutor,
         RowHandler<Row> handler
     ) {
+        this.topSrvc = topSrvc;
         this.handler = handler;
         this.msgSrvc = msgSrvc;
         this.schemaHolder = schemaHolder;
@@ -172,24 +176,25 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
         qryPlanCache = planCache;
         running = new ConcurrentHashMap<>();
         ddlConverter = new DdlSqlToCommandConverter();
-        iteratorsHolder = new ClosableIteratorsHolder(LOG);
+        iteratorsHolder = new ClosableIteratorsHolder(topSrvc.localMember().name(), LOG);
         mailboxRegistry = new MailboxRegistryImpl(topSrvc);
         exchangeSrvc = new ExchangeServiceImpl(taskExecutor, mailboxRegistry, msgSrvc);
         mappingSrvc = new MappingServiceImpl(topSrvc);
         // TODO: fix this
         affSrvc = cacheId -> Objects::hashCode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        iteratorsHolder.start();
+        mailboxRegistry.start();
+        exchangeSrvc.start();
 
         topSrvc.addEventHandler(new NodeLeaveHandler(this::onNodeLeft));
 
-        init();
-    }
-
-    private void init() {
         msgSrvc.register((n, m) -> onMessage(n, (QueryStartRequest) m), SqlQueryMessageGroup.QUERY_START_REQUEST);
         msgSrvc.register((n, m) -> onMessage(n, (QueryStartResponse) m), SqlQueryMessageGroup.QUERY_START_RESPONSE);
         msgSrvc.register((n, m) -> onMessage(n, (ErrorMessage) m), SqlQueryMessageGroup.ERROR_MESSAGE);
-
-        iteratorsHolder.init();
     }
 
     /** {@inheritDoc} */
@@ -664,6 +669,12 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(node.id()));
     }
 
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws Exception {
+        IgniteUtils.closeAll(qryPlanCache::stop, iteratorsHolder::stop, mailboxRegistry::stop, exchangeSrvc::stop);
+    }
+
     /** */
     private enum QueryState {
         /** */
@@ -785,7 +796,7 @@ public class ExecutionServiceImpl<Row> implements ExecutionService {
             }
 
             if (state0 == QueryState.CLOSED) {
-                // 2) unregister runing query
+                // 2) unregister running query
                 running.remove(ctx.queryId());
 
                 IgniteInternalException wrpEx = null;

@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDesc
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
-import org.apache.ignite.internal.thread.StripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,21 +50,14 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
     /** */
     @BeforeEach
     public void beforeTest() {
-        taskExecutor = new QueryTaskExecutorImpl(
-            new StripedThreadPoolExecutor(
-                4,
-                "calciteQry",
-                this::handle,
-                true,
-                60_000L
-            )
-        );
+        taskExecutor = new QueryTaskExecutorImpl("no_node");
+        taskExecutor.start();
     }
 
     /** */
     @AfterEach
     public void afterTest() {
-        taskExecutor.tearDown();
+        taskExecutor.stop();
 
         if (lastE != null)
             throw new AssertionError(lastE);

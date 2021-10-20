@@ -90,7 +90,7 @@ public class NamedThreadFactory implements ThreadFactory {
      * Create prefix for thread name.
      */
     public static String threadPrefix(String nodeName, String poolName) {
-        return "%" + nodeName + "%" + poolName + "-";
+        return IgniteThread.threadPrefix(nodeName, poolName);
     }
 
     /**

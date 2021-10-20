@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
 import org.apache.ignite.internal.manager.IgniteComponent;
+import org.apache.ignite.lang.IgniteException;
 
 /**
  * QueryProcessor interface.
@@ -31,6 +32,8 @@ public interface QueryProcessor extends IgniteComponent {
      * @param qry Sql query.
      * @param params Query parameters.
      * @return List of sql cursors.
+     *
+     * @throws IgniteException in case of an error.
      * */
     List<SqlCursor<List<?>>> query(String schemaName, String qry, Object... params);
 }
