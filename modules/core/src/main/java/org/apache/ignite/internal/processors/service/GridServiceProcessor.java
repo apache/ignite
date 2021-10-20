@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -1022,7 +1023,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout)
+        Supplier<Map<String, Object>> attrSupplier, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -1043,7 +1044,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, attrSupplier).proxy();
     }
 
     /**

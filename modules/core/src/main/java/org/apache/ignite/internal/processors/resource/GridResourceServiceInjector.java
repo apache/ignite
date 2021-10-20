@@ -18,23 +18,28 @@
 package org.apache.ignite.internal.processors.resource;
 
 import java.util.Collection;
-import org.apache.ignite.Ignite;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.service.ServiceProxyContextImpl;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceProxyContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid service injector.
  */
 public class GridResourceServiceInjector extends GridResourceBasicInjector<Collection<Service>> {
     /** */
-    private Ignite ignite;
+    private IgniteEx ignite;
 
     /**
      * @param ignite Grid.
      */
-    public GridResourceServiceInjector(Ignite ignite) {
+    public GridResourceServiceInjector(IgniteEx ignite) {
         super(null);
 
         this.ignite = ignite;
@@ -43,16 +48,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        ServiceResource ann = (ServiceResource)field.getAnnotation();
-
-        Class svcItf = ann.proxyInterface();
-
-        Object svc;
-
-        if (svcItf == Void.class)
-            svc = ignite.services().service(ann.serviceName());
-        else
-            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+        Object svc = getService((ServiceResource)field.getAnnotation());
 
         if (svc != null)
             GridResourceUtils.inject(field.getField(), target, svc);
@@ -63,22 +59,51 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         throws IgniteCheckedException {
         ServiceResource ann = (ServiceResource)mtd.getAnnotation();
 
-        Class svcItf = ann.proxyInterface();
+        if (mtd.getMethod().getParameterTypes().length != 1) {
+            throw new IgniteCheckedException("Setter must have single argument [service=" +
+                ann.serviceName() + ", setter=" + mtd + ']');
+        }
 
-        Object svc;
-
-        if (svcItf == Void.class)
-            svc = ignite.services().service(ann.serviceName());
-        else
-            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
-
-        Class<?>[] types = mtd.getMethod().getParameterTypes();
-
-        if (types.length != 1)
-            throw new IgniteCheckedException("Setter does not have single parameter of required type [type=" +
-                svc.getClass().getName() + ", setter=" + mtd + ']');
+        Object svc = getService(ann);
 
         if (svc != null)
             GridResourceUtils.inject(mtd.getMethod(), target, svc);
+    }
+
+    /**
+     * @param ann Service resource annotation.
+     * @return Proxy for the service if a proxy interface was specified, otherwise the service itself or @code null}
+     *         if the service is not deployed locally.
+     */
+    private @Nullable <T> T getService(ServiceResource ann) {
+        if (ann.proxyInterface() == Void.class)
+            return ignite.services().service(ann.serviceName());
+
+        ignite.context().gateway().readLock();
+
+        try {
+            return ignite.context().service().serviceProxy(
+                ignite.services().clusterGroup(),
+                ann.serviceName(),
+                (Class<? super T>)ann.proxyInterface(),
+                ann.proxySticky(),
+                ann.forwardRequestAttributes() ? currentThreadRequestAttributesProvider() : null,
+                0
+            );
+        }
+        finally {
+            ignite.context().gateway().readUnlock();
+        }
+    }
+
+    /**
+     * @return Thread local service request attributes provider.
+     */
+    private Supplier<Map<String, Object>> currentThreadRequestAttributesProvider() {
+        return () -> {
+            Map<String, Object> reqAttrs = ((ServiceProxyContextImpl)ServiceProxyContext.current()).values();
+
+            return reqAttrs.isEmpty() ? null : reqAttrs;
+        };
     }
 }

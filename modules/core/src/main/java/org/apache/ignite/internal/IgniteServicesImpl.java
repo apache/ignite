@@ -24,11 +24,13 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.processors.service.ServiceProxyContextImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,6 +38,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.services.ServiceProxyContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -374,17 +377,25 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
+        throws IgniteException {
+        return (T) serviceProxy(name, svcItf, sticky, null, timeout);
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
-        final long timeout) throws IgniteException {
+        final ServiceProxyContext opCtx, final long timeout) throws IgniteException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
+        Map<String, Object> opCtx0 = opCtx != null ? ((ServiceProxyContextImpl)opCtx).values() : null;
+
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, opCtx0 != null ? () -> opCtx0 : null, timeout);
         }
         finally {
             unguard();

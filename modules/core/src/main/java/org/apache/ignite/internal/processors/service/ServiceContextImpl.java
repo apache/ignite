@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -65,6 +66,9 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Cancelled flag. */
     private volatile boolean isCancelled;
+
+    /** Service operation context. */
+    private final ThreadLocal<Map<String, Object>> opCtx = new ThreadLocal<>();
 
     /**
      * @param name Service name.
