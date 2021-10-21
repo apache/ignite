@@ -150,7 +150,7 @@ public class RootQuery<RowT> extends Query<RowT> {
      * Starts maping phase for the query.
      */
     public void mapping() {
-        synchronized (this) {
+        synchronized (mux) {
             if (state == QueryState.CLOSED) {
                 throw new IgniteSQLException(
                     "The query was cancelled while executing.",
@@ -166,7 +166,7 @@ public class RootQuery<RowT> extends Query<RowT> {
      * Starts execution phase for the query and setup remote fragments.
      */
     public void run(ExecutionContext<RowT> ctx, MultiStepPlan plan, Node<RowT> root) {
-        synchronized (this) {
+        synchronized (mux) {
             if (state == QueryState.CLOSED) {
                 throw new IgniteSQLException(
                     "The query was cancelled while executing.",
@@ -202,7 +202,7 @@ public class RootQuery<RowT> extends Query<RowT> {
     @Override protected void tryClose() {
         QueryState state0 = null;
 
-        synchronized (this) {
+        synchronized (mux) {
             if (state == QueryState.CLOSED)
                 return;
 
@@ -256,7 +256,7 @@ public class RootQuery<RowT> extends Query<RowT> {
 
     /** */
     public PlanningContext planningContext() {
-        synchronized (this) {
+        synchronized (mux) {
             if (state == QueryState.CLOSED) {
                 throw new IgniteSQLException(
                     "The query was cancelled while executing.",
@@ -294,7 +294,7 @@ public class RootQuery<RowT> extends Query<RowT> {
     public void onNodeLeft(UUID nodeId) {
         List<RemoteFragmentKey> fragments = null;
 
-        synchronized (this) {
+        synchronized (mux) {
             fragments = waiting.stream().filter(f -> f.nodeId().equals(nodeId)).collect(Collectors.toList());
         }
 
@@ -315,7 +315,7 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** */
     private void onResponse(RemoteFragmentKey fragment, Throwable error) {
         QueryState state;
-        synchronized (this) {
+        synchronized (mux) {
             waiting.remove(fragment);
 
             state = this.state;

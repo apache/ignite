@@ -48,6 +48,9 @@ public class Query<RowT> implements RunningQuery {
     private final UUID id;
 
     /** */
+    protected final Object mux = new Object();
+
+    /** */
     protected final Set<RunningFragment<RowT>> fragments;
 
     /** */
@@ -108,7 +111,7 @@ public class Query<RowT> implements RunningQuery {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        synchronized (this) {
+        synchronized (mux) {
             if (state == QueryState.CLOSED)
                 return;
 
@@ -126,9 +129,9 @@ public class Query<RowT> implements RunningQuery {
     }
 
     /** */
-    public void addFragment(RunningFragment f) {
+    public void addFragment(RunningFragment<RowT> f) {
         if (state == QueryState.INIT) {
-            synchronized (this) {
+            synchronized (mux) {
                 if (state == QueryState.INIT)
                     state = QueryState.EXECUTION;
             }
