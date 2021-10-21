@@ -205,7 +205,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /**
      * @return Keys.
      */
-    public Collection<KeyCacheObject> keys(){
+    public Collection<KeyCacheObject> keys() {
         return keys;
     }
 

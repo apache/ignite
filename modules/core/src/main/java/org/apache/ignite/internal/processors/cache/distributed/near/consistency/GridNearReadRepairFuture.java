@@ -76,7 +76,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /** {@inheritDoc} */
     @Override protected void reduce() {
         Map<KeyCacheObject, T2<EntryGetResult, Object>> newestMap = new HashMap<>(); // Newest entries (by version).
-        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(); // Newest entries required to be committed to fix consistency violations.
+        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(); // Newest entries required to be re-committed.
 
         Set<KeyCacheObject> nullKeys = new HashSet<>();
 
