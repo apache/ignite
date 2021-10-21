@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
-import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHelper.optimize;
+import static org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper.optimize;
 
 /**
  *
