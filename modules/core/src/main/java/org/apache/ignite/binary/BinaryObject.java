@@ -186,8 +186,8 @@ public interface BinaryObject extends Serializable, Cloneable {
     public String enumName() throws BinaryObjectException;
 
     /**
-     * Get the size of the object.
-     * @return Size of the object.
+     * Get the size of the object
+     * @return Size of the object
      */
     public int size();
 }

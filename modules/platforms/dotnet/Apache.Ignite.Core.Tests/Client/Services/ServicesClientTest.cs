@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             // Array types are not distinguished.
             Assert.AreEqual(9, svc.Foo(new Object[] {new Person(0)}));
-            // TODO: Fix Service method resolution in .Net foo(object[]) and foo(Person[]) can't be
+            // TODO: IGNITE-14299
             //Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
         }
 
