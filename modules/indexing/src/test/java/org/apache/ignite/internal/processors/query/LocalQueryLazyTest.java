@@ -229,17 +229,4 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
             .setSchema("TEST")
             .setArgs(args), false);
     }
-
-    /**
-     * @param ign Node.
-     * @param sql SQL query.
-     * @param args Query parameters.
-     * @return Results cursor.
-     */
-    private List<FieldsQueryCursor<List<?>>> sqlMs(IgniteEx ign, String sql, Object... args) {
-        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
-            .setLazy(true)
-            .setSchema("TEST")
-            .setArgs(args), false, false);
-    }
 }

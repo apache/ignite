@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.type.RelDataType;
@@ -499,6 +500,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         RootQuery<Row> qry,
         MultiStepPlan plan
     ) {
+        qry.mapping();
+
         MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion());
         plan.init(mappingSvc, mapCtx);
 
@@ -624,9 +627,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            Query<Row> qryNew = new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id()));
-
-            Query<Row> qry = qryReg.register(qryNew);
+            Query<Row> qry = qryReg.register(new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id())));
 
             final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 

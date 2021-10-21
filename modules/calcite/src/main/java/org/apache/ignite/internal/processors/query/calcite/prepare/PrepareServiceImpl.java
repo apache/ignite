@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteContextException;
@@ -48,10 +49,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHe
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class PrepareServiceImpl extends AbstractService {
-    /** */
-    private static final int MAX_PREPARE_THREADS = 4;
-
+public class PrepareServiceImpl extends AbstractService implements PrepareService {
     /** */
     private final DdlSqlToCommandConverter ddlConverter;
 
@@ -69,8 +67,8 @@ public class PrepareServiceImpl extends AbstractService {
         super.onStart(ctx);
     }
 
-    /** */
-    public QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) {
+    /** {@inheritDoc} */
+    @Override public QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) {
         try {
             assert single(sqlNode);
 

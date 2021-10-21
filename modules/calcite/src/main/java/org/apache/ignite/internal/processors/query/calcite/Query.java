@@ -41,7 +41,9 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 
 /** */
 public class Query<Row> implements RunningQuery {
-    public static final CompletableFuture[] COMPLETABLE_FUTURES_EMPTY_ARRAY = new CompletableFuture[0];
+    /** Completable futures empty array. */
+    private static final CompletableFuture<?>[] COMPLETABLE_FUTURES_EMPTY_ARRAY = new CompletableFuture<?>[0];
+
     /** */
     private final UUID id;
 

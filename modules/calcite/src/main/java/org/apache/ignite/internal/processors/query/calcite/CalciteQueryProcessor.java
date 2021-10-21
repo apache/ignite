@@ -22,8 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
@@ -33,6 +32,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine, QueryRegistry<Object[]> {
+public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
@@ -176,7 +176,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final PrepareServiceImpl prepareSvc;
 
     /** */
-    private final ConcurrentMap<UUID, Query<Object[]>> runningQrys = new ConcurrentHashMap<>();
+    private final QueryRegistry<Object[]> qryReg;
 
     /**
      * @param ctx Kernal context.
@@ -195,6 +195,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
+        qryReg = new QueryRegistryImpl<>(ctx.log(QueryRegistry.class));
     }
 
     /**
@@ -276,13 +277,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             taskExecutor,
             mappingSvc,
             qryPlanCache,
-            exchangeSvc
+            exchangeSvc,
+            qryReg
         );
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         onStop(
+            qryReg,
             executionSvc,
             mailboxRegistry,
             partSvc,
@@ -293,32 +296,42 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             qryPlanCache,
             exchangeSvc
         );
-
-        runningQrys.clear();
     }
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
         String sql, Object... params) throws IgniteSQLException {
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schemaHolder.schema(schemaName).getName(), sql));
+        SchemaPlus schema = schemaHolder.schema(schemaName);
+
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
 
         if (plan != null) {
             RootQuery<Object[]> qry = new RootQuery<>(
                 sql,
-                schemaHolder.schema(schemaName),
+                schema,
                 params,
                 qryCtx,
                 exchangeSvc,
-                (q) -> unregister(q.id()),
+                (q) -> qryReg.unregister(q.id()),
                 log
             );
 
-            register(qry);
+            qryReg.register(qry);
 
-            return Collections.singletonList(executionSvc.executePlan(
-                qry,
-                plan
-            ));
+            try {
+                return Collections.singletonList(executionSvc.executePlan(
+                    qry,
+                    plan
+                ));
+            }
+                catch (Exception e) {
+                qryReg.unregister(qry.id());
+
+                if (qry.isCancelled())
+                    throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
+                else
+                    throw e;
+            }
         }
 
         SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
@@ -327,15 +340,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         for (final SqlNode sqlNode: qryList) {
             RootQuery<Object[]> qry = new RootQuery<>(
                 sqlNode.toString(),
-                schemaHolder.schema(schemaName),
+                schema,
                 params,
                 qryCtx,
                 exchangeSvc,
-                (q) -> unregister(q.id()),
+                (q) -> qryReg.unregister(q.id()),
                 log
             );
 
-            register(qry);
+            qryReg.register(qry);
             try {
                 if (qryList.size() == 1) {
                     plan = queryPlanCache().queryPlan(
@@ -348,7 +361,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 cursors.add(executionSvc.executePlan(qry, plan));
             }
             catch (Exception e) {
-                unregister(qry.id());
+                qryReg.unregister(qry.id());
 
                 if (qry.isCancelled())
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
@@ -377,34 +390,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public Query<Object[]> register(Query<Object[]> qry) {
-        Query<Object[]> old = runningQrys.putIfAbsent(qry.id(), qry);
-
-        return old != null ? old : qry;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Query<Object[]> query(UUID id) {
-        return runningQrys.get(id);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unregister(UUID id) {
-        runningQrys.remove(id);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Query<Object[]>> runningQueries() {
-        return runningQrys.values();
-    }
-
-    /** {@inheritDoc} */
     @Override public RunningQuery runningQuery(UUID id) {
-        return runningQrys.get(id);
+        return qryReg.query(id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<? extends RunningQuery> runningQueries() {
+        return qryReg.runningQueries();
     }
 
     /** */
     public <Row> QueryRegistry<Row> queryRegistry() {
-        return (QueryRegistry<Row>)this;
+        return (QueryRegistry<Row>)qryReg;
     }
 }

@@ -15,40 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.Collection;
-import java.util.UUID;
-
+import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
- * Registry of the running queries.
+ *
  */
-public interface QueryRegistry<Row> extends Service {
+public interface PrepareService extends Service {
     /**
-     * Register the query or return the exists query with the same identifier.
-     *
-     * @param qry Query to register.
-     * @return registered query.
+     * Prepare query plan.
      */
-    Query<Row> register(Query<Row> qry);
-
-    /**
-     * Lookup query by identifier.
-     *
-     * @param id Query identified.
-     * @return registered query or {@code null} if the query with specified identifier isn't found.
-     */
-    Query<Row> query(UUID id);
-
-    /**
-     * Unregister query by identifier.
-     *
-     * @param id Query identifier.
-     */
-    void unregister(UUID id);
-
-    /** */
-    Collection<Query<Row>> runningQueries();
+    QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx);
 }

@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
@@ -52,7 +53,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
-/** */
+/**
+ * The RootQuery is created on the qury initiator (originator) node as the first step of a query run;
+ * It contains the information about query state, contexts, remote fragments;
+ * It provides 'cancel' functionality for running query like a base query class.
+ */
 public class RootQuery<Row> extends Query<Row> {
     /** SQL query. */
     private final String sql;
@@ -91,7 +96,7 @@ public class RootQuery<Row> extends Query<Row> {
         Consumer<Query> unregister,
         IgniteLogger log
     ) {
-        super(UUID.randomUUID(), qryCtx != null? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
+        super(UUID.randomUUID(), qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
 
         this.sql = sql;
         this.params = params;
@@ -114,9 +119,16 @@ public class RootQuery<Row> extends Query<Row> {
             .build();
     }
 
-    /** */
+    /**
+     * Creates the new root that inherits the query parameters from {@code this} query.
+     * Is used to execute DML query immediately after (inside) DDL.
+     * e.g.:
+     *      CREATE TABLE MY_TABLE AS SELECT ... FROM ...;
+     *
+     * @param schema new schema.
+     */
     public RootQuery<Row> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, null, exch, unregister, log);
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log);
     }
 
     /** */
@@ -134,7 +146,25 @@ public class RootQuery<Row> extends Query<Row> {
         return params;
     }
 
-    /** */
+    /**
+     * Starts maping phase for the query.
+     */
+    public void mapping() {
+        synchronized (this) {
+            if (state == QueryState.CLOSED) {
+                throw new IgniteSQLException(
+                    "The query was cancelled while executing.",
+                    IgniteQueryErrorCode.QUERY_CANCELED
+                );
+            }
+
+            state = QueryState.MAPPING;
+        }
+    }
+
+    /**
+     * Starts execution phase for the query and setup remote fragments.
+     */
     public void run(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
         synchronized (this) {
             if (state == QueryState.CLOSED) {
@@ -176,7 +206,7 @@ public class RootQuery<Row> extends Query<Row> {
             if (state == QueryState.CLOSED)
                 return;
 
-            if (state == QueryState.PLANNING) {
+            if (state == QueryState.INIT || state == QueryState.PLANNING) {
                 state = QueryState.CLOSED;
 
                 return;
@@ -226,24 +256,33 @@ public class RootQuery<Row> extends Query<Row> {
 
     /** */
     public PlanningContext planningContext() {
-        if (pctx == null) {
-            state = QueryState.PLANNING;
-
-            pctx = PlanningContext.builder()
-                .parentContext(ctx)
-                .query(sql)
-                .parameters(params)
-                .build();
-
-            try {
-                cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
+        synchronized (this) {
+            if (state == QueryState.CLOSED) {
+                throw new IgniteSQLException(
+                    "The query was cancelled while executing.",
+                    IgniteQueryErrorCode.QUERY_CANCELED
+                );
             }
-            catch (QueryCancelledException e) {
-                throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED, e);
+
+            if (pctx == null) {
+                state = QueryState.PLANNING;
+
+                pctx = PlanningContext.builder()
+                    .parentContext(ctx)
+                    .query(sql)
+                    .parameters(params)
+                    .build();
+
+                try {
+                    cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
+                }
+                catch (QueryCancelledException e) {
+                    throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED, e);
+                }
             }
+
+            return pctx;
         }
-
-        return pctx;
     }
 
     /** */
@@ -256,15 +295,7 @@ public class RootQuery<Row> extends Query<Row> {
         List<RemoteFragmentKey> fragments = null;
 
         synchronized (this) {
-            for (RemoteFragmentKey fragment : waiting) {
-                if (!fragment.nodeId().equals(nodeId))
-                    continue;
-
-                if (fragments == null)
-                    fragments = new ArrayList<>();
-
-                fragments.add(fragment);
-            }
+            fragments = waiting.stream().filter(f -> f.nodeId().equals(nodeId)).collect(Collectors.toList());
         }
 
         if (!F.isEmpty(fragments)) {
@@ -286,6 +317,7 @@ public class RootQuery<Row> extends Query<Row> {
         QueryState state;
         synchronized (this) {
             waiting.remove(fragment);
+
             state = this.state;
         }
 
