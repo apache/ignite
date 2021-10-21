@@ -340,7 +340,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         for (final SqlNode sqlNode: qryList) {
             RootQuery<Object[]> qry = new RootQuery<>(
                 sqlNode.toString(),
-                schema,
+                schemaHolder.schema(schemaName), // Update schema for each query in multiple statements.
                 params,
                 qryCtx,
                 exchangeSvc,
@@ -359,9 +359,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
                 cursors.add(executionSvc.executePlan(qry, plan));
-
-                // Update schema for the next query in muliple statements.
-                schema = schemaHolder.schema(schemaName);
             }
             catch (Exception e) {
                 qryReg.unregister(qry.id());
