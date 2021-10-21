@@ -306,7 +306,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
     };
 
-    /** Custom serializer for {@link BinaryArray} */
+    /** Custom serializer for {@link BinaryArray}. */
     private static final JsonSerializer<BinaryArray> IGNITE_BINARY_ARRAY_SERIALIZER = new JsonSerializer<BinaryArray>() {
         /** {@inheritDoc} */
         @Override public void serialize(BinaryArray val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
