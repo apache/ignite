@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /** */
-public class Query<Row> implements RunningQuery {
+public class Query<RowT> implements RunningQuery {
     /** Completable futures empty array. */
     private static final CompletableFuture<?>[] COMPLETABLE_FUTURES_EMPTY_ARRAY = new CompletableFuture<?>[0];
 
@@ -48,19 +48,19 @@ public class Query<Row> implements RunningQuery {
     private final UUID id;
 
     /** */
-    protected final Set<RunningFragment<Row>> fragments;
+    protected final Set<RunningFragment<RowT>> fragments;
 
     /** */
     protected final GridQueryCancel cancel;
 
     /** */
-    protected final Consumer<Query> unregister;
+    protected final Consumer<Query<RowT>> unregister;
 
     /** */
     protected volatile QueryState state = QueryState.INIT;
 
     /** */
-    public Query(UUID id, GridQueryCancel cancel, Consumer<Query> unregister) {
+    public Query(UUID id, GridQueryCancel cancel, Consumer<Query<RowT>> unregister) {
         this.id = id;
         this.unregister = unregister;
 
@@ -95,7 +95,7 @@ public class Query<Row> implements RunningQuery {
     /** */
     protected void tryClose() {
         List<CompletableFuture<?>> futs = new ArrayList<>();
-        for (RunningFragment<Row> frag : fragments) {
+        for (RunningFragment<RowT> frag : fragments) {
             CompletableFuture<?> f = frag.context().submit(frag.root()::close, frag.root()::onError);
 
             CompletableFuture<?> fCancel = f.thenApply((u) -> frag.context().submit(frag.context()::cancel, frag.root()::onError));
@@ -116,7 +116,7 @@ public class Query<Row> implements RunningQuery {
                 state = QueryState.CLOSED;
         }
 
-        for (RunningFragment<Row> frag : fragments) {
+        for (RunningFragment<RowT> frag : fragments) {
             frag.context().execute(()-> {
                 frag.root().onError(new ExecutionCancelledException());
             }, frag.root()::onError);

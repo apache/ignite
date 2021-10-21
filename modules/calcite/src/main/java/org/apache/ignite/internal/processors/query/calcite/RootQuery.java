@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
  * It contains the information about query state, contexts, remote fragments;
  * It provides 'cancel' functionality for running query like a base query class.
  */
-public class RootQuery<Row> extends Query<Row> {
+public class RootQuery<RowT> extends Query<RowT> {
     /** SQL query. */
     private final String sql;
 
@@ -75,7 +75,7 @@ public class RootQuery<Row> extends Query<Row> {
     private final Set<RemoteFragmentKey> waiting;
 
     /** */
-    private volatile RootNode<Row> root;
+    private volatile RootNode<RowT> root;
 
     /** */
     private volatile PlanningContext pctx;
@@ -93,7 +93,7 @@ public class RootQuery<Row> extends Query<Row> {
         Object[] params,
         QueryContext qryCtx,
         ExchangeService exch,
-        Consumer<Query> unregister,
+        Consumer<Query<RowT>> unregister,
         IgniteLogger log
     ) {
         super(UUID.randomUUID(), qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
@@ -127,7 +127,7 @@ public class RootQuery<Row> extends Query<Row> {
      *
      * @param schema new schema.
      */
-    public RootQuery<Row> childQuery(SchemaPlus schema) {
+    public RootQuery<RowT> childQuery(SchemaPlus schema) {
         return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log);
     }
 
@@ -165,7 +165,7 @@ public class RootQuery<Row> extends Query<Row> {
     /**
      * Starts execution phase for the query and setup remote fragments.
      */
-    public void run(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
+    public void run(ExecutionContext<RowT> ctx, MultiStepPlan plan, Node<RowT> root) {
         synchronized (this) {
             if (state == QueryState.CLOSED) {
                 throw new IgniteSQLException(
@@ -174,7 +174,7 @@ public class RootQuery<Row> extends Query<Row> {
                 );
             }
 
-            RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
+            RootNode<RowT> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
             rootNode.register(root);
 
             addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));
@@ -286,7 +286,7 @@ public class RootQuery<Row> extends Query<Row> {
     }
 
     /** */
-    public Iterator<Row> iterator() {
+    public Iterator<RowT> iterator() {
         return root;
     }
 

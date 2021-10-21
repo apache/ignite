@@ -28,9 +28,9 @@ import org.apache.ignite.internal.util.IgniteUtils;
 /**
  * Registry of the running queries.
  */
-public class QueryRegistryImpl<Row> implements QueryRegistry<Row> {
+public class QueryRegistryImpl<RowT> implements QueryRegistry<RowT> {
     /** */
-    private final ConcurrentMap<UUID, Query<Row>> runningQrys = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, Query<RowT>> runningQrys = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -41,14 +41,14 @@ public class QueryRegistryImpl<Row> implements QueryRegistry<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Query<Row> register(Query<Row> qry) {
-        Query<Row> old = runningQrys.putIfAbsent(qry.id(), qry);
+    @Override public Query<RowT> register(Query<RowT> qry) {
+        Query<RowT> old = runningQrys.putIfAbsent(qry.id(), qry);
 
         return old != null ? old : qry;
     }
 
     /** {@inheritDoc} */
-    @Override public Query<Row> query(UUID id) {
+    @Override public Query<RowT> query(UUID id) {
         return runningQrys.get(id);
     }
 
@@ -58,7 +58,7 @@ public class QueryRegistryImpl<Row> implements QueryRegistry<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Query<Row>> runningQueries() {
+    @Override public Collection<Query<RowT>> runningQueries() {
         return runningQrys.values();
     }
 
