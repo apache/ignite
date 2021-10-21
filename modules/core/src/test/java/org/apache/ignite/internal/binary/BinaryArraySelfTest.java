@@ -34,10 +34,16 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
     private static Ignite client;
 
     /** */
-    private static IgniteCache<Integer, TestClass1[]> srvCache;
+    private static IgniteCache<Integer, TestClass1[]> srvCache0;
 
     /** */
-    private static IgniteCache<Integer, TestClass1[]> cliCache;
+    private static IgniteCache<Integer, TestClass1[]> cliCache0;
+
+    /** */
+    private static IgniteCache<TestClass1[], Integer> srvCache1;
+
+    /** */
+    private static IgniteCache<TestClass1[], Integer> cliCache1;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -46,33 +52,60 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
         server = startGrid(0);
         client = startClientGrid(1);
 
-        srvCache = server.createCache("my-cache");
-        cliCache = client.getOrCreateCache("my-cache");
+        srvCache0 = server.createCache("my-cache");
+        cliCache0 = client.getOrCreateCache("my-cache");
+        srvCache1 = server.createCache("my-cache-1");
+        cliCache1 = client.getOrCreateCache("my-cache-1");
     }
 
     /** */
     @Test
-    public void testArray() throws Exception {
-        doTestArray(srvCache);
-        doTestArray(cliCache);
-
+    public void testArrayKey() {
+        doTestArrayKey(srvCache1);
+        doTestArrayKey(cliCache1);
     }
 
     /** */
-    private void doTestArray(IgniteCache<Integer, TestClass1[]> c) {
+    @Test
+    public void testArrayValue() {
+        doTestArrayValue(srvCache0);
+        doTestArrayValue(cliCache0);
+    }
+
+    /** */
+    private void doTestArrayKey(IgniteCache<TestClass1[], Integer> c) {
+        TestClass1[] arr = {new TestClass1(), new TestClass1()};
+        TestClass1[] emptyArr = {};
+
+        c.put(arr, 1);
+        c.put(emptyArr, 2);
+
+        assertEquals((Integer)1, c.get(arr));
+        assertEquals((Integer)2, c.get(emptyArr));
+
+        assertTrue(c.remove(arr));
+        assertTrue(c.remove(emptyArr));
+    }
+
+    /** */
+    private void doTestArrayValue(IgniteCache<Integer, TestClass1[]> c) {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
+        c.put(2, new TestClass1[] {});
         TestClass1[] obj = c.get(1);
+        TestClass1[] emptyObj = c.get(2);
 
         assertEquals(TestClass1[].class, obj.getClass());
+        assertEquals(TestClass1[].class, emptyObj.getClass());
 
         assertTrue(c.remove(1));
+        assertTrue(c.remove(2));
     }
 
     /** */
     @Test
     public void testBinaryModeArray() {
-        doTestBinaryModeArray(srvCache);
-        doTestBinaryModeArray(cliCache);
+        doTestBinaryModeArray(srvCache0);
+        doTestBinaryModeArray(cliCache0);
     }
 
     /** */

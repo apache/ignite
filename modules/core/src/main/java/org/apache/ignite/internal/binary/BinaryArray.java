@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -100,12 +102,14 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
+            boolean deserializeBinary = BinaryObject.class.isAssignableFrom(compType);
+
             Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 
             for (int i = 0; i < arr.length; i++) {
                 Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
 
-                if (obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
+                if (deserializeBinary && obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
                     obj = ((BinaryObject)obj).deserialize(ldr);
 
                 res[i] = obj;
@@ -198,6 +202,33 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 31 * Objects.hash(compTypeId);
+
+        // {@link Arrays#deepHashCode(Object[])} used because array elements can be array of primitives
+        // or supported types like String, UUID, etc. "Standart" arrays like int[], String[] not modified
+        // during binarization - {@link CacheObjectBinaryProcessorImpl#marshalToBinary(Object, boolean)}.
+        // See {@link BinaryUtils#BINARY_CLS} for details.
+        result = 31 * result + Arrays.deepHashCode(arr);
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        BinaryArray arr = (BinaryArray)o;
+
+        return compTypeId == arr.compTypeId
+            && Arrays.equals(this.arr, arr.arr);
     }
 
     /** {@inheritDoc} */
