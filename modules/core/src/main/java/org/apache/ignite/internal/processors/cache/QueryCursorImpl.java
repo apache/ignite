@@ -223,10 +223,17 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** Query cursor state */
     protected enum State {
-        /** Idle. */ IDLE,
-        /** Executing. */ EXECUTING,
-        /** Execution completed. */ COMPLETED,
-        /** Closed. */CLOSED,
+        /** Idle. */
+        IDLE,
+
+        /** Executing. */
+        EXECUTING,
+
+        /** Execution completed. */
+        COMPLETED,
+
+        /** Closed. */
+        CLOSED,
     }
 
     /**

@@ -85,6 +85,7 @@ public class GridCapacityLoadTest {
         }
     }
 
+    /** */
     private static void printHeap(long init) {
         MemoryUsage heap = mem.getHeapMemoryUsage();
 

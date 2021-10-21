@@ -41,6 +41,12 @@
     <ClCompile Include="..\..\src\cache_client_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\compute_client_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\interop_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h">
@@ -57,50 +63,68 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\cache.xml">
+    <Xml Include="..\..\config\cache.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\cache-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\ssl.xml">
+    </Xml>
+    <Xml Include="..\..\config\compute.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\ssl-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\compute-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\ssl-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\compute-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\auth.xml">
+    </Xml>
+    <Xml Include="..\..\config\interop.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\auth-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\interop-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\auth-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\interop-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\non-ssl.xml">
+    </Xml>
+    <Xml Include="..\..\config\ssl.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\non-ssl-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\ssl-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\non-ssl-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\ssl-default.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\sql-query-fields.xml">
+    </Xml>
+    <Xml Include="..\..\config\auth.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\sql-query-fields-32.xml">
+    </Xml>
+    <Xml Include="..\..\config\auth-32.xml">
       <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\sql-query-fields-default.xml">
+    </Xml>
+    <Xml Include="..\..\config\auth-default.xml">
       <Filter>Configs</Filter>
-    </None>
+    </Xml>
+    <Xml Include="..\..\config\non-ssl.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\non-ssl-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\non-ssl-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\sql-query-fields.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\sql-query-fields-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\sql-query-fields-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
  * Represents a {@link Runnable} wrapper that executes the original {@link Runnable} with the security context
  * current at the time the wrapper was created.
  */
-public class SecurityAwareRunnable implements Runnable {
+class SecurityAwareRunnable implements Runnable {
     /** */
     private final Runnable delegate;
 
@@ -36,7 +36,7 @@ public class SecurityAwareRunnable implements Runnable {
     private final SecurityContext secCtx;
 
     /** */
-    public SecurityAwareRunnable(IgniteSecurity security, Runnable delegate) {
+    private SecurityAwareRunnable(IgniteSecurity security, Runnable delegate) {
         assert security.enabled();
         assert delegate != null;
 
@@ -50,5 +50,13 @@ public class SecurityAwareRunnable implements Runnable {
         try (OperationSecurityContext ignored = security.withContext(secCtx)) {
             delegate.run();
         }
+    }
+
+    /** */
+    static Runnable of(IgniteSecurity security, Runnable delegate) {
+        if (delegate == null || security.isDefaultContext())
+            return delegate;
+
+        return new SecurityAwareRunnable(security, delegate);
     }
 }

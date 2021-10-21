@@ -1104,6 +1104,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         /** */
         private final String cacheName;
 
+        /** */
         public ManualRebalancer(String cacheName) {
             this.cacheName = cacheName;
         }

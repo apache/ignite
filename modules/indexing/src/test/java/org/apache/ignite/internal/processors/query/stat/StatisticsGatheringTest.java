@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -32,6 +35,25 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
     /** {@inheritDoc} */
     @Override public int nodes() {
         return 1;
+    }
+
+    /**
+     * Try to collect statistics on inactive cluster. Check that error will be thrown.
+     *
+     * @throws IgniteInterruptedCheckedException In case of error.
+     */
+    @Test
+    public void testInactiveClusterGathering() throws IgniteInterruptedCheckedException {
+        IgniteStatisticsManagerImpl statMgr0 = statisticsMgr(0);
+        StatisticsTarget t101 = createStatisticTarget(101);
+
+        sql("select * from SMALL101");
+        statMgr0.statisticConfiguration().dropStatistics(Collections.singletonList(t101), false);
+
+        grid(0).cluster().state(ClusterState.INACTIVE);
+
+        GridTestUtils.assertThrows(null, () -> collectStatistics(t101), IgniteException.class,
+            "Unable to perform collect statistics due to cluster state [state=INACTIVE]");
     }
 
     /**

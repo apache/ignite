@@ -91,6 +91,7 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
         }, 1, "restart-thread");
     }
 
+    /** {@inheritDoc} */
     @Override protected int countRebalances(int nodes, int restarts) {
         return 0;
     }

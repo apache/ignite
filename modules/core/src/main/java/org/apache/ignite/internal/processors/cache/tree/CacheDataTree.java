@@ -192,6 +192,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
 
+        /** */
         final class DataPageScanCursor implements GridCursor<CacheDataRow> {
             /** */
             int pagesCnt = pageStore.pages();

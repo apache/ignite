@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.client.suite;
 
+import org.apache.ignite.common.CacheCreateDestroyEventSecurityContextTest;
+import org.apache.ignite.common.CacheEventSecurityContextTest;
 import org.apache.ignite.common.ClientSideCacheCreationDestructionWileTopologyChangeTest;
 import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
 import org.apache.ignite.common.ComputeTaskRemoteSecurityContextTest;
 import org.apache.ignite.common.NodeSslConnectionMetricTest;
+import org.apache.ignite.common.RebalanceCacheEventSecurityContextTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
@@ -61,6 +64,7 @@ import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticati
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticatorUserManagementAuthorizationTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBeforeNodeStartSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorCacheNodeFilterTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
@@ -105,6 +109,7 @@ import org.junit.runners.Suite;
     JettyRestProcessorGetAllAsArrayTest.class,
     JettyRestProcessorBaselineSelfTest.class,
     JettyRestProcessorBeforeNodeStartSelfTest.class,
+    JettyRestProcessorCacheNodeFilterTest.class,
 
     // Test TCP rest processor with original memcache client.
     ClientMemcachedProtocolSelfTest.class,
@@ -184,7 +189,10 @@ import org.junit.runners.Suite;
     ClientSizeCacheCreationDestructionTest.class,
     ClientSideCacheCreationDestructionWileTopologyChangeTest.class,
     NodeSslConnectionMetricTest.class,
-    ComputeTaskRemoteSecurityContextTest.class
+    ComputeTaskRemoteSecurityContextTest.class,
+    CacheCreateDestroyEventSecurityContextTest.class,
+    CacheEventSecurityContextTest.class,
+    RebalanceCacheEventSecurityContextTest.class
 })
 public class IgniteClientTestSuite {
 }

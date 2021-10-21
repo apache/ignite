@@ -92,6 +92,6 @@ group="Kernal",name=IgniteKernal
 |Operation | Description
 
 | `clusterState()` | Get the current cluster state.
-| `clusterState(String)` | Set the cluster state.
+| `clusterState(String, boolean)` | Set the cluster state.
 |===
 --

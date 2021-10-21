@@ -111,7 +111,8 @@ public class TcpIgniteClient implements IgniteClient {
     ) throws ClientException {
         final ClientBinaryMetadataHandler metadataHnd = new ClientBinaryMetadataHandler();
 
-        marsh = new ClientBinaryMarshaller(metadataHnd, new ClientMarshallerContext());
+        ClientMarshallerContext marshCtx = new ClientMarshallerContext();
+        marsh = new ClientBinaryMarshaller(metadataHnd, marshCtx);
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
 
@@ -124,7 +125,14 @@ public class TcpIgniteClient implements IgniteClient {
         try {
             ch.channelsInit();
 
-            ch.addChannelFailListener(metadataHnd::onReconnect);
+            // Metadata, binary descriptors and user types caches must be cleared so that the
+            // client will register all the user types within the cluster once again in case this information
+            // was lost during the cluster failover.
+            ch.addChannelFailListener(() -> {
+                metadataHnd.onReconnect();
+                marshCtx.clearUserTypesCache();
+                marsh.context().unregisterUserTypeDescriptors();
+            });
 
             // Send postponed metadata after channel init.
             metadataHnd.sendAllMeta();
@@ -147,7 +155,7 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         ch.close();
     }
 
@@ -521,7 +529,7 @@ public class TcpIgniteClient implements IgniteClient {
      */
     private class ClientMarshallerContext implements MarshallerContext {
         /** Type ID -> class name map. */
-        private Map<Integer, String> cache = new ConcurrentHashMap<>();
+        private final Map<Integer, String> cache = new ConcurrentHashMap<>();
 
         /** System types. */
         private final Collection<String> sysTypes = new HashSet<>();
@@ -645,6 +653,15 @@ public class TcpIgniteClient implements IgniteClient {
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
             return new JdkMarshaller();
+        }
+
+        /**
+         * Clear the user types cache on reconnect so that the client will register all
+         * the types once again after reconnect.
+         * See the comment in constructor of the TcpIgniteClient.
+         */
+        void clearUserTypesCache() {
+            cache.clear();
         }
     }
 }

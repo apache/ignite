@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
@@ -27,7 +29,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
 
 /**
  * Factory fot client index.
@@ -46,11 +47,12 @@ public class ClientIndexFactory implements IndexFactory {
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
-        List<IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(def.getTable(), def.getColumns()).keyDefinitions();
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = definition.indexKeyDefinitions();
 
-        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs, DUMMY_SETTINGS);
+        List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
-        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, def.getCfgInlineSize(), def.getMaxInlineSize());
+        int inlineSize = InlineIndexTree.computeInlineSize(keyTypes, new ArrayList<>(keyDefs.values()),
+            def.getCfgInlineSize(), def.getMaxInlineSize());
 
         return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
     }

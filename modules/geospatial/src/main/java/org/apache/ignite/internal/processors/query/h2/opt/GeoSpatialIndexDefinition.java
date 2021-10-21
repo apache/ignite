@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.LinkedHashMap;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
 
 /**
@@ -29,15 +31,20 @@ public class GeoSpatialIndexDefinition implements IndexDefinition {
     private final QueryIndexRowHandler rowHnd;
 
     /** */
+    private final LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+
+    /** */
     private final int segmentsCnt;
 
     /** */
     private final IndexName idxName;
 
     /** */
-    public GeoSpatialIndexDefinition(IndexName idxName, QueryIndexRowHandler rowHnd, int segmentsCnt) {
+    public GeoSpatialIndexDefinition(IndexName idxName, LinkedHashMap<String, IndexKeyDefinition> keyDefs,
+        QueryIndexRowHandler rowHnd, int segmentsCnt) {
         this.idxName = idxName;
         this.rowHnd = rowHnd;
+        this.keyDefs = keyDefs;
         this.segmentsCnt = segmentsCnt;
     }
 
@@ -54,5 +61,10 @@ public class GeoSpatialIndexDefinition implements IndexDefinition {
     /** {@inheritDoc} */
     @Override public IndexName idxName() {
         return idxName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
+        return keyDefs;
     }
 }

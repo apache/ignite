@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRem
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
 import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.ClientReconnectTest;
 import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
@@ -42,9 +43,11 @@ import org.apache.ignite.internal.processors.security.compute.closure.ComputeTas
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.daemon.DaemonNodeBasicSecurityTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.maintenance.MaintenanceModeNodeSecurityTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
@@ -83,6 +86,7 @@ import org.junit.runners.Suite;
     ThinClientPermissionCheckSecurityTest.class,
     ContinuousQueryPermissionCheckTest.class,
     IgniteClientContainSubjectAddressTest.class,
+    ClientReconnectTest.class,
     SnapshotPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
@@ -122,7 +126,9 @@ import org.junit.runners.Suite;
     SchedulerSandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
-    MultipleSSLContextsTest.class
+    MultipleSSLContextsTest.class,
+    MaintenanceModeNodeSecurityTest.class,
+    DaemonNodeBasicSecurityTest.class
 })
 public class SecurityTestSuite {
     /** */

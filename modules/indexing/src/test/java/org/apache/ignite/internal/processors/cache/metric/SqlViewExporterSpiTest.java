@@ -433,7 +433,16 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DISTRIBUTED_METASTORAGE",
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
-            "STATISTICS_LOCAL_DATA"
+            "STATISTICS_LOCAL_DATA",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_ATOMICSEQUENCES",
+            "DS_COUNTDOWNLATCHES",
+            "DS_REENTRANTLOCKS",
+            "DS_SETS",
+            "DS_SEMAPHORES",
+            "DS_QUEUES"
         ));
 
         Set<String> actViews = new HashSet<>();

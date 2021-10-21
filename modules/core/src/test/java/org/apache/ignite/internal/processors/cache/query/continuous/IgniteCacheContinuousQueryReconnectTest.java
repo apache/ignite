@@ -61,6 +61,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

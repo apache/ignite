@@ -168,7 +168,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                         mapping.getValue(), // Keys.
                         readThrough,
                         false, // Local get required.
-                        tx != null ? tx.subjectId() : null,
                         taskName,
                         deserializeBinary,
                         recovery,
@@ -281,7 +280,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     EntryGetResult res = entry.getValue();
                     CacheEntryVersion ver = res.version();
 
-                    Object val = ctx.unwrapBinaryIfNeeded(res.value(), false, false, null);
+                    Object val = ctx.unwrapBinaryIfNeeded(res.value(), !deserializeBinary, false, null);
 
                     Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo> map =
                         originalMap.computeIfAbsent(
@@ -296,6 +295,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         }
 
         evtMgr.record(new CacheConsistencyViolationEvent(
+            ctx.name(),
             ctx.discovery().localNode(),
             "Consistency violation fixed.",
             originalMap));
