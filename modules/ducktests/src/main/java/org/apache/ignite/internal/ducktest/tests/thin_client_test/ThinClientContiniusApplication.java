@@ -24,8 +24,6 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -63,15 +61,16 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
         markInitialized();
 
         log.info("RUN CLIENTS");
+        log.info("Load config: "+ cfgPath);
 
         ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
 
         List<List<Long>> connectTimes = new ArrayList<>();
-
+        log.info("start Connect");
         startClients(ClientType.CONNECT, connectClients, connectTimes, cfg);
-
+        log.info("start Put");
         startClients(ClientType.PUT, putClients, connectTimes, cfg);
-
+        log.info("start Putall");
         startClients(ClientType.PUTALL, putAllClients, connectTimes, cfg);
 
         log.info("START WAITING");
@@ -91,8 +90,8 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
             List<Long> connectTime = new ArrayList<>();
 
             times.add(connectTime);
-
-            new ThinClientContiniusRunner(cfg, connectTime, type).run();
+            log.info("start client "+i);
+            new Thread(new ThinClientContiniusRunner(cfg, connectTime, type)).start();
         }
     }
 }
