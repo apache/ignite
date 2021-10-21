@@ -209,17 +209,15 @@ if (!$skipNuGet) {
     echo "NuGet packages created in '$pwd\$nupkgDir'."
 
     # Examples template
-    if (!$skipExamples) {
-        # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
-        Copy-Item .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj $pwd
+    # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
+    Copy-Item .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj $pwd
 
-        Exec "dotnet pack Apache.Ignite.Examples.csproj --output $nupkgDir -p:PackageVersion=$ver"
+    Exec "dotnet pack Apache.Ignite.Examples.csproj --output $nupkgDir -p:PackageVersion=$ver"
 
-        Remove-Item Apache.Ignite.Examples.csproj
-        Remove-Item bin\Debug -Force -Recurse
+    Remove-Item Apache.Ignite.Examples.csproj
+    Remove-Item bin\Debug -Force -Recurse
 
-        echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
-    }
+    echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
 }
 
 # 4) Build Examples
