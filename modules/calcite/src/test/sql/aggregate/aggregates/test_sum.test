@@ -66,9 +66,15 @@ INSERT INTO bigints SELECT * FROM table(system_range(4611686018427387904, 461168
 
 # sum them up
 query I
-SELECT SUM(b::DECIMAL) FROM bigints
+SELECT SUM(b) FROM bigints
 ----
 4611686018427388403500
+
+# sum them up
+query T
+SELECT typeof(SUM(b)) FROM bigints
+----
+DECIMAL(32767, 0)
 
 # this is too big for a bigint
 statement error

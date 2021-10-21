@@ -100,7 +100,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws InterruptedException {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
@@ -110,6 +110,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             qryProc.queryPlanCache().clear();
         }
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
