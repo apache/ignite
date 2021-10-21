@@ -34,7 +34,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}")
+    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}, nulls={5}")
     public static Collection parameters() {
         List<Object[]> res = new ArrayList<>();
 
@@ -43,7 +43,8 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
                 for (boolean raw : new boolean[] {false, true}) {
                     for (boolean async : new boolean[] {false, true})
                         for (boolean misses : new boolean[] {false, true})
-                            res.add(new Object[] {concurrency, isolation, raw, async, misses});
+                            for (boolean nulls : new boolean[] {false, true})
+                                res.add(new Object[] {concurrency, isolation, raw, async, misses, nulls});
                 }
             }
         }
@@ -71,6 +72,10 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     @Parameterized.Parameter(4)
     public boolean misses;
 
+    /** Nulls. */
+    @Parameterized.Parameter(5)
+    public boolean nulls;
+
     /** {@inheritDoc} */
     @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
@@ -79,6 +84,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             raw,
             async,
             misses,
+            nulls,
             (ReadRepairData data) -> {
                 boolean fixByOtherTx = concurrency == TransactionConcurrency.OPTIMISTIC ||
                     isolation == TransactionIsolation.READ_COMMITTED;
@@ -112,6 +118,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             raw,
             async,
             misses,
+            nulls,
             (ReadRepairData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     GET_NULL.accept(data);
@@ -140,6 +147,7 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             raw,
             async,
             misses,
+            nulls,
             (ReadRepairData data) -> {
                 // "Contains" works like optimistic() || readCommitted() and always fixed by other tx.
                 boolean fixByOtherTx = true;

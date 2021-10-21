@@ -167,6 +167,7 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
             raw,
             async,
             misses,
+            nulls,
             (ReadRepairData data) -> {
                 if (all)
                     GETALL_CHECK_AND_FAIL.accept(data);
@@ -185,6 +186,7 @@ public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
             raw,
             async,
             misses,
+            nulls,
             (ReadRepairData data) -> {
                 if (all)
                     CONTAINS_ALL_CHECK_AND_FAIL.accept(data);
