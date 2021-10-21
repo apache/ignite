@@ -1,0 +1,78 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= JDBC Driver
+
+Apache Ignite is shipped with JDBC driver that allows processing of distributed data using standard SQL statements like `SELECT`, `INSERT`, `UPDATE`, or `DELETE` directly from the JDBC side.
+
+WARNING:
+----
+This Alpha release implementation of JDBC driver does not support the following functionality:
+
+* SSL/TLS connection;
+* Multiple Endpoints;
+* Partition Awareness;
+* `CREATE TABLE`, `ALTER TABLE`, `WITH`, and `MERGE` commands.
+----
+
+== Setting Up
+
+The name of the driver’s class is `org.apache.ignite.IgniteJdbcThinDriver`. For instance, this is how you can open a JDBC connection to the cluster node listening on IP address `192.168.0.50`:
+
+[source, java]
+----
+// Load JDBC drivers.
+ServiceLoader.load(java.sql.Driver.class);
+
+// Open the JDBC connection.
+Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.1.1:10800");
+----
+
+The driver connects to one of the cluster nodes and forwards all the queries to it for final execution. The node handles the query distribution and the result’s aggregations. Then the result is sent back to the client application.
+
+The JDBC connection string may be formatted with one of two patterns: `URL query` or `semicolon`:
+
+[source, java]
+----
+// URL query pattern
+jdbc:ignite:thin://<hostAndPortRange0>[,<hostAndPortRange1>]...[,<hostAndPortRangeN>][/schema][?<params>]
+
+hostAndPortRange := host[:port_from[..port_to]]
+
+params := param1=value1[&param2=value2]...[&paramN=valueN]
+
+// Semicolon pattern
+jdbc:ignite:thin://<hostAndPortRange0>[,<hostAndPortRange1>]...[,<hostAndPortRangeN>][;schema=<schema_name>][;param1=value1]...[;paramN=valueN]
+----
+
+* `host` is required and defines the host of the cluster node to connect to.
+* `port_from` is the beginning of the port range to use to open the connection. 10800 is used by default if this parameter is omitted.
+* `port_to` is optional. It is set to the `port_from` value by default if this parameter is omitted.
+* `schema` is the schema name to access. PUBLIC is used by default. This name should correspond to the SQL ANSI-99 standard. Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive. When semicolon format is used, the schema may be defined as a parameter with name schema.
+* `<params>` are optional.
+
+== Running an Example
+
+Examples are shipped as a separate Maven project, which is located in the `examples` folder. `SqlJdbcExample` demonstrates the usage of the Apache Ignite JDBC driver.
+
+To run `SqlJdbcExample`, perform the following steps:
+
+. Import the examples project into you IDE;
+. Start a server node using the CLI tool:
++
+[source, shell]
+----
+ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-first-node
+----
+. Run `SqlJdbcExample` in the IDE.

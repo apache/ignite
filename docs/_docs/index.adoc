@@ -25,32 +25,22 @@ it introduces several new features, which are to be accompanied with other impro
 This alpha version of Apache Ignite, incorporating all the best solutions over the past years,
 possesses the highest level of usability thanks to the following improvements:
 
-* Schema-first approach: This feature introduces one-to-one mapping between data schemas and caches/tables,
-which means that the schema is defined for a cache/table before its creation.
-
+* Schema-first approach: This feature introduces one-to-one mapping between data schemas and caches/tables, which means that the schema is defined for a cache/table before its creation.
 * Unified Configuration: This feature is presented by a set of the following improvements:
-
 - Platform-agnostic configuration representation
 - Clear separation between configuration and any third-party code
 - Predictable configuration lifecycle
 - Consistent runtime configuration change support
-
 * Ignite CLI tool: This tool functions as a single sign-on for any operational, management, and development needs.
-
 * See a link:https://cwiki.apache.org/confluence/display/IGNITE/Proposals+for+Ignite+3.0[full list of improvements,window=_blank].
 
 
-== New in Alpha 2
+== New in Alpha 3
 
-Apache Ignite Alpha 2 comes with the following new features:
+Apache Ignite Alpha 3 comes with the following new features:
 
-- Added replication infrastructure based on Raft.
-- New in-memory atomic storage with the basic insert-read functionality.
-- New schema management engine and API.
-
-== Known Issues
-
-Due to changes between alpha 1 and alpha 2, Ignite cluster configuration commands no longer work. This will be fixed in alpha 3.
-
-Affected commands: `config`, `config get`, `config set`.
+* New SQL engine based on Apache Calcite with implemented JDBC driver;
+* Persistence implementation based on RocksDB;
+* New binary client protocol with an implementation in Java;
+* Data rebalancing.
 

@@ -1,0 +1,30 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Data Rebalancing
+
+When a new node joins the cluster, some of the partitions are relocated to the new node so that the data remains distributed equally in the cluster. This process is called data rebalancing.
+If an existing node permanently leaves the cluster and backups are not configured, you lose the partitions stored on this node. When backups are configured, one of the backup copies of the lost partitions becomes a primary partition and the rebalancing process is initiated.
+
+WARNING:
+----
+Data rebalancing is triggered by changes in the Baseline Topology. In pure in-memory clusters, the default behavior is to start rebalancing immediately when a node leaves or joins the cluster (the baseline topology changes automatically). In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when automatic baseline adjustment is enabled.
+----
+
+== Running an Example
+
+Examples are shipped as a separate Maven project, which is located in the `examples` folder. `RebalanceExample` demonstrates the data rebalancing process.
+
+To start running `RebalanceExample`, please refer to its link:https://github.com/apache/ignite-3/blob/3.0.0-alpha3/examples/src/main/java/org/apache/ignite/example/rebalance/RebalanceExample.java[JavaDoc,window=_blank] for instructions.
+

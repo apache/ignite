@@ -1,0 +1,237 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Calcite-Based SQL Engine
+
+This Alpha release introduces new SQL engine based on the Apache Calcite framework to parse and optimize queries and generate execution plans. Previously, it was based on H2 Database.
+
+Apache Calcite is a dynamic data management framework, which mainly serves for mediating between applications and one or more data storage locations and data processing engines.
+For more information on Apache Calcite, please see the link:https://calcite.apache.org/docs/[product documentation,window=_blank].
+
+Replacing H2 SQL engine with Apache Calcite incorporates the following general improvements:
+
+* *Wider SQL support*: Apache Calcite, unlike H2, is specifically designed for SQL enablement on top of an arbitrary external data storage;
+* *Better optimization algorithms*: Apache Calcite optimizes queries by repeatedly applying planner rules to a relational expression;
+* *Higher overall performance*: Calcite offers much higher levels of execution flexibility, as well as higher efficiency in terms of both memory and CPU consumption.
+
+== Data Manipulation Language (DML)
+
+This section walks you through all data manipulation language (DML) commands supported by Apache Ignite Alpha 3.
+
+WARNING: Currently, `WITH` and `MERGE` commands are not supported.
+
+=== SELECT
+
+Retrieves data from a table or multiple tables.
+
+[source,sql]
+----
+SELECT [ hintComment ] [ STREAM ] [ ALL | DISTINCT ]
+    { * | projectItem [, projectItem ]* }
+FROM tableExpression
+[ WHERE booleanExpression ]
+[ GROUP BY { groupItem [, groupItem ]* } ]
+[ HAVING booleanExpression ]
+----
+
+=== INSERT
+
+Inserts data into a table.
+
+[source,sql]
+----
+{ INSERT | UPSERT } INTO tablePrimary
+[ '(' column [, column ]* ')' ]
+query
+----
+
+=== UPDATE
+
+Updates data in a table.
+
+[source,sql]
+----
+UPDATE tablePrimary
+SET assign [, assign ]*
+[ WHERE booleanExpression ]
+----
+
+=== DELETE
+
+Deletes data from a table.
+
+[source,sql]
+----
+DELETE FROM tablePrimary [ [ AS ] alias ]
+[ WHERE booleanExpression ]
+----
+
+== Supported Operators and Functions
+
+=== Aggregate Functions
+
+==== COUNT
+
+[source,sql]
+----
+COUNT( [ ALL | DISTINCT ] value [, value ]*)
+----
+
+Returns the number of input rows for which value is not null (wholly not null if value is composite).
+
+==== AVG
+
+[source,sql]
+----
+AVG( [ ALL | DISTINCT ] numeric)
+----
+
+Returns the average (arithmetic mean) of numeric across all input values.
+
+==== SUM
+
+[source,sql]
+----
+SUM( [ ALL | DISTINCT ] numeric)
+----
+
+Returns the sum of numeric across all input values.
+
+==== MIN
+
+[source,sql]
+----
+MIN( [ ALL | DISTINCT ] value)
+----
+
+Returns the minimum value of value across all input values.
+
+==== MAX
+
+[source,sql]
+----
+MAX( [ ALL | DISTINCT ] value)
+----
+
+Returns the maximum value of value across all input values.
+
+==== STRING_AGG
+
+[source,sql]
+----
+STRING_AGG( value [, separator ] [ ORDER BY ...])
+----
+
+Concatenates the values of string expressions and places separator values between them.
+
+==== STRING_CONCAT
+
+[source,sql]
+----
+STRING_CONCAT(string1, string2, ... stringN)
+----
+
+Concatenates the text values in the specified data ranges.
+
+
+=== Functions
+
+
+==== JSON
+
+* JSON_EXISTS
+* JSON_VALUE
+* JSON_QUERY
+* JSON_OBJECT
+* JSON_ARRAY
+* JSON_PRETTY
+* STRING
+* CHAR_LENGTH
+* CHARACTER_LENGTH
+* UPPER
+* LOWER
+* POSITION
+* TRIM
+* OVERLAY
+* SUBSTRING
+* INITCAP
+* SPACE
+* STRCMP
+* REVERSE
+* REGEXP_REPLACE
+* SHA1
+* MD5
+* LTRIM
+* TO_BASE64
+* FROM_BASE64
+* COMPRESS
+* CONCAT
+* TRANSLATE
+* ASCII
+* LEFT
+* RIGHT
+* REPEAT
+* SOUNDEX
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].
+
+==== NUMERIC
+
+* POWER
+* ABS
+* MOD
+* SQRT
+* LN
+* LOG10
+* EXP
+* CEIL
+* FLOOR
+* RAND
+* ACOS
+* ASIN
+* ATAN
+* ATAN2
+* CBRT
+* COS
+* COT
+* DEGREES
+* PI()
+* RADIANS
+* ROUND
+* SIGN
+* SIN
+* TAN
+* TRUNCATE
+* CHR
+* COSH
+* SINH
+* TANH
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].
+
+==== GENERAL
+
+* NULLIF
+* COALESCE
+* CAST
+* NVL
+* GREATEST
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].
+
+
+==== TIMESTAMP
+
+* TIMESTAMP_ADD
+* TIMESTAMP_DIFF
+* EXTRACT
+* LAST_DAY
+* For more information on functions supported by Apache Calcite, see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[product documentation,window=_blank].

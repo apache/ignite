@@ -23,6 +23,9 @@ Below is a list of Ignite CLI tool commands with short descriptions:
 [cols="1,3",opts="header", stripes=none]
 |===
 | Command | Description
+| `config` | Inspects and updates Ignite cluster configuration.
+| `config get` | Gets current Ignite cluster configuration values.
+| `config set` | Updates Ignite cluster configuration values.
 | `init` | Installs Ignite core modules locally.
 | `module` | Manages optional Ignite modules and external artifacts.
 | `module list` | Shows the list of available optional Ignite modules.
@@ -34,5 +37,3 @@ Below is a list of Ignite CLI tool commands with short descriptions:
 | `node classpath` | Shows the current classpath used by the Ignite nodes.
 | `node list` | Shows the list of currently running local Ignite nodes.
 |===
-
-NOTE: While `config`, `config get`, `config set` commands are listed in command output, they do not work in alpha 2.

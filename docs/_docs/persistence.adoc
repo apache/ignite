@@ -12,7 +12,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+= Ignite Persistence
 
-// tag::command[]
-curl "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha3/apache-ignite-3.0.0-alpha3.zip" -o apache-ignite-3.0.0-alpha3.zip
-// end::command[]
+Ignite Persistence, or Native Persistence, is a set of features designed to provide persistent storage.
+When it is enabled, Ignite always stores all the data on disk, and loads as much data as it can into RAM for processing.
+For example, if there are 100 entries and RAM has the capacity to store only 20, then all 100 are stored on disk and only 20 are cached in RAM for better performance.
+
+When Native persistence is turned off and no external storage is used, Ignite behaves as a pure in-memory store.
+
+NOTE: In this Apache Ignite Alpha release, persistence is enabled by default.
+
+The current Alpha release persistence functionality is based on link:https://github.com/facebook/rocksdb/wiki/RocksDB-Overview[RocksDB,window=_blank].

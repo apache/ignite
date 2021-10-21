@@ -14,7 +14,7 @@
 // limitations under the License.
 = Getting Started Guide
 
-This guide provides essential details on how to start working with Ignite 3.0 alpha 2 by using the Ignite CLI tool, including the following information:
+This guide provides essential details on how to start working with Ignite 3.0 alpha 3 by using the Ignite CLI tool, including the following information:
 
 * How to download and install the tool.
 * How to use the Ignite CLI tool to manage nodes.
@@ -24,7 +24,7 @@ This guide provides essential details on how to start working with Ignite 3.0 al
 == Prerequisites
 
 
-Ignite 3.0 alpha 2 was officially tested on:
+Ignite 3.0 alpha 3 was officially tested on:
 
 include::../includes/prereqs.adoc[]
 
@@ -41,7 +41,7 @@ To download and install the Ignite CLI Tool, follow the steps below:
 tab:Unix[]
 [source,shell]
 ----
-curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha2/apache-ignite-3.0.0-alpha2.zip" -o apache-ignite-3.0.0-alpha2.zip
+curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha3/apache-ignite-3.0.0-alpha3.zip" -o apache-ignite-3.0.0-alpha3.zip
 ----
 
 tab:Windows (PowerShell)[]
@@ -64,19 +64,19 @@ include::../includes/ignite-cli-download-windows.adoc[tag=command,indent=0]
 tab:Unix[]
 [source,shell]
 ----
-unzip apache-ignite-3.0.0-alpha2.zip && cd apache-ignite-3.0.0-alpha2
+unzip apache-ignite-3.0.0-alpha3.zip && cd apache-ignite-3.0.0-alpha3
 ----
 
 tab:Windows (PowerShell)[]
 [source,shell]
 ----
-Expand-Archive apache-ignite-3.0.0-alpha2.zip -DestinationPath . ; cd apache-ignite-3.0.0-alpha2
+Expand-Archive apache-ignite-3.0.0-alpha3.zip -DestinationPath . ; cd apache-ignite-3.0.0-alpha3
 ----
 
 tab:Windows (CMD)[]
 [source,shell]
 ----
-tar -xf apache-ignite-3.0.0-alpha2.zip & cd apache-ignite-3.0.0-alpha2
+tar -xf apache-ignite-3.0.0-alpha3.zip & cd apache-ignite-3.0.0-alpha3
 ----
 --
 
@@ -103,7 +103,7 @@ set PATH=%cd%;%PATH%
 ----
 --
 
-NOTE: On Windows, this latter change is not permanent and will only affect the current terminal session. If you want the
+NOTE: On Windows, this latter change is not permanent and only affects the current terminal session. If you want the
 `ignite` command to be available after terminal or system restart, use the `System Properties` dialog to
 permanently update the `PATH` environment variable by adding a full path to the Ignite installation directory.
 
@@ -136,7 +136,12 @@ ignite init --help
 
 Ignite CLI allows to install Ignite modules and 3rd party Maven dependencies.
 
-. To start an Ignite 3.0 alpha 2 cluster, you need to install Ignite core artifacts first:
+WARNING:
+----
+If you have installed one of the Ignite 3 Alpha releases before, please remove the `~/.ignitecfg` file before proceeding. This is a temporary step, the procedure will be improved in the future releases.
+----
+
+. To start an Ignite 3.0 alpha 3 cluster, you need to install Ignite core artifacts first:
 +
 [source, shell]
 ----
@@ -161,11 +166,11 @@ ignite module list
 
 This section explains how to start a node, how to stop, and perform other basic operations with it.
 
-. Start a cluster node setting `node-1` as a node unique identifier:
+. Start a cluster node setting `my-first-node` as a node unique identifier:
 +
 [source, shell]
 ----
-ignite node start --config=examples/config/ignite-config.json node-1
+ignite node start --config=examples/config/ignite-config.json my-first-node
 ----
 
 . Confirm the node is started and running:
@@ -182,26 +187,37 @@ For example, use the `cat` command on a Unix operating system.
 
 == Built-in Examples
 
-Ignite 3.0 alpha 2 comes with examples that are configured as a separate Maven project located in the `examples` folder.
+Ignite 3.0 alpha 3 comes with examples that are configured as a separate Maven project located in the `examples` folder.
 
 The project includes the following examples:
 
 * `RecordViewExample` demonstrates the usage of the `org.apache.ignite.table.RecordView` API to create a table. It also shows how to get data from a table, or insert a line into a table.
 * `KeyValueViewExample` - demonstrates the usage of the `org.apache.ignite.table.KeyValueView` API to insert a line into a table.
+* `SqlJdbcExample` - demonstrates the usage of the Apache Ignite JDBC driver.
+* `RebalanceExample` - demonstrates the data rebalancing process.
 
-To run an example:
+To run the `RebalanceExample`, refer to its link:https://github.com/apache/ignite-3/blob/3.0.0-alpha3/examples/src/main/java/org/apache/ignite/example/rebalance/RebalanceExample.java[JavaDoc,window=_blank] for instructions.
 
-1. Import the `examples` folder into your IDE as a Maven project.
+To run any other example, perform the following steps:
 
-2. Follow the steps in the specific example to start it.
+. Import the examples project into you IDE.
+
+. Start a server node using the CLI tool:
++
+[source, shell script]
+----
+ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json my-first-node
+----
+
+. Run the preferred example in the IDE.
 
 
 == Stopping the Cluster
 
-To stop the node, use the command below passing `myFirstNode` as a node unique identifier:
+To stop the node, use the command below passing `my-first-node` as a node unique identifier:
 [source, shell]
 ----
-ignite node stop myFirstNode
+ignite node stop my-first-node
 ----
 
 

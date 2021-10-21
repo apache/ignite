@@ -18,5 +18,15 @@
   url: quick-start/getting-started-guide
 - title: Ignite CLI Tool
   url: ignite-cli-tool
+- title: Calcite-Based SQL Engine
+  url: sql/calcite-based-sql-engine
+- title: JDBC Driver
+  url: sql/jdbc-driver
+- title: Binary Client Protocol
+  url: binary-protocol
+- title: Native Persistence
+  url: persistence
+- title: Data Rebalancing
+  url: rebalance
 
 
