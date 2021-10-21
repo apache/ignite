@@ -503,6 +503,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
+            // TODO: Is this flag still required? Similar check inside BinaryArray#deserialize.
             boolean isBinaryElemArr = BinaryObject.class.isAssignableFrom(compCls);
 
             return new BinaryArray(

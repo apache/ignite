@@ -116,13 +116,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final String taskName;
 
     /** Whether to deserialize binary objects. */
-    private final boolean deserializeBinary;
+    private boolean deserializeBinary;
 
     /** Skip values flag. */
-    private final boolean skipVals;
+    private boolean skipVals;
 
     /** Expiry policy. */
-    private final IgniteCacheExpiryPolicy expiryPlc;
+    private IgniteCacheExpiryPolicy expiryPlc;
 
     /** Flag indicating that get should be done on a locked topology version. */
     private final boolean canRemap;
@@ -134,7 +134,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final boolean keepCacheObjects;
 
     /** */
-    private final boolean recovery;
+    private boolean recovery;
 
     /** */
     @GridToStringInclude

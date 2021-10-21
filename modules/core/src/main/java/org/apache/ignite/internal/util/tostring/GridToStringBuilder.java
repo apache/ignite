@@ -920,7 +920,7 @@ public class GridToStringBuilder {
      * @param arrType Type of the array.
      * @param obj Array object.
      */
-    static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
+    private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
         if (arrType.getComponentType().isPrimitive()) {
             buf.a(arrayToString(obj));
 
@@ -1190,7 +1190,7 @@ public class GridToStringBuilder {
      * @param arr Array object. Each value is automatically wrapped if it has a primitive type.
      * @return String representation of an array.
      */
-    static String arrayToString(Object arr) {
+    public static String arrayToString(Object arr) {
         if (arr == null)
             return "null";
 
