@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,6 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,9 +66,6 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Cancelled flag. */
     private volatile boolean isCancelled;
-
-    /** Service operation context. */
-    private final ThreadLocal<Map<String, Object>> opCtx = new ThreadLocal<>();
 
     /**
      * @param name Service name.
@@ -156,6 +153,11 @@ public class ServiceContextImpl implements ServiceContext {
         }
 
         return mtd == NULL_METHOD ? null : mtd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceCallContext currentCallContext() {
+        return ServiceCallContextImpl.current();
     }
 
     /**

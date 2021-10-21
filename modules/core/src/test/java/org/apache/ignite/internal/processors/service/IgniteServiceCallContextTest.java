@@ -28,12 +28,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.services.ServiceProxyContext;
-import org.apache.ignite.services.ServiceProxyContextBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -41,12 +41,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Tests service proxy execution context.
+ * Tests service caller context.
  */
 @RunWith(Parameterized.class)
-public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
-    /** Custom context attribute. */
-    private static final String ATTR_NAME = "int.attr";
+public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
+    /** String attribute name. */
+    private static final String STR_ATTR_NAME = "str.attr";
+
+    /** Binary attribute name. */
+    private static final String BIN_ATTR_NAME = "bin.attr";
 
     /** Service name. */
     private static final String SVC_NAME = "test-svc";
@@ -108,10 +111,16 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
     @Test
     public void testContextAttribute() {
         for (int i = 0; i < NODES_CNT; i++) {
-            TestService proxy = createProxyWithContext(grid(i), i);
+            String strVal = String.valueOf(i);
+            byte[] binVal = strVal.getBytes();
 
-            assertEquals(i, proxy.attribute(false));
-            assertEquals(i, proxy.attribute(true));
+            TestService proxy = createProxyWithContext(grid(i), strVal, binVal);
+
+            assertEquals(strVal, proxy.attribute(false));
+            assertEquals(strVal, proxy.attribute(true));
+
+            assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(false)));
+            assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(true)));
         }
     }
 
@@ -122,24 +131,35 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
      */
     @Test
     public void testContextAttributeMultithreaded() throws Exception {
-        Map<TestService, Integer> proxies = new HashMap<>();
+        Map<TestService, T2<String, byte[]>> proxies = new HashMap<>();
 
         for (int i = 0; i < G.allGrids().size(); i++) {
-            proxies.put(createProxyWithContext(grid(i), i * 2), i * 2);
-            proxies.put(createProxyWithContext(grid(i), i * 2 + 1), i * 2 + 1);
+            String strVal1 = String.valueOf(i * 2);
+            String strVal2 = String.valueOf(i * 2 + 1);
+            byte[] binVal1 = strVal1.getBytes();
+            byte[] binVal2 = strVal2.getBytes();
+
+            proxies.put(createProxyWithContext(grid(i), strVal1, binVal1), new T2<>(strVal1, binVal1));
+            proxies.put(createProxyWithContext(grid(i), strVal2, binVal2), new T2<>(strVal2, binVal2));
         }
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
         GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>();
 
-        for (Map.Entry<TestService, Integer> e : proxies.entrySet()) {
+        for (Map.Entry<TestService, T2<String, byte[]>> e : proxies.entrySet()) {
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
                 startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
                 for (int i = 0; i < 1_000; i++) {
-                    assertEquals(e.getValue(), e.getKey().attribute(false));
-                    assertEquals(e.getValue(), e.getKey().attribute(true));
+                    T2<String, byte[]> expVals = e.getValue();
+                    TestService proxy = e.getKey();
+
+                    assertEquals(expVals.get1(), proxy.attribute(false));
+                    assertEquals(expVals.get1(), proxy.attribute(true));
+
+                    assertTrue(Arrays.equals(expVals.get2(), proxy.binaryAttribute(false)));
+                    assertTrue(Arrays.equals(expVals.get2(), proxy.binaryAttribute(true)));
                 }
 
                 return true;
@@ -157,12 +177,13 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
 
     /**
      * @param node Ignite node.
-     * @param attrVal Attribute value.
+     * @param attrVal String attribute value.
+     * @param binVal Binary attribute value.
      * @return Service proxy instance.
      */
-    private TestService createProxyWithContext(Ignite node, int attrVal) {
+    private TestService createProxyWithContext(Ignite node, String attrVal, byte[] binVal) {
         return node.services().serviceProxy(SVC_NAME, TestService.class, sticky,
-            new ServiceProxyContextBuilder(ATTR_NAME, attrVal).build(), 0);
+            ServiceCallContext.create().put(STR_ATTR_NAME, attrVal).put(BIN_ATTR_NAME, binVal), 0);
     }
 
     /** */
@@ -171,29 +192,49 @@ public class IgniteServiceProxyContextTest extends GridCommonAbstractTest {
          * @param useInjectedSvc Get attribute from the injected service.
          * @return Context attribute value.
          */
-        public Object attribute(boolean useInjectedSvc);
+        public String attribute(boolean useInjectedSvc);
+
+        /**
+         * @param useInjectedSvc Get attribute from the injected service.
+         * @return Context attribute value.
+         */
+        public byte[] binaryAttribute(boolean useInjectedSvc);
     }
 
     /** */
     private static class TestServiceImpl implements TestService {
         /** Injected service. */
-        @ServiceResource(serviceName = SVC_NAME_INJECTED, proxyInterface = TestService.class, forwardRequestAttributes = true)
+        @ServiceResource(serviceName = SVC_NAME_INJECTED, proxyInterface = TestService.class, forwardCallerContext = true)
         private TestService injected;
 
+        /** Service context. */
+        private ServiceContext ctx;
+
         /** {@inheritDoc} */
-        @Override public Object attribute(boolean useInjectedSvc) {
+        @Override public String attribute(boolean useInjectedSvc) {
             assert injected != null;
 
-            return useInjectedSvc ? injected.attribute(false) : ServiceProxyContext.current().attribute(ATTR_NAME);
+            ServiceCallContext callCtx = ctx.currentCallContext();
+
+            return useInjectedSvc ? injected.attribute(false) : callCtx.attribute(STR_ATTR_NAME);
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(ServiceContext ctx) {
-            // No-op.
+        @Override public byte[] binaryAttribute(boolean useInjectedSvc) {
+            assert injected != null;
+
+            ServiceCallContext callCtx = ctx.currentCallContext();
+
+            return useInjectedSvc ? injected.binaryAttribute(false) : callCtx.binary(BIN_ATTR_NAME);
         }
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
             // No-op.
         }
 

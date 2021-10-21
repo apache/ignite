@@ -79,6 +79,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -946,7 +947,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        Supplier<Map<String, Object>> attrSupplier, long timeout)
+        @Nullable Supplier<ServiceCallContext> callCtxProvider, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -956,7 +957,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (ctx != null) {
                 Service srvc = ctx.service();
 
-                if (srvc != null && attrSupplier == null) {
+                if (srvc != null && callCtxProvider == null) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
@@ -967,7 +968,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, attrSupplier).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider).proxy();
     }
 
     /**

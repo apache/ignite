@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.services.Service;
 
@@ -48,20 +47,6 @@ public interface PlatformService extends Service {
      */
     public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
             throws IgniteCheckedException;
-
-    /**
-     * Invokes native service method.
-     *
-     * @param mthdName Method name.
-     * @param srvKeepBinary Server keep binary flag.
-     * @param args Arguments.
-     * @param deserializeResult If {@code true}, call service in cross-platform compatible manner.
-     * @param opCtx Service operation context.
-     * @return Resulting data.
-     * @throws org.apache.ignite.IgniteCheckedException If failed.
-     */
-    public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args,
-        Map<String, Object> opCtx) throws IgniteCheckedException;
 
     /**
      * Gets native pointer.

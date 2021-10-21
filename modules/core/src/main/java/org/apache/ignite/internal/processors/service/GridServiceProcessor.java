@@ -103,6 +103,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -1023,7 +1024,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        Supplier<Map<String, Object>> attrSupplier, long timeout)
+        Supplier<ServiceCallContext> callCtxProvider, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
@@ -1044,7 +1045,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, attrSupplier).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider).proxy();
     }
 
     /**

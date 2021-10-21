@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSel
 import org.apache.ignite.internal.processors.service.GridServiceProxyTopologyInitializationTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClas
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceProxyContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentDiscoveryListenerNotificationOrderTest;
@@ -120,7 +120,7 @@ import org.junit.runners.Suite;
     GridServiceProxyTopologyInitializationTest.class,
     GridServiceDeployClusterReadOnlyModeTest.class,
     GridServiceClusterReadOnlyModeTest.class,
-    IgniteServiceProxyContextTest.class,
+    IgniteServiceCallContextTest.class,
 })
 public class IgniteServiceGridTestSuite {
     /** */

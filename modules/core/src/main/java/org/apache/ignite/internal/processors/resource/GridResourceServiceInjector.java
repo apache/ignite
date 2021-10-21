@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.resource;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.processors.service.ServiceProxyContextImpl;
+import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceProxyContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,7 +69,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
 
     /**
      * @param ann Service resource annotation.
-     * @return Proxy for the service if a proxy interface was specified, otherwise the service itself or @code null}
+     * @return Proxy for the service if a proxy interface was specified, otherwise the service itself or {@code null}
      *         if the service is not deployed locally.
      */
     private @Nullable <T> T getService(ServiceResource ann) {
@@ -87,23 +84,12 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
                 ann.serviceName(),
                 (Class<? super T>)ann.proxyInterface(),
                 ann.proxySticky(),
-                ann.forwardRequestAttributes() ? currentThreadRequestAttributesProvider() : null,
+                ann.forwardCallerContext() ? ServiceCallContextImpl::current : null,
                 0
             );
         }
         finally {
             ignite.context().gateway().readUnlock();
         }
-    }
-
-    /**
-     * @return Thread local service request attributes provider.
-     */
-    private Supplier<Map<String, Object>> currentThreadRequestAttributesProvider() {
-        return () -> {
-            Map<String, Object> reqAttrs = ((ServiceProxyContextImpl)ServiceProxyContext.current()).values();
-
-            return reqAttrs.isEmpty() ? null : reqAttrs;
-        };
     }
 }

@@ -25,10 +25,10 @@ import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.services.ServiceProxyContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -622,12 +622,12 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *      service or try to load-balance between services.
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
-     * @param opCtx Service operation context.
+     * @param callCtx Service call context.
      * @param <T> Service type.
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
-    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, ServiceProxyContext opCtx, long timeout)
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, ServiceCallContext callCtx, long timeout)
         throws IgniteException;
 
     /** {@inheritDoc} */

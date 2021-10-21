@@ -67,4 +67,11 @@ public interface ServiceContext extends Serializable {
      * @return Affinity key, possibly {@code null}.
      */
     @Nullable public <K> K affinityKey();
+
+    /**
+     * Gets context of the current service call.
+     *
+     * @return Context of the current service call.
+     */
+    public ServiceCallContext currentCallContext();
 }
