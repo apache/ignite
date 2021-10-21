@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -536,33 +535,6 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
-     * Convert Object[] to T[] when required:
-     * Ignite loses array item types when passing arguments through GridServiceProxy.
-     *
-     * @param args Service method args.
-     * @param mtd Target method.
-     */
-    public static void convertArrayArgs(Object[] args, Method mtd) {
-        for (int i = 0; i < args.length; i++) {
-            Object arg = args[i];
-
-            if (arg instanceof Object[]) {
-                Class<?> parameterType = mtd.getParameterTypes()[i];
-
-                if (parameterType.isArray() && parameterType != Object[].class) {
-                    Object[] arr = (Object[])arg;
-                    Object newArg = Array.newInstance(parameterType.getComponentType(), arr.length);
-
-                    for (int j = 0; j < arr.length; j++)
-                        Array.set(newArg, j, arr[j]);
-
-                    args[i] = newArg;
-                }
-            }
-        }
-    }
-
-    /**
      * Proxy holder.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -628,7 +600,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = PlatformUtils.unwrapBinariesInArray(args, null);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
-                convertArrayArgs(args, mtd);
 
                 return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }

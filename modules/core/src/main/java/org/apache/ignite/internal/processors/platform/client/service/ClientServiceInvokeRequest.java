@@ -172,8 +172,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                PlatformServices.convertArrayArgs(args, method);
-
                 res = proxy.invokeMethod(method, args);
             }
 
