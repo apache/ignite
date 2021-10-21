@@ -653,11 +653,27 @@
                                                 project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
                                                 ""));
                                             }
+                                            
+                                            // When running nightly build, 'new.client.version' can be incompatible
+                                            // with .NET AssemblyInformationalVersion requirements 
+                                            // (i.e. 2.x.x.29394859 instead of 2.x.x).
+                                            // This function cuts excessive part of version.
+                                            function setCutClientVersion(dest, source) {
+                                                var value = project.getProperty(source);
+                                                var digitVer = /\d+\.\d+\.\d+/.exec(value);
+                                            
+                                                if (digitVer != null) {
+                                                    project.setProperty(dest, digitVer[0]);
+                                                }
+                                                else
+                                                    project.setProperty(dest, value);
+                                            }
 
                                             fix('ignite.version.fixed', 'project.version');
                                             fix('new.ignite.version.fixed', 'new.ignite.version');
                                             setClientVersion('ignite.version.fixed', 'old.client.version');
                                             setClientVersion('new.ignite.version.fixed', 'new.client.version');
+                                            setCutClientVersion('cut.new.client.version', 'new.client.version');
                                         </script>
 
                                         <echo message="Update ignite.version in .NET" />
@@ -673,7 +689,7 @@
 
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
-                                            <substitution expression="\1${new.ignite.version.fixed}\2" />
+                                            <substitution expression="\1${cut.new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/SharedAssemblyInfo.cs" />
                                             </fileset>
