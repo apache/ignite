@@ -129,10 +129,10 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
 
         String str = asBinaryObjectString(cache, o);
 
-        assertTrue("'" + str + "' should contain '" + s0 + "'", str.contains(s0));
+        assertTrue(str.contains(s0));
 
         for (String s : ss)
-            assertTrue("'" + str + "' should contain '" + s + "'", str.contains(s));
+            assertTrue(str.contains(s));
     }
 
     /** */

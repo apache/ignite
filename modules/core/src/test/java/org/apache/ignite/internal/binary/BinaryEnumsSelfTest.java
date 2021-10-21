@@ -335,8 +335,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         BinaryObject resBinary1 = (BinaryObject)cacheBinary1.get(key);
         BinaryObject resBinary2 = (BinaryObject)cacheBinary2.get(key);
 
-        validate(resBinary1.field("val"), val);
-        validate(resBinary2.field("val"), val);
+        validate((BinaryObject)resBinary1.field("val"), val);
+        validate((BinaryObject)resBinary2.field("val"), val);
     }
 
     /**
@@ -617,17 +617,17 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(EnumType.TWO, arr2[1]);
         }
 
-        BinaryArray arrBinary1 = (BinaryArray)cacheBinary1.get(1);
-        BinaryArray arrBinary2 = (BinaryArray)cacheBinary2.get(1);
+        Object[] arrBinary1 = ((BinaryArray)cacheBinary1.get(1)).array();
+        Object[] arrBinary2 = ((BinaryArray)cacheBinary2.get(1)).array();
 
-        assertEquals(2, arrBinary1.array().length);
-        assertEquals(2, arrBinary2.array().length);
+        assertEquals(2, arrBinary1.length);
+        assertEquals(2, arrBinary2.length);
 
-        validate((BinaryObject) arrBinary1.array()[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary1.array()[1], EnumType.TWO);
+        validate((BinaryObject) arrBinary1[0], EnumType.ONE);
+        validate((BinaryObject) arrBinary1[1], EnumType.TWO);
 
-        validate((BinaryObject) arrBinary2.array()[0], EnumType.ONE);
-        validate((BinaryObject) arrBinary2.array()[1], EnumType.TWO);
+        validate((BinaryObject) arrBinary2[0], EnumType.ONE);
+        validate((BinaryObject) arrBinary2[1], EnumType.TWO);
     }
 
     /**
