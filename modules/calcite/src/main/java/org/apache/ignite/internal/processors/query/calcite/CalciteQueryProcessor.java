@@ -359,6 +359,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
                 cursors.add(executionSvc.executePlan(qry, plan));
+
+                // Update schema for the next query in muliple statements.
+                schema = schemaHolder.schema(schemaName);
             }
             catch (Exception e) {
                 qryReg.unregister(qry.id());
