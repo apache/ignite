@@ -61,16 +61,15 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
         markInitialized();
 
         log.info("RUN CLIENTS");
-        log.info("Load config: "+ cfgPath);
 
         ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
 
         List<List<Long>> connectTimes = new ArrayList<>();
-        log.info("start Connect");
+
         startClients(ClientType.CONNECT, connectClients, connectTimes, cfg);
-        log.info("start Put");
+
         startClients(ClientType.PUT, putClients, connectTimes, cfg);
-        log.info("start Putall");
+
         startClients(ClientType.PUTALL, putAllClients, connectTimes, cfg);
 
         log.info("START WAITING");
@@ -90,7 +89,7 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
             List<Long> connectTime = new ArrayList<>();
 
             times.add(connectTime);
-            log.info("start client "+i);
+
             new Thread(new ThinClientContiniusRunner(cfg, connectTime, type)).start();
         }
     }
