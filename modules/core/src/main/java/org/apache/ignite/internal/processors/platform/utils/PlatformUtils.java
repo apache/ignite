@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
