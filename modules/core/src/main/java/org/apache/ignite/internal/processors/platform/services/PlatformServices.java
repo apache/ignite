@@ -597,7 +597,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 // Deserialize arguments for Java service when not in binary mode
                 if (!srvKeepBinary)
-                    args = PlatformUtils.unwrapBinariesInArray(args, null);
+                    args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 

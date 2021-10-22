@@ -923,7 +923,7 @@ public class PlatformUtils {
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
         else if (o instanceof Object[])
-            return unwrapBinariesInArray((Object[])o, null);
+            return unwrapBinariesInArray((Object[])o);
         else if (o instanceof BinaryObject)
             return ((BinaryObject)o).deserialize();
 
@@ -989,11 +989,11 @@ public class PlatformUtils {
      * @param arr Array.
      * @return Result.
      */
-    public static Object[] unwrapBinariesInArray(Object[] arr, @Nullable Class<?> compType) {
+    public static Object[] unwrapBinariesInArray(Object[] arr) {
         if (arr.getClass().getComponentType() != Object.class)
             return arr;
 
-        Object[] res = compType == null ? new Object[arr.length] : (Object[])Array.newInstance(compType, arr.length);
+        Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i]);
