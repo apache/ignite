@@ -35,7 +35,11 @@ public enum CacheMode {
      * querying, etc... This mode is very useful when caching read-only data
      * or data that automatically expires at a certain interval and
      * then automatically reloaded from persistence store.
+     *
+     * @deprecated Use {@link #REPLICATED} or {@link #PARTITIONED} modes instead.
+     * Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     LOCAL,
 
     /**
