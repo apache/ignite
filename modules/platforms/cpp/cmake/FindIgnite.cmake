@@ -26,8 +26,6 @@ if (WIN32)
 
 	find_library(IGNITE_NETWORK_LIB ignite.network HINTS ${IGNITE_CPP_DIR}/lib)
 
-	find_library(IGNITE_JNI_LIB ignite.jni HINTS ${IGNITE_CPP_DIR}/lib)
-
 	find_library(IGNITE_THIN_CLIENT_LIB ignite.thin-client HINTS ${IGNITE_CPP_DIR}/lib)
 
 	find_library(IGNITE_BINARY_LIB ignite.binary HINTS ${IGNITE_CPP_DIR}/lib)
@@ -37,8 +35,6 @@ else()
 	find_library(IGNITE_COMMON_LIB ignite-common HINTS ${IGNITE_CPP_DIR}/lib)
 
 	find_library(IGNITE_NETWORK_LIB ignite-network HINTS ${IGNITE_CPP_DIR}/lib)
-
-	find_library(IGNITE_JNI_LIB ignite-jni HINTS ${IGNITE_CPP_DIR}/lib)
 
 	find_library(IGNITE_THIN_CLIENT_LIB ignite-thin-client HINTS ${IGNITE_CPP_DIR}/lib)
 

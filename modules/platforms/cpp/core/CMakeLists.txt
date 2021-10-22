@@ -17,12 +17,15 @@
 
 project(ignite)
 
+find_library(JVM_LIBRARY jvm ${JAVA_JVM_LIBRARY_DIRECTORIES})
+
 include_directories(SYSTEM ${JNI_INCLUDE_DIRS})
 include_directories(include)
 
 set(TARGET ${PROJECT_NAME})
 
 set(SOURCES src/ignite.cpp
+		src/jni/java.cpp
         src/ignition.cpp
         src/impl/ignite_environment.cpp
         src/impl/binary/binary_type_updater_impl.cpp
@@ -49,15 +52,25 @@ set(SOURCES src/ignite.cpp
         src/impl/cluster/cluster_node_impl.cpp
         src/impl/cache/cache_affinity_impl.cpp)
 
+if (WIN32)
+	list(APPEND SOURCES src/jni/os/win/utils.cpp)
+else()
+	list(APPEND SOURCES src/jni/os/linux/utils.cpp)
+endif()
+
 add_library(${TARGET} SHARED ${SOURCES})
 
 set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
+target_link_libraries(${TARGET} ignite-binary ${JVM_LIBRARY})
+
 if (WIN32)
+	target_link_libraries(${TARGET} delayimp)
+
+	set_target_properties(${TARGET} PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
+
 	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.core")
 endif()
-
-target_link_libraries(${TARGET} ignite-binary ignite-jni)
 
 target_include_directories(${TARGET} INTERFACE include)
 
