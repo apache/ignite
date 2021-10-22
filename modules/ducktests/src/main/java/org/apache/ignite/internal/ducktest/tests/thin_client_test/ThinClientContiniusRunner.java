@@ -66,7 +66,7 @@ public class ThinClientContiniusRunner implements Runnable {
 
                 func.apply(cache, stopTyme);
 
-            } catch (InterruptedException interruptedException){
+            } catch (InterruptedException interruptedException) {
                 Thread.currentThread().interrupt();
             }
             catch (Exception e) {

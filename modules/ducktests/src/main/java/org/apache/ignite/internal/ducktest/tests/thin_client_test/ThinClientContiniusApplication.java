@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +24,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+
 /** */
 @FunctionalInterface
 interface ContiniusClientInterface {
+    /** */
     public void apply(ClientCache<UUID, byte[]> cache, long stopTime) throws InterruptedException;
 }
 
@@ -52,8 +53,7 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
     private static final int PUT_ALL_SIZE = 1000;
 
     /** {@inheritDoc} */
-    @Override
-    protected void run(JsonNode jsonNode) throws Exception {
+    @Override protected void run(JsonNode jsonNode) throws Exception {
         int connectClients = jsonNode.get("connectClients").asInt();
 
         int putClients = jsonNode.get("putClients").asInt();
@@ -113,7 +113,8 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
     }
 
     /** Internal function to start clients */
-    private void startClients(ClientConfiguration cfg, List<List<Long>> times, ContiniusClientInterface func, int count){
+    private void startClients(ClientConfiguration cfg, List<List<Long>> times,
+                              ContiniusClientInterface func, int count) {
         for (int i = 0; i < count; i++) {
             List<Long> connectTime = new ArrayList<>();
 
