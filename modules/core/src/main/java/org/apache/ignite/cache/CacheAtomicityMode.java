@@ -121,8 +121,10 @@ public enum CacheAtomicityMode {
      * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
      * <p>
      * See {@link Transaction} for more information about transactions.
+     *
+     * @deprecated Use {@link #TRANSACTIONAL} or {@link #ATOMIC} instead. Please, be aware this API will be removed in the next releases.
      */
-    @IgniteExperimental
+    @Deprecated
     TRANSACTIONAL_SNAPSHOT;
 
     /** Enumerated values. */
