@@ -354,7 +354,8 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                     params = ((BinaryArray)obj).array();
                 else // This can happen if user pass special array type to arguments, String[], for example.
                     params = (Object[])obj;
-            } else
+            }
+            else
                 params = U.unmarshal(m, paramsBytes, ldr);
         }
         catch (IgniteCheckedException e) {

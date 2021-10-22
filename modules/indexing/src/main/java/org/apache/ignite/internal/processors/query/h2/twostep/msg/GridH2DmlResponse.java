@@ -141,7 +141,8 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                     errKeys = ((BinaryArray)obj).array();
                 else // This can happen if user pass special array type to arguments, String[], for example.
                     errKeys = (Object[])obj;
-            } else
+            }
+            else
                 errKeys = U.unmarshal(m, errKeysBytes, ldr);
         }
         catch (IgniteCheckedException e) {
