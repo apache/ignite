@@ -21,6 +21,7 @@ import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.Table;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -50,8 +51,9 @@ public class ITSecondaryIndexTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String NAME_DEPID_CITY_IDX = "NAME_DEPID_CITY_IDX";
 
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         {
             TableDefinition schema = SchemaBuilders.tableBuilder("PUBLIC", "DEVELOPER")
                 .columns(

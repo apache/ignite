@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.ITUtils;
@@ -42,7 +41,7 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -101,39 +100,30 @@ public class AbstractBasicIntegrationTest {
 
     /** Work directory */
     @WorkDirectory
-    private Path workDir;
+    private static Path WORK_DIR;
 
-    @BeforeEach
-    protected void bootstrap() {
-        if (!CLUSTER_NODES.isEmpty())
-            return;
-
+    /** */
+    @BeforeAll
+    static void startNodes() {
         NODES_BOOTSTRAP_CFG.forEach((nodeName, configStr) ->
-            CLUSTER_NODES.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
+            CLUSTER_NODES.add(IgnitionManager.start(nodeName, configStr, WORK_DIR.resolve(nodeName)))
         );
-
-        initTestData();
     }
 
     /** */
     @AfterAll
-    static void tearDown() throws Exception {
-        if (CLUSTER_NODES.isEmpty())
-            return;
-
-        if (LOG.isInfoEnabled())
-            LOG.info("Start tearDown()");
+    static void stopNodes() throws Exception {
+        LOG.info("Start tearDown()");
 
         IgniteUtils.closeAll(ITUtils.reverse(CLUSTER_NODES));
 
         CLUSTER_NODES.clear();
 
-        if (LOG.isInfoEnabled())
-            LOG.info("End tearDown()");
+        LOG.info("End tearDown()");
     }
 
     /** */
-    protected QueryChecker assertQuery(String qry) {
+    protected static QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryProcessor getEngine() {
                 return ((IgniteImpl)CLUSTER_NODES.get(0)).queryEngine();
@@ -142,7 +132,7 @@ public class AbstractBasicIntegrationTest {
     }
 
     /** */
-    protected Table createAndPopulateTable() {
+    protected static Table createAndPopulateTable() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
             SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
             SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build(),
@@ -168,7 +158,8 @@ public class AbstractBasicIntegrationTest {
         return tbl;
     }
 
-    protected void insertData(Table table, String[] columnNames, Object[]... tuples) {
+    /** */
+    protected static void insertData(Table table, String[] columnNames, Object[]... tuples) {
         RecordView<Tuple> view = table.recordView();
 
         int batchSize = 128;
@@ -201,13 +192,10 @@ public class AbstractBasicIntegrationTest {
         }
     }
 
-    protected List<List<?>> sql(String sql, Object... args) {
+    /** */
+    protected static List<List<?>> sql(String sql, Object... args) {
         return getAllFromCursor(
             ((IgniteImpl)CLUSTER_NODES.get(0)).queryEngine().query("PUBLIC", sql, args).get(0)
         );
-    }
-
-    protected void initTestData() {
-
     }
 }

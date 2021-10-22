@@ -20,6 +20,7 @@ package org.apache.ignite.internal.calcite;
 import java.util.List;
 
 import org.apache.ignite.lang.IgniteException;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -30,8 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ITAggregatesTest extends AbstractBasicIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         createAndPopulateTable();
     }
 

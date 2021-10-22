@@ -26,6 +26,7 @@ import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -39,8 +40,9 @@ public class ITSortAggregateTest extends AbstractBasicIntegrationTest {
     /** */
     public static final int ROWS = 103;
 
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "TEST")
             .columns(
                 SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),

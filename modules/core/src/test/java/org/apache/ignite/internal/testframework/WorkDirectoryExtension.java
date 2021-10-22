@@ -97,11 +97,15 @@ public class WorkDirectoryExtension
     @Override public void afterAll(ExtensionContext context) throws Exception {
         removeWorkDir(context);
 
+        Path testClassDir = getTestClassDir(context);
+
+        // remove the folder for the current test class, if empty
+        if (isEmpty(testClassDir))
+            IgniteUtils.deleteIfExists(testClassDir);
+
         // remove the base folder, if empty
-        try (Stream<Path> list = Files.list(BASE_PATH)) {
-            if (list.findAny().isEmpty())
-                IgniteUtils.deleteIfExists(BASE_PATH);
-        }
+        if (isEmpty(BASE_PATH))
+            IgniteUtils.deleteIfExists(BASE_PATH);
     }
 
     /**
@@ -158,19 +162,24 @@ public class WorkDirectoryExtension
         if (existingDir != null)
             return existingDir;
 
-        String testClassDir = context.getRequiredTestClass().getSimpleName();
-
         String testMethodDir = context.getTestMethod()
             .map(Method::getName)
             .orElse(STATIC_FOLDER_NAME);
 
-        Path workDir = BASE_PATH.resolve(testClassDir).resolve(testMethodDir + '_' + System.currentTimeMillis());
+        Path workDir = getTestClassDir(context).resolve(testMethodDir + '_' + System.currentTimeMillis());
 
         Files.createDirectories(workDir);
 
         context.getStore(NAMESPACE).put(context.getUniqueId(), workDir);
 
         return workDir;
+    }
+
+    /**
+     * Returns a path to the working directory of the test class (identified by the JUnit context).
+     */
+    private static Path getTestClassDir(ExtensionContext context) {
+        return BASE_PATH.resolve(context.getRequiredTestClass().getSimpleName());
     }
 
     /**
@@ -217,5 +226,18 @@ public class WorkDirectoryExtension
      */
     private static boolean shouldRemoveDir() {
         return !IgniteSystemProperties.getBoolean(KEEP_WORK_DIR_PROPERTY);
+    }
+
+    /**
+     * Returns {@code true} if the given directory is empty or {@code false} if the given directory contains files or
+     * does not exist.
+     */
+    private static boolean isEmpty(Path dir) throws IOException {
+        if (!Files.exists(dir))
+            return false;
+
+        try (Stream<Path> list = Files.list(dir)) {
+            return list.findAny().isEmpty();
+        }
     }
 }

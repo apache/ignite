@@ -22,6 +22,7 @@ import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.Table;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -59,8 +60,9 @@ public class ITOrToUnionRuleTest extends AbstractBasicIntegrationTest {
     /** */
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "PRODUCTS").columns(
             SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
             SchemaBuilders.column("CATEGORY", ColumnType.string()).asNullable().build(),

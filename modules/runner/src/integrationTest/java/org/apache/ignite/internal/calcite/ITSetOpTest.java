@@ -28,6 +28,7 @@ import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -38,8 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ITSetOpTest extends AbstractBasicIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         Table emp1 = createTable("EMP1");
         Table emp2 = createTable("EMP2");
 
@@ -259,7 +261,7 @@ public class ITSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(3, rows.size());
     }
 
-    private Table createTable(String tableName) {
+    private static Table createTable(String tableName) {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", tableName)
             .columns(
                 SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),

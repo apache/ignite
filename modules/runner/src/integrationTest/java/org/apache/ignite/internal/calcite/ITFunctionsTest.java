@@ -64,7 +64,7 @@ public class ITFunctionsTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private <T> void checkDateTimeQuery(String sql, LongFunction<T> func) {
+    private static <T> void checkDateTimeQuery(String sql, LongFunction<T> func) {
         while (true) {
             long tsBeg = System.currentTimeMillis();
 

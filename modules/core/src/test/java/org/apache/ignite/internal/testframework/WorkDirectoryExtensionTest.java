@@ -25,6 +25,7 @@ import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -268,6 +269,32 @@ public class WorkDirectoryExtensionTest {
     @Test
     void testSystemProperty() {
         assertExecutesSuccessfully(SystemPropertiesTest.class);
+    }
+
+    /**
+     * Test class for the {@link #testEmptyClass()} test.
+     */
+    @ExtendWith(WorkDirectoryExtension.class)
+    static class TestEmptyClass {
+        /** */
+        @WorkDirectory
+        private Path workDir;
+
+        /** */
+        @Disabled
+        @Test
+        void test() {}
+    }
+
+    /**
+     * Tests {@code WorkDirectoryExtension} lifecycle works correctly on a test class with all test methods being
+     * disabled.
+     *
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-15799">IGNITE-15799</a>
+     */
+    @Test
+    void testEmptyClass() {
+        assertExecutesSuccessfully(TestEmptyClass.class);
     }
 
     /**

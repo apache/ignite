@@ -25,6 +25,7 @@ import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.table.Table;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /** */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ITMixedQueriesTest extends AbstractBasicIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         Table emp1 = createTable("EMP1");
         Table emp2 = createTable("EMP2");
 
@@ -301,7 +303,7 @@ public class ITMixedQueriesTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
-    private Table createTable(String tableName) {
+    private static Table createTable(String tableName) {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", tableName)
             .columns(
                 SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),

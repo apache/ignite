@@ -22,6 +22,7 @@ import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConver
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -31,8 +32,9 @@ import static java.util.stream.Stream.generate;
 /** */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ITMetadataTest extends AbstractBasicIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected void initTestData() {
+    /** */
+    @BeforeAll
+    static void initTestData() {
         createAndPopulateTable();
     }
 
