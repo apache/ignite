@@ -14,7 +14,7 @@
 // limitations under the License.
 = Multiversion Concurrency Control
 
-IMPORTANT: MVCC is currently in beta.
+CAUTION: `TRANSACTIONAL_SNAPSHOT` is deprecated since 2.12 and will be removed in the next releases.
 
 == Overview
 
