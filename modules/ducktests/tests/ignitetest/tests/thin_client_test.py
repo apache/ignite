@@ -70,7 +70,6 @@ class ThinClientTest(IgniteTest):
         thin_clients.run()
         ignite.stop()
 
-
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 60, "freeze": True},
