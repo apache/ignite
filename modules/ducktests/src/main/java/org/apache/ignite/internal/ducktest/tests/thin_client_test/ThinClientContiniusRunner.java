@@ -30,14 +30,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 
 /** Start Thin Client making some operations for a given time. */
 public class ThinClientContiniusRunner implements Runnable {
-    /** Size of one entry. */
-    private static final int DATA_SIZE = 15;
-
     /** Time of one iteration. */
     private static final int RUN_TIME = 1000;
-
-    /** Size of Map to putAll. */
-    private static final int PUT_ALL_SIZE = 1000;
 
     /** Ignite Client configuration. */
     private ClientConfiguration cfg;
@@ -46,13 +40,13 @@ public class ThinClientContiniusRunner implements Runnable {
     private List<Long> connectTime;
 
     /** Type of client. */
-    private ClientType type;
+    private ContiniusClientInterface func;
 
     /** {@inheritDoc} */
-    ThinClientContiniusRunner(ClientConfiguration cfg, List<Long> connectTime, ClientType type) {
+    ThinClientContiniusRunner(ClientConfiguration cfg, List<Long> connectTime, ContiniusClientInterface func) {
         this.cfg = cfg;
 
-        this.type = type;
+        this.func = func;
 
         this.connectTime = connectTime;
     }
@@ -75,36 +69,8 @@ public class ThinClientContiniusRunner implements Runnable {
 
                 long stopTyme = System.currentTimeMillis() + RUN_TIME;
 
-                switch (type) {
-                    case CONNECT:
-                        TimeUnit.MILLISECONDS.sleep(RUN_TIME);
+                func.apply(cache, stopTyme);
 
-                        break;
-
-                    case PUT:
-                        while (stopTyme > System.currentTimeMillis()) {
-                            cache.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
-                        }
-
-                        break;
-
-                    case PUTALL:
-                        while (stopTyme > System.currentTimeMillis()) {
-
-                            Map<UUID, byte[]> data = new HashMap<>();
-
-                            for (int i = 0; i < PUT_ALL_SIZE; i++) {
-                                data.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
-                            }
-
-                            cache.putAll(data);
-                        }
-                        
-                        break;
-
-                    default:
-                        throw new IgniteCheckedException("Unknown operation: " + type + ".");
-                }
             } catch (InterruptedException interruptedException){
                 Thread.currentThread().interrupt();
             }

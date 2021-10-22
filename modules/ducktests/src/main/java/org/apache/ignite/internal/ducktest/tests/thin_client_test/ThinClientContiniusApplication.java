@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,8 +48,22 @@ enum ClientType {
     PUTALL
 }
 
+@FunctionalInterface
+interface ContiniusClientInterface {
+    public void apply(ClientCache<UUID, byte[]> cache, long stopTime) throws InterruptedException;
+}
+
 /** Run multiple Thin Clients making some work for a given time */
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
+    /** Size of one entry. */
+    private static final int DATA_SIZE = 15;
+
+    /** Time of one iteration. */
+    private static final int RUN_TIME = 1000;
+
+    /** Size of Map to putAll. */
+    private static final int PUT_ALL_SIZE = 1000;
+
     /** {@inheritDoc} */
     @Override
     protected void run(JsonNode jsonNode) throws Exception {
@@ -58,6 +77,29 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 
         client.close();
 
+        ContiniusClientInterface connectClientsImpl = (ClientCache<UUID, byte[]> cache, long stopTyme) -> {
+            TimeUnit.MILLISECONDS.sleep(RUN_TIME);
+        };
+
+        ContiniusClientInterface putClientsImpl = (ClientCache<UUID, byte[]> cache, long stopTyme) -> {
+            while (stopTyme > System.currentTimeMillis()) {
+                cache.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
+            }
+        };
+
+        ContiniusClientInterface putAllClientsImpl = (ClientCache<UUID, byte[]> cache, long stopTyme) -> {
+            while (stopTyme > System.currentTimeMillis()) {
+
+                Map<UUID, byte[]> data = new HashMap<>();
+
+                for (int i = 0; i < PUT_ALL_SIZE; i++) {
+                    data.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
+                }
+
+                cache.putAll(data);
+            }
+        };
+
         markInitialized();
 
         log.info("RUN CLIENTS");
@@ -66,11 +108,12 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 
         List<List<Long>> connectTimes = new ArrayList<>();
 
-        startClients(ClientType.CONNECT, connectClients, connectTimes, cfg);
 
-        startClients(ClientType.PUT, putClients, connectTimes, cfg);
+        startClients(cfg, connectTimes, connectClientsImpl, connectClients);
 
-        startClients(ClientType.PUTALL, putAllClients, connectTimes, cfg);
+        startClients(cfg, connectTimes, putClientsImpl, putClients);
+
+        startClients(cfg, connectTimes, putAllClientsImpl, putAllClients);
 
         log.info("START WAITING");
 
@@ -84,13 +127,13 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
     }
 
     /** Internal function to start clients */
-    private void startClients(ClientType type, int count, List<List<Long>> times, ClientConfiguration cfg){
+    private void startClients(ClientConfiguration cfg, List<List<Long>> times, ContiniusClientInterface func, int count){
         for (int i = 0; i < count; i++) {
             List<Long> connectTime = new ArrayList<>();
 
             times.add(connectTime);
 
-            new Thread(new ThinClientContiniusRunner(cfg, connectTime, type)).start();
+            new Thread(new ThinClientContiniusRunner(cfg, connectTime, func)).start();
         }
     }
 }
