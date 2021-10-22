@@ -19,12 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -676,24 +671,10 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
-    /** */
-    private List<List<?>> executeSql(String sql, Object... args) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql, args);
-
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected QueryChecker assertQuery(String qry) {
         return super.assertQuery(qry.replace("select", "select "
             + Arrays.stream(joinType.disabledRules).collect(Collectors.joining("','", "/*+ DISABLE_RULE('", "') */"))));
-    }
-
-    /** */
-    private CalciteQueryProcessor queryProcessor() {
-        return Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
     }
 
     /** */

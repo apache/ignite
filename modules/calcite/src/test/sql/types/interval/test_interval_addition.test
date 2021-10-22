@@ -1,7 +1,6 @@
 # name: test/sql/types/interval/test_interval_addition.test
 # description: Test interval addition/subtraction
 # group: [interval]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-14975
 
 statement ok
 PRAGMA enable_verification
@@ -177,18 +176,18 @@ SELECT DATE '1993-03-01' - INTERVAL '1' SECOND
 
 # but a large amount of seconds does have an impact
 query T
-SELECT DATE '1993-03-01' + INTERVAL '1000000' SECOND
+SELECT DATE '1993-03-01' + INTERVAL '1000000' SECOND(7)
 ----
 1993-03-12
 
 query T
-SELECT DATE '1993-03-01' - INTERVAL '1000000' SECOND
+SELECT DATE '1993-03-01' - INTERVAL '1000000' SECOND(7)
 ----
 1993-02-18
 
 # we cannot subtract dates from intervals
 statement error
-SELECT INTERVAL '1000000' SECOND - DATE '1993-03-01'
+SELECT INTERVAL '1000000' SECOND(7) - DATE '1993-03-01'
 
 # we can add/subtract them to/from times
 query T
@@ -232,25 +231,20 @@ SELECT TIME '00:00:00' + INTERVAL '-1' HOUR
 query T
 SELECT TIMESTAMP '1992-01-01 10:00:00' + INTERVAL '1' DAY
 ----
-1992-01-02 10:00:00
+1992-01-02 10:00:00.0
 
 query T
 SELECT INTERVAL '1' DAY + TIMESTAMP '1992-01-01 10:00:00'
 ----
-1992-01-02 10:00:00
-
-query T
-SELECT TIMESTAMP '1992-01-01 10:00:05' + INTERVAL '17 years 3 months 1 day 2 hours 1 minute 57 seconds'
-----
-2009-04-02 12:02:02
+1992-01-02 10:00:00.0
 
 query T
 SELECT TIMESTAMP '1992-01-01 10:00:00' - INTERVAL '1' DAY
 ----
-1991-12-31 10:00:00
+1991-12-31 10:00:00.0
 
 query T
-select timestamp '1993-01-01 00:00:00' - timestamp '1991-01-01 01:00:30';
+select (timestamp '1993-01-01 00:00:00' - timestamp '1991-01-01 01:00:30') days;
 ----
-1 year 11 months 30 days 22:59:30
+PT17542H59M30S
 

@@ -21,16 +21,21 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Geometries;
+import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,6 +44,14 @@ import org.apache.ignite.internal.util.typedef.F;
  * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+    /** Interval qualifier to create year-month interval types. */
+    private static final SqlIntervalQualifier INTERVAL_QUALIFIER_YEAR_MONTH = new SqlIntervalQualifier(TimeUnit.YEAR,
+        TimeUnit.MONTH, SqlParserPos.ZERO);
+
+    /** Interval qualifier to create day-time interval types. */
+    private static final SqlIntervalQualifier INTERVAL_QUALIFIER_DAY_TIME = new SqlIntervalQualifier(TimeUnit.DAY,
+        TimeUnit.SECOND, SqlParserPos.ZERO);
+
     /** */
     public IgniteTypeFactory() {
         super(IgniteTypeSystem.INSTANCE);
@@ -147,11 +160,13 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return LocalDateTime.class;
                 case INTEGER:
+                    return type.isNullable() ? Integer.class : int.class;
                 case INTERVAL_YEAR:
                 case INTERVAL_YEAR_MONTH:
                 case INTERVAL_MONTH:
-                    return type.isNullable() ? Integer.class : int.class;
+                    return Period.class;
                 case BIGINT:
+                    return type.isNullable() ? Long.class : long.class;
                 case INTERVAL_DAY:
                 case INTERVAL_DAY_HOUR:
                 case INTERVAL_DAY_MINUTE:
@@ -162,7 +177,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case INTERVAL_MINUTE:
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
-                    return type.isNullable() ? Long.class : long.class;
+                    return Duration.class;
                 case SMALLINT:
                     return type.isNullable() ? Short.class : short.class;
                 case TINYINT:
@@ -220,6 +235,28 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     @Override public Charset getDefaultCharset() {
         // Use JVM default charset rather then Calcite default charset (ISO-8859-1).
         return Charset.defaultCharset();
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType toSql(RelDataType type) {
+        if (type instanceof JavaType) {
+            Class<?> clazz = ((JavaType)type).getJavaClass();
+
+            if (clazz == Duration.class)
+                return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
+            else if (clazz == Period.class)
+                return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
+        }
+
+        return super.toSql(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createType(Type type) {
+        if (type == Duration.class || type == Period.class)
+            return createJavaType((Class<?>)type);
+
+        return super.createType(type);
     }
 
     /** */

@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -31,6 +34,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
@@ -81,6 +86,28 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
                 return Commons.lookupComponent(client.context(), QueryEngine.class);
             }
         };
+    }
+
+    /** */
+    protected List<List<?>> executeSql(String sql, Object... args) {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        List<FieldsQueryCursor<List<?>>> cur = qryProc.query(null, "PUBLIC", sql, args);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
+        }
+    }
+
+    /**
+     * Asserts that executeSql throws an exception.
+     *
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
+        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
     }
 
     /** */
