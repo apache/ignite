@@ -121,6 +121,27 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testArrayOfBinariesSerDe() {
+        BinaryObject[] arr = new BinaryObject[] {
+            server.binary().toBinary(new TestClass1()),
+            server.binary().toBinary(new TestClass1())
+        };
+
+        BinaryObject obj = server.binary().toBinary(arr);
+
+        Object deser = obj.deserialize();
+
+        assertEquals(Object[].class, deser.getClass());
+
+        Object[] res = ((Object[])deser);
+
+        assertEquals(2, res.length);
+        assertTrue(res[0] instanceof TestClass1);
+        assertTrue(res[1] instanceof TestClass1);
+    }
+
+    /** */
+    @Test
     public void testBinaryArraySerDe() {
         TestClass1[] arr = {new TestClass1(), new TestClass1()};
 

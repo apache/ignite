@@ -54,7 +54,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     @Nullable private String compClsName;
 
     /** Values. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object[] arr;
 
     /**
@@ -102,14 +102,14 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
-            boolean deserializeBinary = BinaryObject.class.isAssignableFrom(compType);
-
             Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 
-            for (int i = 0; i < arr.length; i++) {
-                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+            boolean keepBinary = BinaryObject.class.isAssignableFrom(compType);
 
-                if (deserializeBinary && obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
+            for (int i = 0; i < arr.length; i++) {
+                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], keepBinary, false, ldr);
+
+                if (!keepBinary && obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
                     obj = ((BinaryObject)obj).deserialize(ldr);
 
                 res[i] = obj;

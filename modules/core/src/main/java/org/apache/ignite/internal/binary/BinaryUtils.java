@@ -1177,6 +1177,10 @@ public class BinaryUtils {
             return BinaryWriteMode.BINARY_ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
+        // Write of BinaryObject interface is not supported.
+        // BinaryObject itself should be used only in BinaryArray to support arrays of binary objects.
+        else if (cls == BinaryObject.class)
+            return BinaryWriteMode.EXCLUSION;
         else if (Proxy.class.isAssignableFrom(cls))
             return BinaryWriteMode.PROXY;
         else

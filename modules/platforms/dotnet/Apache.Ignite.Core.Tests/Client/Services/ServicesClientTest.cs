@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(99, svc.IntProperty);
 
             // Object.
-            svc.PersonProperty= new Person(123);
+            svc.PersonProperty = new Person(123);
             Assert.AreEqual(123, svc.PersonProperty.Id);
         }
 

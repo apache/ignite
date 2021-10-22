@@ -125,6 +125,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: binary enum. */
         public const byte BinaryEnum = 38;
 
+        /** Type: binary enum. */
+        public const byte IBinaryObject = 39;
+
         /** Type: native job holder. */
         public const byte NativeJobHolder = 77;
 

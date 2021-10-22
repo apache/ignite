@@ -1105,7 +1105,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return elemType == typeof(object)
                 ? ObjTypeId
-                : marsh.GetDescriptor(elemType).TypeId;
+                : elemType == typeof(IBinaryObject)
+                    ? BinaryTypeId.IBinaryObject
+                    : marsh.GetDescriptor(elemType).TypeId;
         }
 
         /// <summary>
@@ -1115,7 +1117,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return typeId == ObjTypeId
                 ? typeof(object)
-                : marsh.GetDescriptor(true, typeId, true).Type;
+                : typeId == BinaryTypeId.IBinaryObject ? typeof(IBinaryObject)
+                    : marsh.GetDescriptor(true, typeId, true).Type;
         }
 
         /// <summary>
