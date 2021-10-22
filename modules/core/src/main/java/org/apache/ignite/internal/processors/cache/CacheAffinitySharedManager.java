@@ -86,6 +86,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager.CacheGroupNoAffOrFilteredHolder.create;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CALCULATION;
 
@@ -661,7 +662,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert grpHolder != null && !grpHolder.nonAffNode() : grpHolder;
 
                 try {
-                    grpHolder = createHolder(
+                    grpHolder = create(
                         cctx,
                         cachesRegistry.group(grpId),
                         topVer,
@@ -1987,7 +1988,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                 if (grp == null) {
-                    grpHolder = createHolder(cctx, desc, topVer, null);
+                    grpHolder = create(cctx, desc, topVer, null);
 
                     final GridAffinityAssignmentCache aff = grpHolder.affinity();
 
@@ -2138,9 +2139,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert (affNode && grp != null) || (!affNode && grp == null);
 
-        CacheGroupHolder cacheGrp = affNode ?
-            new CacheGroupAffNodeHolder(grp) :
-            createHolder(cctx, desc, topVer, null);
+        CacheGroupHolder cacheGrp = affNode ? new CacheGroupAffNodeHolder(grp) : create(cctx, desc, topVer, null);
 
         CacheGroupHolder old = grpHolders.put(desc.groupId(), cacheGrp);
 
@@ -2645,7 +2644,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      *
      */
-    abstract class CacheGroupHolder {
+    private abstract static class CacheGroupHolder {
         /** */
         private final GridAffinityAssignmentCache aff;
 
@@ -2659,7 +2658,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         CacheGroupHolder(boolean rebalanceEnabled,
             GridAffinityAssignmentCache aff,
-            @Nullable GridAffinityAssignmentCache initAff) {
+            @Nullable GridAffinityAssignmentCache initAff
+        ) {
             this.aff = aff;
 
             if (initAff != null)
@@ -2681,13 +2681,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /**
-         * @return Partitions number.
-         */
-        int partitions() {
-            return aff.partitions();
-        }
-
-        /**
          * @param discoCache Discovery data cache.
          * @return Cache topology.
          */
@@ -2704,7 +2697,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Created cache is started on coordinator.
      */
-    private class CacheGroupAffNodeHolder extends CacheGroupHolder {
+    private static class CacheGroupAffNodeHolder extends CacheGroupHolder {
         /** */
         private final CacheGroupContext grp;
 
@@ -2741,9 +2734,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Created if cache is not started on coordinator.
      */
-    private class CacheGroupNoAffOrFilteredHolder extends CacheGroupHolder {
+    private static class CacheGroupNoAffOrFilteredHolder extends CacheGroupHolder {
         /** */
-        private final GridCacheSharedContext cctx;
+        private final GridCacheSharedContext<?, ?> cctx;
 
         /**
          * @param rebalanceEnabled Rebalance flag.
@@ -2753,7 +2746,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         CacheGroupNoAffOrFilteredHolder(
             boolean rebalanceEnabled,
-            GridCacheSharedContext cctx,
+            GridCacheSharedContext<?, ?> cctx,
             GridAffinityAssignmentCache aff,
             @Nullable GridAffinityAssignmentCache initAff
         ) {
@@ -2766,27 +2759,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param cctx Context.
          * @param grpDesc Cache group descriptor.
          * @param topVer Current exchange version.
-         * @return Cache holder.
-         * @throws IgniteCheckedException If failed.
-         */
-        CacheGroupNoAffOrFilteredHolder create(
-            GridCacheSharedContext cctx,
-            CacheGroupDescriptor grpDesc,
-            AffinityTopologyVersion topVer
-        ) throws IgniteCheckedException {
-            return create(cctx, grpDesc, topVer, null);
-        }
-
-        /**
-         * @param cctx Context.
-         * @param grpDesc Cache group descriptor.
-         * @param topVer Current exchange version.
          * @param initAff Current affinity.
          * @return Cache holder.
          * @throws IgniteCheckedException If failed.
          */
-        CacheGroupNoAffOrFilteredHolder create(
-            GridCacheSharedContext cctx,
+        static CacheGroupNoAffOrFilteredHolder create(
+            GridCacheSharedContext<?, ?> cctx,
             CacheGroupDescriptor grpDesc,
             AffinityTopologyVersion topVer,
             @Nullable GridAffinityAssignmentCache initAff
@@ -2809,16 +2787,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             U.startLifecycleAware(F.asList(affFunc));
 
-            GridAffinityAssignmentCache aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-                grpDesc.cacheOrGroupName(),
-                grpDesc.groupId(),
-                affFunc,
-                ccfg.getNodeFilter(),
-                ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
-            );
-
-            return new CacheGroupNoAffOrFilteredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
+            return new CacheGroupNoAffOrFilteredHolder(ccfg.getRebalanceMode() != NONE, cctx,
+                GridAffinityAssignmentCache.create(cctx.kernalContext(), affFunc, ccfg), initAff);
         }
 
         /** {@inheritDoc} */
@@ -2830,43 +2800,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         @Override public GridDhtPartitionTopology topology(DiscoCache discoCache) {
             return cctx.exchange().clientTopology(groupId(), discoCache);
         }
-    }
-
-    /** */
-    private CacheGroupNoAffOrFilteredHolder createHolder(
-        GridCacheSharedContext cctx,
-        CacheGroupDescriptor grpDesc,
-        AffinityTopologyVersion topVer,
-        @Nullable GridAffinityAssignmentCache initAff
-    ) throws IgniteCheckedException {
-        assert grpDesc != null;
-        assert !cctx.kernalContext().clientNode() || !CU.affinityNode(cctx.localNode(), grpDesc.config().getNodeFilter());
-
-        CacheConfiguration<?, ?> ccfg = grpDesc.config();
-
-        assert ccfg != null : grpDesc;
-        assert ccfg.getCacheMode() != LOCAL : ccfg.getName();
-
-        assert !cctx.discovery().cacheGroupAffinityNodes(grpDesc.groupId(),
-            topVer).contains(cctx.localNode()) : grpDesc.cacheOrGroupName();
-
-        AffinityFunction affFunc = cctx.cache().clone(ccfg.getAffinity());
-
-        cctx.kernalContext().resource().injectGeneric(affFunc);
-        cctx.kernalContext().resource().injectCacheName(affFunc, ccfg.getName());
-
-        U.startLifecycleAware(F.asList(affFunc));
-
-        GridAffinityAssignmentCache aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-            grpDesc.cacheOrGroupName(),
-            grpDesc.groupId(),
-            affFunc,
-            ccfg.getNodeFilter(),
-            ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL
-        );
-
-        return new CacheGroupNoAffOrFilteredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
     }
 
     /**
