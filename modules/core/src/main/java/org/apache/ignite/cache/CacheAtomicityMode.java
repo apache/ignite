@@ -19,7 +19,6 @@ package org.apache.ignite.cache;
 
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
