@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
@@ -31,29 +30,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Thin clients.
- * connectClients connect, wait, disconnect, repeat
- * putClients - connect, put many times, disconnect, repeat
- * putAllClients - connect, putAll, disconnnet, repeat
- */
-enum ClientType {
-    /** Just connect */
-    CONNECT,
-
-    /** Make some puts */
-    PUT,
-
-    /** Make putAll */
-    PUTALL
-}
-
+/** */
 @FunctionalInterface
 interface ContiniusClientInterface {
     public void apply(ClientCache<UUID, byte[]> cache, long stopTime) throws InterruptedException;
 }
 
-/** Run multiple Thin Clients making some work for a given time */
+/** Run multiple Thin Clients making some work for a given time
+ * connectClients connect, wait, disconnect, repeat
+ * putClients - connect, put many times, disconnect, repeat
+ * putAllClients - connect, putAll, disconnnet, repeat
+ */
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
     /** Size of one entry. */
     private static final int DATA_SIZE = 15;
@@ -108,7 +95,6 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 
         List<List<Long>> connectTimes = new ArrayList<>();
 
-
         startClients(cfg, connectTimes, connectClientsImpl, connectClients);
 
         startClients(cfg, connectTimes, putClientsImpl, putClients);
@@ -137,4 +123,3 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
         }
     }
 }
-

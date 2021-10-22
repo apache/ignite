@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
@@ -52,8 +48,7 @@ public class ThinClientContiniusRunner implements Runnable {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void run() {
+    @Override public void run() {
         long connectStart;
 
         cfg.setPartitionAwarenessEnabled(true);
