@@ -22,20 +22,20 @@ is stored in an external cache storage. Later, if the same method is called with
 will be retrieved from the cache instead of actually executing the method.
 
 Apache Ignite provides the `ignite-spring-cache-ext` extension that allows to use Apache Ignite Cache as an external
-storage for the Spring Cache abstraction. The mentioned integration is achieved by providing implementations of the
+storage for the Spring Cache abstraction. The mentioned above integration is achieved by providing implementations of the
 `CacheManager` Spring interface. There are two such implementations: `SpringCacheManager` and
-`IgniteClientSpringCacheManager`, which use Apache Ignite node or Apache Ignite thin client to connect to the Apache Ignite
-cluster and perform data caching, respectively.
+`IgniteClientSpringCacheManager`, which use either Apache Ignite node or Apache Ignite thin client to connect to the
+Apache Ignite cluster and perform data caching.
 
 == Maven Configuration
 
-If you are using Maven to manage dependencies in your project, you can add Apache Ignite Spring Cache extension
+If you use Maven to manage dependencies in your project, you can add Apache Ignite Spring Cache extension
 dependencies to the application's `pom.xml` file like this:
 
 [NOTE]
 ====
-For Apache Ignite 2.10.0 version and earlier the `ignite-spring-cache-ext` dependency must be added to
-classpath before `ignite-spring`, due to duplication of Spring Cache integration classes. If you are using Maven
+For Apache Ignite 2.10.0 and earlier the `ignite-spring-cache-ext` dependency must be added to
+classpath before `ignite-spring`, due to duplication of Spring Cache integration classes. If you use Maven
 to manage dependencies, place `ignite-spring-cache-ext` before the `ignite-spring` dependency in the
 application's `pom.xml` file.
 ====
@@ -57,11 +57,11 @@ tab:pom.xml[]
     <version>${ignite.version}</version>
 </dependency>
 
-<!-- Note, that 'ignite-spring' depends on Spring dependencies which version may conflict with versions of Spring
+<!-- Note, that 'ignite-spring' depends on version of Spring dependencies, that may conflict with version of Spring
      dependencies used in your project. It is safe to exclude Spring dependencies from 'ignite-spring' and add them
      with version updated to match the Spring version used in your project.
 
-     For Apache Ignite 2.11.0 version and earlier the following list of Spring dependencies must be excluded to
+     For Apache Ignite 2.11.0 and earlier the following list of Spring dependencies must be excluded to
      avoid possible Spring version conflicts:
         - 'spring-core'
         - 'spring-aop'
@@ -93,10 +93,10 @@ tab:pom.xml[]
 
 Replace `${ignite-spring-cache-ext.version}`, `${spring.version}`, and
 `${ignite.version}` with an actual version of Apache Ignite Spring Cache extension, Spring, and
-Apache Ignite dependency you are interested in, respectively.
+Apache Ignite dependency you are need, respectively.
 
-The table below shows available versions of the Apache Ignite Spring Cache extension and corresponding versions
-of the Apache Ignite and Spring each one is compatible with.
+The table below shows available versions of the Apache Ignite Spring Cache extension and compatible versions
+of the Apache Ignite and Spring.
 
 [cols="4,5,5", opts="header"]
 |===
@@ -108,10 +108,11 @@ of the Apache Ignite and Spring each one is compatible with.
 
 === Cluster Connection Configuration
 
-Only two simple steps are required to plug in an Ignite cache into your Spring-based application using Ignite node to
-connect to Apache Ignite cluster:
+To plug in an Ignite cache into your Spring-based application that uses Ignite node to connect to Apache Ignite cluster
+you need to perform just two simple steps:
 
-* Start an Ignite node with proper configuration in embedded mode (i.e., in the same JVM where the application is running). It can already have predefined caches, but it's not required - caches will be created automatically on first access if needed.
+* Start an Ignite node with proper configuration in embedded mode (i.e., in the same JVM where the application is running).
+It can already have predefined caches, but it's not required - caches will be created automatically on first access if required.
 * Configure `SpringCacheManager` as the cache manager in the Spring application context.
 
 The embedded node can be started by `SpringCacheManager` itself. In this case you will need to provide a path to either
@@ -270,7 +271,7 @@ You can start as many remote standalone nodes as you need and all these nodes wi
 While you can have all required caches predefined in Ignite configuration, it's not required. If Spring wants to use a
 cache that doesn't exist, the `SpringCacheManager` will automatically create it.
 
-If otherwise not specified, a new cache will be created will all defaults. To customize it, you can provide a configuration
+If otherwise not specified, a new cache will be created with default configuration. To customize it, you can provide a configuration
 template via `dynamicCacheConfiguration` property. For example, if you want to use `REPLICATED` caches instead of
 `PARTITIONED`, you should configure `SpringCacheManager` like this:
 
@@ -362,13 +363,13 @@ that uses an Ignite node to connect to Ignite cluster.
 ====
 
 === Cluster Connection Configuration
-Cluster connection configuration defines Apache Ignite thin client that `IgniteClientSpringCacheManager` uses to access
+Cluster connection configuration defines Apache Ignite thin client used by `IgniteClientSpringCacheManager` to access
 the cluster.
-To do this, you can use the following approaches.
+There are several approaches to do this:
 
 [NOTE]
 ====
-Mixing of multiple approaches is incorrect and results in the exception during the manager startup.
+It is incorrect to mix multiple approaches - this results in the `IllegalArgumentException` exception during the manager startup.
 ====
 
 [discrete]
@@ -406,7 +407,7 @@ tab:XML[]
                 http://www.springframework.org/schema/cache/spring-cache.xsd">
     <!--
         Note that org.apache.ignite.IgniteClientSpringBean is available since Apache Ignite 2.11.0 version.
-        For Apache Ignite 2.10.0 version and earlier `org.apache.ignite.client.IgniteClient` bean should be created
+        For Apache Ignite 2.10.0 and earlier `org.apache.ignite.client.IgniteClient` bean should be created
         manually with concern of its connection to the Ignite cluster.
     -->
     <bean id="igniteClient" class="org.apache.ignite.IgniteClientSpringBean">
