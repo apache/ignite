@@ -32,7 +32,7 @@ public class ThinClientContiniusRunner implements Runnable {
     /** Time of connection. */
     private final List<Long> connectTime;
 
-    /** Type of client. */
+    /** Function to execute with IgniteClient. */
     private final Consumer<IgniteClient> func;
 
     /**
