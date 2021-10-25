@@ -31,7 +31,6 @@
         </details>
         <feature>ignite-core</feature>
         <feature>ignite-aop</feature>
-        <feature>ignite-aws</feature>
         <feature>ignite-camel-ext</feature>
         <feature>ignite-flume-ext</feature>
         <feature>ignite-indexing</feature>
@@ -67,19 +66,6 @@
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>        
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/${aspectj.bundle.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-aop/${project.version}</bundle>
-    </feature>
-
-    <feature name="ignite-aws" version="${project.version}" description="Apache Ignite :: AWS">
-        <details><![CDATA[The Apache Ignite AWS module + dependencies.]]></details>
-        <feature prerequisite="true">wrap</feature>
-        <bundle start="true" dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/${httpcore.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/${httpclient.version}</bundle>
-        <bundle start="true" dependency="true">mvn:commons-codec/commons-codec/${commons.codec.version}</bundle>
-        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-s3/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-s3&amp;Bundle-Version=${aws.sdk.version}&amp;Export-Package=!com.amazonaws.auth,*</bundle>
-        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-elasticloadbalancing/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-elasticloadbalancing&amp;Bundle-Version=${aws.sdk.version}</bundle>
-        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-ec2/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-ec2&amp;Bundle-Version=${aws.sdk.version}</bundle>
-        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-core/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-core&amp;Bundle-Version=${aws.sdk.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-aws/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-camel-ext" version="${ignite-camel-ext.version}" description="Apache Ignite :: Camel">
