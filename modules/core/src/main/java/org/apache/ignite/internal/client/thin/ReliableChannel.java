@@ -644,7 +644,18 @@ final class ReliableChannel implements AutoCloseable {
         if (idx != -1)
             currDfltHolder = holders.get(idx);
 
-        for (InetSocketAddress addr : allAddrs) {
+        List<InetSocketAddress> allAddrsSorted = new ArrayList<>(allAddrs);
+
+        allAddrsSorted.sort((a1, a2) -> {
+            int c = a1.getHostName().compareToIgnoreCase(a2.getHostName());
+
+            if (c == 0)
+                return a1.getPort() - a2.getPort();
+            else
+                return c;
+        });
+
+        for (InetSocketAddress addr : allAddrsSorted) {
             if (shouldStopChannelsReinit())
                 return false;
 
@@ -676,7 +687,7 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         if (dfltChannelIdx == -1)
-            dfltChannelIdx = new Random().nextInt(reinitHolders.size());
+            dfltChannelIdx = 0;//new Random().nextInt(reinitHolders.size());
 
         curChannelsGuard.writeLock().lock();
 
