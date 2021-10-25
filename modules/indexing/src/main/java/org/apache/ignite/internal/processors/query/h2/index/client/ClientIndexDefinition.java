@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
@@ -39,7 +40,7 @@ public class ClientIndexDefinition implements IndexDefinition {
     private final IndexName idxName;
 
     /** */
-    private final List<IndexKeyDefinition> keyDefs;
+    private final LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public ClientIndexDefinition(GridH2Table table, IndexName idxName, List<IndexColumn> unwrappedCols,
@@ -67,7 +68,7 @@ public class ClientIndexDefinition implements IndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+    @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
         return keyDefs;
     }
 }

@@ -343,15 +343,16 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    private static IgniteInternalCache<Object, Object> cache(Ignite ignite,
-        String cacheName) throws IgniteCheckedException {
-        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+    private static IgniteInternalCache<Object, Object> cache(
+        Ignite ignite,
+        String cacheName
+    ) throws IgniteCheckedException {
+        IgniteCacheProxy<Object, Object> cache = (IgniteCacheProxy<Object, Object>)ignite.cache(cacheName);
 
         if (cache == null)
-            throw new IgniteCheckedException(
-                "Failed to find cache for given cache name: " + cacheName);
+            throw new IgniteCheckedException("Failed to find cache for given cache name: " + cacheName);
 
-        return cache;
+        return cache.internalProxy();
     }
 
     /** {@inheritDoc} */
@@ -785,8 +786,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final String cacheName,
         final Object key,
         final CacheCommand op) throws IgniteCheckedException {
-        final boolean locExec = destId == null || destId.equals(ctx.localNodeId()) ||
-            ctx.cache().cache(cacheName) != null;
+        final boolean locExec = destId == null || destId.equals(ctx.localNodeId());
 
         if (locExec) {
             final IgniteInternalCache<Object, Object> cache = localCache(cacheName);
@@ -825,13 +825,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     protected IgniteInternalCache<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
-        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
-
-        if (cache == null)
-            throw new IgniteCheckedException(
-                "Failed to find cache for given cache name: " + cacheName);
-
-        return cache;
+        return cache(ctx.grid(), cacheName);
     }
 
     /**

@@ -163,10 +163,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestMultipleDomains()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                Logger = null
-            };
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(noLogger: true));
             
             using (var ignite = Ignition.Start(cfg))
             {
@@ -232,10 +229,9 @@ namespace Apache.Ignite.Core.Tests
         {
             public void Run()
             {
-                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(noLogger: true))
                 {
-                    IgniteInstanceName = "newDomainGrid",
-                    Logger = null
+                    IgniteInstanceName = "newDomainGrid"
                 });
 
                 // Will be stopped automatically on domain unload.
