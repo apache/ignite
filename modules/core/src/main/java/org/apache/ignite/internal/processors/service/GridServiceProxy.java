@@ -277,17 +277,7 @@ public class GridServiceProxy<T> implements Serializable {
         else {
             prepareArgs(args);
 
-            try {
-                return mtd.invoke(svc, args);
-            }
-            catch (IllegalArgumentException e) {
-                String err = e.getMessage() + " ";
-
-                for (int i = 0; i < args.length; i++)
-                    err += (args[i] == null ? "null" : args[i].getClass().getName()) + ", ";
-
-                throw new IgniteException(err);
-            }
+            return mtd.invoke(svc, args);
         }
     }
 

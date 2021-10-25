@@ -130,15 +130,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         }
     }
 
-    /** @return Arrays as {@code BinaryObject[]}. */
-    public BinaryObject[] asArrayOfBinary() {
-        BinaryObject[] res = new BinaryObject[arr.length];
-
-        System.arraycopy(arr, 0, res, 0, arr.length);
-
-        return res;
-    }
-
     /**
      * @return Underlying array.
      */
