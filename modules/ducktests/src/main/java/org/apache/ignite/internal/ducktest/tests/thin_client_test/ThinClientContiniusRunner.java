@@ -37,15 +37,14 @@ public class ThinClientContiniusRunner implements Runnable {
 
     /**
      * Start IgniteClient, save connect time and execute function
-     * @param cfg
-     * @param connectTime
-     * @param func
+     *
+     * @param cfg Configuration of Ignite Thin Client
+     * @param connectTime list to save connection times
+     * @param func Function to execute with IgniteClient
      */
     ThinClientContiniusRunner(ClientConfiguration cfg, List<Long> connectTime, Consumer<IgniteClient> func) {
         this.cfg = cfg;
-
         this.func = func;
-
         this.connectTime = connectTime;
     }
 

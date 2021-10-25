@@ -105,8 +105,7 @@ class ThinClientTest(IgniteTest):
                                                         "putClients": test_params["putClients"],
                                                         "putAllClients": test_params["putAllClients"],
                                                         "runTime": test_params["runTime"]},
-                                                num_nodes=2,
-                                                startup_timeout_sec=60)
+                                                num_nodes=2)
 
         ignite.start()
 
