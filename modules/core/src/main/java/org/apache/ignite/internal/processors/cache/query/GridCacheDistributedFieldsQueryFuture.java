@@ -34,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridCacheDistributedFieldsQueryFuture
     extends GridCacheDistributedQueryFuture<Object, Object, List<Object>>
     implements GridCacheQueryMetadataAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Meta data future. */
     private final GridFutureAdapter<List<GridQueryFieldMetadata>> metaFut;
 
@@ -44,10 +41,9 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param ctx Cache context.
      * @param reqId Request ID.
      * @param qry Query.
-     * @param nodes Nodes.
      */
-    public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId,
-        GridCacheQueryBean qry, Iterable<ClusterNode> nodes) {
+    public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId, GridCacheQueryBean qry,
+        Collection<ClusterNode> nodes) {
         super((GridCacheContext<Object, Object>)ctx, reqId, qry, nodes);
 
         metaFut = new GridFutureAdapter<>();
@@ -93,7 +89,7 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override boolean fields() {
+    @Override public boolean fields() {
         return true;
     }
 }

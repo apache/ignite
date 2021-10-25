@@ -125,7 +125,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
                 return tblCache.query(wrongQry).getAll();
 
-            }, IgniteCheckedException.class, "Index doesn't match query.");
+            }, IgniteCheckedException.class, "Index doesn't match criteria.");
         }
 
         // Wrong cache.
@@ -176,7 +176,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         check(tblCache.query(qry), 0, pivot);
 
-        String errMsg = qryDescIdxName != null ? "Index doesn't match query." : "No index found for criteria.";
+        String errMsg = qryDescIdxName != null ? "Index doesn't match criteria." : "No index found for criteria.";
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Object> wrongQry = new IndexQuery<Long, Object>(Person.class.getName(), qryDescIdxName)
