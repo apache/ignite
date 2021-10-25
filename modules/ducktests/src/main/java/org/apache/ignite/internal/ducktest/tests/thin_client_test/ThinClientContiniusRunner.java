@@ -27,13 +27,13 @@ import java.util.function.Consumer;
 /** Start Thin Client making some operations for a given time. */
 public class ThinClientContiniusRunner implements Runnable {
     /** Ignite Client configuration. */
-    private ClientConfiguration cfg;
+    private final ClientConfiguration cfg;
 
     /** Time of connection. */
-    private List<Long> connectTime;
+    private final List<Long> connectTime;
 
     /** Type of client. */
-    private Consumer<IgniteClient> func;
+    private final Consumer<IgniteClient> func;
 
     /**
      * Start IgniteClient, save connect time and execute function
@@ -52,8 +52,6 @@ public class ThinClientContiniusRunner implements Runnable {
     /** {@inheritDoc} */
     @Override public void run() {
         long connectStart;
-
-        cfg.setPartitionAwarenessEnabled(true);
 
         while (!Thread.currentThread().isInterrupted()) {
 
