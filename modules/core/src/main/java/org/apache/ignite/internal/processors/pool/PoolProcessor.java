@@ -66,6 +66,7 @@ import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -197,6 +198,10 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** Rebalance executor service. */
     @GridToStringExclude
     private ThreadPoolExecutor rebalanceExecSvc;
+
+    /** Executor service for thin clients. */
+    @GridToStringExclude
+    private ExecutorService thinClientExec;
 
     /** Rebalance striped executor service. */
     @GridToStringExclude
@@ -498,6 +503,16 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
+        thinClientExec = new IgniteThreadPoolExecutor(
+            "client-connector",
+            cfg.getIgniteInstanceName(),
+            cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+            cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+            0,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.UNDEFINED,
+            new OomExceptionHandler(ctx));
+
         rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
             cfg.getRebalanceThreadPoolSize(),
             cfg.getIgniteInstanceName(),
@@ -548,6 +563,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
+        monitorExecutor("GridThinClientExecutor", thinClientExec);
         monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         monitorStripedPool("GridDataStreamExecutor", dataStreamerExecSvc);
@@ -820,6 +836,15 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Executor service for thin clients.
+     *
+     * @return Executor service for thin clients.
+     */
+    public ExecutorService getThinClientExecutorService() {
+        return thinClientExec;
+    }
+
+    /**
      * Executor service that is in charge of processing unorderable rebalance messages.
      *
      * @return Executor service that is in charge of processing unorderable rebalance messages.
@@ -961,6 +986,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         registerExecutorMBean(mbMgr, "GridQueryExecutor", qryExecSvc);
         registerExecutorMBean(mbMgr, "GridSchemaExecutor", schemaExecSvc);
         registerExecutorMBean(mbMgr, "GridRebalanceExecutor", rebalanceExecSvc);
+        registerExecutorMBean(mbMgr, "GridThinClientExecutor", thinClientExec);
         registerExecutorMBean(mbMgr, "GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         registerStripedExecutorMBean(mbMgr, "GridDataStreamExecutor", dataStreamerExecSvc);
@@ -1052,6 +1078,10 @@ public class PoolProcessor extends GridProcessorAdapter {
         U.shutdownNow(getClass(), rebalanceExecSvc, log);
 
         rebalanceExecSvc = null;
+
+        U.shutdownNow(getClass(), thinClientExec, log);
+
+        thinClientExec = null;
 
         U.shutdownNow(getClass(), rebalanceStripedExecSvc, log);
 
