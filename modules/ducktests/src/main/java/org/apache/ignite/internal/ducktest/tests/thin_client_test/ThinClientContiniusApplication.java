@@ -17,31 +17,22 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-/** */
-@FunctionalInterface
-interface ContiniusClientInterface {
-    /** */
-    public void apply(ClientCache<UUID, byte[]> cache, long stopTime) throws InterruptedException;
-}
-
-/** Run multiple Thin Clients making some work for a given time
- * connectClients connect, wait, disconnect, repeat
- * putClients - connect, put many times, disconnect, repeat
- * putAllClients - connect, putAll, disconnnet, repeat
- */
+/** Run multiple Thin Clients making some work for a given time */
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
     /** Size of one entry. */
     private static final int DATA_SIZE = 15;
@@ -64,17 +55,30 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 
         client.close();
 
-        ContiniusClientInterface connectClientsImpl = (ClientCache<UUID, byte[]> cache, long stopTyme) -> {
-            TimeUnit.MILLISECONDS.sleep(RUN_TIME);
+        Consumer<IgniteClient> connectClientsImpl = (IgniteClient client) -> {
+            try {
+                TimeUnit.MILLISECONDS.sleep(RUN_TIME);
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         };
 
-        ContiniusClientInterface putClientsImpl = (ClientCache<UUID, byte[]> cache, long stopTyme) -> {
+        Consumer<IgniteClient> putClientsImpl = (IgniteClient client) -> {
+            ClientCache<UUID, byte[]> cache = client.getOrCreateCache("testCache");
+
+            long stopTyme = System.currentTimeMillis() + RUN_TIME;
+
             while (stopTyme > System.currentTimeMillis()) {
                 cache.put(UUID.randomUUID(), new byte[DATA_SIZE * 1024]);
             }
         };
 
-        ContiniusClientInterface putAllClientsImpl = (ClientCache<UUID, byte[]> cache, long stopTyme) -> {
+        Consumer<IgniteClient> putAllClientsImpl = (IgniteClient client) -> {
+            ClientCache<UUID, byte[]> cache = client.getOrCreateCache("testCache");
+
+            long stopTyme = System.currentTimeMillis() + RUN_TIME;
+
             while (stopTyme > System.currentTimeMillis()) {
 
                 Map<UUID, byte[]> data = new HashMap<>();
@@ -114,7 +118,7 @@ public class ThinClientContiniusApplication extends IgniteAwareApplication {
 
     /** Internal function to start clients */
     private void startClients(ClientConfiguration cfg, List<List<Long>> times,
-                              ContiniusClientInterface func, int count) {
+                              Consumer<IgniteClient> func, int count) {
         for (int i = 0; i < count; i++) {
             List<Long> connectTime = new ArrayList<>();
 

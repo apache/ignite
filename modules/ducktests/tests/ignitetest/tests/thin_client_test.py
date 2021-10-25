@@ -109,6 +109,7 @@ class ThinClientTest(IgniteTest):
                                                 startup_timeout_sec=60)
 
         ignite.start()
+
         ControlUtility(cluster=ignite).activate()
 
         thin_clients.start_async()
@@ -122,10 +123,7 @@ class ThinClientTest(IgniteTest):
                 time.sleep(7)
 
         thin_clients.await_event("IGNITE_APPLICATION_FINISHED", 120)
+
         thin_clients.stop(force_stop=True)
-
-        ControlUtility(cluster=ignite).baseline()
-
-        ControlUtility(cluster=ignite).deactivate()
 
         ignite.stop()

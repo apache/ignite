@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 /** Start Thin Client making some operations for a given time. */
 public class ThinClientContiniusRunner implements Runnable {
-    /** Time of one iteration. */
-    private static final int RUN_TIME = 1000;
-
     /** Ignite Client configuration. */
     private ClientConfiguration cfg;
 
@@ -36,10 +33,15 @@ public class ThinClientContiniusRunner implements Runnable {
     private List<Long> connectTime;
 
     /** Type of client. */
-    private ContiniusClientInterface func;
+    private Consumer<IgniteClient> func;
 
-    /** {@inheritDoc} */
-    ThinClientContiniusRunner(ClientConfiguration cfg, List<Long> connectTime, ContiniusClientInterface func) {
+    /**
+     * Start IgniteClient, save connect time and execute function
+     * @param cfg
+     * @param connectTime
+     * @param func
+     */
+    ThinClientContiniusRunner(ClientConfiguration cfg, List<Long> connectTime, Consumer<IgniteClient> func) {
         this.cfg = cfg;
 
         this.func = func;
@@ -60,17 +62,10 @@ public class ThinClientContiniusRunner implements Runnable {
             try (IgniteClient client = Ignition.startClient(cfg)) {
                 connectTime.add(System.currentTimeMillis() - connectStart);
 
-                ClientCache<UUID, byte[]> cache = client.getOrCreateCache("testCache");
-
-                long stopTyme = System.currentTimeMillis() + RUN_TIME;
-
-                func.apply(cache, stopTyme);
-
-            } catch (InterruptedException interruptedException) {
-                Thread.currentThread().interrupt();
+                func.accept(client);
             }
             catch (Exception e) {
-                System.out.println(e);
+                e.printStackTrace();
             }
         }
     }
