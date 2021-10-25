@@ -86,7 +86,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager.CacheGroupNoAffOrFilteredHolder.create;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CALCULATION;
 
@@ -662,7 +661,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert grpHolder != null && !grpHolder.nonAffNode() : grpHolder;
 
                 try {
-                    grpHolder = create(
+                    grpHolder = CacheGroupNoAffOrFilteredHolder.create(
                         cctx,
                         cachesRegistry.group(grpId),
                         topVer,
@@ -1988,7 +1987,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                 if (grp == null) {
-                    grpHolder = create(cctx, desc, topVer, null);
+                    grpHolder = CacheGroupNoAffOrFilteredHolder.create(cctx, desc, topVer, null);
 
                     final GridAffinityAssignmentCache aff = grpHolder.affinity();
 
@@ -2139,7 +2138,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert (affNode && grp != null) || (!affNode && grp == null);
 
-        CacheGroupHolder cacheGrp = affNode ? new CacheGroupAffNodeHolder(grp) : create(cctx, desc, topVer, null);
+        CacheGroupHolder cacheGrp = affNode ? new CacheGroupAffNodeHolder(grp) :
+            CacheGroupNoAffOrFilteredHolder.create(cctx, desc, topVer, null);
 
         CacheGroupHolder old = grpHolders.put(desc.groupId(), cacheGrp);
 

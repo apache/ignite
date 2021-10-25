@@ -1577,7 +1577,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * @return Future that will be completed when rebalancing is finished. Future.get() returns {@code true}
      *      when rebalance was successfully finished.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public IgniteFuture<Boolean> rebalance();
 
     /**
