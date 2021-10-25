@@ -2073,7 +2073,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return new BinaryArray(ctx, compTypeId, compClsName, arr, deserialize);
+        return new BinaryArray(ctx, compTypeId, compClsName, arr, !deserialize);
     }
 
     /**

@@ -3024,7 +3024,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 assertTrue(map.containsKey(key));
                 assertEquals(val, map.get(key));
             });
-        });
+        }, false);
     }
 
     /**
@@ -3044,7 +3044,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(col.contains(val));
             });
-        });
+        }, false);
     }
 
     /** @throws Exception If failed. */
@@ -3063,7 +3063,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(args[0] instanceof Value[]);
             assertArrayEquals(arr, (Value[])args[0]);
-        });
+        }, true);
     }
 
     /** @throws Exception If failed. */
@@ -3081,7 +3081,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(args[0] instanceof Collection[]);
             assertArrayEquals(arr, (Collection[])args[0]);
-        });
+        }, true);
     }
 
 
@@ -3096,7 +3096,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             Collection deserVals = (Collection)((Object[])args[0])[0];
 
             assertEqualsCollections(arr[0], deserVals);
-        });
+        }, false);
     }
 
     /**
@@ -3106,7 +3106,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param action Action to perform on object.
      * @throws Exception If failed.
      */
-    private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action) throws Exception {
+    private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action, boolean deserialize) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
         BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
@@ -3119,7 +3119,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
 
-        Object bObj = reader.readObjectDetached();
+        Object bObj = reader.readObjectDetached(deserialize);
 
         Arrays.fill(os.array(), (byte)0);
 

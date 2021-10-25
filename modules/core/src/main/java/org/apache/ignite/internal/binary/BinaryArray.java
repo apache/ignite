@@ -58,7 +58,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     private Object[] arr;
 
     /** */
-    private boolean deserialize;
+    private boolean keepBinary;
 
     /**
      * {@link Externalizable} support.
@@ -72,13 +72,14 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
      * @param compTypeId Component type id.
      * @param compClsName Component class name.
      * @param arr Array.
+     * @param keepBinary Keep binary.
      */
-    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr, boolean deserialize) {
+    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr, boolean keepBinary) {
         this.ctx = ctx;
         this.compTypeId = compTypeId;
         this.compClsName = compClsName;
         this.arr = arr;
-        this.deserialize = deserialize;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -98,7 +99,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException {
-        if (!deserialize)
+        if (keepBinary)
             return (T)arr;
 
         ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
@@ -145,6 +146,11 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         return arr;
     }
 
+    /** @param keepBinary Keep binary value. */
+    public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
+    }
+
     /**
      * @return Component type ID.
      */
@@ -161,7 +167,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
-        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone(), deserialize);
+        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone(), keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +180,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         out.writeInt(compTypeId);
         out.writeObject(compClsName);
         out.writeObject(arr);
-        out.writeBoolean(deserialize);
+        out.writeBoolean(keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -184,7 +190,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         compTypeId = in.readInt();
         compClsName = (String)in.readObject();
         arr = (Object[])in.readObject();
-        deserialize = in.readBoolean();
+        keepBinary = in.readBoolean();
     }
 
     /** {@inheritDoc} */

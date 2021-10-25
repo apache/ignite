@@ -27,10 +27,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -280,22 +278,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (reader.readBoolean()) {
                     args = new Object[reader.readInt()];
 
-                    for (int i = 0; i < args.length; i++) {
+                    for (int i = 0; i < args.length; i++)
                         args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
-
-                        // TODO: this handling should be moved inside serivce execution!
-                        if (args[i] instanceof BinaryArray) {
-                            if (!srvKeepBinary && !svc.isPlatformService())
-                                args[i] = ((BinaryArray)args[i]).deserialize();
-                            else {
-                                BinaryArray arr = (BinaryArray)args[i];
-
-                                args[i] = arr.componentTypeId() == GridBinaryMarshaller.BINARY_OBJ_INTERFACE
-                                    ? arr.asArrayOfBinary()
-                                    : arr.array();
-                            }
-                        }
-                    }
                 }
                 else
                     args = null;

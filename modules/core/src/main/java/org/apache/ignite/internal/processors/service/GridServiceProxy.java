@@ -275,10 +275,7 @@ public class GridServiceProxy<T> implements Serializable {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
         else {
-            for (int i = 0; i < args.length; i++) {
-                if (args[i] instanceof BinaryArray)
-                    args[i] = ((BinaryArray)args[i]).deserialize();
-            }
+            prepareArgs(args);
 
             try {
                 return mtd.invoke(svc, args);
@@ -290,6 +287,19 @@ public class GridServiceProxy<T> implements Serializable {
                     err += (args[i] == null ? "null" : args[i].getClass().getName()) + ", ";
 
                 throw new IgniteException(err);
+            }
+        }
+    }
+
+    /** */
+    public static void prepareArgs(Object[] args) {
+        if (args == null)
+            return;
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof BinaryArray) {
+                ((BinaryArray)args[i]).keepBinary(false);
+                args[i] = ((BinaryArray)args[i]).deserialize();
             }
         }
     }
@@ -501,6 +511,8 @@ public class GridServiceProxy<T> implements Serializable {
         private Object callService(Service srv, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
+
+            prepareArgs(args);
 
             try {
                 return mtd.invoke(srv, args);
