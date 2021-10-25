@@ -11,8 +11,7 @@ $IGNITE_HOME/platforms/cpp/odbc/README.txt.
 Common Requirements:
  * C++ compiler and SDK:
   Linux and Mac OS X:
-   * clang 3.9 or later
-   * gcc 3.6 or later
+   * clang >= 3.9 or gcc >= 3.6
   Windows:
    * Visual Studio 2010 or later
    * Windows SDK 7.1 or later
@@ -44,13 +43,16 @@ Building and installing the Apache Ignite C++ components:
  * Execute the following commands one by one to build the project:
  * mkdir cmake-build-[release|debug]
  * cd ./cmake-build-[release|debug]
- * Run CMake configuration:
-  * On Linux or Mac OS X:
+ * run CMake configuration:
+  * on Linux or Mac OS X:
     cmake .. -DCMAKE_BUILD_TYPE=[Release|Debug] [-DCMAKE_INSTALL_PREFIX=<install_dir>] [-DWITH_THIN_CLIENT=ON]
           [-DWITH_ODBC=ON] [-DWITH_TESTS=ON]
-  * On Windows:
-    cmake .. -DCMAKE_BUILD_TYPE=[Release|Debug] -DCMAKE_GENERATOR_PLATFORM=[Win32|x64]
-          [-DCMAKE_INSTALL_PREFIX=<install_dir>] [-DWITH_THIN_CLIENT=ON] [-DWITH_ODBC=ON] [-DWITH_TESTS=ON]
+  * on Windows:
+    cmake .. -DCMAKE_GENERATOR_PLATFORM=[Win32|x64] [-DCMAKE_INSTALL_PREFIX=<install_dir>] [-DWITH_THIN_CLIENT=ON]
+          [-DWITH_ODBC=ON] [-DWITH_TESTS=ON]
+
+    CMake by default generate on Windows Visual Studio projects. You can find generated projects in CMake
+    build directory (./cmake-build-[release|debug]) and open Ignite.C++.sln in Visual Studio.
  * cmake --build . --target install --config [Release|Debug]
 
 Testing:
@@ -84,8 +86,8 @@ Building ODBC Installers on Windows:
  * mkdir cmake-build-release-[32|64]
  * cd ./cmake-build-release-[32|64]
  * Run CMake configuration:
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=[Win32|x64]
-       [-DCMAKE_INSTALL_PREFIX=<install_dir>] [-DWITH_CORE=OFF] [-DWITH_ODBC=ON]
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR_PLATFORM=[Win32|x64] -
+       -DCMAKE_INSTALL_PREFIX=<install_dir> -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON
  * cmake --build . --target install --config Release
 
 ODBC msi installers will be located in <install_dir>/bin

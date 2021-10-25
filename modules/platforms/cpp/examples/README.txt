@@ -20,8 +20,7 @@ Running examples.
 Prerequisites:
  * C++ compiler and SDK:
   Linux and Mac OS X:
-   * clang 3.9 or later
-   * gcc 3.6 or later
+   * clang >= 3.9 or gcc >= 3.6
   Windows:
    * Visual Studio 2010 or later
    * Windows SDK 7.1 or later
@@ -31,8 +30,15 @@ Prerequisites:
 To build examples execute the following commands one by one from examples root directory:
  * mkdir cmake-build-[debug|release]
  * cd ./cmake-build-[debug|release]
- * cmake .. -DCMAKE_BUILD_TYPE=[Release|Debug] [-DIGNITE_CPP_DIR=<ignite_install_dir>]
+ * run CMake configuration:
+  * on Linux or Mac OS X:
+     cmake .. -DCMAKE_BUILD_TYPE=[Release|Debug] [-DIGNITE_CPP_DIR=<ignite_install_dir>]
+  * on Windows:
+     cmake .. -DCMAKE_GENERATOR_PLATFORM=[Win32|x64] [-DIGNITE_CPP_DIR=<ignite_install_dir>]
  * cmake --build . --config [Release|Debug]
+
+CMake by default generate on Windows Visual Studio projects. You can find generated projects in CMake
+build directory (./cmake-build-[release|debug]) and open examples.sln in Visual Studio.
 
 If Apache Ignite C++ is installed in default directories (i.e. /usr/local or /usr), setting IGNITE_CPP_DIR property
 is not necessary. As a result executables will be in corresponding subdirectories in cmake-build-release directory.

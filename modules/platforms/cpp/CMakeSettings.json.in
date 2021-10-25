@@ -31,7 +31,7 @@
         },
         {
           "name": "WITH_TESTS",
-          "value": "ON"
+          "value": "OFF"
         }
       ]
     },
@@ -56,7 +56,7 @@
         },
         {
           "name": "WITH_TESTS",
-          "value": "ON"
+          "value": "OFF"
         }
       ]
     }
