@@ -91,7 +91,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /**
      * @param callCtx Service call context of the current thread.
      */
-    public static void current(@Nullable ServiceCallContext callCtx) {
+    protected static void current(@Nullable ServiceCallContext callCtx) {
         if (callCtx != null)
             locCallCtx.set(callCtx);
         else
