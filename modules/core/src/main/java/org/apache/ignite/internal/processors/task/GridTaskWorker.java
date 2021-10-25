@@ -832,7 +832,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             ? res.getJobResult()
                             : unmarshalResult(
                                 res.getJobResultBytes(),
-                                true,
+                                false,
                                 U.resolveClassLoader(clsLdr, ctx.config())
                             );
 
