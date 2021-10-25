@@ -72,6 +72,7 @@
     <Compile Include="Model\TestModel.cs" />
     <Compile Include="Binary\BinarizableReadBenchmark.cs" />
     <Compile Include="Binary\BinarizableWriteBenchmark.cs" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Result\BenchmarkConsoleResultWriter.cs" />
     <Compile Include="Result\BenchmarkFileResultWriter.cs" />

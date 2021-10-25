@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs" />
     <Compile Remove="Service\IgniteService.cs" />
     <Compile Remove="Service\IgniteServiceInstaller.cs" />
   </ItemGroup>

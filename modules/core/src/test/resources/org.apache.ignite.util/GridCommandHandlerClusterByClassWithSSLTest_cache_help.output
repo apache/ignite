@@ -29,6 +29,13 @@ Arguments: --cache help --yes
       --groups                    - print information about groups.
       --seq                       - print information about sequences.
 
+  --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
+    Permanently destroy specified caches.
+
+    Parameters:
+      --caches cache1,...,cacheN  - specifies a comma-separated list of cache names to be destroyed.
+      --destroy-all-caches        - permanently destroy all user-created caches.
+
   --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
     Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries.
 

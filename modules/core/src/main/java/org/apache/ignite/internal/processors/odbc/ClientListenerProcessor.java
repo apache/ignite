@@ -157,6 +157,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 int selectorCnt = cliConnCfg.getSelectorCount();
 
+                ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()

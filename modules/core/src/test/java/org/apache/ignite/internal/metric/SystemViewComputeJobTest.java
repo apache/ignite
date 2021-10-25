@@ -508,14 +508,17 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
             }
         }
 
+        /** {@inheritDoc} */
         @Override public void setExternalCollisionListener(@Nullable CollisionExternalListener lsnr) {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }

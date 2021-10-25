@@ -421,7 +421,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         readThrough,
                         /*metrics*/retVal,
                         /*event*/evt,
-                        tx.subjectId(),
                         entryProc,
                         tx.resolveTaskName(),
                         null,
@@ -540,7 +539,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*readThrough*/false,
                             /*metrics*/false,
                             /*event*/false,
-                            /*subjectId*/tx.subjectId(),
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
@@ -1451,7 +1449,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.nearXidVersion(),
                 true,
                 tx.onePhaseCommit(),
-                tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
@@ -1566,7 +1563,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.nearXidVersion(),
                     true,
                     tx.onePhaseCommit(),
-                    tx.subjectId(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
@@ -2013,7 +2009,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null, false);
+                                        false, null, null, false);
 
                                 if (retVal && !invoke) {
                                     ret.value(

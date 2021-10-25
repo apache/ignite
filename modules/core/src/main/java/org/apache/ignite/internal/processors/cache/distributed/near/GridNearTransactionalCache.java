@@ -57,6 +57,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -117,7 +118,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
@@ -155,12 +155,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             }, opCtx, /*retry*/false);
         }
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         return loadAsync(null,
             ctx.cacheKeysView(keys),
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
@@ -198,7 +195,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             readThrough,
             forcePrimary,
             tx,
-            CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
             deserializeBinary,
             expiryPlc,
@@ -331,7 +327,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.isInvalidate(),
                                         req.timeout(),
                                         req.txSize(),
-                                        req.subjectId(),
+                                        securitySubjectId(ctx),
                                         req.taskNameHash(),
                                         req.txLabel()
                                     );

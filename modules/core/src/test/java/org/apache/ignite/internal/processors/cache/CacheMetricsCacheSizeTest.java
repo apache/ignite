@@ -72,6 +72,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
     }
 
+    /** */
     @Test
     public void testCacheSize() throws Exception {
         startClientGrid(GRID_CNT);

@@ -228,6 +228,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if default marshaller is used.
      * If not, this method is no-op and will return current cache.
      *
+     * @param <V1> Type of the cache value binary objects.
+     * @param <K1> Type of the cache key.
      * @return New cache instance for binary objects.
      */
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
@@ -240,6 +242,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * If you want to use atomic operations inside transactions in case they are restricted by system property,
      * you should allow it before transaction start.
      *
+     * @param <V1> Type of the cache value.
+     * @param <K1> Type of the cache key.
      * @return Cache with atomic operations allowed in transactions.
      */
     public <K1, V1> IgniteCache<K1, V1> withAllowAtomicOpsInTx();
@@ -422,6 +426,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * See also {@link #query(SqlFieldsQuery)}.
      *
      * @param qry Query.
+     * @param <R> Type of the query result.
      * @return Cursor.
      * @see ScanQuery
      * @see SqlFieldsQuery
@@ -450,6 +455,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param qry Query.
      * @param transformer Transformer.
+     * @param <T> Type of the initial query result.
+     * @param <R> Type of the transformed query result.
      * @return Cursor.
      */
     public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer);
@@ -654,6 +661,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
      *      if any, defined by the {@link EntryProcessor} implementation.  No mappings
      *      will be returned for {@link EntryProcessor}s that return a
@@ -669,6 +677,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation. See more about future result
      * at the {@link #invokeAll(Map, Object...)}.
      * @throws TransactionException If operation within transaction is failed.
@@ -1311,6 +1320,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param key The key to the entry.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
      * @param arguments Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1333,6 +1343,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param key The key to the entry.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param arguments Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return The result of the processing, if any, defined by the {@link CacheEntryProcessor} implementation.
      * @throws NullPointerException If key or {@link CacheEntryProcessor} is null
      * @throws IllegalStateException If the cache is {@link #isClosed()}
@@ -1364,6 +1375,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param key The key to the entry.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param arguments Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws NullPointerException If key or {@link CacheEntryProcessor} is null
      * @throws IllegalStateException If the cache is {@link #isClosed()}
@@ -1427,6 +1439,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The set of keys.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1464,6 +1477,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param args Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
      * if any, defined by the {@link CacheEntryProcessor} implementation.  No mappings
      * will be returned for {@link CacheEntryProcessor}s that return a
@@ -1512,6 +1526,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param args Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws NullPointerException If keys or {@link CacheEntryProcessor} are {#code null}.
      * @throws IllegalStateException If the cache is {@link #isClosed()}.

@@ -58,9 +58,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
         return node;
     }
 
-    /**
-     *
-     */
+    /** @return Discovery data container that collects data from all cluster nodes. */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
     }

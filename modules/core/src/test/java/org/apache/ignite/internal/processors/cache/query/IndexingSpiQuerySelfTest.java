@@ -56,6 +56,7 @@ import org.junit.Test;
  * Indexing Spi query only test
  */
 public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
+    /** */
     private IndexingSpi indexingSpi;
 
     /** {@inheritDoc} */

@@ -56,6 +56,8 @@ public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, E
      * Creates a new transformer based on instance of {@link CacheEntryProcessor}.
      *
      * @param ep Entry processor.
+     * @param <K> Cache key type.
+     * @param <V> Cache value type.
      * @return Stream transformer.
      */
     public static <K, V> StreamTransformer<K, V> from(final CacheEntryProcessor<K, V, Object> ep) {

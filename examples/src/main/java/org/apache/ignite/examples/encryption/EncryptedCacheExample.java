@@ -34,7 +34,7 @@ public class EncryptedCacheExample {
     /** Cache name. */
     private static final String CACHE_NAME = "encrypted-accounts-caches";
 
-    /** */
+    /** @param args Command line arguments. */
     public static void main(String[] args) {
         System.out.println(">>> Starting cluster.");
 

@@ -567,7 +567,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
             m.explicitLock(),
-            tx.subjectId(),
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
