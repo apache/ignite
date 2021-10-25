@@ -281,7 +281,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = new Object[reader.readInt()];
 
                     for (int i = 0; i < args.length; i++) {
-                        args[i] = reader.readObjectDetached();
+                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
 
                         // TODO: this handling should be moved inside serivce execution!
                         if (args[i] instanceof BinaryArray) {

@@ -509,7 +509,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 binaryCtx,
                 binaryCtx.typeId(!isBinaryArr ? compCls.getName() : Object.class.getName()),
                 !isBinaryArr ? compCls.getName() : Object.class.getName(),
-                pArr
+                pArr,
+                true
             );
         }
 

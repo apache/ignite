@@ -57,6 +57,9 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     @GridToStringInclude(sensitive = true)
     private Object[] arr;
 
+    /** */
+    private boolean deserialize;
+
     /**
      * {@link Externalizable} support.
      */
@@ -70,11 +73,12 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
      * @param compClsName Component class name.
      * @param arr Array.
      */
-    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr) {
+    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr, boolean deserialize) {
         this.ctx = ctx;
         this.compTypeId = compTypeId;
         this.compClsName = compClsName;
         this.arr = arr;
+        this.deserialize = deserialize;
     }
 
     /** {@inheritDoc} */
@@ -94,6 +98,9 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException {
+        if (!deserialize)
+            return (T)arr;
+
         ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
         if (ldr != null)
@@ -154,7 +161,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
-        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone());
+        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone(), deserialize);
     }
 
     /** {@inheritDoc} */
@@ -167,6 +174,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         out.writeInt(compTypeId);
         out.writeObject(compClsName);
         out.writeObject(arr);
+        out.writeBoolean(deserialize);
     }
 
     /** {@inheritDoc} */
@@ -176,6 +184,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         compTypeId = in.readInt();
         compClsName = (String)in.readObject();
         arr = (Object[])in.readObject();
+        deserialize = in.readBoolean();
     }
 
     /** {@inheritDoc} */
