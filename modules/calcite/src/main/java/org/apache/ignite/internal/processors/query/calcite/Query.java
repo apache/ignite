@@ -60,7 +60,7 @@ public class Query<RowT> implements RunningQuery {
     protected final Consumer<Query<RowT>> unregister;
 
     /** */
-    protected volatile QueryState state = QueryState.INIT;
+    protected volatile QueryState state = QueryState.INITED;
 
     /** */
     public Query(UUID id, GridQueryCancel cancel, Consumer<Query<RowT>> unregister) {
@@ -115,7 +115,7 @@ public class Query<RowT> implements RunningQuery {
             if (state == QueryState.CLOSED)
                 return;
 
-            if (state == QueryState.EXECUTION)
+            if (state == QueryState.EXECUTING)
                 state = QueryState.CLOSED;
         }
 
@@ -130,10 +130,10 @@ public class Query<RowT> implements RunningQuery {
 
     /** */
     public void addFragment(RunningFragment<RowT> f) {
-        if (state == QueryState.INIT) {
+        if (state == QueryState.INITED) {
             synchronized (mux) {
-                if (state == QueryState.INIT)
-                    state = QueryState.EXECUTION;
+                if (state == QueryState.INITED)
+                    state = QueryState.EXECUTING;
             }
         }
 

@@ -337,6 +337,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
 
+        List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
+
         for (final SqlNode sqlNode: qryList) {
             RootQuery<Object[]> qry = new RootQuery<>(
                 sqlNode.toString(),
@@ -347,6 +349,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 (q) -> qryReg.unregister(q.id()),
                 log
             );
+
+            qrys.add(qry);
 
             qryReg.register(qry);
             try {
@@ -361,9 +365,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 cursors.add(executionSvc.executePlan(qry, plan));
             }
             catch (Exception e) {
+                boolean isCanceled = qry.isCancelled();
+
+                qrys.forEach(RootQuery::cancel);
+
                 qryReg.unregister(qry.id());
 
-                if (qry.isCancelled())
+                if (isCanceled)
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
                 else
                     throw e;

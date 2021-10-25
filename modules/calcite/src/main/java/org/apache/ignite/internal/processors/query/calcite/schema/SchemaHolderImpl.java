@@ -265,7 +265,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaPlus schema(String schema) {
+    @Override public SchemaPlus schema(@Nullable String schema) {
         return schema != null ? calciteSchema.getSubSchema(schema) : calciteSchema;
     }
 

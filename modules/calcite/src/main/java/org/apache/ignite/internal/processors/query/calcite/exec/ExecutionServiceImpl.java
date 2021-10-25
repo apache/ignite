@@ -596,9 +596,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             partitionService(),
             mailboxRegistry(),
             exchangeService(),
-            failureProcessor())
-            .go(plan.root()
-        );
+            failureProcessor()
+        )
+            .go(plan.root());
 
         qry.addFragment(new RunningFragment<>(plan.root(), node, ectx));
 

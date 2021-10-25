@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.IntStream;
-import org.apache.ignite.Ignite;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -111,7 +110,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             () -> {
                 Collection<? extends RunningQuery> queries = engine.runningQueries();
 
-                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTION;
+                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
             },
             TIMEOUT_IN_MS));
 
@@ -151,7 +150,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             () -> {
                 Collection<? extends RunningQuery> queries = clientEngine.runningQueries();
 
-                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTION;
+                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
             },
             TIMEOUT_IN_MS));
 

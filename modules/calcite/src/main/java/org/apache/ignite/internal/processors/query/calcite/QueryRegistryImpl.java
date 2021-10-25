@@ -42,9 +42,7 @@ public class QueryRegistryImpl<RowT> implements QueryRegistry<RowT> {
 
     /** {@inheritDoc} */
     @Override public Query<RowT> register(Query<RowT> qry) {
-        Query<RowT> old = runningQrys.putIfAbsent(qry.id(), qry);
-
-        return old != null ? old : qry;
+        return runningQrys.computeIfAbsent(qry.id(), k -> qry);
     }
 
     /** {@inheritDoc} */

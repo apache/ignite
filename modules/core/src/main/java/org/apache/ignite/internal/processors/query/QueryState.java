@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query;
 /** */
 public enum QueryState {
     /** */
-    INIT,
+    INITED,
 
     /** */
     PLANNING,
@@ -29,7 +29,7 @@ public enum QueryState {
     MAPPING,
 
     /** */
-    EXECUTION,
+    EXECUTING,
 
     /** */
     CLOSING,

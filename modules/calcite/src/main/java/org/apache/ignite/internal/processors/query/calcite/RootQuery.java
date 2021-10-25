@@ -191,7 +191,7 @@ public class RootQuery<RowT> extends Query<RowT> {
                     waiting.add(new RemoteFragmentKey(node, fragment.fragmentId()));
             }
 
-            state = QueryState.EXECUTION;
+            state = QueryState.EXECUTING;
         }
     }
 
@@ -206,13 +206,13 @@ public class RootQuery<RowT> extends Query<RowT> {
             if (state == QueryState.CLOSED)
                 return;
 
-            if (state == QueryState.INIT || state == QueryState.PLANNING) {
+            if (state == QueryState.INITED || state == QueryState.PLANNING) {
                 state = QueryState.CLOSED;
 
                 return;
             }
 
-            if (state == QueryState.EXECUTION)
+            if (state == QueryState.EXECUTING)
                 state0 = state = QueryState.CLOSING;
 
             root.closeInternal();
