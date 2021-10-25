@@ -85,7 +85,8 @@ param (
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-all-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
-	[string]$version=""
+	[string]$version="",
+	[string]$versionSuffix=""
  )
 
 # 0) Functions
@@ -202,7 +203,7 @@ if (!$skipNuGet) {
     Make-Dir($nupkgDir)
 
     # Detect version
-    $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\netstandard2.0\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
+    $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\netstandard2.0\Apache.Ignite.Core.dll).VersionInfo.ProductVersion } + $versionSuffix
 
     Exec "dotnet pack Apache.Ignite.sln -c Release -o $nupkgDir /p:Version=$ver"
 
