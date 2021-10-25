@@ -66,6 +66,11 @@ class ClientDataStreamerReader {
         if (obj == null)
             return null;
 
+        // if the object already is an instance of CacheObject, there is no need to wrap it
+		if (obj instanceof CacheObject) {
+			return (T) obj;
+		}
+
         int pos1 = in.position();
 
         in.position(pos0);
