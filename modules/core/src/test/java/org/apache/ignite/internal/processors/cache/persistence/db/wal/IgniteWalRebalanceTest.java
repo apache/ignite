@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -96,7 +97,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -747,7 +747,6 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15364")
     @Test
     public void testSwitchHistoricalRebalanceToFullAndClientJoin() throws Exception {
         testSwitchHistoricalRebalanceToFull(
@@ -788,6 +787,70 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cfg.setCacheConfiguration(ccfg);
 
                 startGrid(igniteInstanceName, cfg, null);
+
+                return false;
+            });
+    }
+
+    /**
+     * Tests that demander switches to full rebalance if the previously chosen supplier for a group has failed
+     * to perform historical rebalance due to an unexpected error while historical iterator (wal iterator) is created.
+     * Additionally, a new cache is created between the demand message sent, and the supply message received.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSwitchHistoricalRebalanceToFullAndStartNewCache() throws Exception {
+        testSwitchHistoricalRebalanceToFull(
+            IgniteWalRebalanceTest::injectFailingIOFactory,
+            () -> {
+                grid(0).getOrCreateCache(
+                    new CacheConfiguration<>("test-cache-3")
+                        .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT))
+                        .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                        .setRebalanceOrder(30)
+                        .setBackups(1)
+                );
+
+                return false;
+            });
+    }
+
+    /**
+     * Tests that demander switches to full rebalance if the previously chosen supplier for a group has failed
+     * to perform historical rebalance due to an unexpected error while historical iterator (wal iterator) is created.
+     * Additionally, an existing cache is destroyed between the demand message sent, and the supply message received.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSwitchHistoricalRebalanceToFullAndDestroyCache() throws Exception {
+        testSwitchHistoricalRebalanceToFull(
+            IgniteWalRebalanceTest::injectFailingIOFactory,
+            () -> {
+                grid(0).cache("cache").destroy();
+
+                return false;
+            });
+    }
+
+    /**
+     * Tests that demander switches to full rebalance if the previously chosen supplier for a group has failed
+     * to perform historical rebalance due to an unexpected error while historical iterator (wal iterator) is created.
+     * Additionally, the server node left the cluster between the demand message sent, and the supply message received.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSwitchHistoricalRebalanceToFullAndStopBaselineNode() throws Exception {
+        backups = 3;
+
+        IgniteEx justNode = startGrid(3);
+
+        testSwitchHistoricalRebalanceToFull(
+            IgniteWalRebalanceTest::injectFailingIOFactory,
+            () -> {
+                Ignition.stop(justNode.name(), true);
 
                 return false;
             });
