@@ -93,7 +93,7 @@ tab:pom.xml[]
 
 Replace `${ignite-spring-cache-ext.version}`, `${spring.version}`, and
 `${ignite.version}` with an actual version of Apache Ignite Spring Cache extension, Spring, and
-Apache Ignite dependency you are need, respectively.
+Apache Ignite dependency you need, respectively.
 
 The table below shows available versions of the Apache Ignite Spring Cache extension and compatible versions
 of the Apache Ignite and Spring.
