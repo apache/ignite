@@ -78,6 +78,9 @@
         <fileSet>
             <directory>modules/platforms/dotnet/bin</directory>
             <outputDirectory>/platforms/dotnet/bin</outputDirectory>
+            <excludes>
+                <exclude>libs/**</exclude>
+            </excludes>
         </fileSet>
 
         <!-- Move .Net docs. -->
