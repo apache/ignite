@@ -119,11 +119,8 @@ public class Query<RowT> implements RunningQuery {
                 state = QueryState.CLOSED;
         }
 
-        for (RunningFragment<RowT> frag : fragments) {
-            frag.context().execute(()-> {
-                frag.root().onError(new ExecutionCancelledException());
-            }, frag.root()::onError);
-        }
+        for (RunningFragment<RowT> frag : fragments)
+            frag.context().execute(() -> frag.root().onError(new ExecutionCancelledException()), frag.root()::onError);
 
         tryClose();
     }

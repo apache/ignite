@@ -21,9 +21,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.junit.After;
-import org.junit.Before;
 
 /** */
 public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {

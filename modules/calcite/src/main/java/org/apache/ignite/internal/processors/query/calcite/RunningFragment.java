@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Objects;
+
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.Downstream;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 

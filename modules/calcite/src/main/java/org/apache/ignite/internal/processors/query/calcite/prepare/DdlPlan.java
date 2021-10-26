@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 public class DdlPlan implements QueryPlan {

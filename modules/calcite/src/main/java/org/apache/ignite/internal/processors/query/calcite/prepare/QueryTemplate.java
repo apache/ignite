@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -86,7 +87,12 @@ public class QueryTemplate {
     }
 
     /** */
-    @NotNull private List<Fragment> map(MappingService mappingService, List<Fragment> fragments, MappingQueryContext ctx, RelMetadataQuery mq) {
+    @NotNull private List<Fragment> map(
+        MappingService mappingService,
+        List<Fragment> fragments,
+        MappingQueryContext ctx,
+        RelMetadataQuery mq
+    ) {
         ImmutableList.Builder<Fragment> b = ImmutableList.builder();
 
         for (Fragment fragment : fragments)

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import jdk.internal.jline.internal.Nullable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
