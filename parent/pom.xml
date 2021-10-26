@@ -734,6 +734,10 @@
                             </message>
                             <version>[1.7,1.8),[1.8.0-40,)</version>
                         </requireJavaVersion>
+
+                        <requireMavenVersion>
+                            <version>[3.5.0,)</version>
+                        </requireMavenVersion>
                     </rules>
                 </configuration>
                 <executions>
