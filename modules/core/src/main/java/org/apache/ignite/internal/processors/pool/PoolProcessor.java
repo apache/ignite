@@ -503,15 +503,17 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
-        thinClientExec = new IgniteThreadPoolExecutor(
-            "client-connector",
-            cfg.getIgniteInstanceName(),
-            cfg.getClientConnectorConfiguration().getThreadPoolSize(),
-            cfg.getClientConnectorConfiguration().getThreadPoolSize(),
-            0,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.UNDEFINED,
-            new OomExceptionHandler(ctx));
+        if (cfg.getClientConnectorConfiguration() != null) {
+            thinClientExec = new IgniteThreadPoolExecutor(
+                "client-connector",
+                cfg.getIgniteInstanceName(),
+                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                new OomExceptionHandler(ctx));
+        }
 
         rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
             cfg.getRebalanceThreadPoolSize(),
@@ -563,7 +565,6 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
-        monitorExecutor("GridThinClientExecutor", thinClientExec);
         monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         monitorStripedPool("GridDataStreamExecutor", dataStreamerExecSvc);
@@ -578,6 +579,9 @@ public class PoolProcessor extends GridProcessorAdapter {
             // Striped executor uses a custom adapter.
             monitorStripedPool("StripedExecutor", stripedExecSvc);
         }
+
+        if (thinClientExec != null)
+            monitorExecutor("GridThinClientExecutor", thinClientExec);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
@@ -986,7 +990,6 @@ public class PoolProcessor extends GridProcessorAdapter {
         registerExecutorMBean(mbMgr, "GridQueryExecutor", qryExecSvc);
         registerExecutorMBean(mbMgr, "GridSchemaExecutor", schemaExecSvc);
         registerExecutorMBean(mbMgr, "GridRebalanceExecutor", rebalanceExecSvc);
-        registerExecutorMBean(mbMgr, "GridThinClientExecutor", thinClientExec);
         registerExecutorMBean(mbMgr, "GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         registerStripedExecutorMBean(mbMgr, "GridDataStreamExecutor", dataStreamerExecSvc);
@@ -1001,6 +1004,9 @@ public class PoolProcessor extends GridProcessorAdapter {
             // striped executor uses a custom adapter
             registerStripedExecutorMBean(mbMgr, "StripedExecutor", stripedExecSvc);
         }
+
+        if (thinClientExec != null)
+            registerExecutorMBean(mbMgr, "GridThinClientExecutor", thinClientExec);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
@@ -1079,10 +1085,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc = null;
 
-        U.shutdownNow(getClass(), thinClientExec, log);
-
-        thinClientExec = null;
-
         U.shutdownNow(getClass(), rebalanceStripedExecSvc, log);
 
         rebalanceStripedExecSvc = null;
@@ -1127,6 +1129,11 @@ public class PoolProcessor extends GridProcessorAdapter {
         U.shutdownNow(getClass(), callbackExecSvc, log);
 
         callbackExecSvc = null;
+
+        if (thinClientExec != null)
+            U.shutdownNow(getClass(), thinClientExec, log);
+
+        thinClientExec = null;
 
         if (!F.isEmpty(customExecs)) {
             for (ThreadPoolExecutor exec : customExecs.values())
