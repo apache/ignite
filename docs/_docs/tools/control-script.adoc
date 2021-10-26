@@ -977,6 +977,8 @@ Parameters:
 
 == Cache Consistency
 
+=== Repair
+
 The command allows to perform cache consistency check and repair (when possible) using Read Repair approach.
 
 [tabs]
@@ -1000,3 +1002,21 @@ Parameters:
 | `cache-name`| Cache to be checked/repaired..
 | `partition`| Cache's partition to be checked/repaired.
 |===
+
+=== Status
+
+The command allows performing cache consistency check/repair operation's status check.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency status
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency status
+----
+--
