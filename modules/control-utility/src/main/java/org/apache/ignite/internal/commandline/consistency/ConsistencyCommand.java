@@ -28,18 +28,19 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskArg;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskResult;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.REPAIR;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.STATUS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.of;
 
 /**
  *
  */
-public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTaskArg> {
+public class ConsistencyCommand extends AbstractCommand<Object> {
     /** Command argument. */
     private VisorConsistencyRepairTaskArg cmdArg;
 
@@ -53,7 +54,7 @@ public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTa
         StringBuilder sb = new StringBuilder();
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorConsistencyRepairTaskResult res = executeTaskByNameOnNode(
+            VisorConsistencyTaskResult res = executeTaskByNameOnNode(
                 client,
                 cmd.taskName(),
                 arg(),
@@ -96,7 +97,7 @@ public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTa
     }
 
     /** {@inheritDoc} */
-    @Override public VisorConsistencyRepairTaskArg arg() {
+    @Override public Object arg() {
         return cmdArg;
     }
 
@@ -127,6 +128,8 @@ public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTa
 
             cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part);
         }
+        else if (cmd == STATUS)
+            cmdArg = null;
         else
             throw new IllegalArgumentException("Unsupported operation.");
     }
