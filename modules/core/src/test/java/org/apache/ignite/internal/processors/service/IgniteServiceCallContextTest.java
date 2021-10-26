@@ -116,6 +116,9 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
             TestService proxy = createProxyWithContext(grid(i), strVal, binVal);
 
+            GridTestUtils.assertThrowsAnyCause(log, () -> proxy.modifyAttribute("dummy"),
+                UnsupportedOperationException.class, null);
+
             assertEquals(strVal, proxy.attribute(false));
             assertEquals(strVal, proxy.attribute(true));
 
@@ -199,6 +202,11 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
          * @return Context attribute value.
          */
         public byte[] binaryAttribute(boolean useInjectedSvc);
+
+        /**
+         * @param val Attribute value.
+         */
+        public Void modifyAttribute(String val);
     }
 
     /** */
@@ -226,6 +234,13 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
             ServiceCallContext callCtx = ctx.currentCallContext();
 
             return useInjectedSvc ? injected.binaryAttribute(false) : callCtx.binary(BIN_ATTR_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void modifyAttribute(String val) {
+            ctx.currentCallContext().put(STR_ATTR_NAME, val);
+
+            return null;
         }
 
         /** {@inheritDoc} */
