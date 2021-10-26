@@ -286,6 +286,17 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests that invalid protocol causes a socket exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidProtocolThrowsSocketException()
+        {
+            var cfg = new IgniteClientConfiguration("bad_proto://foo.bar:12345");
+
+            Assert.Catch<SocketException>(() => Ignition.StartClient(cfg));
+        }
+
+        /// <summary>
         /// Tests that default configuration throws.
         /// </summary>
         [Test]

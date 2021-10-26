@@ -17,10 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -42,6 +43,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
@@ -99,27 +102,12 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testQueryWithWrongCriteria() {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryNoCriteria = new IndexQuery<>(Person.class, qryIdx);
-
-                return cache.query(qryNoCriteria);
-            },
-            NullPointerException.class, "Ouch! Argument cannot be null: criteria");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class, qryIdx)
                     .setCriteria(lt(null, 12));
 
                 return cache.query(qryNullCriteria);
             },
             NullPointerException.class, "Ouch! Argument cannot be null: field");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryDuplicateField = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(lt("id", 12), lt("id", 32));
-
-                return cache.query(qryDuplicateField);
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid");
     }
 
     /** */
@@ -163,23 +151,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testQueryWrongQuery() {
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria();
-
-                return cache.query(qry).getAll();
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
-                    .setCriteria(Collections.emptyList());
-
-                return cache.query(qry).getAll();
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid: criteria must not be empty.");
-
-        String errMsg = qryIdx != null ? "Index doesn't match query." : "No index found for criteria.";
+        String errMsg = qryIdx != null ? "Index doesn't match criteria." : "No index found for criteria.";
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
@@ -198,11 +170,38 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
                 return cache.query(qry).getAll();
             },
             IgniteCheckedException.class, errMsg);
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                    .setCriteria(between("id", 432, 40));
+
+                return cache.query(qry).getAll();
+            },
+            IgniteCheckedException.class, "Illegal criterion: lower boundary is greater than the upper boundary: " +
+                "ID[432; 40]");
+
+        Stream.of(
+            Arrays.asList(lt("id", 100), gt("id", 101)),
+            Arrays.asList(eq("id", 100), eq("id", 101)),
+            Arrays.asList(eq("id", 101), eq("id", 100)),
+            Arrays.asList(eq("id", 101), between("id", 19, 40))
+        ).forEach(crit -> {
+            String msg = "Failed to merge criterion " + crit.get(1).toString().replace("id", "ID")
+                + " with previous criteria range " + crit.get(0).toString().replace("id", "ID");
+
+            GridTestUtils.assertThrowsAnyCause(null, () -> {
+                    IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
+                        .setCriteria(crit);
+
+                    return cache.query(qry).getAll();
+                },
+                IgniteCheckedException.class, msg);
+        });
     }
 
     /** */
     @Test
-    public void testRangeQueries() {
+    public void testStopNode() {
         insertData(0, CNT);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
