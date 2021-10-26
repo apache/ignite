@@ -409,21 +409,16 @@ public class SqlScriptRunner {
                     continue;
                 }
 
-                IgniteException err = null;
-
                 try {
                     sql(qry);
 
                     if (expected != ExpectedStatementStatus.OK)
-                        err = new IgniteException("Error expected at: " + posDesc + ". Statement: " + this);
+                        throw new IgniteException("Error expected at: " + posDesc + ". Statement: " + this);
                 }
                 catch (Throwable e) {
                     if (expected != ExpectedStatementStatus.ERROR)
-                        err = new IgniteException("Error at: " + posDesc + ". Statement: " + this, e);
+                        throw new IgniteException("Error at: " + posDesc + ". Statement: " + this, e);
                 }
-
-                if (err != null)
-                    throw err;
             }
         }
 
