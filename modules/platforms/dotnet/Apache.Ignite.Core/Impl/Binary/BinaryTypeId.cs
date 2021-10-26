@@ -227,7 +227,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             Add(typeof (string[]), ArrayString);
             Add(typeof (decimal?[]), ArrayDecimal);
             Add(typeof (Guid?[]), ArrayGuid);
+            Add(typeof (Guid[]), ArrayGuid);
             Add(typeof (DateTime?[]), ArrayTimestamp);
+            Add(typeof (DateTime[]), ArrayTimestamp);
             Add(typeof (object[]), Array);
         }
 
