@@ -95,9 +95,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Default shared cache group name. */
     private static final String SHARED_GRP = "shared";
 
-    /** Cache value builder. */
-    private Function<Integer, Object> valBuilder = String::valueOf;
-
     /** Reset consistent ID flag. */
     private boolean resetConsistentId;
 
@@ -109,11 +106,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             cfg.setConsistentId(null);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Function<Integer, Object> valueBuilder() {
-        return valBuilder;
     }
 
     /**
@@ -161,7 +153,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         CacheConfiguration<Integer, Object> cacheCfg2 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder,
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
@@ -348,7 +340,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -391,7 +383,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         CacheConfiguration<Integer, Object> cacheCfg2 =
             txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, cacheCfg1, cacheCfg2);
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), cacheCfg1, cacheCfg2);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 

@@ -27,7 +27,6 @@ JVM_PARAMS_GENERIC = "-server -XX:+DisableExplicitGC -XX:+AlwaysPreTouch " \
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
 
-# pylint: disable=R0913
 def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, generic_params=JVM_PARAMS_GENERIC,
                         opts=None, gc_dump_path=None, oom_path=None):
     """
