@@ -44,21 +44,10 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     }
 
     /**
-     * Constructs an immutable context from the map.
-     *
      * @param attrs Service call attributes.
      */
     public ServiceCallContextImpl(Map<String, Object> attrs) {
-        this.attrs = Collections.unmodifiableMap(attrs);
-    }
-
-    /**
-     * Constructs an immutable copy of the context.
-     *
-     * @param callCtx Service call context.
-     */
-    public ServiceCallContextImpl(ServiceCallContext callCtx) {
-        this(new HashMap<>(((ServiceCallContextImpl)callCtx).values()));
+        this.attrs = attrs;
     }
 
     /** {@inheritDoc} */
@@ -83,11 +72,6 @@ public class ServiceCallContextImpl implements ServiceCallContext {
         attrs.put(name, val);
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        return attrs.isEmpty();
     }
 
     /**

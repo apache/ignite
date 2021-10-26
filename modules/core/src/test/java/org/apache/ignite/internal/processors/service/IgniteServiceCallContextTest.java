@@ -116,14 +116,19 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
             TestService proxy = createProxyWithContext(grid(i), strVal, binVal);
 
-            GridTestUtils.assertThrowsAnyCause(log, () -> proxy.modifyAttribute("dummy"),
-                UnsupportedOperationException.class, null);
-
             assertEquals(strVal, proxy.attribute(false));
             assertEquals(strVal, proxy.attribute(true));
 
             assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(false)));
             assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(true)));
+
+            TestService proxyWithEmptyCtx = createProxy(grid(i), ServiceCallContext.create());
+            TestService proxyWithoutCtx = createProxy(grid(i), null);
+
+            assertEquals("dummy", proxy.modifyAttribute("dummy"));
+            assertEquals("dummy", proxyWithEmptyCtx.modifyAttribute("dummy"));
+            GridTestUtils.assertThrowsAnyCause(log, () -> proxyWithoutCtx.modifyAttribute("dummy"),
+                UnsupportedOperationException.class, null);
         }
     }
 
@@ -185,8 +190,16 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
      * @return Service proxy instance.
      */
     private TestService createProxyWithContext(Ignite node, String attrVal, byte[] binVal) {
-        return node.services().serviceProxy(SVC_NAME, TestService.class, sticky,
-            ServiceCallContext.create().put(STR_ATTR_NAME, attrVal).put(BIN_ATTR_NAME, binVal), 0);
+        return createProxy(node, ServiceCallContext.create().put(STR_ATTR_NAME, attrVal).put(BIN_ATTR_NAME, binVal));
+    }
+
+    /**
+     * @param node Ignite node.
+     * @param callCtx Service call context.
+     * @return Service proxy instance.
+     */
+    private TestService createProxy(Ignite node, ServiceCallContext callCtx) {
+        return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, callCtx, 0);
     }
 
     /** */
@@ -205,8 +218,9 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
         /**
          * @param val Attribute value.
+         * @return Attribute from injected service.
          */
-        public Void modifyAttribute(String val);
+        public String modifyAttribute(String val);
     }
 
     /** */
@@ -237,10 +251,10 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Void modifyAttribute(String val) {
+        @Override public String modifyAttribute(String val) {
             ctx.currentCallContext().put(STR_ATTR_NAME, val);
 
-            return null;
+            return injected.attribute(false);
         }
 
         /** {@inheritDoc} */

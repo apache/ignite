@@ -103,9 +103,4 @@ public interface ServiceCallContext {
      * @return This for chaining.
      */
     public ServiceCallContext put(String name, byte[] value);
-
-    /**
-     * @return {@code True} if the context is empty.
-     */
-    public boolean isEmpty();
 }
