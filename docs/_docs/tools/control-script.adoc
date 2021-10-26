@@ -1005,7 +1005,7 @@ Parameters:
 
 === Status
 
-The command allows performing cache consistency check/repair operation's status check.
+The command allows performing cache consistency check/repair operations status check.
 
 [tabs]
 --

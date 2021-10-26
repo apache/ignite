@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.consistency;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -116,6 +117,13 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             REPAIR.toString(),
             "cache-name",
             "partition");
+
+        usage(
+            log,
+            "Cache consistency check/repair operations status:",
+            CONSISTENCY,
+            Collections.emptyMap(),
+            STATUS.toString());
     }
 
     /** {@inheritDoc} */
