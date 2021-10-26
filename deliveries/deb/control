@@ -1,0 +1,14 @@
+Source: apache-ignite
+Maintainer: Petr Ivanov <mr.weider@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 4.1.1.1
+
+Package: apache-ignite
+Architecture: all
+Section: misc
+Priority: optional
+Depends: openjdk-11-jdk | default-jdk | java-sdk, passwd
+Description: Apache Ignite is a distributed database for high-performance
+ computing with in-memory speed.
+Homepage: https://ignite.apache.org

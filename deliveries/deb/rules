@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+# debian/rules for alien
+
+PACKAGE=$(shell dh_listpackages)
+
+clean:
+	dh_testdir
+	dh_testroot
+	dh_clean -d
+
+binary-arch: clean
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+
+	dh_installdocs
+	dh_installchangelogs
+
+        # Copy the packages's files.
+	find . -maxdepth 1 -mindepth 1 -not -name debian -print0 | \
+		xargs -0 -r -i cp -a {} debian/$(PACKAGE)
+
+        #
+        # If you need to move files around in debian/$(PACKAGE) or do some
+        # binary patching, do it here
+        #
+
+	dh_compress
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch

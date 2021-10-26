@@ -19,20 +19,15 @@ set -o nounset; set -o errexit; set -o pipefail; set -o errtrace; set -o functra
 
 
 ## VARS ##
-PACKAGE_VERSION="${1}"
-RPM_WORK_DIR="/tmp/apache-ignite-rpm"
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PATH__RPM="${1}"
+FILE__RPM=$(basename "${PATH__RPM}")
 
 
 ## START ##
-cd ${SCRIPT_DIR}
-mkdir -pv ${RPM_WORK_DIR}/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-cp -rfv ignite ${RPM_WORK_DIR}/BUILD/
-cp -rfv apache-ignite.spec ${RPM_WORK_DIR}/SPECS/
-sed -r "4 i if [ \"\$(whoami)\" != \"ignite\" ]; then echo \"Ignite CLI can only be run by 'ignite' user.\"; echo \"Swith user to ignite by executing '(sudo) su ignite'\"; exit 1; fi" \
-    -i ${RPM_WORK_DIR}/BUILD/ignite
-rpmbuild -bb \
-         --define "_topdir ${RPM_WORK_DIR}" \
-         ${RPM_WORK_DIR}/SPECS/apache-ignite.spec
-cp -rfv ${RPM_WORK_DIR}/RPMS/noarch/apache-ignite-${PACKAGE_VERSION}.noarch.rpm ./
-
+cd "${SCRIPT_DIR}"
+mv -fv "${PATH__RPM}" ./
+alien --scripts --verbose --keep-version --single "${FILE__RPM}"
+rm -rf "${FILE__RPM}"
+cd apache-ignite-*
+fakeroot debian/rules binary

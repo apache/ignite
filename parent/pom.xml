@@ -1147,6 +1147,9 @@
                         <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/timer/TimerTask.java</exclude> <!-- Netty license. -->
                         <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/timer/Timeout.java</exclude> <!-- Netty license. -->
                         <exclude>**/*.sln</exclude> <!-- Visual Studio solution. -->
+                        <!-- DEB package assembly files -->
+                        <exclude>deliveries/deb/rules</exclude>
+                        <exclude>deliveries/deb/control</exclude>
                     </excludes>
                 </configuration>
             </plugin>

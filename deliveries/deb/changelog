@@ -1,0 +1,5 @@
+apache-ignite (3.0.0-1) unstable; urgency=low
+
+  * Apache Ignite 3 initial release
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Mon, 25 Oct 2021 17:19:00 +0300

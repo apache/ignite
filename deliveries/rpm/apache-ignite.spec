@@ -53,11 +53,9 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 #
 echo "Preinstall mode: '$1'"
 case $1 in
-    1|configure)
+    1|install)
         # Add service user
-        /usr/sbin/useradd -r -M -d %{_datadir}/%{name} -s /bin/bash %{user} 
-        #useradd -r -md %{_datadir}/%{name} %{user}
-        #[ -f "%{_datadir}/%{name}/.bashrc" ] && echo "cd ~" >> %{_datadir}/%{name}/.bashrc
+        /usr/sbin/useradd -r -M -d /usr/share/apache-ignite -s /bin/bash ignite
         ;;
 esac
 
@@ -159,7 +157,8 @@ case $1 in
         userdel %{user}
 
         # Remove service PID directory
-        rm -rfv /var/run/%{name}
+        rm -rfv /var/run/%{name} \
+                /usr/share/${name}
 
         # Remove firewalld rules if firewalld is installed and running
         if [[ "$(type firewall-cmd &>/dev/null; echo $?)" -eq 0 && "$(systemctl is-active firewalld)" == "active" ]]
