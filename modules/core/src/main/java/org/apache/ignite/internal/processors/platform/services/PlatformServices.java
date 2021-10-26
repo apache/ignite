@@ -582,18 +582,26 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws NoSuchMethodException On error.
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
-            if (isPlatformService())
-                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
-            else {
-                assert proxy instanceof GridServiceProxy;
+            GridServiceProxy.KEEP_BINARY.set(true);
 
-                // Deserialize arguments for Java service when not in binary mode
-                if (!srvKeepBinary)
-                    args = PlatformUtils.unwrapBinariesInArray(args);
+            try {
 
-                Method mtd = getMethod(serviceClass, mthdName, args);
+                if (isPlatformService())
+                    return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
+                else {
+                    assert proxy instanceof GridServiceProxy;
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                    // Deserialize arguments for Java service when not in binary mode
+                    if (!srvKeepBinary)
+                        args = PlatformUtils.unwrapBinariesInArray(args);
+
+                    Method mtd = getMethod(serviceClass, mthdName, args);
+
+                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                }
+            }
+            finally {
+                GridServiceProxy.KEEP_BINARY.set(false);
             }
         }
 

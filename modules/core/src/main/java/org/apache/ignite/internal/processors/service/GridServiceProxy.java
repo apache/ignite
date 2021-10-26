@@ -39,6 +39,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.services.Service;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
@@ -65,6 +68,9 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final ThreadLocal<Boolean> KEEP_BINARY = ThreadLocal.withInitial(() -> false);
 
     /** */
     private static final Method PLATFORM_SERVICE_INVOKE_METHOD;
@@ -156,7 +162,7 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Invoek the method.
+     * Invoke the method.
      *
      * @param mtd Method.
      * @param args Arugments.
@@ -202,7 +208,13 @@ public class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args),
+                            new ServiceProxyCallable(
+                                methodName(mtd),
+                                name,
+                                mtd.getParameterTypes(),
+                                args,
+                                KEEP_BINARY.get()
+                            ),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
@@ -427,6 +439,7 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * Callable proxy class.
      */
+    @ComputeTaskSessionFullSupport
     private static class ServiceProxyCallable implements IgniteCallable<Object>, Externalizable {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
@@ -443,9 +456,16 @@ public class GridServiceProxy<T> implements Serializable {
         /** Args. */
         private Object[] args;
 
+        /** Keep binary. */
+        private boolean keepBinary;
+
         /** Grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
+
+        /** */
+        @TaskSessionResource
+        private transient ComputeTaskSession taskSes;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -460,11 +480,12 @@ public class GridServiceProxy<T> implements Serializable {
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args) {
+        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args, boolean keepBinary) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;
             this.args = args;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -477,6 +498,8 @@ public class GridServiceProxy<T> implements Serializable {
             GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);
 
             Method mtd = ctx.method(key);
+
+            taskSes.setAttribute("KEEP_BINARY", keepBinary);
 
             if (ctx.service() instanceof PlatformService && mtd == null)
                 return callPlatformService((PlatformService)ctx.service());
@@ -518,6 +541,7 @@ public class GridServiceProxy<T> implements Serializable {
             U.writeString(out, mtdName);
             U.writeArray(out, argTypes);
             U.writeArray(out, args);
+            out.writeBoolean(keepBinary);
         }
 
         /** {@inheritDoc} */
@@ -526,6 +550,7 @@ public class GridServiceProxy<T> implements Serializable {
             mtdName = U.readString(in);
             argTypes = U.readClassArray(in);
             args = U.readArray(in);
+            keepBinary = in.readBoolean();
         }
 
         /** {@inheritDoc} */
