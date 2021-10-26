@@ -147,6 +147,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         IgniteServices services = grp.services();
 
+        GridServiceProxy.KEEP_BINARY.set(true);
+
         try {
             Object res;
 
@@ -184,6 +186,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         }
         catch (Throwable e) {
             throw new IgniteException(e);
+        }
+        finally {
+            GridServiceProxy.KEEP_BINARY.set(false);
         }
     }
 

@@ -177,43 +177,59 @@ namespace Apache.Ignite.Core.Impl.Binary
         public const int IgniteBiTuple = 62;
 
         /** Type ids. */
-        private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
+        private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>();
+
+        /** Type ids. */
+        private static readonly Dictionary<byte, Type> IdToType = new Dictionary<byte, Type>();
+
+        static BinaryTypeId()
         {
-            {typeof (bool), Bool},
-            {typeof (byte), Byte},
-            {typeof (sbyte), Byte},
-            {typeof (short), Short},
-            {typeof (ushort), Short},
-            {typeof (char), Char},
-            {typeof (int), Int},
-            {typeof (uint), Int},
-            {typeof (long), Long},
-            {typeof (ulong), Long},
-            {typeof (float), Float},
-            {typeof (double), Double},
-            {typeof (string), String},
-            {typeof (decimal), Decimal},
-            {typeof (Guid), Guid},
-            {typeof (Guid?), Guid},
-            {typeof (ArrayList), Collection},
-            {typeof (Hashtable), Dictionary},
-            {typeof (bool[]), ArrayBool},
-            {typeof (byte[]), ArrayByte},
-            {typeof (sbyte[]), ArrayByte},
-            {typeof (short[]), ArrayShort},
-            {typeof (ushort[]), ArrayShort},
-            {typeof (char[]), ArrayChar},
-            {typeof (int[]), ArrayInt},
-            {typeof (uint[]), ArrayInt},
-            {typeof (long[]), ArrayLong},
-            {typeof (ulong[]), ArrayLong},
-            {typeof (float[]), ArrayFloat},
-            {typeof (double[]), ArrayDouble},
-            {typeof (string[]), ArrayString},
-            {typeof (decimal?[]), ArrayDecimal},
-            {typeof (Guid?[]), ArrayGuid},
-            {typeof (object[]), Array}
-        };
+            void Add(Type type, byte typeId)
+            {
+                TypeIds.Add(type, typeId);
+
+                if (!IdToType.ContainsKey(typeId))
+                    IdToType.Add(typeId, type);
+            }
+
+            Add(typeof (bool), Bool);
+            Add(typeof (byte), Byte);
+            Add(typeof (sbyte), Byte);
+            Add(typeof (short), Short);
+            Add(typeof (ushort), Short);
+            Add(typeof (char), Char);
+            Add(typeof (int), Int);
+            Add(typeof (uint), Int);
+            Add(typeof (long), Long);
+            Add(typeof (ulong), Long);
+            Add(typeof (float), Float);
+            Add(typeof (double), Double);
+            Add(typeof (string), String);
+            Add(typeof (decimal), Decimal);
+            Add(typeof (Guid), Guid);
+            Add(typeof (Guid?), Guid);
+            Add(typeof(DateTime), Timestamp);
+            Add(typeof(DateTime?), Timestamp);
+            Add(typeof (ArrayList), Collection);
+            Add(typeof (Hashtable), Dictionary);
+            Add(typeof (bool[]), ArrayBool);
+            Add(typeof (byte[]), ArrayByte);
+            Add(typeof (sbyte[]), ArrayByte);
+            Add(typeof (short[]), ArrayShort);
+            Add(typeof (ushort[]), ArrayShort);
+            Add(typeof (char[]), ArrayChar);
+            Add(typeof (int[]), ArrayInt);
+            Add(typeof (uint[]), ArrayInt);
+            Add(typeof (long[]), ArrayLong);
+            Add(typeof (ulong[]), ArrayLong);
+            Add(typeof (float[]), ArrayFloat);
+            Add(typeof (double[]), ArrayDouble);
+            Add(typeof (string[]), ArrayString);
+            Add(typeof (decimal?[]), ArrayDecimal);
+            Add(typeof (Guid?[]), ArrayGuid);
+            Add(typeof (DateTime?[]), ArrayTimestamp);
+            Add(typeof (object[]), Array);
+        }
 
         /// <summary>
         /// Get binary type id for a type.
@@ -232,6 +248,19 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return ArrayEnum;
 
             return Object;
+        }
+
+        /// <summary>
+        /// Get binary type id for a type.
+        /// </summary>
+        internal static Type GetType(byte typeId)
+        {
+            Type res;
+
+            if (IdToType.TryGetValue(typeId, out res))
+                return res;
+
+            return null;
         }
     }
 }

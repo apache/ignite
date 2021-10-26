@@ -585,7 +585,6 @@ public class PlatformServices extends PlatformAbstractTarget {
             GridServiceProxy.KEEP_BINARY.set(true);
 
             try {
-
                 if (isPlatformService())
                     return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
                 else {
