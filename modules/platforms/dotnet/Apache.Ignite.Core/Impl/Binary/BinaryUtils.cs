@@ -1109,11 +1109,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (elemType == typeof(IBinaryObject))
                 return BinaryTypeId.IBinaryObject;
 
-            byte typeId = BinaryTypeId.GetTypeId(elemType);
-
-            if (typeId != BinaryTypeId.Object)
-                return typeId;
-
             return marsh.GetDescriptor(elemType).TypeId;
         }
 
