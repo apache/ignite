@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryState;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
@@ -140,7 +141,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private ClosableIteratorsHolder iteratorsHolder;
 
     /** */
-    private QueryRegistry<Row> qryReg;
+    private QueryRegistry qryReg;
 
     /** */
     private final RowHandler<Row> handler;
@@ -352,18 +353,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    public QueryRegistry<Row> queryRegistry() {
+    public QueryRegistry queryRegistry() {
         return qryReg;
     }
 
     /** */
-    public void queryRegistry(QueryRegistry<Row> qryReg) {
+    public void queryRegistry(QueryRegistry qryReg) {
         this.qryReg = qryReg;
     }
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID qryId) {
-        Query<Row> qry = qryReg.query(qryId);
+        RunningQuery qry = qryReg.query(qryId);
 
         if (qry != null)
             qry.cancel();
@@ -627,7 +628,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            Query<Row> qry = qryReg.register(new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id())));
+            Query<Row> qry = (Query<Row>)qryReg.register(new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id())));
 
             final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
@@ -681,7 +682,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartResponse msg) {
         assert nodeId != null && msg != null;
 
-        Query<Row> qry = qryReg.query(msg.queryId());
+        RunningQuery qry = qryReg.query(msg.queryId());
 
         if (qry != null) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;
@@ -694,7 +695,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, ErrorMessage msg) {
         assert nodeId != null && msg != null;
 
-        Query<Row> qry = qryReg.query(msg.queryId());
+        RunningQuery qry = qryReg.query(msg.queryId());
 
         if (qry != null && qry.state() != QueryState.CLOSED) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;

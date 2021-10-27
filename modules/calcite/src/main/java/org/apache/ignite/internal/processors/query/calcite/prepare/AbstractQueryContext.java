@@ -38,9 +38,4 @@ public class AbstractQueryContext implements Context {
 
         return parentCtx.unwrap(aCls);
     }
-
-    /** */
-    public Context parent() {
-        return parentCtx;
-    }
 }

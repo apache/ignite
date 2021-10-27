@@ -23,14 +23,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * Registry of the running queries.
  */
-public class QueryRegistryImpl<RowT> implements QueryRegistry<RowT> {
+public class QueryRegistryImpl implements QueryRegistry {
     /** */
-    private final ConcurrentMap<UUID, Query<RowT>> runningQrys = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, RunningQuery> runningQrys = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -41,12 +42,12 @@ public class QueryRegistryImpl<RowT> implements QueryRegistry<RowT> {
     }
 
     /** {@inheritDoc} */
-    @Override public Query<RowT> register(Query<RowT> qry) {
+    @Override public RunningQuery register(RunningQuery qry) {
         return runningQrys.computeIfAbsent(qry.id(), k -> qry);
     }
 
     /** {@inheritDoc} */
-    @Override public Query<RowT> query(UUID id) {
+    @Override public RunningQuery query(UUID id) {
         return runningQrys.get(id);
     }
 
@@ -56,7 +57,7 @@ public class QueryRegistryImpl<RowT> implements QueryRegistry<RowT> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Query<RowT>> runningQueries() {
+    @Override public Collection<? extends RunningQuery> runningQueries() {
         return runningQrys.values();
     }
 

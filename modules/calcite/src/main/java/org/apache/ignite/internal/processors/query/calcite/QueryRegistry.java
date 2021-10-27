@@ -20,19 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  * Registry of the running queries.
  */
-public interface QueryRegistry<RowT> extends Service {
+public interface QueryRegistry extends Service {
     /**
      * Register the query or return the existing one with the same identifier.
      *
      * @param qry Query to register.
      * @return Registered query.
      */
-    Query<RowT> register(Query<RowT> qry);
+    RunningQuery register(RunningQuery qry);
 
     /**
      * Lookup query by identifier.
@@ -40,7 +41,7 @@ public interface QueryRegistry<RowT> extends Service {
      * @param id Query identified.
      * @return Registered query or {@code null} if the query with specified identifier isn't found.
      */
-    Query<RowT> query(UUID id);
+    RunningQuery query(UUID id);
 
     /**
      * Unregister query by identifier.
@@ -50,5 +51,5 @@ public interface QueryRegistry<RowT> extends Service {
     void unregister(UUID id);
 
     /** */
-    Collection<Query<RowT>> runningQueries();
+    Collection<? extends RunningQuery> runningQueries();
 }

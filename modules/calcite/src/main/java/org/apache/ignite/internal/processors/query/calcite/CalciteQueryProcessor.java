@@ -176,7 +176,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final PrepareServiceImpl prepareSvc;
 
     /** */
-    private final QueryRegistry<Object[]> qryReg;
+    private final QueryRegistry qryReg;
 
     /**
      * @param ctx Kernal context.
@@ -195,7 +195,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
-        qryReg = new QueryRegistryImpl<>(ctx.log(QueryRegistry.class));
+        qryReg = new QueryRegistryImpl(ctx.log(QueryRegistry.class));
     }
 
     /**
@@ -408,7 +408,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    public <Row> QueryRegistry<Row> queryRegistry() {
-        return (QueryRegistry<Row>)qryReg;
+    public QueryRegistry queryRegistry() {
+        return qryReg;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
@@ -88,7 +88,6 @@ public class SqlCommandProcessor {
     /**
      * Execute command.
      *
-     * @param sql SQL.
      * @param cmdNative Native command.
      * @return Result.
      */

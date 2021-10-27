@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
@@ -195,7 +196,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryCloseMessage msg) {
-        Query<?> qry = qryRegistry.query(msg.queryId());
+        RunningQuery qry = qryRegistry.query(msg.queryId());
 
         if (qry != null)
             qry.cancel();

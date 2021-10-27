@@ -83,19 +83,6 @@ public class Query<RowT> implements RunningQuery {
     }
 
     /** */
-    public static BaseQueryContext createQueryContext(QueryContext ctx, SchemaPlus schema, IgniteLogger log) {
-        return BaseQueryContext.builder()
-            .parentContext(Commons.convert(ctx))
-            .frameworkConfig(
-                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build()
-            )
-            .logger(log)
-            .build();
-    }
-
-    /** */
     protected void tryClose() {
         List<CompletableFuture<?>> futs = new ArrayList<>();
         for (RunningFragment<RowT> frag : fragments) {
