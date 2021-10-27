@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +24,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /** Run multiple Thin Clients making some work for a given time */
 public class ThinClientContiniusApplication extends IgniteAwareApplication {
