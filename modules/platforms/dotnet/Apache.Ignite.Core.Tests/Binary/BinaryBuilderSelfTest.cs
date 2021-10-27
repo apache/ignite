@@ -1094,7 +1094,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(10, meta.Fields.Count);
 
             Assert.AreEqual(BinaryTypeNames.TypeNameString, meta.GetFieldTypeName("fStr"));
-            Assert.AreEqual(BinaryTypeNames.TypeNameTimestamp, meta.GetFieldTypeName("fNDate"));
+            Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("fNDate"));
             Assert.AreEqual(BinaryTypeNames.TypeNameTimestamp, meta.GetFieldTypeName("fNTimestamp"));
             Assert.AreEqual(BinaryTypeNames.TypeNameGuid, meta.GetFieldTypeName("fNGuid"));
             Assert.AreEqual(BinaryTypeNames.TypeNameEnum, meta.GetFieldTypeName("fEnum"));

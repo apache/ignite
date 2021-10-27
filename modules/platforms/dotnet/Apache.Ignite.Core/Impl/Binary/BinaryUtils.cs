@@ -1128,14 +1128,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (typeId == BinaryTypeId.IBinaryObject)
                 return typeof(IBinaryObject);
 
-            if (typeId > 0 && typeId <= Byte.MaxValue)
-            {
-                Type type = BinaryTypeId.GetType((byte)typeId);
-
-                if (type != null)
-                    return type;
-            }
-
             return marsh.GetDescriptor(true, typeId, true).Type;
         }
 
