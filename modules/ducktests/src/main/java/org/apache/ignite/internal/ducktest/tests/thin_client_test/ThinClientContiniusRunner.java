@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_test;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 /** Start Thin Client making some operations for a given time. */
 public class ThinClientContiniusRunner implements Runnable {
