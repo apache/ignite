@@ -59,9 +59,16 @@ public interface Ignite extends AutoCloseable {
      * - No recovery logic supported, if setBaseline fails - it can produce random state of cluster.
      *
      * TODO: IGNITE-14209 issues above must be fixed.
+     * TODO: IGNITE-15815 add a test for stopping node and asynchronous implementation.
      *
      * @param baselineNodes Names of baseline nodes.
-     * @throws IgniteException if nodes empty/null or any node is not alive.
+     * @throws IgniteException If an unspecified platform exception has happened internally.
+     * Is thrown when:
+     * <ul>
+     *     <li>the node is stopping,</li>
+     *     <li>{@code baselineNodes} argument is empty or null,</li>
+     *     <li>any node from {@code baselineNodes} is not alive.</li>
+     * </ul>
      */
     @Experimental
     void setBaseline(Set<String> baselineNodes);

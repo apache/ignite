@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
@@ -138,6 +139,8 @@ public class RaftServerImpl implements RaftServer {
 
     /** {@inheritDoc} */
     @Override public void stop() throws NodeStoppingException {
+        assert listeners.isEmpty() : LoggerMessageHelper.format("Raft groups are still running {}", listeners.keySet());
+
         if (readWorker != null) {
             readWorker.interrupt();
             try {

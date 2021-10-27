@@ -197,6 +197,8 @@ public class ConfigurationExtension implements BeforeEachCallback, AfterEachCall
 
                     change.descend(copy);
 
+                    ConfigurationUtil.dropNulls(copy);
+
                     if (superRootRef.compareAndSet(sr, copy)) {
                         List<CompletableFuture<?>> futures = new ArrayList<>();
 

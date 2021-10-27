@@ -116,13 +116,19 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
      */
     @AfterEach
     public void afterTest() throws Exception {
+        for (JRaftServerImpl server : servers)
+            server.stopRaftGroup(raftGroupId());
+
         for (RaftGroupService client : clients)
             client.shutdown();
 
         IgniteUtils.shutdownAndAwaitTermination(executor, 10, TimeUnit.SECONDS);
 
-        for (JRaftServerImpl server : servers)
+        for (JRaftServerImpl server : servers) {
+            server.beforeNodeStop();
+
             server.stop();
+        }
 
         for (ClusterService service : cluster)
             service.stop();
@@ -201,6 +207,8 @@ public abstract class ITAbstractListenerSnapshotTest<T extends RaftGroupListener
         servers.remove(stopIdx);
 
         // Shutdown that node
+        toStop.stopRaftGroup(raftGroupId());
+        toStop.beforeNodeStop();
         toStop.stop();
 
         // Create a snapshot of the raft group

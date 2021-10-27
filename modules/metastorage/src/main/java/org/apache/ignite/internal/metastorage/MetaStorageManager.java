@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
@@ -136,8 +137,11 @@ public class MetaStorageManager implements IgniteComponent {
     /** Actual storage for the Metastorage. */
     private final KeyValueStorage storage;
 
-    /** Busy lock for stop synchronisation. */
+    /** Busy lock to stop synchronously. */
     private final IgniteSpinBusyLock busyLock = new IgniteSpinBusyLock();
+
+    /** Prevents double stopping the component. */
+    AtomicBoolean stopGuard = new AtomicBoolean();
 
     /**
      * The constructor.
@@ -224,6 +228,9 @@ public class MetaStorageManager implements IgniteComponent {
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        if (!stopGuard.compareAndSet(false, true))
+            return;
+
         busyLock.block();
 
         Optional<IgniteUuid> watchId;
@@ -256,7 +263,7 @@ public class MetaStorageManager implements IgniteComponent {
             if (raftGroupServiceFut != null) {
                 raftGroupServiceFut.get().shutdown();
 
-                raftMgr.stopRaftGroup(METASTORAGE_RAFT_GROUP_NAME, metastorageNodes());
+                raftMgr.stopRaftGroup(METASTORAGE_RAFT_GROUP_NAME);
             }
         }
         catch (InterruptedException | ExecutionException e) {

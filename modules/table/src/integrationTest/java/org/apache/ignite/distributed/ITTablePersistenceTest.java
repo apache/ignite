@@ -35,6 +35,7 @@ import org.apache.ignite.internal.storage.DataRow;
 import org.apache.ignite.internal.storage.PartitionStorage;
 import org.apache.ignite.internal.storage.basic.ConcurrentHashMapPartitionStorage;
 import org.apache.ignite.internal.storage.basic.SimpleDataRow;
+import org.apache.ignite.internal.storage.engine.TableStorage;
 import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.lang.IgniteUuid;
@@ -42,6 +43,8 @@ import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.service.ITAbstractListenerSnapshotTest;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * Persistent partitions raft group snapshots tests.
@@ -76,7 +79,8 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
             new IgniteUuid(UUID.randomUUID(), 0),
             Map.of(0, service),
             1,
-            NetworkAddress::toString
+            NetworkAddress::toString,
+            mock(TableStorage.class)
         );
 
         table.upsert(FIRST_VALUE, null).get();
@@ -89,7 +93,8 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
             new IgniteUuid(UUID.randomUUID(), 0),
             Map.of(0, service),
             1,
-            NetworkAddress::toString
+            NetworkAddress::toString,
+            mock(TableStorage.class)
         );
 
         // Remove the first key
@@ -106,7 +111,8 @@ public class ITTablePersistenceTest extends ITAbstractListenerSnapshotTest<Parti
             new IgniteUuid(UUID.randomUUID(), 0),
             Map.of(0, service),
             1,
-            NetworkAddress::toString
+            NetworkAddress::toString,
+            mock(TableStorage.class)
         );
 
         table.upsert(SECOND_VALUE, null).get();

@@ -35,6 +35,7 @@ import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
+import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -71,9 +72,11 @@ public class ITLozaTest {
 
     /**
      * Starts a raft group service with a provided group id on a provided Loza instance.
+     *
+     * @return Raft group service.
      */
-    private void startClient(String groupId, ClusterNode node, Loza loza) throws Exception {
-        loza.prepareRaftGroup(groupId,
+    private RaftGroupService startClient(String groupId, ClusterNode node, Loza loza) throws Exception {
+        return loza.prepareRaftGroup(groupId,
             List.of(node), () -> mock(RaftGroupListener.class)
         ).get(10, TimeUnit.SECONDS);
     }
@@ -107,6 +110,8 @@ public class ITLozaTest {
 
         Loza loza = null;
 
+        RaftGroupService[] grpSrvcs = new RaftGroupService[5];
+
         try {
             service = spy(clusterService(testInfo, PORT, List.of()));
 
@@ -120,7 +125,7 @@ public class ITLozaTest {
 
             loza.start();
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < grpSrvcs.length; i++) {
                 // return an error on first invocation
                 doReturn(exception)
                     // assert that a retry has been issued on the executor
@@ -133,13 +138,19 @@ public class ITLozaTest {
                     .doCallRealMethod()
                     .when(messagingServiceMock).invoke(any(NetworkAddress.class), any(), anyLong());
 
-                startClient(Integer.toString(i), service.topologyService().localMember(), loza);
+                grpSrvcs[i] = startClient(Integer.toString(i), service.topologyService().localMember(), loza);
 
                 verify(messagingServiceMock, times(3 * (i + 1)))
                     .invoke(any(NetworkAddress.class), any(), anyLong());
             }
         }
         finally {
+            for (RaftGroupService srvc : grpSrvcs) {
+                srvc.shutdown();
+
+                loza.stopRaftGroup(srvc.groupId());
+            }
+
             if (loza != null)
                 loza.stop();
 

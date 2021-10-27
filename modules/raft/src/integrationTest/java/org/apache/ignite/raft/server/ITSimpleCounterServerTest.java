@@ -92,7 +92,7 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
 
         var addr = new NetworkAddress("localhost", PORT);
 
-        ClusterService service = clusterService(PORT, List.of(), true);
+        ClusterService service = clusterService(PORT, List.of(addr), true);
 
         server = new JRaftServerImpl(service, dataPath) {
             @Override public synchronized void stop() {
@@ -106,8 +106,8 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
 
         ClusterNode serverNode = server.clusterService().topologyService().localMember();
 
-        server.startRaftGroup(COUNTER_GROUP_ID_0, new CounterListener(), List.of(new Peer(serverNode.address())));
-        server.startRaftGroup(COUNTER_GROUP_ID_1, new CounterListener(), List.of(new Peer(serverNode.address())));
+        assertTrue(server.startRaftGroup(COUNTER_GROUP_ID_0, new CounterListener(), List.of(new Peer(serverNode.address()))));
+        assertTrue(server.startRaftGroup(COUNTER_GROUP_ID_1, new CounterListener(), List.of(new Peer(serverNode.address()))));
 
         ClusterService clientNode1 = clusterService(PORT + 1, List.of(addr), true);
 
@@ -121,9 +121,9 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
         client2 = RaftGroupServiceImpl.start(COUNTER_GROUP_ID_1, clientNode2, FACTORY, 1000,
             List.of(new Peer(serverNode.address())), false, 200, executor).get(3, TimeUnit.SECONDS);
 
-        assertTrue(waitForTopology(service, 2, 1000));
-        assertTrue(waitForTopology(clientNode1, 2, 1000));
-        assertTrue(waitForTopology(clientNode2, 2, 1000));
+        assertTrue(waitForTopology(service, 3, 1000));
+        assertTrue(waitForTopology(clientNode1, 3, 1000));
+        assertTrue(waitForTopology(clientNode2, 3, 1000));
     }
 
     /**
@@ -131,7 +131,11 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
      */
     @AfterEach
     @Override public void after() throws Exception {
+        server.stopRaftGroup(COUNTER_GROUP_ID_0);
+        server.stopRaftGroup(COUNTER_GROUP_ID_1);
+
         server.stop();
+
         client1.shutdown();
         client2.shutdown();
 

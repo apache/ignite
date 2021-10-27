@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Flow.Publisher;
-
 import javax.naming.OperationNotSupportedException;
 import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.storage.engine.TableStorage;
 import org.apache.ignite.internal.table.InternalTable;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
@@ -57,6 +57,16 @@ public class FakeInternalTable implements InternalTable {
     public FakeInternalTable(String tableName, IgniteUuid tableId) {
         this.tableName = tableName;
         this.tableId = tableId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TableStorage storage() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partitions() {
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -238,5 +248,10 @@ public class FakeInternalTable implements InternalTable {
     /** {@inheritDoc} */
     @Override public @NotNull List<String> assignments() {
         throw new IgniteInternalException(new OperationNotSupportedException());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        // No-op.
     }
 }

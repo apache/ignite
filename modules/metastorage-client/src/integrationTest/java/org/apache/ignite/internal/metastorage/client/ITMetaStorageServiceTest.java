@@ -242,6 +242,7 @@ public class ITMetaStorageServiceTest {
      */
     @AfterEach
     public void afterTest() throws Exception {
+        metaStorageRaftSrv.stopRaftGroup(METASTORAGE_RAFT_GROUP_NAME);
         metaStorageRaftSrv.stop();
         metaStorageRaftGrpSvc.shutdown();
 

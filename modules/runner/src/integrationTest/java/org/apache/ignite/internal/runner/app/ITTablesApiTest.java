@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.ITUtils;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.table.Table;
@@ -165,7 +165,12 @@ public class ITTablesApiTest extends IgniteAbstractTest {
         });
 
         CompletableFuture<Table> tableByIdFut = CompletableFuture.supplyAsync(() -> {
-            return ((IgniteTablesInternal)ignite1.tables()).table(tblId);
+            try {
+                return ((IgniteTablesInternal)ignite1.tables()).table(tblId);
+            }
+            catch (NodeStoppingException e) {
+                throw new AssertionError(e.getMessage());
+            }
         });
 
         // Because the event inhibitor was started, last metastorage updates do not reach to one node.

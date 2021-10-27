@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
@@ -176,8 +177,7 @@ public class JRaftServerImpl implements RaftServer {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        for (RaftGroupService groupService : groups.values())
-            groupService.shutdown();
+        assert groups.isEmpty() : LoggerMessageHelper.format("Raft groups are still running {}", groups.keySet());
 
         rpcServer.shutdown();
 
