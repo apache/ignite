@@ -805,10 +805,10 @@ public class FunctionalTest {
      */
     @Test
     public void testTxResumeAfterTxTimeout() throws Exception {
-        try (Ignite ignite = Ignition.start(Config.getServerConfiguration().setClientConnectorConfiguration(
-            new ClientConnectorConfiguration().setThreadPoolSize(1)));
-             IgniteClient client = Ignition.startClient(getClientConfiguration())
-        ) {
+        IgniteConfiguration cfg = Config.getServerConfiguration().setClientConnectorConfiguration(
+            new ClientConnectorConfiguration().setThreadPoolSize(1));
+
+        try (Ignite ignite = Ignition.start(cfg); IgniteClient client = Ignition.startClient(getClientConfiguration())) {
             String cacheName = "cache";
 
             IgniteCache<Object, Object> igniteCache = ignite.createCache(new CacheConfiguration<>(cacheName)
