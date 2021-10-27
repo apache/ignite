@@ -122,7 +122,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                     continue;
                 }
 
-                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), !deserializeBinary, false, null);
+                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), true, false, null);
 
                 if (prev != null) {
                     Object prevVal = prev.get1();

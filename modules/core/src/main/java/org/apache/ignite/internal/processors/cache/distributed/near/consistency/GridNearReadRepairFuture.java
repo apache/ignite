@@ -95,7 +95,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                     continue;
                 }
 
-                Object candidateVal = ctx.unwrapBinaryIfNeeded(candidateRes.value(), !deserializeBinary, false, null);
+                Object candidateVal = ctx.unwrapBinaryIfNeeded(candidateRes.value(), true, false, null);
 
                 newestMap.putIfAbsent(key, new T2<>(candidateRes, candidateVal));
 
