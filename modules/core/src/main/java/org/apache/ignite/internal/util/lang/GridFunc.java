@@ -716,7 +716,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID.
      */
-    public static IgniteClosure<ClusterNode, UUID> node2id() {
+    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
         return NODE2ID;
     }
 

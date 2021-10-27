@@ -40,10 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.expiry.EternalExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
@@ -130,13 +127,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Stream.concat;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
@@ -295,7 +290,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final IgniteLogger exchLog;
 
     /** */
-    private volatile CacheAffinityChangeMessage affChangeMsg;
+    private CacheAffinityChangeMessage affChangeMsg;
 
     /**
      * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
@@ -540,13 +535,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void affinityChangeMessage(CacheAffinityChangeMessage affChangeMsg) {
         this.affChangeMsg = affChangeMsg;
-    }
-
-    /**
-     * @return Affinity change message associated with the exchange.
-     */
-    public @Nullable CacheAffinityChangeMessage affinityChangeMessage() {
-        return affChangeMsg;
     }
 
     /**
@@ -1888,6 +1876,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      * @param doRollback If {@code true} tries to rollback transactions which lock partitions. Avoids unnecessary calls
      * of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
+     *
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease(
@@ -3409,34 +3398,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param top Topology to reset all states.
-     */
-    private void resetAllPartitionStates(GridDhtPartitionTopology top) {
-        assert crd.isLocal();
-
-        List<List<ClusterNode>> ideal = cctx.affinity().affinity(top.groupId()).idealAssignmentRaw();
-
-        resetStateByCondition(IntStream.range(0, top.partitions()).boxed().collect(Collectors.toMap(part -> part, part -> emptySet())),
-            state -> true,
-            () -> AffinityTopologyVersion.NONE, // The last major affinity version will be used (e.g. node left, node join event).
-            top,
-            emptySet(),
-            (partId, nodeId) -> F.transform(ideal.get(partId), ClusterNode::id).contains(nodeId),
-            IntStream.range(0, top.partitions()).boxed().collect(Collectors.toMap(p -> p, p -> 0L)));
-
-        Collection<ClusterNode> affNodes = cctx.discovery().cacheGroupAffinityNodes(top.groupId(), AffinityTopologyVersion.NONE);
-
-        for (ClusterNode node : affNodes) {
-            for (Map.Entry<Integer, GridDhtPartitionState> e : top.partitions(node.id()).map().entrySet()) {
-                if (e.getValue() == GridDhtPartitionState.MOVING)
-                    continue;
-
-                assert false : "Partitions must be set to MOVING state on all nodes [node=" + node.id() + ", state=" + e + ']';
-            }
-        }
-    }
-
-    /**
      * Collects and determines new owners of partitions for all nodes for given {@code top}.
      *
      * @param top Topology to assign.
@@ -3519,15 +3480,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         List<SupplyPartitionInfo> list = assignHistoricalSuppliers(top, maxCntrs, varCntrs, haveHistory);
 
-        if (resetOwners) {
-            resetStateByCondition(maxCntrs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().nodes)),
-                state -> state == GridDhtPartitionState.OWNING,
-                () -> top.topologyVersionFuture().initialVersion(),
-                top,
-                haveHistory,
-                (partId, nodeId) -> !maxCntrs.get(partId).nodes.contains(nodeId),
-                maxCntrs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size)));
-        }
+        if (resetOwners)
+            resetOwnersByCounter(top, maxCntrs, haveHistory);
 
         return list;
     }
@@ -3537,32 +3491,31 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * If anyone of OWNING partitions have a counter less than maximum this partition changes state to MOVING forcibly.
      *
      * @param top Topology.
-     * @param awaitAffVer Topology version to wait late affinity assignment to. If <tt>NONE</tt> is used then
-     * the last topology version which requires affinity re-calculation is used.
+     * @param maxCntrs Max counter partiton map.
      * @param haveHistory Set of partitions witch have historical supplier.
      */
-    private void resetStateByCondition(
-        Map<Integer, Set<UUID>> partsToReset,
-        Predicate<GridDhtPartitionState> statesToReset,
-        Supplier<AffinityTopologyVersion> awaitAffVer,
-        GridDhtPartitionTopology top,
-        Set<Integer> haveHistory,
-        IgniteBiPredicate<Integer, UUID> rebCond,
-        Map<Integer, Long> partSizes
-    ) {
-        Map<UUID, Set<Integer>> partsToRebalance = top.resetPartitionStates(partsToReset,
-            statesToReset,
-            awaitAffVer,
-            haveHistory,
-            this,
-            rebCond);
+    private void resetOwnersByCounter(GridDhtPartitionTopology top,
+        Map<Integer, CounterWithNodes> maxCntrs, Set<Integer> haveHistory) {
+        Map<Integer, Set<UUID>> ownersByUpdCounters = U.newHashMap(maxCntrs.size());
+        Map<Integer, Long> partSizes = U.newHashMap(maxCntrs.size());
+
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
+            ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
+
+            partSizes.put(e.getKey(), e.getValue().size);
+        }
 
         top.globalPartSizes(partSizes);
 
-        for (Map.Entry<UUID, Set<Integer>> entry : partsToRebalance.entrySet()) {
-            // This map will be sent to other nodes in the cluster inside the full message.
-            for (Integer part : entry.getValue())
-                partsToReload.put(entry.getKey(), top.groupId(), part);
+        Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(
+            ownersByUpdCounters, haveHistory, this);
+
+        for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
+            UUID nodeId = e.getKey();
+            Set<Integer> parts = e.getValue();
+
+            for (int part : parts)
+                partsToReload.put(nodeId, top.groupId(), part);
         }
     }
 
@@ -3971,28 +3924,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
 
                 if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
-                    assert exchActions != null;
-
+                    if (exchActions != null) {
                     Set<String> caches = exchActions.cachesToResetLostPartitions();
 
                     if (!F.isEmpty(caches))
                         resetLostPartitions(caches);
 
-                    Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart()
-                            .stream()
+                        Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
                             .map(grp -> grp.descriptor().groupId()),
                         exchActions.cachesToResetLostPartitions().stream()
                             .map(CU::cacheId))
                         .collect(Collectors.toSet());
 
-                    Set<Integer> cacheGroupsToResetAll = exchActions.cacheGroupsToStart(cctx.snapshotMgr()::requirePartitionLoad)
-                        .stream()
-                        .map(d -> d.descriptor().groupId())
-                        .collect(Collectors.toSet());
-
-                    cacheGroupsToResetOwners.removeAll(cacheGroupsToResetAll);
-
-                    assignPartitionsStates(cacheGroupsToResetOwners, cacheGroupsToResetAll);
+                        assignPartitionsStates(cacheGroupsToResetOwners);
+                    }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
                     && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions()) {
@@ -4299,16 +4244,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * null if reset partitions state for all cache groups needed
      */
     private void assignPartitionsStates(Set<Integer> cacheGroupsToResetOwners) {
-        assignPartitionsStates(cacheGroupsToResetOwners, emptySet());
-    }
-
-    /**
-     * @param cacheGroupsToResetOwners Set of cache groups which need to reset partitions state, null if reset partitions
-     * state for all cache groups needed.
-     * @param cacheGroupsToResetAll Set of cache groups which need to reset all partitions states and fully reload from
-     * external source.
-     */
-    private void assignPartitionsStates(Set<Integer> cacheGroupsToResetOwners, Set<Integer> cacheGroupsToResetAll) {
         Map<String, List<SupplyPartitionInfo>> supplyInfoMap = log.isInfoEnabled() ?
             new ConcurrentHashMap<>() : null;
 
@@ -4324,14 +4259,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
                     if (CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
-                        List<SupplyPartitionInfo> list = emptyList();
+                        List<SupplyPartitionInfo> list;
 
-                        if (cacheGroupsToResetAll.contains(grpDesc.groupId()))
-                            resetAllPartitionStates(top);
-                        else {
-                            list = assignPartitionStates(top,
-                                cacheGroupsToResetOwners == null || cacheGroupsToResetOwners.contains(grpDesc.groupId()));
-                        }
+                        if (cacheGroupsToResetOwners == null || cacheGroupsToResetOwners.contains(grpDesc.groupId()))
+                            list = assignPartitionStates(top, true);
+                        else
+                            list = assignPartitionStates(top, false);
 
                         if (supplyInfoMap != null && !F.isEmpty(list))
                             supplyInfoMap.put(grpDesc.cacheOrGroupName(), list);

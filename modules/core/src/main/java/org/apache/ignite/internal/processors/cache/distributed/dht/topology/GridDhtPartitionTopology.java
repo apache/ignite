@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -38,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -169,8 +166,9 @@ public interface GridDhtPartitionTopology {
      *
      * @param p Partition ID.
      * @return Partition.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridDhtLocalPartition forceCreatePartition(int p);
+    public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException;
 
     /**
      * @param topVer Topology version at the time of creation.
@@ -427,20 +425,16 @@ public interface GridDhtPartitionTopology {
      * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
      * Called on coordinator during assignment of partition states.
      *
-     * @param partsToReset Map (partition, set of node IDs that have most actual state about partition
+     * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
      *                            (update counter is maximal) and should hold OWNING state for such partition).
-     * @param statesToReset Predicate to filter partition states to be reset. If returns {@code true} than the state will be reset.
      * @param haveHist Set of partitions which have WAL history to rebalance.
      * @param exchFut Exchange future for operation.
      * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Map<UUID, Set<Integer>> resetPartitionStates(
-        Map<Integer, Set<UUID>> partsToReset,
-        Predicate<GridDhtPartitionState> statesToReset,
-        Supplier<AffinityTopologyVersion> awaitAffVer,
+    public Map<UUID, Set<Integer>> resetOwners(
+        Map<Integer, Set<UUID>> ownersByUpdCounters,
         Set<Integer> haveHist,
-        GridDhtPartitionsExchangeFuture exchFut,
-        IgniteBiPredicate<Integer, UUID> rebCond);
+        GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Callback on exchange done.

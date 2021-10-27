@@ -103,7 +103,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -111,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -390,7 +388,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(restoreCacheGrpProc);
 
         // Manage remote snapshots.
         snpRmtHandler = new SequentialRemoteSnapshotManager();
@@ -505,8 +502,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        cctx.exchange().registerExchangeAwareComponent(restoreCacheGrpProc);
-
         cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtHandler);
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtHandler);
     }
@@ -544,7 +539,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 cctx.kernalContext().event().removeDiscoveryEventListener(discoLsnr);
 
             cctx.exchange().unregisterExchangeAwareComponent(this);
-            cctx.exchange().unregisterExchangeAwareComponent(restoreCacheGrpProc);
         }
         finally {
             busyLock.unblock();
@@ -966,14 +960,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return {@code true} if partition states of given cache groups must be reset
-     * to the initial {@link GridDhtPartitionState#MOVING} state.
-     */
-    public boolean requirePartitionLoad(CacheConfiguration<?, ?> ccfg, UUID restoreId) {
-        return restoreCacheGrpProc.requirePartitionLoad(ccfg, restoreId);
-    }
-
-    /**
      * Check if snapshot restore process is currently running.
      *
      * @param snpName Snapshot name.
@@ -1015,14 +1001,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptySet();
 
         return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
-    }
-
-    /**
-     * @param grps Ordered list of cache groups sorted by priority.
-     * @param exchFut Exchange future.
-     */
-    public void onRebalanceReady(Set<CacheGroupContext> grps, GridDhtPartitionsExchangeFuture exchFut) {
-        restoreCacheGrpProc.onRebalanceReady(grps, exchFut);
     }
 
     /**
