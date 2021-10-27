@@ -48,14 +48,19 @@ public class DataTypesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNumericTypes() {
-        executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
+        try {
+            executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
 
-        executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4)");
+            executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4)");
 
-        assertSingleEquals(executeSql("SELECT tiny FROM tbl"), (byte)1);
-        assertSingleEquals(executeSql("SELECT small FROM tbl"), (short)2);
-        assertSingleEquals(executeSql("SELECT i FROM tbl"), 3);
-        assertSingleEquals(executeSql("SELECT big FROM tbl"), 4L);
+            assertSingleEquals(executeSql("SELECT tiny FROM tbl"), (byte)1);
+            assertSingleEquals(executeSql("SELECT small FROM tbl"), (short)2);
+            assertSingleEquals(executeSql("SELECT i FROM tbl"), 3);
+            assertSingleEquals(executeSql("SELECT big FROM tbl"), 4L);
+        }
+        finally {
+            executeSql("DROP TABLE if exists tbl");
+        }
     }
 
     /**
@@ -63,27 +68,32 @@ public class DataTypesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNumericConvertationOnEquals() {
-        executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
+        try {
+            executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
 
-        executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4), (5, 5, 5, 5)");
+            executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4), (5, 5, 5, 5)");
 
-        assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)"), (byte)5);
-        assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)"), (short)5);
+            assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)"), (byte)5);
+            assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)"), (short)5);
 
-        assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)"), (byte)5);
-        assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)"), 5);
+            assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)"), (byte)5);
+            assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)"), 5);
 
-        assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)"), (byte)5);
-        assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)"), 5L);
+            assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)"), (byte)5);
+            assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)"), 5L);
 
-        assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)"), (short)5);
-        assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)"), 5);
+            assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)"), (short)5);
+            assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)"), 5);
 
-        assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)"), (short)5);
-        assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)"), 5L);
+            assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)"), (short)5);
+            assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)"), 5L);
 
-        assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)"), 5);
-        assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)"), 5L);
+            assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)"), 5);
+            assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)"), 5L);
+        }
+        finally {
+            executeSql("DROP TABLE if exists tbl");
+        }
     }
 
     /** */
