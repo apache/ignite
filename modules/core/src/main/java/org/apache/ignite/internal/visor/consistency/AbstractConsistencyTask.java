@@ -29,7 +29,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
  * @param <A> Task argument type.
  * @param <J> Job result type
  */
-public abstract class AbstractConsistencyTask<A, J>  extends VisorMultiNodeTask<A, VisorConsistencyTaskResult, J> {
+public abstract class AbstractConsistencyTask<A, J> extends VisorMultiNodeTask<A, VisorConsistencyTaskResult, J> {
     /** {@inheritDoc} */
     @Override protected VisorConsistencyTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
         VisorConsistencyTaskResult taskRes = new VisorConsistencyTaskResult();
