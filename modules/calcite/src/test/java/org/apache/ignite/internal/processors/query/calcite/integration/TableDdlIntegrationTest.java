@@ -550,13 +550,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals(2, res.get(0).size());
     }
 
-    @Test
-    public void test(){
-        executeSql("CREATE TABLE tbl(a TINYINT, b SMALLINT, c INTEGER, d BIGINT, e VARCHAR, f DATE, g TIMESTAMP)");
-        executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4, '5', DATE '1992-01-01', TIMESTAMP '1992-01-01 00:00:00')");
-        executeSql("SELECT 1 FROM tbl t1 JOIN tbl t2 ON (t1.d=t2.d)");
-    }
-
     /**
      * Add/drop column if column not exists/exists.
      */

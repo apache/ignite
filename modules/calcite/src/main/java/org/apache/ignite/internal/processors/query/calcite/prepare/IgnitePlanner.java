@@ -131,7 +131,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
         sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig();
-        validatorCfg = frameworkCfg.getSqlValidatorConfig();
+        validatorCfg = frameworkCfg.getSqlValidatorConfig().withTypeCoercionFactory(IgniteTypeCoercion::new);
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();
         traitDefs = frameworkCfg.getTraitDefs();

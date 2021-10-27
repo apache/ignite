@@ -445,11 +445,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         /** {@inheritDoc} */
         @Override public boolean test(Row r1, Row r2) {
-            try {
-                scalar.execute(ctx, r1, r2, out);
-            } catch (Exception e){
-                scalar.execute(ctx, r1, r2, out);
-            }
+            scalar.execute(ctx, r1, r2, out);
             return Boolean.TRUE == hnd.get(0, out);
         }
     }
