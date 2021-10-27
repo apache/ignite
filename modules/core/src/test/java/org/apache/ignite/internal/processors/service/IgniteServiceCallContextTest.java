@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -151,15 +151,15 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
             proxies.put(createProxyWithContext(grid(i), strVal2, binVal2), new T2<>(strVal2, binVal2));
         }
 
-        CountDownLatch startLatch = new CountDownLatch(1);
-
+        int threadsPerProxy = 2;
+        CyclicBarrier barrier = new CyclicBarrier(proxies.size() * threadsPerProxy);
         GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>();
 
         for (Map.Entry<TestService, T2<String, byte[]>> e : proxies.entrySet()) {
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-                startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                barrier.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-                for (int i = 0; i < 1_000; i++) {
+                for (int i = 0; i < 100; i++) {
                     T2<String, byte[]> expVals = e.getValue();
                     TestService proxy = e.getKey();
 
@@ -171,14 +171,12 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
                 }
 
                 return true;
-            }, 2, "worker");
+            }, threadsPerProxy, "worker");
 
             compFut.add(fut);
         }
 
         compFut.markInitialized();
-
-        startLatch.countDown();
 
         compFut.get(getTestTimeout());
     }
