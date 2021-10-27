@@ -33,7 +33,7 @@ import static java.util.stream.Stream.of;
  * */
 public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridCommandHandlerAbstractTest {
     /** Number of server nodes. */
-    protected static final int SERVER_NODE_CNT = 3;
+    protected static final int SERVER_NODE_CNT = 2;
 
     /** Coordinator. */
     protected static IgniteEx crd;
