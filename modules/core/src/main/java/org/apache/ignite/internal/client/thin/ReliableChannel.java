@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-//import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -687,7 +686,7 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         if (dfltChannelIdx == -1)
-            dfltChannelIdx = 0; //new Random().nextInt(reinitHolders.size());
+            dfltChannelIdx = 0;
 
         curChannelsGuard.writeLock().lock();
 

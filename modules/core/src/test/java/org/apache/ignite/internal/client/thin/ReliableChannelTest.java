@@ -36,6 +36,7 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,6 +73,22 @@ public class ReliableChannelTest {
         rc.channelsInit();
 
         assertEquals(3, rc.getChannelHolders().size());
+    }
+
+    /**
+     * Checks that in case if address specified without port, the default port will be processet firstly
+     * */
+    @Test
+    public void testAddresesWithoutPort() {
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1");
+
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
+        rc.channelsInit();
+
+        assertEquals(ClientConnectorConfiguration.DFLT_PORT_RANGE + 1, rc.getChannelHolders().size());
+
+        assertEquals(ClientConnectorConfiguration.DFLT_PORT, rc.getChannelHolders().iterator().next().getAddress().getPort());
     }
 
     /**
