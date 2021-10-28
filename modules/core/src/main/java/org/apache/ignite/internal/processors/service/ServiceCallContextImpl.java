@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.services.ServiceCallContext;
@@ -30,16 +29,11 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     private final Map<String, Object> attrs;
 
     /**
-     * Default contructor.
-     */
-    public ServiceCallContextImpl() {
-        attrs = new HashMap<>();
-    }
-
-    /**
      * @param attrs Service call context attributes.
      */
     public ServiceCallContextImpl(Map<String, Object> attrs) {
+        A.notNull(attrs, "attrs");
+
         this.attrs = attrs;
     }
 
@@ -51,24 +45,6 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /** {@inheritDoc} */
     @Override public byte[] binary(String name) {
         return (byte[])attrs.get(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public ServiceCallContext put(String name, String val) {
-        A.notNullOrEmpty(name, "name");
-
-        attrs.put(name, val);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ServiceCallContext put(String name, byte[] val) {
-        A.notNullOrEmpty(name, "name");
-
-        attrs.put(name, val);
-
-        return this;
     }
 
     /**
