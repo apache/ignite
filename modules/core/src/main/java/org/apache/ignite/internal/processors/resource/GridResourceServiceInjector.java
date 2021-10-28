@@ -54,14 +54,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        ServiceResource ann = (ServiceResource)mtd.getAnnotation();
-
-        if (mtd.getMethod().getParameterTypes().length != 1) {
-            throw new IgniteCheckedException("Setter must have single argument [service=" +
-                ann.serviceName() + ", setter=" + mtd + ']');
-        }
-
-        Object svc = getService(ann);
+        Object svc = getService((ServiceResource)mtd.getAnnotation());
 
         if (svc != null)
             GridResourceUtils.inject(mtd.getMethod(), target, svc);
