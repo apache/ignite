@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -627,6 +628,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
+    @IgniteExperimental
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, ServiceCallContext callCtx, long timeout)
         throws IgniteException;
 

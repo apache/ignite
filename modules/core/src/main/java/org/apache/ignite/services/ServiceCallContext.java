@@ -18,6 +18,7 @@
 package org.apache.ignite.services;
 
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Service call context.
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
  *
  * @see ServiceContext
  */
+@IgniteExperimental
 public interface ServiceCallContext {
     /**
      * Factory method for creating an internal implementation.
