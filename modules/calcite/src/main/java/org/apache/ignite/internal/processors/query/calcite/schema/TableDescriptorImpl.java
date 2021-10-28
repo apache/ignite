@@ -315,9 +315,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             case DELETE:
                 return deleteTuple(row, ectx);
             case UPDATE:
-                return updateTuple(row, (List<String>) arg, ectx);
+                return updateTuple(row, (List<String>) arg, 0, ectx);
             case MERGE:
-                throw new UnsupportedOperationException();
+                return mergeTuple(row, (List<String>) arg, ectx);
             default:
                 throw new AssertionError();
         }
@@ -440,14 +440,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private <Row> IgniteBiTuple updateTuple(Row row, List<String> updateColList, ExecutionContext<Row> ectx)
+    private <Row> IgniteBiTuple updateTuple(Row row, List<String> updateColList, int offset, ExecutionContext<Row> ectx)
         throws IgniteCheckedException {
         RowHandler<Row> handler = ectx.rowHandler();
 
-        Object key = Objects.requireNonNull(handler.get(QueryUtils.KEY_COL, row));
-        Object val = clone(Objects.requireNonNull(handler.get(QueryUtils.VAL_COL, row)));
+        Object key = Objects.requireNonNull(handler.get(offset + QueryUtils.KEY_COL, row));
+        Object val = clone(Objects.requireNonNull(handler.get(offset + QueryUtils.VAL_COL, row)));
 
-        int offset = descriptorsMap.size();
+        offset += descriptorsMap.size();
 
         for (int i = 0; i < updateColList.size(); i++) {
             final ColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
@@ -468,6 +468,31 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         typeDesc.validateKeyAndValue(key, val);
 
         return F.t(key, val);
+    }
+
+    /** */
+    private <Row> IgniteBiTuple mergeTuple(Row row, List<String> updateColList, ExecutionContext<Row> ectx)
+        throws IgniteCheckedException {
+        RowHandler<Row> hnd = ectx.rowHandler();
+
+        int rowColumnsCnt = hnd.columnCount(row);
+
+        if (rowColumnsCnt == descriptors.length)
+            return F.t(insertTuple(row, ectx), null); // Only WHEN NOT MATCHED clause in MERGE.
+        else if (rowColumnsCnt == descriptors.length + updateColList.size())
+            return F.t(null, updateTuple(row, updateColList, 0, ectx)); // Only WHEN MATCHED clause in MERGE.
+        else {
+            // Both WHEN MATCHED and WHEN NOT MATCHED clauses in MERGE.
+            assert rowColumnsCnt == descriptors.length * 2 + updateColList.size() : "Unexpected columns count: " +
+                rowColumnsCnt;
+
+            int updateOffset = descriptors.length; // Offset of fields for update statement.
+
+            if (hnd.get(updateOffset + QueryUtils.KEY_COL, row) != null)
+                return F.t(null, updateTuple(row, updateColList, updateOffset, ectx));
+            else
+                return F.t(insertTuple(row, ectx), null);
+        }
     }
 
     /** */

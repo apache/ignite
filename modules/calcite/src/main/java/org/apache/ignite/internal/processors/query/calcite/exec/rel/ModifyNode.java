@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 
 /**
@@ -115,6 +117,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             case DELETE:
             case UPDATE:
             case INSERT:
+            case MERGE:
                 tuples.add(desc.toTuple(context(), row, op, cols));
 
                 flushTuples(false);
@@ -197,17 +200,28 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
-        if (op == TableModify.Operation.INSERT && updated != res.size()) {
-            List<Object> duplicates = res.entrySet().stream()
+        if ((op == TableModify.Operation.INSERT || op == TableModify.Operation.MERGE) && updated != res.size()) {
+            List<Object> conflictKeys = res.entrySet().stream()
                 .filter(e -> e.getValue().get() == 0)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
 
-            throw new IgniteSQLException("Failed to INSERT some keys because they are already in cache. " +
-                "[keys=" + duplicates + ']', DUPLICATE_KEY);
+            throw conflictKeysException(conflictKeys);
         }
 
         updatedRows += updated;
+    }
+
+    /** */
+    private IgniteSQLException conflictKeysException(List<Object> conflictKeys) {
+        if (op == TableModify.Operation.INSERT) {
+            return new IgniteSQLException("Failed to INSERT some keys because they are already in cache. " +
+                "[keys=" + conflictKeys + ']', DUPLICATE_KEY);
+        }
+        else {
+            return new IgniteSQLException("Failed to MERGE some keys due to keys conflict or concurrent updates. " +
+                "[keys=" + conflictKeys + ']', CONCURRENT_UPDATE);
+        }
     }
 
     /** */
@@ -216,13 +230,29 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         switch (op) {
             case INSERT:
-                for (IgniteBiTuple<?, ?> entry : tuples)
-                    procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue()));
+                for (IgniteBiTuple<?, ?> entry : tuples) {
+                    if (procMap.put(entry.getKey(), new InsertOperation<>(entry.getValue())) != null)
+                        throw conflictKeysException(Collections.singletonList(entry.getKey()));
+                }
 
                 break;
             case UPDATE:
                 for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new UpdateOperation<>(entry.getValue()));
+
+                break;
+            case MERGE:
+                for (IgniteBiTuple<?, ?> insertUpdateTuple : tuples) {
+                    IgniteBiTuple<?, ?> insertEntry = (IgniteBiTuple<?, ?>)insertUpdateTuple.get1();
+                    IgniteBiTuple<?, ?> updateEntry = (IgniteBiTuple<?, ?>)insertUpdateTuple.get2();
+
+                    if (updateEntry != null)
+                        procMap.put(updateEntry.getKey(), new UpdateOperation<>(updateEntry.getValue()));
+                    else {
+                        if (procMap.put(insertEntry.getKey(), new InsertOperation<>(insertEntry.getValue())) != null)
+                            throw conflictKeysException(Collections.singletonList(insertEntry.getKey()));
+                    }
+                }
 
                 break;
             case DELETE:

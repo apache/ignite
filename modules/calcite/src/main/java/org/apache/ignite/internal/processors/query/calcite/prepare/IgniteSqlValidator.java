@@ -131,11 +131,15 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override protected SqlSelect createSourceSelectForUpdate(SqlUpdate call) {
         final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
-        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier)call.getTargetTable()).names);
+        final SqlIdentifier targetTable = (SqlIdentifier)call.getTargetTable();
+        final SqlValidatorTable table = getCatalogReader().getTable(targetTable.names);
+
+        SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
+            new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
 
         table.unwrap(IgniteTable.class).descriptor().selectForUpdateRowType((IgniteTypeFactory)typeFactory)
             .getFieldNames().stream()
-            .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
+            .map(name -> alias.plus(name, SqlParserPos.ZERO))
             .forEach(selectList::add);
 
         int ordinal = 0;

@@ -131,7 +131,8 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
                     @Nullable ImmutableBitSet requiredColunms) throws IgniteCheckedException;
 
     /**
-     * Converts a relational node row to cache key-value tuple;
+     * Converts a relational node row to cache key-value tuple.
+     * For MERGE operation return tuple of two tuples (first for insert and second for update);
      *
      * @param ectx Execution context.
      * @param row Relational node row.

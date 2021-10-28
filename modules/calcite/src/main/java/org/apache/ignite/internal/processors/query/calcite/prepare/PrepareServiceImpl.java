@@ -90,6 +90,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 case INSERT:
                 case DELETE:
                 case UPDATE:
+                case MERGE:
                     return prepareDml(sqlNode, ctx);
 
                 case EXPLAIN:
