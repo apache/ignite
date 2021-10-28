@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.io.IOException;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants;
@@ -33,5 +35,10 @@ public abstract class AbstractDateIndexKey implements IndexKey {
     /** {@inheritDoc} */
     @Override public int type() {
         return IndexKeyTypes.DATE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(dateValue());
     }
 }

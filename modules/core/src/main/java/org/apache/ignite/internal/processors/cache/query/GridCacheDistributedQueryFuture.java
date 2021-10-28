@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -27,17 +29,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCompartorImpl;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortCacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.reducer.NodePage;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 
 /**
  * Distributed query future.
@@ -89,9 +93,49 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
-        reducer = qry.query().type() == TEXT ?
-            new MergeSortCacheQueryReducer<>(streamsMap)
-            : new UnsortedCacheQueryReducer<>(streamsMap);
+        switch (qry.query().type()) {
+            case TEXT: reducer = new MergeSortCacheQueryReducer<>(streamsMap,
+                (o1, o2) -> Float.compare(
+                    ((ScoredCacheEntry<?, ?>)o1.head()).score(), ((ScoredCacheEntry<?, ?>)o2.head()).score()));
+                break;
+
+            case INDEX: reducer = new MergeSortCacheQueryReducer<>(streamsMap, new IndexedNodePageComparator<>());
+                break;
+
+            default: reducer = new UnsortedCacheQueryReducer<>(streamsMap);
+        }
+    }
+
+    /** Comparing rows by indexed keys. */
+    private static class IndexedNodePageComparator<R> implements Comparator<NodePage<R>>, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Every node will return the same key types for the same index, then it's possible to use simple comparator. */
+        private final IndexRowComparator idxRowComp = new IndexRowCompartorImpl();
+
+        /** {@inheritDoc} */
+        @Override public int compare(NodePage<R> o1, NodePage<R> o2) {
+            IndexedCacheEntry<?, ?> e1 = (IndexedCacheEntry<?, ?>)o1.head();
+            IndexedCacheEntry<?, ?> e2 = (IndexedCacheEntry<?, ?>)o2.head();
+
+            try {
+                for (int i = 0; i < e1.keysSize(); i++) {
+                    int cmp = idxRowComp.compareKey(e1.key(i), e2.key(i));
+
+                    if (cmp != 0) {
+                        boolean desc = ((e1.orderMask() >> i) & 1) > 0;
+
+                        return desc ? -cmp : cmp;
+                    }
+                }
+
+                return 0;
+
+            } catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to sort remote index rows", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

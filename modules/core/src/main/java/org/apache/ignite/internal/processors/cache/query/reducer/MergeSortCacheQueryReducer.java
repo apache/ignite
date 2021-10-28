@@ -23,7 +23,6 @@ import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
 
 /**
  * Reducer of cache query results that sort result through all nodes. Note that it's assumed that every node
@@ -43,8 +42,13 @@ public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     private UUID pendingNodeId;
 
     /** */
-    public MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
+    private final Comparator<NodePage<R>> pageCmp;
+
+    /** */
+    public MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams, Comparator<NodePage<R>> pageCmp) {
         super(pageStreams);
+
+        this.pageCmp = pageCmp;
     }
 
     /** {@inheritDoc} */
@@ -52,9 +56,6 @@ public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
         // Initial sort.
         if (nodePages == null) {
             // Compares head pages from all nodes to get the lowest value at the moment.
-            Comparator<NodePage<R>> pageCmp = (o1, o2) -> textResultComparator.compare(
-                (ScoredCacheEntry<?, ?>)o1.head(), (ScoredCacheEntry<?, ?>)o2.head());
-
             nodePages = new PriorityQueue<>(pageStreams.size(), pageCmp);
 
             for (NodePageStream<R> s : pageStreams.values()) {
@@ -76,6 +77,8 @@ public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
                 if (p != null && p.hasNext())
                     nodePages.add(p);
             }
+
+            pendingNodeId = null;
         }
 
         return !nodePages.isEmpty();
@@ -97,8 +100,4 @@ public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
 
         return o;
     }
-
-    /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
-    private static final Comparator<ScoredCacheEntry<?, ?>> textResultComparator = (c1, c2) ->
-        Float.compare(c2.score(), c1.score());
 }

@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.io.Externalizable;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /**
  * Class that represnts a single index key.
  */
-public interface IndexKey {
+public interface IndexKey extends Externalizable {
     /**
      * @return Value of this key.
      */

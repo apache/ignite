@@ -19,9 +19,6 @@ package org.apache.ignite.cache.query;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -106,19 +103,15 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
 
         assertEquals(right - left, all.size());
 
-        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
-
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, ?> entry = all.get(i);
 
-            assertTrue(expKeys.remove(entry.getKey()));
+            assertEquals(left + i, entry.getKey().intValue());
 
             BinaryObject o = all.get(i).getValue();
 
             assertEquals(new Person(entry.getKey().intValue()), o.deserialize());
         }
-
-        assertTrue(expKeys.isEmpty());
     }
 
     /** */

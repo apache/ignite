@@ -21,9 +21,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
+import org.apache.ignite.internal.processors.cache.query.IndexedCacheEntry;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -80,7 +83,12 @@ public class IndexQueryProcessor {
     ) throws IgniteCheckedException {
         Index idx = index(cctx, idxQryDesc);
 
-        GridCursor<IndexRow> cursor = query(cctx, idx, idxQryDesc, qryCtx);
+        IndexRangeQuery qry = prepareQuery(idx, idxQryDesc);
+
+        GridCursor<IndexRow> cursor = querySortedIndex(cctx, (InlineIndexImpl)idx, qryCtx, qry);
+
+        final int critSize = qry.criteria.length;
+        final int orderMask = orderMask(idx.id(), critSize);
 
         // Map IndexRow to Cache Key-Value pair.
         return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
@@ -102,7 +110,7 @@ public class IndexQueryProcessor {
                     if (filter != null && !filter.apply(k, v))
                         continue;
 
-                    currVal = new IgniteBiTuple<>(k, v);
+                    currVal = new IndexedCacheEntry<>(k, v, r.keys(), critSize, orderMask);
                 }
 
                 return currVal != null;
@@ -121,6 +129,22 @@ public class IndexQueryProcessor {
                 return row;
             }
         };
+    }
+
+    /** @return Mask with {@code 1} for DESC criteria and {@code 0} for ASC criteria. */
+    private int orderMask(UUID idxId, int critSize) {
+        Iterator<IndexKeyDefinition> it = idxProc.indexDefinition(idxId).indexKeyDefinitions().values().iterator();
+
+        int descFlags = 0;
+
+        for (int i = 0; i < critSize; i++) {
+            IndexKeyDefinition d = it.next();
+
+            if (d.order().sortOrder() == DESC)
+                descFlags |= 1 << i;
+        }
+
+        return descFlags;
     }
 
     /**
@@ -430,19 +454,27 @@ public class IndexQueryProcessor {
     }
 
     /**
-     * Runs an index query.
+     * Prepare index query.
      *
-     * @return Result cursor over index segments.
+     * @return Prepared query for index range.
      */
-    private GridCursor<IndexRow> query(GridCacheContext<?, ?> cctx, Index idx, IndexQueryDesc idxQryDesc, IndexQueryContext qryCtx)
-        throws IgniteCheckedException {
-
+    private IndexRangeQuery prepareQuery(Index idx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
         IndexQueryCriterion c = F.isEmpty(idxQryDesc.criteria()) ? null : idxQryDesc.criteria().get(0);
 
-        if (c == null || c instanceof RangeIndexQueryCriterion)
-            return querySortedIndex(cctx, (InlineIndexImpl) idx, idxQryDesc, qryCtx);
+        if (c != null && !(c instanceof RangeIndexQueryCriterion))
+            throw new IllegalStateException("Doesn't support index query criteria: " + c.getClass().getName());
 
-        throw new IllegalStateException("Doesn't support index query criteria: " + c.getClass().getName());
+        SortedIndexDefinition idxDef = (SortedIndexDefinition) idxProc.indexDefinition(idx.id());
+
+        // For PK indexes will serialize _KEY column.
+        if (F.isEmpty(idxQryDesc.criteria()))
+            return new IndexRangeQuery(1);
+
+        InlineIndexImpl sortedIdx = (InlineIndexImpl)idx;
+
+        Map<String, RangeIndexQueryCriterion> merged = mergeIndexQueryCriteria(sortedIdx, idxDef, idxQryDesc);
+
+        return alignCriteriaWithIndex(sortedIdx, merged, idxDef);
     }
 
     /**
@@ -450,20 +482,12 @@ public class IndexQueryProcessor {
      *
      * @return Result cursor over segment.
      */
-    private GridCursor<IndexRow> querySortedIndex(GridCacheContext<?, ?> cctx, InlineIndexImpl idx, IndexQueryDesc idxQryDesc,
-        IndexQueryContext qryCtx) throws IgniteCheckedException {
-        SortedIndexDefinition idxDef = (SortedIndexDefinition) idxProc.indexDefinition(idx.id());
-
-        IndexRangeQuery qry;
-
-        if (!F.isEmpty(idxQryDesc.criteria())) {
-            Map<String, RangeIndexQueryCriterion> merged = mergeIndexQueryCriteria(idx, idxDef, idxQryDesc);
-
-            qry = alignCriteriaWithIndex(idx, merged, idxDef);
-        }
-        else
-            qry = new IndexRangeQuery(0);
-
+    private GridCursor<IndexRow> querySortedIndex(
+        GridCacheContext<?, ?> cctx,
+        InlineIndexImpl idx,
+        IndexQueryContext qryCtx,
+        IndexRangeQuery qry
+    ) throws IgniteCheckedException {
         int segmentsCnt = cctx.isPartitioned() ? cctx.config().getQueryParallelism() : 1;
 
         if (segmentsCnt == 1)
@@ -475,8 +499,7 @@ public class IndexQueryProcessor {
         for (int i = 0; i < segmentsCnt; i++)
             segmentCursors[i] = treeIndexRange(idx, i, qry, qryCtx);
 
-        return new SegmentedIndexCursor(
-            segmentCursors, ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator());
+        return new SegmentedIndexCursor(segmentCursors, (SortedIndexDefinition)idxProc.indexDefinition(idx.id()));
     }
 
     /**
@@ -588,14 +611,30 @@ public class IndexQueryProcessor {
         private IndexRow head;
 
         /** */
-        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, IndexRowComparator rowCmp) throws IgniteCheckedException {
+        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
             cursorComp = new Comparator<GridCursor<IndexRow>>() {
                 @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
                     try {
-                        return rowCmp.compareRow(o1.get(), o2.get(), 0);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
+                        IndexRow l = o1.get();
+
+                        Iterator<IndexKeyDefinition> it = idxDef.indexKeyDefinitions().values().iterator();
+
+                        for (int i = 0; i < l.keys().length; i++) {
+                            int cmp = idxDef.rowComparator().compareRow(o1.get(), o2.get(), i);
+
+                            IndexKeyDefinition def = it.next();
+
+                            if (cmp != 0) {
+                                boolean desc = def.order().sortOrder() == SortOrder.DESC;
+
+                                return desc ? -cmp : cmp;
+                            }
+                        }
+
+                        return 0;
+
+                    } catch (IgniteCheckedException e) {
+                        throw new IgniteException("Failed to sort remote index rows", e);
                     }
                 }
             };

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.io.IOException;
+import java.io.ObjectOutput;
 import java.util.Arrays;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
@@ -26,6 +28,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
  * {@link IndexKeyTypes#JAVA_OBJECT}.
  */
 public abstract class JavaObjectIndexKey implements IndexKey {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return key().hashCode();
@@ -105,5 +110,10 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int len = bytes.length;
             return len == 0 ? EMPTY_BYTES : Arrays.copyOf(bytes, len);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(key());
     }
 }

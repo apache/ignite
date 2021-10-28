@@ -20,14 +20,20 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 /** */
 public class SignedBytesIndexKey extends BytesIndexKey {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    public SignedBytesIndexKey() {
+        // No-op.
+    }
+
+    /** */
     public SignedBytesIndexKey(byte[] key) {
         super(key);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        byte[] okey = (byte[]) o.key();
-
-        return BytesCompareUtils.compareNotNullSigned(key, okey);
+        return BytesCompareUtils.compareNotNullSigned(key, ((BytesIndexKey)o).key);
     }
 }

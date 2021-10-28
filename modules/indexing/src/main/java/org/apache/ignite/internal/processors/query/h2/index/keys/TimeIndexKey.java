@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.keys;
 
+import java.io.IOException;
+import java.io.ObjectInput;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimeIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueTime;
@@ -24,11 +26,19 @@ import org.h2.value.ValueTime;
 /** */
 public class TimeIndexKey extends AbstractTimeIndexKey implements H2ValueWrapperMixin {
     /** */
-    private final ValueTime time;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private ValueTime time;
 
     /** */
     public TimeIndexKey(Object obj) {
         time = (ValueTime) wrapToValue(obj, type());
+    }
+
+    /** */
+    public TimeIndexKey() {
+        // No-op.
     }
 
     /** */
@@ -54,5 +64,10 @@ public class TimeIndexKey extends AbstractTimeIndexKey implements H2ValueWrapper
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
         return time.compareTo(((TimeIndexKey)o).time, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        time = ValueTime.fromNanos(in.readLong());
     }
 }

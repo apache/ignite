@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.keys;
 
+import java.io.IOException;
+import java.io.ObjectInput;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractDateIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueDate;
@@ -24,11 +26,19 @@ import org.h2.value.ValueDate;
 /** */
 public class DateIndexKey extends AbstractDateIndexKey implements H2ValueWrapperMixin {
     /** */
-    private final ValueDate date;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private ValueDate date;
 
     /** */
     public DateIndexKey(Object obj) {
         date = (ValueDate) wrapToValue(obj, type());
+    }
+
+    /** */
+    public DateIndexKey() {
+        // No-op.
     }
 
     /** */
@@ -54,5 +64,10 @@ public class DateIndexKey extends AbstractDateIndexKey implements H2ValueWrapper
     /** {@inheritDoc} */
     @Override public long dateValue() {
         return date.getDateValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        date = ValueDate.fromDateValue(in.readLong());
     }
 }

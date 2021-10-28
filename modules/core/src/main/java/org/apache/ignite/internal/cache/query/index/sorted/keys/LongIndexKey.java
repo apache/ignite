@@ -17,21 +17,32 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /** */
 public class LongIndexKey implements IndexKey {
     /** */
-    private final long key;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private long key;
 
     /** */
     public LongIndexKey(long key) {
         this.key = key;
     }
 
+    /** */
+    public LongIndexKey() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public Object key() {
-        return key;
+        return Long.valueOf(key);
     }
 
     /** {@inheritDoc} */
@@ -41,8 +52,16 @@ public class LongIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        long okey = (long) o.key();
+        return Long.compare(key, ((LongIndexKey)o).key);
+    }
 
-        return Long.compare(key, okey);
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        key = in.readLong();
     }
 }

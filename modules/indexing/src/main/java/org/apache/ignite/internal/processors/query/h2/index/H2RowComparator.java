@@ -49,11 +49,14 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     /** Ignite H2 session. */
     private final SessionInterface ses;
 
+    /** Key type settings for this index. */
+    private final IndexKeyTypeSettings keyTypeSettings;
+
     /** */
     public H2RowComparator(GridH2Table table, IndexKeyTypeSettings keyTypeSettings) {
-        super(keyTypeSettings);
-
         this.table = table;
+        this.keyTypeSettings = keyTypeSettings;
+
         coctx = table.rowDescriptor().context().cacheObjectContext();
         ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
     }

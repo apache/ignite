@@ -17,17 +17,28 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /** */
 public class DecimalIndexKey implements IndexKey {
     /** */
-    private final BigDecimal key;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private BigDecimal key;
 
     /** */
     public DecimalIndexKey(BigDecimal key) {
         this.key = key;
+    }
+
+    /** */
+    public DecimalIndexKey() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -45,5 +56,16 @@ public class DecimalIndexKey implements IndexKey {
         BigDecimal okey = (BigDecimal) o.key();
 
         return key.compareTo(okey);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(key.unscaledValue().longValue());
+        out.writeInt(key.scale());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        key = BigDecimal.valueOf(in.readLong(), in.readInt());
     }
 }

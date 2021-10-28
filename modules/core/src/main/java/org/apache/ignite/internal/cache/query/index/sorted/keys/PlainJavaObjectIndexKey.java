@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import java.io.IOException;
+import java.io.ObjectInput;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -25,10 +27,18 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private Object key;
 
     /** */
     private byte[] serialized;
+
+    /** */
+    public PlainJavaObjectIndexKey() {
+        // Np-op.
+    }
 
     /** */
     public PlainJavaObjectIndexKey(@Nullable Object key, @Nullable byte[] serialized) {
@@ -60,5 +70,10 @@ public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
         } catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to deserialize Java Object from byte array", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        key = in.readObject();
     }
 }
