@@ -161,8 +161,25 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         qry.cancel();
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> clientEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+        try {
+            Assert.assertTrue(GridTestUtils.waitForCondition(
+                () -> clientEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+        }
+        catch (Throwable e) {
+            System.out.println("+++ " + qry);
+
+            throw e;
+        }
+
+        try {
+            Assert.assertTrue(GridTestUtils.waitForCondition(
+                () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+        }
+        catch (Throwable e) {
+            System.out.println("+++ " + qry);
+
+            throw e;
+        }
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
     }
