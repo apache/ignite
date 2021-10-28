@@ -2678,6 +2678,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /**
+         * @return Partitions number.
+         */
+        int partitions() {
+            return aff.partitions();
+        }
+
+        /**
          * @param discoCache Discovery data cache.
          * @return Cache topology.
          */

@@ -100,102 +100,10 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 
 /**
  * Distributed process to restore cache group from the snapshot.
- *
- *
- *
- * Snapshot recovery with transfer partitions.
- *
- * TODO: Some notes left to do for the restore using rebalancing:
- *  (done) 1. Disable WAL for starting caches.
- *  (done) 2. Own partitions on exchange (like the rebalancing does).
- *  (done) 3. Handle and fire affinity change message when waitInfo becomes empty.
- *  (done) 4. Load partitions from remote nodes.
- *  (no need) 5. Set partition to MOVING state during copy from snapshot and read partition Metas.
- *  (done) 6. Replace index if topology match partitions.
- *  (done) 7. Rebuild index if need.
- *  8. Check the partition reservation during the restore if a next exchange occurs (see message:
- *  Cache groups were not reserved [[[grpId=-903566235, grpName=shared], reason=Checkpoint was marked
- *  as inapplicable for historical rebalancing]])
- *  (done) 9. Add cache destroy rollback procedure if loading was unsuccessful.
- *  (done) 10. Crash-recovery when node crashes with started, but not loaded caches.
- *  (?) 11. Do not allow schema changes during the restore procedure.
- *  12. Restore busy lock should throw exception if a lock acquire fails.
- *  (?) 13. Should we clean the 'dirty' flag prior to markCheckpointBegin, so pages won't be collected by the checkpoint?
- *  (?) 14. cancelOrWaitPartitionDestroy should we wait for partition destroying.
- *  (done) 15. prevent page store initialization on write if tag has been incremented.
- *  (?) 16. Register snapshot task by request id not by snapshot name.
- *  (?) 17. Does waitRebInfo need to be cleaned on DynamicCacheChangeFailureMessage occurs for restored caches?
- *  (?) 18. Do we need to remove cache from the waitInfo rebalance groups prior to cache actually rollback fired?
- *  (?) 19. Exclude partitions for restoring caches from PME.
- *  20. Make the CacheGroupActionData private inner class.
- *  21. Partitions may not be even created in a snapshot.
- *  22. Snapshot interrupted during caches loading from snapshot.
- *
- * Other strategies to be memento to:
- *
- * 1. Load partitions from snapshot, then start cache groups
- * - registered cache groups calculated from discovery thread, no affinity cache data can be calculated without it
- * - index rebuild may be started only after cache group start, will it require cache availability using disabled proxies?
- * - Can affinity be calculated on each node? Node attributes may cause some issues.
- *
- *
- * 2. Start cache groups disabled, then load partitions from snapshot
- * - What would happen with partition counters on primaries and backups? (probably not required)
- * - Should the partition map be updated on client nodes?
- * - When partition is loaded from snapshot, should we update partition counters under checkpoint?
- *
- * 3. Start cache disabled and load data from each partition using partition iterator (defragmentation out of the box + index rebuild)
- * 3a. Transfer snapshot partition files from remove node and read them as local data.
- * 3b. Read partitions on remote node and transfer data via Supply cache message.
- * - cacheId is not stored in the partition file, so it's required to obtain it from the cache data tree
- * - data streamer load job is not suitable for caches running with disabled cache proxies
- * - too many dirty pages can lead to data eviction to ssd
- *
- * 4. Start cache and load partitions as it rebalancing do (transfer files)
- * - There is no lazy init for index partition
- * - node2part must be updated on forceRecreatePartition method call
- * - do not own partitions after cache start
- * - update node2part map after partitions loaded from source and start refreshPartitions/affinityChange (each node sends
- *   a single message with its own cntrMap to the coordinator node, than coordinator resends aggregated message to the whole
- *   cluster nodes on update incomeCntrMap).
- * - Two strategies for the restore on the same topology with indexes: start cache group from preloaded files or start cache
- *   and then re-init index for started cache group. The second case will require data structures re-initialization on the fly.
- *
- *
- * IMPLEMENTATION NOTES
- * ---------------------
- *
- * There are still some dirty pages related to processing partition available in the PageMemory.
- *
- * Loaded:
- * - need to set MOVING states to loading partitions.
- * - need to acquire partition counters from each part
- *
- * The process of re-init options:
- * 1. Clear heap entries from GridDhtLocalPartition, swap datastore, re-init counters
- * 2. Re-create the whole GridDhtLocalPartition from scratch in GridDhtPartitionTopologyImpl
- * as it the eviction does
- *
- * The re-init notes:
- * - clearAsync() should move the clearVer in clearAll() to the end.
- * - How to handle updates on partition prior to the storage switch? (the same as waitPartitionRelease()?)
- * - destroyCacheDataStore() calls and removes a data store from partDataStores under lock.
- * - CacheDataStore markDestroyed() may be called prior to checkpoint?
- * - Does new pages on acquirePage will be read from new page store after tag has been incremented?
- * - invalidate() returns a new tag -> no updates will be written to page store.
- * - Check GridDhtLocalPartition.isEmpty and all heap rows are cleared
- * - Do we need to call ClearSegmentRunnable with predicate to clear outdated pages?
- * - getOrCreatePartition() resets also partition counters of new partitions can be updated
- * only on cp-write-lock (GridDhtLocalPartition ?).
- * - update the cntrMap in the GridDhtTopology prior to partition creation
- * - WAL logged PartitionMetaStateRecord on GridDhtLocalPartition creation. Do we need it for re-init?
- * - check there is no reservations on MOVING partition during the switch procedure
- * - we can applyUpdateCounters() from exchange thread on coordinator to sync cntrMap and
- * locParts in GridDhtPartitionTopologyImpl
  */
 public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
-    public static final String TMP_PREFIX = "_tmp_snp_restore_";
+    public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
@@ -261,7 +169,7 @@ public class SnapshotRestoreProcess {
 
         File dbDir = pageStore.workDir();
 
-        for (File dir : dbDir.listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_PREFIX))) {
+        for (File dir : dbDir.listFiles(dir -> dir.isDirectory() && dir.getName().startsWith(TMP_CACHE_DIR_PREFIX))) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -700,7 +608,7 @@ public class SnapshotRestoreProcess {
      * @return Temporary directory.
      */
     private static File formatTmpDirName(File cacheDir) {
-        return new File(cacheDir.getParent(), TMP_PREFIX + cacheDir.getName());
+        return new File(cacheDir.getParent(), TMP_CACHE_DIR_PREFIX + cacheDir.getName());
     }
 
     /**
