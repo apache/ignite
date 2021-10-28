@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -36,32 +34,16 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
 
     /** {@inheritDoc} */
     @Override protected boolean needToCast(SqlValidatorScope scope, SqlNode node, RelDataType toType) {
-        RelDataType fromType = validator.deriveType(scope, node);
-        // This depends on the fact that type validate happens before coercion.
-        // We do not have inferred type for some node, i.e. LOCALTIME.
-        if (fromType == null)
-            return false;
+        if (SqlTypeUtil.isIntType(toType)) {
+            RelDataType fromType = validator.deriveType(scope, node);
 
-        // This prevents that we cast a JavaType to normal RelDataType.
-        if (fromType instanceof RelDataTypeFactoryImpl.JavaType
-            && toType.getSqlTypeName() == fromType.getSqlTypeName())
-            return false;
+            if (fromType == null)
+                return false;
 
-        // Do not make a cast when we don't know specific type (ANY) of the origin node.
-        if (toType.getSqlTypeName() == SqlTypeName.ANY
-            || fromType.getSqlTypeName() == SqlTypeName.ANY)
-            return false;
+            if (SqlTypeUtil.isIntType(fromType) && fromType.getSqlTypeName() != toType.getSqlTypeName())
+                return true;
+        }
 
-        // No need to cast between char and varchar.
-        if (SqlTypeUtil.isCharacter(toType) && SqlTypeUtil.isCharacter(fromType))
-            return false;
-
-        // Implicit type coercion does not handle nullability.
-        if (SqlTypeUtil.equalSansNullability(factory, fromType, toType))
-            return false;
-
-        // Should keep sync with rules in SqlTypeCoercionRule.
-        assert SqlTypeUtil.canCastFrom(toType, fromType, true);
-        return true;
+        return super.needToCast(scope, node, toType);
     }
 }
