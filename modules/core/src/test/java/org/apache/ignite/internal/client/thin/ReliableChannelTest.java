@@ -76,10 +76,10 @@ public class ReliableChannelTest {
     }
 
     /**
-     * Checks that in case if address specified without port, the default port will be processet firstly
+     * Checks that in case if address specified without port, the default port will be processed first
      * */
     @Test
-    public void testAddresesWithoutPort() {
+    public void testAddressWithoutPort() {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses("127.0.0.1");
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
