@@ -734,6 +734,10 @@
                             </message>
                             <version>[1.7,1.8),[1.8.0-40,)</version>
                         </requireJavaVersion>
+
+                        <requireMavenVersion>
+                            <version>[3.5.0,)</version>
+                        </requireMavenVersion>
                     </rules>
                 </configuration>
                 <executions>
@@ -947,10 +951,9 @@
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
                                         <exclude>**/*.cmake</exclude>
                                         <exclude>**/CMakeLists.txt</exclude>
-                                        <exclude>**/Makefile.am</exclude>
-                                        <exclude>**/configure.ac</exclude>
-                                        <exclude>**/Makefile.amrel</exclude>
-                                        <exclude>**/configure.acrel</exclude>
+                                        <exclude>**/CMakeSettings.json.in</exclude>
+                                        <exclude>**/cmake-build-*/</exclude>
+                                        <exclude>**/.idea/**</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
@@ -962,9 +965,6 @@
                                         <exclude>**/*.csproj</exclude>
                                         <exclude>**/*.ndproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
-                                        <exclude>**/*.vcxproj</exclude>
-                                        <exclude>**/*.vcxprojrel</exclude>
-                                        <exclude>**/*.vcxproj.filters</exclude>
                                         <exclude>**/mkbuild.cmd</exclude>
                                         <exclude>**/module.def</exclude>
                                         <exclude>**/*.fxcop</exclude>
@@ -975,7 +975,6 @@
                                         <exclude>**/teamcity_boost.cpp</exclude>
                                         <exclude>**/teamcity_messages.h</exclude>
                                         <exclude>**/teamcity_messages.cpp</exclude>
-                                        <exclude>**/project/vs/**</exclude>
                                         <exclude>**/obj/x64/**</exclude>
                                         <exclude>**/obj/x86/**</exclude>
                                         <exclude>**/bin/x64/**</exclude>

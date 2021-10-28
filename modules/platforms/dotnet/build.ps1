@@ -85,7 +85,8 @@ param (
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-all-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
-	[string]$version=""
+	[string]$version="",
+	[string]$versionSuffix=""
  )
 
 # 0) Functions
@@ -203,23 +204,22 @@ if (!$skipNuGet) {
 
     # Detect version
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\netstandard2.0\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
+    $ver = "$ver$versionSuffix"
 
     Exec "dotnet pack Apache.Ignite.sln -c Release -o $nupkgDir /p:Version=$ver"
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
 
     # Examples template
-    if (!$skipExamples) {
-        # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
-        Copy-Item .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj $pwd
+    # Copy csproj to current dir temporarily: dotnet-new templates can't be packed with parent dir content.
+    Copy-Item .\templates\public\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj $pwd
 
-        Exec "dotnet pack Apache.Ignite.Examples.csproj --output $nupkgDir -p:PackageVersion=$ver"
+    Exec "dotnet pack Apache.Ignite.Examples.csproj --output $nupkgDir -p:PackageVersion=$ver"
 
-        Remove-Item Apache.Ignite.Examples.csproj
-        Remove-Item bin\Debug -Force -Recurse
+    Remove-Item Apache.Ignite.Examples.csproj
+    Remove-Item bin\Debug -Force -Recurse
 
-        echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
-    }
+    echo "Examples template NuGet package created in '$pwd\$nupkgDir'."
 }
 
 # 4) Build Examples
