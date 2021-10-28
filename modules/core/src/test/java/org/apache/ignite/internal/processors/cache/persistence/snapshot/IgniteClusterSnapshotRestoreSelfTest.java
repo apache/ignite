@@ -496,7 +496,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
      */
     @Test
     public void testParallelCacheStartWithTheSameNameOnPrepare() throws Exception {
-        checkCacheStartWithTheSameName(RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, IgniteCheckedException.class,
+        checkCacheStartWithTheSameName(RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD, IgniteCheckedException.class,
             "Cache start failed. A cache or group with the same name is currently being restored from a snapshot");
     }
 
