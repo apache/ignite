@@ -250,7 +250,12 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public String modifyAttribute(String val) {
-            ctx.currentCallContext().put(STR_ATTR_NAME, val);
+            ServiceCallContext callCtx = ctx.currentCallContext();
+
+            if (callCtx == null)
+                throw new UnsupportedOperationException();
+
+            callCtx.put(STR_ATTR_NAME, val);
 
             return injected.attribute(false);
         }

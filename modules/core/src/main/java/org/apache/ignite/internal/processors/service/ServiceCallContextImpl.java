@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,9 +29,6 @@ import org.jetbrains.annotations.Nullable;
 public class ServiceCallContextImpl implements ServiceCallContext {
     /** Service call context of the current thread. */
     private static final ThreadLocal<ServiceCallContext> locCallCtx = new ThreadLocal<>();
-
-    /** Read-only empty context. */
-    private static final ServiceCallContext emptyCtx = new ServiceCallContextImpl(Collections.emptyMap());
 
     /** Service call context attributes. */
     private final Map<String, Object> attrs;
@@ -89,10 +85,8 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /**
      * @return Service call context of the current thread.
      */
-    public static ServiceCallContext current() {
-        ServiceCallContext callCtx = locCallCtx.get();
-
-        return callCtx == null ? emptyCtx : callCtx;
+    public @Nullable static ServiceCallContext current() {
+        return locCallCtx.get();
     }
 
     /**
