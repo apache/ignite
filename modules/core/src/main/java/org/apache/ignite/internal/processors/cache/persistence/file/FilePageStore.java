@@ -135,8 +135,7 @@ public class FilePageStore implements PageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         int pageSize,
-        LongConsumer allocatedTracker,
-        int tag
+        LongConsumer allocatedTracker
     ) {
         assert type == PageStore.TYPE_DATA || type == PageStore.TYPE_IDX : type;
 
@@ -146,7 +145,6 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = pageSize;
         this.allocatedTracker = allocatedTracker;
-        this.tag = tag;
     }
 
     /** {@inheritDoc} */
@@ -179,11 +177,6 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte type() {
-        return type;
     }
 
     /** {@inheritDoc} */

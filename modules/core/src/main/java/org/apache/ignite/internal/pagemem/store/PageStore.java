@@ -163,11 +163,6 @@ public interface PageStore extends Closeable {
     public long size();
 
     /**
-     * @return The type of page store {@link PageStore#TYPE_DATA} or {@link PageStore#TYPE_IDX}.
-     */
-    public byte type();
-
-    /**
      * @return Size of the storage adjusted for sparsity in bytes or negative
      *         value if not supported. Should be less than or equal to {@link #size()}.
      * @see #punchHole

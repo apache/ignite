@@ -50,7 +50,6 @@ public class IndexesRebuildTask {
      *
      * @param cctx Cache context.
      * @param force Force rebuild indexes.
-     * @param cancelTok Token for cancellation index rebuild or {@code null} to use default.
      * @return A future of rebuilding cache indexes.
      */
     @Nullable public IgniteInternalFuture<?> rebuild(
@@ -127,7 +126,7 @@ public class IndexesRebuildTask {
             outRebuildCacheIdxFut.onDone(err);
         });
 
-        startRebuild(cctx, rebuildCacheIdxFut, clo, cancelTok);
+        startRebuild(cctx, rebuildCacheIdxFut, clo, intRebFut.cancelToken());
 
         return outRebuildCacheIdxFut;
     }

@@ -87,10 +87,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /**
  * The requested map of cache groups and its partitions to include into snapshot represented as <tt>Map<Integer, Set<Integer>></tt>.
  * If array of partitions is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
- * In this case if all of partitions have OWNING state the index partition also will be included.
+ * In this case if all partitions have OWNING state the index partition also will be included.
  * <p>
  * If partitions for particular cache group are not provided that they will be collected and added
- * on checkpoint under the write lock.
+ * on checkpoint under the write-lock.
  */
 class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener {
     /** File page store manager for accessing cache group associated files. */

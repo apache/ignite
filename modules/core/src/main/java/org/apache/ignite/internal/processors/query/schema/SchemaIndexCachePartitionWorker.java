@@ -93,7 +93,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
      * @param partsCnt Count of partitions to be processed.
      */
     public SchemaIndexCachePartitionWorker(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         GridDhtLocalPartition locPart,
         AtomicBoolean stop,
         IndexRebuildCancelToken cancelTok,

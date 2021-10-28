@@ -103,7 +103,7 @@ public class ExchangeActions {
      * @return New caches start requests.
      */
     public Collection<CacheActionData> cacheStartRequests() {
-        return cacheStartRequests((ccfg, uuid) -> true);
+        return cachesToStart != null ? cachesToStart.values() : Collections.emptyList();
     }
 
     /**
@@ -327,7 +327,7 @@ public class ExchangeActions {
      * @return Cache groups to start.
      */
     public List<CacheGroupActionData> cacheGroupsToStart() {
-        return cacheGroupsToStart((ccfg, uuid) -> true);
+        return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupActionData>emptyList();
     }
 
     /**
@@ -390,7 +390,7 @@ public class ExchangeActions {
      * @return Cache groups to start.
      */
     public List<CacheGroupActionData> cacheGroupsToStop() {
-        return cacheGroupsToStop((ccfg, uuid) -> true);
+        return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupActionData>emptyList();
     }
 
     /**

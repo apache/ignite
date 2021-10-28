@@ -216,11 +216,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHO
 /**
  * Internal implementation of snapshot operations over persistence caches.
  * <p>
- * There are two major actions available:
+ * These major actions available:
  * <ul>
  *     <li>Create snapshot of the whole cluster cache groups by triggering PME to achieve consistency.</li>
- *     <li>Create local snapshot of requested cache groups and send it to the node which request this operation.
- *     Cache groups will be transmitted using internal API for transferring files. See {@link TransmissionHandler}.</li>
  * </ul>
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter

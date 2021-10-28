@@ -36,7 +36,9 @@ public class SchemaIndexCacheFuture extends GridFutureAdapter<Void> {
     }
 
     /**
-     * @return {@code true} if cancellation is in progress.
+     * Getting token for canceling index rebuilding.
+     *
+     * @return Cancellation token.
      */
     public IndexRebuildCancelToken cancelToken() {
         return cancelTok;

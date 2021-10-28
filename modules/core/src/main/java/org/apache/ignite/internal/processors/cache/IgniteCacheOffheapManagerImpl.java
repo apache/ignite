@@ -628,7 +628,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Nullable @Override public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
+        CacheDataStore dataStore = dataStore(cctx, key);
 
         CacheDataRow row = dataStore != null ? dataStore.find(cctx, key) : null;
 
@@ -642,7 +642,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         throws IgniteCheckedException {
         assert mvccSnapshot != null;
 
-        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
+        CacheDataStore dataStore = dataStore(cctx, key);
 
         CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, mvccSnapshot) : null;
 
@@ -654,7 +654,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
+        CacheDataStore dataStore = dataStore(cctx, key);
 
         return dataStore != null ? dataStore.mvccFindAllVersions(cctx, key) :
             Collections.emptyList();
@@ -663,7 +663,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx,
         KeyCacheObject key, Object x) throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx.affinity().partition(key), false);
+        CacheDataStore dataStore = dataStore(cctx, key);
 
         return dataStore != null ? dataStore.mvccAllVersionsCursor(cctx, key, x) : EMPTY_CURSOR;
     }

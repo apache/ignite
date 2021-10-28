@@ -1285,7 +1285,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         assert locPart != null && locPart.reservations() > 0;
 
-        dataStore(locPart).preload();
+        locPart.dataStore().preload();
     }
 
     /**
@@ -1941,13 +1941,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             this.exists = exists;
             this.busyLock = busyLock;
             this.log = log;
-        }
-
-        /**
-         * @return {@code true} if persistence data store initialized.
-         */
-        public boolean inited() {
-            return init.get();
         }
 
         /** */

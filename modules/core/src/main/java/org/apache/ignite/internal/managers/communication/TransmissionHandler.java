@@ -83,7 +83,7 @@ public interface TransmissionHandler {
      * ends by the user interruption request.
      *
      * @param nodeId Remote node id on which the error occurred.
-     * @param err The err of fail handling process.
+     * @param err The error of fail handling process.
      */
     public void onException(UUID nodeId, Throwable err);
 

@@ -44,7 +44,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -101,7 +100,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 
 /**
  * File page store manager.
@@ -400,7 +398,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         for (CacheStoreHolder holder : idxCacheStores.values()) {
-            for (PageStore partStore : holder)
+            holder.idxStore.beginRecover();
+
+            for (PageStore partStore : holder.partStores)
                 partStore.beginRecover();
         }
     }
@@ -441,7 +441,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     @Override public void finishRecover() throws IgniteCheckedException {
         try {
             for (CacheStoreHolder holder : idxCacheStores.values()) {
-                for (PageStore partStore : holder)
+                holder.idxStore.finishRecover();
+
+                for (PageStore partStore : holder.partStores)
                     partStore.finishRecover();
             }
         }
@@ -596,51 +598,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, partId);
 
         store.truncate(tag);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PageStore recreate(int grpId, int partId, int tag, Path src) throws IgniteCheckedException {
-        assert cctx.database().checkpointLockIsHeldByThread();
-        assert src.toFile().exists();
-        assert tag >= 0;
-
-        CacheStoreHolder holder = getHolder(grpId);
-
-        if (holder == null)
-            throw new IgniteCheckedException("Failed to get page store for the given cache ID " +
-                "(cache has not been started): " + grpId);
-
-        CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpId);
-        DataRegion region = cctx.database().dataRegion(desc.config().getDataRegionName());
-        PageMetrics metrics = region.metrics().cacheGrpPageMetrics(desc.groupId());
-        FileVersionCheckingFactory factory = getPageStoreFactory(grpId, desc.config().isEncryptionEnabled());
-        FilePageStore pageStore = (FilePageStore)getStore(grpId, partId);
-
-        boolean exists = pageStore.exists();
-
-        if (exists)
-            throw new IgniteCheckedException("Previous partition page store must be truncated first: " + partId);
-
-        if (desc == null)
-            throw new IgniteCheckedException("Cache group with given id doesn't exists: " + grpId);
-
-        try {
-            Files.move(src,
-                getPartitionFilePath(cacheWorkDir(desc.config()), partId),
-                StandardCopyOption.ATOMIC_MOVE);
-
-            // Previous page stores may be used by other processes. The link to the instance of a PageStore available
-            // for may internal components, so the best way to share the 'recreation' status is to close the previous
-            // page store instance and to create a new one.
-            return holder.set(partId,
-                factory.createPageStore(getTypeByPartId(partId),
-                    () -> getPartitionFilePath(desc.config(), partId),
-                    metrics.totalPages()::add,
-                    tag));
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Error copying partition page store [src=" + src + ", partId=" + partId + "]", e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -821,14 +778,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             throw e;
         }
-    }
-
-    /**
-     * @param ccfg Cache group configuration.
-     * @param partId Partition id.
-     */
-    @NotNull public Path getPartitionFilePath(CacheConfiguration<?, ?> ccfg, int partId) {
-        return getPartitionFilePath(cacheWorkDir(ccfg), partId);
     }
 
     /**
@@ -1047,7 +996,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (conf.exists() && conf.length() > 0) {
                 StoredCacheData cacheData = readCacheData(conf);
 
-                ccfgs.putIfAbsent(cacheData.config().getName(), readCacheData(conf));
+                String cacheName = cacheData.config().getName();
+
+                if (!ccfgs.containsKey(cacheName))
+                    ccfgs.put(cacheName, cacheData);
+                else {
+                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                        + dir.getName());
+                }
             }
         }
         else if (dir.getName().startsWith(CACHE_GRP_DIR_PREFIX))
@@ -1154,7 +1110,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
                 StoredCacheData cacheData = readCacheData(file);
 
-                ccfgs.putIfAbsent(cacheData.config().getName(), cacheData);
+                String cacheName = cacheData.config().getName();
+
+                if (!ccfgs.containsKey(cacheName))
+                    ccfgs.put(cacheName, cacheData);
+                else {
+                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                            + file.getName() + " in group directory " + grpDir.getName());
+                }
             }
         }
     }
@@ -1186,10 +1149,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (holder == null)
             return 0;
 
-        long pageCnt = 0;
+        long pageCnt = holder.idxStore.pages();
 
-        for (PageStore store : holder)
-            pageCnt += store.pages();
+        for (int i = 0; i < holder.partStores.length; i++)
+            pageCnt += holder.partStores[i].pages();
 
         return pageCnt;
     }
@@ -1243,7 +1206,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
+        return cacheDirName(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
     }
 
     /**
@@ -1281,8 +1244,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param aggr Aggregating exception.
      * @return Aggregating exception, if error occurred.
      */
-    private IgniteCheckedException shutdown(CacheStoreHolder holder, boolean cleanFile, @Nullable IgniteCheckedException aggr) {
-        for (PageStore store : holder) {
+    private IgniteCheckedException shutdown(CacheStoreHolder holder, boolean cleanFile,
+        @Nullable IgniteCheckedException aggr) {
+        aggr = shutdown(holder.idxStore, cleanFile, aggr);
+
+        for (PageStore store : holder.partStores) {
             if (store != null)
                 aggr = shutdown(store, cleanFile, aggr);
         }
@@ -1370,7 +1336,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Return cache store holder.
+     * Return cache store holedr.
      *
      * @param grpId Cache group ID.
      * @return Cache store holder.
@@ -1425,7 +1391,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             throw new IgniteCheckedException("Failed to get page store for the given cache ID " +
                 "(cache has not been started): " + grpId);
 
-        PageStore store = holder.get(partId);
+        if (partId == INDEX_PARTITION)
+            return holder.idxStore;
+
+        if (partId > MAX_PARTITION_ID)
+            throw new IgniteCheckedException("Partition ID is reserved: " + partId);
+
+        PageStore store = holder.partStores[partId];
 
         if (store == null)
             throw new IgniteCheckedException("Failed to get page store for the given partition ID " +
@@ -1463,59 +1435,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      *
      */
     private static class CacheStoreHolder extends AbstractList<PageStore> {
+        /** Index store. */
+        private final PageStore idxStore;
+
         /** Partition stores. */
-        private final AtomicReferenceArray<PageStore> stores;
+        private final PageStore[] partStores;
 
         /**
-         * @param idxStore Index page store.
-         * @param partStores Partition page stores.
          */
         CacheStoreHolder(PageStore idxStore, PageStore[] partStores) {
-            assert idxStore.type() == PageStore.TYPE_IDX;
-
-            int len = requireNonNull(partStores).length;
-
-            PageStore[] arr = Arrays.copyOf(partStores, len + 1);
-            arr[len] = requireNonNull(idxStore);
-
-            stores = new AtomicReferenceArray<>(arr);
+            this.idxStore = requireNonNull(idxStore);
+            this.partStores = requireNonNull(partStores);
         }
 
         /** {@inheritDoc} */
-        @Override public PageStore get(int partId) {
-            if (partId > MAX_PARTITION_ID && partId != INDEX_PARTITION)
-                throw new IllegalArgumentException("Partition with id is reserved: " + partId);
-
-            return requireNonNull(partId == INDEX_PARTITION ? stores.get(stores.length() - 1) : stores.get(partId));
-        }
-
-        /** {@inheritDoc} */
-        @Override public PageStore set(int partId, PageStore store) {
-            if (partId > MAX_PARTITION_ID && partId != INDEX_PARTITION)
-                throw new IllegalArgumentException("Partition with id is reserved: " + partId);
-
-            if (store == null)
-                throw new IllegalArgumentException("PageStore for the given partition cannot be null: " + partId);
-
-            int idx = partId == INDEX_PARTITION ? stores.length() - 1 : partId;
-
-            assert (store.type() == PageStore.TYPE_IDX && partId == INDEX_PARTITION) ||
-                (partId <= MAX_PARTITION_ID && store.type() == PageStore.TYPE_DATA);
-
-            while (true) {
-                PageStore old = stores.get(idx);
-
-                if (old == store)
-                    return store;
-
-                if (stores.compareAndSet(idx, old, store))
-                    return old;
-            }
+        @Override public PageStore get(int idx) {
+            return requireNonNull(idx == partStores.length ? idxStore : partStores[idx]);
         }
 
         /** {@inheritDoc} */
         @Override public int size() {
-            return stores.length();
+            return partStores.length + 1;
         }
     }
 

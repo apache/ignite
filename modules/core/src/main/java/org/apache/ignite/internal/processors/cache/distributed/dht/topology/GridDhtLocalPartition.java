@@ -169,7 +169,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private volatile boolean delayedRenting;
 
     /** */
-    private final AtomicReference<GridFutureAdapter<Void>> finishFutRef = new AtomicReference<>();
+    private final AtomicReference<GridFutureAdapter<?>> finishFutRef = new AtomicReference<>();
 
     /** */
     private volatile long clearVer;
@@ -723,7 +723,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      *
      * @return A future what will be finished then a current clearing attempt is done.
      */
-    public IgniteInternalFuture<Void> clearAsync() {
+    public IgniteInternalFuture<?> clearAsync() {
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -734,10 +734,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (!evictionRequested && !clearingRequested)
             return new GridFinishedFuture<>();
 
-        GridFutureAdapter<Void> finishFut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
 
         do {
-            GridFutureAdapter<Void> curFut = finishFutRef.get();
+            GridFutureAdapter<?> curFut = finishFutRef.get();
 
             if (curFut != null)
                 return curFut;

@@ -350,7 +350,6 @@ public class IndexProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param force Force rebuild indexes.
-     * @param cancelTok Token for cancellation index rebuild or {@code null} to use default.
      * @return A future of rebuilding cache indexes.
      */
     @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(

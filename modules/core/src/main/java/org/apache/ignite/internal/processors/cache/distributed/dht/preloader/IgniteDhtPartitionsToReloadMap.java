@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -36,7 +35,6 @@ public class IgniteDhtPartitionsToReloadMap implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
     private Map<UUID, Map<Integer, Set<Integer>>> map;
 
     /**

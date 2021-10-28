@@ -93,32 +93,16 @@ public class FileVersionCheckingFactory {
         IgniteOutClosure<Path> pathProvider,
         LongConsumer allocatedTracker
     ) throws IgniteCheckedException {
-       return createPageStore(type, pathProvider, allocatedTracker, 0);
-    }
-
-    /**
-     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}
-     * @param pathProvider File Page store path provider.
-     * @param allocatedTracker metrics updater
-     * @return page store
-     * @throws IgniteCheckedException if failed
-     */
-    public PageStore createPageStore(
-        byte type,
-        IgniteOutClosure<Path> pathProvider,
-        LongConsumer allocatedTracker,
-        int tag
-    ) throws IgniteCheckedException {
         Path filePath = pathProvider.apply();
 
         if (!Files.exists(filePath))
-            return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker, tag);
+            return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker);
 
         try (FileIO fileIO = fileIOFactoryStoreV1.create(filePath.toFile())) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker, tag);
+                return createPageStore(type, pathProvider, pageSize.getAsInt(), latestVersion(), allocatedTracker);
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.nativeOrder());
 
@@ -130,7 +114,7 @@ public class FileVersionCheckingFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, pathProvider, pageSize.getAsInt(), ver, allocatedTracker, tag);
+            return createPageStore(type, pathProvider, pageSize.getAsInt(), ver, allocatedTracker);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Error while creating file page store [file=" + filePath.toAbsolutePath() + "]:", e);
@@ -165,15 +149,14 @@ public class FileVersionCheckingFactory {
         IgniteOutClosure<Path> pathProvider,
         int pageSize,
         int ver,
-        LongConsumer allocatedTracker,
-        int tag
+        LongConsumer allocatedTracker
     ) {
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, pathProvider, fileIOFactoryStoreV1, pageSize, allocatedTracker, tag);
+                return new FilePageStore(type, pathProvider, fileIOFactoryStoreV1, pageSize, allocatedTracker);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, pathProvider, fileIOFactory, pageSize, allocatedTracker, tag);
+                return new FilePageStoreV2(type, pathProvider, fileIOFactory, pageSize, allocatedTracker);
 
             default:
                 throw new IllegalArgumentException(
