@@ -990,7 +990,7 @@ public class SnapshotRestoreProcess {
                         assert leftParts.isEmpty() : leftParts;
 
                         if (log.isInfoEnabled()) {
-                            log.info("The snapshot was taken on the same cluster topology. The index will be copied to" +
+                            log.info("The snapshot was taken on the same cluster topology. The index will be copied to " +
                                 "restoring cache group if necessary [snpName=" + opCtx0.snpName + ", dir=" + dir.getName() + ']');
                         }
 

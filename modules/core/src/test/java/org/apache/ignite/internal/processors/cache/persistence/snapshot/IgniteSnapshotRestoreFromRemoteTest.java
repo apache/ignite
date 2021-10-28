@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-public class IgniteSnapshotRestoreStoreSwapTest extends IgniteClusterSnapshotRestoreBaseTest {
+public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** */
     private static final String FIRST_CLUSTER_PREFIX = "one_";
 
