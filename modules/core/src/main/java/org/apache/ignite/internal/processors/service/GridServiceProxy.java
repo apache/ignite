@@ -294,14 +294,14 @@ public class GridServiceProxy<T> implements Serializable {
     private static Object callServiceMethod(Service svc, Method mtd, Object[] args, @Nullable ServiceCallContext callCtx)
         throws InvocationTargetException, IllegalAccessException {
         if (callCtx != null)
-            ServiceCallContextImpl.current(callCtx);
+            ServiceCallContextHolder.current(callCtx);
 
         try {
             return mtd.invoke(svc, args);
         }
         finally {
             if (callCtx != null)
-                ServiceCallContextImpl.current(null);
+                ServiceCallContextHolder.current(null);
         }
     }
 

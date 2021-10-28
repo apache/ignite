@@ -157,7 +157,7 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** {@inheritDoc} */
     @Override public ServiceCallContext currentCallContext() {
-        return ServiceCallContextImpl.current();
+        return ServiceCallContextHolder.current();
     }
 
     /**

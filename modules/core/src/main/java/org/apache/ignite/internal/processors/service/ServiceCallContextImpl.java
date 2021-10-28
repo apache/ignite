@@ -21,15 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.services.ServiceCallContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Service call context implementation.
  */
 public class ServiceCallContextImpl implements ServiceCallContext {
-    /** Service call context of the current thread. */
-    private static final ThreadLocal<ServiceCallContext> locCallCtx = new ThreadLocal<>();
-
     /** Service call context attributes. */
     private final Map<String, Object> attrs;
 
@@ -80,22 +76,5 @@ public class ServiceCallContextImpl implements ServiceCallContext {
      */
     protected Map<String, Object> values() {
         return attrs;
-    }
-
-    /**
-     * @return Service call context of the current thread.
-     */
-    public @Nullable static ServiceCallContext current() {
-        return locCallCtx.get();
-    }
-
-    /**
-     * @param callCtx Service call context of the current thread.
-     */
-    protected static void current(@Nullable ServiceCallContext callCtx) {
-        if (callCtx != null)
-            locCallCtx.set(callCtx);
-        else
-            locCallCtx.remove();
     }
 }
