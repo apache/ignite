@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.services.ServiceCallContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +34,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /** Read-only empty context. */
     private static final ServiceCallContext emptyCtx = new ServiceCallContextImpl(Collections.emptyMap());
 
-    /** Service call attributes. */
+    /** Service call context attributes. */
     private final Map<String, Object> attrs;
 
     /**
@@ -44,7 +45,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     }
 
     /**
-     * @param attrs Service call attributes.
+     * @param attrs Service call context attributes.
      */
     public ServiceCallContextImpl(Map<String, Object> attrs) {
         this.attrs = attrs;
@@ -62,6 +63,8 @@ public class ServiceCallContextImpl implements ServiceCallContext {
 
     /** {@inheritDoc} */
     @Override public ServiceCallContext put(String name, String val) {
+        A.notNullOrEmpty(name, "name");
+
         attrs.put(name, val);
 
         return this;
@@ -69,9 +72,18 @@ public class ServiceCallContextImpl implements ServiceCallContext {
 
     /** {@inheritDoc} */
     @Override public ServiceCallContext put(String name, byte[] val) {
+        A.notNullOrEmpty(name, "name");
+
         attrs.put(name, val);
 
         return this;
+    }
+
+    /**
+     * @return Service call context attributes.
+     */
+    protected Map<String, Object> values() {
+        return attrs;
     }
 
     /**
@@ -91,12 +103,5 @@ public class ServiceCallContextImpl implements ServiceCallContext {
             locCallCtx.set(callCtx);
         else
             locCallCtx.remove();
-    }
-
-    /**
-     * @return Service call attributes.
-     */
-    protected Map<String, Object> values() {
-        return attrs;
     }
 }
