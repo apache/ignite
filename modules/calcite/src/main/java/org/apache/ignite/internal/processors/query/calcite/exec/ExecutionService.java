@@ -28,13 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
  *
  */
 public interface ExecutionService<Row> extends Service {
-    /**
-     * Cancels a running query.
-     *
-     * @param queryId Query ID.
-     */
-    void cancelQuery(UUID queryId);
-
     /** */
     FieldsQueryCursor<List<?>> executePlan(RootQuery<Row> qry, QueryPlan plan);
 }

@@ -181,6 +181,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         @Nullable List<List<String>> origins) {
         RelDataType resultType = TypeUtils.getResultType(
             ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
+
         return new FieldsMetadataImpl(resultType, origins);
     }
 

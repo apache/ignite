@@ -299,8 +299,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
-        String sql, Object... params) throws IgniteSQLException {
+    @Override public List<FieldsQueryCursor<List<?>>> query(
+        @Nullable QueryContext qryCtx,
+        @Nullable String schemaName,
+        String sql,
+        Object... params
+    ) throws IgniteSQLException {
         SchemaPlus schema = schemaHolder.schema(schemaName);
 
         QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
@@ -324,13 +328,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan
                 ));
             }
-                catch (Exception e) {
+            catch (Exception e) {
+                boolean isCanceled = qry.isCancelled();
+
+                qry.cancel();
+
                 qryReg.unregister(qry.id());
 
-                if (qry.isCancelled())
+                if (isCanceled)
                     throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
                 else
                     throw e;
+
             }
         }
 
@@ -353,6 +362,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             qrys.add(qry);
 
             qryReg.register(qry);
+
             try {
                 if (qryList.size() == 1) {
                     plan = queryPlanCache().queryPlan(

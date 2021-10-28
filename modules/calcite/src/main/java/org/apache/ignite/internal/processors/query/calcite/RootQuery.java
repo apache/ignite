@@ -96,7 +96,7 @@ public class RootQuery<RowT> extends Query<RowT> {
         Consumer<Query<RowT>> unregister,
         IgniteLogger log
     ) {
-        super(UUID.randomUUID(), qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
+        super(UUID.randomUUID(), null, qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
 
         this.sql = sql;
         this.params = params;

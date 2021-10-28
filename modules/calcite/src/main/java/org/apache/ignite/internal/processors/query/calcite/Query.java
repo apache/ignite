@@ -26,23 +26,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 public class Query<RowT> implements RunningQuery {
     /** Completable futures empty array. */
     private static final CompletableFuture<?>[] COMPLETABLE_FUTURES_EMPTY_ARRAY = new CompletableFuture<?>[0];
+
+    /** */
+    private final UUID initNodeId;
 
     /** */
     private final UUID id;
@@ -63,9 +59,10 @@ public class Query<RowT> implements RunningQuery {
     protected volatile QueryState state = QueryState.INITED;
 
     /** */
-    public Query(UUID id, GridQueryCancel cancel, Consumer<Query<RowT>> unregister) {
+    public Query(UUID id, UUID initNodeId, GridQueryCancel cancel, Consumer<Query<RowT>> unregister) {
         this.id = id;
         this.unregister = unregister;
+        this.initNodeId = initNodeId;
 
         this.cancel = cancel != null ? cancel : new GridQueryCancel();
 
@@ -80,6 +77,11 @@ public class Query<RowT> implements RunningQuery {
     /** */
     @Override public QueryState state() {
         return state;
+    }
+
+    /** */
+    public UUID initiatorNodeId() {
+        return initNodeId;
     }
 
     /** */
@@ -127,5 +129,10 @@ public class Query<RowT> implements RunningQuery {
     /** */
     public boolean isCancelled() {
         return cancel.isCanceled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Query.class, this, "state", state, "fragments", fragments);
     }
 }

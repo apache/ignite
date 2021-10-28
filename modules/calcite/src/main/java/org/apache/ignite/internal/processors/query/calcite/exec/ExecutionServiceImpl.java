@@ -363,14 +363,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelQuery(UUID qryId) {
-        RunningQuery qry = qryReg.query(qryId);
-
-        if (qry != null)
-            qry.cancel();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
         exchangeManager(ctx.cache().context().exchange());
@@ -628,7 +620,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            Query<Row> qry = (Query<Row>)qryReg.register(new Query<>(msg.queryId(), null, (q) -> qryReg.unregister(q.id())));
+            Query<Row> qry = (Query<Row>)qryReg.register(new Query<>(msg.queryId(), nodeId, null, (q) -> qryReg.unregister(q.id())));
 
             final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
