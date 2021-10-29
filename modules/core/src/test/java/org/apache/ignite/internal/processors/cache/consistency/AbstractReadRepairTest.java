@@ -412,7 +412,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             boolean raw,
             boolean async) {
             this.cache = cache;
-            this.data = new HashMap<>(data);
+            this.data = data;
             this.raw = raw;
             this.async = async;
         }
