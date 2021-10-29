@@ -75,62 +75,56 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>(); // Newest entries (by version).
+        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>(keys.size()); // Newest entries (by version).
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(); // Newest entries required to be re-committed.
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
             for (KeyCacheObject key : fut.keys()) {
                 EntryGetResult candidateRes = fut.result().get(key);
 
-                if (candidateRes != null) {
-                    if (newestMap.containsKey(key)) {
-                        EntryGetResult newestRes = newestMap.get(key);
+                if (!newestMap.containsKey(key)) {
+                    newestMap.put(key, candidateRes);
 
-                        if (newestRes == null) { // Existing data wins.
+                    continue;
+                }
+
+                EntryGetResult newestRes = newestMap.get(key);
+
+                if (candidateRes != null) {
+                    if (newestRes == null) { // Existing data wins.
+                        newestMap.put(key, candidateRes);
+                        fixedMap.put(key, candidateRes);
+                    }
+                    else {
+                        int compareRes = candidateRes.version().compareTo(newestRes.version());
+
+                        if (compareRes > 0) { // Newest data wins.
                             newestMap.put(key, candidateRes);
                             fixedMap.put(key, candidateRes);
                         }
-                        else {
-                            int compareRes = candidateRes.version().compareTo(newestRes.version());
+                        else if (compareRes < 0)
+                            fixedMap.put(key, newestRes);
+                        else if (compareRes == 0) {
+                            CacheObjectAdapter candidateVal = candidateRes.value();
+                            CacheObjectAdapter newestVal = newestRes.value();
 
-                            if (compareRes > 0) { // Newest data wins.
-                                newestMap.put(key, candidateRes);
-                                fixedMap.put(key, candidateRes);
+                            try {
+                                byte[] candidateBytes = candidateVal.valueBytes(ctx.cacheObjectContext());
+                                byte[] newestBytes = newestVal.valueBytes(ctx.cacheObjectContext());
+
+                                if (!Arrays.equals(candidateBytes, newestBytes))
+                                    fixedMap.put(key, newestRes); // Same version, fixing values inconsistency.
                             }
-                            else if (compareRes < 0)
-                                fixedMap.put(key, newestRes);
-                            else if (compareRes == 0) {
-                                CacheObjectAdapter candidateVal = candidateRes.value();
-                                CacheObjectAdapter newestVal = newestRes.value();
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
 
-                                try {
-                                    byte[] candidateBytes = candidateVal.valueBytes(ctx.cacheObjectContext());
-                                    byte[] newestBytes = newestVal.valueBytes(ctx.cacheObjectContext());
-
-                                    if (!Arrays.equals(candidateBytes, newestBytes))
-                                        fixedMap.put(key, candidateRes); // Same version, fixing values inconsistency.
-                                }
-                                catch (IgniteCheckedException e) {
-                                    onDone(e);
-
-                                    return;
-                                }
+                                return;
                             }
                         }
                     }
-                    else
-                        newestMap.put(key, candidateRes);
                 }
-                else {
-                    EntryGetResult newestRes = newestMap.get(key);
-
-                    if (newestRes != null)
-                        fixedMap.put(key, newestRes); // Existing data wins.
-                    else
-                        newestMap.put(key, candidateRes);
-                }
-
-                assert newestMap.containsKey(key) : "The newest map should contain the value after the first iteration.";
+                else if (newestRes != null)
+                    fixedMap.put(key, newestRes); // Existing data wins.
             }
         }
 

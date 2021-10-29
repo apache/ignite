@@ -95,7 +95,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>();
+        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>(keys.size());
         Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
