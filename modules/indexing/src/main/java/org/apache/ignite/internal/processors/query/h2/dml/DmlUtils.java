@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.lang.reflect.Array;
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -111,8 +112,26 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
-            if (type == Value.ARRAY)
+            if (type == Value.ARRAY && BinaryArray.USE_TYPED_ARRAYS)
                 return ((BinaryArray)val).deserialize();
+
+            if (type == Value.ARRAY && currCls != expCls) {
+                if (currCls != Object[].class) {
+                    throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] " +
+                        "is assumed");
+                }
+
+                // Why would otherwise type be Value.ARRAY?
+                assert expCls.isArray();
+
+                Object[] curr = (Object[])val;
+
+                Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
+
+                System.arraycopy(curr, 0, newArr, 0, curr.length);
+
+                return newArr;
+            }
 
             Object res = H2Utils.convert(val, desc.indexing(), type);
 

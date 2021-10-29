@@ -633,7 +633,7 @@ public class H2Utils {
                 return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
                 // We want raw data(no deserialization), because, all actions with params happens in binary format.
-                Object[] arr = ((BinaryArray)obj).array();
+                Object[] arr = BinaryArray.USE_TYPED_ARRAYS ? ((BinaryArray)obj).array() : (Object[])obj;
 
                 Value[] valArr = new Value[arr.length];
 
