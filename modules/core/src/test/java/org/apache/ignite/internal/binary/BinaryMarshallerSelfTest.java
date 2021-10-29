@@ -104,7 +104,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -119,7 +118,7 @@ import static org.junit.Assert.assertNotEquals;
  * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
-public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
+public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
     /**
      * @throws Exception If failed.
      */
@@ -805,7 +804,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
         assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
         assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
-        assertArrayEquals(obj.objArr, po.<BinaryArray>field("objArr").array());
+        assertArrayEquals(
+            obj.objArr,
+            useTypedArrays ? po.<BinaryArray>field("objArr").array() : (Object[])po.field("objArr")
+        );
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
@@ -840,7 +842,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.inner.strArr, (String[])innerPo.field("strArr"));
         assertArrayEquals(obj.inner.uuidArr, (UUID[])innerPo.field("uuidArr"));
         assertArrayEquals(obj.inner.dateArr, (Date[])innerPo.field("dateArr"));
-        assertArrayEquals(obj.inner.objArr, innerPo.<BinaryArray>field("objArr").array());
+        assertArrayEquals(
+            obj.inner.objArr,
+            useTypedArrays ? innerPo.<BinaryArray>field("objArr").array() : (Object[])innerPo.field("objArr")
+        );
         assertEquals(obj.inner.col, innerPo.field("col"));
         assertEquals(obj.inner.map, innerPo.field("map"));
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
@@ -889,7 +894,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.strArr, (String[])po.field("_strArr"));
         assertArrayEquals(obj.uuidArr, (UUID[])po.field("_uuidArr"));
         assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
-        assertArrayEquals(obj.objArr, po.<BinaryArray>field("_objArr").array());
+        assertArrayEquals(
+            obj.objArr,
+            useTypedArrays ? po.<BinaryArray>field("_objArr").array() : (Object[])po.field("_objArr")
+        );
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
@@ -924,7 +932,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.simple.strArr, (String[])simplePo.field("strArr"));
         assertArrayEquals(obj.simple.uuidArr, (UUID[])simplePo.field("uuidArr"));
         assertArrayEquals(obj.simple.dateArr, (Date[])simplePo.field("dateArr"));
-        assertArrayEquals(obj.simple.objArr, simplePo.<BinaryArray>field("objArr").array());
+        assertArrayEquals(
+            obj.simple.objArr,
+            useTypedArrays ? simplePo.<BinaryArray>field("objArr").array() : (Object[])simplePo.field("objArr")
+        );
         assertEquals(obj.simple.col, simplePo.field("col"));
         assertEquals(obj.simple.map, simplePo.field("map"));
         assertEquals(new Integer(obj.simple.enumVal.ordinal()),
@@ -961,7 +972,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.binary.strArr, (String[])binaryPo.field("_strArr"));
         assertArrayEquals(obj.binary.uuidArr, (UUID[])binaryPo.field("_uuidArr"));
         assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
-        assertArrayEquals(obj.binary.objArr, binaryPo.<BinaryArray>field("_objArr").array());
+        assertArrayEquals(
+            obj.binary.objArr,
+            useTypedArrays ? binaryPo.<BinaryArray>field("_objArr").array() : (Object[])binaryPo.field("_objArr")
+        );
         assertEquals(obj.binary.col, binaryPo.field("_col"));
         assertEquals(obj.binary.map, binaryPo.field("_map"));
         assertEquals(new Integer(obj.binary.enumVal.ordinal()),
@@ -1214,7 +1228,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
         assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
         assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
-        assertArrayEquals(obj.objArr, po.<BinaryArray>field("objArr").array());
+        assertArrayEquals(
+            obj.objArr,
+            useTypedArrays ? po.<BinaryArray>field("objArr").array() : (Object[])po.field("objArr")
+        );
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
         assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
@@ -1607,13 +1624,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        BinaryArray arr0 = po.field("arr");
+        Object[] arr0 = useTypedArrays ? po.<BinaryArray>field("arr").array() : po.field("arr");
 
-        assertEquals(3, arr0.array().length);
+        assertEquals(3, arr0.length);
 
         int i = 1;
 
-        for (Object valPo : arr0.array())
+        for (Object valPo : arr0)
             assertEquals(i++, ((BinaryObject)valPo).<Value>deserialize().val);
 
         Collection<BinaryObject> col0 = po.field("col");
@@ -3052,12 +3069,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testReadDetachedTypedArray() throws Exception {
         Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
 
-        testReadDetachObjectProperly(arr, obj -> {
-            assertArrayEquals(arr, ((BinaryArray)obj).deserialize());
+        testReadDetachObjectProperly(arr, obj0 -> {
+            Object[] obj = useTypedArrays ? ((BinaryArray)obj0).deserialize() : (Value[])obj0;
+
+            assertArrayEquals(arr, (Value[])obj);
 
             Object[] args = new Object[] {obj};
 
-            assertTrue(args[0] instanceof BinaryArray);
+            assertTrue(args[0] instanceof Value[]);
 
             args = PlatformUtils.unwrapBinariesInArray(args);
 
@@ -3070,12 +3089,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testReadArrayOfCollections() throws Exception {
         Collection[] arr = new Collection[] { Arrays.asList(new Value(1), new Value(2), new Value(3)) };
-        testReadDetachObjectProperly(arr, obj -> {
-            assertArrayEquals(arr, ((BinaryArray)obj).deserialize());
+        testReadDetachObjectProperly(arr, obj0 -> {
+            Object[] obj = useTypedArrays ? ((BinaryArray)obj0).deserialize() : (Collection[])obj0;
+
+            assertArrayEquals(arr, (Collection[])obj);
 
             Object[] args = new Object[] {obj};
 
-            assertTrue(args[0] instanceof BinaryArray);
+            assertTrue(args[0] instanceof Collection[]);
 
             args = PlatformUtils.unwrapBinariesInArray(args);
 

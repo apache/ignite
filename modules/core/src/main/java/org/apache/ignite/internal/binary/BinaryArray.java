@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -35,10 +36,19 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+
 /**
  * Binary object representing array.
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable {
+    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = true;
+
+    /** Value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
+    public static boolean USE_TYPED_ARRAYS =
+        IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
+
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -149,6 +149,27 @@ public class CacheObjectUtils {
     }
 
     /**
+     * Unwrap array of binaries if needed.
+     *
+     * @param arr Array.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy.
+     * @return Result.
+     */
+    private static Object[] unwrapBinariesInArrayIfNeeded(CacheObjectValueContext ctx, Object[] arr, boolean keepBinary,
+        boolean cpy) {
+        if (BinaryUtils.knownArray(arr))
+            return arr;
+
+        Object[] res = new Object[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy, null);
+
+        return res;
+    }
+
+    /**
      * Unwraps an object for end user.
      *
      * @param ctx Cache object context.
@@ -182,6 +203,8 @@ public class CacheObjectUtils {
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
+        else if (o instanceof Object[])
+            return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
         else if (o instanceof BinaryArray) {
             ((BinaryArray)o).keepBinary(false);
 

@@ -22,11 +22,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class BinaryArraySelfTest extends GridCommonAbstractTest {
+public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     /** */
     private static Ignite server;
 
@@ -74,6 +73,7 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
 
     /** */
     private void doTestArrayKey(IgniteCache<TestClass1[], Integer> c) {
+        //TODO: add tests for all API methods.
         TestClass1[] arr = {new TestClass1(), new TestClass1()};
         TestClass1[] emptyArr = {};
 
@@ -91,11 +91,11 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
     private void doTestArrayValue(IgniteCache<Integer, TestClass1[]> c) {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         c.put(2, new TestClass1[] {});
-        TestClass1[] obj = c.get(1);
-        TestClass1[] emptyObj = c.get(2);
+        Object obj = c.get(1);
+        Object emptyObj = c.get(2);
 
-        assertEquals(TestClass1[].class, obj.getClass());
-        assertEquals(TestClass1[].class, emptyObj.getClass());
+        assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, obj.getClass());
+        assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, emptyObj.getClass());
 
         assertTrue(c.remove(1));
         assertTrue(c.remove(2));
@@ -113,8 +113,10 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         Object obj = c.withKeepBinary().get(1);
 
-        assertEquals(BinaryArray.class, obj.getClass());
-        assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
+        assertEquals(useTypedArrays ? BinaryArray.class : Object[].class, obj.getClass());
+
+        if (useTypedArrays)
+            assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
 
         assertTrue(c.remove(1));
     }
@@ -167,9 +169,9 @@ public class BinaryArraySelfTest extends GridCommonAbstractTest {
         BinaryObject obj = server.binary().toBinary(src);
 
         BinaryObject simpleObj = obj.field("obj");
-        BinaryObject objArr = simpleObj.field("objArr");
+        Object objArr = simpleObj.field("objArr");
 
-        assertEquals(BinaryArray.class, objArr.getClass());
+        assertEquals(useTypedArrays ? BinaryArray.class : Object[].class, objArr.getClass());
 
         Object deser = obj.deserialize();
 

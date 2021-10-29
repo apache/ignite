@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,7 +75,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -1609,14 +1608,20 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         BinaryObject extObj = builder.setField("extVal", exp).setField("extArr", expArr).build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, extObj.<BinaryArray>field("extArr").array());
+        Assert.assertArrayEquals(
+            expArr,
+            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : (Object[])extObj.field("extArr")
+        );
 
         builder = extObj.toBuilder();
 
         extObj = builder.setField("intVal", 10).build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, extObj.<BinaryArray>field("extArr").array());
+        Assert.assertArrayEquals(
+            expArr,
+            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : (Object[])extObj.field("extArr")
+        );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
         builder = extObj.toBuilder();
@@ -1624,7 +1629,10 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         extObj = builder.setField("strVal", "some string").build();
 
         assertEquals(exp, extObj.field("extVal"));
-        Assert.assertArrayEquals(expArr, extObj.<BinaryArray>field("extArr").array());
+        Assert.assertArrayEquals(
+            expArr,
+            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : (Object[])extObj.field("extArr")
+        );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
     }

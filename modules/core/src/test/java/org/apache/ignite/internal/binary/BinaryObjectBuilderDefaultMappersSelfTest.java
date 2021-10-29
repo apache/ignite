@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,7 +52,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary builder test.
  */
-public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArrayTest {
     /** */
     private static IgniteConfiguration cfg;
 
@@ -632,12 +631,12 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        BinaryArray arr = po.field("objectArrayField");
+        Object[] arr = useTypedArrays ? po.<BinaryArray>field("objectArrayField").array() : po.field("objectArrayField");
 
-        assertEquals(2, arr.array().length);
+        assertEquals(2, arr.length);
 
-        assertEquals(1, ((BinaryObject)arr.array()[0]).<Value>deserialize().i);
-        assertEquals(2, ((BinaryObject)arr.array()[1]).<Value>deserialize().i);
+        assertEquals(1, ((BinaryObject)arr[0]).<Value>deserialize().i);
+        assertEquals(2, ((BinaryObject)arr[1]).<Value>deserialize().i);
     }
 
     /**
@@ -846,6 +845,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     public void testMetaData() throws Exception {
         BinaryObjectBuilder builder = builder("org.test.MetaTest");
 
+        builder.removeField("uuidField");
+        builder.removeField("intField");
+        builder.removeField("byteArrayField");
+
         builder.setField("intField", 1);
         builder.setField("byteArrayField", new byte[] {1, 2, 3});
 
@@ -857,10 +860,18 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         Collection<String> fields = meta.fieldNames();
 
-        assertEquals(2, fields.size());
+        switch (fields.size()) {
+            case 3:
+                assertTrue(fields.contains("uuidField"));
 
-        assertTrue(fields.contains("intField"));
-        assertTrue(fields.contains("byteArrayField"));
+            case 2:
+                assertTrue(fields.contains("intField"));
+                assertTrue(fields.contains("byteArrayField"));
+
+                break;
+            default:
+                fail("Expected 2 or 3 fields but got " + fields.size());
+        }
 
         assertEquals("int", meta.fieldTypeName("intField"));
         assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
