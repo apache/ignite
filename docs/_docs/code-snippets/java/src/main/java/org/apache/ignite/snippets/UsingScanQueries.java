@@ -116,13 +116,15 @@ public class UsingScanQueries {
 
             IgniteCache<Integer, Person> cache = ignite.getOrCreateCache(ccfg);
 
+            //end::idxQry[]
             {
-                // Find the persons who work in Organization 1.
-                QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
-                    new IndexQuery<Integer, Person>(Person.class, "ORG_SALARY_IDX")
-                        .setCriteria(eq("orgId", 1))
-                );
-                //end::idxQry[]
+            //tag::idxQry[]
+            // Find the persons who work in Organization 1.
+            QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
+                new IndexQuery<Integer, Person>(Person.class, "ORG_SALARY_IDX")
+                    .setCriteria(eq("orgId", 1))
+            );
+            //end::idxQry[]
             }
 
             {
