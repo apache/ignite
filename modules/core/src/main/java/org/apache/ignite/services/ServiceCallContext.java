@@ -17,6 +17,7 @@
 
 package org.apache.ignite.services;
 
+import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -26,7 +27,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * ServiceContext#currentCallContext()}. It is accessible only from the local thread during the execution of a service
  * method.
  * <p>
- * Use {@link ServiceCallContext#builder()} to create the context builder.
+ * Use {@link ServiceCallContext#create()} to instantiate the context.
  * <p>
  * <b>Note</b>: passing the context to the service may lead to performance overhead, so it should only be used for
  * "middleware" tasks.
@@ -50,7 +51,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * ...
  *
  * // Call this service with context.
- * ServiceCallContext callCtx = ServiceCallContext.builder().put("user", "John").build();
+ * ServiceCallContext callCtx = ServiceCallContext.create().put("user", "John");
  * HelloService helloSvc = ignite.services().serviceProxy("hello-service", HelloService.class, false, callCtx, 0);
  * // Print "Hello John".
  * System.out.println( helloSvc.call("Hello ") );
@@ -61,12 +62,12 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public interface ServiceCallContext {
     /**
-     * Create a context builder.
+     * Factory method for creating an internal implementation.
      *
-     * @return Context builder.
+     * @return Service call context.
      */
-    public static ServiceCallContextBuilder builder() {
-        return new ServiceCallContextBuilder();
+    public static ServiceCallContext create() {
+        return new ServiceCallContextImpl();
     }
 
     /**
@@ -84,4 +85,24 @@ public interface ServiceCallContext {
      * @return Binary attribute value.
      */
     public byte[] binary(String name);
+
+    /**
+     * Put new string attribute.<br<
+     * If the context previously contained a mapping for the key, the old value is replaced by the specified value.
+     *
+     * @param name Attribute name.
+     * @param value Attribute value.
+     * @return This for chaining.
+     */
+    public ServiceCallContext put(String name, String value);
+
+    /**
+     * Put new binary attribute.<br<
+     * If the context previously contained a mapping for the key, the old value is replaced by the specified value.
+     *
+     * @param name Attribute name.
+     * @param value Attribute value.
+     * @return This for chaining.
+     */
+    public ServiceCallContext put(String name, byte[] value);
 }

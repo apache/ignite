@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.services.ServiceCallContext;
@@ -29,12 +31,28 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     private final Map<String, Object> attrs;
 
     /**
+     * Default contructor.
+     */
+    public ServiceCallContextImpl() {
+        attrs = new HashMap<>();
+    }
+
+    /**
+     * Constructs an immutable context from the map.
+     *
      * @param attrs Service call context attributes.
      */
     public ServiceCallContextImpl(Map<String, Object> attrs) {
-        A.notNull(attrs, "attrs");
+        this.attrs = Collections.unmodifiableMap(attrs);
+    }
 
-        this.attrs = attrs;
+    /**
+     * Constructs an immutable context.
+     *
+     * @param callCtx Service call context.
+     */
+    public ServiceCallContextImpl(ServiceCallContext callCtx) {
+        this(((ServiceCallContextImpl)callCtx).values());
     }
 
     /** {@inheritDoc} */
@@ -45,6 +63,26 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /** {@inheritDoc} */
     @Override public byte[] binary(String name) {
         return (byte[])attrs.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceCallContext put(String name, String value) {
+        A.notNullOrEmpty(name, "name");
+        A.notNull(value, "value");
+
+        attrs.put(name, value);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceCallContext put(String name, byte[] value) {
+        A.notNullOrEmpty(name, "name");
+        A.notNull(value, "value");
+
+        attrs.put(name, value);
+
+        return this;
     }
 
     /**

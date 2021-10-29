@@ -121,6 +121,9 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
             assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(false)));
             assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(true)));
+
+            GridTestUtils.assertThrowsAnyCause(log, () -> proxy.modifyAttribute("dummy"),
+                UnsupportedOperationException.class, null);
         }
     }
 
@@ -180,8 +183,15 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
      * @return Service proxy instance.
      */
     private TestService createProxyWithContext(Ignite node, String attrVal, byte[] binVal) {
-        ServiceCallContext callCtx = ServiceCallContext.builder().put(STR_ATTR_NAME, attrVal).put(BIN_ATTR_NAME, binVal).build();
+        return createProxy(node, ServiceCallContext.create().put(STR_ATTR_NAME, attrVal).put(BIN_ATTR_NAME, binVal));
+    }
 
+    /**
+     * @param node Ignite node.
+     * @param callCtx Service call context.
+     * @return Service proxy instance.
+     */
+    private TestService createProxy(Ignite node, ServiceCallContext callCtx) {
         return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, callCtx, 0);
     }
 
@@ -198,6 +208,12 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
          * @return Context attribute value.
          */
         public byte[] binaryAttribute(boolean useInjectedSvc);
+
+        /**
+         * @param val Attribute value.
+         * @return Attribute from injected service.
+         */
+        public String modifyAttribute(String val);
     }
 
     /** */
@@ -225,6 +241,13 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
             ServiceCallContext callCtx = ctx.currentCallContext();
 
             return useInjectedSvc ? injected.binaryAttribute(false) : callCtx.binary(BIN_ATTR_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String modifyAttribute(String val) {
+            ctx.currentCallContext().put(STR_ATTR_NAME, val);
+
+            return injected.attribute(false);
         }
 
         /** {@inheritDoc} */
