@@ -26,9 +26,9 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <calcite.version>1.27.0</calcite.version>
-        <janino.version>3.1.4</janino.version>
-        <avatica.version>1.18.0</avatica.version>
+        <calcite.version>1.28.0</calcite.version>
+        <janino.version>3.1.6</janino.version>
+        <avatica.version>1.19.0</avatica.version>
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.9.10</reflections.version>
         <javassist.version>3.28.0-GA</javassist.version>
