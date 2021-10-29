@@ -90,7 +90,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                     cache.withReadRepair().getAllAsync(keys).get() :
                     cache.withReadRepair().getAll(keys);
 
-            for (Map.Entry<Integer, Integer> entry : res.entrySet()){
+            for (Map.Entry<Integer, Integer> entry : res.entrySet()) {
                 Integer latest = data.data.get(entry.getKey()).latest;
 
                 if (latest != null)
