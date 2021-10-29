@@ -1409,7 +1409,6 @@ public class SnapshotRestoreProcess {
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs;
 
-        // TODO check the stopFut setting in case of some operation require cancellation performs.
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
 
