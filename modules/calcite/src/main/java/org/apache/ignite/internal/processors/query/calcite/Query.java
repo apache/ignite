@@ -28,7 +28,9 @@ import java.util.function.Consumer;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -124,6 +126,8 @@ public class Query<RowT> implements RunningQuery {
                 return;
             
             if (state == QueryState.INITED) {
+                state = QueryState.CLOSING;
+
                 try {
                     exch.closeQuery(initNodeId, id);
 
@@ -131,27 +135,10 @@ public class Query<RowT> implements RunningQuery {
                 }
                 catch (IgniteCheckedException e) {
                     log.warning("Cannot send cancel request to query initiator", e);
-
-                    boolean interrupt = false;
-
-                    while (state == QueryState.INITED) {
-                        try {
-                            // Wait for the first fragment.
-                            mux.wait();
-                        }
-                        catch (InterruptedException ex) {
-                            interrupt = true;
-                        }
-                    }
-
-                    if (interrupt)
-                        Thread.currentThread().interrupt();
-
-                    assert state == QueryState.EXECUTING : "Unexpected query state: " + this;
                 }
             }
 
-            if (state == QueryState.EXECUTING)
+            if (state == QueryState.EXECUTING || state == QueryState.CLOSING)
                 state = QueryState.CLOSED;
         }
 
@@ -165,10 +152,15 @@ public class Query<RowT> implements RunningQuery {
     public void addFragment(RunningFragment<RowT> f) {
         if (state == QueryState.INITED) {
             synchronized (mux) {
-                if (state == QueryState.INITED) {
+                if (state == QueryState.INITED)
                     state = QueryState.EXECUTING;
 
-                    mux.notifyAll();
+                if (state == QueryState.CLOSING || state == QueryState.CLOSED) {
+                    throw new IgniteSQLException(
+                        "The query was cancelled",
+                        IgniteQueryErrorCode.QUERY_CANCELED,
+                        new ExecutionCancelledException()
+                    );
                 }
             }
         }
