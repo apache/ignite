@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, fullResultAfterClientStreamer[0][0]);
 
             // check the cache content
-            var element = cacheClientBinary[0];
+            var element = cacheClientBinary[key];
             Assert.AreEqual("Jane", element.GetField<string>("Name"));
             Assert.AreEqual(43, element.GetField<int>("Age"));
         }
