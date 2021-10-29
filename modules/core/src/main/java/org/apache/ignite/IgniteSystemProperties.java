@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
@@ -2017,6 +2018,8 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_INDEX_REBUILD_BATCH_SIZE = "IGNITE_INDEX_REBUILD_BATCH_SIZE";
 
     /**
+     * Enabled storage of typed arrays.
+     * The default value is {@link BinaryArray#DFLT_IGNITE_USE_TYPED_ARRAYS}.
      */
     @SystemProperty(value = "Flag to enabled store of array component type.",
         defaults = "" + DFLT_IGNITE_USE_TYPED_ARRAYS)

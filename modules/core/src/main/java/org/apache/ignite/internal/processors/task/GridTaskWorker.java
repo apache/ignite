@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
+import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -832,7 +834,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                             ? res.getJobResult()
                             : unmarshalResult(
                                 res.getJobResultBytes(),
-                                ses.isFullSupport() && ses.getAttribute("KEEP_BINARY") == Boolean.TRUE,
+                                isBinaryTask(ses.getTaskName()),
                                 U.resolveClassLoader(clsLdr, ctx.config())
                             );
 
@@ -1021,6 +1023,11 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 });
             }
         }
+    }
+
+    /** */
+    private boolean isBinaryTask(String taskClsName) {
+        return Objects.equals(taskClsName, GridServiceProxy.BinaryServiceProxyCallable.class.getName());
     }
 
     /** */

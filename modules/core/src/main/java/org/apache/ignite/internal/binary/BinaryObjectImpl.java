@@ -316,12 +316,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return BinaryUtils.unwrapBinaryArrayIfNeeded(reader(null, false).unmarshalField(fieldName));
+        return BinaryUtils.unwrapBinaryArrayForBackwardCompatibility(reader(null, false).unmarshalField(fieldName));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return BinaryUtils.unwrapBinaryArrayIfNeeded(reader(null, false).unmarshalField(fieldId));
+        return BinaryUtils.unwrapBinaryArrayForBackwardCompatibility(reader(null, false).unmarshalField(fieldId));
     }
 
     /** {@inheritDoc} */
@@ -504,7 +504,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = BinaryUtils.unwrapBinaryArrayIfNeeded(
+                val = BinaryUtils.unwrapBinaryArrayForBackwardCompatibility(
                     BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null)
                 );
 
@@ -632,7 +632,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return BinaryUtils.unwrapBinaryArrayIfNeeded(reader(rCtx, false).unmarshalField(fieldName));
+        return BinaryUtils.unwrapBinaryArrayForBackwardCompatibility(reader(rCtx, false).unmarshalField(fieldName));
     }
 
     /** {@inheritDoc} */

@@ -2010,7 +2010,9 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return unwrapBinaryArrayIfNeeded(doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize));
+                return unwrapBinaryArrayForBackwardCompatibility(
+                    doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize)
+                );
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2565,7 +2567,7 @@ public class BinaryUtils {
     }
 
     /** */
-    public static <F> F unwrapBinaryArrayIfNeeded(Object o) {
+    public static <F> F unwrapBinaryArrayForBackwardCompatibility(Object o) {
         if (!BinaryArray.USE_TYPED_ARRAYS && o instanceof BinaryArray)
             return ((BinaryArray)o).deserialize();
 
