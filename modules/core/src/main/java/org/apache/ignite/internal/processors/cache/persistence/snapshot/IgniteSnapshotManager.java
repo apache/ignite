@@ -147,7 +147,6 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -327,7 +326,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Local snapshot sender factory. */
     private Function<String, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
 
-    /** Local snapshot sender factory. */
+    /** Remote snapshot sender factory. */
     private BiFunction<String, UUID, SnapshotSender> rmtSndrFactory = this::remoteSnapshotSenderFactory;
 
     /** Main snapshot directory to save created snapshots. */
@@ -366,8 +365,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot operation handlers. */
     private final SnapshotHandlers handlers = new SnapshotHandlers();
 
-    /** Manager to handle remote snapshot requests and receive. */
-    private volatile SequentialRemoteSnapshotManager snpRmtHandler;
+    /** Manager to receive responses of remote snapshot requests. */
+    private final SequentialRemoteSnapshotManager snpRmtMgr;
 
     /**
      * @param ctx Kernal context.
@@ -388,7 +387,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
 
         // Manage remote snapshots.
-        snpRmtHandler = new SequentialRemoteSnapshotManager();
+        snpRmtMgr = new SequentialRemoteSnapshotManager();
     }
 
     /**
@@ -463,6 +462,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "the configured via IgniteConfiguration snapshot working path.");
 
         cctx.exchange().registerExchangeAwareComponent(this);
+
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
 
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
@@ -492,7 +492,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
 
                     restoreCacheGrpProc.onNodeLeft(leftNodeId);
-                    snpRmtHandler.onNodeLeft(leftNodeId);
+                    snpRmtMgr.onNodeLeft(leftNodeId);
                 }
             }
             finally {
@@ -500,8 +500,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtHandler);
-        cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtHandler);
+        cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtMgr);
+        cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, snpRmtMgr);
     }
 
     /** {@inheritDoc} */
@@ -517,7 +517,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             locSnpTasks.clear();
 
-            snpRmtHandler.stop();
+            snpRmtMgr.stop();
 
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null) {
@@ -1511,7 +1511,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param rmtNodeId The remote node to connect to.
      * @param partHnd Received partition handler.
      */
-    public IgniteInternalFuture<Void> requestRemoteSnapshotAsync(
+    public IgniteInternalFuture<Void> requestRemoteSnapshot(
         UUID rmtNodeId,
         String snpName,
         Map<Integer, Set<Integer>> parts,
@@ -1524,32 +1524,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
         if (rmtNode == null) {
-            throw new ClusterTopologyCheckedException("Snapshot request cannot be performed. " +
+            throw new ClusterTopologyCheckedException("Snapshot remote request cannot be performed. " +
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']');
         }
 
         if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
             throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
-        RemoteSnapshotHandler fut = new RemoteSnapshotHandler(rmtNodeId,
-            tmpWorkDir,
-            rqId -> {
-                cctx.gridIO().sendOrderedMessage(rmtNode,
-                    DFLT_INITIAL_SNAPSHOT_TOPIC,
-                    new SnapshotRequestMessage(rqId, snpName, parts),
-                    SYSTEM_POOL,
-                    Long.MAX_VALUE,
-                    true);
+        RemoteSnapshotHandler fut = new RemoteSnapshotHandler(this, rmtNodeId, snpName, parts, stopChecker, partHnd);
 
-                if (log.isInfoEnabled()) {
-                    log.info("Snapshot request is sent to the remote node [rmtNodeId=" + rmtNodeId +
-                        ", snpName=" + snpName + ", rqId=" + rqId + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
-                }
-            },
-            stopChecker,
-            partHnd);
-
-        snpRmtHandler.submit(() -> fut);
+        snpRmtMgr.submit(() -> fut);
 
         return fut;
     }
@@ -1709,9 +1693,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         try {
-            if (locSnpTasks.containsKey(rqId))
+            if (locSnpTasks.containsKey(rqId)) {
                 return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " +
                     rqId));
+            }
 
             AbstractSnapshotFutureTask<?> prev = locSnpTasks.putIfAbsent(rqId, task);
 
@@ -1763,7 +1748,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     RemoteSnapshotSender remoteSnapshotSenderFactory(String rqId, UUID nodeId) {
         return new RemoteSnapshotSender(log,
             snpRunner,
-            () -> databaseRelativePath(pdsSettings.folderName()),
+            databaseRelativePath(pdsSettings.folderName()),
             cctx.gridIO().openTransmissionSender(nodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             rqId);
     }
@@ -2255,13 +2240,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Remote snapshot future which tracks remote snapshot transmission result. */
     private static class RemoteSnapshotHandler extends GridFutureAdapter<Void> implements Runnable {
         /** Snapshot name to create. */
-        private final String rqId = RMT_SNAPSHOT_PREFIX + U.maskForFileName(UUID.randomUUID().toString());
+        private final String reqId = RMT_SNAPSHOT_PREFIX + U.maskForFileName(UUID.randomUUID().toString());
+
+        /** Ignite snapshot manager. */
+        private final IgniteSnapshotManager snpMgr;
+
+        /** Initial message to send request. */
+        private final SnapshotRequestMessage initMsg;
 
         /** Remote node id to request snapshot from. */
         private final UUID rmtNodeId;
-
-        /** Initialization procedure. */
-        private final IgniteThrowableConsumer<String> init;
 
         /** Process interrupt checker. */
         private final BooleanSupplier stopChecker;
@@ -2276,22 +2264,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final AtomicInteger partsLeft = new AtomicInteger(-1);
 
         /**
-         * @param rmtNodeId Remote node id to request snapshots.
-         * @param tmpWorkDir Temporary work directory.
-         * @param init The initialization task procedure.
+         * @param snpMgr Ignite snapshot manager.
+         * @param rmtNodeId Remote node to request snapshot from.
+         * @param snpName Snapshot name to request.
+         * @param parts Cache group and partitions to request.
          * @param stopChecker Process interrupt checker.
          * @param partHnd Partition handler.
          */
         public RemoteSnapshotHandler(
+            IgniteSnapshotManager snpMgr,
             UUID rmtNodeId,
-            File tmpWorkDir,
-            IgniteThrowableConsumer<String> init,
+            String snpName,
+            Map<Integer, Set<Integer>> parts,
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(tmpWorkDir.getAbsolutePath(), rqId);
+            dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), reqId);
+            initMsg = new SnapshotRequestMessage(reqId, snpName, parts);
+
+            this.snpMgr = snpMgr;
             this.rmtNodeId = rmtNodeId;
-            this.init = init;
             this.stopChecker = stopChecker;
             this.partHnd = partHnd;
         }
@@ -2302,7 +2294,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
 
             try {
-                init.accept(rqId);
+                ClusterNode rmtNode = snpMgr.cctx.discovery().node(rmtNodeId);
+
+                if (rmtNode == null) {
+                    throw new ClusterTopologyCheckedException("Snapshot remote request cannot be performed. " +
+                        "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']');
+                }
+
+                snpMgr.cctx.gridIO().sendOrderedMessage(rmtNode,
+                    DFLT_INITIAL_SNAPSHOT_TOPIC,
+                    initMsg,
+                    SYSTEM_POOL,
+                    Long.MAX_VALUE,
+                    true);
+
+                if (snpMgr.log.isInfoEnabled()) {
+                    snpMgr.log.info("Snapshot request is sent to the remote node [rmtNodeId=" + rmtNodeId +
+                        ", snpName=" + initMsg.snapshotName() + ", rqId=" + reqId + ']');
+                }
             }
             catch (Throwable t) {
                 onDone(t);
@@ -2357,12 +2366,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             RemoteSnapshotHandler future = (RemoteSnapshotHandler)o;
 
-            return Objects.equals(rqId, future.rqId);
+            return Objects.equals(reqId, future.reqId);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(rqId);
+            return reqId.hashCode();
         }
 
         /** {@inheritDoc} */
@@ -2518,7 +2527,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     RemoteSnapshotHandler task = active.get();
 
-                    if (task == null || !task.rqId.equals(respMsg0.requestId())) {
+                    if (task == null || !task.reqId.equals(respMsg0.requestId())) {
                         if (log.isInfoEnabled()) {
                             log.info("A stale snapshot response message has been received. Will be ignored " +
                                 "[fromNodeId=" + nodeId + ", response=" + respMsg0 + ']');
@@ -2554,7 +2563,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             assert task.rmtNodeId.equals(nodeId);
 
             log.info("Requested snapshot from remote node has been fully received " +
-                "[rqId=" + task.rqId + ", task=" + task + ']');
+                "[rqId=" + task.reqId + ", task=" + task + ']');
 
             task.onDone((Void)null);
         }
@@ -2582,12 +2591,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             RemoteSnapshotHandler task = active.get();
 
-            if (task == null || task.isDone() || !task.rqId.equals(rqId)) {
+            if (task == null || task.isDone() || !task.reqId.equals(rqId)) {
                 throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
                     "[rqId=" + rqId + ", meta=" + fileMeta + ", task=" + task + ']');
             }
 
-            assert task.rqId.equals(rqId) && task.rmtNodeId.equals(nodeId) :
+            assert task.reqId.equals(rqId) && task.rmtNodeId.equals(nodeId) :
                 "Another transmission in progress [task=" + task + ", nodeId=" + rqId + ']';
 
             busyLock.enterBusy();
@@ -2626,7 +2635,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             RemoteSnapshotHandler task = active.get();
 
-            if (task == null || task.isDone() || !task.rqId.equals(rqId)) {
+            if (task == null || task.isDone() || !task.reqId.equals(rqId)) {
                 throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
                     "[rqId=" + rqId + ", meta=" + initMeta + ", task=" + task + ']');
             }
@@ -2727,14 +2736,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** The sender which sends files to remote node. */
         private final GridIoManager.TransmissionSender sndr;
 
-        /** Relative node path initializer. */
-        private final Supplier<String> initPath;
-
         /** Snapshot name. */
         private final String rqId;
 
         /** Local node persistent directory with consistent id. */
-        private String relativeNodePath;
+        private final String relativeNodePath;
 
         /** The number of cache partition files expected to be processed. */
         private int partsCnt;
@@ -2747,7 +2753,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         public RemoteSnapshotSender(
             IgniteLogger log,
             Executor exec,
-            Supplier<String> initPath,
+            String relativeNodePath,
             GridIoManager.TransmissionSender sndr,
             String rqId
         ) {
@@ -2755,16 +2761,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             this.sndr = sndr;
             this.rqId = rqId;
-            this.initPath = initPath;
+            this.relativeNodePath = relativeNodePath;
         }
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
             this.partsCnt = partsCnt;
 
-            relativeNodePath = initPath.get();
-
-            if (relativeNodePath == null)
+            if (F.isEmpty(relativeNodePath))
                 throw new IgniteException("Relative node path cannot be empty.");
         }
 

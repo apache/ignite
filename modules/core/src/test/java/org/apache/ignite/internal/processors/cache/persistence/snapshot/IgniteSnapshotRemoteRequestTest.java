@@ -81,7 +81,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
                 IgniteInternalFuture<Void> locFut = null;
 
-                compFut.add(locFut = snp(ignite).requestRemoteSnapshotAsync(grid(1).localNode().id(),
+                compFut.add(locFut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
                     SNAPSHOT_NAME,
                     parts,
                     () -> false,
@@ -123,9 +123,9 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             fromNode0.values().stream().mapToInt(Set::size).sum());
 
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshotAsync(node1, SNAPSHOT_NAME, fromNode1, () -> false,
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshot(node1, SNAPSHOT_NAME, fromNode1, () -> false,
             defaultPartitionConsumer(fromNode1, latch));
-        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshotAsync(node0, SNAPSHOT_NAME, fromNode0, () -> false,
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshot(node0, SNAPSHOT_NAME, fromNode0, () -> false,
             defaultPartitionConsumer(fromNode0, latch));
 
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g).stopBlock());
@@ -137,7 +137,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
     }
 
     /** @throws Exception If fails. */
-    @Test(expected = ClusterTopologyCheckedException.class)
+    @Test
     public void testRemoteRequestedInitiatorNodeLeft() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
@@ -172,7 +172,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             }
         });
 
-        snp(ignite).requestRemoteSnapshotAsync(grid(1).localNode().id(),
+        snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
             () -> false,
@@ -198,7 +198,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         stopGrid(0);
         sndLatch.countDown();
 
-        futs[0].get(TIMEOUT);
+        GridTestUtils.assertThrowsAnyCause(log, () -> futs[0].get(TIMEOUT), ClusterTopologyCheckedException.class, null);
     }
 
     /** @throws Exception If fails. */
@@ -213,7 +213,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshotAsync(grid(1).localNode().id(),
+        IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
             () -> false,
@@ -259,7 +259,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         CountDownLatch latch = new CountDownLatch(1);
         AtomicBoolean stopChecker = new AtomicBoolean();
 
-        IgniteInternalFuture<Void> fut = snp(ignite).requestRemoteSnapshotAsync(grid(1).localNode().id(),
+        IgniteInternalFuture<Void> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
             stopChecker::get,

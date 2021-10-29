@@ -942,7 +942,7 @@ public class SnapshotRestoreProcess {
                         continue;
 
                     ctx.cache().context().snapshotMgr()
-                        .requestRemoteSnapshotAsync(m.getKey(),
+                        .requestRemoteSnapshot(m.getKey(),
                             opCtx0.snpName,
                             m.getValue(),
                             opCtx0.stopChecker,

@@ -134,10 +134,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** */
-    public static final Predicate<String> CACHE_DIR_FILTER = dirName ->
-        dirName.startsWith(CACHE_DIR_PREFIX) ||
-        dirName.startsWith(CACHE_GRP_DIR_PREFIX) ||
-        dirName.equals(MetaStorage.METASTORAGE_DIR_NAME);
+    public static final Predicate<File> DATA_DIR_FILTER = dir ->
+        dir.getName().startsWith(CACHE_DIR_PREFIX) ||
+        dir.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
+        dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
 
     /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
@@ -1024,7 +1024,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return Arrays.stream(files)
             .sorted()
             .filter(File::isDirectory)
-            .filter(f -> CACHE_DIR_FILTER.test(f.getName()))
+            .filter(DATA_DIR_FILTER)
             .filter(f -> names.test(cacheGroupName(f)))
             .collect(Collectors.toList());
     }
@@ -1042,7 +1042,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         return Arrays.stream(files)
             .filter(File::isDirectory)
-            .filter(f -> CACHE_DIR_FILTER.test(f.getName()))
+            .filter(DATA_DIR_FILTER)
             .filter(f -> CU.cacheId(cacheGroupName(f)) == grpId)
             .findAny()
             .orElse(null);

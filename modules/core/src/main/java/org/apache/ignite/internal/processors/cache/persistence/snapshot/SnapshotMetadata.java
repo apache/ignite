@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,10 +28,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Snapshot metadata file.
@@ -158,9 +159,7 @@ public class SnapshotMetadata implements Serializable {
      * saved on the local node because some of them may be skipped due to cache node filter).
      */
     public Map<Integer, Set<Integer>> partitions() {
-        return locParts.entrySet().stream().
-            collect(Collectors.toMap(Map.Entry::getKey,
-                e -> new HashSet<>(e.getValue())));
+        return Collections.unmodifiableMap(locParts);
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
@@ -193,7 +192,7 @@ public class SnapshotMetadata implements Serializable {
         if (size < 0)
             throw new InvalidObjectException("Illegal size: " + size);
 
-        locParts = new HashMap<>(size);
+        locParts = U.newHashMap(size);
 
         // Read in all elements in the proper order.
         for (int i = 0; i < size; i++) {
@@ -203,7 +202,7 @@ public class SnapshotMetadata implements Serializable {
             if (total < 0)
                 throw new InvalidObjectException("Illegal size: " + total);
 
-            Set<Integer> parts = new HashSet<>(total);
+            Set<Integer> parts = U.newHashSet(total);
 
             for (int k = 0; k < total; k++)
                 parts.add(s.readInt());

@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 abstract class AbstractSnapshotMessage implements Message {
     /** Unique request id. */
-    private String rqId;
+    private String reqId;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -41,19 +41,19 @@ abstract class AbstractSnapshotMessage implements Message {
     }
 
     /**
-     * @param rqId Unique snapshot name.
+     * @param reqId Unique request id.
      */
-    protected AbstractSnapshotMessage(String rqId) {
-        assert U.alphanumericUnderscore(rqId) : rqId;
+    protected AbstractSnapshotMessage(String reqId) {
+        assert U.alphanumericUnderscore(reqId) : reqId;
 
-        this.rqId = rqId;
+        this.reqId = reqId;
     }
 
     /**
-     * @return Unique snapshot name.
+     * @return Unique request id.
      */
     public String requestId() {
-        return rqId;
+        return reqId;
     }
 
     /** {@inheritDoc} */
@@ -68,7 +68,7 @@ abstract class AbstractSnapshotMessage implements Message {
         }
 
         if (writer.state() == 0) {
-            if (!writer.writeString("rqId", rqId))
+            if (!writer.writeString("reqId", reqId))
                 return false;
 
             writer.incrementState();
@@ -85,7 +85,7 @@ abstract class AbstractSnapshotMessage implements Message {
             return false;
 
         if (reader.state() == 0) {
-            rqId = reader.readString("rqId");
+            reqId = reader.readString("reqId");
 
             if (!reader.isLastRead())
                 return false;

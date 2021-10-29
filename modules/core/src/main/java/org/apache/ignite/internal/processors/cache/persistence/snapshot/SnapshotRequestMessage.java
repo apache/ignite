@@ -36,7 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class SnapshotRequestMessage extends AbstractSnapshotMessage {
-    /** Snapshot request message type (value is {@code 177}). */
+    /** Snapshot request message type (value is {@code 178}). */
     public static final short TYPE_CODE = 178;
 
     /** Serialization version. */
@@ -57,11 +57,12 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param snpName Unique snapshot name.
+     * @param reqId Unique request id.
+     * @param snpName Snapshot name.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
-    public SnapshotRequestMessage(String rqId, String snpName, Map<Integer, Set<Integer>> parts) {
-        super(rqId);
+    public SnapshotRequestMessage(String reqId, String snpName, Map<Integer, Set<Integer>> parts) {
+        super(reqId);
 
         assert parts != null && !parts.isEmpty();
 
