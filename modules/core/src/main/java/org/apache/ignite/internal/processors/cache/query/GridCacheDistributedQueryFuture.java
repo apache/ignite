@@ -95,7 +95,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         switch (qry.query().type()) {
             case TEXT: reducer = new MergeSortCacheQueryReducer<>(streamsMap,
-                (o1, o2) -> Float.compare(
+                (o1, o2) -> -Float.compare(
                     ((ScoredCacheEntry<?, ?>)o1.head()).score(), ((ScoredCacheEntry<?, ?>)o2.head()).score()));
                 break;
 
