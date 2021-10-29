@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.Constants;
  * using proper format {{@link #compactVarTable(ExpandableByteBuf, int, int)}}.
  * The vartable format is coded into chunk flags.
  *
- * @see #format(int)
+ * @see #format(int, int)
  * @see #fromFlags(int)
  */
 abstract class VarTableFormat {
@@ -54,11 +54,12 @@ abstract class VarTableFormat {
      * to write vartable in a compact way.
      *
      * @param payloadLen Payload size in bytes.
+     * @param valVartblLen
      * @return Vartable format helper.
      */
-    static VarTableFormat format(int payloadLen) {
+    static VarTableFormat format(int payloadLen, int valVartblLen) {
         if (payloadLen > 0) {
-            if (payloadLen < 256)
+            if (payloadLen < 256 && valVartblLen < 256)
                 return TINY;
 
             if (payloadLen < 64 * Constants.KiB)
@@ -75,10 +76,12 @@ abstract class VarTableFormat {
      * @return Vartable format helper.
      */
     public static VarTableFormat fromFlags(int chunkFlags) {
-        switch (chunkFlags & FORMAT_CODE_MASK) {
-            case 1:
+        int formatId = chunkFlags & FORMAT_CODE_MASK;
+
+        switch (formatId) {
+            case TinyFormat.FORMAT_ID:
                 return TINY;
-            case 2:
+            case MediumFormat.FORMAT_ID:
                 return MEDIUM;
             default:
                 return LARGE;
@@ -91,25 +94,25 @@ abstract class VarTableFormat {
     /** Size of cartable size field. */
     private final int vartblSizeFieldSize;
 
-    /** Format flags. */
-    private final byte flags;
+    /** Format id. */
+    private final byte formatId;
 
     /**
      * @param vartblSizeFieldSize Size of vartalble size field (in bytes).
      * @param vartblEntrySize Size of vartable entry (in bytes).
-     * @param flags Format specific flags.
+     * @param formatId Format specific flags.
      */
-    VarTableFormat(int vartblSizeFieldSize, int vartblEntrySize, byte flags) {
+    VarTableFormat(int vartblSizeFieldSize, int vartblEntrySize, byte formatId) {
         this.vartblEntrySize = vartblEntrySize;
         this.vartblSizeFieldSize = vartblSizeFieldSize;
-        this.flags = flags;
+        this.formatId = formatId;
     }
 
     /**
-     * @return Format specific flags for a chunk.
+     * @return Format id.
      */
-    public byte formatFlags() {
-        return flags;
+    public byte formatId() {
+        return formatId;
     }
 
     /**
@@ -165,11 +168,13 @@ abstract class VarTableFormat {
      * Chunk format for small rows (with payload size less 256 bytes).
      */
     private static class TinyFormat extends VarTableFormat {
+        private static final byte FORMAT_ID = 1;
+
         /**
          * Creates chunk format.
          */
         TinyFormat() {
-            super(Byte.BYTES, Byte.BYTES, (byte)1);
+            super(Byte.BYTES, Byte.BYTES, FORMAT_ID);
         }
 
         /** {@inheritDoc} */
@@ -184,12 +189,12 @@ abstract class VarTableFormat {
 
         /** {@inheritDoc} */
         @Override public int compactVarTable(ExpandableByteBuf buf, int vartblOff, int entres) {
-            assert entres > 0;
+            assert entres > 0 && entres < 0xFFFF;
 
             buf.put(vartblOff, (byte)entres);
 
-            int dstOff = vartblOff + 1;
-            int srcOff = vartblOff + 2;
+            int dstOff = vartblOff + Byte.BYTES;
+            int srcOff = vartblOff + Short.BYTES;
 
             for (int i = 0; i < entres; i++, srcOff += Integer.BYTES, dstOff++)
                 buf.put(dstOff, buf.get(srcOff));
@@ -204,11 +209,13 @@ abstract class VarTableFormat {
      * Chunk format for rows of medium size (with payload size up to 64Kb).
      */
     private static class MediumFormat extends VarTableFormat {
+        private static final byte FORMAT_ID = 2;
+
         /**
          * Creates chunk format.
          */
         MediumFormat() {
-            super(Short.BYTES, Short.BYTES, (byte)2);
+            super(Short.BYTES, Short.BYTES, FORMAT_ID);
         }
 
         /** {@inheritDoc} */
@@ -225,8 +232,8 @@ abstract class VarTableFormat {
         @Override public int compactVarTable(ExpandableByteBuf buf, int vartblOff, int entries) {
             buf.putShort(vartblOff, (short)entries);
 
-            int dstOff = vartblOff + 2;
-            int srcOff = vartblOff + 2;
+            int dstOff = vartblOff + Short.BYTES;
+            int srcOff = vartblOff + Short.BYTES;
 
             for (int i = 0; i < entries; i++, srcOff += Integer.BYTES, dstOff += Short.BYTES)
                 buf.putShort(dstOff, buf.getShort(srcOff));
@@ -241,11 +248,13 @@ abstract class VarTableFormat {
      * Chunk format for large rows (with payload size 64+Kb).
      */
     private static class LargeFormat extends VarTableFormat {
+        private static byte FORMAT_ID = 0;
+
         /**
          * Creates chunk format.
          */
         LargeFormat() {
-            super(Short.BYTES, Integer.BYTES, (byte)0);
+            super(Short.BYTES, Integer.BYTES, FORMAT_ID);
         }
 
         /** {@inheritDoc} */

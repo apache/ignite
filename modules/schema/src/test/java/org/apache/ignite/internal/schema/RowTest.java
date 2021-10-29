@@ -74,7 +74,7 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with nullable fix-sized columns only.
+     * Check row serialization for a schema with nullable fix-sized columns only.
      */
     @Test
     public void nullableFixSizedColumns() {
@@ -114,7 +114,7 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with non-nullable fix-sized columns only.
+     * Check row serialization for a schema with non-nullable fix-sized columns only.
      */
     @Test
     public void fixSizedColumns() {
@@ -154,7 +154,7 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with various columns.
+     * Check row serialization for a schema with various columns.
      */
     @Test
     public void mixedColumns() {
@@ -186,7 +186,7 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with various columns.
+     * Check row serialization for a schema with various columns.
      */
     @Test
     public void temporalColumns() {
@@ -212,7 +212,7 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with non-nullable varlen columns only.
+     * Check row serialization for a schema with non-nullable varlen columns only.
      */
     @Test
     public void varlenColumns() {
@@ -234,7 +234,7 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with nullable varlen columns only.
+     * Check row serialization for a schema with nullable varlen columns only.
      */
     @Test
     public void nullableVarlenColumns() {
@@ -254,16 +254,16 @@ public class RowTest {
     }
 
     /**
-     * Check row serialization for schema with large varlen columns (64Kb+).
+     * Check row serialization for a schema with large varlen columns (64Kb+).
      */
     @Test
     public void largeVarlenColumns() {
-        Column[] keyCols = new Column[] {
+        Column[] keyCols = new Column[]{
             new Column("keyBytesCol", BYTES, false),
             new Column("keyStringCol", STRING, false),
         };
 
-        Column[] valCols = new Column[] {
+        Column[] valCols = new Column[]{
             new Column("valBytesCol", BYTES, true),
             new Column("valStringCol", STRING, true),
         };
@@ -287,6 +287,29 @@ public class RowTest {
 
             checkArr[idx] = prev;
         }
+    }
+
+    /**
+     * Check row serialization for a schema with many empty varlen columns (255+).
+     */
+    @Test
+    public void bigVartable() {
+        Column[] keyCols = new Column[]{
+            new Column("id", INT64, false),
+        };
+
+        int columnCount = 260;
+
+        Column[] valCols = IntStream.range(1, columnCount)
+            .mapToObj(i -> new Column("val" + i, STRING, true))
+            .toArray(Column[]::new);
+
+        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
+
+        Object[] checkArr = IntStream.range(0, columnCount)
+            .mapToObj(i -> i == 0 ? 42L : (i > columnCount - 5) ? "str" : "").toArray();
+
+        checkValues(sch, checkArr);
     }
 
     /**
@@ -469,43 +492,35 @@ public class RowTest {
                     if (schema.isKeyColumn(i)) {
                         nonNullVarLenKeyCols++;
                         nonNullVarLenKeySize += val.length;
-                    }
-                    else {
+                    } else {
                         nonNullVarLenValCols++;
                         nonNullVarLenValSize += val.length;
                     }
-                }
-                else if (type == NativeTypeSpec.STRING) {
+                } else if (type == NativeTypeSpec.STRING) {
                     if (schema.isKeyColumn(i)) {
                         nonNullVarLenKeyCols++;
                         nonNullVarLenKeySize += RowAssembler.utf8EncodedLength((CharSequence)vals[i]);
-                    }
-                    else {
+                    } else {
                         nonNullVarLenValCols++;
                         nonNullVarLenValSize += RowAssembler.utf8EncodedLength((CharSequence)vals[i]);
                     }
-                }
-                else if (type == NativeTypeSpec.NUMBER) {
+                } else if (type == NativeTypeSpec.NUMBER) {
                     if (schema.isKeyColumn(i)) {
                         nonNullVarLenKeyCols++;
                         nonNullVarLenKeySize += RowAssembler.sizeInBytes((BigInteger)vals[i]);
-                    }
-                    else {
+                    } else {
                         nonNullVarLenValCols++;
                         nonNullVarLenValSize += RowAssembler.sizeInBytes((BigInteger)vals[i]);
                     }
-                }
-                else if (type == NativeTypeSpec.DECIMAL) {
+                } else if (type == NativeTypeSpec.DECIMAL) {
                     if (schema.isKeyColumn(i)) {
                         nonNullVarLenKeyCols++;
                         nonNullVarLenKeySize += RowAssembler.sizeInBytes((BigDecimal)vals[i]);
-                    }
-                    else {
+                    } else {
                         nonNullVarLenValCols++;
                         nonNullVarLenValSize += RowAssembler.sizeInBytes((BigDecimal)vals[i]);
                     }
-                }
-                else
+                } else
                     throw new IllegalStateException("Unsupported variable-length type: " + type);
             }
         }

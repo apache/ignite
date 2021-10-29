@@ -871,11 +871,11 @@ public class RowAssembler {
             assert varTblOff < dataOff : "Illegal writing of varlen when 'omit vartable' flag is set for a chunk.";
             assert varTblOff + varTableChunkLength(curVartblEntry, Integer.BYTES) == dataOff : "Vartable overlow: size=" + curVartblEntry;
 
-            final VarTableFormat format = VarTableFormat.format(curOff - dataOff);
+            final VarTableFormat format = VarTableFormat.format(curOff - dataOff, valVartblLen);
 
             curOff -= format.compactVarTable(buf, varTblOff, curVartblEntry - 1);
 
-            flags |= format.formatFlags() << (isKeyChunk() ? KEY_FLAGS_OFFSET : VAL_FLAGS_OFFSET);
+            flags |= format.formatId() << (isKeyChunk() ? KEY_FLAGS_OFFSET : VAL_FLAGS_OFFSET);
         }
 
         // Write sizes.
