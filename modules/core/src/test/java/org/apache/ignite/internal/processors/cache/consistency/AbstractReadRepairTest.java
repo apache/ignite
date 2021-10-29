@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
@@ -197,7 +199,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
                         assertEquals(node, primaryNode(key, DEFAULT_CACHE_NAME).cluster().localNode());
                 }
 
-            assertEquals(checkFixed ? latest : null, fixedVal);
+            if (latest != null)
+                assertEquals(checkFixed ? latest : null, fixedVal);
         }
 
         assertEquals(checkFixed ? data.data.size() : 0, fixedCnt);
@@ -220,7 +223,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ThreadLocalRandom.current().nextInt(1, 10); i++) {
-            Map<Integer, InconsistentMapping> results = new HashMap<>();
+            Map<Integer, InconsistentMapping> results = new TreeMap<>(); // Sorted to avoid warning.
 
             for (int j = 0; j < cnt; j++) {
                 InconsistentMapping res = setDifferentValuesForSameKey(++iterableKey, misses, nulls);
@@ -283,6 +286,10 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         int rmvLimit = rnd.nextInt(nodes.size());
 
+        boolean incVer = rnd.nextBoolean();
+
+        GridCacheVersion ver = null;
+
         for (Ignite node : nodes) {
             IgniteInternalCache cache = ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
 
@@ -290,13 +297,16 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
             GridCacheEntryEx entry = adapter.entryEx(key);
 
+            if (ver == null || incVer)
+                ver = mgr.next(entry.context().kernalContext().discovery().topologyVersion()); // Incremental version.
+
             boolean rmv = nulls && rnd.nextBoolean() && --rmvLimit >= 0;
 
             Integer val = rmv ? null : ++incVal;
 
             boolean init = entry.initialValue(
                 new CacheObjectImpl(rmv ? -1 : val, null), // Incremental value.
-                mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
+                ver,
                 0,
                 0,
                 false,
@@ -308,7 +318,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             if (rmv) {
                 if (cache.configuration().getAtomicityMode() == ATOMIC)
                     entry.innerUpdate(
-                        mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
+                        ver,
                         ((IgniteEx)node).localNode().id(),
                         ((IgniteEx)node).localNode().id(),
                         GridCacheOperation.DELETE,
@@ -374,7 +384,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         if (!misses && !nulls)
             assertTrue(primVal != null); // Primary value set.
 
-        return new InconsistentMapping(mapping, primVal, incVal);
+        return new InconsistentMapping(mapping, primVal, incVer ? incVal : null /*Any*/);
     }
 
     /**

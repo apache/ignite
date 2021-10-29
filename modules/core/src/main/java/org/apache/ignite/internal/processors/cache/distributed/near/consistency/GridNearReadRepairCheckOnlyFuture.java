@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -33,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartition
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -95,47 +96,45 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /** {@inheritDoc} */
     @Override protected void reduce() {
         Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>();
-
-        Map<KeyCacheObject, T2<Object, CacheEntryVersion>> prevMap = new HashMap<>();
-
         Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
-        Set<KeyCacheObject> nullKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
             for (KeyCacheObject key : fut.keys()) {
-                T2<Object, CacheEntryVersion> prev = prevMap.get(key);
-
                 EntryGetResult curRes = fut.result().get(key);
 
-                if (curRes == null) {
-                    nullKeys.add(key);
+                if (curRes != null) {
+                    if (resMap.containsKey(key)) {
+                        EntryGetResult prevRes = resMap.get(key);
 
-                    if (prev != null)
-                        inconsistentKeys.add(key);
+                        if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
+                            inconsistentKeys.add(key);
+                        else {
+                            CacheObjectAdapter curVal = curRes.value();
+                            CacheObjectAdapter prevVal = prevRes.value();
 
-                    continue;
+                            try {
+                                byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
+                                byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());
+
+                                if (!Arrays.equals(curBytes, prevBytes))
+                                    inconsistentKeys.add(key);
+                            }
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
+
+                                return;
+                            }
+                        }
+                    }
+                    else
+                        resMap.put(key, curRes);
                 }
-
-                if (nullKeys.contains(key)) {
+                else if (resMap.get(key) != null)
                     inconsistentKeys.add(key);
-
-                    continue;
-                }
-
-                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), true, false, null);
-
-                if (prev != null) {
-                    Object prevVal = prev.get1();
-                    CacheEntryVersion prevVer = prev.get2();
-
-                    if (prevVer.compareTo(curRes.version()) != 0 || !prevVal.equals(curVal))
-                        inconsistentKeys.add(key);
-                }
-                else {
+                else
                     resMap.put(key, curRes);
 
-                    prevMap.put(key, new T2<>(curVal, curRes.version()));
-                }
+                assert resMap.containsKey(key) : "The result map should contain the value after the first iteration.";
             }
         }
 
@@ -151,6 +150,9 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
             return;
         }
+
+        // Misses recorded to detect partial misses, but should not be propagated when the key is null at each node.
+        resMap.values().removeIf(Objects::isNull);
 
         onDone(resMap);
     }
