@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +45,6 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -63,7 +61,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -301,9 +298,8 @@ public class SnapshotRestoreProcess {
 
                 return;
             }
-            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-                F.node2id(),
-                (node) -> CU.baselineNode(node, ctx.state().clusterState()));
+
+            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
             SnapshotOperationRequest req =
                 new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, new HashSet<>(bltNodes));
@@ -858,11 +854,12 @@ public class SnapshotRestoreProcess {
                 File tmpCacheDir = formatTmpDirName(dir);
                 tmpCacheDir.mkdir();
 
+                Set<PartitionRestoreFuture> leftParts;
+
                 opCtx0.locProgress.put(grpId,
                     nodeAffinityPartitions(opCtx0.affCache.get(cacheOrGrpName), locNode, PartitionRestoreFuture::new));
-                rmtLoadParts.put(grpId, new HashSet<>(opCtx0.locProgress.get(grpId)));
 
-                Set<PartitionRestoreFuture> leftParts = rmtLoadParts.get(grpId);
+                rmtLoadParts.put(grpId, leftParts = new HashSet<>(opCtx0.locProgress.get(grpId)));
 
                 if (leftParts.isEmpty())
                     continue;
@@ -934,7 +931,7 @@ public class SnapshotRestoreProcess {
                     log.info("Trying to request partitions from remote nodes" +
                         "[snapshot=" + opCtx0.snpName +
                         ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> partitionsMapToString(e.getValue()))) + ']');
+                        e -> partitionsMapToCompactString(e.getValue()))) + ']');
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -998,7 +995,7 @@ public class SnapshotRestoreProcess {
 
             int size = allParts.size();
 
-            CompletableFuture<Void> partFut = CompletableFuture.allOf(allParts.toArray(new CompletableFuture[size]))
+            CompletableFuture.allOf(allParts.toArray(new CompletableFuture[size]))
                 .runAfterBothAsync(metaFut, () -> {
                     try {
                         if (opCtx0.stopChecker.getAsBoolean())
@@ -1011,15 +1008,12 @@ public class SnapshotRestoreProcess {
                         throw new IgniteException(e);
                     }
                 }, snpMgr.snapshotExecutorService())
-                .whenComplete((r, t) -> opCtx0.errHnd.accept(t));
-
-            allOfFailFast(Arrays.asList(metaFut, partFut))
+                .whenComplete((r, t) -> opCtx0.errHnd.accept(t))
                 .whenComplete((res, t) -> {
                     Throwable t0 = ofNullable(opCtx0.err.get()).orElse(t);
 
-                    if (t0 == null) {
+                    if (t0 == null)
                         retFut.onDone(true);
-                    }
                     else {
                         log.error("Unable to restore cache group(s) from a snapshot " +
                             "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', t0);
@@ -1355,30 +1349,10 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param futs Collection of futures to chain.
-     * @param <T> Result type.
-     * @return Completable future waits for all of.
-     */
-    private static <T extends CompletableFuture<?>> CompletableFuture<Void> allOfFailFast(Collection<T> futs) {
-        CompletableFuture<?>[] out = new CompletableFuture[futs.size()];
-        CompletableFuture<Void> result = CompletableFuture.allOf(futs.toArray(out));
-
-        // This is a mix of allOf() and anyOf() where the returned future completes normally as soon as all the elements
-        // complete normally, or it completes exceptionally as soon as any of the elements complete exceptionally.
-        Stream.of(out).forEach(f -> f.exceptionally(e -> {
-            result.completeExceptionally(e);
-
-            return null;
-        }));
-
-        return result;
-    }
-
-    /**
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
-    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+    private static String partitionsMapToCompactString(Map<Integer, Set<Integer>> map) {
         return map.entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> S.compact(e.getValue())))
