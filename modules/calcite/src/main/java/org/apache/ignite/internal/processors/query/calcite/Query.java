@@ -132,13 +132,20 @@ public class Query<RowT> implements RunningQuery {
                 catch (IgniteCheckedException e) {
                     log.warning("Cannot send cancel request to query initiator", e);
 
-                    try {
-                        // Wait for the first fragment.
-                        mux.wait();
+                    boolean interrupt = false;
+
+                    while (state == QueryState.INITED) {
+                        try {
+                            // Wait for the first fragment.
+                            mux.wait();
+                        }
+                        catch (InterruptedException ex) {
+                            interrupt = true;
+                        }
                     }
-                    catch (InterruptedException ex) {
+
+                    if (interrupt)
                         Thread.currentThread().interrupt();
-                    }
 
                     assert state == QueryState.EXECUTING : "Unexpected query state: " + this;
                 }
