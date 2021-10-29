@@ -22,27 +22,14 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Test SQL data types.
  */
-public class DataTypesTest extends GridCommonAbstractTest {
-    /** */
-    private static QueryEngine qryEngine;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        IgniteEx grid = startGrid();
-
-        qryEngine = Commons.lookupComponent(grid.context(), QueryEngine.class);
-    }
-
+public class DataTypesTest extends AbstractBasicIntegrationTest {
     /**
      * Tests numeric types mapping on Java types.
      */
@@ -54,20 +41,20 @@ public class DataTypesTest extends GridCommonAbstractTest {
             executeSql("INSERT INTO tbl VALUES (" + Byte.MAX_VALUE + ", " + Short.MAX_VALUE + ", " +
                 Integer.MAX_VALUE + ", " + Long.MAX_VALUE + ')');
 
-            assertSingleEquals(executeSql("SELECT tiny FROM tbl"), Byte.MAX_VALUE);
-            assertSingleEquals(executeSql("SELECT small FROM tbl"), Short.MAX_VALUE);
-            assertSingleEquals(executeSql("SELECT i FROM tbl"), Integer.MAX_VALUE);
-            assertSingleEquals(executeSql("SELECT big FROM tbl"), Long.MAX_VALUE);
+            assertQuery("SELECT tiny FROM tbl").returnsStrict(Byte.MAX_VALUE).check();
+            assertQuery("SELECT small FROM tbl").returnsStrict(Short.MAX_VALUE).check();
+            assertQuery("SELECT i FROM tbl").returnsStrict(Integer.MAX_VALUE).check();
+            assertQuery("SELECT big FROM tbl").returnsStrict(Long.MAX_VALUE).check();
 
             executeSql("DELETE from tbl");
 
             executeSql("INSERT INTO tbl VALUES (" + Byte.MIN_VALUE + ", " + Short.MIN_VALUE + ", " +
                 Integer.MIN_VALUE + ", " + Long.MIN_VALUE + ')');
 
-            assertSingleEquals(executeSql("SELECT tiny FROM tbl"), Byte.MIN_VALUE);
-            assertSingleEquals(executeSql("SELECT small FROM tbl"), Short.MIN_VALUE);
-            assertSingleEquals(executeSql("SELECT i FROM tbl"), Integer.MIN_VALUE);
-            assertSingleEquals(executeSql("SELECT big FROM tbl"), Long.MIN_VALUE);
+            assertQuery("SELECT tiny FROM tbl").returnsStrict(Byte.MIN_VALUE).check();
+            assertQuery("SELECT small FROM tbl").returnsStrict(Short.MIN_VALUE).check();
+            assertQuery("SELECT i FROM tbl").returnsStrict(Integer.MIN_VALUE).check();
+            assertQuery("SELECT big FROM tbl").returnsStrict(Long.MIN_VALUE).check();
         }
         finally {
             executeSql("DROP TABLE if exists tbl");
@@ -84,23 +71,29 @@ public class DataTypesTest extends GridCommonAbstractTest {
 
             executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4), (5, 5, 5, 5)");
 
-            assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)"), (byte)5);
-            assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)"), (short)5);
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)").returnsStrict((int)5)
+                .check();
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)").returnsStrict((short)5)
+                .check();
 
-            assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)"), (byte)5);
-            assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)"), 5);
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)").returnsStrict((byte)5)
+                .check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)").returnsStrict(5).check();
 
-            assertSingleEquals(executeSql("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)"), (byte)5);
-            assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)"), 5L);
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)").returnsStrict((byte)5)
+                .check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)").returnsStrict(5L).check();
 
-            assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)"), (short)5);
-            assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)"), 5);
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)").returnsStrict((short)5)
+                .check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)").returnsStrict(5).check();
 
-            assertSingleEquals(executeSql("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)"), (short)5);
-            assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)"), 5L);
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)").returnsStrict((short)5)
+                .check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)").returnsStrict(5L).check();
 
-            assertSingleEquals(executeSql("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)"), 5);
-            assertSingleEquals(executeSql("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)"), 5L);
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)").returnsStrict(5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)").returnsStrict(5L).check();
         }
         finally {
             executeSql("DROP TABLE if exists tbl");
@@ -149,11 +142,6 @@ public class DataTypesTest extends GridCommonAbstractTest {
             assertEquals(1, rows.size());
             assertEquals(val.length(), rows.get(0).get(0));
         }
-    }
-
-    /** */
-    private List<List<?>> executeSql(String sql, Object... params) {
-        return qryEngine.query(null, "PUBLIC", sql, params).get(0).getAll();
     }
 
     /** Checks type and value of single record result. */
