@@ -91,7 +91,8 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
     /** */
     @Test
     public void testCancelAtExecutionPhase() throws IgniteCheckedException {
-        QueryEngine engine = queryProcessor(client);
+        QueryEngine cliEngine = queryProcessor(client);
+        QueryEngine srvEngine = queryProcessor(srv);
         int cnt = 6;
 
         sql("CREATE TABLE person (id int, val varchar)");
@@ -106,15 +107,25 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
 
+        // The query is executing on client.
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> {
-                Collection<? extends RunningQuery> queries = engine.runningQueries();
+                Collection<? extends RunningQuery> queries = cliEngine.runningQueries();
 
                 return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
             },
             TIMEOUT_IN_MS));
 
-        Collection<? extends RunningQuery> running = engine.runningQueries();
+        // The query is executing on sever.
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> {
+                Collection<? extends RunningQuery> queries = srvEngine.runningQueries();
+
+                return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
+            },
+            TIMEOUT_IN_MS));
+
+        Collection<? extends RunningQuery> running = cliEngine.runningQueries();
 
         assertEquals(1, running.size());
 
@@ -122,7 +133,10 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         qry.cancel();
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+            () -> cliEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> srvEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
     }
@@ -161,25 +175,11 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         qry.cancel();
 
-        try {
-            Assert.assertTrue(GridTestUtils.waitForCondition(
-                () -> clientEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
-        }
-        catch (Throwable e) {
-            System.out.println("+++ " + qry);
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> clientEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-            throw e;
-        }
-
-        try {
-            Assert.assertTrue(GridTestUtils.waitForCondition(
-                () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
-        }
-        catch (Throwable e) {
-            System.out.println("+++ " + qry);
-
-            throw e;
-        }
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
     }

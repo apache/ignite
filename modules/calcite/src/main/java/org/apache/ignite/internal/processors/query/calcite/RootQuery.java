@@ -65,9 +65,6 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** Parameters. */
     private final Object[] params;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** remote nodes */
     private final Set<UUID> remotes;
 
@@ -84,9 +81,6 @@ public class RootQuery<RowT> extends Query<RowT> {
     private final BaseQueryContext ctx;
 
     /** */
-    private final ExchangeService exch;
-
-    /** */
     public RootQuery(
         String sql,
         SchemaPlus schema,
@@ -96,12 +90,17 @@ public class RootQuery<RowT> extends Query<RowT> {
         Consumer<Query<RowT>> unregister,
         IgniteLogger log
     ) {
-        super(UUID.randomUUID(), null, qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null, unregister);
+        super(
+            UUID.randomUUID(),
+            null,
+            qryCtx != null ? qryCtx.unwrap(GridQueryCancel.class) : null,
+            exch,
+            unregister,
+            log
+        );
 
         this.sql = sql;
         this.params = params;
-        this.exch = exch;
-        this.log = log;
 
         remotes = new HashSet<>();
         waiting = new HashSet<>();
@@ -291,7 +290,7 @@ public class RootQuery<RowT> extends Query<RowT> {
     }
 
     /** */
-    public void onNodeLeft(UUID nodeId) {
+    @Override public void onNodeLeft(UUID nodeId) {
         List<RemoteFragmentKey> fragments = null;
 
         synchronized (mux) {

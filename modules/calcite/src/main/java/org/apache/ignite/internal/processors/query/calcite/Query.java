@@ -26,9 +26,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -59,10 +62,25 @@ public class Query<RowT> implements RunningQuery {
     protected volatile QueryState state = QueryState.INITED;
 
     /** */
-    public Query(UUID id, UUID initNodeId, GridQueryCancel cancel, Consumer<Query<RowT>> unregister) {
+    protected final ExchangeService exch;
+
+    /** Logger. */
+    protected final IgniteLogger log;
+
+    /** */
+    public Query(
+        UUID id,
+        UUID initNodeId,
+        GridQueryCancel cancel,
+        ExchangeService exch,
+        Consumer<Query<RowT>> unregister,
+        IgniteLogger log
+    ) {
         this.id = id;
         this.unregister = unregister;
         this.initNodeId = initNodeId;
+        this.exch = exch;
+        this.log = log;
 
         this.cancel = cancel != null ? cancel : new GridQueryCancel();
 
@@ -87,6 +105,7 @@ public class Query<RowT> implements RunningQuery {
     /** */
     protected void tryClose() {
         List<CompletableFuture<?>> futs = new ArrayList<>();
+        
         for (RunningFragment<RowT> frag : fragments) {
             CompletableFuture<?> f = frag.context().submit(frag.root()::close, frag.root()::onError);
 
@@ -103,6 +122,27 @@ public class Query<RowT> implements RunningQuery {
         synchronized (mux) {
             if (state == QueryState.CLOSED)
                 return;
+            
+            if (state == QueryState.INITED) {
+                try {
+                    exch.closeQuery(initNodeId, id);
+
+                    return;
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Cannot send cancel request to query initiator", e);
+
+                    try {
+                        // Wait for the first fragment.
+                        mux.wait();
+                    }
+                    catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+
+                    assert state == QueryState.EXECUTING : "Unexpected query state: " + this;
+                }
+            }
 
             if (state == QueryState.EXECUTING)
                 state = QueryState.CLOSED;
@@ -118,8 +158,11 @@ public class Query<RowT> implements RunningQuery {
     public void addFragment(RunningFragment<RowT> f) {
         if (state == QueryState.INITED) {
             synchronized (mux) {
-                if (state == QueryState.INITED)
+                if (state == QueryState.INITED) {
                     state = QueryState.EXECUTING;
+
+                    mux.notifyAll();
+                }
             }
         }
 
@@ -129,6 +172,12 @@ public class Query<RowT> implements RunningQuery {
     /** */
     public boolean isCancelled() {
         return cancel.isCanceled();
+    }
+
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        if (initNodeId.equals(nodeId))
+            cancel();
     }
 
     /** {@inheritDoc} */

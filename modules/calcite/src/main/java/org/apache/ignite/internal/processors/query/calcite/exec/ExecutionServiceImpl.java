@@ -620,7 +620,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            Query<Row> qry = (Query<Row>)qryReg.register(new Query<>(msg.queryId(), nodeId, null, (q) -> qryReg.unregister(q.id())));
+            Query<Row> qry = (Query<Row>)qryReg.register(
+                new Query<>(
+                    msg.queryId(),
+                    nodeId,
+                    null,
+                    exchangeSvc,
+                    (q) -> qryReg.unregister(q.id()),
+                    log
+                )
+            );
 
             final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
@@ -708,8 +717,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private void onNodeLeft(UUID nodeId) {
-        qryReg.runningQueries().stream()
-            .filter(q -> q instanceof RootQuery)
-            .forEach((qry) -> ((RootQuery<Row>)qry).onNodeLeft(nodeId));
+        qryReg.runningQueries()
+            .forEach((qry) -> ((Query<Row>)qry).onNodeLeft(nodeId));
     }
 }
