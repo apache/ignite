@@ -47,16 +47,27 @@ public class DataTypesTest extends GridCommonAbstractTest {
      * Tests numeric types mapping on Java types.
      */
     @Test
-    public void testNumericTypes() {
+    public void testNumericRanges() {
         try {
             executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
 
-            executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4)");
+            executeSql("INSERT INTO tbl VALUES (" + Byte.MAX_VALUE + ", " + Short.MAX_VALUE + ", " +
+                Integer.MAX_VALUE + ", " + Long.MAX_VALUE + ')');
 
-            assertSingleEquals(executeSql("SELECT tiny FROM tbl"), (byte)1);
-            assertSingleEquals(executeSql("SELECT small FROM tbl"), (short)2);
-            assertSingleEquals(executeSql("SELECT i FROM tbl"), 3);
-            assertSingleEquals(executeSql("SELECT big FROM tbl"), 4L);
+            assertSingleEquals(executeSql("SELECT tiny FROM tbl"), Byte.MAX_VALUE);
+            assertSingleEquals(executeSql("SELECT small FROM tbl"), Short.MAX_VALUE);
+            assertSingleEquals(executeSql("SELECT i FROM tbl"), Integer.MAX_VALUE);
+            assertSingleEquals(executeSql("SELECT big FROM tbl"), Long.MAX_VALUE);
+
+            executeSql("DELETE from tbl");
+
+            executeSql("INSERT INTO tbl VALUES (" + Byte.MIN_VALUE + ", " + Short.MIN_VALUE + ", " +
+                Integer.MIN_VALUE + ", " + Long.MIN_VALUE + ')');
+
+            assertSingleEquals(executeSql("SELECT tiny FROM tbl"), Byte.MIN_VALUE);
+            assertSingleEquals(executeSql("SELECT small FROM tbl"), Short.MIN_VALUE);
+            assertSingleEquals(executeSql("SELECT i FROM tbl"), Integer.MIN_VALUE);
+            assertSingleEquals(executeSql("SELECT big FROM tbl"), Long.MIN_VALUE);
         }
         finally {
             executeSql("DROP TABLE if exists tbl");
