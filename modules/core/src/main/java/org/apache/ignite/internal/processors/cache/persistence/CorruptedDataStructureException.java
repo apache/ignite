@@ -16,24 +16,45 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception to distinguish partition meta page broken invariants.
+ * Abstract exception when {@link DataStructure} are corrupted.
  */
-public class CorruptedPartitionMetaPageException extends CorruptedDataStructureException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+public abstract class CorruptedDataStructureException extends IgniteCheckedException {
+    /** Cache group id. */
+    protected final int grpId;
+
+    /** PageId's that can be corrupted. */
+    protected final long[] pageIds;
 
     /**
-     * Constrictor.
+     * Constructor.
      *
-     * @param msg     Message.
-     * @param cause   Cause.
-     * @param grpId   Cache group id.
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Cache group id.
      * @param pageIds PageId's that can be corrupted.
      */
-    protected CorruptedPartitionMetaPageException(String msg, @Nullable Throwable cause, int grpId, long... pageIds) {
-        super(msg, cause, grpId, pageIds);
+    protected CorruptedDataStructureException(String msg, @Nullable Throwable cause, int grpId, long[] pageIds) {
+        super(msg, cause);
+
+        this.grpId = grpId;
+        this.pageIds = pageIds;
+    }
+
+    /**
+     * @return Cache group id.
+     */
+    public long[] pageIds() {
+        return pageIds;
+    }
+
+    /**
+     * @return PageId's that can be corrupted.
+     */
+    public int groupId() {
+        return grpId;
     }
 }
