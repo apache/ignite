@@ -198,7 +198,7 @@ public class CacheObjectUtils {
             // It may be a collection of binaries
             o = co.value(ctx, cpy, ldr);
 
-            if (BinaryArray.USE_TYPED_ARRAYS && o instanceof Object[])
+            if (!BinaryArray.USE_TYPED_ARRAYS && o instanceof Object[])
                 return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
         }
 

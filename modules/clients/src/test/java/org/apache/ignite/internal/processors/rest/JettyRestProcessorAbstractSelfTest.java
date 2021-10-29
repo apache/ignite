@@ -1881,6 +1881,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
             "Failed to request meta data. nonExistingCacheName is not found");
+
+        grid(1).destroyCache("partial");
     }
 
     /**
@@ -1908,8 +1910,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             assertFalse(caches.isNull());
 
             Collection<IgniteCacheProxy<?, ?>> publicCaches = grid(0).context().cache().publicCaches();
-
-            assertEquals(publicCaches.size(), caches.size());
 
             for (JsonNode cache : caches) {
                 String cacheName0 = cache.get("name").asText();
