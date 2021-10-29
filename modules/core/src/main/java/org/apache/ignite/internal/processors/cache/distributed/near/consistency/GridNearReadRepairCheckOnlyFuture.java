@@ -102,39 +102,37 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             for (KeyCacheObject key : fut.keys()) {
                 EntryGetResult curRes = fut.result().get(key);
 
-                if (curRes != null) {
-                    if (resMap.containsKey(key)) {
-                        EntryGetResult prevRes = resMap.get(key);
-
-                        if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
-                            inconsistentKeys.add(key);
-                        else {
-                            CacheObjectAdapter curVal = curRes.value();
-                            CacheObjectAdapter prevVal = prevRes.value();
-
-                            try {
-                                byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
-                                byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());
-
-                                if (!Arrays.equals(curBytes, prevBytes))
-                                    inconsistentKeys.add(key);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-
-                                return;
-                            }
-                        }
-                    }
-                    else
-                        resMap.put(key, curRes);
-                }
-                else if (resMap.get(key) != null)
-                    inconsistentKeys.add(key);
-                else
+                if (!resMap.containsKey(key)) {
                     resMap.put(key, curRes);
 
-                assert resMap.containsKey(key) : "The result map should contain the value after the first iteration.";
+                    continue;
+                }
+
+                EntryGetResult prevRes = resMap.get(key);
+
+                if (curRes != null) {
+                    if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
+                        inconsistentKeys.add(key);
+                    else {
+                        CacheObjectAdapter curVal = curRes.value();
+                        CacheObjectAdapter prevVal = prevRes.value();
+
+                        try {
+                            byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
+                            byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());
+
+                            if (!Arrays.equals(curBytes, prevBytes))
+                                inconsistentKeys.add(key);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+
+                            return;
+                        }
+                    }
+                }
+                else if (prevRes != null)
+                    inconsistentKeys.add(key);
             }
         }
 
