@@ -41,20 +41,20 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             executeSql("INSERT INTO tbl VALUES (" + Byte.MAX_VALUE + ", " + Short.MAX_VALUE + ", " +
                 Integer.MAX_VALUE + ", " + Long.MAX_VALUE + ')');
 
-            assertQuery("SELECT tiny FROM tbl").returnsStrict(Byte.MAX_VALUE).check();
-            assertQuery("SELECT small FROM tbl").returnsStrict(Short.MAX_VALUE).check();
-            assertQuery("SELECT i FROM tbl").returnsStrict(Integer.MAX_VALUE).check();
-            assertQuery("SELECT big FROM tbl").returnsStrict(Long.MAX_VALUE).check();
+            assertQuery("SELECT tiny FROM tbl").returns(Byte.MAX_VALUE).check();
+            assertQuery("SELECT small FROM tbl").returns(Short.MAX_VALUE).check();
+            assertQuery("SELECT i FROM tbl").returns(Integer.MAX_VALUE).check();
+            assertQuery("SELECT big FROM tbl").returns(Long.MAX_VALUE).check();
 
             executeSql("DELETE from tbl");
 
             executeSql("INSERT INTO tbl VALUES (" + Byte.MIN_VALUE + ", " + Short.MIN_VALUE + ", " +
                 Integer.MIN_VALUE + ", " + Long.MIN_VALUE + ')');
 
-            assertQuery("SELECT tiny FROM tbl").returnsStrict(Byte.MIN_VALUE).check();
-            assertQuery("SELECT small FROM tbl").returnsStrict(Short.MIN_VALUE).check();
-            assertQuery("SELECT i FROM tbl").returnsStrict(Integer.MIN_VALUE).check();
-            assertQuery("SELECT big FROM tbl").returnsStrict(Long.MIN_VALUE).check();
+            assertQuery("SELECT tiny FROM tbl").returns(Byte.MIN_VALUE).check();
+            assertQuery("SELECT small FROM tbl").returns(Short.MIN_VALUE).check();
+            assertQuery("SELECT i FROM tbl").returns(Integer.MIN_VALUE).check();
+            assertQuery("SELECT big FROM tbl").returns(Long.MIN_VALUE).check();
         }
         finally {
             executeSql("DROP TABLE if exists tbl");
@@ -71,29 +71,24 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
             executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4), (5, 5, 5, 5)");
 
-            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)").returnsStrict((int)5)
-                .check();
-            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)").returnsStrict((short)5)
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)").returns((byte)5).check();
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)").returns((short)5)
                 .check();
 
-            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)").returnsStrict((byte)5)
-                .check();
-            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)").returnsStrict(5).check();
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)").returns((byte)5).check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)").returns(5).check();
 
-            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)").returnsStrict((byte)5)
-                .check();
-            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)").returnsStrict(5L).check();
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)").returns((byte)5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)").returns(5L).check();
 
-            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)").returnsStrict((short)5)
-                .check();
-            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)").returnsStrict(5).check();
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)").returns((short)5).check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)").returns(5).check();
 
-            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)").returnsStrict((short)5)
-                .check();
-            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)").returnsStrict(5L).check();
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)").returns((short)5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)").returns(5L).check();
 
-            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)").returnsStrict(5).check();
-            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)").returnsStrict(5L).check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)").returns(5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)").returns(5L).check();
         }
         finally {
             executeSql("DROP TABLE if exists tbl");
@@ -142,14 +137,5 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             assertEquals(1, rows.size());
             assertEquals(val.length(), rows.get(0).get(0));
         }
-    }
-
-    /** Checks type and value of single record result. */
-    static void assertSingleEquals(List<List<?>> result, Object val) {
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(1, result.get(0).size());
-        assertEquals(result.get(0).get(0).getClass(), val.getClass());
-        assertEquals(result.get(0).get(0), val);
     }
 }

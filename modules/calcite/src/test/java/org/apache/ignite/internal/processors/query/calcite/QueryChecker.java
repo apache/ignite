@@ -274,9 +274,6 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
-    private boolean strictResultTypes;
-
-    /** */
     private List<String> expectedColumnNames;
 
     /** */
@@ -315,13 +312,6 @@ public abstract class QueryChecker {
         expectedResult.add(Arrays.asList(res));
 
         return this;
-    }
-
-    /** */
-    public QueryChecker returnsStrict(Object... res) {
-        strictResultTypes = true;
-
-        return returns(res);
     }
 
     /** */
@@ -416,8 +406,7 @@ public abstract class QueryChecker {
             Object item1 = it1.next();
             Object item2 = it2.next();
 
-            if (!F.eq(item1, item2) ||
-                (strictResultTypes && item1 != null && item2 != null && item1.getClass() != item2.getClass()))
+            if (!F.eq(item1, item2))
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
