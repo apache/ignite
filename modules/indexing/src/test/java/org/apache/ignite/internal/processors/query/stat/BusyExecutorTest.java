@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -83,7 +85,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInactiveExecutor() throws Exception {
-        BusyExecutor be = new BusyExecutor("testInactiveExecutor", pool, c -> log);
+        BusyExecutor be = new BusyExecutor("testInactiveExecutor", pool, () -> false, c -> log);
         CDLTask task = new CDLTask();
         CDLCancellableTask cancellableTask = new CDLCancellableTask();
 
@@ -115,7 +117,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testActivateDeactivate() throws Exception {
-        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
+        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         CDLTask taskExec = new CDLTask();
         CDLTask taskSubmit = new CDLTask();
         CDLCancellableTask cancellableTask = new CDLCancellableTask();
@@ -147,7 +149,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNormalExecution() throws InterruptedException {
-        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
+        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         be.activate();
 
         CompletableFuture<Boolean> futures[] = new CompletableFuture[100];
@@ -176,8 +178,8 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      * @throws InterruptedException In case of errrors.
      */
     @Test
-    public void testReactivationWontStart() throws InterruptedException {
-        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
+    public void testReactivationWontStart() throws InterruptedException, IgniteInterruptedCheckedException {
+        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         be.activate();
 
         CDLTask t1 = new CDLTask();
@@ -188,7 +190,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         be.execute(t2);
         be.execute(t3);
 
-        Thread.sleep(TIME_TO_START_THREAD);
+        Thread.sleep(TIME_TO_START_THREAD * 10);
 
         assertEquals(0, t1.started.getCount());
         assertEquals(1, t3.started.getCount());
@@ -203,6 +205,9 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
 
         assertEquals(1, t3.started.getCount());
 
+        AtomicBoolean beActive = GridTestUtils.getFieldValue(be, "active");
+        assertTrue(GridTestUtils.waitForCondition(() -> beActive.get() == false, TIME_TO_START_THREAD));
+
         t1.finished.countDown();
         t2.finished.countDown();
 
@@ -212,6 +217,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
 
         assertEquals(1, t3.started.getCount());
         checkNoCancellableTask(be);
+        Thread.sleep(TIME_TO_START_THREAD * 10);
     }
 
     /**
@@ -220,8 +226,8 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      * @throws InterruptedException In case of errrors.
      */
     @Test
-    public void testReactivationCancellableWontStart() throws InterruptedException {
-        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
+    public void testReactivationCancellableWontStart() throws InterruptedException, IgniteInterruptedCheckedException {
+        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         be.activate();
 
         CDLCancellableFinallizableTask t1 = new CDLCancellableFinallizableTask();
@@ -239,7 +245,6 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         assertEquals(0, t1.started.getCount());
         assertEquals(1, t3.started.getCount());
 
-        CountDownLatch cdlStartDeactivation = new CountDownLatch(1);
         CountDownLatch cdlEndDeactivation = new CountDownLatch(1);
 
         ConcurrentMap<CancellableTask, Object> cancellableTasks =
@@ -248,8 +253,6 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         assertEquals(3, cancellableTasks.size());
 
         GridTestUtils.runAsync(() -> {
-            cdlStartDeactivation.countDown();
-
             be.deactivate();
             be.activate();
 
@@ -258,7 +261,8 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
 
         assertEquals(1, t3.started.getCount());
 
-        cdlStartDeactivation.await();
+        AtomicBoolean beActive = GridTestUtils.getFieldValue(be, "active");
+        assertTrue(GridTestUtils.waitForCondition(() -> beActive.get() == false, TIME_TO_START_THREAD));
 
         t1.finished.countDown();
         t2.finished.countDown();

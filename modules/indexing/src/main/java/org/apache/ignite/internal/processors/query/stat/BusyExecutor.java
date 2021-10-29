@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -37,10 +39,10 @@ public class BusyExecutor {
     private final String name;
 
     /** Active flag (used to skip commands in inactive cluster.) */
-    private volatile boolean active;
+    private final AtomicBoolean active = new AtomicBoolean(false);
 
     /** Lock protection of started gathering during deactivation. */
-    private GridBusyLock busyLock = new GridBusyLock();
+    private volatile GridBusyLock busyLock = new GridBusyLock();
 
     /** Executor pool. */
     private final IgniteThreadPoolExecutor pool;
@@ -48,19 +50,27 @@ public class BusyExecutor {
     /** Cancellable tasks. */
     private final ConcurrentMap<CancellableTask, Object> cancellableTasks = new ConcurrentHashMap<>();
 
+    /** External stopping supplier. */
+    Supplier<Boolean> stopping;
+
     /**
      * Constructor.
      *
      * @param name Executor name.
      * @param pool Underlying thread pool executor.
+     * @param stopping External stopping state supplier.
      * @param logSupplier Log supplier.
      */
-    public BusyExecutor(String name, IgniteThreadPoolExecutor pool, Function<Class<?>, IgniteLogger> logSupplier) {
+    public BusyExecutor(
+        String name,
+        IgniteThreadPoolExecutor pool,
+        Supplier<Boolean> stopping,
+        Function<Class<?>, IgniteLogger> logSupplier) {
         this.name = name;
         this.pool = pool;
+        this.stopping = stopping;
         this.log = logSupplier.apply(StatisticsProcessor.class);
         busyLock.block();
-        active = false;
     }
 
     /**
@@ -69,7 +79,7 @@ public class BusyExecutor {
     public synchronized void activate() {
 
         busyLock = new GridBusyLock();
-        active = true;
+        active.set(true);
 
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " activated.");
@@ -79,7 +89,8 @@ public class BusyExecutor {
      * Stop all running tasks. Block new task scheduling, execute cancell runnable and wait till each task stops.
      */
     public synchronized void deactivate() {
-        active = false;
+        if (!active.compareAndSet(true, false))
+            return;
 
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " deactivating.");
@@ -107,7 +118,7 @@ public class BusyExecutor {
             return false;
 
         try {
-            if (!active)
+            if (!active.get())
                 return false;
 
             r.run();
@@ -115,7 +126,10 @@ public class BusyExecutor {
             return true;
         }
         catch (Throwable t) {
-            log.warning("Unexpected exception on statistics processing: " + t.getMessage(), t);
+            if (stopping.get())
+                log.debug("Unexpected exception on statistics processing: " + t);
+            else
+                log.warning("Unexpected exception on statistics processing: " + t.getMessage(), t);
         }
         finally {
             taskLock.leaveBusy();
@@ -132,9 +146,11 @@ public class BusyExecutor {
      * @return Completable future.
      */
     public CompletableFuture<Boolean> submit(Runnable r) {
+        GridBusyLock lock = busyLock;
+
         CompletableFuture<Boolean> res = new CompletableFuture<>();
 
-        pool.execute(() -> res.complete(busyRun(r, busyLock)));
+        pool.execute(() -> res.complete(busyRun(r, lock)));
 
         return res;
     }
@@ -169,7 +185,9 @@ public class BusyExecutor {
      * @param r Task to execute.
      */
     public void execute(Runnable r) {
-        pool.execute(() -> busyRun(r, busyLock));
+        GridBusyLock lock = busyLock;
+
+        pool.execute(() -> busyRun(r, lock));
     }
 
     /**
