@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Using Scan Queries
+= Using Cache Queries
 
 :javaFile: {javaCodeDir}/UsingScanQueries.java
 :dotnetFile: code-snippets/dotnet/UsingScanQueries.cs
@@ -20,6 +20,7 @@
 
 == Overview
 `IgniteCache` has several query methods, all of which receive a subclass of the `Query` class and return a `QueryCursor`.
+Available types of queries: `ScanQuery`, `IndexQuery`, `TextQuery`.
 
 A `Query` represents an abstract paginated query to be executed on a cache.
 The page size is configurable via the `Query.setPageSize(...)` method (default is 1024).
@@ -118,7 +119,64 @@ include::code-snippets/cpp/src/scan_query.cpp[tag=set-local,indent=0]
 ----
 --
 
+== Executing Index Queries
+
+[WARNING]
+====
+[discrete]
+Experimental API. Introduced since Apache Ignite 2.12. Only Java API is supported. Questions or bug reports are welcome,
+please share it with user@ignite.apache.org.
+====
+
+Index queries perform over distributed indexes and retrieve cache entries that match the specified query. `IndexQuery` can
+be used if a low amount of data match filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly
+extracts all cache entries and then applies a filter on them. `IndexQuery` relies on index tree structure and filters
+most of the entries without extracting.
+
+[source,java]
+----
+include::{javaFile}[tag=idxQry,indent=0]
+----
+
+Index query criteria are defined in `IndexQueryCriteriaBuilder`. The goal of the criteria is to build a valid range to
+traverse the index tree. For this reason, criteria fields have to match the specified index. For example, if there is an
+index defined with (A, B) set, then valid criteria sets are (A) and (A, B). Criteria with the single (B) field are invalid
+because the field (B) is not a prefix set of the specified index fields, and it's impossible to build a narrow index range
+with it.
+
+[NOTE]
+====
+Criteria are joint by the AND operator. Also it is possible to use multiple criteria for the same field.
+====
+
+[source,java]
+----
+include::{javaFile}[tag=idxQryMultipleCriteria,indent=0]
+----
+
+The index name is an optional parameter. In this case, Ignite tries to figure out the index by self by specified criteria fields.
+
+[source,java]
+----
+include::{javaFile}[tag=idxQryNoIdxName,indent=0]
+----
+
+For the empty criteria list, a full scan of the specified index performs. If also index name isn't specified, then the
+PrimaryKey index is used.
+
+=== Additional filtering
+
+`IndexQuery` also supports an optional predicate the same as `ScanQuery` have. It's suitable for additional cache entry
+filtering in such cases when a filter doesn't match an index tree range. For example, it contains some logic, the "OR"
+operations, or fields that aren't part of the index.
+
+[source,java]
+----
+include::{javaFile}[tag=idxQryFilter,indent=0]
+----
+
 == Related Topics
 
 * link:restapi#sql-scan-query-execute[Execute scan query via REST API]
 * link:events/events#cache-query-events[Cache Query Events]
+* link:SQL/indexes[Defining Indexes]

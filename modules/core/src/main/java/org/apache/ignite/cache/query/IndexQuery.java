@@ -29,12 +29,14 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Index query runs over internal index structure and returns cache entries for index rows.
+ * Index queries perform over distributed indexes and retrieve cache entries that match the specified criteria.
  *
  * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is as following:
  * 1. If {@link #idxName} is set, then use it.
  * 2. If {@link #idxName} is not set, then find an index that matches criteria fields.
  * 3. If neither of {@link #idxName} or {@link #setCriteria(List)} used, then perform index scan over PK index for specified Value type.
+ *
+ * Conjuction of items in {@link #criteria} has to represent a valid range to traverse the index tree.
  */
 @IgniteExperimental
 public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
