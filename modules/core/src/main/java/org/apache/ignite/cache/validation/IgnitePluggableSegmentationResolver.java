@@ -97,7 +97,8 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
 
         log = ctx.log(getClass());
 
-        stateChangeExec = new IgniteThreadPoolExecutor(SEG_RESOLVER_THREAD_PREFIX,
+        stateChangeExec = new IgniteThreadPoolExecutor(
+            SEG_RESOLVER_THREAD_PREFIX,
             ctx.igniteInstanceName(),
             1,
             1,

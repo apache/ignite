@@ -23,5 +23,5 @@ import org.apache.ignite.plugin.segmentation.SegmentationResolver;
 /** */
 public interface PluggableSegmentationResolver extends SegmentationResolver, Extension {
     /** */
-    @Override boolean isValidSegment();
+    @Override public boolean isValidSegment();
 }

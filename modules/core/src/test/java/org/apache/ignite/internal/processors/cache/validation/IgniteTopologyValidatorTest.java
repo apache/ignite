@@ -199,8 +199,7 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         splitAndWait();
 
-        checkPutGet(0, false);
-        checkPutGet(1, false);
+        checkPutGet(G.allGrids(), false);
 
         connectNodeToSegment(4, 0);
         checkPutGet(0, false);
@@ -240,22 +239,15 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
     public void testClientNodeSegmentationIgnored() throws Exception {
         IgniteEx srv = startGrid(0);
 
-        IgniteEx cli = startClientGrid(1);
+        startClientGrid(1);
 
         srv.cluster().baselineAutoAdjustEnabled(false);
 
         createCaches();
 
-        long topVer = srv.cluster().topologyVersion();
+        failNode(1, Collections.singleton(srv));
 
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cli.context().discovery().getInjectedDiscoverySpi();
-
-        spi.setClientReconnectDisabled(true);
-        spi.disconnect();
-
-        awaitExchangeVersionFinished(Collections.singleton(srv), topVer + 1);
-
-        checkPutGet(Collections.singleton(grid(0)), true);
+        checkPutGet(Collections.singleton(srv), true);
     }
 
     /** */
@@ -269,11 +261,9 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         splitAndWait();
 
-        checkPutGet(0, true);
-        checkPutGet(1, true);
+        checkPutGet(G.allGrids(), true);
 
-        stopGrid(1);
-        stopGrid(3);
+        stopSegmentNodes(1);
 
         unsplit();
 
@@ -302,8 +292,7 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(1).cluster().state(), getTestTimeout()));
 
-        stopGrid(1);
-        stopGrid(3);
+        stopSegmentNodes(1);
 
         unsplit();
 
@@ -314,8 +303,7 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         splitAndWait();
 
-        checkPutGet(0, false);
-        checkPutGet(1, false);
+        checkPutGet(G.allGrids(), false);
 
         assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(1).cluster().state(), getTestTimeout()));
         assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(0).cluster().state(), getTestTimeout()));
@@ -337,24 +325,18 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         splitAndWait();
 
-        checkPutGet(0, false);
-        checkPutGet(1, false);
+        checkPutGet(G.allGrids(), false);
 
         grid(1).cluster().state(ACTIVE);
 
         checkPutGet(0, false);
         checkPutGet(1, true);
 
-        stopGrid(0);
-        stopGrid(2);
+        stopSegmentNodes(0);
 
         unsplit();
 
-        long topVer = grid(1).cluster().topologyVersion();
-
-        grid(1).context().discovery().getInjectedDiscoverySpi().disconnect();
-
-        awaitExchangeVersionFinished(Collections.singleton(grid(3)), topVer + 1);
+        failNode(1, Collections.singleton(grid(3)));
 
         checkPutGet(Collections.singleton(grid(3)), false);
 
@@ -376,8 +358,17 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         splitAndWait();
 
-        checkPutGet(0, true);
-        checkPutGet(1, true);
+        checkPutGet(G.allGrids(), true);
+
+        stopSegmentNodes(0);
+
+        unsplit();
+
+        grid(1).context().distributedConfiguration().property(SEG_RESOLVER_ENABLED_PROP_NAME).propagate(true);
+
+        failNode(1, Collections.singleton(grid(3)));
+
+        checkPutGet(Collections.singleton(grid(3)), false);
     }
 
     /** */
@@ -524,6 +515,26 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
                 }
             }
         }
+    }
+
+    /** */
+    private void stopSegmentNodes(int segment) {
+        for (IgniteEx node : segmentNodes(segment, true))
+            stopGrid(node.name());
+    }
+
+    /** */
+    private void failNode(int idx, Collection<Ignite> awaitingNodes) {
+        assertFalse(awaitingNodes.isEmpty());
+
+        long topVer = awaitingNodes.iterator().next().cluster().topologyVersion();
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)grid(idx).context().discovery().getInjectedDiscoverySpi();
+
+        spi.setClientReconnectDisabled(true);
+        spi.disconnect();
+
+        awaitExchangeVersionFinished(awaitingNodes, topVer + 1);
     }
 
     /** */
