@@ -72,7 +72,7 @@ public class GridCacheLocalFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override boolean fields() {
+    @Override public boolean fields() {
         return true;
     }
 }

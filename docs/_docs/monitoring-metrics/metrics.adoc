@@ -19,7 +19,7 @@
 == Overview
 
 The Apache Ignite 2.8 release introduced a new mechanism for collecting metrics, which is intended to replace all
-the legacy metrics below. Please, check the link:monitoring-metrics/new-metrics-system.adoc[New Metrics System].
+the legacy metrics below. Please, check the link:monitoring-metrics/new-metrics-system[New Metrics System].
 
 Ignite exposes a large number of metrics useful for monitoring your cluster or application.
 You can use JMX and a monitoring tool, such as JConsole to access these metrics via JMX.
