@@ -197,14 +197,15 @@ public class CacheObjectUtils {
 
             // It may be a collection of binaries
             o = co.value(ctx, cpy, ldr);
+
+            if (BinaryArray.USE_TYPED_ARRAYS && o instanceof Object[])
+                return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
         }
 
         if (BinaryUtils.knownCollection(o))
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
-        else if (o instanceof Object[])
-            return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
         else if (o instanceof BinaryArray) {
             ((BinaryArray)o).keepBinary(false);
 
