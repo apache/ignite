@@ -29,15 +29,13 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.client.proto.query.event.JdbcColumnMeta;
 import org.apache.ignite.client.proto.query.event.JdbcPrimaryKeyMeta;
 import org.apache.ignite.client.proto.query.event.JdbcTableMeta;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.DecimalNativeType;
 import org.apache.ignite.internal.schema.NativeType;
-import org.apache.ignite.internal.schema.NativeTypeSpec;
-import org.apache.ignite.internal.schema.NumberNativeType;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.table.TableImpl;
@@ -244,23 +242,14 @@ public class JdbcMetadataCatalog {
     private JdbcColumnMeta createColumnMeta(String tblName, Column col) {
         NativeType type = col.type();
 
-        int precision = -1;
-        int scale = -1;
-
-        if (type.spec() == NativeTypeSpec.NUMBER)
-            precision = ((NumberNativeType)type).precision();
-        else if (type.spec() == NativeTypeSpec.DECIMAL) {
-            precision = ((DecimalNativeType)type).precision();
-            scale = ((DecimalNativeType)type).scale();
-        }
-
         return new JdbcColumnMeta(
+            col.name(),
             getTblSchema(tblName),
             getTblName(tblName),
             col.name(),
-            Commons.nativeTypeToClass(col.type()),
-            precision,
-            scale,
+            Commons.nativeTypeToClass(type),
+            Commons.nativeTypePrecision(type),
+            Commons.nativeTypeScale(type),
             col.nullable()
         );
     }

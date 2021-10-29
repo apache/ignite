@@ -22,9 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+
+import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 
 public class FakeCursor implements SqlCursor<List<?>> {
 
@@ -58,11 +59,11 @@ public class FakeCursor implements SqlCursor<List<?>> {
         return result;
     }
 
-    @Override public SqlQueryType getQueryType() {
+    @Override public SqlQueryType queryType() {
         return SqlQueryType.QUERY;
     }
 
-    @Override public FieldsMetadata getColumnMetadata() {
+    @Override public ResultSetMetadata metadata() {
         return null;
     }
 }

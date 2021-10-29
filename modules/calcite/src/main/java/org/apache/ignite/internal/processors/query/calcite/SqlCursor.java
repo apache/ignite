@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.util.Cursor;
 
 /**
@@ -29,10 +28,10 @@ public interface SqlCursor<T> extends Cursor<T> {
     /**
      * @return Query type.
      */
-    SqlQueryType getQueryType();
+    SqlQueryType queryType();
 
     /**
      * @return Column metadata.
      */
-    FieldsMetadata getColumnMetadata();
+    ResultSetMetadata metadata();
 }

@@ -49,6 +49,9 @@ public class JdbcColumnMeta extends Response {
     /** Nullable. */
     private boolean nullable;
 
+    /** Column label. */
+    private String label;
+
     /** Schema name. */
     private String schemaName;
 
@@ -82,18 +85,17 @@ public class JdbcColumnMeta extends Response {
     /**
      * Constructor.
      *
-     * @param schemaName Schema.
-     * @param tblName Table.
-     * @param colName Column.
+     * @param label Column label.
      * @param cls Type.
      */
-    public JdbcColumnMeta(String schemaName, String tblName, String colName, Class<?> cls) {
-        this(schemaName, tblName, colName, cls, -1, -1, true);
+    public JdbcColumnMeta(String label, Class<?> cls) {
+        this(label, null, null, null, cls, -1, -1, true);
     }
 
     /**
      * Constructor with nullable flag.
      *
+     * @param label Column label.
      * @param schemaName Schema.
      * @param tblName Table.
      * @param colName Column.
@@ -102,14 +104,15 @@ public class JdbcColumnMeta extends Response {
      * @param precision Column precision.
      * @param scale Column scale.
      */
-    public JdbcColumnMeta(String schemaName, String tblName, String colName, Class<?> cls, int precision, int scale,
+    public JdbcColumnMeta(String label, String schemaName, String tblName, String colName, Class<?> cls, int precision, int scale,
         boolean nullable) {
-        this(schemaName, tblName, colName, cls.getName(), precision, scale, nullable);
+        this(label, schemaName, tblName, colName, cls.getName(), precision, scale, nullable);
     }
 
     /**
      * Constructor with nullable flag.
      *
+     * @param label Column label.
      * @param schemaName Schema.
      * @param tblName Table.
      * @param colName Column.
@@ -118,8 +121,9 @@ public class JdbcColumnMeta extends Response {
      * @param precision Column precision.
      * @param scale Column scale.
      */
-    public JdbcColumnMeta(String schemaName, String tblName, String colName, String javaTypeName, int precision, int scale,
+    public JdbcColumnMeta(String label, String schemaName, String tblName, String colName, String javaTypeName, int precision, int scale,
         boolean nullable) {
+        this.label = label;
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.colName = colName;
@@ -132,6 +136,15 @@ public class JdbcColumnMeta extends Response {
         this.scale = scale;
 
         hasResults = true;
+    }
+
+    /**
+     * Gets column label.
+     *
+     * @return Column name.
+     */
+    public String columnLabel() {
+        return label;
     }
 
     /**
@@ -158,7 +171,7 @@ public class JdbcColumnMeta extends Response {
      * @return Column name.
      */
     public String columnName() {
-        return colName;
+        return colName != null ? colName : label;
     }
 
     /**
@@ -231,9 +244,10 @@ public class JdbcColumnMeta extends Response {
         if (!hasResults)
             return;
 
+        packer.packString(label);
         ClientMessageUtils.writeStringNullable(packer, schemaName);
         ClientMessageUtils.writeStringNullable(packer, tblName);
-        packer.packString(colName);
+        ClientMessageUtils.writeStringNullable(packer, colName);
 
         packer.packInt(dataType);
         packer.packString(dataTypeName);
@@ -250,9 +264,10 @@ public class JdbcColumnMeta extends Response {
         if (!hasResults)
             return;
 
+        label = unpacker.unpackString();
         schemaName = ClientMessageUtils.readStringNullable(unpacker);
         tblName = ClientMessageUtils.readStringNullable(unpacker);
-        colName = unpacker.unpackString();
+        colName = ClientMessageUtils.readStringNullable(unpacker);
 
         dataType = unpacker.unpackInt();
         dataTypeName = unpacker.unpackString();

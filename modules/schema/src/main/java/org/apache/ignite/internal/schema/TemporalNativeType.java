@@ -80,7 +80,7 @@ public class TemporalNativeType extends NativeType {
     /**
      * Return fractional seconds precision.
      *
-     * @return Precicion;
+     * @return Precision;
      */
     public int precision() {
         return precision;

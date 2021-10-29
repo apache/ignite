@@ -28,10 +28,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.ResultFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.CollectionUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.hamcrest.CoreMatchers;
@@ -327,17 +326,17 @@ public abstract class QueryChecker {
         SqlCursor<List<?>> cur = cursors.get(0);
 
         if (expectedColumnNames != null) {
-            List<String> colNames = cur.getColumnMetadata().rowType().getFieldNames();
+            List<String> colNames = cur.metadata().fields().stream()
+                .map(ResultFieldMetadata::name)
+                .collect(Collectors.toList());
 
             assertThat("Column names don't match", colNames, equalTo(expectedColumnNames));
         }
 
         if (expectedColumnTypes != null) {
-            IgniteTypeFactory typeFactory = new IgniteTypeFactory();
-
-            List<Type> colNames = cur.getColumnMetadata().rowType().getFieldList().stream()
-                .map(RelDataTypeField::getType)
-                .map(typeFactory::getResultClass)
+            List<Type> colNames = cur.metadata().fields().stream()
+                .map(ResultFieldMetadata::type)
+                .map(org.apache.ignite.internal.processors.query.calcite.util.Commons::nativeTypeToClass)
                 .collect(Collectors.toList());
 
             assertThat("Column types don't match", colNames, equalTo(expectedColumnTypes));

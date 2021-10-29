@@ -15,44 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
-import java.util.Map;
 
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.schema.NativeType;
 
 /**
- * Regular query or DML
+ * Metadata of the field of a query result set.
  */
-public interface MultiStepPlan extends QueryPlan {
+public interface ResultFieldMetadata {
     /**
-     * @return Query fragments.
+     * @return name of the result's field.
      */
-    List<Fragment> fragments();
+    String name();
 
     /**
-     * @return Fields metadata.
+     * @return index (order) of the result's field (starts from 0).
      */
-    ResultSetMetadataInternal metadata();
+    int order();
 
     /**
-     * @param fragment Fragment.
-     * @return Mapping for a given fragment.
+     * @return type of the result's field.
      */
-    FragmentMapping mapping(Fragment fragment);
-
-    /** */
-    ColocationGroup target(Fragment fragment);
-
-    /** */
-    Map<Long, List<String>> remotes(Fragment fragment);
+    NativeType type();
 
     /**
-     * Inits query fragments.
+     * @return nullable flag of the result's field.
+     */
+    boolean isNullable();
+
+    /**
+     * Example:
+     * SELECT SUM(price), category, subcategory FROM Goods WHERE [condition] GROUP_BY category, subcategory;
      *
-     * @param ctx Planner context.
+     * Field - Origin
+     * SUM(price) - null;
+     * category - {"PUBLIC", "Goods", "category"};
+     * subcategory - {"PUBLIC", "Goods", "subcategory"};
+     *
+     * @return field's origin (or where a field value comes from).
      */
-    void init(PlanningContext ctx);
+    List<String> origin();
 }

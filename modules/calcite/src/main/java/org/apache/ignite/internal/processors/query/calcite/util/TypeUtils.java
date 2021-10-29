@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.NativeTypes;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -293,5 +295,50 @@ public class TypeUtils {
             return new java.util.Date((Long)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Long)val));
         else
             return val;
+    }
+
+    /**
+     * Convert calcite date type to Ignite native type.
+     */
+    public static NativeType nativeType(RelDataType type) {
+        switch (type.getSqlTypeName()) {
+            case VARCHAR:
+            case CHAR:
+                return type.getPrecision() > 0 ? NativeTypes.stringOf(type.getPrecision()) : NativeTypes.STRING;
+            case DATE:
+                return NativeTypes.DATE;
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                return type.getPrecision() > 0 ? NativeTypes.time(type.getPrecision()) : NativeTypes.time();
+            case INTEGER:
+                return NativeTypes.INT32;
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                return type.getPrecision() > 0 ? NativeTypes.timestamp(type.getPrecision()) : NativeTypes.timestamp();
+            case BIGINT:
+                return NativeTypes.INT64;
+            case SMALLINT:
+                return NativeTypes.INT16;
+            case TINYINT:
+                return NativeTypes.INT8;
+            case DECIMAL:
+                return NativeTypes.decimalOf(type.getPrecision(), type.getScale());
+            case BOOLEAN:
+                return NativeTypes.INT8;
+            case DOUBLE:
+                return NativeTypes.DOUBLE;
+            case REAL:
+            case FLOAT:
+                return NativeTypes.FLOAT;
+            case BINARY:
+            case VARBINARY:
+                return NativeTypes.blobOf(type.getPrecision());
+            case ANY:
+            case OTHER:
+                return NativeTypes.blobOf(type.getPrecision());
+            default:
+                assert false : "Unexpected type of result: " + type;
+                return null;
+        }
     }
 }

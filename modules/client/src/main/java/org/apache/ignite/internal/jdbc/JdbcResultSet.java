@@ -1959,7 +1959,7 @@ public class JdbcResultSet implements ResultSet {
         colOrder = new HashMap<>(meta.size());
 
         for (int i = 0; i < meta.size(); ++i) {
-            String colName = meta.get(i).columnName().toUpperCase();
+            String colName = meta.get(i).columnLabel().toUpperCase();
 
             if (!colOrder.containsKey(colName))
                 colOrder.put(colName, i);

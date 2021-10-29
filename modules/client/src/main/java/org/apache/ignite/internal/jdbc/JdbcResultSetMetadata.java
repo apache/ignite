@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
+
 import org.apache.ignite.client.proto.query.event.JdbcColumnMeta;
 
 /**
@@ -85,7 +86,7 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public String getColumnLabel(int col) throws SQLException {
-        return meta.get(col - 1).columnName();
+        return meta.get(col - 1).columnLabel();
     }
 
     /** {@inheritDoc} */

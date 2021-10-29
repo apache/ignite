@@ -122,7 +122,7 @@ public class ITJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         assertEquals(meta.getColumnClassName(1), "java.lang.String");
 
         assertEquals("Organization".toUpperCase(), meta.getTableName(2).toUpperCase());
-        assertEquals("orgId".toUpperCase(), meta.getColumnName(2).toUpperCase());
+        assertEquals("id".toUpperCase(), meta.getColumnName(2).toUpperCase());
         assertEquals("orgId".toUpperCase(), meta.getColumnLabel(2).toUpperCase());
         assertEquals(INTEGER, meta.getColumnType(2));
         assertEquals(meta.getColumnTypeName(2), "INTEGER");

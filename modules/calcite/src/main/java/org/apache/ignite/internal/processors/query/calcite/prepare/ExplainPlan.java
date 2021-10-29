@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
+
 /**
  * Query explain plan.
  */
@@ -25,14 +27,14 @@ public class ExplainPlan implements QueryPlan {
     public static final String PLAN_COL_NAME = "PLAN";
 
     /** */
-    private final FieldsMetadata fieldsMeta;
+    private final ResultSetMetadata meta;
 
     /** */
     private final String plan;
 
     /** */
-    public ExplainPlan(String plan, FieldsMetadata fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
+    public ExplainPlan(String plan, ResultSetMetadata meta) {
+        this.meta = meta;
         this.plan = plan;
     }
 
@@ -47,8 +49,8 @@ public class ExplainPlan implements QueryPlan {
     }
 
     /** */
-    public FieldsMetadata fieldsMeta() {
-        return fieldsMeta;
+    public ResultSetMetadata metadata() {
+        return meta;
     }
 
     /** */

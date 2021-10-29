@@ -15,26 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite;
+
+import java.util.List;
 
 /**
- * Distributed query plan.
+ * Results set metadata.
  */
-public class MultiStepQueryPlan extends AbstractMultiStepPlan {
+public interface ResultSetMetadata {
     /**
-     * @param meta Fields metadata.
+     * @return Fields metadata.
      */
-    public MultiStepQueryPlan(QueryTemplate queryTemplate, ResultSetMetadataInternal meta) {
-        super(queryTemplate, meta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.QUERY;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return new MultiStepQueryPlan(queryTemplate, meta);
-    }
+    List<ResultFieldMetadata> fields();
 }

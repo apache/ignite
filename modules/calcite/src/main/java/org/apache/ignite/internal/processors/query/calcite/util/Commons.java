@@ -19,6 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -61,13 +66,13 @@ import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.generated.query.calcite.sql.IgniteSqlParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractMultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
@@ -75,7 +80,12 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConforma
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.schema.BitmaskNativeType;
+import org.apache.ignite.internal.schema.DecimalNativeType;
 import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.NumberNativeType;
+import org.apache.ignite.internal.schema.TemporalNativeType;
+import org.apache.ignite.internal.schema.VarlenNativeType;
 import org.apache.ignite.internal.util.ArrayUtils;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
@@ -145,13 +155,13 @@ public final class Commons {
 
     public static <T> SqlCursor<T> createCursor(Iterator<T> iter, QueryPlan plan) {
         return new SqlCursor<>() {
-            @Override public SqlQueryType getQueryType() {
+            @Override public SqlQueryType queryType() {
                 return SqlQueryType.mapPlanTypeToSqlType(plan.type());
             }
 
-            @Override public FieldsMetadata getColumnMetadata() {
-                return plan instanceof AbstractMultiStepPlan ? ((MultiStepPlan)plan).fieldsMetadata()
-                    : ((ExplainPlan)plan).fieldsMeta();
+            @Override public ResultSetMetadata metadata() {
+                return plan instanceof AbstractMultiStepPlan ? ((MultiStepPlan)plan).metadata()
+                    : ((ExplainPlan)plan).metadata();
             }
 
             @Override public void remove() {
@@ -530,6 +540,9 @@ public final class Commons {
             case DOUBLE:
                 return Double.class;
 
+            case NUMBER:
+                return BigInteger.class;
+
             case DECIMAL:
                 return BigDecimal.class;
 
@@ -544,6 +557,94 @@ public final class Commons {
 
             case BITMASK:
                 return BitSet.class;
+
+            case DATE:
+                return LocalDate.class;
+
+            case TIME:
+                return LocalTime.class;
+
+            case DATETIME:
+                return LocalDateTime.class;
+
+            case TIMESTAMP:
+                return Instant.class;
+
+            default:
+                throw new IllegalArgumentException("Unsupported type " + type.spec());
+        }
+    }
+
+    public static int nativeTypePrecision(NativeType type) {
+        assert type != null;
+
+        switch (type.spec()) {
+            case INT8:
+                return 3;
+
+            case INT16:
+                return 5;
+
+            case INT32:
+                return 10;
+
+            case INT64:
+                return 19;
+
+            case FLOAT:
+            case DOUBLE:
+                return 15;
+
+            case NUMBER:
+                return ((NumberNativeType)type).precision();
+
+            case DECIMAL:
+                return ((DecimalNativeType)type).precision();
+
+            case UUID:
+            case DATE:
+                return -1;
+
+            case TIME:
+            case DATETIME:
+            case TIMESTAMP:
+                return ((TemporalNativeType)type).precision();
+
+            case BYTES:
+            case STRING:
+                return ((VarlenNativeType)type).length();
+
+            case BITMASK:
+                return ((BitmaskNativeType)type).bits();
+
+            default:
+                throw new IllegalArgumentException("Unsupported type " + type.spec());
+        }
+    }
+
+    public static int nativeTypeScale(NativeType type) {
+        switch (type.spec()) {
+            case INT8:
+            case INT16:
+            case INT32:
+            case INT64:
+            case NUMBER:
+                return 0;
+
+            case FLOAT:
+            case DOUBLE:
+            case UUID:
+            case DATE:
+            case TIME:
+            case DATETIME:
+            case TIMESTAMP:
+            case BYTES:
+            case STRING:
+            case BITMASK:
+                return Integer.MIN_VALUE;
+
+            case DECIMAL:
+                return ((DecimalNativeType)type).scale();
 
             default:
                 throw new IllegalArgumentException("Unsupported type " + type.spec());

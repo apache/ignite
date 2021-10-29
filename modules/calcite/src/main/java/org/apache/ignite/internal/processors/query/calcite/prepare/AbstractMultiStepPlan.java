@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.newHashMap;
  */
 public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** */
-    protected final FieldsMetadata fieldsMetadata;
+    protected final ResultSetMetadataInternal meta;
 
     /** */
     protected final QueryTemplate queryTemplate;
@@ -44,9 +44,9 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected ExecutionPlan executionPlan;
 
     /** */
-    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMetadata) {
+    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, ResultSetMetadataInternal meta) {
         this.queryTemplate = queryTemplate;
-        this.fieldsMetadata = fieldsMetadata;
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */
@@ -55,8 +55,8 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public FieldsMetadata fieldsMetadata() {
-        return fieldsMetadata;
+    @Override public ResultSetMetadataInternal metadata() {
+        return meta;
     }
 
     /** {@inheritDoc} */
