@@ -72,6 +72,7 @@ public interface ServiceContext extends Serializable {
      * Gets context of the current service call.
      *
      * @return Context of the current service call, possibly {@code null}.
+     * @see ServiceCallContext
      */
     @Nullable public ServiceCallContext currentCallContext();
 }

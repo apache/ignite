@@ -87,7 +87,7 @@ public interface ServiceCallContext {
     public byte[] binary(String name);
 
     /**
-     * Put new string attribute.<br<
+     * Put new string attribute.<br>
      * If the context previously contained a mapping for the key, the old value is replaced by the specified value.
      *
      * @param name Attribute name.
@@ -97,7 +97,7 @@ public interface ServiceCallContext {
     public ServiceCallContext put(String name, String value);
 
     /**
-     * Put new binary attribute.<br<
+     * Put new binary attribute.<br>
      * If the context previously contained a mapping for the key, the old value is replaced by the specified value.
      *
      * @param name Attribute name.
