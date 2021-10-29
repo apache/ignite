@@ -260,7 +260,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         statsRepos.stop();
 
-        obsolescenceBusyExecutor.deactivate(() -> {});
+        obsolescenceBusyExecutor.deactivate();
         started = false;
     }
 

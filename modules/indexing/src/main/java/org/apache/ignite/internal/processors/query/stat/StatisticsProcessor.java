@@ -209,7 +209,15 @@ public class StatisticsProcessor {
                 log
             );
 
-            gatheringBusyExecutor.submit(() -> processPartitionTask(task))
+            gatheringBusyExecutor.submit(new  CancellableTask() {
+                    @Override public void run() {
+                        processPartitionTask(task);
+                    }
+
+                    @Override public void cancel() {
+                        task.context().cancel();
+                    }
+                })
                 .thenAccept(success -> {
                     if (!success) {
                         if (log.isDebugEnabled()) {
@@ -337,7 +345,7 @@ public class StatisticsProcessor {
             log.trace(String.format("Statistics gathering stopping %d task...", gatheringInProgress.size()));
 
         // Can skip waiting for each task finished because of global busyLock.
-        gatheringBusyExecutor.deactivate(() -> gatheringInProgress.values().forEach(LocalStatisticsGatheringContext::cancel));
+        gatheringBusyExecutor.deactivate();
 
         if (log.isDebugEnabled())
             log.debug("Statistics gathering stopped.");

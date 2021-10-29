@@ -363,7 +363,7 @@ public class IgniteStatisticsConfigurationManager {
             schemaMgr.unregisterDropTableListener(dropTblLsnr);
         }
 
-        mgmtBusyExecutor.deactivate(() -> {});
+        mgmtBusyExecutor.deactivate();
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager stopped.");

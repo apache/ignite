@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +77,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
     /**
      * Create BusyExecutor and try to busyRun, execute and submit task to it without activation.
      * Check it won't start even after small amount of time to schedule.
+     * Check no cancellable task was even added into the BusyExecutor internals.
      *
      * @throws Exception In case of errors.
      */
@@ -83,6 +85,9 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
     public void testInactiveExecutor() throws Exception {
         BusyExecutor be = new BusyExecutor("testInactiveExecutor", pool, c -> log);
         CDLTask task = new CDLTask();
+        CDLCancellableTask cancellableTask = new CDLCancellableTask();
+
+        be.submit(cancellableTask);
 
         assertFalse(be.busyRun(task));
 
@@ -98,6 +103,8 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
 
         Thread.sleep(TIME_TO_START_THREAD);
         assertEquals(1, task.started.getCount());
+
+        checkNoCancellableTask(be);
     }
 
     /**
@@ -111,23 +118,26 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
         CDLTask taskExec = new CDLTask();
         CDLTask taskSubmit = new CDLTask();
+        CDLCancellableTask cancellableTask = new CDLCancellableTask();
 
         be.activate();
 
         be.execute(taskExec);
         CompletableFuture<Boolean> submitFuture = be.submit(taskSubmit);
+        be.execute(cancellableTask);
 
         Thread.sleep(TIME_TO_START_THREAD);
         assertEquals(0, taskExec.started.getCount());
         // Pool can await first task, so second one can be still in quieue here
 
-        GridTestUtils.runAsync(() -> be.deactivate(() -> {
-            taskExec.finished.countDown();
-            taskSubmit.finished.countDown();
-        }));
+        GridTestUtils.runAsync(() -> be.deactivate());
+
+        taskExec.finished.countDown();
+        taskSubmit.finished.countDown();
 
         assertTrue(GridTestUtils.waitForCondition(() -> 0 == taskExec.finished.getCount(), TIME_TO_START_THREAD));
         assertTrue(GridTestUtils.waitForCondition(() -> 0 == taskSubmit.finished.getCount(), TIME_TO_START_THREAD));
+        checkNoCancellableTask(be);
     }
 
     /**
@@ -157,6 +167,121 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         }
 
         executed.await(10, TimeUnit.SECONDS);
+        checkNoCancellableTask(be);
+    }
+
+    /**
+     * Check that old tasks won't be started after reactivation.
+     *
+     * @throws InterruptedException In case of errrors.
+     */
+    @Test
+    public void testReactivationWontStart() throws InterruptedException {
+        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
+        be.activate();
+
+        CDLTask t1 = new CDLTask();
+        CDLTask t2 = new CDLTask();
+        CDLTask t3 = new CDLTask();
+
+        be.execute(t1);
+        be.execute(t2);
+        be.execute(t3);
+
+        Thread.sleep(TIME_TO_START_THREAD);
+
+        assertEquals(0, t1.started.getCount());
+        assertEquals(1, t3.started.getCount());
+
+        CountDownLatch cdl1 = new CountDownLatch(1);
+
+        GridTestUtils.runAsync(() -> {
+            be.deactivate();
+            be.activate();
+            cdl1.countDown();
+        });
+
+        assertEquals(1, t3.started.getCount());
+
+        t1.finished.countDown();
+        t2.finished.countDown();
+
+        cdl1.await();
+
+        Thread.sleep(TIME_TO_START_THREAD);
+
+        assertEquals(1, t3.started.getCount());
+        checkNoCancellableTask(be);
+    }
+
+    /**
+     * Check that old cancellable tasks won't be started after reactivation.
+     *
+     * @throws InterruptedException In case of errrors.
+     */
+    @Test
+    public void testReactivationCancellableWontStart() throws InterruptedException {
+        BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, c -> log);
+        be.activate();
+
+        CDLCancellableFinallizableTask t1 = new CDLCancellableFinallizableTask();
+        CDLCancellableFinallizableTask t2 = new CDLCancellableFinallizableTask();
+        CDLCancellableFinallizableTask t3 = new CDLCancellableFinallizableTask();
+
+        be.execute(t1);
+        be.execute(t2);
+        be.execute(t3);
+
+        Thread.sleep(TIME_TO_START_THREAD);
+
+        t1.started.await();
+
+        assertEquals(0, t1.started.getCount());
+        assertEquals(1, t3.started.getCount());
+
+        CountDownLatch cdlStartDeactivation = new CountDownLatch(1);
+        CountDownLatch cdlEndDeactivation = new CountDownLatch(1);
+
+        ConcurrentMap<CancellableTask, Object> cancellableTasks =
+            GridTestUtils.getFieldValue(be, "cancellableTasks");
+
+        assertEquals(3, cancellableTasks.size());
+
+        GridTestUtils.runAsync(() -> {
+            cdlStartDeactivation.countDown();
+
+            be.deactivate();
+            be.activate();
+
+            cdlEndDeactivation.countDown();
+        });
+
+        assertEquals(1, t3.started.getCount());
+
+        cdlStartDeactivation.await();
+
+        t1.finished.countDown();
+        t2.finished.countDown();
+
+        cdlEndDeactivation.await();
+
+        Thread.sleep(TIME_TO_START_THREAD);
+
+        assertEquals(1, t3.started.getCount());
+
+        checkNoCancellableTask(be);
+    }
+
+    /**
+     * Test there is no cancellable tasks in specified BusyExecutor.
+     *
+     * @param be BusyExecutor to check tasks in.
+     */
+    private void checkNoCancellableTask(BusyExecutor be) {
+        ConcurrentMap<CancellableTask, Object> cancellableTasks =
+            GridTestUtils.getFieldValue(be, "cancellableTasks");
+
+        assertTrue(cancellableTasks.isEmpty());
     }
 
     /**
@@ -180,6 +305,29 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
             catch (InterruptedException e) {
                 fail(e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Test cancellable task.
+     */
+    private class CDLCancellableTask extends CDLTask implements CancellableTask {
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            finished.countDown();
+        }
+    }
+
+    /**
+     * Test cancellable finallizable task (separate cancel and finish counters).
+     */
+    private class CDLCancellableFinallizableTask extends CDLTask implements CancellableTask {
+        /** Task cancelled. */
+        public CountDownLatch cancelled = new CountDownLatch(1);
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            cancelled.countDown();
         }
     }
 }

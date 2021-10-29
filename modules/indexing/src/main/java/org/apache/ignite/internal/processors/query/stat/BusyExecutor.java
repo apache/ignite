@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -38,10 +40,13 @@ public class BusyExecutor {
     private volatile boolean active;
 
     /** Lock protection of started gathering during deactivation. */
-    private final GridBusyLock busyLock = new GridBusyLock();
+    private GridBusyLock busyLock = new GridBusyLock();
 
     /** Executor pool. */
     private final IgniteThreadPoolExecutor pool;
+
+    /** Cancellable tasks. */
+    private final ConcurrentMap<CancellableTask, Object> cancellableTasks = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -54,12 +59,16 @@ public class BusyExecutor {
         this.name = name;
         this.pool = pool;
         this.log = logSupplier.apply(StatisticsProcessor.class);
+        busyLock.block();
+        active = false;
     }
 
     /**
      * Allow operations.
      */
-    public void activate() {
+    public synchronized void activate() {
+
+        busyLock = new GridBusyLock();
         active = true;
 
         if (log.isDebugEnabled())
@@ -68,19 +77,16 @@ public class BusyExecutor {
 
     /**
      * Stop all running tasks. Block new task scheduling, execute cancell runnable and wait till each task stops.
-     *
-     * @param r Runnable to cancel all scheduled tasks.
      */
-    public void deactivate(Runnable r) {
+    public synchronized void deactivate() {
         active = false;
 
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " deactivating.");
 
-        r.run();
+        cancellableTasks.keySet().forEach(CancellableTask::cancel);
 
         busyLock.block();
-        busyLock.unblock();
 
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " deactivated.");
@@ -93,7 +99,11 @@ public class BusyExecutor {
      * @return {@code true} if task was succesfully scheduled, {@code false} - otherwise (due to inactive state)
      */
     public boolean busyRun(Runnable r) {
-        if (!busyLock.enterBusy())
+        return busyRun(r, busyLock);
+    }
+
+    private boolean busyRun(Runnable r, GridBusyLock taskLock) {
+        if (!taskLock.enterBusy())
             return false;
 
         try {
@@ -108,7 +118,7 @@ public class BusyExecutor {
             log.warning("Unexpected exception on statistics processing: " + t.getMessage(), t);
         }
         finally {
-            busyLock.leaveBusy();
+            taskLock.leaveBusy();
         }
 
         return false;
@@ -124,7 +134,31 @@ public class BusyExecutor {
     public CompletableFuture<Boolean> submit(Runnable r) {
         CompletableFuture<Boolean> res = new CompletableFuture<>();
 
-        pool.execute(() -> res.complete(busyRun(r)));
+        pool.execute(() -> res.complete(busyRun(r, busyLock)));
+
+        return res;
+    }
+
+    /**
+     * Submit cancellable task to execute in thread pool
+     * @param ct
+     * @return
+     */
+    public CompletableFuture<Boolean> submit(CancellableTask ct) {
+        GridBusyLock lock = busyLock;
+
+        CompletableFuture<Boolean> res = new CompletableFuture<>();
+        if (busyRun(() -> cancellableTasks.put(ct, ct), lock)) {
+
+            pool.execute(() -> {
+                res.complete(busyRun(ct, lock));
+
+                cancellableTasks.remove(ct);
+            });
+
+        }
+        else
+            res.complete(false);
 
         return res;
     }
@@ -135,6 +169,23 @@ public class BusyExecutor {
      * @param r Task to execute.
      */
     public void execute(Runnable r) {
-        pool.execute(() -> busyRun(r));
+        pool.execute(() -> busyRun(r, busyLock));
+    }
+
+    /**
+     * Execute cancellable task in thread pool under busy lock. Track task to cancel on executor stop.
+     *
+     * @param ct Cancellable task to execute.
+     */
+    public void execute(CancellableTask ct) {
+        GridBusyLock lock = busyLock;
+
+        if (busyRun(() -> cancellableTasks.put(ct, ct), lock)) {
+            pool.execute(() -> {
+                busyRun(ct, lock);
+
+                cancellableTasks.remove(ct);
+            });
+        }
     }
 }
