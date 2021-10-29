@@ -43,6 +43,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
@@ -291,7 +292,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", consistencyCancheName, "0"));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
-        assertContains(log, testOut.toString(), "violations were NOT found [processed=0]");
+        assertContains(log, testOut.toString(), VisorConsistencyRepairTask.NOTHING_FOUND);
+        assertNotContains(log, testOut.toString(), VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND);
 
         thLatch.await();
 

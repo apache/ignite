@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.cache.query.index.NullsOrder;
 import org.apache.ignite.internal.cache.query.index.Order;
@@ -35,8 +34,8 @@ public class QueryIndexKeyDefinitionProvider {
     /** H2 index columns. */
     private final List<IndexColumn> h2IdxColumns;
 
-    /** Unmodified list of index key definitions. */
-    private List<IndexKeyDefinition> keyDefs;
+    /** Unmodifiable ordered map of index key definitions. */
+    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public QueryIndexKeyDefinitionProvider(GridH2Table table, List<IndexColumn> h2IdxColumns) {
@@ -47,26 +46,25 @@ public class QueryIndexKeyDefinitionProvider {
     /**
      * @return List of index key definitions.
      */
-    public List<IndexKeyDefinition> keyDefinitions() {
+    public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
         if (keyDefs != null)
             return keyDefs;
 
-        List<IndexKeyDefinition> idxKeyDefinitions = new ArrayList<>();
+        LinkedHashMap<String, IndexKeyDefinition> idxKeyDefinitions = new LinkedHashMap<>();
 
         for (IndexColumn c: h2IdxColumns)
-            idxKeyDefinitions.add(keyDefinition(c));
+            idxKeyDefinitions.put(c.columnName, keyDefinition(c));
 
         IndexColumn.mapColumns(h2IdxColumns.toArray(new IndexColumn[0]), table);
 
-        keyDefs = Collections.unmodifiableList(idxKeyDefinitions);
+        keyDefs = idxKeyDefinitions;
 
         return keyDefs;
     }
 
     /** */
     private IndexKeyDefinition keyDefinition(IndexColumn c) {
-        return new IndexKeyDefinition(
-            c.columnName, c.column.getType(), sortOrder(c.sortType), c.column.getPrecision());
+        return new IndexKeyDefinition(c.column.getType(), sortOrder(c.sortType), c.column.getPrecision());
     }
 
     /** Maps H2 column order to Ignite index order. */

@@ -42,9 +42,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -59,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -78,12 +81,15 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -107,6 +113,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Optional cache name to be created on demand. */
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
+    /** Parameters. Encryption is not supported by snapshot validation. */
+    @Parameterized.Parameters(name = "Encryption is disabled")
+    public static Iterable<Boolean> disabledEncryption() {
+        return Collections.singletonList(false);
+    }
+
     /** Cleanup data of task execution results if need. */
     @Before
     public void beforeCheck() {
@@ -119,7 +131,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         startClientGrid();
-        
+
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
 
@@ -559,6 +571,77 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
     }
 
+    /** Checks bytes, signature of partion files. Compares before and after snapshot. Assumes the files are equal.  */
+    @Test
+    public void testSnapshotLocalPartitions() throws Exception {
+        // Note: this test is valid only for not-encrypted snapshots. Writing snapshots deltas causes several page writes into file.
+        // Every page write calls encrypt(). Every repeatable encrypt() produces different record (different bytes) even for same original
+        // data. Re-writting pages from delta to partition file in the shanpshot leads to additional encryption before writing to the
+        // snapshot partition file. Thus, page in original partition and in snapshot partiton has different encrypted CRC and same
+        // de-crypted CRC. Different encrypted CRC looks like different data in point of view of third-party observer.
+
+        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        for (int i = 4096; i < 8192; i++) {
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
+                @Override public String toString() {
+                    return "_" + super.toString();
+                }
+            });
+        }
+
+        GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
+        IgniteSnapshotManager mgr = snp(ig);
+
+        // Collection of pairs group and appropriate cache partition to be snapshot.
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
+            SNAPSHOT_NAME,
+            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
+            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
+
+        snpFut.get();
+
+        File cacheWorkDir = ((FilePageStoreManager)ig.context()
+            .cache()
+            .context()
+            .pageStore())
+            .cacheWorkDir(dfltCacheCfg);
+
+        // Checkpoint forces on cluster deactivation (currently only single node in cluster),
+        // so we must have the same data in snapshot partitions and those which left
+        // after node stop.
+        stopGrid(ig.name());
+
+        // Calculate CRCs.
+        IgniteConfiguration cfg = ig.context().config();
+        PdsFolderSettings settings = ig.context().pdsFolderResolver().resolveFolders();
+        String nodePath = databaseRelativePath(settings.folderName());
+        File binWorkDir = binaryWorkDir(cfg.getWorkDirectory(), settings.folderName());
+        File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        File snpBinWorkDir = binaryWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
+        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
+
+        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
+        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
+            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME)
+                    .getAbsolutePath(),
+                nodePath,
+                false),
+                cacheDirName(dfltCacheCfg)));
+
+        assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
+            origPartCRCs, snpPartCRCs);
+        assertEquals("Binary object mappings must be the same for local node and created snapshot",
+            calculateCRC32Partitions(binWorkDir), calculateCRC32Partitions(snpBinWorkDir));
+        assertEquals("Marshaller meta mast be the same for local node and created snapshot",
+            calculateCRC32Partitions(marshWorkDir), calculateCRC32Partitions(snpMarshWorkDir));
+
+        File snpWorkDir = mgr.snapshotTmpDir();
+
+        assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
+    }
+
     /**
      * @param cls Class of running task.
      * @param results Results of compute.
@@ -621,8 +704,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
 
+        int grpId = CU.cacheId(ccfg.getName());
+
         try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(CU.cacheId(ccfg.getName()), false)
+            .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
             .createPageStore(getTypeByPartId(partId),
                 () -> part0,
                 val -> {

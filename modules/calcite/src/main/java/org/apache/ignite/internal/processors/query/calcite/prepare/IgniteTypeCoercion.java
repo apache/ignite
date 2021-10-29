@@ -25,23 +25,24 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 
-/** Ignite type coercion. */
+/**
+ * Implementation of implicit type cast.
+ */
 public class IgniteTypeCoercion extends TypeCoercionImpl {
-    /** */
+    /** Ctor. */
     public IgniteTypeCoercion(RelDataTypeFactory typeFactory, SqlValidator validator) {
         super(typeFactory, validator);
     }
 
     /** {@inheritDoc} */
     @Override protected boolean needToCast(SqlValidatorScope scope, SqlNode node, RelDataType toType) {
-        if (SqlTypeUtil.isIntType(toType)) {
+        if (SqlTypeUtil.isInterval(toType)) {
             RelDataType fromType = validator.deriveType(scope, node);
 
-            if (fromType == null)
-                return false;
-
-            if (SqlTypeUtil.isIntType(fromType) && fromType.getSqlTypeName() != toType.getSqlTypeName())
-                return true;
+            if (SqlTypeUtil.isInterval(fromType)) {
+                // Two different families of intervals: INTERVAL_DAY_TIME and INTERVAL_YEAR_MONTH.
+                return fromType.getSqlTypeName().getFamily() != toType.getSqlTypeName().getFamily();
+            }
         }
 
         return super.needToCast(scope, node, toType);

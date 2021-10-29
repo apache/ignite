@@ -735,7 +735,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void alterTableLogging() {
         String cacheName = "cache";
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(cacheName)
+        client.getOrCreateCache(new CacheConfiguration<>(cacheName)
             .setDataRegionName(PERSISTENT_DATA_REGION).setIndexedTypes(Integer.class, Integer.class));
 
         assertTrue(client.cluster().isWalEnabled(cacheName));

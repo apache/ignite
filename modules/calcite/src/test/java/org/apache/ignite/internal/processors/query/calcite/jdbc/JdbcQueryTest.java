@@ -144,14 +144,17 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             "timestamp_col_10 TIMESTAMP(10), " +
             "timestamp_col_def TIMESTAMP, " +
             "date_col DATE, " +
+            "interval_ym_col INTERVAL YEAR TO MONTH, " +
+            "interval_dt_col INTERVAL DAY TO SECONDS, " +
             "PRIMARY KEY (id));");
 
         grid(0).context().cache().context().exchange().affinityReadyFuture(
             new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
 
         stmt.executeUpdate("INSERT INTO t1 (id, bool_col, tinyint_col, smallint_col, int_col, bigint_col, " +
-            "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, timestamp_col_def, date_col) " +
-            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
+            "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, " +
+            "timestamp_col_def, date_col, interval_ym_col, interval_dt_col) " +
+            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
 
         try (ResultSet rs = stmt.executeQuery("SELECT * FROM t1;")) {
             assertTrue(rs.next());
@@ -174,6 +177,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertEquals(Types.TIMESTAMP, md.getColumnType(13));
             assertEquals(Types.TIMESTAMP, md.getColumnType(14));
             assertEquals(Types.DATE, md.getColumnType(15));
+            // Custom java types Period and Duration for intervals.
+            assertEquals(Types.OTHER, md.getColumnType(16));
+            assertEquals(Types.OTHER, md.getColumnType(17));
         }
 
         stmt.execute("DROP TABLE t1");

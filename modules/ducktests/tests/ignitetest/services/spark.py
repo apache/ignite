@@ -22,7 +22,6 @@ from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-# pylint: disable=abstract-method
 from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
@@ -32,7 +31,6 @@ class SparkService(DucktestsService, PathAware):
     """
     Start a spark node.
     """
-    # pylint: disable=R0913
     def __init__(self, context, num_nodes=3, version=LooseVersion("2.3.4")):
         """
         :param context: test context

@@ -106,8 +106,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withIdentifierExpansion(true)
             .withDefaultNullCollation(NullCollation.LOW)
             .withSqlConformance(IgniteSqlConformance.INSTANCE)
-            .withTypeCoercionFactory(IgniteTypeCoercion::new)
-        )
+            .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(
             SqlLibraryOperatorTableFactory.INSTANCE

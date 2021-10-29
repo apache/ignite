@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -160,6 +161,10 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setQueryParallelism(qryParallelism)
             .setBackups(backups);
 
+        // TODO: remove after IGNITE-15671.
+        if (atomicityMode == ATOMIC)
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -200,14 +205,18 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Add data
         insertData();
 
+        qry = new IndexQuery<>(Person.class, IDX);
+
+        check(cache.query(qry), 0, CNT);
+
+        // Range queries.
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
@@ -253,14 +262,18 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeDescQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, DESC_IDX);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Add data
         insertData();
 
+        qry = new IndexQuery<>(Person.class, DESC_IDX);
+
+        check(cache.query(qry), 0, CNT);
+
+        // Range queries.
         int pivot = new Random().nextInt(CNT);
 
         // Eq.

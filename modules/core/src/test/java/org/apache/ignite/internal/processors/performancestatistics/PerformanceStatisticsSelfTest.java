@@ -205,6 +205,9 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
 
+        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllOutTx(Collections.singleton(1)));
+        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllOutTxAsync(Collections.singleton(2)).get());
+
         checkCacheOperation(CACHE_REMOVE, cache -> cache.remove(1));
         checkCacheOperation(CACHE_REMOVE, cache -> cache.removeAsync(2).get());
 
