@@ -107,12 +107,19 @@ public class BusyExecutor {
      * Run task on busy lock.
      *
      * @param r Task to run.
-     * @return {@code true} if task was succesfully scheduled, {@code false} - otherwise (due to inactive state)
+     * @return {@code true} if task was succesfully scheduled, {@code false} - otherwise (due to inactive state).
      */
     public boolean busyRun(Runnable r) {
         return busyRun(r, busyLock);
     }
 
+    /**
+     * Run task under specified busyLock.
+     *
+     * @param r Task to run.
+     * @param taskLock BusyLock to use.
+     * @return {@code true} if task was succesfully scheduled, {@code false} - otherwise (due to inactive state).
+     */
     private boolean busyRun(Runnable r, GridBusyLock taskLock) {
         if (!taskLock.enterBusy())
             return false;

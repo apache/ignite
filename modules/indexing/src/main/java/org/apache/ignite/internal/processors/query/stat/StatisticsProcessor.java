@@ -212,11 +212,13 @@ public class StatisticsProcessor {
                 log
             );
 
-            gatheringBusyExecutor.submit(new  CancellableTask() {
+            gatheringBusyExecutor.submit(new CancellableTask() {
+                    /** {@inheritDoc} */
                     @Override public void run() {
                         processPartitionTask(task);
                     }
 
+                    /** {@inheritDoc} */
                     @Override public void cancel() {
                         task.context().cancel();
                     }

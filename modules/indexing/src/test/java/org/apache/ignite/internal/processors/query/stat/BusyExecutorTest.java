@@ -206,7 +206,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         assertEquals(1, t3.started.getCount());
 
         AtomicBoolean beActive = GridTestUtils.getFieldValue(be, "active");
-        assertTrue(GridTestUtils.waitForCondition(() -> beActive.get() == false, TIME_TO_START_THREAD));
+        assertTrue(GridTestUtils.waitForCondition(() -> !beActive.get(), TIME_TO_START_THREAD));
 
         t1.finished.countDown();
         t2.finished.countDown();
@@ -262,7 +262,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         assertEquals(1, t3.started.getCount());
 
         AtomicBoolean beActive = GridTestUtils.getFieldValue(be, "active");
-        assertTrue(GridTestUtils.waitForCondition(() -> beActive.get() == false, TIME_TO_START_THREAD));
+        assertTrue(GridTestUtils.waitForCondition(() -> !beActive.get(), TIME_TO_START_THREAD));
 
         t1.finished.countDown();
         t2.finished.countDown();
