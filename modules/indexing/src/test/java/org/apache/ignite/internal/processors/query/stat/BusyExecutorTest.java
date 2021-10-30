@@ -190,7 +190,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         be.execute(t2);
         be.execute(t3);
 
-        Thread.sleep(TIME_TO_START_THREAD * 10);
+        Thread.sleep(TIME_TO_START_THREAD);
 
         assertEquals(0, t1.started.getCount());
         assertEquals(1, t3.started.getCount());
@@ -217,7 +217,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
 
         assertEquals(1, t3.started.getCount());
         checkNoCancellableTask(be);
-        Thread.sleep(TIME_TO_START_THREAD * 10);
+        Thread.sleep(TIME_TO_START_THREAD);
     }
 
     /**
