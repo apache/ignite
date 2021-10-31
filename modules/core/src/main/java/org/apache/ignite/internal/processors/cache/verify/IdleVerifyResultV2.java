@@ -200,10 +200,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             .filter(e -> !(e.getValue() instanceof NoMatchingCachesException))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        if (ex0.size() < exceptions.size())
-            printer.accept("\nThere are no caches matching given filter options.\n");
-
-        if (F.isEmpty(ex0)) {
+        if (F.isEmpty(exceptions)) {
             if (!hasConflicts())
                 printer.accept("The check procedure has finished, no conflicts have been found.\n");
             else
@@ -216,24 +213,31 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
             printSkippedPartitions(printer, moving, "MOVING");
             printSkippedPartitions(printer, lostPartitions(), "LOST");
+
+            return;
         }
-        else {
-            int size = ex0.size();
 
-            printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
-            printer.accept("\nThe check procedure failed on nodes:\n");
+        if (ex0.size() < exceptions.size())
+            printer.accept("\nThere are no caches matching given filter options.\n");
 
-            for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
-                ClusterNode n = e.getKey();
+        if (F.isEmpty(ex0))
+            return;
 
-                printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
+        int size = ex0.size();
 
-                if (printExceptionMessages) {
-                    String msg = e.getValue().getMessage();
+        printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+        printer.accept("\nThe check procedure failed on nodes:\n");
 
-                    printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
-                    printer.accept(msg == null ? "" : msg + "\n");
-                }
+        for (Map.Entry<ClusterNode, Exception> e : ex0.entrySet()) {
+            ClusterNode n = e.getKey();
+
+            printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
+
+            if (printExceptionMessages) {
+                String msg = e.getValue().getMessage();
+
+                printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
+                printer.accept(msg == null ? "" : msg + "\n");
             }
         }
     }
