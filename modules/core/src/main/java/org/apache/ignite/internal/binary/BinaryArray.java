@@ -31,6 +31,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -231,13 +232,16 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
+        if (!USE_TYPED_ARRAYS)
+            return IgniteUtils.hashCode(arr);
+
         int result = 31 * Objects.hash(compTypeId);
 
         // {@link Arrays#deepHashCode(Object[])} used because array elements can be array of primitives
         // or supported types like String, UUID, etc. "Standart" arrays like int[], String[] not modified
         // during binarization - {@link CacheObjectBinaryProcessorImpl#marshalToBinary(Object, boolean)}.
         // See {@link BinaryUtils#BINARY_CLS} for details.
-        result = 31 * result + Arrays.deepHashCode(arr);
+        result = 31 * result + IgniteUtils.hashCode(arr);
 
         return result;
     }
