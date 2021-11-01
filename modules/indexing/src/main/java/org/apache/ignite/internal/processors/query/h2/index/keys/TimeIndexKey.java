@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.index.keys;
 
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimeIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueTime;
@@ -64,6 +65,11 @@ public class TimeIndexKey extends AbstractTimeIndexKey implements H2ValueWrapper
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
         return time.compareTo(((TimeIndexKey)o).time, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(nanos());
     }
 
     /** {@inheritDoc} */

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.io.IOException;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimestampInlineIndexKeyType;
@@ -38,11 +36,5 @@ public abstract class AbstractTimestampIndexKey implements IndexKey {
     /** {@inheritDoc} */
     @Override public int type() {
         return IndexKeyTypes.TIMESTAMP;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(dateValue());
-        out.writeLong(nanos());
     }
 }

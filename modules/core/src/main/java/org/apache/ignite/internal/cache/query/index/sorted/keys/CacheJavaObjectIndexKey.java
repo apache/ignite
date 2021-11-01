@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -91,6 +92,11 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(key());
     }
 
     /** {@inheritDoc} */
