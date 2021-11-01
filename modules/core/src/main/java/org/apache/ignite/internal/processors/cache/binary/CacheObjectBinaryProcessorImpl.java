@@ -494,14 +494,17 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return obj;
 
         if (obj instanceof Object[]) {
-            Class<?> compCls = obj.getClass().getComponentType();
-
             Object[] arr = (Object[])obj;
 
             Object[] pArr = new Object[arr.length];
 
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
+
+            if (!BinaryArray.USE_TYPED_ARRAYS)
+                return pArr;
+
+            Class<?> compCls = obj.getClass().getComponentType();
 
             boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
 

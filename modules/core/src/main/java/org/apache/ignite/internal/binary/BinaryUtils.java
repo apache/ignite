@@ -2239,7 +2239,7 @@ public class BinaryUtils {
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach);
+        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach, deserialize);
     }
 
     /**
@@ -2589,14 +2589,6 @@ public class BinaryUtils {
         }
 
         return mergedMap;
-    }
-
-    /** */
-    public static <F> F unwrapBinaryArrayForBackwardCompatibility(Object o) {
-        if (!BinaryArray.USE_TYPED_ARRAYS && o instanceof BinaryArray)
-            return ((BinaryArray)o).deserialize();
-
-        return (F)o;
     }
 
     /**

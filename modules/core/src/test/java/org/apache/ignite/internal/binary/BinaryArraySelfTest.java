@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -128,9 +129,20 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
             server.binary().toBinary(new TestClass1())
         };
 
-        BinaryObject obj = server.binary().toBinary(arr);
+        Object obj = server.binary().toBinary(arr);
 
-        Object deser = obj.deserialize();
+        Object deser;
+
+        if (useTypedArrays) {
+            assertTrue(obj instanceof BinaryArray);
+
+            deser = ((BinaryArray)obj).deserialize();
+        }
+        else {
+            assertTrue(obj instanceof Object[]);
+
+            deser = PlatformUtils.unwrapBinariesInArray((Object[])obj);
+        }
 
         assertEquals(Object[].class, deser.getClass());
 
@@ -139,6 +151,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(2, res.length);
         assertTrue(res[0] instanceof TestClass1);
         assertTrue(res[1] instanceof TestClass1);
+
     }
 
     /** */
@@ -146,14 +159,24 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     public void testBinaryArraySerDe() {
         TestClass1[] arr = {new TestClass1(), new TestClass1()};
 
-        BinaryObject obj = server.binary().toBinary(arr);
+        Object obj = server.binary().toBinary(arr);
 
-        assertEquals(BinaryArray.class, obj.getClass());
+        Object deser;
 
-        Object deser = obj.deserialize();
+        if (useTypedArrays) {
+            assertEquals(BinaryArray.class, obj.getClass());
 
-        assertEquals(TestClass1[].class, deser.getClass());
-        assertEquals(2, ((TestClass1[])deser).length);
+            deser = ((BinaryArray)obj).deserialize();
+
+            assertEquals(TestClass1[].class, deser.getClass());
+        }
+        else {
+            assertTrue(obj instanceof Object[]);
+
+            deser = PlatformUtils.unwrapBinariesInArray((Object[])obj);
+        }
+
+        assertEquals(2, ((Object[])deser).length);
     }
 
     /** */

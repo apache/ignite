@@ -232,9 +232,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        if (!USE_TYPED_ARRAYS)
-            return IgniteUtils.hashCode(arr);
-
         int result = 31 * Objects.hash(compTypeId);
 
         // {@link Arrays#deepHashCode(Object[])} used because array elements can be array of primitives
