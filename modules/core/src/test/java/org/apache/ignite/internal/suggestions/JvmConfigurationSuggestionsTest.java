@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -36,7 +35,6 @@ import static org.junit.Assert.assertThat;
 public class JvmConfigurationSuggestionsTest {
     /***/
     @Test
-    @WithSystemProperty(key = "java.specification.version", value = "1.8")
     public void shouldSuggestJava11WhenNotRunOnJava11() {
         try (JdkVersionForger ignored = withJdkVersion("1.8")) {
             List<String> suggestions = JvmConfigurationSuggestions.getSuggestions();
@@ -47,7 +45,6 @@ public class JvmConfigurationSuggestionsTest {
 
     /***/
     @Test
-    @WithSystemProperty(key = "java.specification.version", value = "11")
     public void shouldNotSuggestJava11WhenRunOnJava11() {
         try (JdkVersionForger ignored = withJdkVersion("11")) {
             List<String> suggestions = JvmConfigurationSuggestions.getSuggestions();
