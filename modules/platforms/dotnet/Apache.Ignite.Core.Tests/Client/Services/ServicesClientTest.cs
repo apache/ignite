@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(99, svc.IntProperty);
 
             // Object.
-            svc.PersonProperty = new Person(123);
+            svc.PersonProperty= new Person(123);
             Assert.AreEqual(123, svc.PersonProperty.Id);
         }
 
@@ -306,9 +306,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(4, svc.Foo(default(ushort)));
 
             // Array types are not distinguished.
-            Assert.AreEqual(9, svc.Foo(new Object[] {new Person(0)}));
-            // TODO: IGNITE-14299
-            //Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
+            Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
         }
 
         /// <summary>

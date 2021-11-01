@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -147,7 +148,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         IgniteServices services = grp.services();
 
-        GridServiceProxy.KEEP_BINARY.set(true);
+        if (BinaryArray.USE_TYPED_ARRAYS)
+            GridServiceProxy.KEEP_BINARY.set(true);
 
         try {
             Object res;
@@ -174,6 +176,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
                 Method method = resolveMethod(ctx, svcCls);
 
+                if (!BinaryArray.USE_TYPED_ARRAYS)
+                    PlatformServices.convertArrayArgs(args, method);
+
                 res = proxy.invokeMethod(method, args);
             }
 
@@ -188,7 +193,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             throw new IgniteException(e);
         }
         finally {
-            GridServiceProxy.KEEP_BINARY.set(false);
+            if (BinaryArray.USE_TYPED_ARRAYS)
+                GridServiceProxy.KEEP_BINARY.set(false);
         }
     }
 

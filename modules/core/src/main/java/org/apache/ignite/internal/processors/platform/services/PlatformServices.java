@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -527,6 +529,33 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
+     * Convert Object[] to T[] when required:
+     * Ignite loses array item types when passing arguments through GridServiceProxy.
+     *
+     * @param args Service method args.
+     * @param mtd Target method.
+     */
+    public static void convertArrayArgs(Object[] args, Method mtd) {
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+
+            if (arg instanceof Object[]) {
+                Class<?> parameterType = mtd.getParameterTypes()[i];
+
+                if (parameterType.isArray() && parameterType != Object[].class) {
+                    Object[] arr = (Object[])arg;
+                    Object newArg = Array.newInstance(parameterType.getComponentType(), arr.length);
+
+                    for (int j = 0; j < arr.length; j++)
+                        Array.set(newArg, j, arr[j]);
+
+                    args[i] = newArg;
+                }
+            }
+        }
+    }
+
+    /**
      * Proxy holder.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -582,7 +611,8 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws NoSuchMethodException On error.
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
-            GridServiceProxy.KEEP_BINARY.set(true);
+            if (BinaryArray.USE_TYPED_ARRAYS)
+                GridServiceProxy.KEEP_BINARY.set(true);
 
             try {
                 if (isPlatformService())
@@ -600,7 +630,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 }
             }
             finally {
-                GridServiceProxy.KEEP_BINARY.set(false);
+                if (BinaryArray.USE_TYPED_ARRAYS)
+                    GridServiceProxy.KEEP_BINARY.set(false);
             }
         }
 

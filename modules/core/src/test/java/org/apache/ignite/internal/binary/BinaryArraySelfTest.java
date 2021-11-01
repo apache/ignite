@@ -73,7 +73,6 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
 
     /** */
     private void doTestArrayKey(IgniteCache<TestClass1[], Integer> c) {
-        //TODO: add tests for all API methods.
         TestClass1[] arr = {new TestClass1(), new TestClass1()};
         TestClass1[] emptyArr = {};
 
