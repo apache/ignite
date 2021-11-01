@@ -684,10 +684,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (!type.isArray())
             return false;
 
-        if (propVal.getClass() != BinaryArray.class)
+        Class<?> expCls = BinaryArray.USE_TYPED_ARRAYS ? BinaryArray.class : Object[].class;
+
+        if (propVal.getClass() != expCls)
             return false;
 
-        return checkArrayElements(((BinaryArray)propVal).array(), type);
+        return checkArrayElements(
+            BinaryArray.USE_TYPED_ARRAYS ? ((BinaryArray)propVal).array() : (Object[])propVal,
+            type
+        );
     }
 
     /** */

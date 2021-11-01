@@ -364,7 +364,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         IgniteCompute compute0 = computeForTask(nodeIds);
 
-        if (!keepBinary && (arg instanceof BinaryObjectImpl) || (arg instanceof BinaryArray))
+        if (!keepBinary && (arg instanceof BinaryObjectImpl || arg instanceof BinaryArray))
             arg = ((BinaryObject)arg).deserialize();
 
         if (async)

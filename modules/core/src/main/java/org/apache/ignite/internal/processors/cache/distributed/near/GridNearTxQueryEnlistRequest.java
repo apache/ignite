@@ -303,10 +303,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (params != null)
-            return;
-
-        if (paramsBytes == null)
+        if (paramsBytes == null || params != null)
             return;
 
         GridKernalContext kctx = ctx.kernalContext();
