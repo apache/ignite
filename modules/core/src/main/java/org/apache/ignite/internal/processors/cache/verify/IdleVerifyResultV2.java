@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -196,10 +195,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @param printExceptionMessages {@code true} if exceptions must be included too.
      */
     public void print(Consumer<String> printer, boolean printExceptionMessages) {
-        Map<ClusterNode, Exception> ex0 = exceptions.entrySet().stream()
-            .filter(e -> !(e.getValue() instanceof NoMatchingCachesException))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
         if (F.isEmpty(exceptions)) {
             if (!hasConflicts())
                 printer.accept("The check procedure has finished, no conflicts have been found.\n");
@@ -217,18 +212,16 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             return;
         }
 
-        if (ex0.size() < exceptions.size())
-            printer.accept("\nThere are no caches matching given filter options.\n");
-
-        if (F.isEmpty(ex0))
-            return;
-
-        int size = ex0.size();
+        int size = exceptions.size();
 
         printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+
+        if (!F.isEmpty(F.view(exceptions.values(), e -> e instanceof NoMatchingCachesException)))
+            printer.accept("\nThere are no caches matching given filter options.\n");
+
         printer.accept("\nThe check procedure failed on nodes:\n");
 
-        for (Map.Entry<ClusterNode, Exception> e : ex0.entrySet()) {
+        for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
             ClusterNode n = e.getKey();
 
             printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
