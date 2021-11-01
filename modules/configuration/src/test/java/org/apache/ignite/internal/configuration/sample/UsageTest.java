@@ -53,6 +53,7 @@ public class UsageTest {
             List.of(LocalConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(LOCAL),
+            List.of(),
             List.of()
         );
 
@@ -114,6 +115,7 @@ public class UsageTest {
             List.of(NetworkConfiguration.KEY, LocalConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(LOCAL),
+            List.of(),
             List.of()
         );
 

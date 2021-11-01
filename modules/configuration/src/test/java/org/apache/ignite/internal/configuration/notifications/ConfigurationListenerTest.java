@@ -91,6 +91,7 @@ public class ConfigurationListenerTest {
             List.of(ParentConfiguration.KEY),
             Map.of(),
             testConfigurationStorage,
+            List.of(),
             List.of()
         );
 

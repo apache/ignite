@@ -86,7 +86,7 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
         deque.push(list);
 
         for (String subkey : node.namedListKeys()) {
-            node.get(subkey).accept(subkey, this);
+            node.getInnerNode(subkey).accept(subkey, this);
 
             ((Map<String, Object>)list.get(list.size() - 1)).put(node.syntheticKeyName(), subkey);
         }

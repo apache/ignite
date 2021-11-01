@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.unmodifiableCollection;
 
@@ -134,7 +135,7 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
 
             synchronized (this) {
                 if (cachedRootNode == oldRootNode) {
-                    beforeRefreshValue(newVal);
+                    beforeRefreshValue(newVal, val);
 
                     val = newVal;
 
@@ -172,8 +173,9 @@ public abstract class ConfigurationNode<VIEW> implements ConfigurationProperty<V
      * Callback from {@link #refreshValue()} that's called right before the update. Synchronized.
      *
      * @param newValue New configuration value.
+     * @param oldValue Old configuration value.
      */
-    protected void beforeRefreshValue(VIEW newValue) {
+    protected void beforeRefreshValue(VIEW newValue, @Nullable VIEW oldValue) {
         // No-op.
     }
 

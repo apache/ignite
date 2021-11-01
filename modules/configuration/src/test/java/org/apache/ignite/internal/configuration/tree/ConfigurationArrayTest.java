@@ -85,7 +85,7 @@ public class ConfigurationArrayTest {
     /** */
     @BeforeAll
     public static void beforeAll() {
-        cgen.compileRootSchema(TestArrayConfigurationSchema.class, Map.of());
+        cgen.compileRootSchema(TestArrayConfigurationSchema.class, Map.of(), Map.of());
     }
 
     /** */

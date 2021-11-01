@@ -54,7 +54,7 @@ public class TraversableTreeNodeTest {
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
 
-        cgen.compileRootSchema(ParentConfigurationSchema.class, Map.of());
+        cgen.compileRootSchema(ParentConfigurationSchema.class, Map.of(), Map.of());
     }
 
     @AfterAll

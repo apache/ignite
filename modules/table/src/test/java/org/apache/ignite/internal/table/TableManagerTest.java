@@ -133,7 +133,7 @@ public class TableManagerTest extends IgniteAbstractTest {
     private Loza rm;
 
     /** Tables configuration. */
-    @InjectConfiguration(extensions = {ExtendedTableConfigurationSchema.class})
+    @InjectConfiguration(internalExtensions = {ExtendedTableConfigurationSchema.class})
     private TablesConfiguration tblsCfg;
 
     /** Data storage configuration. */

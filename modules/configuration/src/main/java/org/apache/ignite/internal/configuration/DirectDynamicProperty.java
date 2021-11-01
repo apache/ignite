@@ -39,15 +39,17 @@ public class DirectDynamicProperty<T extends Serializable>
      * @param rootKey Root key.
      * @param changer Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
+     * @param readOnly Value cannot be changed.
      */
     public DirectDynamicProperty(
         List<String> prefix,
         String key,
         RootKey<?, ?> rootKey,
         DynamicConfigurationChanger changer,
-        boolean listenOnly
+        boolean listenOnly,
+        boolean readOnly
     ) {
-        super(prefix, key, rootKey, changer, listenOnly);
+        super(prefix, key, rootKey, changer, listenOnly, readOnly);
     }
 
     /** {@inheritDoc} */

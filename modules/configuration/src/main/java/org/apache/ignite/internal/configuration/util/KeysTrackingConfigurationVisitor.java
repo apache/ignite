@@ -99,15 +99,14 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
      *
      * @param key Name of the node retrieved from its holder object.
      * @param node Named list inner configuration node.
-     * @param <N> Type of element nodes in the named list.
      * @return Anything that implementation decides to return.
      */
-    protected <N extends InnerNode> T doVisitNamedListNode(String key, NamedListNode<N> node) {
+    protected T doVisitNamedListNode(String key, NamedListNode<?> node) {
         for (String namedListKey : node.namedListKeys()) {
             int prevPos = startVisit(namedListKey, true, false);
 
             try {
-                doVisitInnerNode(namedListKey, node.get(namedListKey));
+                doVisitInnerNode(namedListKey, node.getInnerNode(namedListKey));
             }
             finally {
                 endVisit(prevPos);

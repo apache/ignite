@@ -194,6 +194,7 @@ public class ConfigurationChangerTest {
             List.of(KEY),
             Map.of(MaybeInvalid.class, Set.of(validator)),
             storage,
+            List.of(),
             List.of()
         );
 
@@ -481,6 +482,6 @@ public class ConfigurationChangerTest {
 
     /** */
     private ConfigurationChanger createChanger(RootKey<?, ?> rootKey) {
-        return new TestConfigurationChanger(cgen, List.of(rootKey), Map.of(), storage, List.of());
+        return new TestConfigurationChanger(cgen, List.of(rootKey), Map.of(), storage, List.of(), List.of());
     }
 }

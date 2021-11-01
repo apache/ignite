@@ -76,6 +76,7 @@ public class SchemaConfigurationConverterTest {
             List.of(TablesConfiguration.KEY, DataStorageConfiguration.KEY),
             Map.of(TableValidator.class, Set.of(TableValidatorImpl.INSTANCE)),
             new TestConfigurationStorage(DISTRIBUTED),
+            List.of(),
             List.of()
         );
 

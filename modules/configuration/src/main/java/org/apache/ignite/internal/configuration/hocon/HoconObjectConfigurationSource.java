@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
+import org.apache.ignite.configuration.ConfigurationWrongPolymorphicTypeIdException;
 import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.ConstructableTreeNode;
 import org.jetbrains.annotations.Nullable;
@@ -125,6 +126,11 @@ class HoconObjectConfigurationSource implements ConfigurationSource {
                         format("'%s' configuration doesn't have the '%s' sub-configuration", join(path), key), e
                     );
                 }
+            }
+            catch (ConfigurationWrongPolymorphicTypeIdException e) {
+                throw new IllegalArgumentException(
+                    "Polymorphic configuration type is not correct: " + e.getMessage()
+                );
             }
         }
     }

@@ -94,7 +94,7 @@ class ConfigurationExtensionTest {
     /** Tests that internal configuration extensions work properly on injected configuration instance. */
     @Test
     public void internalConfiguration(
-        @InjectConfiguration(extensions = {ExtendedConfigurationSchema.class}) BasicConfiguration cfg
+        @InjectConfiguration(internalExtensions = {ExtendedConfigurationSchema.class}) BasicConfiguration cfg
     ) throws Exception {
         assertThat(cfg, is(instanceOf(ExtendedConfiguration.class)));
 

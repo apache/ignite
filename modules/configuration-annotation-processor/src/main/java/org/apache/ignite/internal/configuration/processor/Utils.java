@@ -16,7 +16,11 @@
  */
 package org.apache.ignite.internal.configuration.processor;
 
+import java.lang.annotation.Annotation;
+import java.util.stream.Stream;
 import com.squareup.javapoet.ClassName;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Annotation processing utilities.
@@ -63,5 +67,27 @@ public class Utils {
             schemaClassName.packageName(),
             schemaClassName.simpleName().replace("ConfigurationSchema", "Change")
         );
+    }
+
+    /**
+     * Returns the simple name of the annotation as: @Config.
+     *
+     * @param annotationClass Annotation class.
+     * @return Simple name of the annotation.
+     */
+    public static String simpleName(Class<? extends Annotation> annotationClass) {
+        return '@' + annotationClass.getSimpleName();
+    }
+
+    /**
+     * Create a string with simple annotation names like: @Config and @PolymorphicConfig.
+     *
+     * @param delimiter Delimiter between elements.
+     * @param annotations Annotations.
+     * @return String with simple annotation names.
+     */
+    @SafeVarargs
+    public static String joinSimpleName(String delimiter, Class<? extends Annotation>... annotations) {
+        return Stream.of(annotations).map(Utils::simpleName).collect(joining(delimiter));
     }
 }

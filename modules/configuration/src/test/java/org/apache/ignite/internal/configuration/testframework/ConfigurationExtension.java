@@ -54,6 +54,7 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.internalSchemaExtensions;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.polymorphicSchemaExtensions;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -161,7 +162,11 @@ public class ConfigurationExtension implements BeforeEachCallback, AfterEachCall
         // classes, extension is designed to mock actual configurations from public API to configure Ignite components.
         Class<?> schemaClass = Class.forName(type.getCanonicalName() + "Schema");
 
-        cgen.compileRootSchema(schemaClass, internalSchemaExtensions(List.of(annotation.extensions())));
+        cgen.compileRootSchema(
+            schemaClass,
+            internalSchemaExtensions(List.of(annotation.internalExtensions())),
+            polymorphicSchemaExtensions(List.of(annotation.polymorphicExtensions()))
+        );
 
         // RootKey must be mocked, there's no way to instantiate it using a public constructor.
         RootKey rootKey = mock(RootKey.class);

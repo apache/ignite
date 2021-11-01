@@ -29,6 +29,9 @@ import com.typesafe.config.ConfigValue;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import org.apache.ignite.configuration.annotation.PolymorphicConfig;
+import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
+import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
@@ -45,6 +48,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -62,6 +66,10 @@ public class HoconConverterTest {
         /** */
         @NamedConfigValue(syntheticKeyName = "p")
         public HoconPrimitivesConfigurationSchema primitivesList;
+
+        /** Polymorphic config. */
+        @org.apache.ignite.configuration.annotation.ConfigValue
+        public HoconPolymorphicConfigurationSchema polymorphicCfg;
     }
 
     /**
@@ -148,6 +156,36 @@ public class HoconConverterTest {
         public String stringVal = "";
     }
 
+    /**
+     * Configuration schema for testing the support of polymorphic configuration.
+     */
+    @PolymorphicConfig
+    public static class HoconPolymorphicConfigurationSchema {
+        /** Polymorphic type id field. */
+        @PolymorphicId(hasDefault = true)
+        public String typeId = "first";
+    }
+
+    /**
+     * Configuration schema for testing the support of polymorphic configuration.
+     */
+    @PolymorphicConfigInstance("first")
+    public static class HoconFirstPolymorphicInstanceConfigurationSchema extends HoconPolymorphicConfigurationSchema {
+        /** Long value. */
+        @Value(hasDefault = true)
+        public int longVal = 0;
+    }
+
+    /**
+     * Configuration schema for testing the support of polymorphic configuration.
+     */
+    @PolymorphicConfigInstance("second")
+    public static class HoconSecondPolymorphicInstanceConfigurationSchema extends HoconPolymorphicConfigurationSchema {
+        /** Integer value. */
+        @Value(hasDefault = true)
+        public int intVal = 0;
+    }
+
     /** */
     private static ConfigurationRegistry registry;
 
@@ -161,7 +199,11 @@ public class HoconConverterTest {
             List.of(HoconRootConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(LOCAL),
-            List.of()
+            List.of(),
+            List.of(
+                HoconFirstPolymorphicInstanceConfigurationSchema.class,
+                HoconSecondPolymorphicInstanceConfigurationSchema.class
+            )
         );
 
         registry.start();
@@ -185,15 +227,16 @@ public class HoconConverterTest {
         configuration.change(cfg -> cfg
             .changePrimitivesList(list -> list.namedListKeys().forEach(list::delete))
             .changeArraysList(list -> list.namedListKeys().forEach(list::delete))
+            .changePolymorphicCfg(c -> {})
         ).get(1, SECONDS);
     }
 
     /** */
     @Test
     public void toHoconBasic() {
-        assertEquals("root{arraysList=[],primitivesList=[]}", asHoconStr(List.of()));
+        assertEquals("root{arraysList=[],polymorphicCfg{longVal=0,typeId=first},primitivesList=[]}", asHoconStr(List.of()));
 
-        assertEquals("arraysList=[],primitivesList=[]", asHoconStr(List.of("root")));
+        assertEquals("arraysList=[],polymorphicCfg{longVal=0,typeId=first},primitivesList=[]", asHoconStr(List.of("root")));
 
         assertEquals("[]", asHoconStr(List.of("root", "arraysList")));
 
@@ -546,6 +589,35 @@ public class HoconConverterTest {
         assertThrowsIllegalArgException(
             () -> change("root.arraysList.name.strings = 10"),
             "'String[]' is expected as a type for the 'root.arraysList.name.strings' configuration value"
+        );
+    }
+
+    /** */
+    @Test
+    void testPolymorphicConfig() throws Throwable {
+        // Check defaults.
+        assertEquals("root{arraysList=[],polymorphicCfg{longVal=0,typeId=first},primitivesList=[]}", asHoconStr(List.of()));
+
+        // Check change type.
+        change("root.polymorphicCfg.typeId = second");
+
+        assertInstanceOf(HoconSecondPolymorphicInstanceConfiguration.class, configuration.polymorphicCfg());
+        assertEquals("root{arraysList=[],polymorphicCfg{intVal=0,typeId=second},primitivesList=[]}", asHoconStr(List.of()));
+
+        // Check change field.
+        change("root.polymorphicCfg.intVal = 10");
+        assertEquals("root{arraysList=[],polymorphicCfg{intVal=10,typeId=second},primitivesList=[]}", asHoconStr(List.of()));
+
+        // Check error: unknown typeId.
+        assertThrowsIllegalArgException(
+            () -> change("root.polymorphicCfg.typeId = ERROR"),
+            "Polymorphic configuration type is not correct: ERROR"
+        );
+
+        // Check error: try update field from typeId = first.
+        assertThrowsIllegalArgException(
+            () -> change("root.polymorphicCfg.longVal = 10"),
+            "'root.polymorphicCfg' configuration doesn't have the 'longVal' sub-configuration"
         );
     }
 

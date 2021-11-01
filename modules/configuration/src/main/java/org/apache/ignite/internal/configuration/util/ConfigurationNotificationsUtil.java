@@ -115,6 +115,12 @@ public class ConfigurationNotificationsUtil {
             eventConfigs
         );
 
+        // Polymorphic configuration type has changed.
+        // At the moment, we do not separate common fields from fields of a specific polymorphic configuration,
+        // so this may cause errors in the logic below, perhaps we will fix it later.
+        if (oldInnerNode.schemaType() != newInnerNode.schemaType())
+            return;
+
         oldInnerNode.traverseChildren(new ConfigurationVisitor<Void>() {
             /** {@inheritDoc} */
             @Override public Void visitLeafNode(String key, Serializable oldLeaf) {
@@ -238,7 +244,7 @@ public class ConfigurationNotificationsUtil {
 
                         eventConfigs.put(newNodeCfg.configType(), new ConfigurationContainer(name, newNodeCfg));
 
-                        InnerNode newVal = newNamedList.get(name);
+                        InnerNode newVal = newNamedList.getInnerNode(name);
 
                         for (DynamicConfiguration<InnerNode, ?> anyConfig : anyConfigs) {
                             notifyPublicListeners(
@@ -287,7 +293,7 @@ public class ConfigurationNotificationsUtil {
 
                         eventConfigs.put(delNodeCfg.configType(), new ConfigurationContainer(name, null));
 
-                        InnerNode oldVal = oldNamedList.get(name);
+                        InnerNode oldVal = oldNamedList.getInnerNode(name);
 
                         for (DynamicConfiguration<InnerNode, ?> anyConfig : anyConfigs) {
                             notifyPublicListeners(
@@ -347,8 +353,8 @@ public class ConfigurationNotificationsUtil {
                             new ConfigurationContainer(entry.getValue(), renNodeCfg)
                         );
 
-                        InnerNode oldVal = oldNamedList.get(entry.getKey());
-                        InnerNode newVal = newNamedList.get(entry.getValue());
+                        InnerNode oldVal = oldNamedList.getInnerNode(entry.getKey());
+                        InnerNode newVal = newNamedList.getInnerNode(entry.getValue());
 
                         for (DynamicConfiguration<InnerNode, ?> anyConfig : anyConfigs) {
                             notifyPublicListeners(
@@ -379,8 +385,8 @@ public class ConfigurationNotificationsUtil {
                     updated.retainAll(oldNames);
 
                     for (String name : updated) {
-                        InnerNode oldVal = oldNamedList.get(name);
-                        InnerNode newVal = newNamedList.get(name);
+                        InnerNode oldVal = oldNamedList.getInnerNode(name);
+                        InnerNode newVal = newNamedList.getInnerNode(name);
 
                         if (oldVal == newVal)
                             continue;
@@ -594,7 +600,7 @@ public class ConfigurationNotificationsUtil {
 
                     configs.put(newNodeCfg.configType(), new ConfigurationContainer(name, newNodeCfg));
 
-                    InnerNode newVal = newNamedList.get(name);
+                    InnerNode newVal = newNamedList.getInnerNode(name);
 
                     for (DynamicConfiguration<InnerNode, ?> anyConfig : anyConfigs) {
                         notifyPublicListeners(

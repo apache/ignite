@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.StreamSupport;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.util.CollectionUtils.concat;
+import static org.apache.ignite.internal.util.CollectionUtils.difference;
 import static org.apache.ignite.internal.util.CollectionUtils.union;
 import static org.apache.ignite.internal.util.CollectionUtils.viewReadOnly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,17 +53,17 @@ public class CollectionUtilsTest {
 
     /** */
     @Test
-    void testUnion() {
+    void testSetUnion() {
         assertTrue(union(null, null).isEmpty());
         assertTrue(union(Set.of(), null).isEmpty());
         assertTrue(union(null, new Object[] {}).isEmpty());
 
         assertEquals(Set.of(1), union(Set.of(1), null));
         assertEquals(Set.of(1), union(Set.of(1), new Integer[] {}));
-        assertEquals(Set.of(1), union(null, new Integer[] {1}));
-        assertEquals(Set.of(1), union(Set.of(), new Integer[] {1}));
+        assertEquals(Set.of(1), union(null, 1));
+        assertEquals(Set.of(1), union(Set.of(), 1));
 
-        assertEquals(Set.of(1, 2), union(Set.of(1), new Integer[] {2}));
+        assertEquals(Set.of(1, 2), union(Set.of(1), 2));
     }
 
     /** */
@@ -70,7 +72,7 @@ public class CollectionUtilsTest {
         assertTrue(viewReadOnly(null, null).isEmpty());
         assertTrue(viewReadOnly(List.of(), null).isEmpty());
 
-        assertEquals(List.of(1), viewReadOnly(List.of(1), null));
+        assertEquals(List.of(1), collect(viewReadOnly(List.of(1), null)));
         assertEquals(List.of(1), collect(viewReadOnly(List.of(1), identity())));
 
         assertEquals(List.of("1", "2", "3"), collect(viewReadOnly(List.of(1, 2, 3), String::valueOf)));
@@ -86,6 +88,36 @@ public class CollectionUtilsTest {
         assertThrows(UnsupportedOperationException.class, () -> viewReadOnly(List.of(1), null).retainAll(List.of()));
 
         assertThrows(UnsupportedOperationException.class, () -> viewReadOnly(List.of(1), null).iterator().remove());
+    }
+
+    /** */
+    @Test
+    void testSetDifference() {
+        assertTrue(difference(null, Set.of(1, 2, 3, 4)).isEmpty());
+        assertTrue(difference(Set.of(), Set.of(1, 2, 3, 4)).isEmpty());
+
+        assertEquals(Set.of(1, 2, 3, 4), difference(Set.of(1, 2, 3, 4), null));
+        assertEquals(Set.of(1, 2, 3, 4), difference(Set.of(1, 2, 3, 4), Set.of()));
+
+        assertEquals(Set.of(1, 2), difference(Set.of(1, 2, 3, 4), Set.of(3, 4)));
+        assertEquals(Set.of(1, 4), difference(Set.of(1, 2, 3, 4), Set.of(2, 3)));
+
+        assertEquals(Set.of(1, 2, 3, 4), difference(Set.of(1, 2, 3, 4), Set.of(5, 6, 7)));
+
+        assertEquals(Set.of(), difference(Set.of(1, 2, 3, 4), Set.of(1, 2, 3, 4)));
+    }
+
+    /** */
+    @Test
+    void testCollectionUnion() {
+        assertTrue(union().isEmpty());
+        assertTrue(union(new Collection[] {}).isEmpty());
+        assertTrue(union(List.of()).isEmpty());
+
+        assertEquals(List.of(1), collect(union(List.of(1), List.of())));
+        assertEquals(List.of(1), collect(union(List.of(), List.of(1))));
+
+        assertEquals(List.of(1, 2), collect(union(List.of(1), List.of(2))));
     }
 
     /**

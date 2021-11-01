@@ -19,7 +19,9 @@ package org.apache.ignite.internal.configuration.tree;
 
 import java.util.NoSuchElementException;
 
-/** */
+/**
+ * Interface for filling the configuration node.
+ */
 public interface ConstructableTreeNode {
     /**
      * Initializes {@code key} element of the object with the content from the source.

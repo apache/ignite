@@ -136,6 +136,7 @@ public class ITDistributedConfigurationPropertiesTest {
                 List.of(NodeConfiguration.KEY),
                 Map.of(),
                 new LocalConfigurationStorage(vaultManager),
+                List.of(),
                 List.of()
             );
 
@@ -165,6 +166,7 @@ public class ITDistributedConfigurationPropertiesTest {
                 List.of(DistributedConfiguration.KEY),
                 Map.of(),
                 distributedCfgStorage,
+                List.of(),
                 List.of()
             );
         }

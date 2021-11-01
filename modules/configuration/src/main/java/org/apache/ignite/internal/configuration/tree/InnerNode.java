@@ -19,7 +19,9 @@ package org.apache.ignite.internal.configuration.tree;
 
 import java.util.NoSuchElementException;
 
-/** */
+/**
+ * Configuration node implementation.
+ */
 public abstract class InnerNode implements TraversableTreeNode, ConstructableTreeNode, Cloneable {
     /** {@inheritDoc} */
     @Override public final <T> T accept(String key, ConfigurationVisitor<T> visitor) {
@@ -172,5 +174,16 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * Returns specific {@code Node} of the value.
+     * Overridden for polymorphic configuration to get a specific polymorphic configuration instance.
+     *
+     * @param <NODE> Type of the {@code Node}.
+     * @return Specific {@code Node} of the value.
+     */
+    public <NODE> NODE specificNode() {
+        return (NODE)this;
     }
 }

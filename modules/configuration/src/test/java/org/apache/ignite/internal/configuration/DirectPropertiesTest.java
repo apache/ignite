@@ -108,7 +108,11 @@ public class DirectPropertiesTest {
 
     /** */
     private final ConfigurationRegistry registry = new ConfigurationRegistry(
-        List.of(DirectConfiguration.KEY), Map.of(), new TestConfigurationStorage(LOCAL), List.of()
+        List.of(DirectConfiguration.KEY),
+        Map.of(),
+        new TestConfigurationStorage(LOCAL),
+        List.of(),
+        List.of()
     );
 
     /** */

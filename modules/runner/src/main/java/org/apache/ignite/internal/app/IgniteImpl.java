@@ -156,6 +156,7 @@ public class IgniteImpl implements Ignite {
             ),
             Map.of(),
             new LocalConfigurationStorage(vaultMgr),
+            List.of(),
             List.of()
         );
 
@@ -186,7 +187,8 @@ public class IgniteImpl implements Ignite {
             ),
             Map.of(TableValidator.class, Set.of(TableValidatorImpl.INSTANCE)),
             new DistributedConfigurationStorage(metaStorageMgr, vaultMgr),
-            Collections.singletonList(ExtendedTableConfigurationSchema.class)
+            Collections.singletonList(ExtendedTableConfigurationSchema.class),
+            List.of()
         );
 
         baselineMgr = new BaselineManager(

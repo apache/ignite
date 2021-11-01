@@ -39,7 +39,7 @@ public class ConstructableTreeNodeTest {
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
 
-        cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class, Map.of());
+        cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class, Map.of(), Map.of());
     }
 
     @AfterAll

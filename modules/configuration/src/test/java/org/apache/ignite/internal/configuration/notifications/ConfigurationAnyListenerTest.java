@@ -113,6 +113,7 @@ public class ConfigurationAnyListenerTest {
             List.of(RootConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(LOCAL),
+            List.of(),
             List.of()
         );
 

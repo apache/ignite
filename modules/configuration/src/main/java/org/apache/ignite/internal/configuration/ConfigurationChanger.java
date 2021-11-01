@@ -59,6 +59,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationFlattener.createFlattenedUpdatesMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.addDefaults;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.checkConfigurationType;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.compressDeletedEntries;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.dropNulls;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.fillFromPrefixMap;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.toPrefixMap;
@@ -450,25 +451,5 @@ public abstract class ConfigurationChanger implements DynamicConfigurationChange
                 else
                     oldStorageRoots.changeFuture.completeExceptionally(t);
             });
-    }
-
-    /**
-     * "Compress" prefix map - this means that deleted named list elements will be represented as a single {@code null}
-     * objects instead of a number of nullified configuration leaves.
-     *
-     * @param prefixMap Prefix map, constructed from the storage notification data or its subtree.
-     */
-    private void compressDeletedEntries(Map<String, ?> prefixMap) {
-        // Here we basically assume that if prefix subtree contains single null child then all its childrens are nulls.
-        // Replace all such elements will nulls, signifying that these are deleted named list elements.
-        prefixMap.replaceAll((key, value) ->
-            value instanceof Map && ((Map<?, ?>)value).containsValue(null) ? null : value
-        );
-
-        // Continue recursively.
-        for (Object value : prefixMap.values()) {
-            if (value instanceof Map)
-                compressDeletedEntries((Map<String, ?>)value);
-        }
     }
 }

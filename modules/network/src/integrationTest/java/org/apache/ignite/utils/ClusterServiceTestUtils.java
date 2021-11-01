@@ -69,6 +69,7 @@ public class ClusterServiceTestUtils {
             Collections.singleton(NetworkConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(ConfigurationType.LOCAL),
+            List.of(),
             List.of()
         );
 

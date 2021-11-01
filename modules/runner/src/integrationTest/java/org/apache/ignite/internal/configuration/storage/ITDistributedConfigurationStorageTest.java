@@ -108,6 +108,7 @@ public class ITDistributedConfigurationStorageTest {
                 rootKeys,
                 Map.of(),
                 new LocalConfigurationStorage(vaultManager),
+                List.of(),
                 List.of()
             );
 

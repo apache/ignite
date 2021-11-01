@@ -47,7 +47,7 @@ public class ConfigurationFlattener {
 
         oldInnerNodesStack.push(curRoot);
 
-        // Explicit access to the children of super root guarantees that "oldInnerNodesStack" is never empty and thus
+        // Explicit access to the children of super root guarantees that "oldInnerNodesStack" is never empty, and thus
         // we don't need null-checks when calling Deque#peek().
         updates.traverseChildren(new FlattenerVisitor(oldInnerNodesStack, resMap), true);
 
@@ -66,7 +66,7 @@ public class ConfigurationFlattener {
         int idx = 0;
 
         for (String key : node.namedListKeys()) {
-            if (node.get(key) != null)
+            if (node.getInnerNode(key) != null)
                 res.put(key, idx++);
         }
 
@@ -92,6 +92,12 @@ public class ConfigurationFlattener {
          */
         private boolean deletion;
 
+        /**
+         * Constructor.
+         *
+         * @param oldInnerNodesStack Old nodes stack for recursion.
+         * @param resMap Map with the result.
+         */
         FlattenerVisitor(Deque<InnerNode> oldInnerNodesStack, Map<String, Serializable> resMap) {
             this.oldInnerNodesStack = oldInnerNodesStack;
             this.resMap = resMap;
@@ -120,6 +126,14 @@ public class ConfigurationFlattener {
 
             if (oldNode == null)
                 visitAsymmetricInnerNode(newNode, false);
+            else if (oldNode.schemaType() != newNode.schemaType()) {
+                // At the moment, we do not separate the general fields from the fields of
+                // specific instances of the polymorphic configuration, so we will assume
+                // that all the fields have changed, perhaps we will fix this later.
+                visitAsymmetricInnerNode(oldNode, true);
+
+                visitAsymmetricInnerNode(newNode, false);
+            }
             else {
                 oldInnerNodesStack.push(oldNode);
 
@@ -132,7 +146,7 @@ public class ConfigurationFlattener {
         }
 
         /** {@inheritDoc} */
-        @Override public <N extends InnerNode> Void doVisitNamedListNode(String key, NamedListNode<N> newNode) {
+        @Override public Void doVisitNamedListNode(String key, NamedListNode<?> newNode) {
             // Read same named list node from old tree.
             NamedListNode<?> oldNode = oldInnerNodesStack.peek().traverseChild(key, ConfigurationUtil.namedListNodeVisitor(), true);
 
@@ -152,10 +166,10 @@ public class ConfigurationFlattener {
                 String newNodeInternalId = newNode.internalId(newNodeKey);
 
                 withTracking(newNodeInternalId, false, false, () -> {
-                    InnerNode newNamedElement = newNode.get(newNodeKey);
+                    InnerNode newNamedElement = newNode.getInnerNode(newNodeKey);
 
                     String oldNodeKey = oldNode.keyByInternalId(newNodeInternalId);
-                    InnerNode oldNamedElement = oldNode.get(oldNodeKey);
+                    InnerNode oldNamedElement = oldNode.getInnerNode(oldNodeKey);
 
                     // Deletion of nonexistent element.
                     if (oldNamedElement == null && newNamedElement == null)
@@ -168,6 +182,14 @@ public class ConfigurationFlattener {
                             visitAsymmetricInnerNode(oldNamedElement, true);
                         else if (oldNamedElement == null)
                             visitAsymmetricInnerNode(newNamedElement, false);
+                        else if (newNamedElement.schemaType() != oldNamedElement.schemaType()) {
+                            // At the moment, we do not separate the general fields from the fields of
+                            // specific instances of the polymorphic configuration, so we will assume
+                            // that all the fields have changed, perhaps we will fix this later.
+                            visitAsymmetricInnerNode(oldNamedElement, true);
+
+                            visitAsymmetricInnerNode(newNamedElement, false);
+                        }
                         else {
                             oldInnerNodesStack.push(oldNamedElement);
 

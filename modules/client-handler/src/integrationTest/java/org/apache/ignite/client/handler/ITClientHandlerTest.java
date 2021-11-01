@@ -181,6 +181,7 @@ public class ITClientHandlerTest {
             List.of(ClientConnectorConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(LOCAL),
+            List.of(),
             List.of()
         );
 

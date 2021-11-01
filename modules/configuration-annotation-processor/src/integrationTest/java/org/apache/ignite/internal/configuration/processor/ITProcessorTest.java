@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.Compiler.javac;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,7 +46,7 @@ public class ITProcessorTest extends AbstractProcessorTest {
 
         final Compilation status = batch.getCompilationStatus();
 
-        assertNotEquals(Compilation.Status.FAILURE, status.status());
+        assertEquals(Compilation.Status.SUCCESS, status.status());
 
         assertEquals(3, batch.generated().size());
 
@@ -68,7 +67,7 @@ public class ITProcessorTest extends AbstractProcessorTest {
 
         BatchCompilation batchCompile = batchCompile(cls0, cls1, cls2, cls3);
 
-        assertNotEquals(Compilation.Status.FAILURE, batchCompile.getCompilationStatus().status());
+        assertEquals(Compilation.Status.SUCCESS, batchCompile.getCompilationStatus().status());
 
         assertEquals(4 * 3, batchCompile.generated().size());
 
@@ -142,6 +141,114 @@ public class ITProcessorTest extends AbstractProcessorTest {
         assertThat(compilation).hadErrorContaining(
             "@DirectAccess annotation must not be present on nested configuration fields"
         );
+    }
+
+    /** */
+    @Test
+    void testErrorPolymorphicConfigCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.polymorphic";
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic0ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic1ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic2ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic3ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic4ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic5ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic6ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic7ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphic8ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance0ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance1ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance2ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance3ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance4ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance5ConfigurationSchema")
+        );
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> batchCompile(packageName, "ErrorPolymorphicInstance6ConfigurationSchema")
+        );
+    }
+
+    /** */
+    @Test
+    void testSuccessPolymorphicConfigCodeGeneration() {
+        String packageName = "org.apache.ignite.internal.configuration.processor.polymorphic";
+
+        ClassName cls0 = ClassName.get(packageName, "SimplePolymorphicConfigurationSchema");
+        ClassName cls1 = ClassName.get(packageName, "SimplePolymorphicInstanceConfigurationSchema");
+        ClassName cls2 = ClassName.get(packageName, "SimpleConfigurationSchema");
+        ClassName cls3 = ClassName.get(packageName, "SimpleRootConfigurationSchema");
+
+        BatchCompilation batchCompile = batchCompile(cls0, cls1, cls2, cls3);
+
+        assertEquals(Compilation.Status.SUCCESS, batchCompile.getCompilationStatus().status());
+
+        assertEquals(4 * 3, batchCompile.generated().size());
+
+        assertTrue(batchCompile.getBySchema(cls0).allGenerated());
+        assertTrue(batchCompile.getBySchema(cls1).allGenerated());
+        assertTrue(batchCompile.getBySchema(cls2).allGenerated());
+        assertTrue(batchCompile.getBySchema(cls3).allGenerated());
     }
 
     /**

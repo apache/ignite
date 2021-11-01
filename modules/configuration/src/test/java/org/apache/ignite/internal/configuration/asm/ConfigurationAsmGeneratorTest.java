@@ -22,11 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import org.apache.ignite.configuration.ConfigurationReadOnlyException;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import org.apache.ignite.configuration.annotation.PolymorphicConfig;
+import org.apache.ignite.configuration.annotation.PolymorphicConfigInstance;
+import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.internal.configuration.ConfigurationChanger;
 import org.apache.ignite.internal.configuration.DynamicConfiguration;
@@ -34,13 +39,17 @@ import org.apache.ignite.internal.configuration.TestConfigurationChanger;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.addDefaults;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,30 +58,48 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Testing the {@link ConfigurationAsmGenerator}.
  */
 public class ConfigurationAsmGeneratorTest {
-    /** Configuration changer. */
-    private static ConfigurationChanger changer;
-
     /** Configuration generator. */
     private static ConfigurationAsmGenerator generator;
+
+    /** Configuration changer. */
+    private ConfigurationChanger changer;
 
     /** */
     @BeforeAll
     public static void beforeAll() {
-        Collection<Class<?>> extensions = List.of(
+        generator = new ConfigurationAsmGenerator();
+    }
+
+    /** */
+    @AfterAll
+    public static void afterAll() {
+        generator = null;
+    }
+
+    /** */
+    @BeforeEach
+    void beforeEach() {
+        Collection<Class<?>> internalExtensions = List.of(
             ExtendedTestRootConfigurationSchema.class,
             ExtendedSecondTestRootConfigurationSchema.class,
             ExtendedTestConfigurationSchema.class,
             ExtendedSecondTestConfigurationSchema.class
         );
 
-        generator = new ConfigurationAsmGenerator();
+        Collection<Class<?>> polymorphicExtensions = List.of(
+            FirstPolymorphicInstanceTestConfigurationSchema.class,
+            SecondPolymorphicInstanceTestConfigurationSchema.class,
+            FirstPolymorphicNamedInstanceTestConfigurationSchema.class,
+            SecondPolymorphicNamedInstanceTestConfigurationSchema.class
+        );
 
         changer = new TestConfigurationChanger(
             generator,
             List.of(TestRootConfiguration.KEY),
             Map.of(),
             new TestConfigurationStorage(LOCAL),
-            extensions
+            internalExtensions,
+            polymorphicExtensions
         );
 
         changer.start();
@@ -80,17 +107,14 @@ public class ConfigurationAsmGeneratorTest {
     }
 
     /** */
-    @AfterAll
-    public static void after() {
+    @AfterEach
+    void afterEach() {
         changer.stop();
-
-        generator = null;
-        changer = null;
     }
 
     /** */
     @Test
-    void testExtendedRootConfiguration() throws Exception {
+    void testInternalRootConfiguration() throws Exception {
         DynamicConfiguration<?, ?> config = generator.instantiateCfg(TestRootConfiguration.KEY, changer);
 
         TestRootConfiguration baseRootConfig = (TestRootConfiguration)config;
@@ -134,7 +158,7 @@ public class ConfigurationAsmGeneratorTest {
 
     /** */
     @Test
-    void testExtendedSubConfiguration() throws Exception {
+    void testInternalSubConfiguration() throws Exception {
         DynamicConfiguration<?, ?> config = generator.instantiateCfg(TestRootConfiguration.KEY, changer);
 
         TestRootConfiguration rootConfig = (TestRootConfiguration)config;
@@ -175,7 +199,7 @@ public class ConfigurationAsmGeneratorTest {
 
     /** */
     @Test
-    void testExtendedNamedConfiguration() throws Exception {
+    void testInternalNamedConfiguration() throws Exception {
         DynamicConfiguration<?, ?> config = generator.instantiateCfg(TestRootConfiguration.KEY, changer);
 
         TestRootConfiguration rootConfig = (TestRootConfiguration)config;
@@ -231,6 +255,228 @@ public class ConfigurationAsmGeneratorTest {
         subInnerNode.construct("i1", null, true);
     }
 
+    /** */
+    @Test
+    void testPolymorphicSubConfiguration() throws Exception {
+        TestRootConfiguration rootConfig = (TestRootConfiguration)generator.instantiateCfg(TestRootConfiguration.KEY, changer);
+
+        // Check defaults.
+
+        FirstPolymorphicInstanceTestConfiguration firstCfg = (FirstPolymorphicInstanceTestConfiguration)rootConfig.polymorphicSubCfg();
+        assertEquals("first", firstCfg.typeId().value());
+        assertEquals("strVal", firstCfg.strVal().value());
+        assertEquals(0, firstCfg.intVal().value());
+
+        FirstPolymorphicInstanceTestView firstVal = (FirstPolymorphicInstanceTestView)firstCfg.value();
+        assertEquals("first", firstVal.typeId());
+        assertEquals("strVal", firstVal.strVal());
+        assertEquals(0, firstVal.intVal());
+
+        firstVal = (FirstPolymorphicInstanceTestView)rootConfig.value().polymorphicSubCfg();
+        assertEquals("first", firstVal.typeId());
+        assertEquals("strVal", firstVal.strVal());
+        assertEquals(0, firstVal.intVal());
+
+        // Check simple changes.
+
+        firstCfg.strVal().update("strVal1").get(1, SECONDS);
+        firstCfg.intVal().update(1).get(1, SECONDS);
+
+        assertEquals("first", firstCfg.typeId().value());
+        assertEquals("strVal1", firstCfg.strVal().value());
+        assertEquals(1, firstCfg.intVal().value());
+
+        firstCfg.change(c -> ((FirstPolymorphicInstanceTestChange)c).changeIntVal(2).changeStrVal("strVal2")).get(1, SECONDS);
+
+        assertEquals("first", firstCfg.typeId().value());
+        assertEquals("strVal2", firstCfg.strVal().value());
+        assertEquals(2, firstCfg.intVal().value());
+
+        rootConfig.change(c -> c.changePolymorphicSubCfg(
+            c1 -> ((FirstPolymorphicInstanceTestChange)c1).changeIntVal(3).changeStrVal("strVal3")
+        )).get(1, SECONDS);
+
+        assertEquals("first", firstCfg.typeId().value());
+        assertEquals("strVal3", firstCfg.strVal().value());
+        assertEquals(3, firstCfg.intVal().value());
+
+        // Check convert.
+
+        rootConfig.polymorphicSubCfg().change(c -> c.convert(SecondPolymorphicInstanceTestChange.class)).get(1, SECONDS);
+
+        SecondPolymorphicInstanceTestConfiguration secondCfg = (SecondPolymorphicInstanceTestConfiguration)rootConfig.polymorphicSubCfg();
+        assertEquals("second", secondCfg.typeId().value());
+        assertEquals("strVal3", secondCfg.strVal().value());
+        assertEquals(0, secondCfg.intVal().value());
+        assertEquals(0L, secondCfg.longVal().value());
+
+        SecondPolymorphicInstanceTestView secondView = (SecondPolymorphicInstanceTestView)secondCfg.value();
+        assertEquals("second", secondView.typeId());
+        assertEquals("strVal3", secondView.strVal());
+        assertEquals(0, secondView.intVal());
+        assertEquals(0L, secondView.longVal());
+
+        rootConfig.polymorphicSubCfg().change(c -> c.convert(FirstPolymorphicInstanceTestChange.class)).get(1, SECONDS);
+
+        firstCfg = (FirstPolymorphicInstanceTestConfiguration)rootConfig.polymorphicSubCfg();
+        assertEquals("first", firstCfg.typeId().value());
+        assertEquals("strVal3", firstCfg.strVal().value());
+        assertEquals(0, firstCfg.intVal().value());
+    }
+
+    /** */
+    @Test
+    void testPolymorphicErrors() throws Exception {
+        TestRootConfiguration rootConfig = (TestRootConfiguration)generator.instantiateCfg(TestRootConfiguration.KEY, changer);
+
+        PolymorphicTestConfiguration polymorphicCfg = rootConfig.polymorphicSubCfg();
+
+        // Checks for an error on an attempt to update polymorphicTypeId field.
+        assertThrows(
+            ConfigurationReadOnlyException.class,
+            () -> polymorphicCfg.typeId().update("second").get(1, SECONDS)
+        );
+
+        // Checks for an error on an attempt to read a field of a different type of polymorphic configuration.
+        assertThrows(ExecutionException.class, () -> polymorphicCfg.change(c -> {
+                    FirstPolymorphicInstanceTestView firstView = (FirstPolymorphicInstanceTestView)c;
+
+                    c.convert(SecondPolymorphicInstanceTestChange.class);
+
+                    firstView.intVal();
+                }
+            ).get(1, SECONDS)
+        );
+
+        // Checks for an error on an attempt to change a field of a different type of polymorphic configuration.
+        assertThrows(ExecutionException.class, () -> polymorphicCfg.change(c -> {
+                    FirstPolymorphicInstanceTestChange firstChange = (FirstPolymorphicInstanceTestChange)c;
+
+                    c.convert(SecondPolymorphicInstanceTestChange.class);
+
+                    firstChange.changeIntVal(10);
+                }
+            ).get(1, SECONDS)
+        );
+    }
+
+    /** */
+    @Test
+    void testPolymorphicNamedConfigurationAdd() throws Exception {
+        TestRootConfiguration rootConfig = (TestRootConfiguration)generator.instantiateCfg(TestRootConfiguration.KEY, changer);
+        
+        // Check add named polymorphic config.
+
+        rootConfig.polymorphicNamedCfg()
+            .change(c -> c.create("0", c1 -> c1.convert(FirstPolymorphicNamedInstanceTestChange.class))
+                .create("1", c1 -> c1.convert(SecondPolymorphicNamedInstanceTestChange.class)
+                    .changeIntVal(1)
+                    .changeLongVal(1)
+                    .changeStrVal("strVal1")
+                )
+            ).get(1, SECONDS);
+
+        FirstPolymorphicNamedInstanceTestConfiguration firstCfg =
+            (FirstPolymorphicNamedInstanceTestConfiguration)rootConfig.polymorphicNamedCfg().get("0");
+
+        assertEquals("strVal", firstCfg.strVal().value());
+        assertEquals(0, firstCfg.intVal().value());
+
+        SecondPolymorphicNamedInstanceTestConfiguration secondCfg =
+            (SecondPolymorphicNamedInstanceTestConfiguration)rootConfig.polymorphicNamedCfg().get("1");
+
+        assertEquals("strVal1", secondCfg.strVal().value());
+        assertEquals(1, secondCfg.intVal().value());
+        assertEquals(1L, secondCfg.longVal().value());
+
+        // Check config values.
+        FirstPolymorphicNamedInstanceTestView firstVal = (FirstPolymorphicNamedInstanceTestView)firstCfg.value();
+
+        assertEquals("strVal", firstVal.strVal());
+        assertEquals(0, firstVal.intVal());
+
+        firstVal = (FirstPolymorphicNamedInstanceTestView)rootConfig.polymorphicNamedCfg().value().get("0");
+
+        assertEquals("strVal", firstVal.strVal());
+        assertEquals(0, firstVal.intVal());
+
+        firstVal = (FirstPolymorphicNamedInstanceTestView)rootConfig.value().polymorphicNamedCfg().get("0");
+
+        assertEquals("strVal", firstVal.strVal());
+        assertEquals(0, firstVal.intVal());
+
+        SecondPolymorphicNamedInstanceTestView secondVal = (SecondPolymorphicNamedInstanceTestView)secondCfg.value();
+
+        assertEquals("strVal1", secondVal.strVal());
+        assertEquals(1, secondVal.intVal());
+        assertEquals(1L, secondVal.longVal());
+
+        secondVal = (SecondPolymorphicNamedInstanceTestView)rootConfig.polymorphicNamedCfg().value().get("1");
+
+        assertEquals("strVal1", secondVal.strVal());
+        assertEquals(1, secondVal.intVal());
+        assertEquals(1L, secondVal.longVal());
+
+        secondVal = (SecondPolymorphicNamedInstanceTestView)rootConfig.value().polymorphicNamedCfg().get("1");
+
+        assertEquals("strVal1", secondVal.strVal());
+        assertEquals(1, secondVal.intVal());
+        assertEquals(1L, secondVal.longVal());
+    }
+
+    /** */
+    @Test
+    void testPolymorphicNamedConfigurationChange() throws Exception {
+        TestRootConfiguration rootConfig = (TestRootConfiguration)generator.instantiateCfg(TestRootConfiguration.KEY, changer);
+
+        rootConfig.polymorphicNamedCfg()
+            .change(c -> c.create("0", c1 -> c1.convert(FirstPolymorphicNamedInstanceTestChange.class)))
+            .get(1, SECONDS);
+
+        FirstPolymorphicNamedInstanceTestConfiguration firstCfg =
+            (FirstPolymorphicNamedInstanceTestConfiguration)rootConfig.polymorphicNamedCfg().get("0");
+
+        firstCfg.intVal().update(1).get(1, SECONDS);
+
+        assertEquals(1, firstCfg.intVal().value());
+
+        firstCfg.change(c -> ((FirstPolymorphicNamedInstanceTestChange)c).changeIntVal(2).changeStrVal("strVal2"))
+            .get(1, SECONDS);
+
+        assertEquals(2, firstCfg.intVal().value());
+        assertEquals("strVal2", firstCfg.strVal().value());
+
+        // Check convert.
+
+        rootConfig.polymorphicNamedCfg().get("0")
+            .change(c -> c.convert(SecondPolymorphicNamedInstanceTestChange.class)
+                .changeLongVal(3)
+                .changeIntVal(3)
+                .changeStrVal("strVal3")
+            ).get(1, SECONDS);
+
+        SecondPolymorphicNamedInstanceTestConfiguration secondCfg =
+            (SecondPolymorphicNamedInstanceTestConfiguration)rootConfig.polymorphicNamedCfg().get("0");
+
+        assertEquals(3, secondCfg.intVal().value());
+        assertEquals(3L, secondCfg.longVal().value());
+        assertEquals("strVal3", secondCfg.strVal().value());
+    }
+
+    /** */
+    @Test
+    void testPolymorphicNamedConfigurationRemove() throws Exception {
+        TestRootConfiguration rootConfig = (TestRootConfiguration)generator.instantiateCfg(TestRootConfiguration.KEY, changer);
+
+        rootConfig.polymorphicNamedCfg()
+            .change(c -> c.create("0", c1 -> c1.convert(FirstPolymorphicNamedInstanceTestChange.class)))
+            .get(1, SECONDS);
+
+        rootConfig.polymorphicNamedCfg().change(c -> c.delete("0")).get(1, SECONDS);
+
+        assertNull(rootConfig.polymorphicNamedCfg().get("0"));
+    }
+
     /**
      * Test root configuration schema.
      */
@@ -251,6 +497,14 @@ public class ConfigurationAsmGeneratorTest {
         /** Named configuration field. */
         @NamedConfigValue
         public TestConfigurationSchema namedCfg;
+
+        /** Polymorphic sub configuration field. */
+        @ConfigValue
+        public PolymorphicTestConfigurationSchema polymorphicSubCfg;
+
+        /** Polymorphic named configuration field. */
+        @NamedConfigValue
+        public PolymorphicNamedTestConfigurationSchema polymorphicNamedCfg;
     }
 
     /**
@@ -305,5 +559,81 @@ public class ConfigurationAsmGeneratorTest {
         /** Integer field. */
         @Value(hasDefault = true)
         public int i1 = 0;
+    }
+
+    /**
+     * Polymorphic configuration scheme.
+     */
+    @PolymorphicConfig
+    public static class PolymorphicTestConfigurationSchema {
+        /** Polymorphic type id field. */
+        @PolymorphicId(hasDefault = true)
+        public String typeId = "first";
+
+        /** String value. */
+        @Value(hasDefault = true)
+        public String strVal = "strVal";
+    }
+
+    /**
+     * First instance of the polymorphic configuration schema.
+     */
+    @PolymorphicConfigInstance("first")
+    public static class FirstPolymorphicInstanceTestConfigurationSchema extends PolymorphicTestConfigurationSchema {
+        /** Integer value. */
+        @Value(hasDefault = true)
+        public int intVal = 0;
+    }
+
+    /**
+     * Second instance of the polymorphic configuration schema.
+     */
+    @PolymorphicConfigInstance("second")
+    public static class SecondPolymorphicInstanceTestConfigurationSchema extends PolymorphicTestConfigurationSchema {
+        /** Integer value. */
+        @Value(hasDefault = true)
+        public int intVal = 0;
+
+        /** Long value. */
+        @Value(hasDefault = true)
+        public long longVal = 0;
+    }
+
+    /**
+     * Polymorphic named configuration scheme.
+     */
+    @PolymorphicConfig
+    public static class PolymorphicNamedTestConfigurationSchema {
+        /** Polymorphic type id field. */
+        @PolymorphicId(hasDefault = true)
+        public String typeId;
+
+        /** String value. */
+        @Value(hasDefault = true)
+        public String strVal = "strVal";
+    }
+
+    /**
+     * First instance of the named polymorphic configuration schema.
+     */
+    @PolymorphicConfigInstance("first")
+    public static class FirstPolymorphicNamedInstanceTestConfigurationSchema extends PolymorphicNamedTestConfigurationSchema {
+        /** Integer value. */
+        @Value(hasDefault = true)
+        public int intVal = 0;
+    }
+
+    /**
+     * Second instance of the named polymorphic configuration schema.
+     */
+    @PolymorphicConfigInstance("second")
+    public static class SecondPolymorphicNamedInstanceTestConfigurationSchema extends PolymorphicNamedTestConfigurationSchema {
+        /** Integer value. */
+        @Value(hasDefault = true)
+        public int intVal = 0;
+
+        /** Long value. */
+        @Value(hasDefault = true)
+        public long longVal = 0;
     }
 }

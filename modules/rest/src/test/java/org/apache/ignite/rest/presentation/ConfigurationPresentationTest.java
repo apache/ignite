@@ -71,6 +71,7 @@ public class ConfigurationPresentationTest {
             List.of(TestRootConfiguration.KEY),
             Map.of(Value.class, Set.of(validator)),
             new TestConfigurationStorage(LOCAL),
+            List.of(),
             List.of()
         );
 

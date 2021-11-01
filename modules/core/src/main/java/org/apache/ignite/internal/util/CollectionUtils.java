@@ -31,6 +31,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.addAll;
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableCollection;
 import static java.util.Collections.unmodifiableSet;
 
 /**
@@ -86,22 +88,60 @@ public final class CollectionUtils {
      *
      * @param set Set.
      * @param ts Items.
-     * @param <T> Type of the elements of the list.
+     * @param <T> Type of the elements of set and items..
      * @return Immutable union of set and items.
      */
     @SafeVarargs
     public static <T> Set<T> union(@Nullable Set<T> set, @Nullable T... ts) {
         if (nullOrEmpty(set))
             return ts == null || ts.length == 0 ? Set.of() : Set.of(ts);
-        else if (ts == null || ts.length == 0)
+
+        if (ts == null || ts.length == 0)
             return unmodifiableSet(set);
-        else {
-            Set<T> res = new HashSet<>(set);
 
-            addAll(res, ts);
+        Set<T> res = new HashSet<>(set);
 
-            return unmodifiableSet(res);
-        }
+        addAll(res, ts);
+
+        return unmodifiableSet(res);
+    }
+
+    /**
+     * Union collections.
+     *
+     * @param collections Collections.
+     * @param <T> Type of the elements of collections.
+     * @return Immutable union of collections.
+     */
+    @SafeVarargs
+    public static <T> Collection<T> union(Collection<T>... collections) {
+        if (collections == null || collections.length == 0)
+            return List.of();
+
+        return new AbstractCollection<>() {
+            /** Total size of the collections. */
+            int size = -1;
+
+            /** {@inheritDoc} */
+            @Override public Iterator<T> iterator() {
+                return concat(collections).iterator();
+            }
+
+            /** {@inheritDoc} */
+            @Override public int size() {
+                if (size == -1) {
+                    int s = 0;
+
+                    for (Collection<T> collection : collections) {
+                        s += collection.size();
+                    }
+
+                    size = s;
+                }
+
+                return size;
+            }
+        };
     }
 
     /**
@@ -117,31 +157,30 @@ public final class CollectionUtils {
     public static <T> Iterable<T> concat(@Nullable Iterable<? extends T>... iterables) {
         if (iterables == null || iterables.length == 0)
             return Collections::emptyIterator;
-        else {
-            return () -> new Iterator<T>() {
-                /** Current index at {@code iterables}. */
-                int i = 0;
 
-                /** Current iterator. */
-                Iterator<? extends T> curr = emptyIterator();
+        return () -> new Iterator<>() {
+            /** Current index at {@code iterables}. */
+            int i = 0;
 
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    while (!curr.hasNext() && i < iterables.length)
-                        curr = iterables[i++].iterator();
+            /** Current iterator. */
+            Iterator<? extends T> curr = emptyIterator();
 
-                    return curr.hasNext();
-                }
+            /** {@inheritDoc} */
+            @Override public boolean hasNext() {
+                while (!curr.hasNext() && i < iterables.length)
+                    curr = iterables[i++].iterator();
 
-                /** {@inheritDoc} */
-                @Override public T next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException();
-                    else
-                        return curr.next();
-                }
-            };
-        }
+                return curr.hasNext();
+            }
+
+            /** {@inheritDoc} */
+            @Override public T next() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+                else
+                    return curr.next();
+            }
+        };
     }
 
     /**
@@ -158,39 +197,69 @@ public final class CollectionUtils {
         @Nullable Function<? super T1, ? extends T2> mapper
     ) {
         if (nullOrEmpty(collection))
-            return Collections.emptyList();
-        else if (mapper == null)
-            return (Collection<T2>)collection;
-        else {
-            return new AbstractCollection<>() {
-                /** {@inheritDoc} */
-                @Override public Iterator<T2> iterator() {
-                    Iterator<? extends T1> iterator = collection.iterator();
+            return emptyList();
 
-                    return new Iterator<>() {
-                        /** {@inheritDoc} */
-                        @Override public boolean hasNext() {
-                            return iterator.hasNext();
-                        }
+        if (mapper == null)
+            return unmodifiableCollection((Collection<T2>)collection);
 
-                        /** {@inheritDoc} */
-                        @Override public T2 next() {
-                            return mapper.apply(iterator.next());
-                        }
-                    };
-                }
+        return new AbstractCollection<>() {
+            /** {@inheritDoc} */
+            @Override public Iterator<T2> iterator() {
+                Iterator<? extends T1> iterator = collection.iterator();
 
-                /** {@inheritDoc} */
-                @Override public int size() {
-                    return collection.size();
-                }
+                return new Iterator<>() {
+                    /** {@inheritDoc} */
+                    @Override public boolean hasNext() {
+                        return iterator.hasNext();
+                    }
 
-                /** {@inheritDoc} */
-                @Override public boolean isEmpty() {
-                    return collection.isEmpty();
-                }
-            };
+                    /** {@inheritDoc} */
+                    @Override public T2 next() {
+                        return mapper.apply(iterator.next());
+                    }
+                };
+            }
+
+            /** {@inheritDoc} */
+            @Override public int size() {
+                return collection.size();
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean isEmpty() {
+                return collection.isEmpty();
+            }
+        };
+    }
+
+    /**
+     * Difference of two sets.
+     *
+     * @param a First set.
+     * @param b Second set.
+     * @param <T> Type of the elements.
+     * @return Immutable set of elements of the first without the second.
+     */
+    public static <T> Set<T> difference(@Nullable Set<T> a, @Nullable Set<T> b) {
+        if (nullOrEmpty(a))
+            return Set.of();
+
+        else if (nullOrEmpty(b))
+            return unmodifiableSet(a);
+
+        // Lazy initialization.
+        Set<T> res = null;
+
+        for (T t : a) {
+            if (!b.contains(t)) {
+                if (res == null)
+                    res = new HashSet<>();
+
+                res.add(t);
+            }
         }
+
+        return res == null ? Set.of() : unmodifiableSet(res);
     }
 
     /** Stub. */

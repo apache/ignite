@@ -99,7 +99,15 @@ public class NamedListNodeTest {
     public void before() {
         storage = new TestConfigurationStorage(LOCAL);
 
-        changer = new TestConfigurationChanger(cgen, List.of(AConfiguration.KEY), Map.of(), storage, List.of());
+        changer = new TestConfigurationChanger(
+            cgen,
+            List.of(AConfiguration.KEY),
+            Map.of(),
+            storage,
+            List.of(),
+            List.of()
+        );
+
         changer.start();
     }
 
@@ -271,7 +279,7 @@ public class NamedListNodeTest {
     /** Tests exceptions described in methods signatures. */
     @Test
     public void errors() throws Exception {
-        var b = new NamedListNode<>("name", () -> cgen.instantiateNode(BConfigurationSchema.class));
+        var b = new NamedListNode<>("name", () -> cgen.instantiateNode(BConfigurationSchema.class), null);
 
         b.create("X", x -> {}).create("Y", y -> {});
 
