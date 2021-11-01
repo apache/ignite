@@ -17,31 +17,20 @@
 
 package org.apache.ignite.configuration.schemas.table;
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigValue;
-import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.validation.Immutable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Configuration for single column in SQL table.
+ * Annotation to validate whole table configuration.
+ *
+ * Activate SchemaTableValidatorImpl in configuration engine for {@link TablesConfigurationSchema#tables}.
  */
-@Config
-public class ColumnConfigurationSchema {
-    /** Column name. */
-    @Value
-    public String name;
+@Target({ FIELD, PARAMETER })
+@Retention(RUNTIME)
+public @interface ColumnTypeValidator {
 
-    /** Column type. */
-    @ConfigValue
-    @ColumnTypeValidator
-    public ColumnTypeConfigurationSchema type;
-
-    /** Nullable flag. */
-    @Value
-    @Immutable
-    public boolean nullable;
-
-    /** Default value. */
-    @Value(hasDefault = true)
-    public String defaultValue = "";
 }

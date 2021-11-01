@@ -79,24 +79,6 @@ public class SchemaUtils {
                 final Column newCol = newDesc.column(newColView.name());
                 final Column oldCol = oldDesc.column(oldColView.name());
 
-                // TODO: IGNITE-15414 Assertion just in case, proper validation should be implemented with the help of
-                // TODO: configuration validators.
-                assert newCol.type().equals(oldCol.type()) :
-                    LoggerMessageHelper.format(
-                        "Column types doesn't match [column={}, oldType={}, newType={}",
-                        oldCol.name(),
-                        oldCol.type(),
-                        newCol.type()
-                    );
-
-                assert newCol.nullable() == oldCol.nullable() :
-                    LoggerMessageHelper.format(
-                        "Column nullable properties doesn't match [column={}, oldNullable={}, newNullable={}",
-                        oldCol.name(),
-                        oldCol.nullable(),
-                        newCol.nullable()
-                    );
-
                 if (newCol.schemaIndex() == oldCol.schemaIndex())
                     continue;
 
@@ -113,7 +95,7 @@ public class SchemaUtils {
             .filter(c -> oldDesc.isKeyColumn(c.schemaIndex()))
             .findAny();
 
-        // TODO: IGNITE-15414 Assertion just in case, proper validation should be implemented with the help of
+        // TODO: IGNITE-15774 Assertion just in case, proper validation should be implemented with the help of
         // TODO: configuration validators.
         assert !droppedKeyCol.isPresent() :
             LoggerMessageHelper.format(

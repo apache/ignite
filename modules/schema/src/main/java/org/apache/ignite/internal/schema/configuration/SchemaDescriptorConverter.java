@@ -58,7 +58,7 @@ public class SchemaDescriptorConverter {
      * @param colType ColumnType.
      * @return NativeType.
      */
-    private static NativeType convert(ColumnType colType) {
+    public static NativeType convert(ColumnType colType) {
         assert colType != null;
 
         ColumnType.ColumnTypeSpec type = colType.typeSpec();

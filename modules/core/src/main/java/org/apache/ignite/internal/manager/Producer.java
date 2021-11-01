@@ -62,7 +62,7 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      */
     public void removeListener(T evt, EventListener<P> closure, @Nullable IgniteInternalCheckedException cause) {
         if (listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>()).remove(closure))
-            closure.remove(cause == null ? new ListenerRemovedException() : new ListenerRemovedException(cause));
+            closure.remove(cause == null ? new ListenerRemovedException() : cause.getCause() == null ? cause : cause.getCause());
     }
 
     /**

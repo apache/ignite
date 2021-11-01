@@ -23,9 +23,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
+import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.configuration.schemas.table.ColumnChange;
+import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.ITUtils;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.internal.testframework.WorkDirectory;
@@ -38,8 +41,11 @@ import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(WorkDirectoryExtension.class)
 class ITDynamicTableCreationTest {
     /** Network ports of the test nodes. */
-    private static final int[] PORTS = { 3344, 3345, 3346 };
+    private static final int[] PORTS = {3344, 3345, 3346};
 
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
@@ -121,15 +127,24 @@ class ITDynamicTableCreationTest {
     }
 
     /**
-     * Check dynamic table creation.
+     * @return Grid nodes.
      */
-    @Test
-    void testDynamicSimpleTableCreation() {
+    @NotNull protected List<Ignite> startGrid() {
         nodesBootstrapCfg.forEach((nodeName, configStr) ->
             clusterNodes.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
         );
 
         assertEquals(3, clusterNodes.size());
+
+        return clusterNodes;
+    }
+
+    /**
+     * Check dynamic table creation.
+     */
+    @Test
+    void testDynamicSimpleTableCreation() {
+        startGrid();
 
         // Create table on node 0.
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
@@ -178,11 +193,7 @@ class ITDynamicTableCreationTest {
      */
     @Test
     void testDynamicTableCreation() {
-        nodesBootstrapCfg.forEach((nodeName, configStr) ->
-            clusterNodes.add(IgnitionManager.start(nodeName, configStr, workDir.resolve(nodeName)))
-        );
-
-        assertEquals(3, clusterNodes.size());
+        startGrid();
 
         // Create table on node 0.
         TableDefinition scmTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
@@ -252,5 +263,121 @@ class ITDynamicTableCreationTest {
         assertEquals("String value 2", kvView2.get(keyTuple2).value("valStr"));
         assertEquals(7373, (Integer)kvView2.get(keyTuple2).value("valInt"));
         assertNull(kvView2.get(keyTuple2).value("valNull"));
+    }
+
+    /**
+     * Check unsupported column type change.
+     */
+    @Test
+    public void testChangeColumnType() {
+        List<Ignite> grid = startGrid();
+
+        assertTableCreationFailed(grid, c -> c.changeType(t -> t.changeType("UNKNOWN_TYPE")));
+
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("STRING").changeLength(-1)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("BYTES").changeLength(-1)));
+
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("INT32").changePrecision(-1)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("INT32").changeScale(-1)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("BYTES").changeLength(-1)));
+
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("NUMBER").changePrecision(-1)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("NUMBER").changeScale(-2)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("BYTES").changeLength(-1)));
+
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(c -> c.changeType("DECIMAL").changePrecision(-1)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(c -> c.changeType("DECIMAL").changePrecision(0)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(c -> c.changeType("DECIMAL").changeScale(-2)));
+        assertTableCreationFailed(grid, colChanger -> colChanger.changeType(t -> t.changeType("BYTES").changeLength(-1)));
+    }
+
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15747")
+    @Test
+    void testMissedPK() {
+        List<Ignite> grid = startGrid();
+
+        // Missed PK.
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
+            try {
+                grid.get(0).tables().createTable(
+                    "PUBLIC.tbl1",
+                    tblChanger -> tblChanger.changeName("PUBLIC.tbl1")
+                        .changeColumns(cols -> {
+                            cols.create("0", col -> col.changeName("key").changeType(t -> t.changeType("INT64")).changeNullable(false));
+                            cols.create("1", col -> col.changeName("val").changeNullable(true).changeType(t -> t.changeType("INT32")));
+                        })
+                        .changeReplicas(1)
+                        .changePartitions(10)
+                );
+            } catch (CompletionException ex) {
+                throw ex.getCause();
+            }
+        });
+
+        //Missed affinity cols.
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
+            try {
+                grid.get(0).tables().createTable(
+                    "PUBLIC.tbl1",
+                    tblChanger -> tblChanger.changeName("PUBLIC.tbl1")
+                        .changeColumns(cols -> {
+                            cols.create("0", col -> col.changeName("key").changeType(t -> t.changeType("INT64")).changeNullable(false));
+                            cols.create("1", col -> col.changeName("val").changeNullable(true).changeType(t -> t.changeType("INT32")));
+                        })
+                        .changePrimaryKey(pk -> pk.changeColumns("key"))
+                        .changeReplicas(1)
+                        .changePartitions(10)
+                );
+            } catch (CompletionException ex) {
+                throw ex.getCause();
+            }
+        });
+
+        //Missed key cols.
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
+            try {
+                grid.get(0).tables().createTable(
+                    "PUBLIC.tbl1",
+                    tblChanger -> tblChanger.changeName("PUBLIC.tbl1")
+                        .changeColumns(cols -> {
+                            cols.create("0", col -> col.changeName("key").changeType(t -> t.changeType("INT64")).changeNullable(false));
+                            cols.create("1", col -> col.changeName("val").changeNullable(true).changeType(t -> t.changeType("INT32")));
+                        })
+                        .changePrimaryKey(pk -> pk.changeAffinityColumns("key"))
+                        .changeReplicas(1)
+                        .changePartitions(10)
+                );
+            } catch (CompletionException ex) {
+                throw ex.getCause();
+            }
+        });
+    }
+
+    /**
+     * Ensure configuration validation failed.
+     *
+     * @param grid Grid.
+     * @param colChanger Column configuration changer.
+     */
+    private void assertTableCreationFailed(List<Ignite> grid, Consumer<ColumnChange> colChanger) {
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
+            try {
+                grid.get(0).tables().createTable(
+                    "PUBLIC.tbl1",
+                    tblChanger -> tblChanger.changeName("PUBLIC.tbl1")
+                        .changeColumns(cols -> {
+                            cols.create("0", col -> col.changeName("key").changeType(t -> t.changeType("INT64")).changeNullable(false));
+
+                            cols.create("1", col -> colChanger.accept(col.changeName("val").changeNullable(true)));
+                        })
+                        .changePrimaryKey(pk -> pk.changeColumns("key").changeAffinityColumns("key"))
+                        .changeReplicas(1)
+                        .changePartitions(10)
+                );
+            }
+            catch (CompletionException ex) {
+                throw ex.getCause();
+            }
+        });
     }
 }

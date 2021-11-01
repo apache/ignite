@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
+import org.apache.ignite.configuration.schemas.table.ColumnChange;
+import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.ITUtils;
-import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -39,7 +41,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -127,85 +128,44 @@ abstract class AbstractSchemaChangeTest {
     /**
      * Check unsupported column type change.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15056")
     @Test
     public void testChangeColumnType() {
         List<Ignite> grid = startGrid();
 
         createTable(grid);
 
-        Assertions.assertThrows(InvalidTypeException.class, () -> {
-            grid.get(0).tables().alterTable(TABLE,
-                tblChanger -> tblChanger.changeColumns(cols -> {
-                    final String colKey = tblChanger.columns().namedListKeys().stream()
-                        .filter(c -> "valInt".equals(tblChanger.columns().get(c).name()))
-                        .findFirst()
-                        .orElseThrow(() -> {
-                            throw new IllegalStateException("Column not found.");
-                        });
+        assertColumnChangeFailed(grid, "valStr", c -> c.changeType(t -> t.changeType("UNKNOWN_TYPE")));
 
-                    tblChanger.changeColumns(listChanger ->
-                        listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeType(c -> c.changeType("STRING")))
-                    );
-                })
-            );
-        });
-    }
+        assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changeType(ColumnType.blobOf().typeSpec().name())));
 
-    /**
-     * Check unsupported column nullability change.
-     */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15056")
-    @Test
-    public void testMakeColumnNonNullable() {
-        List<Ignite> grid = startGrid();
+        assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changePrecision(10)));
+        assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changeScale(10)));
+        assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeType(t -> t.changeLength(1)));
 
-        createTable(grid);
+        assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changePrecision(-1)));
+        assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changePrecision(10)));
+        assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changeScale(2)));
+        assertColumnChangeFailed(grid, "valBigInt", colChanger -> colChanger.changeType(t -> t.changeLength(10)));
 
-        Assertions.assertThrows(InvalidTypeException.class, () -> {
-            grid.get(0).tables().alterTable(TABLE,
-                tblChanger -> tblChanger.changeColumns(cols -> {
-                    final String colKey = tblChanger.columns().namedListKeys().stream()
-                        .filter(c -> "valInt".equals(tblChanger.columns().get(c).name()))
-                        .findFirst()
-                        .orElseThrow(() -> {
-                            throw new IllegalStateException("Column not found.");
-                        });
-
-                    tblChanger.changeColumns(listChanger ->
-                        listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeNullable(false))
-                    );
-                })
-            );
-        });
+        assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changePrecision(-1)));
+        assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changePrecision(0)));
+        assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changeScale(-2)));
+        assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changePrecision(10)));
+        assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changeScale(2)));
+        assertColumnChangeFailed(grid, "valDecimal", colChanger -> colChanger.changeType(c -> c.changeLength(10)));
     }
 
     /**
      * Check unsupported nullability change.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15056")
     @Test
-    public void testMakeColumnsNullable() {
+    public void testChangeColumnsNullability() {
         List<Ignite> grid = startGrid();
 
         createTable(grid);
 
-        Assertions.assertThrows(InvalidTypeException.class, () -> {
-            grid.get(0).tables().alterTable(TABLE,
-                tblChanger -> tblChanger.changeColumns(cols -> {
-                    final String colKey = tblChanger.columns().namedListKeys().stream()
-                        .filter(c -> "valStr".equals(tblChanger.columns().get(c).name()))
-                        .findFirst()
-                        .orElseThrow(() -> {
-                            throw new IllegalStateException("Column not found.");
-                        });
-
-                    tblChanger.changeColumns(listChanger ->
-                        listChanger.createOrUpdate(colKey, colChanger -> colChanger.changeNullable(true))
-                    );
-                })
-            );
-        });
+        assertColumnChangeFailed(grid, "valStr", colChanger -> colChanger.changeNullable(true));
+        assertColumnChangeFailed(grid, "valInt", colChanger -> colChanger.changeNullable(false));
     }
 
     /**
@@ -227,6 +187,9 @@ abstract class AbstractSchemaChangeTest {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
             SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
             SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
+            SchemaBuilders.column("valBlob", ColumnType.blobOf()).asNullable().build(),
+            SchemaBuilders.column("valDecimal", ColumnType.decimalOf()).asNullable().build(),
+            SchemaBuilders.column("valBigInt", ColumnType.numberOf()).asNullable().build(),
             SchemaBuilders.column("valStr", ColumnType.string()).withDefaultValueExpression("default").build()
         ).withPrimaryKey("key").build();
 
@@ -310,6 +273,29 @@ abstract class AbstractSchemaChangeTest {
                 );
             })
         );
+    }
+
+    /**
+     * Ensure configuration validation failed.
+     *
+     * @param grid Grid.
+     * @param colName Column to change.
+     * @param colChanger Column configuration changer.
+     */
+    private void assertColumnChangeFailed(List<Ignite> grid, String colName, Consumer<ColumnChange> colChanger) {
+        Assertions.assertThrows(ConfigurationValidationException.class, () -> {
+            grid.get(0).tables().alterTable(TABLE,
+                tblChanger -> tblChanger.changeColumns(cols -> {
+                    final String colKey = tblChanger.columns().namedListKeys().stream()
+                        .filter(c -> colName.equals(tblChanger.columns().get(c).name()))
+                        .findFirst()
+                        .orElseGet(() -> Assertions.fail("Column not found."));
+
+                    tblChanger.changeColumns(listChanger -> listChanger.createOrUpdate(colKey, colChanger)
+                    );
+                })
+            );
+        });
     }
 
     /**

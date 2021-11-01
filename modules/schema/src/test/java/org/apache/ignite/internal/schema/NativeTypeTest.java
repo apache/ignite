@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.schema.configuration.SchemaDescriptorConverter;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,6 @@ import static org.apache.ignite.internal.schema.NativeTypes.bitmaskOf;
 import static org.apache.ignite.internal.schema.NativeTypes.blobOf;
 import static org.apache.ignite.internal.schema.NativeTypes.datetime;
 import static org.apache.ignite.internal.schema.NativeTypes.decimalOf;
-import static org.apache.ignite.internal.schema.NativeTypes.from;
 import static org.apache.ignite.internal.schema.NativeTypes.numberOf;
 import static org.apache.ignite.internal.schema.NativeTypes.stringOf;
 import static org.apache.ignite.internal.schema.NativeTypes.time;
@@ -183,5 +183,9 @@ public class NativeTypeTest {
             assertEquals(datetime(i), from(ColumnType.datetime(i)));
             assertEquals(timestamp(i), from(ColumnType.timestamp(i)));
         }
+    }
+
+    private NativeType from(ColumnType colType) {
+        return SchemaDescriptorConverter.convert(colType);
     }
 }

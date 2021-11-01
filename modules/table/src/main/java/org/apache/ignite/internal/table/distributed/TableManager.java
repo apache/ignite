@@ -46,6 +46,7 @@ import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
+import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.affinity.AffinityUtils;
 import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.configuration.schema.ExtendedTableChange;
@@ -584,14 +585,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public Table createTable(String name, Consumer<TableChange> tableInitChange) {
-        if (!busyLock.enterBusy())
-            throw new IgniteException(new NodeStoppingException());
-        try {
-            return createTableAsync(name, tableInitChange).join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return join(createTableAsync(name, tableInitChange));
     }
 
     /** {@inheritDoc} */
@@ -608,14 +602,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
-        if (!busyLock.enterBusy())
-            throw new IgniteException(new NodeStoppingException());
-        try {
-            return createTableIfNotExistsAsync(name, tableInitChange).join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return join(createTableIfNotExistsAsync(name, tableInitChange));
     }
 
     /** {@inheritDoc} */
@@ -703,14 +690,22 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                         changeSchemas(
                                         schemasCh -> schemasCh.create(
                                             String.valueOf(INITIAL_SCHEMA_VERSION),
-                                            schemaCh -> schemaCh.changeSchema(
-                                                SchemaSerializerImpl.INSTANCE.serialize(
-                                                    SchemaUtils.prepareSchemaDescriptor(
+                                            schemaCh -> {
+                                                SchemaDescriptor schemaDesc;
+
+                                                //TODO IGNITE-15747 Remove try-catch and force configuration validation here
+                                                // to ensure a valid configuration passed to prepareSchemaDescriptor() method.
+                                                try {
+                                                    schemaDesc = SchemaUtils.prepareSchemaDescriptor(
                                                         ((ExtendedTableView)ch).schemas().size(),
                                                         ch
-                                                    )
-                                                )
-                                            )
+                                                    );
+                                                } catch (IllegalArgumentException ex) {
+                                                    throw new ConfigurationValidationException(ex.getMessage());
+                                                }
+
+                                                schemaCh.changeSchema(SchemaSerializerImpl.INSTANCE.serialize(schemaDesc));
+                                            }
                                         )
                                     );
                             }
@@ -731,14 +726,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public void alterTable(String name, Consumer<TableChange> tableChange) {
-        if (!busyLock.enterBusy())
-            throw new IgniteException(new NodeStoppingException());
-        try {
-            alterTableAsync(name, tableChange).join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        join(alterTableAsync(name, tableChange));
     }
 
     /** {@inheritDoc} */
@@ -805,17 +793,33 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                         schemaCh -> {
                                             ExtendedTableView currTableView = (ExtendedTableView)tablesCfg.tables().get(name).value();
 
-                                            SchemaDescriptor descriptor = SchemaUtils.prepareSchemaDescriptor(
-                                                ((ExtendedTableView)tblCh).schemas().size(),
-                                                tblCh
-                                            );
+                                            SchemaDescriptor descriptor;
 
-                                            descriptor.columnMapping(SchemaUtils.columnMapper(
-                                                tablesById.get(tblId).schemaView().schema(currTableView.schemas().size()),
-                                                currTableView,
-                                                descriptor,
-                                                tblCh
-                                            ));
+                                            //TODO IGNITE-15747 Remove try-catch and force configuration validation here
+                                            // to ensure a valid configuration passed to prepareSchemaDescriptor() method.
+                                            try {
+                                                descriptor = SchemaUtils.prepareSchemaDescriptor(
+                                                    ((ExtendedTableView)tblCh).schemas().size(),
+                                                    tblCh
+                                                );
+
+                                                descriptor.columnMapping(SchemaUtils.columnMapper(
+                                                    tablesById.get(tblId).schemaView().schema(currTableView.schemas().size()),
+                                                    currTableView,
+                                                    descriptor,
+                                                    tblCh
+                                                ));
+                                            }
+                                            catch (IllegalArgumentException ex) {
+                                                // Convert unexpected exceptions here,
+                                                // because validation actually happens later,
+                                                // when bulk configuration update is applied.
+                                                ConfigurationValidationException e = new ConfigurationValidationException(ex.getMessage());
+
+                                                e.addSuppressed(ex);
+
+                                                throw e;
+                                            }
 
                                             schemaCh.changeSchema(SchemaSerializerImpl.INSTANCE.serialize(descriptor));
                                         }
@@ -837,14 +841,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public void dropTable(String name) {
-        if (!busyLock.enterBusy())
-            throw new IgniteException(new NodeStoppingException());
-        try {
-            dropTableAsync(name).join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        join(dropTableAsync(name));
     }
 
     /** {@inheritDoc} */
@@ -914,14 +911,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public List<Table> tables() {
-        if (!busyLock.enterBusy())
-            throw new IgniteException(new NodeStoppingException());
-        try {
-            return tablesAsync().join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return join(tablesAsync());
     }
 
     /** {@inheritDoc} */
@@ -1022,14 +1012,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public Table table(String name) {
-        if (!busyLock.enterBusy())
-            throw new IgniteException(new NodeStoppingException());
-        try {
-            return tableAsync(name).join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return join(tableAsync(name));
     }
 
     /** {@inheritDoc} */
@@ -1046,14 +1029,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public TableImpl table(IgniteUuid id) throws NodeStoppingException {
-        if (!busyLock.enterBusy())
-            throw new NodeStoppingException();
-        try {
-            return tableAsync(id).join();
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return join(tableAsync(id));
     }
 
     /** {@inheritDoc} */
@@ -1192,6 +1168,41 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      */
     private boolean isTableConfigured(String name) {
         return tableNamesConfigured().contains(name);
+    }
+
+    /**
+     * Waits for future result and return, or
+     * unwraps {@link CompletionException} to {@link IgniteException} if failed.
+     *
+     * @param future Completable future.
+     * @return Future result.
+     */
+    private <T> T join(CompletableFuture<T> future) {
+        if (!busyLock.enterBusy())
+            throw new IgniteException(new NodeStoppingException());
+
+        try {
+            return future.join();
+        }
+        catch (CompletionException ex) {
+            throw convertThrowable(ex.getCause());
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Convert to public throwable.
+     *
+     * @param th Throwable.
+     * @return Public throwable.
+     */
+    private RuntimeException convertThrowable(Throwable th) {
+        if (th instanceof RuntimeException)
+            return (RuntimeException)th;
+
+        return new IgniteException(th);
     }
 
     /**

@@ -60,15 +60,6 @@ public class ColumnType {
     /** Timezone-free three-part value representing a year, month, and day. */
     public static final ColumnType DATE = new ColumnType(ColumnTypeSpec.DATE);
 
-    /** String varlen type of unlimited length. */
-    private static final VarLenColumnType UNLIMITED_STRING = stringOf(0);
-
-    /** Blob varlen type of unlimited length. */
-    private static final VarLenColumnType UNLIMITED_BLOB = blobOf(0);
-
-    /** Number type with unlimited precision. */
-    public static final NumberColumnType UNLIMITED_NUMBER = new NumberColumnType(ColumnTypeSpec.NUMBER, NumberColumnType.UNLIMITED_PRECISION);
-
     /**
      * Returns bit mask type.
      *
@@ -85,7 +76,7 @@ public class ColumnType {
      * @return String type.
      */
     public static VarLenColumnType string() {
-        return UNLIMITED_STRING;
+        return VarLenColumnType.UNLIMITED_STRING;
     }
 
     /**
@@ -105,7 +96,7 @@ public class ColumnType {
      * @see #blobOf(int)
      */
     public static VarLenColumnType blobOf() {
-        return UNLIMITED_BLOB;
+        return VarLenColumnType.UNLIMITED_BLOB;
     }
 
     /**
@@ -139,7 +130,7 @@ public class ColumnType {
      * @see #numberOf(int)
      */
     public static NumberColumnType numberOf() {
-        return UNLIMITED_NUMBER;
+        return NumberColumnType.UNLIMITED_NUMBER;
     }
 
     /**
@@ -269,6 +260,12 @@ public class ColumnType {
      * Column type of variable length.
      */
     public static class VarLenColumnType extends ColumnType {
+        /** String varlen type of unlimited length. */
+        private static final VarLenColumnType UNLIMITED_STRING = new VarLenColumnType(ColumnTypeSpec.STRING, 0);
+
+        /** Blob varlen type of unlimited length. */
+        private static final VarLenColumnType UNLIMITED_BLOB = new VarLenColumnType(ColumnTypeSpec.BLOB, 0);
+
         /** Max length. */
         private final int length;
 
@@ -389,8 +386,8 @@ public class ColumnType {
      * Number column type.
      */
     public static class NumberColumnType extends ColumnType {
-        /** Undefined precision. */
-        private static final int UNLIMITED_PRECISION = 0;
+        /** Number type with unlimited precision. */
+        public static final NumberColumnType UNLIMITED_NUMBER = new NumberColumnType(ColumnTypeSpec.NUMBER, 0);
 
         /** Max precision of value. If -1, column has no precision restrictions. */
         private final int precision;

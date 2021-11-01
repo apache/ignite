@@ -332,7 +332,7 @@ public class SchemaConfigurationConverter {
                     return ColumnType.decimalOf(prec, scale);
 
                 case "NUMBER":
-                    return ColumnType.numberOf(colTypeView.precision());
+                    return colTypeView.precision() == 0 ? ColumnType.numberOf() : ColumnType.numberOf(colTypeView.precision());
 
                 case "TIME":
                     return ColumnType.time(colTypeView.precision());
