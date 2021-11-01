@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -153,12 +152,6 @@ public class GridBinaryMarshaller {
 
     /** Binary enum */
     public static final byte BINARY_ENUM = 38;
-
-    /**
-     * {@link BinaryObject} interface type id.
-     * Used to store array component type in case of {@code BinaryObject[]}.
-     */
-    public static final byte BINARY_OBJ_INTERFACE = 39;
 
     /** */
     public static final byte NULL = (byte)101;
