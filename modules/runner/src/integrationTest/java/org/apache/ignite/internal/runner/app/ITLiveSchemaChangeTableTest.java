@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -52,7 +51,7 @@ class ITLiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         Tuple tuple = Tuple.create().set("key", 1L).set("unknownColumn", 10);
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.recordView().insert(tuple));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.recordView().insert(tuple));
     }
 
     /**
@@ -172,7 +171,7 @@ class ITLiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
         assertEquals("111", newRes.value("valStrNew"));
         assertEquals(Integer.valueOf(333), newRes.value("valIntNew"));
 
-        assertThrows(SchemaMismatchException.class, () -> recView.insert(Tuple.create().set("key", 1L).set("unknownColumn", 10)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> recView.insert(Tuple.create().set("key", 1L).set("unknownColumn", 10)));
     }
 
     /**
@@ -311,10 +310,10 @@ class ITLiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
 
         Tuple rowWithObject = Tuple.create().set("key", 1L).set("newBrokenColumn", new Object());
 
-        assertThrows(InvalidTypeException.class, () -> recView.insert(rowWithObject));
+        assertThrowsWithCause(InvalidTypeException.class, () -> recView.insert(rowWithObject));
 
         Tuple rowWithNull = Tuple.create().set("key", 1L).set("valStrNew", null).set("valIntNew", 333);
 
-        assertThrows(InvalidTypeException.class, () -> recView.insert(rowWithNull));
+        assertThrowsWithCause(InvalidTypeException.class, () -> recView.insert(rowWithNull));
     }
 }

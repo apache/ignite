@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.ITUtils;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.ColumnType;
@@ -43,9 +43,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 
 import static org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter.convert;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Ignition interface tests.
@@ -307,5 +310,22 @@ abstract class AbstractSchemaChangeTest {
                 );
             })
         );
+    }
+
+    /**
+     * @param expectedType Expected cause type.
+     * @param executable Executable that throws exception.
+     */
+    public <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
+        Throwable ex = assertThrows(IgniteException.class, executable);
+
+        while (ex.getCause() != null) {
+            if (expectedType.isInstance(ex.getCause()))
+                return;
+
+            ex = ex.getCause();
+        }
+
+        fail("Expected cause wasn't found.");
     }
 }

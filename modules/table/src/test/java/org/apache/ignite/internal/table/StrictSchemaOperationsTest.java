@@ -24,12 +24,15 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Check data by strict schema.
@@ -48,7 +51,7 @@ public class StrictSchemaOperationsTest {
 
         RecordView<Tuple> recView = createTableImpl(schema).recordView();
 
-        assertThrows(SchemaMismatchException.class, () -> recView.insert(Tuple.create().set("id", 0L).set("invalidCol", 0)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> recView.insert(Tuple.create().set("id", 0L).set("invalidCol", 0)));
     }
 
     /**
@@ -67,15 +70,15 @@ public class StrictSchemaOperationsTest {
 
         Table tbl = createTableImpl(schema);
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.recordView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
-        assertThrows(SchemaMismatchException.class, () -> tbl.recordView().get(Tuple.create().set("id", 0L)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.recordView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.recordView().get(Tuple.create().set("id", 0L)));
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().get(Tuple.create().set("id", 0L)));
-        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.keyValueView().get(Tuple.create().set("id", 0L)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.keyValueView().get(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L)));
 
-        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L), Tuple.create()));
-        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L), Tuple.create()));
-        assertThrows(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L),
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L), Tuple.create()));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L).set("val", 0L), Tuple.create()));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L),
             Tuple.create().set("id", 0L).set("val", 0L)));
     }
 
@@ -96,13 +99,13 @@ public class StrictSchemaOperationsTest {
         RecordView<Tuple> tbl = createTableImpl(schema).recordView();
 
         // Check not-nullable column.
-        assertThrows(IllegalArgumentException.class, () -> tbl.insert(Tuple.create().set("id", null)));
+        assertThrowsWithCause(IllegalArgumentException.class, () -> tbl.insert(Tuple.create().set("id", null)));
 
         // Check length of the string column
-        assertThrows(InvalidTypeException.class, () -> tbl.insert(Tuple.create().set("id", 0L).set("valString", "qweqwe")));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.insert(Tuple.create().set("id", 0L).set("valString", "qweqwe")));
 
         // Check length of the string column
-        assertThrows(InvalidTypeException.class, () -> tbl.insert(Tuple.create().set("id", 0L).set("valBytes", new byte[]{0, 1, 2, 3})));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.insert(Tuple.create().set("id", 0L).set("valBytes", new byte[]{0, 1, 2, 3})));
     }
 
     /**
@@ -155,11 +158,24 @@ public class StrictSchemaOperationsTest {
         tbl.insert(tuple.set("valLimited", new byte[2]));
         tbl.insert(tuple.set("valUnlimited", new byte[3]));
 
-        assertThrows(InvalidTypeException.class, () -> tbl.insert(tuple.set("valLimited", new byte[3])));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.insert(tuple.set("valLimited", new byte[3])));
 
     }
 
     private TableImpl createTableImpl(SchemaDescriptor schema) {
         return new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
+    }
+
+    public <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
+        Throwable ex = assertThrows(IgniteException.class, executable);
+
+        while (ex.getCause() != null) {
+            if (expectedType.isInstance(ex.getCause()))
+                return;
+
+            ex = ex.getCause();
+        }
+
+        fail("Expected cause wasn't found.");
     }
 }

@@ -36,8 +36,9 @@ public final class MarshallerUtil {
      * @param val Field value.
      * @param type Mapped type.
      * @return Serialized value size.
+     * @throws InvalidTypeException If type is unsupported.
      */
-    public static int getValueSize(Object val, NativeType type) {
+    public static int getValueSize(Object val, NativeType type) throws InvalidTypeException {
         switch (type.spec()) {
             case BYTES:
                 return ((byte[])val).length;

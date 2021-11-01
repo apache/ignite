@@ -63,7 +63,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
             assertThrows(IllegalArgumentException.class, () -> tbl.get(keyTuple).value("valStr"));
 
             // Check tuple of outdated schema.
-            assertThrows(SchemaMismatchException.class,
+            assertThrowsWithCause(SchemaMismatchException.class,
                 () -> tbl.insert(Tuple.create().set("key", 2L).set("valInt", -222).set("valStr", "str"))
             );
 
@@ -92,7 +92,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         {
             tbl.insert(Tuple.create().set("key", 1L).set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class,
+            assertThrowsWithCause(SchemaMismatchException.class,
                 () -> tbl.insert(Tuple.create().set("key", 1L).set("valInt", -111).set("valStrNew", "str"))
             );
         }
@@ -130,7 +130,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         {
             tbl.insert(Tuple.create().set("key", 1L).set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class,
+            assertThrowsWithCause(SchemaMismatchException.class,
                     () -> tbl.insert(Tuple.create().set("key", 2L).set("valRenamed", -222))
             );
         }
@@ -146,7 +146,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
             assertThrows(IllegalArgumentException.class, () -> tbl.get(keyTuple1).value("valInt"));
 
             // Check tuple of outdated schema.
-            assertThrows(SchemaMismatchException.class,
+            assertThrowsWithCause(SchemaMismatchException.class,
                     () -> tbl.insert(Tuple.create().set("key", 2L).set("valInt", -222))
             );
 
@@ -175,7 +175,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         {
             tbl.insert(Tuple.create().set("key", 1L).set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class,
+            assertThrowsWithCause(SchemaMismatchException.class,
                 () -> tbl.insert(Tuple.create().set("key", 2L).set("val2", -222))
             );
         }
@@ -221,7 +221,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         {
             tbl.insert(Tuple.create().set("key", 1L).set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class, () -> tbl.insert(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.insert(
                 Tuple.create().set("key", 2L).set("val", "I'not exists"))
             );
         }
@@ -241,7 +241,7 @@ class ITSchemaChangeTableViewTest extends AbstractSchemaChangeTest {
         {
             tbl.insert(Tuple.create().set("key", 4L).set("valInt", 444));
 
-            assertThrows(SchemaMismatchException.class, () -> tbl.insert(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.insert(
                 Tuple.create().set("key", 4L).set("val", "I'm not exist"))
             );
         }

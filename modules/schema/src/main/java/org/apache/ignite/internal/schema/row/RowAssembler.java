@@ -38,11 +38,13 @@ import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.DecimalNativeType;
+import org.apache.ignite.internal.schema.InvalidTypeException;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.NumberNativeType;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.schema.TemporalNativeType;
 
 import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.KEY_FLAGS_OFFSET;
@@ -145,8 +147,9 @@ public class RowAssembler {
      * @param rowAsm Writes column value to assembler.
      * @param col Column.
      * @param val Value.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public static void writeValue(RowAssembler rowAsm, Column col, Object val) {
+    public static void writeValue(RowAssembler rowAsm, Column col, Object val) throws SchemaMismatchException {
         if (val == null) {
             rowAsm.appendNull();
 
@@ -235,7 +238,7 @@ public class RowAssembler {
                 break;
             }
             default:
-                throw new IllegalStateException("Unexpected value: " + col.type());
+                throw new InvalidTypeException("Unexpected value: " + col.type());
         }
     }
 
@@ -320,10 +323,11 @@ public class RowAssembler {
      * Appends {@code null} value for the current column to the chunk.
      *
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If the current column is not nullable.
      */
-    public RowAssembler appendNull() {
+    public RowAssembler appendNull() throws SchemaMismatchException {
         if (!curCols.column(curCol).nullable())
-            throw new IllegalArgumentException("Failed to set column (null was passed, but column is not nullable): " + curCols.column(curCol));
+            throw new SchemaMismatchException("Failed to set column (null was passed, but column is not nullable): " + curCols.column(curCol));
 
         setNull(curCol);
 
@@ -340,8 +344,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendByte(byte val) {
+    public RowAssembler appendByte(byte val) throws SchemaMismatchException {
         checkType(NativeTypes.INT8);
 
         buf.put(curOff, val);
@@ -359,8 +364,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendShort(short val) {
+    public RowAssembler appendShort(short val) throws SchemaMismatchException {
         checkType(NativeTypes.INT16);
 
         buf.putShort(curOff, val);
@@ -378,8 +384,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendInt(int val) {
+    public RowAssembler appendInt(int val) throws SchemaMismatchException {
         checkType(NativeTypes.INT32);
 
         buf.putInt(curOff, val);
@@ -397,8 +404,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendLong(long val) {
+    public RowAssembler appendLong(long val) throws SchemaMismatchException {
         checkType(NativeTypes.INT64);
 
         buf.putLong(curOff, val);
@@ -416,8 +424,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendFloat(float val) {
+    public RowAssembler appendFloat(float val) throws SchemaMismatchException {
         checkType(NativeTypes.FLOAT);
 
         buf.putFloat(curOff, val);
@@ -435,8 +444,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendDouble(double val) {
+    public RowAssembler appendDouble(double val) throws SchemaMismatchException {
         checkType(NativeTypes.DOUBLE);
 
         buf.putDouble(curOff, val);
@@ -454,8 +464,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendNumber(BigInteger val) {
+    public RowAssembler appendNumber(BigInteger val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.NUMBER);
 
         Column col = curCols.column(curCol);
@@ -464,7 +475,7 @@ public class RowAssembler {
 
         //0 is a magic number for "unlimited precision"
         if (type.precision() > 0 && new BigDecimal(val).precision() > type.precision())
-            throw new IllegalArgumentException("Failed to set number value for column '" + col.name() + "' " +
+            throw new SchemaMismatchException("Failed to set number value for column '" + col.name() + "' " +
                 "(max precision exceeds allocated precision) " +
                 "[number=" + val + ", max precision=" + type.precision() + "]");
 
@@ -489,8 +500,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendDecimal(BigDecimal val) {
+    public RowAssembler appendDecimal(BigDecimal val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.DECIMAL);
 
         Column col = curCols.column(curCol);
@@ -500,7 +512,7 @@ public class RowAssembler {
         val = val.setScale(type.scale(), RoundingMode.HALF_UP);
 
         if (val.precision() > type.precision())
-            throw new IllegalArgumentException("Failed to set decimal value for column '" + col.name() + "' " +
+            throw new SchemaMismatchException("Failed to set decimal value for column '" + col.name() + "' " +
                 "(max precision exceeds allocated precision)" +
                 " [decimal=" + val + ", max precision=" + type.precision() + "]");
 
@@ -525,8 +537,9 @@ public class RowAssembler {
      *
      * @param uuid Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendUuid(UUID uuid) {
+    public RowAssembler appendUuid(UUID uuid) throws SchemaMismatchException {
         checkType(NativeTypes.UUID);
 
         buf.putLong(curOff, uuid.getLeastSignificantBits());
@@ -545,8 +558,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendString(String val) {
+    public RowAssembler appendString(String val) throws SchemaMismatchException {
         checkType(NativeTypes.STRING);
 
         try {
@@ -573,8 +587,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendBytes(byte[] val) {
+    public RowAssembler appendBytes(byte[] val) throws SchemaMismatchException {
         checkType(NativeTypes.BYTES);
 
         buf.putBytes(curOff, val);
@@ -596,8 +611,9 @@ public class RowAssembler {
      *
      * @param bitSet Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendBitmask(BitSet bitSet) {
+    public RowAssembler appendBitmask(BitSet bitSet) throws SchemaMismatchException {
         Column col = curCols.column(curCol);
 
         checkType(NativeTypeSpec.BITMASK);
@@ -628,8 +644,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendDate(LocalDate val) {
+    public RowAssembler appendDate(LocalDate val) throws SchemaMismatchException {
         checkType(NativeTypes.DATE);
 
         int date = TemporalTypesHelper.encodeDate(val);
@@ -649,8 +666,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendTime(LocalTime val) {
+    public RowAssembler appendTime(LocalTime val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.TIME);
 
         TemporalNativeType type = (TemporalNativeType)curCols.column(curCol).type();
@@ -670,8 +688,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendDateTime(LocalDateTime val) {
+    public RowAssembler appendDateTime(LocalDateTime val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.DATETIME);
 
         TemporalNativeType type = (TemporalNativeType)curCols.column(curCol).type();
@@ -694,8 +713,9 @@ public class RowAssembler {
      *
      * @param val Column value.
      * @return {@code this} for chaining.
+     * @throws SchemaMismatchException If a value doesn't match the current column type.
      */
-    public RowAssembler appendTimestamp(Instant val) {
+    public RowAssembler appendTimestamp(Instant val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.TIMESTAMP);
 
         TemporalNativeType type = (TemporalNativeType)curCols.column(curCol).type();
@@ -817,12 +837,13 @@ public class RowAssembler {
      * Checks that the type being appended matches the column type.
      *
      * @param type Type spec that is attempted to be appended.
+     * @throws SchemaMismatchException If given type doesn't match the current column type.
      */
     private void checkType(NativeTypeSpec type) {
         Column col = curCols.column(curCol);
 
         if (col.type().spec() != type)
-            throw new IllegalArgumentException("Failed to set column (int was passed, but column is of different " +
+            throw new SchemaMismatchException("Failed to set column (int was passed, but column is of different " +
                 "type): " + col);
     }
 

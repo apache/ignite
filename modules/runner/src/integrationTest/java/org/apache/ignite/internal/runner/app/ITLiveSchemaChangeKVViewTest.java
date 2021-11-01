@@ -29,7 +29,6 @@ import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -37,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ITLiveSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
     /**
-     * Check exception for unknown column when STRICT_SCHEMA is enabled.
+     * Check an operation failed if an unknown column found in case of STRICT_SCHEMA mode is on.
      */
     @Test
     public void testStrictSchemaInsertRowOfNewSchema() {
@@ -47,7 +46,7 @@ class ITLiveSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
 
         KeyValueView<Tuple, Tuple> view = grid.get(0).tables().table(TABLE).keyValueView();
 
-        assertThrows(SchemaMismatchException.class, () -> view.put(Tuple.create().set("key", 1L), Tuple.create().set("unknownColumn", 10)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> view.put(Tuple.create().set("key", 1L), Tuple.create().set("unknownColumn", 10)));
     }
 
     /**
@@ -111,7 +110,7 @@ class ITLiveSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
         assertEquals("111", newRes.value("valStrNew"));
         assertEquals(Integer.valueOf(333), newRes.value("valIntNew"));
 
-        assertThrows(SchemaMismatchException.class, () -> kvBinaryView.put(Tuple.create().set("key", 1L), Tuple.create().set("unknownColumn", 10)));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> kvBinaryView.put(Tuple.create().set("key", 1L), Tuple.create().set("unknownColumn", 10)));
     }
 
     /**

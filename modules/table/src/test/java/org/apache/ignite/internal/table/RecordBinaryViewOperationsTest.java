@@ -25,16 +25,19 @@ import org.apache.ignite.internal.schema.SchemaMismatchException;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.internal.table.impl.TestTupleBuilder;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Basic table operations test.
@@ -305,17 +308,17 @@ public class RecordBinaryViewOperationsTest {
         final Tuple tuple0 = new TestTupleBuilder().set("id", 1L).set("str", "qweqweqwe").set("val", 11L);
         final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[] {0, 1, 2, 3}).set("val", 22L);
 
-        assertThrows(InvalidTypeException.class, () -> tbl.get(keyTuple0));
-        assertThrows(SchemaMismatchException.class, () -> tbl.get(keyTuple1));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.get(keyTuple0));
+        assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.get(keyTuple1));
 
-        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple0));
-        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple1));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.replace(tuple0));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.replace(tuple1));
 
-        assertThrows(InvalidTypeException.class, () -> tbl.insert(tuple0));
-        assertThrows(InvalidTypeException.class, () -> tbl.insert(tuple1));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.insert(tuple0));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.insert(tuple1));
 
-        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple0));
-        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple1));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.replace(tuple0));
+        assertThrowsWithCause(InvalidTypeException.class, () -> tbl.replace(tuple1));
     }
 
     /**
@@ -409,5 +412,18 @@ public class RecordBinaryViewOperationsTest {
 
     @NotNull private TableImpl createTableImpl(SchemaDescriptor schema) {
         return new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
+    }
+
+    public <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
+        Throwable ex = assertThrows(IgniteException.class, executable);
+
+        while (ex.getCause() != null) {
+            if (expectedType.isInstance(ex.getCause()))
+                return;
+
+            ex = ex.getCause();
+        }
+
+        fail("Expected cause wasn't found.");
     }
 }

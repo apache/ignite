@@ -65,7 +65,7 @@ class ITSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
             assertThrows(IllegalArgumentException.class, () -> kvView.get(keyTuple).value("valStr"));
 
             // Check tuple of outdated schema.
-            assertThrows(SchemaMismatchException.class, () -> kvView.put(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> kvView.put(
                 Tuple.create().set("key", 2L),
                 Tuple.create().set("valInt", -222).set("valStr", "str"))
             );
@@ -95,7 +95,7 @@ class ITSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
         {
             kvView.put(Tuple.create().set("key", 1L), Tuple.create().set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class, () -> kvView.put(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> kvView.put(
                 Tuple.create().set("key", 1L),
                 Tuple.create().set("valInt", -111).set("valStrNew", "str"))
             );
@@ -137,7 +137,7 @@ class ITSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
         {
             kvView.put(Tuple.create().set("key", 1L), Tuple.create().set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class, () -> kvView.put(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> kvView.put(
                 Tuple.create().set("key", 2L),
                 Tuple.create().set("valRenamed", 222))
             );
@@ -155,7 +155,7 @@ class ITSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
             assertThrows(IllegalArgumentException.class, () -> kvView.get(keyTuple1).value("valInt"));
 
             // Check tuple of correct schema.
-            assertThrows(SchemaMismatchException.class, () -> kvView.put(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> kvView.put(
                 Tuple.create().set("key", 2L),
                 Tuple.create().set("valInt", -222))
             );
@@ -188,7 +188,7 @@ class ITSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
         {
             kvView.put(Tuple.create().set("key", 1L), Tuple.create().set("valInt", 111));
 
-            assertThrows(SchemaMismatchException.class, () -> kvView.put(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> kvView.put(
                 Tuple.create().set("key", 2L),
                 Tuple.create().set("val", "I'not exists"))
             );
@@ -213,7 +213,7 @@ class ITSchemaChangeKVViewTest extends AbstractSchemaChangeTest {
             kvView.put(Tuple.create().set("key", 4L),
                 Tuple.create().set("valInt", 444));
 
-            assertThrows(SchemaMismatchException.class, () -> kvView.put(
+            assertThrowsWithCause(SchemaMismatchException.class, () -> kvView.put(
                 Tuple.create().set("key", 4L),
                 Tuple.create().set("val", "I'm not exist"))
             );
