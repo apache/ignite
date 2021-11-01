@@ -876,18 +876,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return Snapshot name if the snapshot create operation is in progress or {@code null}.
+     * @return Status of the current snapshot operation, if it is in progress, or {@code null}.
      */
-    protected @Nullable String getCreatingSnapshotName() {
+    protected @Nullable String localSnapshotStatus() {
+        String name = null;
+
         SnapshotOperationRequest req = clusterSnpReq;
 
         if (req != null)
-            return req.snapshotName();
+            name = req.snapshotName();
 
         ClusterSnapshotFuture fut = clusterSnpFut;
 
-        if (fut != null)
-            return fut.name;
+        if (name == null && fut != null)
+            name = fut.name;
+
+        if (name != null)
+            return "Creating the snapshot with name: " + name;
+
+        name = restoreCacheGrpProc.restoringSnapshotName();
+
+        if (name != null)
+            return "Restoring to snapshot with name: " + name;
 
         return null;
     }
@@ -899,13 +909,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public boolean isRestoring() {
         return restoreCacheGrpProc.restoringSnapshotName() != null;
-    }
-
-    /**
-     * @return Snapshot name if the snapshot restore operation is in progress or {@code null}.
-     */
-    protected @Nullable String getRestoringSnapshotName() {
-        return restoreCacheGrpProc.restoringSnapshotName();
     }
 
     /**
@@ -1769,9 +1772,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param taskCls Snapshot operation management task class.
      * @param arg Task argument.
      */
-    private <K, V> IgniteFuture<V> executeSnapshotManagementTask(
-        Class<? extends ComputeTask<K, V>> taskCls,
-        K arg
+    private <T, S> IgniteFuture<S> executeSnapshotManagementTask(
+        Class<? extends ComputeTask<T, S>> taskCls,
+        T arg
     ) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
