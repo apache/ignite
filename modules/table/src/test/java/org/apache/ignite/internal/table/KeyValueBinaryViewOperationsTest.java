@@ -41,19 +41,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * TODO: IGNITE-14487 Check key fields in Tuple is ignored for value or exception is thrown?
  */
 public class KeyValueBinaryViewOperationsTest {
+    /** Simple schema. */
+    private SchemaDescriptor schema = new SchemaDescriptor(
+        1,
+        new Column[]{new Column("id", NativeTypes.INT64, false)},
+        new Column[]{new Column("val", NativeTypes.INT64, false)}
+    );
+
+    /**
+     * Creates table view.
+     *
+     * @return Table KV binary view.
+     */
+    private KeyValueView<Tuple, Tuple> tableView() {
+        return new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+    }
+
     /**
      *
      */
     @Test
     public void put() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
-
-        KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -89,14 +98,7 @@ public class KeyValueBinaryViewOperationsTest {
      */
     @Test
     public void putIfAbsent() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
-
-        KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -122,14 +124,7 @@ public class KeyValueBinaryViewOperationsTest {
      */
     @Test
     public void getAndPut() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
-
-        KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple val = Tuple.create().set("val", 11L);
@@ -155,15 +150,40 @@ public class KeyValueBinaryViewOperationsTest {
      *
      */
     @Test
-    public void remove() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
+    public void contains() {
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
-        KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        final Tuple key = Tuple.create().set("id", 1L);
+        final Tuple val = Tuple.create().set("val", 11L);
+        final Tuple val2 = Tuple.create().set("val", 22L);
+
+        // Not-existed value.
+        assertFalse(tbl.contains(key));
+
+        // Put KV pair.
+        tbl.put(key, val);
+        assertTrue(tbl.contains(Tuple.create().set("id", 1L)));
+
+        // Delete key.
+        assertTrue(tbl.remove(key));
+        assertFalse(tbl.contains(Tuple.create().set("id", 1L)));
+
+        // Put KV pair.
+        tbl.put(key, val2);
+        assertTrue(tbl.contains(Tuple.create().set("id", 1L)));
+
+        // Non-existed key.
+        assertFalse(tbl.contains(Tuple.create().set("id", 2L)));
+        tbl.remove(Tuple.create().set("id", 2L));
+        assertFalse(tbl.contains(Tuple.create().set("id", 2L)));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void remove() {
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -199,14 +219,7 @@ public class KeyValueBinaryViewOperationsTest {
      */
     @Test
     public void removeExact() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
-
-        final KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        final KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -254,14 +267,7 @@ public class KeyValueBinaryViewOperationsTest {
      */
     @Test
     public void replace() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
-
-        KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);
@@ -300,14 +306,7 @@ public class KeyValueBinaryViewOperationsTest {
      */
     @Test
     public void replaceExact() {
-        SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[] {new Column("id", NativeTypes.INT64, false)},
-            new Column[] {new Column("val", NativeTypes.INT64, false)}
-        );
-
-        KeyValueView<Tuple, Tuple> tbl =
-            new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
+        KeyValueView<Tuple, Tuple> tbl = tableView();
 
         final Tuple key = Tuple.create().set("id", 1L);
         final Tuple key2 = Tuple.create().set("id", 2L);

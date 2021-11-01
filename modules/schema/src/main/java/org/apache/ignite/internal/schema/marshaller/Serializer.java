@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.schema.marshaller;
 
+import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.util.Pair;
 
 /**
@@ -28,33 +31,38 @@ public interface Serializer {
      *
      * @param key Key object.
      * @param val Value object.
-     * @return Serialized key-value pair.
+     * @return Binary row.
      * @throws SerializationException If serialization failed.
      */
-    byte[] serialize(Object key, Object val) throws SerializationException;
+    BinaryRow serialize(Object key, Object val) throws SerializationException;
 
     /**
-     * @param data Key bytes.
+     * @param row Row.
      * @param <K> Key object type.
      * @return Key object.
      * @throws SerializationException If deserialization failed.
      */
-    <K> K deserializeKey(byte[] data) throws SerializationException;
+    <K> K deserializeKey(Row row) throws SerializationException;
 
     /**
-     * @param data Value bytes.
+     * @param row Row.
      * @param <V> Value object type.
      * @return Value object.
      * @throws SerializationException If deserialization failed.
      */
-    <V> V deserializeValue(byte[] data) throws SerializationException;
+    <V> V deserializeValue(Row row) throws SerializationException;
 
     /**
-     * @param data Row bytes.
+     * @param row Row.
      * @param <K> Key object type.
      * @param <V> Value object type.
      * @return Key-value pair.
      * @throws SerializationException If deserialization failed.
      */
-    <K, V> Pair<K,V> deserialize(byte[] data) throws SerializationException;
+    <K, V> Pair<K, V> deserialize(Row row) throws SerializationException;
+
+    /**
+     * @return Schema.
+     */
+    SchemaDescriptor schema();
 }

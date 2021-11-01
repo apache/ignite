@@ -29,7 +29,7 @@ import org.apache.ignite.internal.schema.marshaller.RecordSerializer;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.RecordView;
-import org.apache.ignite.table.mapper.RecordMapper;
+import org.apache.ignite.table.mapper.Mapper;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +45,7 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
      * @param mapper Record class mapper.
      * @param tx The transaction.
      */
-    public RecordViewImpl(InternalTable tbl, SchemaRegistry schemaReg, RecordMapper<R> mapper, @Nullable Transaction tx) {
+    public RecordViewImpl(InternalTable tbl, SchemaRegistry schemaReg, Mapper<R> mapper, @Nullable Transaction tx) {
         super(tbl, schemaReg, tx);
     }
 

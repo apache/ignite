@@ -17,10 +17,8 @@
 
 package org.apache.ignite.table;
 
-import org.apache.ignite.table.mapper.KeyMapper;
+import org.apache.ignite.table.mapper.Mapper;
 import org.apache.ignite.table.mapper.Mappers;
-import org.apache.ignite.table.mapper.RecordMapper;
-import org.apache.ignite.table.mapper.ValueMapper;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -47,7 +45,7 @@ public interface Table {
      * @param <R> Record type.
      * @return Table record view.
      */
-    <R> RecordView<R> recordView(RecordMapper<R> recMapper);
+    <R> RecordView<R> recordView(Mapper<R> recMapper);
 
     /**
      * Creates record view of table regarding the binary object concept.
@@ -65,7 +63,7 @@ public interface Table {
      * @param <V> Value type.
      * @return Table key-value view.
      */
-    <K, V> KeyValueView<K, V> keyValueView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper);
+    <K, V> KeyValueView<K, V> keyValueView(Mapper<K> keyMapper, Mapper<V> valMapper);
 
     /**
      * Creates key-value view of table regarding the binary object concept.

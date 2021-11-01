@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.schema.marshaller.reflection;
 
+import java.util.Objects;
+import org.apache.ignite.internal.schema.BinaryRow;
+import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.schema.Columns;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.AbstractSerializer;
 import org.apache.ignite.internal.schema.marshaller.SerializationException;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
+import org.apache.ignite.internal.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.schema.marshaller.MarshallerUtil.getValueSize;
@@ -55,23 +59,49 @@ public class JavaSerializer extends AbstractSerializer {
         this.keyClass = keyClass;
         this.valClass = valClass;
 
-        keyMarsh = Marshaller.createMarshaller(schema.keyColumns(), 0, keyClass);
-        valMarsh = Marshaller.createMarshaller(schema.valueColumns(), schema.keyColumns().length(), valClass);
+        keyMarsh = Marshaller.createMarshaller(schema.keyColumns(), keyClass);
+        valMarsh = Marshaller.createMarshaller(schema.valueColumns(), valClass);
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] serialize0(
-        RowAssembler asm,
-        Object key,
-        @Nullable Object val
-    ) throws SerializationException {
+    @Override public BinaryRow serialize(Object key, @Nullable Object val) throws SerializationException {
         assert keyClass.isInstance(key);
         assert val == null || valClass.isInstance(val);
 
-        keyMarsh.writeObject(key, asm);
-        valMarsh.writeObject(val, asm);
+        final RowAssembler asm = createAssembler(Objects.requireNonNull(key), val);
 
-        return asm.toBytes();
+        keyMarsh.writeObject(key, asm);
+
+        if (val != null)
+            valMarsh.writeObject(val, asm);
+
+        return new ByteBufferRow(asm.toBytes());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K> K deserializeKey(Row row) throws SerializationException {
+        final Object o = keyMarsh.readObject(row);
+
+        assert keyClass.isInstance(o);
+
+        return (K)o;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <V> V deserializeValue(Row row) throws SerializationException {
+        if (!row.hasValue())
+            return null;
+
+        final Object o = valMarsh.readObject(row);
+
+        assert o == null || valClass.isInstance(o);
+
+        return (V)o;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> Pair<K, V> deserialize(Row row) throws SerializationException {
+        return new Pair<>(deserializeKey(row), deserializeValue(row));
     }
 
     /**
@@ -81,7 +111,7 @@ public class JavaSerializer extends AbstractSerializer {
      * @param val Value object.
      * @return Row assembler.
      */
-    @Override protected RowAssembler createAssembler(Object key, Object val) {
+    private RowAssembler createAssembler(Object key, Object val) {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
 
@@ -116,30 +146,12 @@ public class JavaSerializer extends AbstractSerializer {
         return new ObjectStatistic(cnt, size);
     }
 
-    /** {@inheritDoc} */
-    @Override protected Object deserializeKey0(Row row) throws SerializationException {
-        final Object o = keyMarsh.readObject(row);
-
-        assert keyClass.isInstance(o);
-
-        return o;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object deserializeValue0(Row row) throws SerializationException {
-        final Object o = valMarsh.readObject(row);
-
-        assert o == null || valClass.isInstance(o);
-
-        return o;
-    }
-
     /**
      * Object statistic.
      */
     private static class ObjectStatistic {
         /** Cached zero statistics. */
-        static final ObjectStatistic ZERO_VARLEN_STATISTICS = new ObjectStatistic(0,0);
+        static final ObjectStatistic ZERO_VARLEN_STATISTICS = new ObjectStatistic(0, 0);
 
         /** Non-null columns of varlen type. */
         int nonNullCols;

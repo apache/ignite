@@ -30,10 +30,12 @@ import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
 import org.apache.ignite.internal.schema.marshaller.SerializerFactory;
+import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.util.Factory;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -134,10 +136,10 @@ public class SerializerBenchmarkTest {
         Long key = rnd.nextLong();
 
         Object val = objectFactory.create();
-        byte[] bytes = serializer.serialize(key, val);
+        BinaryRow row = serializer.serialize(key, val);
 
-        Object restoredKey = serializer.deserializeKey(bytes);
-        Object restoredVal = serializer.deserializeValue(bytes);
+        Object restoredKey = serializer.deserializeKey(new Row(serializer.schema(), row));
+        Object restoredVal = serializer.deserializeValue(new Row(serializer.schema(), row));
 
         bh.consume(restoredVal);
         bh.consume(restoredKey);

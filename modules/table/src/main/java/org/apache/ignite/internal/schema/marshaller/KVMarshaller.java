@@ -17,30 +17,40 @@
 
 package org.apache.ignite.internal.schema.marshaller;
 
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.row.Row;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Key-value serializer interface.
+ * Key-value marshaller interface provides method to marshal/unmarshal key and value objects to/from a row.
+ *
+ * @param <K> Key type.
+ * @param <V> Value type.
  */
-public interface KVSerializer<K, V> {
+public interface KVMarshaller<K, V> {
     /**
-     * @param key Key object to serialize.
-     * @param val Value object to serialize.
-     * @return Table row with columns serialized from given key-value pair.
+     * Marshal key and value objects to a table row.
+     *
+     * @param key Key object to marshal.
+     * @param val Value object to marshal or {@code null}.
+     * @return Table row with columns from given key-value pair.
      */
-    Row serialize(@NotNull K key, V val);
+    BinaryRow marshal(@NotNull K key, V val);
 
     /**
+     * Unmarshal row to a key object.
+     *
      * @param row Table row.
-     * @return Deserialized key object.
+     * @return Key object.
      */
-    @NotNull K deserializeKey(@NotNull Row row);
+    @NotNull K unmarshalKey(@NotNull Row row);
 
     /**
+     * Unmarshal row to a value object.
+     *
      * @param row Table row.
-     * @return Deserialized value object.
+     * @return Value object.
      */
-    @Nullable V deserializeValue(@NotNull Row row);
+    @Nullable V unmarshalValue(@NotNull Row row);
 }

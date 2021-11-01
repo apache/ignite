@@ -37,6 +37,7 @@ import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
+import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.TestUtils;
 import org.apache.ignite.internal.schema.marshaller.asm.AsmSerializerGenerator;
 import org.apache.ignite.internal.schema.marshaller.reflection.JavaSerializerFactory;
+import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -168,11 +170,11 @@ public class JavaSerializerTest {
 
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
-        byte[] bytes = serializer.serialize(key, val);
+        BinaryRow row = serializer.serialize(key, val);
 
         // Try different order.
-        Object restoredVal = serializer.deserializeValue(bytes);
-        Object restoredKey = serializer.deserializeKey(bytes);
+        Object restoredVal = serializer.deserializeValue(new Row(schema, row));
+        Object restoredKey = serializer.deserializeKey(new Row(schema, row));
 
         assertTrue(key.getClass().isInstance(restoredKey));
         assertTrue(val.getClass().isInstance(restoredVal));
@@ -248,10 +250,10 @@ public class JavaSerializerTest {
 
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
-        byte[] bytes = serializer.serialize(key, val);
+        BinaryRow row = serializer.serialize(key, val);
 
-        Object key1 = serializer.deserializeKey(bytes);
-        Object val1 = serializer.deserializeValue(bytes);
+        Object key1 = serializer.deserializeKey(new Row(schema, row));
+        Object val1 = serializer.deserializeValue(new Row(schema, row));
 
         assertTrue(key.getClass().isInstance(key1));
         assertTrue(val.getClass().isInstance(val1));
@@ -295,10 +297,11 @@ public class JavaSerializerTest {
 
         final ObjectFactory<?> objFactory = new ObjectFactory<>(PrivateTestObject.class);
         final Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
-        byte[] bytes = serializer.serialize(key, objFactory.create());
 
-        Object key1 = serializer.deserializeKey(bytes);
-        Object val1 = serializer.deserializeValue(bytes);
+        BinaryRow row = serializer.serialize(key, objFactory.create());
+
+        Object key1 = serializer.deserializeKey(new Row(schema, row));
+        Object val1 = serializer.deserializeValue(new Row(schema, row));
 
         assertTrue(key.getClass().isInstance(key1));
         assertTrue(val.getClass().isInstance(val1));
@@ -333,15 +336,14 @@ public class JavaSerializerTest {
 
             Serializer serializer = factory.create(schema, key.getClass(), valClass);
 
-            byte[] bytes = serializer.serialize(key, objFactory.create());
+            BinaryRow row = serializer.serialize(key, objFactory.create());
 
-            Object key1 = serializer.deserializeKey(bytes);
-            Object val1 = serializer.deserializeValue(bytes);
+            Object key1 = serializer.deserializeKey(new Row(schema, row));
+            Object val1 = serializer.deserializeValue(new Row(schema, row));
 
             assertTrue(key.getClass().isInstance(key1));
             assertTrue(valClass.isInstance(val1));
-        }
-        finally {
+        } finally {
             Thread.currentThread().setContextClassLoader(loader);
         }
     }
@@ -367,10 +369,10 @@ public class JavaSerializerTest {
 
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
-        byte[] bytes = serializer.serialize(key, val);
+        BinaryRow row = serializer.serialize(key, val);
 
-        Object key1 = serializer.deserializeKey(bytes);
-        Object val1 = serializer.deserializeValue(bytes);
+        Object key1 = serializer.deserializeKey(new Row(schema, row));
+        Object val1 = serializer.deserializeValue(new Row(schema, row));
 
         assertTrue(key.getClass().isInstance(key1));
         assertTrue(val.getClass().isInstance(val1));

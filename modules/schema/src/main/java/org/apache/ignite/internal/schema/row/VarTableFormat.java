@@ -54,12 +54,12 @@ abstract class VarTableFormat {
      * to write vartable in a compact way.
      *
      * @param payloadLen Payload size in bytes.
-     * @param valVartblLen
+     * @param vartblSize Number of items in the vartable.
      * @return Vartable format helper.
      */
-    static VarTableFormat format(int payloadLen, int valVartblLen) {
+    static VarTableFormat format(int payloadLen, int vartblSize) {
         if (payloadLen > 0) {
-            if (payloadLen < 256 && valVartblLen < 256)
+            if (payloadLen < 256 && vartblSize < 256)
                 return TINY;
 
             if (payloadLen < 64 * Constants.KiB)

@@ -28,7 +28,7 @@ public final class Mappers {
      * @param <K> Key type.
      * @return Mapper for key.
      */
-    public static <K> KeyMapper<K> ofKeyClass(Class<K> cls) {
+    public static <K> Mapper<K> ofKeyClass(Class<K> cls) {
         return null;
     }
 
@@ -39,7 +39,7 @@ public final class Mappers {
      * @param <V> Value type.
      * @return Mapper for value.
      */
-    public static <V> ValueMapper<V> ofValueClass(Class<V> cls) {
+    public static <V> Mapper<V> ofValueClass(Class<V> cls) {
         return null;
     }
 
@@ -50,7 +50,7 @@ public final class Mappers {
      * @param <V> Value type.
      * @return Mapper builder for value.
      */
-    public static <V> ValueMapper.Builder<V> ofValueClassBuilder(Class<V> cls) {
+    public static <V> Mapper.Builder<V> ofValueClassBuilder(Class<V> cls) {
         return null;
     }
 
@@ -60,7 +60,7 @@ public final class Mappers {
      * @param <R> Record type.
      * @return Identity key mapper.
      */
-    public static <R> KeyMapper<R> identity() {
+    public static <R> Mapper<R> identity() {
         return null;
     }
 
@@ -71,7 +71,7 @@ public final class Mappers {
      * @param <R> Record type.
      * @return Mapper builder for record.
      */
-    public static <R> RecordMapper<R> ofRecordClass(Class<R> cls) {
+    public static <R> Mapper<R> ofRecordClass(Class<R> cls) {
         return null;
     }
 
@@ -82,7 +82,7 @@ public final class Mappers {
      * @param <R> Record type.
      * @return Mapper builder for record.
      */
-    public static <R> RecordMapper.Builder<R> ofRecordClassBuilder(Class<R> cls) {
+    public static <R> Mapper.Builder<R> ofRecordClassBuilder(Class<R> cls) {
         return null;
     }
 

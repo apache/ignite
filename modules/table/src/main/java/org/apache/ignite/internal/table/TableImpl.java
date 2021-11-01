@@ -25,9 +25,7 @@ import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.mapper.KeyMapper;
-import org.apache.ignite.table.mapper.RecordMapper;
-import org.apache.ignite.table.mapper.ValueMapper;
+import org.apache.ignite.table.mapper.Mapper;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -85,7 +83,7 @@ public class TableImpl implements Table {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> RecordView<R> recordView(RecordMapper<R> recMapper) {
+    @Override public <R> RecordView<R> recordView(Mapper<R> recMapper) {
         return new RecordViewImpl<>(tbl, schemaReg, recMapper, null);
     }
 
@@ -95,7 +93,7 @@ public class TableImpl implements Table {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KeyValueView<K, V> keyValueView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+    @Override public <K, V> KeyValueView<K, V> keyValueView(Mapper<K> keyMapper, Mapper<V> valMapper) {
         return new KeyValueViewImpl<>(tbl, schemaReg, keyMapper, valMapper, null);
     }
 
