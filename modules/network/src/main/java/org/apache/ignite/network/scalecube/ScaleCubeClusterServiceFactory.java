@@ -51,7 +51,6 @@ import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
  * {@link ClusterServiceFactory} implementation that uses ScaleCube for messaging and topology services.
- * TODO: IGNITE-14538: This factory should use ScaleCube configuration instead of default parameters.
  */
 public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
     /** {@inheritDoc} */

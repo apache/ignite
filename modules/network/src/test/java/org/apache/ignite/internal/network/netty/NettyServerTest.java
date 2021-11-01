@@ -211,6 +211,7 @@ public class NettyServerTest {
             });
 
         server = new NettyServer(
+            "test",
             serverCfg.value(),
             () -> handshakeManager,
             sender -> {},
@@ -273,6 +274,7 @@ public class NettyServerTest {
         Mockito.doReturn(future).when(bootstrap).bind(Mockito.anyInt());
 
         var server = new NettyServer(
+            "test",
             bootstrap,
             serverCfg.value(),
             () -> mock(HandshakeManager.class),

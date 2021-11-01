@@ -55,10 +55,10 @@ public class NettyServer {
     private final ServerBootstrap bootstrap;
 
     /** Socket accepter event loop group. */
-    private final NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+    private final NioEventLoopGroup bossGroup;
 
     /** Socket handler event loop group. */
-    private final NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+    private final NioEventLoopGroup workerGroup;
 
     /** Server socket configuration. */
     private final NetworkView configuration;
@@ -80,10 +80,7 @@ public class NettyServer {
     private volatile ServerChannel channel;
 
     /** Server close future. */
-    private CompletableFuture<Void> serverCloseFuture = CompletableFuture.allOf(
-        NettyUtils.toCompletableFuture(bossGroup.terminationFuture()),
-        NettyUtils.toCompletableFuture(workerGroup.terminationFuture())
-    );
+    private CompletableFuture<Void> serverCloseFuture;
 
     /** New connections listener. */
     private final Consumer<NettySender> newConnectionListener;
@@ -94,6 +91,7 @@ public class NettyServer {
     /**
      * Constructor.
      *
+     * @param consistentId Consistent id.
      * @param configuration Server configuration.
      * @param handshakeManager Handshake manager supplier.
      * @param newConnectionListener New connections listener.
@@ -101,18 +99,28 @@ public class NettyServer {
      * @param serializationRegistry Serialization registry.
      */
     public NettyServer(
+        String consistentId,
         NetworkView configuration,
         Supplier<HandshakeManager> handshakeManager,
         Consumer<NettySender> newConnectionListener,
         BiConsumer<SocketAddress, NetworkMessage> messageListener,
         MessageSerializationRegistry serializationRegistry
     ) {
-        this(new ServerBootstrap(), configuration, handshakeManager, newConnectionListener, messageListener, serializationRegistry);
+        this(
+            consistentId,
+            new ServerBootstrap(),
+            configuration,
+            handshakeManager,
+            newConnectionListener,
+            messageListener,
+            serializationRegistry
+        );
     }
 
     /**
      * Constructor.
      *
+     * @param consistentId Consistent id.
      * @param bootstrap Server bootstrap.
      * @param configuration Server configuration.
      * @param handshakeManager Handshake manager supplier.
@@ -121,6 +129,7 @@ public class NettyServer {
      * @param serializationRegistry Serialization registry.
      */
     public NettyServer(
+        String consistentId,
         ServerBootstrap bootstrap,
         NetworkView configuration,
         Supplier<HandshakeManager> handshakeManager,
@@ -134,6 +143,12 @@ public class NettyServer {
         this.newConnectionListener = newConnectionListener;
         this.messageListener = messageListener;
         this.serializationRegistry = serializationRegistry;
+        this.bossGroup = NamedNioEventLoopGroup.create(consistentId + "-srv-accept");
+        this.workerGroup = NamedNioEventLoopGroup.create(consistentId + "-srv-worker");
+        serverCloseFuture = CompletableFuture.allOf(
+            NettyUtils.toCompletableFuture(bossGroup.terminationFuture()),
+            NettyUtils.toCompletableFuture(workerGroup.terminationFuture())
+        );
     }
 
     /**

@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.ignite.configuration.schemas.network.NetworkView;
 import org.apache.ignite.configuration.schemas.network.OutboundView;
@@ -61,7 +60,7 @@ public class ConnectionManager {
     private final Bootstrap clientBootstrap;
 
     /** Client socket channel handler event loop group. */
-    private final EventLoopGroup clientWorkerGroup = new NioEventLoopGroup();
+    private final EventLoopGroup clientWorkerGroup;
 
     /** Server. */
     private final NettyServer server;
@@ -110,12 +109,14 @@ public class ConnectionManager {
         this.consistentId = consistentId;
         this.clientHandshakeManagerFactory = clientHandshakeManagerFactory;
         this.server = new NettyServer(
+            consistentId,
             networkConfiguration,
             serverHandshakeManagerFactory,
             this::onNewIncomingChannel,
             this::onMessage,
             serializationRegistry
         );
+        this.clientWorkerGroup = NamedNioEventLoopGroup.create(consistentId + "-client");
         this.clientBootstrap = createClientBootstrap(clientWorkerGroup, networkConfiguration.outbound());
     }
 

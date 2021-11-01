@@ -94,7 +94,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
 
     /** {@inheritDoc} */
     @Override public CompletableFuture<Void> send(NetworkAddress addr, NetworkMessage msg, String correlationId) {
-        // TODO: IGNITE-15161 Temporarly, probably should be removed after the implementation
+        // TODO: IGNITE-15161 Temporarily, probably should be removed after the implementation
         // TODO of stopping the clusterService cause some sort of stop thread-safety logic will be implemented.
         if (cluster.isShutdown())
             return failedFuture(new NodeStoppingException());
