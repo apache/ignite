@@ -128,10 +128,10 @@ Experimental API. Introduced since Apache Ignite 2.12. Only Java API is supporte
 please share it with user@ignite.apache.org.
 ====
 
-Index queries perform over distributed indexes and retrieve cache entries that match the specified query. `IndexQuery` can
-be used if a low amount of data match filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly
-extracts all cache entries and then applies a filter on them. `IndexQuery` relies on index tree structure and filters
-most of the entries without extracting.
+Index queries perform over distributed indexes and retrieve cache entries that match the specified query. `QueryCursor`
+delivers sorted cache entries by the order defined for queried index. `IndexQuery` can be used if a low amount of data
+match filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly extracts all cache entries and
+then applies a filter on them. `IndexQuery` relies on index tree structure and filters most of the entries without extracting.
 
 [source,java]
 ----
