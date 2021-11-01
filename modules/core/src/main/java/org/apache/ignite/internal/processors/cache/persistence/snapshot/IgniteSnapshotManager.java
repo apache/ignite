@@ -62,14 +62,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1533,7 +1531,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         RemoteSnapshotHandler fut = new RemoteSnapshotHandler(this, rmtNodeId, snpName, parts, stopChecker, partHnd);
 
-        snpRmtMgr.submit(() -> fut);
+        snpRmtMgr.submit(fut);
 
         return fut;
     }
@@ -2386,7 +2384,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private class SequentialRemoteSnapshotManager implements TransmissionHandler, GridMessageListener {
         /** A task currently being executed and must be explicitly finished. */
-        private final AtomicReference<RemoteSnapshotHandler> active = new AtomicReference<>();
+        private volatile RemoteSnapshotHandler active;
 
         /** Queue of asynchronous tasks to execute. */
         private final Queue<RemoteSnapshotHandler> queue = new ConcurrentLinkedDeque<>();
@@ -2395,17 +2393,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private volatile boolean stopping;
 
         /**
-         * @param task The supplier of a new task. May produce <tt>null</tt> value if the queue is empty.
+         * @param next New task for scheduling. May produce <tt>null</tt> value if the queue is empty.
          */
-        public void submit(Supplier<RemoteSnapshotHandler> task) {
-            RemoteSnapshotHandler curr = active.get();
-            RemoteSnapshotHandler next = task.get();
+        public synchronized void submit(@Nullable RemoteSnapshotHandler next) {
+            RemoteSnapshotHandler curr = active;
 
-            if ((curr == null || curr.isDone()) && active.compareAndSet(curr, next)) {
+            if (curr == null || curr.isDone()) {
                 if (next == null)
                     return;
 
-                next.listen(f -> submit(queue::poll));
+                next.listen(f -> submit(queue.poll()));
+
+                active = next;
 
                 if (stopping)
                     next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
@@ -2454,7 +2453,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private Set<RemoteSnapshotHandler> activeTasks() {
             Set<RemoteSnapshotHandler> futs = new HashSet<>();
 
-            RemoteSnapshotHandler curr = active.get();
+            RemoteSnapshotHandler curr = active;
             RemoteSnapshotHandler changed;
 
             do {
@@ -2462,7 +2461,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 futs.add(curr);
 
                 changed = curr;
-            } while ((curr = active.get()) != changed);
+            } while ((curr = active) != changed);
 
             return futs.stream()
                 .filter(Objects::nonNull)
@@ -2525,7 +2524,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 else if (msg instanceof SnapshotResponseMessage) {
                     SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
 
-                    RemoteSnapshotHandler task = active.get();
+                    RemoteSnapshotHandler task = active;
 
                     if (task == null || !task.reqId.equals(respMsg0.requestId())) {
                         if (log.isInfoEnabled()) {
@@ -2554,7 +2553,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public void onEnd(UUID nodeId) {
-            RemoteSnapshotHandler task = active.get();
+            RemoteSnapshotHandler task = active;
 
             if (task == null)
                 return;
@@ -2570,7 +2569,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public void onException(UUID nodeId, Throwable ex) {
-            RemoteSnapshotHandler task = active.get();
+            RemoteSnapshotHandler task = active;
 
             if (task == null)
                 return;
@@ -2589,7 +2588,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String rqId = (String)fileMeta.params().get(RQ_ID_NAME_PARAM);
             Integer partsCnt = (Integer)fileMeta.params().get(SNP_PARTITIONS_CNT);
 
-            RemoteSnapshotHandler task = active.get();
+            RemoteSnapshotHandler task = active;
 
             if (task == null || task.isDone() || !task.reqId.equals(rqId)) {
                 throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
@@ -2633,7 +2632,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             assert partId != null;
             assert rqId != null;
 
-            RemoteSnapshotHandler task = active.get();
+            RemoteSnapshotHandler task = active;
 
             if (task == null || task.isDone() || !task.reqId.equals(rqId)) {
                 throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
@@ -2642,7 +2641,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             return new Consumer<File>() {
                 @Override public void accept(File file) {
-                    RemoteSnapshotHandler task0 = active.get();
+                    RemoteSnapshotHandler task0 = active;
 
                     if (task0 == null || !task0.equals(task) || task0.isDone()) {
                         throw new TransmissionCancelledException("Snapshot request is cancelled [rqId=" + rqId +
