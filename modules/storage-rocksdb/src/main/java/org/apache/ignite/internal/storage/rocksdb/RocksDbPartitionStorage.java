@@ -81,7 +81,6 @@ public class RocksDbPartitionStorage implements PartitionStorage {
      * @param partId Partition id.
      * @param db Rocks DB instance.
      * @param columnFamily Column family to be used for all storage operations.
-     * @param storage
      * @throws StorageException If failed to create RocksDB instance.
      */
     public RocksDbPartitionStorage(int partId, RocksDB db, ColumnFamily columnFamily) throws StorageException {
@@ -354,7 +353,7 @@ public class RocksDbPartitionStorage implements PartitionStorage {
 
                 try {
                     // Rename the temporary directory
-                    Files.move(tempPath, snapshotPath);
+                    IgniteUtils.atomicMoveFile(tempPath, snapshotPath, null);
                 }
                 catch (IOException e) {
                     throw new IgniteInternalException("Failed to rename: " + tempPath + " to " + snapshotPath, e);

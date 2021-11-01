@@ -263,7 +263,7 @@ public class RocksDBKeyValueStorage implements KeyValueStorage {
 
             try {
                 // Rename the temporary directory
-                Files.move(tempPath, snapshotPath);
+                IgniteUtils.atomicMoveFile(tempPath, snapshotPath, null);
             }
             catch (IOException e) {
                 throw new IgniteInternalException("Failed to rename: " + tempPath + " to " + snapshotPath, e);

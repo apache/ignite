@@ -24,12 +24,9 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +35,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Status;
@@ -336,52 +334,12 @@ public final class Utils {
         return Requires.requireNonNull(obj, "obj");
     }
 
-    @SuppressWarnings("ConstantConditions")
     public static boolean atomicMoveFile(final File source, final File target, final boolean sync) throws IOException {
-        // Move temp file to target path atomically.
-        // The code comes from
-        // https://github.com/jenkinsci/jenkins/blob/master/core/src/main/java/hudson/util/AtomicFileWriter.java#L187
-        Requires.requireNonNull(source, "source");
-        Requires.requireNonNull(target, "target");
-        final Path sourcePath = source.toPath();
-        final Path targetPath = target.toPath();
-        boolean success;
-        try {
-            success = Files.move(sourcePath, targetPath, StandardCopyOption.ATOMIC_MOVE) != null;
-        }
-        catch (final IOException e) {
-            // If it falls here that can mean many things. Either that the atomic move is not supported,
-            // or something wrong happened. Anyway, let's try to be over-diagnosing
-            if (e instanceof AtomicMoveNotSupportedException) {
-                LOG.warn("Atomic move not supported. falling back to non-atomic move, error: {}.", e.getMessage());
-            }
-            else {
-                LOG.warn("Unable to move atomically, falling back to non-atomic move, error: {}.", e.getMessage());
-            }
+        Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(target, "target");
 
-            if (target.exists()) {
-                LOG.info("The target file {} was already existing.", targetPath);
-            }
+        boolean success = IgniteUtils.atomicMoveFile(source.toPath(), target.toPath(), LOG) != null;
 
-            try {
-                success = Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING) != null;
-            }
-            catch (final IOException e1) {
-                e1.addSuppressed(e);
-                LOG.warn("Unable to move {} to {}. Attempting to delete {} and abandoning.", sourcePath, targetPath,
-                    sourcePath);
-                try {
-                    Files.deleteIfExists(sourcePath);
-                }
-                catch (final IOException e2) {
-                    e2.addSuppressed(e1);
-                    LOG.warn("Unable to delete {}, good bye then!", sourcePath);
-                    throw e2;
-                }
-
-                throw e1;
-            }
-        }
         if (success && sync) {
             File dir = target.getParentFile();
             // fsync on target parent dir.

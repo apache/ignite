@@ -67,10 +67,10 @@ public class RocksDbTableStorage implements TableStorage {
     private static final String CF_META = "default";
 
     /** Prefix for partitions column families names. */
-    private static final String CF_PARTITION_PREFIX = "cf-part:";
+    private static final String CF_PARTITION_PREFIX = "cf-part-";
 
     /** Prefix for SQL indexes column family names. */
-    private static final String CF_INDEX_PREFIX = "cf-idx:";
+    private static final String CF_INDEX_PREFIX = "cf-idx-";
 
     /** Name of comparator used in indexes column family. */
     private static final String INDEX_COMPARATOR_NAME = "index-comparator";

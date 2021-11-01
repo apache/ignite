@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.util;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -58,7 +60,8 @@ public class IgniteUtils {
     /** Class loader used to load Ignite. */
     private static final ClassLoader igniteClassLoader = IgniteUtils.class.getClassLoader();
 
-    private static final boolean assertionsEnabled;
+    /** Indicates that assertions are enabled. */
+    private static final boolean assertionsEnabled = IgniteUtils.class.desiredAssertionStatus();
 
     /**
      * Gets the current monotonic time in milliseconds.
@@ -84,25 +87,6 @@ public class IgniteUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class<?>>> classCache =
         new ConcurrentHashMap<>();
-
-    /*
-      Initializes enterprise check.
-     */
-    static {
-        boolean assertionsEnabled0 = true;
-
-        try {
-            assert false;
-
-            assertionsEnabled0 = false;
-        }
-        catch (AssertionError ignored) {
-            assertionsEnabled0 = true;
-        }
-        finally {
-            assertionsEnabled = assertionsEnabled0;
-        }
-    }
 
     /**
      * Get JDK version.
@@ -415,7 +399,7 @@ public class IgniteUtils {
     }
 
     /**
-     * @return {@code True} if assertions enabled.
+     * @return {@code true} if assertions enabled.
      */
     public static boolean assertionsEnabled() {
         return assertionsEnabled;
@@ -541,5 +525,73 @@ public class IgniteUtils {
 
             err.printStackTrace(System.err);
         }
+    }
+
+    /**
+     * Atomically moves or renames a file to a target file.
+     *
+     * @param sourcePath The path to the file to move.
+     * @param targetPath The path to the target file.
+     * @param log Optional logger.
+     *
+     * @return The path to the target file.
+     *
+     * @throws IOException If the source file cannot be moved to the target.
+     */
+    public static Path atomicMoveFile(Path sourcePath, Path targetPath, @Nullable IgniteLogger log) throws IOException {
+        // Move temp file to target path atomically.
+        // The code comes from
+        // https://github.com/jenkinsci/jenkins/blob/master/core/src/main/java/hudson/util/AtomicFileWriter.java#L187
+        Objects.requireNonNull(sourcePath, "sourcePath");
+        Objects.requireNonNull(targetPath, "targetPath");
+
+        Path success;
+
+        try {
+            success = Files.move(sourcePath, targetPath, StandardCopyOption.ATOMIC_MOVE);
+        }
+        catch (final IOException e) {
+            // If it falls here that can mean many things. Either that the atomic move is not supported,
+            // or something wrong happened. Anyway, let's try to be over-diagnosing
+            if (log != null) {
+                if (e instanceof AtomicMoveNotSupportedException)
+                    log.warn("Atomic move not supported. falling back to non-atomic move, error: {}.", e.getMessage());
+                else
+                    log.warn("Unable to move atomically, falling back to non-atomic move, error: {}.", e.getMessage());
+
+                if (targetPath.toFile().exists() && log.isInfoEnabled())
+                    log.info("The target file {} was already existing.", targetPath);
+            }
+
+            try {
+                success = Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            catch (final IOException e1) {
+                e1.addSuppressed(e);
+
+                if (log != null) {
+                    log.warn("Unable to move {} to {}. Attempting to delete {} and abandoning.",
+                        sourcePath,
+                        targetPath,
+                        sourcePath);
+                }
+
+                try {
+                    Files.deleteIfExists(sourcePath);
+                }
+                catch (final IOException e2) {
+                    e2.addSuppressed(e1);
+
+                    if (log != null)
+                        log.warn("Unable to delete {}, good bye then!", sourcePath);
+
+                    throw e2;
+                }
+
+                throw e1;
+            }
+        }
+
+        return success;
     }
 }

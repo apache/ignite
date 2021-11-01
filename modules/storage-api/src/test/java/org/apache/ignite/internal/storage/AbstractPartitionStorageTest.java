@@ -19,6 +19,7 @@ package org.apache.ignite.internal.storage;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -593,8 +594,12 @@ public abstract class AbstractPartitionStorageTest {
      * @throws Exception If failed to take snapshot.
      */
     @Test
-    public void testSnapshot(@WorkDirectory Path snapshotDir) throws Exception {
+    public void testSnapshot(@WorkDirectory Path workDir) throws Exception {
         List<DataRow> rows = insertBulk(10);
+
+        Path snapshotDir = Path.of(workDir.toString(), "snapshot");
+
+        Files.createDirectories(snapshotDir);
 
         storage.snapshot(snapshotDir).get(1, TimeUnit.SECONDS);
 
@@ -608,7 +613,7 @@ public abstract class AbstractPartitionStorageTest {
     /**
      * Inserts and returns a given amount of data rows with {@link #KEY}_i as a key and {@link #VALUE}_i as a value
      * where i is an index of the data row.
-     * 
+     *
      * @param numberOfEntries Amount of entries to insert.
      * @return List of inserted rows.
      */
