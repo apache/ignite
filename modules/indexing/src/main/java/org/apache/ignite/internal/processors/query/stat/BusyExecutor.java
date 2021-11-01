@@ -150,7 +150,7 @@ public class BusyExecutor {
      * Task surrounded with try/catch and if it's complete with any exception - resulting future will return
      *
      * @param r Task to execute.
-     * @return Completable future.
+     * @return Completable future with executed flag in result.
      */
     public CompletableFuture<Boolean> submit(Runnable r) {
         GridBusyLock lock = busyLock;
@@ -163,14 +163,16 @@ public class BusyExecutor {
     }
 
     /**
-     * Submit cancellable task to execute in thread pool
-     * @param ct
-     * @return
+     * Submit cancellable task to execute in thread pool.
+     *
+     * @param ct Task to execute.
+     * @return Completable future with executed flag in result.
      */
     public CompletableFuture<Boolean> submit(CancellableTask ct) {
         GridBusyLock lock = busyLock;
 
         CompletableFuture<Boolean> res = new CompletableFuture<>();
+        
         if (busyRun(() -> cancellableTasks.put(ct, ct), lock)) {
 
             pool.execute(() -> {
