@@ -148,8 +148,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         IgniteServices services = grp.services();
 
-        if (BinaryArray.USE_TYPED_ARRAYS)
-            GridServiceProxy.KEEP_BINARY.set(true);
+        GridServiceProxy.KEEP_BINARY.set(true);
 
         try {
             Object res;
@@ -193,8 +192,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             throw new IgniteException(e);
         }
         finally {
-            if (BinaryArray.USE_TYPED_ARRAYS)
-                GridServiceProxy.KEEP_BINARY.set(false);
+            GridServiceProxy.KEEP_BINARY.set(false);
         }
     }
 

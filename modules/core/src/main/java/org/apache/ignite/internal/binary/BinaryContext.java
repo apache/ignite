@@ -53,6 +53,7 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -240,6 +241,7 @@ public class BinaryContext {
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         registerPredefinedType(Time[].class, GridBinaryMarshaller.TIME_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
+        registerPredefinedType(BinaryObject.class, GridBinaryMarshaller.BINARY_OBJ_INTERFACE);
 
         // Special collections.
         registerPredefinedType(ArrayList.class, 0);

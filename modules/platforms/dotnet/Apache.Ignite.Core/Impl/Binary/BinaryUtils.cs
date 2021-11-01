@@ -1103,9 +1103,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static int GetArrayElementTypeId(Type elemType, Marshaller marsh)
         {
-            return elemType == typeof(object)
-                ? ObjTypeId
-                : marsh.GetDescriptor(elemType).TypeId;
+            if (elemType == typeof(object))
+                return ObjTypeId;
+
+            if (elemType == typeof(IBinaryObject))
+                return BinaryTypeId.IBinaryObject;
+
+            return marsh.GetDescriptor(elemType).TypeId;
         }
 
         /// <summary>
@@ -1113,9 +1117,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static Type GetArrayElementType(int typeId, Marshaller marsh)
         {
-            return typeId == ObjTypeId
-                ? typeof(object)
-                : marsh.GetDescriptor(true, typeId, true).Type;
+            if (typeId == ObjTypeId)
+                return typeof(object);
+
+            if (typeId == BinaryTypeId.IBinaryObject)
+                return typeof(IBinaryObject);
+
+            return marsh.GetDescriptor(true, typeId, true).Type;
         }
 
         /// <summary>

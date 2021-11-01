@@ -2006,9 +2006,10 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return unwrapBinaryArrayForBackwardCompatibility(
-                    doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize)
-                );
+                if (BinaryArray.USE_TYPED_ARRAYS)
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize);
+                else
+                    return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2040,6 +2041,34 @@ public class BinaryUtils {
             default:
                 throw new BinaryObjectException("Invalid flag value: " + flag);
         }
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
+     * @param deserialize Deep flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
+        int hPos = positionForHandle(in);
+
+        Class compType = doReadClass(in, ctx, ldr, deserialize);
+
+        int len = in.readInt();
+
+        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+
+        handles.setHandle(arr, hPos);
+
+        for (int i = 0; i < len; i++)
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+        return arr;
     }
 
     /**
