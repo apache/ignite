@@ -191,11 +191,14 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
     /** */
     @Test
     public void testConnectionToSegmentedCluster() throws Exception {
-        startGridsMultiThreaded(4);
+        startGridsMultiThreaded(6);
 
         grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         createCaches();
+
+        stopGrid(4);
+        stopGrid(5);
 
         splitAndWait();
 
@@ -206,6 +209,14 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
 
         connectNodeToSegment(5, 1);
         checkPutGet(1, false);
+
+        stopSegmentNodes(1);
+
+        unsplit();
+
+        startGrid(1);
+
+        checkPutGet(G.allGrids(), false);
     }
 
     /** */
