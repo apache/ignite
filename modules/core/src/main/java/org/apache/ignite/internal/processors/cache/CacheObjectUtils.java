@@ -163,8 +163,12 @@ public class CacheObjectUtils {
 
         Object[] res = new Object[arr.length];
 
-        for (int i = 0; i < arr.length; i++)
-            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy, null);
+        for (int i = 0; i < arr.length; i++) {
+            if (!BinaryArray.USE_TYPED_ARRAYS && arr[i] instanceof Object[])
+                res[i] = unwrapBinariesInArrayIfNeeded(ctx, (Object[])arr[i], keepBinary, cpy);
+            else
+                res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy, null);
+        }
 
         return res;
     }
