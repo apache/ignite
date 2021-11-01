@@ -29,7 +29,7 @@ import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
 import org.apache.ignite.schema.definition.TableDefinition;
-import org.apache.ignite.schema.definition.builder.TableSchemaBuilder;
+import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 import org.apache.ignite.schema.definition.index.ColumnarIndexDefinition;
 import org.apache.ignite.schema.definition.index.IndexColumnDefinition;
 import org.apache.ignite.schema.definition.index.IndexDefinition;
@@ -37,17 +37,17 @@ import org.apache.ignite.schema.definition.index.IndexDefinition;
 /**
  * Table builder.
  */
-public class TableSchemaBuilderImpl implements TableSchemaBuilder {
+public class TableDefinitionBuilderImpl implements TableDefinitionBuilder {
     /** Schema name. */
     private final String schemaName;
 
     /** Table name. */
     private final String tableName;
 
-    /** Columns. */
+    /** Columns definitions. */
     private final LinkedHashMap<String, ColumnDefinition> columns = new LinkedHashMap<>();
 
-    /** Indices. */
+    /** Indices definitions. */
     private final Map<String, IndexDefinition> indices = new HashMap<>();
 
     /** Table primary key. */
@@ -59,13 +59,13 @@ public class TableSchemaBuilderImpl implements TableSchemaBuilder {
      * @param schemaName Schema name.
      * @param tableName Table name.
      */
-    public TableSchemaBuilderImpl(String schemaName, String tableName) {
+    public TableDefinitionBuilderImpl(String schemaName, String tableName) {
         this.schemaName = schemaName;
         this.tableName = tableName;
     }
 
     /** {@inheritDoc} */
-    @Override public TableSchemaBuilderImpl columns(ColumnDefinition... columns) {
+    @Override public TableDefinitionBuilderImpl columns(ColumnDefinition... columns) {
         for (ColumnDefinition column : columns) {
             if (this.columns.put(column.name(), column) != null)
                 throw new IllegalArgumentException("Column with same name already exists: columnName=" + column.name());
@@ -75,7 +75,7 @@ public class TableSchemaBuilderImpl implements TableSchemaBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public TableSchemaBuilder withIndex(IndexDefinition indexDefinition) {
+    @Override public TableDefinitionBuilder withIndex(IndexDefinition indexDefinition) {
         if (indices.put(indexDefinition.name(), indexDefinition) != null)
             throw new IllegalArgumentException("Index with same name already exists: " + indexDefinition.name());
 
@@ -83,21 +83,21 @@ public class TableSchemaBuilderImpl implements TableSchemaBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public TableSchemaBuilder withPrimaryKey(String colName) {
+    @Override public TableDefinitionBuilder withPrimaryKey(String colName) {
         primaryKeyDefinition = SchemaBuilders.primaryKey().withColumns(colName).build();
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TableSchemaBuilder withPrimaryKey(PrimaryKeyDefinition primaryKeyDefinition) {
+    @Override public TableDefinitionBuilder withPrimaryKey(PrimaryKeyDefinition primaryKeyDefinition) {
         this.primaryKeyDefinition = primaryKeyDefinition;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TableSchemaBuilder withHints(Map<String, String> hints) {
+    @Override public TableDefinitionBuilder withHints(Map<String, String> hints) {
         // No op.
         return this;
     }

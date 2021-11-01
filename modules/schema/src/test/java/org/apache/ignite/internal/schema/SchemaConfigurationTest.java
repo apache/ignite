@@ -22,7 +22,7 @@ import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.SchemaObject;
 import org.apache.ignite.schema.definition.TableDefinition;
-import org.apache.ignite.schema.definition.builder.TableSchemaBuilder;
+import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -34,7 +34,7 @@ public class SchemaConfigurationTest {
      */
     @Test
     public void testInitialSchema() {
-        final TableSchemaBuilder builder = SchemaBuilders.tableBuilder(SchemaObject.DEFAULT_DATABASE_SCHEMA_NAME, "table1");
+        final TableDefinitionBuilder builder = SchemaBuilders.tableBuilder(SchemaObject.DEFAULT_DATABASE_SCHEMA_NAME, "table1");
 
         builder
             .columns(

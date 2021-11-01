@@ -24,24 +24,24 @@ import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.schema.definition.index.IndexDefinition;
 
 /**
- * Table descriptor builder.
+ * Table definition builder.
  */
-public interface TableSchemaBuilder extends SchemaObjectBuilder {
+public interface TableDefinitionBuilder extends SchemaObjectBuilder {
     /**
      * Adds columns to the table.
      *
-     * @param columns Table columns.
+     * @param columns Table columns definitions.
      * @return {@code This} for chaining.
      */
-    TableSchemaBuilder columns(ColumnDefinition... columns);
+    TableDefinitionBuilder columns(ColumnDefinition... columns);
 
     /**
      * Adds an index.
      *
-     * @param indexDefinition Table index.
+     * @param indexDefinition Table index definition.
      * @return {@code This} for chaining.
      */
-    TableSchemaBuilder withIndex(IndexDefinition indexDefinition);
+    TableDefinitionBuilder withIndex(IndexDefinition indexDefinition);
 
     /**
      * Shortcut method for adding {@link PrimaryKeyDefinition} of single column.
@@ -49,24 +49,23 @@ public interface TableSchemaBuilder extends SchemaObjectBuilder {
      * @param colName Key column name.
      * @return {@code This} for chaining.
      */
-    TableSchemaBuilder withPrimaryKey(String colName);
+    TableDefinitionBuilder withPrimaryKey(String colName);
 
     /**
      * Adds primary key constraint to the table.
      *
-     * @param primaryKeyDefinition Primary key.
+     * @param primaryKeyDefinition Primary key definition.
      * @return {@code This} for chaining.
      */
-    TableSchemaBuilder withPrimaryKey(PrimaryKeyDefinition primaryKeyDefinition);
+    TableDefinitionBuilder withPrimaryKey(PrimaryKeyDefinition primaryKeyDefinition);
 
     /** {@inheritDoc} */
-    @Override TableSchemaBuilder withHints(Map<String, String> hints);
+    @Override TableDefinitionBuilder withHints(Map<String, String> hints);
 
     /**
-     * Builds table.
+     * Builds table definition.
      *
-     * @return Table.
+     * @return Table definition.
      */
     @Override TableDefinition build();
-
 }

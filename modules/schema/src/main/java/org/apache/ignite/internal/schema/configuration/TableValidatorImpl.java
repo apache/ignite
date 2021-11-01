@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.schema.definition.TableDefinitionImpl;
-import org.apache.ignite.internal.schema.definition.builder.TableSchemaBuilderImpl;
+import org.apache.ignite.internal.schema.definition.builder.TableDefinitionBuilderImpl;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.schemas.store.DataStorageConfigurationSchema.DEFAULT_DATA_REGION_NAME;
@@ -54,7 +54,7 @@ public class TableValidatorImpl implements Validator<TableValidator, NamedListVi
                 assert !tbl.keyColumns().isEmpty();
                 assert !tbl.affinityColumns().isEmpty();
 
-                TableSchemaBuilderImpl.validateIndices(tbl.indices(), tbl.columns(), tbl.affinityColumns());
+                TableDefinitionBuilderImpl.validateIndices(tbl.indices(), tbl.columns(), tbl.affinityColumns());
             }
             catch (IllegalArgumentException e) {
                 ctx.addIssue(new ValidationIssue("Validator works success by key " + ctx.currentKey() + ". Found "

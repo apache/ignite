@@ -22,7 +22,7 @@ import org.apache.ignite.internal.schema.definition.builder.HashIndexDefinitionB
 import org.apache.ignite.internal.schema.definition.builder.PartialIndexDefinitionBuilderImpl;
 import org.apache.ignite.internal.schema.definition.builder.PrimaryKeyDefinitionBuilderImpl;
 import org.apache.ignite.internal.schema.definition.builder.SortedIndexDefinitionBuilderImpl;
-import org.apache.ignite.internal.schema.definition.builder.TableSchemaBuilderImpl;
+import org.apache.ignite.internal.schema.definition.builder.TableDefinitionBuilderImpl;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.schema.definition.builder.ColumnDefinitionBuilder;
@@ -30,7 +30,7 @@ import org.apache.ignite.schema.definition.builder.HashIndexDefinitionBuilder;
 import org.apache.ignite.schema.definition.builder.PartialIndexDefinitionBuilder;
 import org.apache.ignite.schema.definition.builder.PrimaryKeyDefinitionBuilder;
 import org.apache.ignite.schema.definition.builder.SortedIndexDefinitionBuilder;
-import org.apache.ignite.schema.definition.builder.TableSchemaBuilder;
+import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 
 /**
  * Schema builder helper.
@@ -58,8 +58,8 @@ public final class SchemaBuilders {
      * @param tableName Table name.
      * @return Table descriptor builder.
      */
-    public static TableSchemaBuilder tableBuilder(String schemaName, String tableName) {
-        return new TableSchemaBuilderImpl(schemaName, tableName);
+    public static TableDefinitionBuilder tableBuilder(String schemaName, String tableName) {
+        return new TableDefinitionBuilderImpl(schemaName, tableName);
     }
 
     /**

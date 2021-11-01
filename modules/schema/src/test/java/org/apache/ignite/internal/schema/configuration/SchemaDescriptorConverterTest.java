@@ -28,7 +28,7 @@ import org.apache.ignite.schema.definition.ColumnDefinition;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.schema.definition.builder.ColumnDefinitionBuilder;
-import org.apache.ignite.schema.definition.builder.TableSchemaBuilder;
+import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -47,7 +47,7 @@ public class SchemaDescriptorConverterTest {
      */
     @Test
     public void testComplexPrimaryKey() {
-        TableSchemaBuilder bldr = getBuilder(false, false);
+        TableDefinitionBuilder bldr = getBuilder(false, false);
         TableDefinition tblSchm = bldr.withPrimaryKey(
             SchemaBuilders.primaryKey()
                 .withColumns("INT8", "ID")
@@ -66,7 +66,7 @@ public class SchemaDescriptorConverterTest {
      */
     @Test
     public void testComplexPrimaryKeyWithAffinity() {
-        TableSchemaBuilder bldr = getBuilder(false, false);
+        TableDefinitionBuilder bldr = getBuilder(false, false);
         TableDefinition tblSchm = bldr.withPrimaryKey(
             SchemaBuilders.primaryKey()
                 .withColumns("INT8", "ID")
@@ -171,7 +171,7 @@ public class SchemaDescriptorConverterTest {
      * @param withPk If builder should contains primary key index.
      * @return TableSchemaBuilder.
      */
-    private TableSchemaBuilder getBuilder(boolean nullable, boolean withPk) {
+    private TableDefinitionBuilder getBuilder(boolean nullable, boolean withPk) {
         Function<ColumnDefinitionBuilder, ColumnDefinition> postProcess = builder -> {
             if (nullable)
                 builder.asNullable();
@@ -180,7 +180,7 @@ public class SchemaDescriptorConverterTest {
             return builder.build();
         };
 
-        TableSchemaBuilder res = SchemaBuilders.tableBuilder("SCHEMA", "TABLE")
+        TableDefinitionBuilder res = SchemaBuilders.tableBuilder("SCHEMA", "TABLE")
             .columns(
                 postProcess.apply(SchemaBuilders.column("ID", ColumnType.UUID)),
                 postProcess.apply(SchemaBuilders.column("INT8", ColumnType.INT8)),
