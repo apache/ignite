@@ -132,7 +132,10 @@ public class IndexQueryProcessor {
     }
 
     /** @return Mask with {@code 1} for DESC criteria and {@code 0} for ASC criteria. */
-    private int orderMask(UUID idxId, int critSize) {
+    private int orderMask(UUID idxId, int critSize) throws IgniteCheckedException {
+        if (critSize > 31)
+            throw new IgniteCheckedException("IndexQuery doesn't support querying indexes with an amount fields more than 31");
+
         Iterator<IndexKeyDefinition> it = idxProc.indexDefinition(idxId).indexKeyDefinitions().values().iterator();
 
         int descFlags = 0;
