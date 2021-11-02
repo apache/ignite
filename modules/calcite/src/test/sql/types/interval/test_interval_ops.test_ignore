@@ -1,52 +1,53 @@
 # name: test/sql/types/interval/test_interval_ops.test
 # description: Test various ops involving intervals
 # group: [interval]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-14975
+# Ignore https://issues.apache.org/jira/browse/IGNITE-15569
+# Ignore https://issues.apache.org/jira/browse/IGNITE-14777
 
 statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE interval (t INTERVAL);
+CREATE TABLE interval_ym (t INTERVAL YEAR TO MONTH);
 
 statement ok
-INSERT INTO interval VALUES (INTERVAL '20' DAY), (INTERVAL '1' YEAR), (INTERVAL '1' MONTH);
+INSERT INTO interval_ym VALUES (INTERVAL '20' MONTHS), (INTERVAL '1' YEAR), (INTERVAL '1' MONTH);
 
 query I
-SELECT COUNT(DISTINCT t) FROM interval
+SELECT COUNT(DISTINCT t) FROM interval_ym
 ----
 3
 
 statement ok
-UPDATE interval SET t=INTERVAL '1' MONTH WHERE t=INTERVAL '20' DAY;
+UPDATE interval_ym SET t=INTERVAL '1' MONTH WHERE t=INTERVAL '20' MONTHS;
 
 query T
-SELECT * FROM interval i1 JOIN interval i2 USING (t) ORDER BY 1
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 USING (t) ORDER BY 1
 ----
-1 month
-1 month
-1 month
-1 month
-1 year
+P1M
+P1M
+P1M
+P1M
+P1Y
 
 query TT
-SELECT * FROM interval i1 JOIN interval i2 ON (i1.t <> i2.t) ORDER BY 1
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 ON (i1.t <> i2.t) ORDER BY 1
 ----
-1 month	1 year
-1 month	1 year
-1 year	1 month
-1 year	1 month
+P1M	P1Y
+P1M	P1Y
+P1Y	P1M
+P1Y	P1M
 
 query TT
-SELECT * FROM interval i1 JOIN interval i2 ON (i1.t > i2.t) ORDER BY 1
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 ON (i1.t > i2.t) ORDER BY 1
 ----
-1 year	1 month
-1 year	1 month
+P1Y	P1M
+P1Y	P1M
 
 query TI
-SELECT t, row_number() OVER (PARTITION BY t ORDER BY t) FROM interval ORDER BY 1, 2;
+SELECT t, row_number() OVER (PARTITION BY t ORDER BY t) FROM interval_ym ORDER BY 1, 2;
 ----
-1 month	1
-1 month	2
-1 year	1
+P1M	1
+P1M	2
+P1Y	1
 

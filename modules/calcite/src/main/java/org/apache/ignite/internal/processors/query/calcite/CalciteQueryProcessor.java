@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteTypeCoercion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -118,7 +119,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
             .withDefaultNullCollation(NullCollation.LOW)
-            .withSqlConformance(IgniteSqlConformance.INSTANCE))
+            .withSqlConformance(IgniteSqlConformance.INSTANCE)
+            .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(
             SqlLibraryOperatorTableFactory.INSTANCE

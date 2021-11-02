@@ -29,17 +29,10 @@ namespace Apache.Ignite.Core.Client
     /// </summary>
     public class SslStreamFactory : ISslStreamFactory
     {
-#if NETCOREAPP
         /// <summary>
         /// Default SSL protocols.
         /// </summary>
         public const SslProtocols DefaultSslProtocols = SslProtocols.None;
-#else
-        /// <summary>
-        /// Default SSL protocols.
-        /// </summary>
-        public const SslProtocols DefaultSslProtocols = SslProtocols.Tls;
-#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SslStreamFactory"/> class.

@@ -377,6 +377,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 b.append(';');
 
             b.append(nodes.get(i));
+            b.append(':');
+            b.append(nodes.get(i).getType().getFullTypeString());
 
             new RexShuttle() {
                 @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {

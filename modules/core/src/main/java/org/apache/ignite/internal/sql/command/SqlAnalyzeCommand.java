@@ -20,6 +20,7 @@ package org.apache.ignite.internal.sql.command;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class SqlAnalyzeCommand extends SqlStatisticsCommands {
         if (!F.isEmpty(params))
             throw new IgniteSQLException("");
 
-        List<StatisticsColumnConfiguration> colCfgs = (target.columns() == null) ? null :
+        List<StatisticsColumnConfiguration> colCfgs = (target.columns() == null) ? Collections.emptyList() :
             Arrays.stream(target.columns()).map(col -> new StatisticsColumnConfiguration(col, overrides))
                 .collect(Collectors.toList());
 

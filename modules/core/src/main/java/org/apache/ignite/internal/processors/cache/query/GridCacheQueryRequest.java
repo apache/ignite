@@ -162,6 +162,85 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
+     * Send initial query request to specified nodes.
+     *
+     * @param reqId Request (cache query) ID.
+     * @param fut Cache query future, contains query info.
+     */
+    public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
+        GridCacheDistributedQueryFuture<?, ?, ?> fut) {
+        GridCacheQueryBean bean = fut.query();
+        GridCacheQueryAdapter<?> qry = bean.query();
+
+        boolean deployFilterOrTransformer = (qry.scanFilter() != null || qry.transform() != null)
+            && cctx.gridDeploy().enabled();
+
+        return new GridCacheQueryRequest(
+            cctx.cacheId(),
+            reqId,
+            cctx.name(),
+            qry.type(),
+            fut.fields(),
+            qry.clause(),
+            qry.idxQryDesc(),
+            qry.limit(),
+            qry.queryClassName(),
+            qry.scanFilter(),
+            qry.partition(),
+            bean.reducer(),
+            qry.transform(),
+            qry.pageSize(),
+            qry.includeBackups(),
+            bean.arguments(),
+            qry.includeMetadata(),
+            qry.keepBinary(),
+            qry.taskHash(),
+            cctx.startTopologyVersion(),
+            qry.mvccSnapshot(),
+            // Force deployment anyway if scan query is used.
+            cctx.deploymentEnabled() || deployFilterOrTransformer,
+            qry.isDataPageScanEnabled());
+    }
+
+    /**
+     * Send request for fetching query result pages to specified nodes.
+     *
+     * @param reqId Request (cache query) ID.
+     */
+    public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
+        GridCacheQueryAdapter<?> qry, boolean fields) {
+
+        return new GridCacheQueryRequest(
+            cctx.cacheId(),
+            reqId,
+            cctx.name(),
+            qry.pageSize(),
+            qry.includeBackups(),
+            fields,
+            false,
+            qry.keepBinary(),
+            qry.taskHash(),
+            cctx.startTopologyVersion(),
+            // Force deployment anyway if scan query is used.
+            cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+            qry.isDataPageScanEnabled());
+    }
+
+    /**
+     * Send cancel query request, so no new pages will be sent.
+     *
+     * @param reqId Query request ID.
+     * @param fieldsQry Whether query is a fields query.
+     */
+    public static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId, boolean fieldsQry) {
+        return new GridCacheQueryRequest(cctx.cacheId(),
+            reqId,
+            fieldsQry,
+            cctx.startTopologyVersion(),
+            cctx.deploymentEnabled());
+    }
+
+    /**
      * Creates cancel query request.
      *
      * @param cacheId Cache ID.
@@ -170,7 +249,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridCacheQueryRequest(
+    private GridCacheQueryRequest(
         int cacheId,
         long id,
         boolean fields,
@@ -202,7 +281,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param addDepInfo Deployment info flag.
      * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryRequest(
+    private GridCacheQueryRequest(
         int cacheId,
         long id,
         String cacheName,
@@ -256,7 +335,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param mvccSnapshot Mvcc snapshot.
      * @param addDepInfo Deployment info flag.
      */
-    public GridCacheQueryRequest(
+    private GridCacheQueryRequest(
         int cacheId,
         long id,
         String cacheName,

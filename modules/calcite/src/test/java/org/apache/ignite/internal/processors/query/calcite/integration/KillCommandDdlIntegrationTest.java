@@ -116,8 +116,14 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         for (int i = 0; i < PAGE_SZ * servers().size() - 1; i++)
             assertNotNull(scanQryIter.next());
 
-        // Fetch of the next page should throw the exception.
-        assertThrowsWithCause(scanQryIter::next, IgniteCheckedException.class);
+        // New page is delivered in parallel to iterating, eventually exception should be thrown
+        // but before all entries are read by query iterator.
+        assertThrowsWithCause(() -> {
+            for (int i = 0; i < PAGE_SZ * (PAGES_CNT - servers().size()); i++)
+                assertNotNull(scanQryIter.next());
+
+            return null;
+        }, IgniteCheckedException.class);
     }
 
     /** */

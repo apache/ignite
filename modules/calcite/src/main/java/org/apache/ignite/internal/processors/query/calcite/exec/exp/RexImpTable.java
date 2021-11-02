@@ -1331,6 +1331,8 @@ public class RexImpTable {
             Expression operand = argValueList.get(1);
             final SqlTypeName sqlTypeName =
                 call.operands.get(1).getType().getSqlTypeName();
+            final boolean isIntervalType = SqlTypeUtil.isInterval(call.operands.get(1).getType());
+
             switch (unit) {
                 case MILLENNIUM:
                 case CENTURY:
@@ -1382,7 +1384,7 @@ public class RexImpTable {
                     if (sqlTypeName == SqlTypeName.DATE)
                         return Expressions.constant(0L);
 
-                    operand = mod(operand, TimeUnit.MINUTE.multiplier.longValue());
+                    operand = mod(operand, TimeUnit.MINUTE.multiplier.longValue(), !isIntervalType);
                     return Expressions.multiply(
                         operand, Expressions.constant((long)(1 / unit.multiplier.doubleValue())));
                 case EPOCH:
@@ -1430,12 +1432,16 @@ public class RexImpTable {
                     break;
             }
 
-            operand = mod(operand, getFactor(unit));
+            // According to SQL standard result for interval data types should have the same sign as the source,
+            // but QUARTER is not covered by standard and negative values for QUARTER make no sense.
+            operand = mod(operand, getFactor(unit), unit == TimeUnit.QUARTER || !isIntervalType );
+
             if (unit == TimeUnit.QUARTER)
                 operand = Expressions.subtract(operand, Expressions.constant(1L));
 
             operand = Expressions.divide(operand,
                 Expressions.constant(unit.multiplier.longValue()));
+
             if (unit == TimeUnit.QUARTER)
                 operand = Expressions.add(operand, Expressions.constant(1L));
 
@@ -1444,12 +1450,12 @@ public class RexImpTable {
     }
 
     /** */
-    private static Expression mod(Expression operand, long factor) {
+    private static Expression mod(Expression operand, long factor, boolean floorMod) {
         if (factor == 1L)
             return operand;
         else {
-            return Expressions.call(BuiltInMethod.FLOOR_MOD.method,
-                operand, Expressions.constant(factor));
+            return floorMod ? Expressions.call(BuiltInMethod.FLOOR_MOD.method, operand, Expressions.constant(factor)) :
+                Expressions.modulo(operand, Expressions.constant(factor));
         }
     }
 

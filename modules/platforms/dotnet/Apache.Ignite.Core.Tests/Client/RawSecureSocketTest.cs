@@ -52,11 +52,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     var certsCollection = new X509CertificateCollection(new X509Certificate[] {LoadCertificateFile()});
 
-#if !NETCOREAPP
-                    sslStream.AuthenticateAsClient(host, certsCollection, SslProtocols.Tls, false);
-#else
                     sslStream.AuthenticateAsClient(host, certsCollection, SslProtocols.Tls12, false);
-#endif
 
                     Assert.IsTrue(sslStream.IsAuthenticated);
                     Assert.IsTrue(sslStream.IsMutuallyAuthenticated);

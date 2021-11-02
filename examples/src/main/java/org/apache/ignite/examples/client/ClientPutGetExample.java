@@ -66,8 +66,5 @@ public class ClientPutGetExample {
         catch (ClientException e) {
             System.err.println(e.getMessage());
         }
-        catch (Exception e) {
-            System.err.format("Unexpected failure: %s\n", e);
-        }
     }
 }

@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             _noLocalhost = noLocalhost;
         }
 
+#if NETCOREAPP // TODO: IGNITE-15710
         /// <summary>
         /// Tests that client with one initial endpoint discovers all servers.
         /// </summary>
@@ -59,6 +60,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AssertClientConnectionCount(client, 3);
             }
         }
+#endif
 
         /// <summary>
         /// Tests that client discovers new servers automatically when they join the cluster, and removes

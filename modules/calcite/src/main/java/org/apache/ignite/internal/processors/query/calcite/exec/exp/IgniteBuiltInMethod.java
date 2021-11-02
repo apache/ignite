@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 import java.lang.reflect.Method;
 
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 
 /**
  * Built-in methods.
@@ -28,7 +30,13 @@ public enum IgniteBuiltInMethod {
     SYSTEM_RANGE2(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class),
 
     /** */
-    SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class);
+    SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class),
+
+    /** */
+    PARSE_INTERVAL_YEAR_MONTH(SqlParserUtil.class, "intervalToMonths", String.class, SqlIntervalQualifier.class),
+
+    /** */
+    PARSE_INTERVAL_DAY_TIME(SqlParserUtil.class, "intervalToMillis", String.class, SqlIntervalQualifier.class);
 
     /** */
     public final Method method;

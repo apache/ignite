@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -100,9 +102,9 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         assertNotNull(idx);
 
-        List<IndexKeyDefinition> keyDefs = indexKeyDefinitions(idx);
+        List<String> keys = new ArrayList<>(indexKeyDefinitions(idx).keySet());
 
-        assertEquals("ID", keyDefs.get(0).name());
+        assertEquals("ID", keys.get(0));
     }
 
     /**
@@ -139,14 +141,15 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         assertNotNull(idx);
 
-        List<IndexKeyDefinition> keyDefs = indexKeyDefinitions(idx);
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = indexKeyDefinitions(idx);
+        List<String> keys = new ArrayList<>(keyDefs.keySet());
 
-        assertEquals("ID", keyDefs.get(0).name());
-        assertEquals(SortOrder.ASC, keyDefs.get(0).order().sortOrder());
-        assertEquals("VAL_INT", keyDefs.get(1).name());
-        assertEquals(SortOrder.ASC, keyDefs.get(1).order().sortOrder());
-        assertEquals("VAL_STR", keyDefs.get(2).name());
-        assertEquals(SortOrder.DESC, keyDefs.get(2).order().sortOrder());
+        assertEquals("ID", keys.get(0));
+        assertEquals(SortOrder.ASC, keyDefs.get(keys.get(0)).order().sortOrder());
+        assertEquals("VAL_INT", keys.get(1));
+        assertEquals(SortOrder.ASC, keyDefs.get(keys.get(1)).order().sortOrder());
+        assertEquals("VAL_STR", keys.get(2));
+        assertEquals(SortOrder.DESC, keyDefs.get(keys.get(2)).order().sortOrder());
     }
 
     /**
@@ -191,11 +194,7 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /** */
-    private static List<IndexKeyDefinition> indexKeyDefinitions(Index idx) {
-        InlineIndex inlineIdx = idx.unwrap(InlineIndex.class);
-
-        assertNotNull(inlineIdx);
-
-        return inlineIdx.segment(0).rowHandler().indexKeyDefinitions();
+    private LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions(Index idx) {
+        return grid(0).context().indexProcessor().indexDefinition(idx.id()).indexKeyDefinitions();
     }
 }

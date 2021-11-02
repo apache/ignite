@@ -150,7 +150,7 @@ class CheckIgniteVersions:
                       {'project': 'superfork',
                        'ignite_versions': ['2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'dev', 'ignite-dev', 'fork-dev']},
                       ['superfork-2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'superfork-dev', 'ignite-dev', 'fork-dev'])])
-    def check_project_injection(self, versions, global_args, result):  # pylint: disable=R0201
+    def check_project_injection(self, versions, global_args, result):
         """
         Checks joining project to the version.
         """
@@ -168,7 +168,7 @@ class CheckIgniteVersions:
         for i, ctx in enumerate(reversed(context_list)):
             assert ctx.function() == check_versions[i]
 
-    def check_with_others_marks(self):  # pylint: disable=R0201
+    def check_with_others_marks(self):
         """
         Checks that ignite version parametrization works with others correctly.
         """
@@ -240,7 +240,7 @@ class CheckVersionIf:
     """
     Checks @version_if parametrization.
     """
-    def check_common(self):  # pylint: disable=R0201
+    def check_common(self):
         """
         Check common scenarios with @ignite_versions parametrization.
         """

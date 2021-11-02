@@ -121,7 +121,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** 
+    /**
       * Default lock timeout.
       * @deprecated Default lock timeout configuration property has no effect.
       */
@@ -1617,7 +1617,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
      *      start rebalancing manually, or positive value to specify delay in milliseconds
      *      after which rebalancing should start automatically.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public long getRebalanceDelay() {
         return rebalanceDelay;
     }
@@ -1627,7 +1629,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceDelay Rebalance delay to set.
      * @return {@code this} for chaining.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
 

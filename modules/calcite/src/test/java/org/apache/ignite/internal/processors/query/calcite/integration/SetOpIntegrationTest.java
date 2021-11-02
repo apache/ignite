@@ -88,7 +88,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     public void testExcept() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql("SELECT name FROM emp1 EXCEPT SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1 EXCEPT SELECT name FROM emp2");
 
         assertEquals(1, rows.size());
         assertEquals("Igor", rows.get(0).get(0));
@@ -102,11 +102,11 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         copyCacheAsReplicated("emp1");
         copyCacheAsReplicated("emp2");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1 WHERE salary < 0 EXCEPT SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1 WHERE salary < 0 EXCEPT SELECT name FROM emp2");
 
         assertEquals(0, rows.size());
 
-        rows = sql("SELECT name FROM emp1_repl WHERE salary < 0 EXCEPT SELECT name FROM emp2_repl");
+        rows = executeSql("SELECT name FROM emp1_repl WHERE salary < 0 EXCEPT SELECT name FROM emp2_repl");
 
         assertEquals(0, rows.size());
     }
@@ -116,7 +116,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     public void testExceptSeveralColumns() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql("SELECT name, salary FROM emp1 EXCEPT SELECT name, salary FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name, salary FROM emp1 EXCEPT SELECT name, salary FROM emp2");
 
         assertEquals(4, rows.size());
         assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
@@ -128,7 +128,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     public void testExceptAll() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql("SELECT name FROM emp1 EXCEPT ALL SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1 EXCEPT ALL SELECT name FROM emp2");
 
         assertEquals(4, rows.size());
         assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
@@ -141,7 +141,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         populateTables();
 
         List<List<?>> rows =
-            sql("SELECT name FROM emp1 EXCEPT (SELECT name FROM emp1 EXCEPT SELECT name FROM emp2)");
+            executeSql("SELECT name FROM emp1 EXCEPT (SELECT name FROM emp1 EXCEPT SELECT name FROM emp2)");
 
         assertEquals(2, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
@@ -154,7 +154,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         populateTables();
         copyCacheAsReplicated("emp1");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2");
 
         assertEquals(4, rows.size());
         assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
@@ -168,7 +168,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         copyCacheAsReplicated("emp1");
         copyCacheAsReplicated("emp2");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2_repl");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2_repl");
 
         assertEquals(4, rows.size());
         assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
@@ -181,7 +181,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         populateTables();
         copyCacheAsReplicated("emp1");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2 EXCEPT ALL " +
+        List<List<?>> rows = executeSql("SELECT name FROM emp1_repl EXCEPT ALL SELECT name FROM emp2 EXCEPT ALL " +
             "SELECT name FROM emp1 WHERE salary < 11");
 
         assertEquals(3, rows.size());
@@ -234,14 +234,14 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         List<List<?>> rows;
 
         // Check 2 partitioned caches.
-        rows = sql("SELECT _val FROM \"cache1\".table1 EXCEPT SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1\".table1 EXCEPT SELECT _val FROM \"cache2\".table2");
 
         assertEquals(3, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
 
-        rows = sql("SELECT _val FROM \"cache1\".table1 EXCEPT ALL SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1\".table1 EXCEPT ALL SELECT _val FROM \"cache2\".table2");
 
         assertEquals(34817, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
@@ -249,27 +249,29 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
         assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
 
-        rows = sql("SELECT _val FROM \"cache1\".table1 INTERSECT SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1\".table1 INTERSECT SELECT _val FROM \"cache2\".table2");
 
         assertEquals(2, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(1)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(3)));
 
-        rows = sql("SELECT _val FROM \"cache1\".table1 INTERSECT ALL SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1\".table1 INTERSECT ALL SELECT _val FROM \"cache2\".table2");
 
         assertEquals(136, rows.size());
         assertEquals(8, F.size(rows, r -> r.get(0).equals(1)));
         assertEquals(128, F.size(rows, r -> r.get(0).equals(3)));
 
         // Check 1 replicated and 1 partitioned caches.
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val " +
+            "FROM \"cache2\".table2");
 
         assertEquals(3, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
 
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val " +
+            "FROM \"cache2\".table2");
 
         assertEquals(34817, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
@@ -277,29 +279,31 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
         assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
 
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT SELECT _val " +
+            "FROM \"cache2\".table2");
 
         assertEquals(2, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(1)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(3)));
 
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT ALL SELECT _val FROM \"cache2\".table2");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT ALL SELECT _val " +
+            "FROM \"cache2\".table2");
 
         assertEquals(136, rows.size());
         assertEquals(8, F.size(rows, r -> r.get(0).equals(1)));
         assertEquals(128, F.size(rows, r -> r.get(0).equals(3)));
 
         // Check 2 replicated caches.
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2Replicated\"" +
-            ".table2_repl");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val " +
+            "FROM \"cache2Replicated\".table2_repl");
 
         assertEquals(3, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
 
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val FROM \"cache2Replicated\"" +
-            ".table2_repl");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val " +
+            "FROM \"cache2Replicated\".table2_repl");
 
         assertEquals(34817, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
@@ -307,15 +311,15 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
         assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
 
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT SELECT _val FROM \"cache2Replicated\"" +
-            ".table2_repl");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT SELECT _val " +
+            "FROM \"cache2Replicated\".table2_repl");
 
         assertEquals(2, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals(1)));
         assertEquals(1, F.size(rows, r -> r.get(0).equals(3)));
 
-        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT ALL SELECT _val FROM \"cache2Replicated\"" +
-            ".table2_repl");
+        rows = executeSql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT ALL SELECT _val " +
+            "FROM \"cache2Replicated\".table2_repl");
 
         assertEquals(136, rows.size());
         assertEquals(8, F.size(rows, r -> r.get(0).equals(1)));
@@ -327,7 +331,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     public void testIntersect() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql("SELECT name FROM emp1 INTERSECT SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1 INTERSECT SELECT name FROM emp2");
 
         assertEquals(2, rows.size());
         assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
@@ -339,7 +343,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     public void testInstersectAll() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql("SELECT name FROM emp1 INTERSECT ALL SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1 INTERSECT ALL SELECT name FROM emp2");
 
         assertEquals(3, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
@@ -354,11 +358,11 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         copyCacheAsReplicated("emp1");
         copyCacheAsReplicated("emp2");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1 WHERE salary < 0 INTERSECT SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1 WHERE salary < 0 INTERSECT SELECT name FROM emp2");
 
         assertEquals(0, rows.size());
 
-        rows = sql("SELECT name FROM emp1_repl WHERE salary < 0 INTERSECT SELECT name FROM emp2_repl");
+        rows = executeSql("SELECT name FROM emp1_repl WHERE salary < 0 INTERSECT SELECT name FROM emp2_repl");
 
         assertEquals(0, rows.size());
     }
@@ -369,7 +373,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         populateTables();
         copyCacheAsReplicated("emp1");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2 INTERSECT ALL " +
+        List<List<?>> rows = executeSql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2 INTERSECT ALL " +
             "SELECT name FROM emp1 WHERE salary < 14");
 
         assertEquals(2, rows.size());
@@ -383,7 +387,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         copyCacheAsReplicated("emp1");
         copyCacheAsReplicated("emp2");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2_repl");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2_repl");
 
         assertEquals(3, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
@@ -396,7 +400,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
         populateTables();
         copyCacheAsReplicated("emp1");
 
-        List<List<?>> rows = sql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name FROM emp1_repl INTERSECT ALL SELECT name FROM emp2");
 
         assertEquals(3, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
@@ -408,7 +412,7 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTest {
     public void testIntersectSeveralColumns() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql("SELECT name, salary FROM emp1 INTERSECT ALL SELECT name, salary FROM emp2");
+        List<List<?>> rows = executeSql("SELECT name, salary FROM emp1 INTERSECT ALL SELECT name, salary FROM emp2");
 
         assertEquals(2, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
