@@ -219,6 +219,8 @@
           url: SQL/ODBC/error-codes
     - title: Multiversion Concurrency Control
       url: transactions/mvcc
+    - title: SQL Statistics
+      url: SQL/sql-statistics
 - title: SQL Reference
   url: sql-reference/sql-reference-overview
   items:
