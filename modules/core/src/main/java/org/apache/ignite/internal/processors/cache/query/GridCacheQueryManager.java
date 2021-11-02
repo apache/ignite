@@ -628,8 +628,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
-                    IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(), qry.scanFilter(),
-                        filter(qry), qry.keepBinary());
+                    IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
+                        qry.scanFilter(), filter(qry), qry.keepBinary());
 
                     iter = idxQryRes.iter();
                     res.metadata(idxQryRes.metadata());

@@ -26,9 +26,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
  * {@link IndexKeyTypes#JAVA_OBJECT}.
  */
 public abstract class JavaObjectIndexKey implements IndexKey {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return key().hashCode();

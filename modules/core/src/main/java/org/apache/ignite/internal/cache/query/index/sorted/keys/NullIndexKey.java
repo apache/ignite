@@ -17,19 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /**
  * Represents null value stored in index row or query.
  */
 public class NullIndexKey implements IndexKey {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Instance. */
     public static final NullIndexKey INSTANCE = new NullIndexKey();
 
@@ -46,20 +39,5 @@ public class NullIndexKey implements IndexKey {
     /** {@inheritDoc} */
     @Override public int type() {
         return IndexKeyTypes.NULL;
-    }
-
-    /** */
-    protected Object readResolve() throws ObjectStreamException {
-        return INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op.
     }
 }

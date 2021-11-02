@@ -84,7 +84,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        crd = startGrids(1);
+        crd = startGrids(2);
 
         cache = crd.createCache(new CacheConfiguration<>().setName(CACHE));
     }

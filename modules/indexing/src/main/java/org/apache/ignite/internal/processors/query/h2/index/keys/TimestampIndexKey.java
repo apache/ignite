@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.index.keys;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestampIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueTimestamp;
@@ -27,19 +24,11 @@ import org.h2.value.ValueTimestamp;
 /** */
 public class TimestampIndexKey extends AbstractTimestampIndexKey implements H2ValueWrapperMixin {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private ValueTimestamp timestamp;
+    private final ValueTimestamp timestamp;
 
     /** */
     public TimestampIndexKey(Object obj) {
         timestamp = (ValueTimestamp) wrapToValue(obj, type());
-    }
-
-    /** */
-    public TimestampIndexKey() {
-        // No-op.
     }
 
     /** */
@@ -70,16 +59,5 @@ public class TimestampIndexKey extends AbstractTimestampIndexKey implements H2Va
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
         return timestamp.compareTo(((TimestampIndexKey)o).timestamp, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(dateValue());
-        out.writeLong(nanos());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        timestamp = ValueTimestamp.fromDateValueAndNanos(in.readLong(), in.readLong());
     }
 }

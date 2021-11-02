@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -30,13 +27,10 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 /** */
 public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private CacheObject obj;
+    private final CacheObject obj;
 
     /** Object value context. */
-    private CacheObjectValueContext valCtx;
+    private final CacheObjectValueContext valCtx;
 
     /** */
     private byte[] serialized;
@@ -60,11 +54,6 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
 
         this.obj = obj;
         this.valCtx = valCtx;
-    }
-
-    /** */
-    public CacheJavaObjectIndexKey() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -92,15 +81,5 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(key());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        key = in.readObject();
     }
 }

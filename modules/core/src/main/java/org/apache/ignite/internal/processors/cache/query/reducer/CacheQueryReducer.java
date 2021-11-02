@@ -63,12 +63,12 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
      */
     public abstract T getNext() throws IgniteCheckedException;
 
-    /** {@inheritDoc} */
-    private T unwrapIfNeeded(T o) {
+    /** @return Unwrapped or plain entry. */
+    private T unwrapIfNeeded(T e) {
         if (cctx == null)
-            return o;
+            return e;
 
-        return (T)cctx.unwrapBinaryIfNeeded(o, keepBinary, false, null);
+        return (T)cctx.unwrapBinaryIfNeeded(e, keepBinary, false, null);
     }
 
     /** Invoke this method of reducer should unwrap result entries. */

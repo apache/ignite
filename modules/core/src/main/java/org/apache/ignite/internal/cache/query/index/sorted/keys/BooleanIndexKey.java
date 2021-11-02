@@ -17,27 +17,16 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 
 /** */
 public class BooleanIndexKey implements IndexKey {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private boolean key;
+    private final boolean key;
 
     /** */
     public BooleanIndexKey(boolean key) {
         this.key = key;
-    }
-
-    /** */
-    public BooleanIndexKey() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -53,15 +42,5 @@ public class BooleanIndexKey implements IndexKey {
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
         return Boolean.compare(key, ((BooleanIndexKey)o).key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        key = in.readBoolean();
     }
 }
