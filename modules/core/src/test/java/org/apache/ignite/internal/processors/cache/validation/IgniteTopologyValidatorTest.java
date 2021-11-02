@@ -442,6 +442,22 @@ public class IgniteTopologyValidatorTest extends IgniteCacheTopologySplitAbstrac
     }
 
     /** */
+    @Test
+    public void testPreconfiguredClusterState() throws Exception {
+        startGrid(0);
+
+        startGrid(getConfiguration(getTestIgniteInstanceName(1)).setClusterStateOnStart(ACTIVE_READ_ONLY));
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        createCaches();
+
+        splitAndWait();
+
+        checkPutGet(G.allGrids(), false);
+    }
+
+    /** */
     private IgniteEx connectNodeToSegment(int nodeIdx, int segment) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(nodeIdx));
 

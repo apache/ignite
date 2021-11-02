@@ -110,13 +110,18 @@ public class SegmentationResolverPluginProvider implements PluginProvider<Plugin
 
     /** {@inheritDoc} */
     @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        segResolver.onDiscoveryDataReceived(data);
+        segResolver.onDiscoveryDataReceived(nodeId, data);
     }
 
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateNewNode(ClusterNode node, Serializable data) throws PluginValidationException {
         try {
-            segResolver.validateNewNode(node);
+            segResolver.validateNewNode(node, data);
         }
         catch (IgniteException e) {
             throw new PluginValidationException(e.getMessage(), e.getMessage(), node.id());

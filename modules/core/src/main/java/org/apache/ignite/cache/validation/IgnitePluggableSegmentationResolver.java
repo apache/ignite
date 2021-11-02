@@ -20,6 +20,7 @@ package org.apache.ignite.cache.validation;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -54,9 +55,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UND
 
 /** */
 public class IgnitePluggableSegmentationResolver implements PluggableSegmentationResolver {
-   /** */
-    public static final String ATTR_SEG_RESOLVER_CONFIGURED = "org.apache.ignite.segmentation.resolver.configured";
-
     /** */
     public static final String SEG_RESOLVER_ENABLED_PROP_NAME = "org.apache.ignite.segmentation.resolver.enabled";
 
@@ -88,8 +86,8 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
     /** */
     private long lastCheckedTopVer;
 
-    /**  */
-    private volatile State state = State.VALID;
+    /** */
+    private volatile State state;
 
     /** @param ctx Ignite kernel context. */
     public IgnitePluggableSegmentationResolver(GridKernalContext ctx) {
@@ -120,7 +118,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         if (ctx.clientNode())
             return;
 
-        ctx.addNodeAttribute(ATTR_SEG_RESOLVER_CONFIGURED, true);
+        state = ctx.state().clusterState().state() == ACTIVE ? State.VALID : State.CLUSTER_WRITE_BLOCKED;
 
         ctx.event().addDiscoveryEventListener(new TopologyChangedEventListener(), TOP_CHANGED_EVTS);
 
@@ -148,17 +146,24 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         return state;
     }
 
-    /** @param data Discovery data. */
-    public void onDiscoveryDataReceived(Serializable data) {
-        state = (State)data;
+    /**
+     * @param data Discovery data.
+     * @param joiningNodeId ID of the joining node.
+     */
+    public void onDiscoveryDataReceived(UUID joiningNodeId, Serializable data) {
+        if (ctx.localNodeId().equals(joiningNodeId))
+            state = (State)data;
     }
 
-    /** @param node Node. */
-    public void validateNewNode(ClusterNode node) {
+    /**
+     * @param node Node.
+     * @param data Joining node discovery data.
+     */
+    public void validateNewNode(ClusterNode node, Serializable data) {
         if (node.isClient())
             return;
 
-        if (!TRUE.equals(node.attribute(ATTR_SEG_RESOLVER_CONFIGURED))) {
+        if (data == null) {
             throw new IgniteException( "The Segmentation Resolver plugin is not configured for the server node that is" +
                 " trying to join the cluster. Since the Segmentation Resolver is only applicable if all server nodes" +
                 " in the cluster have one, node join request will be rejected [rejectedNodeId=" + node.id() + ']');
@@ -179,14 +184,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
 
     /** */
     private boolean isDisabled() {
-        Boolean res = segResolverEnabledProp.get();
-
-        return res == null || !res;
-    }
-
-    /** @return return. */
-    private String formatTopologyNodes(Collection<ClusterNode> nodes) {
-        return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
+        return !TRUE.equals(segResolverEnabledProp.get());
     }
 
     /** */
@@ -195,10 +193,10 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             lastCheckedTopVer = evt.topologyVersion();
 
-            if (isDisabled())
+            if (isDisabled() || state != State.VALID)
                 return;
 
-            if (state == State.VALID && evt.type() == EVT_NODE_FAILED) {
+            if (evt.type() == EVT_NODE_FAILED) {
                 List<? extends BaselineNode> baselineNodes = discoCache.baselineNodes();
 
                 if (baselineNodes != null && aliveBaselineNodes(baselineNodes) < baselineNodes.size() / 2 + 1) {
@@ -226,9 +224,10 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
                 }
             }
 
-            if (ctx.state().isBaselineAutoAdjustEnabled())
-                U.warn(log, "Segmentation Resolver requires baseline to be configured. If no baseline is" +
-                    " set, any topology change is considered valid.");
+            if (ctx.state().isBaselineAutoAdjustEnabled() && ctx.state().baselineAutoAdjustTimeout() == 0L)
+                U.warn(log, "Segmentation Resolver considers any topology change to be valid with the current" +
+                    " Baseline topology configuration. Configure Baseline nodes explicitly or set Baseline Auto" +
+                    " Adjustment Timeout to greater than zero.");
         }
 
         /** {@inheritDoc} */
@@ -246,6 +245,11 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
             }
 
             return res;
+        }
+
+        /** @return String representation of the specified node collection. */
+        private String formatTopologyNodes(Collection<ClusterNode> nodes) {
+            return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
         }
     }
 
