@@ -703,9 +703,16 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 {
                     new QueryEntity
                     {
+                        KeyTypeName = "PersonKey",
                         ValueTypeName = "Person",
                         Fields = new List<QueryField>
                         {
+                            new QueryField
+                            {
+                                Name = "Id",
+                                FieldType = typeof(int),
+                                IsKeyField = true
+                            },
                             new QueryField
                             {
                                 Name = "Name",
@@ -725,27 +732,30 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 .WithKeepBinary<int, IBinaryObject>();
 
             // Prepare a binary object.
-            var jane = Client.GetBinary().GetBuilder("Person")
+            var personKey = Client.GetBinary().GetBuilder("PersonKey")
+                .SetIntField("Id", 111)
+                .Build();
+
+            var person = Client.GetBinary().GetBuilder("Person")
                 .SetStringField("Name", "Jane")
                 .SetIntField("Age", 43)
                 .Build();
 
-            const int key = 1;
-
             // Stream the binary object to the server.
-            using (var streamer = Client.GetDataStreamer<int, IBinaryObject>(cacheCfg.Name))
+            using (var streamer = Client.GetDataStreamer<IBinaryObject, IBinaryObject>(cacheCfg.Name))
             {
-                streamer.Add(key, jane);
+                streamer.Add(personKey, person);
                 streamer.Flush();
             }
 
             // Check that SQL works.
-            var query = new SqlFieldsQuery("SELECT Name, Age FROM \"PERSONS\".PERSON");
+            var query = new SqlFieldsQuery("SELECT Id, Name, Age FROM \"PERSONS\".PERSON");
             var fullResultAfterClientStreamer = cacheClientBinary.Query(query).GetAll();
             Assert.IsNotNull(fullResultAfterClientStreamer);
             Assert.AreEqual(1, fullResultAfterClientStreamer.Count);
-            Assert.AreEqual("Jane", fullResultAfterClientStreamer[0][0]);
-            Assert.AreEqual(43, fullResultAfterClientStreamer[0][1]);
+            Assert.AreEqual(111, fullResultAfterClientStreamer[0][0]);
+            Assert.AreEqual("Jane", fullResultAfterClientStreamer[0][1]);
+            Assert.AreEqual(43, fullResultAfterClientStreamer[0][2]);
         }
 
 #if NETCOREAPP
