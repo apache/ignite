@@ -98,7 +98,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCacheFullTextQueryAbstr
     public void testTextQueryLimitedMultiplePages() {
         checkTextQuery("1*", QUERY_LIMIT, 30);
 
-        checkPages(4, 7, 3);
+        checkPages(4, 6, 4);
     }
 
     /** Test that rerequest some pages but then send a cancel query after limit exceeded. */
@@ -106,7 +106,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCacheFullTextQueryAbstr
     public void testTextQueryHighLimitedMultiplePages() {
         checkTextQuery("1*", QUERY_LIMIT, 20);
 
-        checkPages(4, 8, 3);
+        checkPages(4, 8, 4);
     }
 
     /** */
