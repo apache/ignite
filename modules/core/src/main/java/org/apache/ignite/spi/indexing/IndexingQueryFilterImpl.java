@@ -21,6 +21,8 @@ import java.util.HashSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,6 +95,11 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     /** {@inheritDoc} */
     @Nullable @Override public IndexingQueryCacheFilter forCache(String cacheName) {
         final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+        if (cache == null) {
+            throw new IgniteSQLException("Failed to find cache [cacheName=" + cacheName + ']',
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        }
 
         // REPLICATED -> nothing to filter (explicit partitions are not supported).
         if (cache.context().isReplicated() && !treatReplicatedAsPartitioned)
