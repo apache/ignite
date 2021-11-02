@@ -26,6 +26,9 @@ import java.io.ObjectOutput;
  * List of settings that affects key types of index keys.
  */
 public class IndexKeyTypeSettings implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Whether inlining POJO keys as hash is supported. */
     private boolean inlineObjHash = true;
 

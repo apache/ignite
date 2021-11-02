@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Meta data for IndexQuery response. */
 public class IndexQueryResultMeta implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Full index name. */
     private String fullIdxName;
 

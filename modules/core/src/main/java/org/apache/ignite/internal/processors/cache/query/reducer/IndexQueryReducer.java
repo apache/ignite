@@ -46,6 +46,9 @@ import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
  * Reducer for {@code IndexQuery} results.
  */
 public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Future that will be completed with first page response. */
     private final CompletableFuture<IndexQueryResultMeta> meta;
 
