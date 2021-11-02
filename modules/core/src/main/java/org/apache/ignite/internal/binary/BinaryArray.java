@@ -115,7 +115,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
             Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 
-            // TODO: Do we need another container for this?
             boolean keepBinary = BinaryObject.class.isAssignableFrom(compType);
 
             for (int i = 0; i < arr.length; i++) {
@@ -198,7 +197,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return -1; //TODO: fixme
+        return 0;
     }
 
     /** {@inheritDoc} */
