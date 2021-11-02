@@ -195,26 +195,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @param printExceptionMessages {@code true} if exceptions must be included too.
      */
     public void print(Consumer<String> printer, boolean printExceptionMessages) {
-        boolean noMatchingCaches = false;
-
-        boolean succeeded = true;
-
-        for (Exception e : exceptions.values()) {
-            if (e instanceof NoMatchingCachesException) {
-                noMatchingCaches = true;
-                succeeded = false;
-
-                break;
-            }
-        }
-
-        if (succeeded) {
-            if (!F.isEmpty(exceptions)) {
-                int size = exceptions.size();
-
-                printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
-            }
-
+        if (F.isEmpty(exceptions)) {
             if (!hasConflicts())
                 printer.accept("The check procedure has finished, no conflicts have been found.\n");
             else
@@ -227,28 +208,29 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
             printSkippedPartitions(printer, moving, "MOVING");
             printSkippedPartitions(printer, lostPartitions(), "LOST");
-        }
-        else {
-            printer.accept("\nThe check procedure failed.\n");
 
-            if (noMatchingCaches)
-                printer.accept("\nThere are no caches matching given filter options.\n");
+            return;
         }
 
-        if (!F.isEmpty(exceptions())) {
-            printer.accept("\nThe check procedure failed on nodes:\n");
+        int size = exceptions.size();
 
-            for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
-                ClusterNode n = e.getKey();
+        printer.accept("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
-                printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
+        if (!F.isEmpty(F.view(exceptions.values(), e -> e instanceof NoMatchingCachesException)))
+            printer.accept("\nThere are no caches matching given filter options.\n");
 
-                if (printExceptionMessages) {
-                    String msg = e.getValue().getMessage();
+        printer.accept("\nThe check procedure failed on nodes:\n");
 
-                    printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
-                    printer.accept(msg == null ? "" : msg + "\n");
-                }
+        for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
+            ClusterNode n = e.getKey();
+
+            printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
+
+            if (printExceptionMessages) {
+                String msg = e.getValue().getMessage();
+
+                printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
+                printer.accept(msg == null ? "" : msg + "\n");
             }
         }
     }
@@ -283,7 +265,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         int cntrConflictsSize = counterConflicts().size();
         int hashConflictsSize = hashConflicts().size();
 
-        printer.accept("The check procedure has finished, conflict partitions has been found: " +
+        printer.accept("The check procedure has failed, conflict partitions has been found: " +
             "[counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize + "]\n");
 
         if (!F.isEmpty(counterConflicts())) {
