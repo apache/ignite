@@ -72,10 +72,10 @@ class ThinClientTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 600, "freeze": True},
-                         {"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 600, "freeze": False},
-                         {"connectClients": 150, "putClients": 2, "putAllClients": 0, "runTime": 600, "freeze": False},
-                         {"connectClients": 150, "putClients": 0, "putAllClients": 2, "runTime": 600, "freeze": False}])
+    @matrix(test_params=[{"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 86400, "freeze": True},
+                         {"connectClients": 150, "putClients": 0, "putAllClients": 0, "runTime": 86400, "freeze": False},
+                         {"connectClients": 150, "putClients": 2, "putAllClients": 0, "runTime": 86400, "freeze": False},
+                         {"connectClients": 150, "putClients": 0, "putAllClients": 2, "runTime": 86400, "freeze": False}])
     def test_thin_client_connect_time(self, ignite_version, test_params):
         """
         Thin client connect time test.
@@ -115,13 +115,13 @@ class ThinClientTest(IgniteTest):
 
         if test_params["freeze"]:
             thin_clients.await_event("START WAITING", 120, True)
-            for _ in range(50):
+            for _ in range(7200):
                 ignite.freeze_node(ignite.nodes[0])
                 time.sleep(3)
                 ignite.unfreeze_node(ignite.nodes[0])
                 time.sleep(7)
 
-        thin_clients.await_event("IGNITE_APPLICATION_FINISHED", 800)
+        thin_clients.await_event("IGNITE_APPLICATION_FINISHED", 90000)
 
         thin_clients.stop(force_stop=True)
 
