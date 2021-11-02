@@ -62,7 +62,6 @@ import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
@@ -2066,15 +2065,8 @@ public class BinaryUtils {
 
         handles.setHandle(arr, hPos);
 
-        //TODO: why this required?
-        for (int i = 0; i < len; i++) {
-            Object el = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
-
-            if (BinaryArray.USE_TYPED_ARRAYS && deserialize)
-                arr[i] = CacheObjectUtils.unwrapBinaryIfNeeded(null, el, false, false, ldr);
-            else
-                arr[i] = el;
-        }
+        for (int i = 0; i < len; i++)
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
         return arr;
     }
