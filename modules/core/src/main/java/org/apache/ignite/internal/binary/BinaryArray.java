@@ -234,10 +234,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     @Override public int hashCode() {
         int result = 31 * Objects.hash(compTypeId);
 
-        // {@link Arrays#deepHashCode(Object[])} used because array elements can be array of primitives
-        // or supported types like String, UUID, etc. "Standart" arrays like int[], String[] not modified
-        // during binarization - {@link CacheObjectBinaryProcessorImpl#marshalToBinary(Object, boolean)}.
-        // See {@link BinaryUtils#BINARY_CLS} for details.
         result = 31 * result + IgniteUtils.hashCode(arr);
 
         return result;
