@@ -2629,6 +2629,11 @@ public class BinaryUtils {
         return args;
     }
 
+    /** */
+    public static boolean isObjectArray(Class<?> cls) {
+        return Object[].class == cls || BinaryArray.class == cls;
+    }
+
     /**
      * Enum type.
      */

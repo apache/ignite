@@ -630,7 +630,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
                     if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && isArrayClass(propVal.getClass()) &&
+                        if (!(prop.type().isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
                             Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
                             noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
@@ -715,7 +715,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (!(propVal instanceof BinaryObject) || propVal instanceof BinaryArray) {
                     if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(propType.isArray() && isArrayClass(propVal.getClass()) &&
+                        if (!(propType.isArray() && BinaryUtils.isObjectArray(propVal.getClass()) &&
                             Arrays.stream(BinaryUtils.rawArrayFromBinary(propVal)).
                                 noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
@@ -747,11 +747,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
             }
         }
-    }
-
-    /** */
-    private static boolean isArrayClass(Class<?> cls) {
-        return Object[].class == cls || BinaryArray.class == cls;
     }
 
     /** {@inheritDoc} */

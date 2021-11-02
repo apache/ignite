@@ -1069,7 +1069,10 @@ public class PlatformUtils {
                 Object val = prop.getValue();
 
                 try {
-                    field.set(obj, field.getType().isArray() ? BinaryUtils.rawArrayFromBinary(val) : val);
+                    field.set(
+                        obj,
+                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
+                    );
                 }
                 catch (Exception e) {
                     throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
