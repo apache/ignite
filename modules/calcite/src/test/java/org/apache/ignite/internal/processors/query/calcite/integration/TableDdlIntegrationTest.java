@@ -775,17 +775,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
-     * Asserts that sql throws an exception.
-     *
-     * @param sql Query.
-     * @param cls Exception class.
-     * @param msg Error message.
-     */
-    private void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
-        assertThrowsAnyCause(log, () -> sql(sql), cls, msg);
-    }
-
-    /**
      * Matcher to verify that an object of the expected type and matches the given predicat.
      *
      * @param desc Description for this matcher.
