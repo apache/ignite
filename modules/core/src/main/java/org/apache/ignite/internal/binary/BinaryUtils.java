@@ -2066,6 +2066,7 @@ public class BinaryUtils {
 
         handles.setHandle(arr, hPos);
 
+        //TODO: why this required?
         for (int i = 0; i < len; i++) {
             Object el = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
@@ -2604,11 +2605,11 @@ public class BinaryUtils {
      */
     public static Object[] rawArrayFromBinary(Object obj) {
         if (obj instanceof BinaryArray)
-            // We want raw data(no deserialization), because, all actions with params happens in binary format.
+            // We want raw data(no deserialization).
             return ((BinaryArray)obj).array();
         else
-            // This can happen even in BinaryArray.USE_TYPED_ARRAY = true
-            // if user pass special array type to arguments, String[], for example.
+            // This can happen even in BinaryArray.USE_TYPED_ARRAY = true.
+            // In case user pass special array type to arguments, String[], for example.
             return (Object[])obj;
     }
 

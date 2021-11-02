@@ -112,7 +112,7 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
-            if (type == Value.ARRAY && BinaryArray.USE_TYPED_ARRAYS) {
+            if (type == Value.ARRAY && val instanceof BinaryArray) {
                 val = ((BinaryArray)val).deserialize();
 
                 if (val == null)
