@@ -240,7 +240,7 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
             ServiceCallContext callCtx = ctx.currentCallContext();
 
-            return useInjectedSvc ? injected.binaryAttribute(false) : callCtx.binary(BIN_ATTR_NAME);
+            return useInjectedSvc ? injected.binaryAttribute(false) : callCtx.binaryAttribute(BIN_ATTR_NAME);
         }
 
         /** {@inheritDoc} */

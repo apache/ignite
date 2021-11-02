@@ -552,7 +552,7 @@ public class GridServiceProxy<T> implements Serializable {
             argTypes = U.readClassArray(in);
             args = U.readArray(in);
 
-            Map<String, Object> map = U.readMap(in);
+            Map<String, byte[]> map = U.readMap(in);
 
             if (map != null)
                 callCtx = new ServiceCallContextImpl(map);

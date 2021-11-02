@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +29,7 @@ import org.apache.ignite.services.ServiceCallContext;
  */
 public class ServiceCallContextImpl implements ServiceCallContext {
     /** Service call context attributes. */
-    private final Map<String, Object> attrs;
+    private final Map<String, byte[]> attrs;
 
     /**
      * Default contructor.
@@ -42,7 +43,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
      *
      * @param attrs Service call context attributes.
      */
-    public ServiceCallContextImpl(Map<String, Object> attrs) {
+    public ServiceCallContextImpl(Map<String, byte[]> attrs) {
         this.attrs = Collections.unmodifiableMap(attrs);
     }
 
@@ -57,12 +58,17 @@ public class ServiceCallContextImpl implements ServiceCallContext {
 
     /** {@inheritDoc} */
     @Override public String attribute(String name) {
-        return (String)attrs.get(name);
+        byte[] bytes = attrs.get(name);
+
+        if (bytes == null)
+            return null;
+
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] binary(String name) {
-        return (byte[])attrs.get(name);
+    @Override public byte[] binaryAttribute(String name) {
+        return attrs.get(name);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +76,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        attrs.put(name, value);
+        attrs.put(name, value.getBytes(StandardCharsets.UTF_8));
 
         return this;
     }
@@ -88,7 +94,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /**
      * @return Service call context attributes.
      */
-    protected Map<String, Object> values() {
+    protected Map<String, byte[]> values() {
         return attrs;
     }
 }

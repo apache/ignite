@@ -84,7 +84,7 @@ public interface ServiceCallContext {
      * @param name Attribute name.
      * @return Binary attribute value.
      */
-    public byte[] binary(String name);
+    public byte[] binaryAttribute(String name);
 
     /**
      * Put new string attribute.<br>
