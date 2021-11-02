@@ -26,6 +26,9 @@ public class NullIndexKey implements IndexKey {
     /** Instance. */
     public static final NullIndexKey INSTANCE = new NullIndexKey();
 
+    /** Private constructor. */
+    private NullIndexKey() {}
+
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
         return o == INSTANCE ? 0 : -1;

@@ -41,6 +41,7 @@ public class ShortIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Short.compare(key, ((ShortIndexKey)o).key);
+        // Keep old logic there.
+        return Integer.compare(key, ((ShortIndexKey)o).key);
     }
 }

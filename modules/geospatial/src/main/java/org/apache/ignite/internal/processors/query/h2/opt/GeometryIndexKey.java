@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueGeometry;
@@ -28,16 +25,11 @@ import org.locationtech.jts.geom.Geometry;
 /** */
 public class GeometryIndexKey implements IndexKey {
     /** */
-    private ValueGeometry geometry;
+    private final ValueGeometry geometry;
 
     /** */
     public GeometryIndexKey(Geometry g) {
         geometry = ValueGeometry.getFromGeometry(g);
-    }
-
-    /** */
-    public GeometryIndexKey() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -53,15 +45,5 @@ public class GeometryIndexKey implements IndexKey {
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
         return geometry.compareTo(((GeometryIndexKey)o).geometry, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(geometry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        geometry = (ValueGeometry)in.readObject();
     }
 }
