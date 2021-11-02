@@ -44,7 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** Default value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = true;
+    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = false;
 
     /** Value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
     public static boolean USE_TYPED_ARRAYS =
