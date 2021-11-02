@@ -30,7 +30,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
-import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -124,7 +123,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
 
         ctx.discovery().setCustomEventListener(
             ChangeGlobalStateFinishMessage.class,
-            new ClusterStateChangedEventListener()
+            (topVer, snd, msg) -> state = msg.state() == ACTIVE ? State.VALID : State.CLUSTER_WRITE_BLOCKED
         );
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -250,18 +249,6 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         /** @return String representation of the specified node collection. */
         private String formatTopologyNodes(Collection<ClusterNode> nodes) {
             return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
-        }
-    }
-
-    /** */
-    private class ClusterStateChangedEventListener implements CustomEventListener<ChangeGlobalStateFinishMessage> {
-        /** {@inheritDoc} */
-        @Override public void onCustomEvent(
-            AffinityTopologyVersion topVer,
-            ClusterNode snd,
-            ChangeGlobalStateFinishMessage msg
-        ) {
-            state = msg.state() == ACTIVE ? State.VALID : State.CLUSTER_WRITE_BLOCKED;
         }
     }
 
