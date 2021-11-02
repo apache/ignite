@@ -42,6 +42,7 @@ public class AbstractTypedArrayTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
+
         BinaryArray.USE_TYPED_ARRAYS = useTypedArrays;
 
         super.beforeTest();
@@ -52,6 +53,7 @@ public class AbstractTypedArrayTest extends GridCommonAbstractTest {
         super.afterTest();
 
         System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
+
         BinaryArray.USE_TYPED_ARRAYS = DFLT_IGNITE_USE_TYPED_ARRAYS;
     }
 }

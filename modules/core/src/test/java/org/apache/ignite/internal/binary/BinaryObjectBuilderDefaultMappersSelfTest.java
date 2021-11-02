@@ -845,10 +845,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArra
     public void testMetaData() throws Exception {
         BinaryObjectBuilder builder = builder("org.test.MetaTest");
 
-        builder.removeField("uuidField");
-        builder.removeField("intField");
-        builder.removeField("byteArrayField");
-
         builder.setField("intField", 1);
         builder.setField("byteArrayField", new byte[] {1, 2, 3});
 

@@ -42,7 +42,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -203,10 +203,10 @@ public class GridServiceProxy<T> implements Serializable {
                     else {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
-                        ServiceProxyCallable callable;
+                        ServiceProxyCallable svcCallable;
 
                         if (KEEP_BINARY.get()) {
-                            callable = new BinaryServiceProxyCallable(
+                            svcCallable = new BinaryServiceProxyCallable(
                                 methodName(mtd),
                                 name,
                                 mtd.getParameterTypes(),
@@ -214,7 +214,7 @@ public class GridServiceProxy<T> implements Serializable {
                             );
                         }
                         else {
-                            callable = new ServiceProxyCallable(
+                            svcCallable = new ServiceProxyCallable(
                                 methodName(mtd),
                                 name,
                                 mtd.getParameterTypes(),
@@ -225,7 +225,7 @@ public class GridServiceProxy<T> implements Serializable {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            callable,
+                            svcCallable,
                             Collections.singleton(node),
                             false,
                             waitTimeout,
@@ -297,24 +297,8 @@ public class GridServiceProxy<T> implements Serializable {
     private Object callServiceLocally(Service svc, Method mtd, Object[] args) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
-        else {
-            prepareArgs(args);
-
-            return mtd.invoke(svc, args);
-        }
-    }
-
-    /** */
-    public static void prepareArgs(Object[] args) {
-        if (args == null)
-            return;
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] instanceof BinaryArray) {
-                ((BinaryArray)args[i]).keepBinary(false);
-                args[i] = ((BinaryArray)args[i]).deserialize();
-            }
-        }
+        else
+            return mtd.invoke(svc, BinaryUtils.rawArrayInArgs(args, false));
     }
 
     /**
@@ -448,7 +432,7 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Copy of {@link ServiceProxyCallable} to distinguish between {@code keepBinary = true / false} modes.
+     * Copy of {@code ServiceProxyCallable} to distinguish between {@code keepBinary = true / false} modes.
      * @see GridTaskWorker
      */
     public static class BinaryServiceProxyCallable extends ServiceProxyCallable {
@@ -551,10 +535,8 @@ public class GridServiceProxy<T> implements Serializable {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
-            prepareArgs(args);
-
             try {
-                return mtd.invoke(srv, args);
+                return mtd.invoke(srv, BinaryUtils.rawArrayInArgs(args, false));
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());

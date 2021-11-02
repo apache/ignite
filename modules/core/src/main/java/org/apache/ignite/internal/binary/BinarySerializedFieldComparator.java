@@ -276,8 +276,13 @@ public class BinarySerializedFieldComparator {
                 return Arrays.equals((float[])val1, (float[])val2);
             else if (val1 instanceof double[])
                 return Arrays.equals((double[])val1, (double[])val2);
-            else if (val1 instanceof BinaryArray)
-                return Arrays.deepEquals(((BinaryArray)val1).array(), ((BinaryArray)val2).array());
+            else if (val1 instanceof BinaryArray) {
+                BinaryArray arr1 = (BinaryArray)val1;
+                BinaryArray arr2 = (BinaryArray)val2;
+
+                return arr1.componentTypeId() == arr2.componentTypeId()
+                    && Arrays.deepEquals(arr1.array(), arr2.array());
+            }
             else
                 return Arrays.deepEquals((Object[])val1, (Object[])val2);
         }

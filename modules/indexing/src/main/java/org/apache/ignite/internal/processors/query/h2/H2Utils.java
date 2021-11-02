@@ -45,7 +45,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -632,8 +632,7 @@ public class H2Utils {
             case Value.JAVA_OBJECT:
                 return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
-                // We want raw data(no deserialization), because, all actions with params happens in binary format.
-                Object[] arr = BinaryArray.USE_TYPED_ARRAYS ? ((BinaryArray)obj).array() : (Object[])obj;
+                Object[] arr = BinaryUtils.rawArrayFromBinary(obj);
 
                 Value[] valArr = new Value[arr.length];
 

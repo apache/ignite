@@ -206,6 +206,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
+
         BinaryArray.USE_TYPED_ARRAYS = useTypedArrays;
 
         super.beforeTest();
@@ -228,6 +229,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         super.afterTest();
 
         System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
+
         BinaryArray.USE_TYPED_ARRAYS = DFLT_IGNITE_USE_TYPED_ARRAYS;
     }
 
@@ -1910,6 +1912,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             assertFalse(caches.isNull());
 
             Collection<IgniteCacheProxy<?, ?>> publicCaches = grid(0).context().cache().publicCaches();
+
+            assertEquals(publicCaches.size(), caches.size());
 
             for (JsonNode cache : caches) {
                 String cacheName0 = cache.get("name").asText();

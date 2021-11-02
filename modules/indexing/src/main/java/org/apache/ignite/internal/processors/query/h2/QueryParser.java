@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -181,7 +181,7 @@ public class QueryParser {
             timeout = (int)idx.distributedConfiguration().defaultQueryTimeout();
 
         return new QueryParameters(
-            unwrapBinaryArray(qry.getArgs()),
+            BinaryUtils.rawArrayInArgs(qry.getArgs(), true),
             qry.getPartitions(),
             timeout,
             qry.isLazy(),
@@ -301,8 +301,8 @@ public class QueryParser {
             if (!F.isEmpty(parser.remainingSql())) {
                 checkRemainingAllowed(remainingAllowed);
 
-                remainingQry =
-                    cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(unwrapBinaryArray(qry.getArgs()));
+                remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(
+                    BinaryUtils.rawArrayInArgs(qry.getArgs(), true));
             }
 
             QueryParserResultCommand cmd = new QueryParserResultCommand(nativeCmd, null, false);
@@ -397,7 +397,7 @@ public class QueryParser {
 
                 final int paramsCnt = prepared.getParameters().size();
 
-                Object[] argsOrig = unwrapBinaryArray(qry.getArgs());
+                Object[] argsOrig = BinaryUtils.rawArrayInArgs(qry.getArgs(), true);
 
                 Object[] args = null;
                 Object[] remainingArgs = null;
@@ -814,21 +814,5 @@ public class QueryParser {
             batched,
             qry.getQueryInitiatorId()
         );
-    }
-
-    /**
-     * Unwraps {@link BinaryArray} in {@code Object[]}.
-     * Required to deal with table function.
-     */
-    private Object[] unwrapBinaryArray(Object[] args) {
-        if (args == null)
-            return null;
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] instanceof BinaryArray)
-                args[i] = ((BinaryArray)args[i]).deserialize();
-        }
-
-        return args;
     }
 }

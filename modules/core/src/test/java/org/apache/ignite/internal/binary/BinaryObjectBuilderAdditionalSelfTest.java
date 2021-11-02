@@ -1610,7 +1610,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTes
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : (Object[])extObj.field("extArr")
+            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
         );
 
         builder = extObj.toBuilder();
@@ -1620,7 +1620,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTes
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : (Object[])extObj.field("extArr")
+            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
         );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
@@ -1631,7 +1631,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractTypedArrayTes
         assertEquals(exp, extObj.field("extVal"));
         Assert.assertArrayEquals(
             expArr,
-            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : (Object[])extObj.field("extArr")
+            useTypedArrays ? extObj.<BinaryArray>field("extArr").array() : extObj.field("extArr")
         );
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));

@@ -2599,6 +2599,37 @@ public class BinaryUtils {
     }
 
     /**
+     * @param obj {@link BinaryArray} or {@code Object[]}.
+     * @return Objects array.
+     */
+    public static Object[] rawArrayFromBinary(Object obj) {
+        if (obj instanceof BinaryArray)
+            // We want raw data(no deserialization), because, all actions with params happens in binary format.
+            return ((BinaryArray)obj).array();
+        else
+            // This can happen even in BinaryArray.USE_TYPED_ARRAY = true
+            // if user pass special array type to arguments, String[], for example.
+            return (Object[])obj;
+    }
+
+    /** */
+    public static Object[] rawArrayInArgs(Object[] args, boolean keepBinary) {
+        if (args == null)
+            return args;
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof BinaryArray) {
+                if (!keepBinary)
+                    ((BinaryArray)args[i]).keepBinary(false);
+
+                args[i] = ((BinaryArray)args[i]).deserialize();
+            }
+        }
+
+        return args;
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {

@@ -251,6 +251,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
+
         BinaryArray.USE_TYPED_ARRAYS = useTypedArrays;
 
         super.beforeTest();
@@ -261,6 +262,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
         super.afterTest();
 
         System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
+
         BinaryArray.USE_TYPED_ARRAYS = DFLT_IGNITE_USE_TYPED_ARRAYS;
     }
 

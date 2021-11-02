@@ -78,7 +78,7 @@ public class DmlUtils {
      * @param type Expected column type to convert to.
      * @return Converted object.
      */
-    @SuppressWarnings({"ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
     public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls,
         int type, String columnName) {
         if (val == null)
@@ -112,8 +112,17 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
-            if (type == Value.ARRAY && BinaryArray.USE_TYPED_ARRAYS)
-                return ((BinaryArray)val).deserialize();
+            if (type == Value.ARRAY && BinaryArray.USE_TYPED_ARRAYS) {
+                val = ((BinaryArray)val).deserialize();
+
+                if (val == null)
+                    return null;
+
+                currCls = val.getClass();
+
+                if (currCls == expCls)
+                    return val;
+            }
 
             if (type == Value.ARRAY && currCls != expCls) {
                 if (currCls != Object[].class) {

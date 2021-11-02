@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -345,16 +345,9 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         try {
             final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller) {
+            if (m instanceof BinaryMarshaller)
                 // To avoid deserializing of enum types.
-                Object obj = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
-
-                if (obj instanceof BinaryArray)
-                    // We want raw data(no deserialization), because, all actions with params happens in binary format.
-                    params = ((BinaryArray)obj).array();
-                else // This can happen if user pass special array type to arguments, String[], for example.
-                    params = (Object[])obj;
-            }
+                params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
             else
                 params = U.unmarshal(m, paramsBytes, ldr);
         }
