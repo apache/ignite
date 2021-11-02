@@ -2018,10 +2018,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_INDEX_REBUILD_BATCH_SIZE = "IGNITE_INDEX_REBUILD_BATCH_SIZE";
 
     /**
-     * Enabled storage of typed arrays.
+     * Enables storage of typed arrays.
      * The default value is {@link BinaryArray#DFLT_IGNITE_USE_TYPED_ARRAYS}.
      */
-    @SystemProperty(value = "Flag to enabled store of array component type",
+    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
         defaults = "" + DFLT_IGNITE_USE_TYPED_ARRAYS)
     public static final String IGNITE_USE_TYPED_ARRAYS = "IGNITE_USE_TYPED_ARRAYS";
 
