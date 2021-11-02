@@ -205,14 +205,8 @@ public class CacheObjectUtils {
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
         else if (o instanceof Object[] && !BinaryArray.USE_TYPED_ARRAYS)
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
-        else if (o instanceof BinaryArray) {
-            ((BinaryArray)o).keepBinary(false);
-
-            if (keepBinary)
-                return o;
-            else
-               return ((BinaryObject)o).deserialize(ldr);
-        }
+        else if (o instanceof BinaryArray && !keepBinary)
+            return ((BinaryObject)o).deserialize(ldr);
 
         return o;
     }

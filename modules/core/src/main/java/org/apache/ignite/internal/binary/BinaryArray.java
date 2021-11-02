@@ -68,9 +68,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     @GridToStringInclude(sensitive = true)
     private Object[] arr;
 
-    /** */
-    private boolean keepBinary;
-
     /**
      * {@link Externalizable} support.
      */
@@ -83,14 +80,12 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
      * @param compTypeId Component type id.
      * @param compClsName Component class name.
      * @param arr Array.
-     * @param keepBinary Keep binary.
      */
-    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr, boolean keepBinary) {
+    public BinaryArray(BinaryContext ctx, int compTypeId, @Nullable String compClsName, Object[] arr) {
         this.ctx = ctx;
         this.compTypeId = compTypeId;
         this.compClsName = compClsName;
         this.arr = arr;
-        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -110,9 +105,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException {
-        if (keepBinary)
-            return (T)arr;
-
         ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
         if (ldr != null)
@@ -123,6 +115,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
             Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 
+            // TODO: Do we need another container for this?
             boolean keepBinary = BinaryObject.class.isAssignableFrom(compType);
 
             for (int i = 0; i < arr.length; i++) {
@@ -148,11 +141,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         return arr;
     }
 
-    /** @param keepBinary Keep binary value. */
-    public void keepBinary(boolean keepBinary) {
-        this.keepBinary = keepBinary;
-    }
-
     /**
      * @return Component type ID.
      */
@@ -169,7 +157,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
-        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone(), keepBinary);
+        return new BinaryArray(ctx, compTypeId, compClsName, arr.clone());
     }
 
     /** {@inheritDoc} */
@@ -182,7 +170,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         out.writeInt(compTypeId);
         out.writeObject(compClsName);
         out.writeObject(arr);
-        out.writeBoolean(keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -192,7 +179,6 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         compTypeId = in.readInt();
         compClsName = (String)in.readObject();
         arr = (Object[])in.readObject();
-        keepBinary = in.readBoolean();
     }
 
     /** {@inheritDoc} */

@@ -2108,7 +2108,7 @@ public class BinaryUtils {
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return new BinaryArray(ctx, compTypeId, compClsName, arr, !deserialize);
+        return new BinaryArray(ctx, compTypeId, compClsName, arr);
     }
 
     /**
@@ -2620,10 +2620,9 @@ public class BinaryUtils {
 
         for (int i = 0; i < args.length; i++) {
             if (args[i] instanceof BinaryArray) {
-                if (!keepBinary)
-                    ((BinaryArray)args[i]).keepBinary(false);
+                BinaryArray arr = (BinaryArray)args[i];
 
-                args[i] = ((BinaryArray)args[i]).deserialize();
+                args[i] = keepBinary ? arr.array() : arr.deserialize();
             }
         }
 
