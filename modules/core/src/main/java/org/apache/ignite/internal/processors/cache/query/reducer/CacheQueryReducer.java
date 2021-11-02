@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 
 /**
@@ -36,6 +37,12 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
     /** Page streams collection. */
     protected final Map<UUID, NodePageStream<T>> pageStreams;
 
+    /** Cache context. */
+    protected GridCacheContext<?, ?> cctx;
+
+    /** Whether to keep items in binary form. */
+    private boolean keepBinary;
+
     /** */
     protected CacheQueryReducer(final Map<UUID, NodePageStream<T>> pageStreams) {
         this.pageStreams = pageStreams;
@@ -46,12 +53,37 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
         throw new UnsupportedOperationException("CacheQueryReducer doesn't support removing items.");
     }
 
+    /** {@inheritDoc} */
+    @Override public T nextX() throws IgniteCheckedException {
+        return unwrapIfNeeded(getNext());
+    }
+
     /**
-     * @return Page with query results data from specified stream.
+     * @return Next unwrapped item.
      */
-    public static <T> NodePage<T> get(CompletableFuture<?> pageFut) throws IgniteCheckedException {
+    public abstract T getNext() throws IgniteCheckedException;
+
+    /** {@inheritDoc} */
+    private T unwrapIfNeeded(T o) {
+        if (cctx == null)
+            return o;
+
+        return (T)cctx.unwrapBinaryIfNeeded(o, keepBinary, false, null);
+    }
+
+    /** Invoke this method of reducer should unwrap result entries. */
+    public void needUnwrap(GridCacheContext<?, ?> cctx, boolean keepBinary) {
+        this.cctx = cctx;
+        this.keepBinary = keepBinary;
+    }
+
+    /**
+     * @return Object that completed the specified future.
+     * @throws IgniteCheckedException for all failures.
+     */
+    public static <T> T get(CompletableFuture<?> fut) throws IgniteCheckedException {
         try {
-            return (NodePage<T>) pageFut.get();
+            return (T) fut.get();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

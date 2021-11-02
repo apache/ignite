@@ -22,13 +22,14 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Reducer of cache query results that sort result through all nodes. Note that it's assumed that every node
  * returns pre-sorted collection of data.
  */
-public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
+abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,21 +43,19 @@ public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     private UUID pendingNodeId;
 
     /** */
-    private final Comparator<NodePage<R>> pageCmp;
-
-    /** */
-    public MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams, Comparator<NodePage<R>> pageCmp) {
+    protected MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
         super(pageStreams);
-
-        this.pageCmp = pageCmp;
     }
+
+    /** @return Comparator for pages from nodes. */
+    protected abstract CompletableFuture<Comparator<NodePage<R>>> pageComparator();
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         // Initial sort.
         if (nodePages == null) {
             // Compares head pages from all nodes to get the lowest value at the moment.
-            nodePages = new PriorityQueue<>(pageStreams.size(), pageCmp);
+            nodePages = new PriorityQueue<>(pageStreams.size(), get(pageComparator()));
 
             for (NodePageStream<R> s : pageStreams.values()) {
                 NodePage<R> p = get(s.headPage());
@@ -85,7 +84,7 @@ public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R nextX() throws IgniteCheckedException {
+    @Override public R getNext() throws IgniteCheckedException {
         if (nodePages.isEmpty())
             throw new NoSuchElementException("No next element. Please, be sure to invoke hasNext() before next().");
 

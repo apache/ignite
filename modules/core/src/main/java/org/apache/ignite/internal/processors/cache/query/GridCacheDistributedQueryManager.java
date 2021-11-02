@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -139,7 +140,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         for (Map.Entry<Long, GridCacheDistributedQueryFuture<?, ?, ?>> e : futs.entrySet()) {
             GridCacheDistributedQueryFuture<?, ?, ?> fut = e.getValue();
 
-            fut.onPage(null, null, err, true);
+            fut.onPage(null, null, null, err, true);
 
             futs.remove(e.getKey(), fut);
         }
@@ -377,14 +378,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         if (fut != null)
             if (res.fields())
-                ((GridCacheDistributedFieldsQueryFuture)fut).onPage(
+                ((GridCacheDistributedFieldsQueryFuture)fut).onFieldsPage(
                     sndId,
                     res.metadata(),
                     (Collection<Map<String, Object>>)((Collection)res.data()),
                     res.error(),
                     res.isFinished());
             else
-                fut.onPage(sndId, res.data(), res.error(), res.isFinished());
+                fut.onPage(sndId, res.idxQryMetadata(), res.data(), res.error(), res.isFinished());
         else if (!cancelled.contains(res.requestId()))
             U.warn(log, "Received response for finished or unknown query [rmtNodeId=" + sndId +
                 ", res=" + res + ']');
@@ -411,8 +412,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        Collection<?> data, boolean finished, Throwable e) {
+    @Override protected boolean onPageReady(
+        boolean loc,
+        GridCacheQueryInfo qryInfo,
+        Externalizable idxQryMetadata,
+        Collection<?> data,
+        boolean finished,
+        Throwable e
+    ) {
         GridCacheLocalQueryFuture<?, ?, ?> fut = qryInfo.localQueryFuture();
 
         if (loc)
@@ -420,7 +427,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         if (e != null) {
             if (loc)
-                fut.onPage(null, null, e, true);
+                fut.onPage(null, null, null, e, true);
             else
                 sendQueryResponse(qryInfo.senderId(),
                     new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e, cctx.deploymentEnabled()),
@@ -430,13 +437,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         if (loc)
-            fut.onPage(null, data, null, finished);
+            fut.onPage(null, null, data, null, finished);
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                /*finished*/false, /*fields*/false, cctx.deploymentEnabled());
+                finished, /*fields*/false, cctx.deploymentEnabled());
 
+            res.idxQryMetadata(idxQryMetadata);
             res.data(data);
-            res.finished(finished);
 
             if (!sendQueryResponse(qryInfo.senderId(), res, qryInfo.query().timeout()))
                 return false;
@@ -471,7 +478,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (loc) {
             GridCacheLocalFieldsQueryFuture fut = (GridCacheLocalFieldsQueryFuture)qryInfo.localQueryFuture();
 
-            fut.onPage(null, metadata, data, null, finished);
+            fut.onFieldsPage(null, metadata, data, null, finished);
         }
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Externalizable;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,6 +38,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     @Override protected boolean onPageReady(
         boolean loc,
         GridCacheQueryInfo qryInfo,
+        Externalizable metadata,
         Collection<?> data,
         boolean finished, Throwable e) {
         GridCacheQueryFutureAdapter fut = qryInfo.localQueryFuture();
@@ -44,9 +46,9 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         assert fut != null;
 
         if (e != null)
-            fut.onPage(null, null, e, true);
+            fut.onPage(null, metadata, null, e, true);
         else
-            fut.onPage(null, data, null, finished);
+            fut.onPage(null, metadata, data, null, finished);
 
         return true;
     }
@@ -68,7 +70,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         if (e != null)
             fut.onPage(null, null, null, e, true);
         else
-            fut.onPage(null, metaData, data, null, finished);
+            fut.onFieldsPage(null, metaData, data, null, finished);
 
         return true;
     }

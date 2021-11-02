@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,10 +47,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
-import org.apache.ignite.internal.processors.cache.query.IndexedCacheEntry;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -74,7 +71,7 @@ public class IndexQueryProcessor {
     }
 
     /** Run query on local node. */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocal(
+    public <K, V> IndexQueryResult<K, V> queryLocal(
         GridCacheContext<K, V> cctx,
         IndexQueryDesc idxQryDesc,
         @Nullable IgniteBiPredicate<K, V> filter,
@@ -85,13 +82,19 @@ public class IndexQueryProcessor {
 
         IndexRangeQuery qry = prepareQuery(idx, idxQryDesc);
 
-        GridCursor<IndexRow> cursor = querySortedIndex(cctx, (InlineIndexImpl)idx, qryCtx, qry);
+        InlineIndexImpl sortedIdx = (InlineIndexImpl)idx;
+
+        GridCursor<IndexRow> cursor = querySortedIndex(cctx, sortedIdx, qryCtx, qry);
 
         final int critSize = qry.criteria.length;
-        final int orderMask = orderMask(idx.id(), critSize);
+
+        SortedIndexDefinition def = (SortedIndexDefinition)idxProc.indexDefinition(sortedIdx.id());
+
+        IndexQueryResultMeta meta = new IndexQueryResultMeta(
+            def.idxName().fullName(), def.keyTypeSettings(), critSize, def.indexKeyDefinitions().get("_KEY").idxType());
 
         // Map IndexRow to Cache Key-Value pair.
-        return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
+        return new IndexQueryResult<>(meta, new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
             private IgniteBiTuple<K, V> currVal;
 
             private final CacheObjectContext coctx = cctx.cacheObjectContext();
@@ -104,13 +107,20 @@ public class IndexQueryProcessor {
                 while (currVal == null && cursor.next()) {
                     IndexRow r = cursor.get();
 
-                    K k = (K)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().key(), keepBinary, false);
-                    V v = (V)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().value(), keepBinary, false);
+                    if (filter != null) {
+                        IgniteBiTuple<K, V> val = wrap(r, keepBinary);
 
-                    if (filter != null && !filter.apply(k, v))
-                        continue;
+                        if (!filter.apply(val.get1(), val.get2()))
+                            continue;
 
-                    currVal = new IndexedCacheEntry<>(k, v, r.keys(), critSize, orderMask);
+                        if (keepBinary) {
+                            currVal = val;
+
+                            continue;
+                        }
+                    }
+
+                    currVal = wrap(r, true);
                 }
 
                 return currVal != null;
@@ -128,26 +138,15 @@ public class IndexQueryProcessor {
 
                 return row;
             }
-        };
-    }
 
-    /** @return Mask with {@code 1} for DESC criteria and {@code 0} for ASC criteria. */
-    private int orderMask(UUID idxId, int critSize) throws IgniteCheckedException {
-        if (critSize > 31)
-            throw new IgniteCheckedException("IndexQuery doesn't support querying indexes with an amount fields more than 31");
+            /** */
+            private IgniteBiTuple<K, V> wrap(IndexRow r, boolean keepBinary) {
+                K k = (K)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().key(), keepBinary, false);
+                V v = (V)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, r.cacheDataRow().value(), keepBinary, false);
 
-        Iterator<IndexKeyDefinition> it = idxProc.indexDefinition(idxId).indexKeyDefinitions().values().iterator();
-
-        int descFlags = 0;
-
-        for (int i = 0; i < critSize; i++) {
-            IndexKeyDefinition d = it.next();
-
-            if (d.order().sortOrder() == DESC)
-                descFlags |= 1 << i;
-        }
-
-        return descFlags;
+                return new IgniteBiTuple<>(k, v);
+            }
+        });
     }
 
     /**

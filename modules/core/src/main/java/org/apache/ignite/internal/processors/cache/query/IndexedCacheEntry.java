@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -31,11 +32,11 @@ public class IndexedCacheEntry<K, V> extends IgniteBiTuple<K, V> {
     /** Indexed keys. */
     private IndexKey[] idxKeys;
 
-    /** Count of indexed keys. */
-    private int keysSize;
+    /** Index row. */
+    private IndexRow idxRow;
 
-    /** Mask for indexed keys order. */
-    private int orderMask;
+    /** Count of indexed keys used in a query. */
+    private int keysSize;
 
     /** */
     public IndexedCacheEntry() {
@@ -43,22 +44,19 @@ public class IndexedCacheEntry<K, V> extends IgniteBiTuple<K, V> {
     }
 
     /** */
-    public IndexedCacheEntry(K key, V val, IndexKey[] keys, int keysSize, int orderMask) {
+    public IndexedCacheEntry(K key, V val, IndexRow row, int keysSize) {
         super(key, val);
 
+        idxRow = row;
         this.keysSize = keysSize;
-        idxKeys = keys;
-        this.orderMask = orderMask;
     }
 
     /** */
     public IndexKey key(int idx) {
-        return idxKeys[idx];
-    }
+        if (idxKeys == null)
+            return idxRow.key(idx);
 
-    /** */
-    public int orderMask() {
-        return orderMask;
+        return idxKeys[idx];
     }
 
     /** */
@@ -70,18 +68,16 @@ public class IndexedCacheEntry<K, V> extends IgniteBiTuple<K, V> {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeInt(orderMask);
         out.writeInt(keysSize);
 
         for (int i = 0; i < keysSize; i++)
-            out.writeObject(idxKeys[i]);
+            out.writeObject(idxRow.key(i));
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        orderMask = in.readInt();
         keysSize = in.readInt();
 
         idxKeys = new IndexKey[keysSize];
@@ -90,4 +86,3 @@ public class IndexedCacheEntry<K, V> extends IgniteBiTuple<K, V> {
             idxKeys[i] = (IndexKey)in.readObject();
     }
 }
-

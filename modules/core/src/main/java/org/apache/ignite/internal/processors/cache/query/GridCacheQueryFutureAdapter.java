@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -207,11 +208,18 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * Entrypoint for handling query result page from remote node.
      *
      * @param nodeId Sender node.
+     * @param metadata Query response metadata.
      * @param data Page data.
      * @param err Error (if was).
      * @param lastPage Whether it is the last page for sender node.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean lastPage) {
+    public void onPage(
+        @Nullable UUID nodeId,
+        @Nullable Externalizable metadata,
+        @Nullable Collection<?> data,
+        @Nullable Throwable err,
+        boolean lastPage
+    ) {
         if (isCancelled())
             return;
 
@@ -260,8 +268,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                     data = unwrapped;
 
-                } else
+                } else if (qry.query().type() != GridCacheQueryType.INDEX) {
+                    // For IndexQuery BinaryObjects are used for sorting algorithm.
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
+                }
+
+                onMeta(metadata);
 
                 onPage(nodeId, (Collection<R>) data, lastPage);
 
@@ -282,6 +294,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** Handles new data page from query node. */
     protected abstract void onPage(UUID nodeId, Collection<R> data, boolean lastPage);
+
+    /** Handles new data page from query node. */
+    protected void onMeta(Externalizable meta) {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {

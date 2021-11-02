@@ -58,6 +58,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         stream = new NodePageStream<>(ctx.localNodeId(), () -> {}, () -> {});
 
         reducer = new UnsortedCacheQueryReducer<>(F.asMap(stream.nodeId(), stream));
+
+        if (qry.query().type() == GridCacheQueryType.INDEX)
+            reducer.needUnwrap(cctx, qry.query().keepBinary());
     }
 
     /**

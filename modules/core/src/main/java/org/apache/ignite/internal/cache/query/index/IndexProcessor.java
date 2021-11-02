@@ -391,23 +391,34 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Returns index for specified name.
      *
-     * @param idxName Index name.
+     * @param cacheName Cache name.
+     * @param fullName Full index name.
      * @return Index for specified index name or {@code null} if not found.
      */
-    public @Nullable Index index(IndexName idxName) {
+    public @Nullable Index index(String cacheName, String fullName) {
         ddlLock.readLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(idxName.cacheName());
+            Map<String, Index> idxs = cacheToIdx.get(cacheName);
 
             if (idxs == null)
                 return null;
 
-            return idxs.get(idxName.fullName());
+            return idxs.get(fullName);
         }
         finally {
             ddlLock.readLock().unlock();
         }
+    }
+
+    /**
+     * Returns index for specified name.
+     *
+     * @param idxName Index name.
+     * @return Index for specified index name or {@code null} if not found.
+     */
+    public @Nullable Index index(IndexName idxName) {
+        return index(idxName.cacheName(), idxName.fullName());
     }
 
     /**
