@@ -114,6 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _config = config;
             _marsh = marsh;
             _transactions = transactions;
+            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
 
 #pragma warning disable 618 // Type or member is obsolete
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
@@ -129,8 +130,6 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
-
-            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
 
             ConnectDefaultSocket();
             OnFirstConnection();

@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Name = SvcName,
                 MaxPerNodeCount = 3,
                 TotalCount = 3,
-                NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
+                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
                 Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
             };
 
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     Name = MakeServiceName(i),
                     MaxPerNodeCount = 3,
                     TotalCount = 3,
-                    NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
+                    NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
                     Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
                 });
             }
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     Name = MakeServiceName(i),
                     MaxPerNodeCount = 2,
                     TotalCount = 2,
-                    NodeFilter = new NodeFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
+                    NodeFilter = new NodeIdFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
                     Service = binarizable ? new TestIgniteServiceBinarizable { TestProperty = i, ThrowInit = throwInit }
                         : new TestIgniteServiceSerializable { TestProperty = i, ThrowInit = throwInit }
                 });
@@ -711,7 +711,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 AffinityKey = 1,
                 MaxPerNodeCount = 2,
                 Service = new TestIgniteServiceSerializable(),
-                NodeFilter = new NodeFilter(),
+                NodeFilter = new NodeIdFilter(),
                 TotalCount = 3
             };
 
@@ -736,7 +736,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(cfg.MaxPerNodeCount, resCfg.MaxPerNodeCount);
             Assert.AreEqual(cfg.TotalCount, resCfg.TotalCount);
             Assert.IsInstanceOf<TestIgniteServiceSerializable>(cfg.Service);
-            Assert.IsInstanceOf<NodeFilter>(cfg.NodeFilter);
+            Assert.IsInstanceOf<NodeIdFilter>(cfg.NodeFilter);
         }
 
         /// <summary>
@@ -1707,7 +1707,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test node filter.
         /// </summary>
         [Serializable]
-        private class NodeFilter : IClusterNodeFilter
+        private class NodeIdFilter : IClusterNodeFilter
         {
             /// <summary>
             /// Gets or sets the node identifier.

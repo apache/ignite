@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnC
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnOverrides;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 
 /**
@@ -169,17 +171,18 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
     public void testEnforceStatisticValues() throws Exception {
         long size = SMALL_SIZE;
 
+        Logger.getLogger(StatisticsProcessor.class).setLevel(Level.TRACE);
         ObjectStatisticsImpl smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         assertNotNull(smallStat);
         assertEquals(size, smallStat.rowCount());
 
         // TODO: revert after IGNITE-15455
-        //sql("DROP STATISTICS SMALL");
+        // sql("DROP STATISTICS SMALL");
 
-//        sql("ANALYZE SMALL (A) WITH \"DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8\"");
-//        sql("ANALYZE SMALL (B) WITH \"DISTINCT=6,NULLS=7,TOTAL=8\"");
-//        sql("ANALYZE SMALL (C)");
+        // sql("ANALYZE SMALL (A) WITH \"DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8\"");
+        // sql("ANALYZE SMALL (B) WITH \"DISTINCT=6,NULLS=7,TOTAL=8\"");
+        // sql("ANALYZE SMALL (C)");
         IgniteStatisticsConfigurationManager cfgMgr = statisticsMgr(0).statisticConfiguration();
 
         cfgMgr.dropStatistics(Collections.singletonList(SMALL_TARGET), true);

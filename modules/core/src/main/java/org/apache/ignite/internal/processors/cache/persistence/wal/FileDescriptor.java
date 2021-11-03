@@ -151,4 +151,9 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
         return new SegmentIO(idx, fileIO);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getClass().getSimpleName() + " [file=" + (file == null ? null : file.getAbsolutePath()) + ", idx=" + idx + ']';
+    }
 }

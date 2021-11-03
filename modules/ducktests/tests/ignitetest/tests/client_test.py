@@ -30,7 +30,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
-# pylint: disable=W0223
 class ClientTest(IgniteTest):
     """
     cluster - cluster size
@@ -47,7 +46,6 @@ class ClientTest(IgniteTest):
     PACING = 10
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.client_test.IgniteCachePutClient"
 
-    # pylint: disable=R0913
     @cluster(num_nodes=7)
     @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
@@ -60,7 +58,6 @@ class ClientTest(IgniteTest):
         self.ignite_start_stop(ignite_version, True, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
-    # pylint: disable=R0913
     @cluster(num_nodes=7)
     @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
@@ -72,8 +69,6 @@ class ClientTest(IgniteTest):
         self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
-    # pylint: disable=R0914
-    # pylint: disable=R0913
     def ignite_start_stop(self, ignite_version, graceful_shutdown, nodes_num, static_clients_num, temp_client,
                           iteration_count, client_work_time):
         """

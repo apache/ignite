@@ -1,0 +1,152 @@
+# name: test/sql/types/interval/interval_constants.test
+# description: Test constant intervals
+# group: [interval]
+
+statement ok
+PRAGMA enable_verification
+
+# interval constants with different representations
+query I
+SELECT interval 2 days;
+----
+PT48H
+
+query T
+SELECT interval (2) day;
+----
+PT48H
+
+query T
+SELECT interval (1+1) days;
+----
+PT48H
+
+query T
+SELECT interval '2' days;
+----
+PT48H
+
+query TTTTTT
+SELECT interval 2 years, interval 2 months, interval 2 days, interval 2 hours, interval 2 minutes, interval 2 seconds;
+----
+P2Y	P2M	PT48H	PT2H	PT2M	PT2S
+
+# non-constant expression
+query T
+SELECT interval (x) day from table(system_range(1, 3));
+----
+PT24H
+PT48H
+PT72H
+
+query T
+SELECT interval (x + 1) day from table(system_range(1, 3));
+----
+PT48H
+PT72H
+PT96H
+
+# try all the different types
+query TT
+SELECT interval 2 years, interval 2 year;
+----
+P2Y	P2Y
+
+query TT
+SELECT interval 2 months, interval 2 month;
+----
+P2M	P2M
+
+query TT
+SELECT interval 2 days, interval 2 day;
+----
+PT48H	PT48H
+
+query TT
+SELECT interval 2 hours, interval 2 hour;
+----
+PT2H	PT2H
+
+query TT
+SELECT interval 2 minutes, interval 2 minute;
+----
+PT2M	PT2M
+
+query TT
+SELECT interval 2 seconds, interval 2 second;
+----
+PT2S	PT2S
+
+# 2 years 10 months
+query T
+SELECT interval '2-10' years to months
+----
+P2Y10M
+
+# 2 days 10 hours
+query T
+SELECT interval '2 10' days to hours
+----
+PT58H
+
+# 12 days 15:06:00
+query T
+SELECT interval '12 15:06' days to minutes
+----
+PT303H6M
+
+# 12 days 15:06:04.123
+query T
+SELECT interval '12 15:06:04.123' days to seconds
+----
+PT303H6M4.123S
+
+# 12:30:00
+query T
+SELECT interval '12:30' hours to minutes
+----
+PT12H30M
+
+# 15:06:04.123
+query T
+SELECT interval '15:06:04.123' hours to seconds
+----
+PT15H6M4.123S
+
+# 00:12:30
+query T
+SELECT interval '12:30' minutes to seconds
+----
+PT12M30S
+
+# test out of range interval constants
+statement error
+SELECT interval '99999999999999' years;
+
+statement error
+SELECT interval '214748364' years;
+
+statement error
+SELECT interval '9223372036854775807' hours;
+
+statement error
+SELECT interval '9223372036854775807' minutes;
+
+statement error
+SELECT interval '9223372036854775807' seconds;
+
+# milliseconds
+query I
+SELECT interval '0.003' seconds;
+----
+PT0.003S
+
+query I
+select timestamp '1992-01-01 12:00:00' + interval '0.003' seconds
+----
+1992-01-01 12:00:00.003
+
+query I
+select timestamp '1992-01-01 12:00:00' + (interval '0.003' seconds + interval '0.003' seconds)
+----
+1992-01-01 12:00:00.006

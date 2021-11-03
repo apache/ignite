@@ -42,7 +42,7 @@ public class ClientKubernetesPutGetExample {
      *
      * @param args Command line arguments.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         KubernetesConnectionConfiguration kcfg = new KubernetesConnectionConfiguration();
         kcfg.setNamespace("ignite");
 

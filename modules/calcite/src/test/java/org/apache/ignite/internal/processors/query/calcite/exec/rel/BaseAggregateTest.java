@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -510,6 +511,98 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
                 assertTrue(grpId.isEmpty());
             }
         }
+    }
+
+    /** */
+    @Test
+    public void sumIntegerOverflow() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+            row(0, Integer.MAX_VALUE / 2),
+            row(0, Integer.MAX_VALUE / 2 + 11)
+        ));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.SUM,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(Long.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+
+        RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
+
+        SingleNode<Object[]> aggChain = createAggregateNodesChain(
+            ctx,
+            grpSets,
+            call,
+            rowType,
+            aggRowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
+        root.register(aggChain);
+
+        assertTrue(root.hasNext());
+
+        Assert.assertArrayEquals(row(0, (long)Integer.MAX_VALUE / 2 + (long)Integer.MAX_VALUE / 2 + 11L), root.next());
+
+        assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
+    public void sumLongOverflow() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, long.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+            row(0, Long.MAX_VALUE / 2),
+            row(0, Long.MAX_VALUE / 2 + 11)
+        ));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.SUM,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(BigDecimal.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+
+        RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
+
+        SingleNode<Object[]> aggChain = createAggregateNodesChain(
+            ctx,
+            grpSets,
+            call,
+            rowType,
+            aggRowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
+        root.register(aggChain);
+
+        assertTrue(root.hasNext());
+
+        Assert.assertArrayEquals(row(0, new BigDecimal(Long.MAX_VALUE).add(new BigDecimal(10))), root.next());
+
+        assertFalse(root.hasNext());
     }
 
     /** */

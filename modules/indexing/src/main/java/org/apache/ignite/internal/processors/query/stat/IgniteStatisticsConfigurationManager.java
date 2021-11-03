@@ -102,7 +102,7 @@ public class IgniteStatisticsConfigurationManager {
     /** Is server node flag. */
     private final boolean isServerNode;
 
-    /** */
+    /** Configuration change subscribers. */
     private List<Consumer<StatisticsObjectConfiguration>> subscribers = new CopyOnWriteArrayList<>();
 
     /** Change statistics configuration listener to update particular object statistics. */
