@@ -118,6 +118,9 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Started flag. */
+    private boolean started;
+
     /** Exchange listener: clean inbound requests and restart outbount. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
         @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
@@ -271,12 +274,21 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      * Start operations.
      * Shouldn't be called twice.
      */
-    public void start() {
+    public synchronized void start() {
+        if (started) {
+            if (log.isDebugEnabled())
+                log.debug("IgniteGlobalStatisticsManager already started.");
+
+            return;
+        }
+
         if (log.isDebugEnabled())
             log.debug("Global statistics manager starting...");
 
         globalStatistics.clear();
         exchange.registerExchangeAwareComponent(exchAwareLsnr);
+
+        started = true;
 
         if (log.isDebugEnabled())
             log.debug("Global statistics manager started.");
@@ -286,7 +298,14 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      * Stop operations.
      * Shouldn't be called twice.
      */
-    public void stop() {
+    public synchronized void stop() {
+        if (!started) {
+            if (log.isDebugEnabled())
+                log.debug("IgniteGlobalStatisticsManager already stopped.");
+
+            return;
+        }
+
         if (log.isDebugEnabled())
             log.debug("Global statistics manager stopping...");
 
@@ -298,6 +317,8 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         curCollections.clear();
 
         exchange.unregisterExchangeAwareComponent(exchAwareLsnr);
+
+        started = false;
 
         if (log.isDebugEnabled())
             log.debug("Global statistics manager stopped.");
@@ -706,7 +727,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
             ObjectStatisticsImpl globStatNew = (globStatOld == null) ? null : globStatOld.subtract(colNames);
 
             return (globStatNew == null || globStatNew.columnsStatistics().isEmpty()) ? null :
-                new CacheEntry<>(v.cachedAt(), globStatNew);
+                new CacheEntry<>(globStatNew);
         });
 
         outGlobalStatisticsRequests.remove(key);
@@ -920,9 +941,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
     /** Cache entry. */
     private static class CacheEntry<T> {
-        /** Cache entry original timestamp. */
-        private final long cachedAt;
-
         /** Cached object. */
         private final T obj;
 
@@ -932,26 +950,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
          * @param obj Cached object.
          */
         public CacheEntry(T obj) {
-            cachedAt = System.currentTimeMillis();
             this.obj = obj;
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param cachedAt Cache original timestamp.
-         * @param obj Object to cache.
-         */
-        public CacheEntry(long cachedAt, T obj) {
-            this.cachedAt = cachedAt;
-            this.obj = obj;
-        }
-
-        /**
-         * @return Cache entry original timestamp.
-         */
-        public long cachedAt() {
-            return cachedAt;
         }
 
         /**
