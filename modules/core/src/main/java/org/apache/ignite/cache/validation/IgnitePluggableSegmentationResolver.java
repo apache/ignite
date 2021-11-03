@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
@@ -135,7 +136,25 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
 
                 /** {@inheritDoc} */
                 @Override public void onReadyToWrite() {
-                    setDefaultValue(segResolverEnabledProp, U.isLocalNodeCoordinator(ctx.discovery()), log);
+                    ctx.state().baselineConfiguration().listenAutoAdjustTimeout((name, oldVal, newVal) ->
+                        checkBaselineConfiguration());
+
+                    ctx.state().baselineConfiguration().listenAutoAdjustEnabled((name, oldVal, newVal) ->
+                        checkBaselineConfiguration());
+
+                    boolean isLocNodeCrd = U.isLocalNodeCoordinator(ctx.discovery());
+
+                    Boolean segResolverEnabled = segResolverEnabledProp.get();
+
+                    if (segResolverEnabled == null && !isLocNodeCrd || FALSE.equals(segResolverEnabled)) {
+                        U.warn(log, "Segmentation Resolver will be disabled for the current node because" +
+                            " Segmentation Resolver plugin is not configured for the cluster it joined." +
+                            " Make sure the Segmentation Resolver plugin is configured on all cluster nodes.");
+                    }
+                    else
+                        checkBaselineConfiguration();
+
+                    setDefaultValue(segResolverEnabledProp, isLocNodeCrd, log);
                 }
             });
     }
@@ -192,7 +211,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             lastCheckedTopVer = evt.topologyVersion();
 
-            if (isDisabled() || state != State.VALID)
+            if (isDisabled() || !checkBaselineConfiguration() || state != State.VALID)
                 return;
 
             if (evt.type() == EVT_NODE_FAILED) {
@@ -222,11 +241,6 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
                         formatTopologyNodes(discoCache.allNodes()) + ']');
                 }
             }
-
-            if (ctx.state().isBaselineAutoAdjustEnabled() && ctx.state().baselineAutoAdjustTimeout() == 0L)
-                U.warn(log, "Segmentation Resolver considers any topology change to be valid with the current" +
-                    " Baseline topology configuration. Configure Baseline nodes explicitly or set Baseline Auto" +
-                    " Adjustment Timeout to greater than zero.");
         }
 
         /** {@inheritDoc} */
@@ -250,6 +264,20 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         private String formatTopologyNodes(Collection<ClusterNode> nodes) {
             return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
         }
+    }
+
+    /** */
+    private boolean checkBaselineConfiguration() {
+        boolean implicitAdjustment =
+            ctx.state().isBaselineAutoAdjustEnabled() && ctx.state().baselineAutoAdjustTimeout() == 0L;
+
+        if (implicitAdjustment) {
+            U.warn(log, "Segmentation Resolver is currently skipping validation of topology changes because" +
+                " Baseline Auto Adjustment with zero timeout is configured for the cluster. Configure" +
+                " Baseline Nodes explicitly or set Baseline Auto Adjustment Timeout to greater than zero.");
+        }
+
+        return !implicitAdjustment;
     }
 
     /** */
