@@ -130,7 +130,7 @@ Cache events are also generated when you use DML commands.
 | An object is read from a cache.
 This event is not emitted when you use link:key-value-api/using-cache-queries[scan queries] (use <<Cache Query Events>> to monitor scan queries).
 | The node where read operation is executed.
-It can be either the primary or backup node (the latter case is only possible when link:configuring-caches/configuration-overview#readfrombackup[reading from backups is enabled]).
+It can be either the primary or backup node (the latter case is only possible when link:configuring-caches/configuration-overview#readfrombackup[reading from backups] is enabled).
 In transactional caches, the event can be generated on both the primary and backup nodes depending on the concurrency and isolation levels.
 
 | EVT_CACHE_OBJECT_REMOVED | An object is removed from a cache. |The primary and backup nodes for the entry.

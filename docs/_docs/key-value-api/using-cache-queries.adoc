@@ -124,14 +124,14 @@ include::code-snippets/cpp/src/scan_query.cpp[tag=set-local,indent=0]
 [WARNING]
 ====
 [discrete]
-Experimental API. Introduced since Apache Ignite 2.12. Only Java API is supported. Questions or bug reports are welcome,
-please share it with user@ignite.apache.org.
+Experimental API. Introduced since Apache Ignite 2.12. Only Java API is supported. Please send your questions and bug reports
+to user@ignite.apache.org.
 ====
 
-Index queries perform over distributed indexes and retrieve cache entries that match the specified query. `QueryCursor`
+Index queries work over distributed indexes and retrieve cache entries that match the specified query. `QueryCursor`
 delivers sorted cache entries by the order defined for queried index. `IndexQuery` can be used if a low amount of data
-match filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly extracts all cache entries and
-then applies a filter on them. `IndexQuery` relies on index tree structure and filters most of the entries without extracting.
+matches filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly extracts all cache entries and
+then applies a filter to them. `IndexQuery` relies on index tree structure and filters most of the entries without extracting.
 
 [source,java]
 ----
@@ -146,7 +146,7 @@ with it.
 
 [NOTE]
 ====
-Criteria are joint by the AND operator. Also it is possible to use multiple criteria for the same field.
+Criteria are joined by the AND operator. It is also possible to use multiple criteria for the same field.
 ====
 
 [source,java]
@@ -154,21 +154,21 @@ Criteria are joint by the AND operator. Also it is possible to use multiple crit
 include::{javaFile}[tag=idxQryMultipleCriteria,indent=0]
 ----
 
-The index name is an optional parameter. In this case, Ignite tries to figure out the index by self by specified criteria fields.
+The index name is an optional parameter. In this case, Ignite tries to figure out the index by itself using specified criteria fields.
 
 [source,java]
 ----
 include::{javaFile}[tag=idxQryNoIdxName,indent=0]
 ----
 
-For the empty criteria list, a full scan of the specified index performs. If also index name isn't specified, then the
+For the empty criteria list, a full scan of the specified index is performed. If index name is also not specified, then the
 PrimaryKey index is used.
 
 === Additional filtering
 
-`IndexQuery` also supports an optional predicate the same as `ScanQuery` have. It's suitable for additional cache entry
-filtering in such cases when a filter doesn't match an index tree range. For example, it contains some logic, the "OR"
-operations, or fields that aren't part of the index.
+`IndexQuery` also supports an optional predicate, the same as `ScanQuery` has. It's suitable for additional cache entry
+filtering in cases when a filter doesn't match an index tree range. For example, it contains some logic, the "OR"
+operations, or fields that are not the part of the index.
 
 [source,java]
 ----

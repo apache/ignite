@@ -28,7 +28,7 @@ If you develop C# and .NET applications, then refer to the link:net-specific/net
 page for details on how to set up and use the peer-class-loading feature with that type of applications.
 ====
 
-For example, when link:key-value-api/using-cache-queries[querying data] with a custom transformer, you only need to define your tasks on the client node that initiates the computation, and Ignite loads the classes to the server nodes.
+For example, when link:key-value-api/using-cache-queries[querying data] with a custom transformer, you just need to define your tasks on the client node that initiates the computation, and Ignite will upload the classes to the server nodes.
 
 When enabled, peer class loading is used to deploy the following classes:
 

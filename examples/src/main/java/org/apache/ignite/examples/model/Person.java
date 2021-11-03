@@ -57,7 +57,7 @@ public class Person implements Serializable {
     @QuerySqlField(index = true, orderedGroups = @QuerySqlField.Group(name = ORG_SALARY_IDX, order = 1))
     public double salary;
 
-    /** Custom cache key to guarantee that person is always collocated with its organization. */
+    /** Custom cache key to guarantee that person is always colocated with its organization. */
     private transient AffinityKey<Long> key;
 
     /**
