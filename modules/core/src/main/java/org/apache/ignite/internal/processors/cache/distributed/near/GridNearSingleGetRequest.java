@@ -44,19 +44,19 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
     /** */
-    private static final int SKIP_VALS_FLAG_MASK = 0x02;
+    private static final int SKIP_VALS_FLAG_MASK = 0b10;
 
     /** */
-    private static final int ADD_READER_FLAG_MASK = 0x04;
+    private static final int ADD_READER_FLAG_MASK = 0b100;
 
     /** */
-    private static final int NEED_VER_FLAG_MASK = 0x08;
+    private static final int NEED_VER_FLAG_MASK = 0b1000;
 
     /** */
-    private static final int NEED_ENTRY_INFO_FLAG_MASK = 0x10;
+    private static final int NEED_ENTRY_INFO_FLAG_MASK = 0b10000;
 
     /** */
-    public static final int RECOVERY_FLAG_MASK = 0x20;
+    public static final int RECOVERY_FLAG_MASK = 0b100000;
 
     /** Future ID. */
     private long futId;

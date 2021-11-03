@@ -93,26 +93,14 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** Force primary flag. */
     protected boolean forcePrimary;
 
-    /** Future ID. */
-    protected IgniteUuid futId;
-
     /** Trackable flag. */
     protected boolean trackable;
-
-    /** Remap count. */
-    protected volatile int remapCnt;
-
-    /** Task name. */
-    protected String taskName;
 
     /** Whether to deserialize binary objects. */
     protected boolean deserializeBinary;
 
     /** Skip values flag. */
     protected boolean skipVals;
-
-    /** Expiry policy. */
-    protected IgniteCacheExpiryPolicy expiryPlc;
 
     /** Flag indicating that get should be done on a locked topology version. */
     protected boolean canRemap = true;
@@ -125,6 +113,18 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
     /** */
     protected final boolean recovery;
+
+    /** Future ID. */
+    protected IgniteUuid futId;
+
+    /** Remap count. */
+    protected volatile int remapCnt;
+
+    /** Task name. */
+    protected String taskName;
+
+    /** Expiry policy. */
+    protected IgniteCacheExpiryPolicy expiryPlc;
 
     /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
     @GridToStringExclude

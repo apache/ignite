@@ -81,6 +81,33 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
+    /** Read through bit. */
+    private static final byte READ_THROUGH = 0b1;
+
+    /** Skip values bit. */
+    private static final byte SKIP_VALS = 0b10;
+
+    /** Force primary bit. */
+    private static final byte FORCE_PRIMARY = 0b100;
+
+    /** Need version bit. */
+    private static final byte NEED_VER = 0b1000;
+
+    /** Deserialize binary bit. */
+    private static final byte DESERIALIZE_BINARY = 0b10000;
+
+    /** */
+    public static final int RECOVERY = 0b100000;
+
+    /** Keep cache objects bit. */
+    private static final byte KEEP_CACHE_OBJECTS = 0b1000000;
+
+    /** Can remap bit. */
+    private static final byte CAN_REMAP = 0b10000000;
+
+    /** Flags byte */
+    private final byte flags;
+
     /** Remap count updater. */
     protected static final AtomicIntegerFieldUpdater<GridPartitionedSingleGetFuture> REMAP_CNT_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridPartitionedSingleGetFuture.class, "remapCnt");
@@ -100,9 +127,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Key. */
     private final KeyCacheObject key;
 
-    /** Read through flag. */
-    private final boolean readThrough;
-
     /** Force primary flag. */
     private final boolean forcePrimary;
 
@@ -115,26 +139,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Task name. */
     private final String taskName;
 
-    /** Whether to deserialize binary objects. */
-    private boolean deserializeBinary;
-
-    /** Skip values flag. */
-    private boolean skipVals;
-
     /** Expiry policy. */
-    private IgniteCacheExpiryPolicy expiryPlc;
-
-    /** Flag indicating that get should be done on a locked topology version. */
-    private final boolean canRemap;
-
-    /** */
-    private final boolean needVer;
-
-    /** */
-    private final boolean keepCacheObjects;
-
-    /** */
-    private boolean recovery;
+    private final IgniteCacheExpiryPolicy expiryPlc;
 
     /** */
     @GridToStringInclude
@@ -194,25 +200,23 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
-        if (lockedTopVer != null) {
+        if (lockedTopVer != null)
             topVer = lockedTopVer;
 
-            canRemap = false;
-        }
-        else
-            canRemap = true;
+        flags = (byte)((readThrough ? READ_THROUGH : 0 ) |
+            (forcePrimary ? FORCE_PRIMARY : 0 ) |
+            (deserializeBinary ? DESERIALIZE_BINARY : 0 ) |
+            (skipVals ? SKIP_VALS : 0 ) |
+            (needVer ? NEED_VER : 0 ) |
+            (recovery ? RECOVERY : 0 ) |
+            (keepCacheObjects ? KEEP_CACHE_OBJECTS : 0) |
+            (lockedTopVer == null ? CAN_REMAP : 0));
 
         this.cctx = cctx;
         this.key = key;
-        this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
         this.taskName = taskName;
-        this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
-        this.skipVals = skipVals;
-        this.needVer = needVer;
-        this.keepCacheObjects = keepCacheObjects;
-        this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
         this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
@@ -234,7 +238,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (topVer.topologyVersion() > 0)
             mappingTopVer = topVer;
         else {
-            mappingTopVer = canRemap ?
+            mappingTopVer = canRemap() ?
                 cctx.affinity().affinityTopologyVersion() :
                 cctx.shared().exchange().readyAffinityVersion();
         }
@@ -294,12 +298,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     -1,
                     key,
                     false,
-                    readThrough,
+                    readThrough(),
                     topVer,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc,
-                    skipVals,
-                    recovery,
+                    skipVals(),
+                    recovery(),
                     txLbl,
                     mvccSnapshot
                 );
@@ -339,10 +343,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             registrateFutureInMvccManager(this);
 
-            boolean needVer = this.needVer;
+            boolean needVer = needVer();
 
             BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
-                cctx, key, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
+                cctx, key, expiryPlc, readThrough() && cctx.readThroughConfigured(), skipVals());
 
             if (postClos != null) {
                 // Need version to correctly store value.
@@ -351,20 +355,21 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 postProcessingClos = postClos;
             }
 
+            // TODO: pass flags as is into request.
             GridCacheMessage req = new GridNearSingleGetRequest(
                 cctx.cacheId(),
                 futId.localId(),
                 key,
-                readThrough,
+                readThrough(),
                 topVer,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                skipVals,
+                skipVals(),
                 /*add reader*/false,
                 needVer,
                 cctx.deploymentEnabled(),
-                recovery,
+                recovery(),
                 txLbl,
                 mvccSnapshot
             );
@@ -401,7 +406,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap,
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap(),
             forcePrimary);
 
         // Failed if none balanced node found.
@@ -456,7 +461,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         GridDhtCacheAdapter colocated = cctx.dht();
 
         boolean readNoEntry = cctx.readNoEntry(expiryPlc, false);
-        boolean evt = !skipVals;
+        boolean evt = !skipVals();
 
         while (true) {
             cctx.shared().database().checkpointReadLock();
@@ -480,7 +485,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                         if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
                             v = row.value();
 
-                            if (needVer)
+                            if (needVer())
                                 ver = row.version();
 
                             if (evt) {
@@ -489,7 +494,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                     txLbl,
                                     row.value(),
                                     taskName,
-                                    !deserializeBinary);
+                                    !deserializeBinary());
                             }
                         }
                         else
@@ -504,7 +509,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     if (entry != null) {
                         boolean isNew = entry.isNewLocked();
 
-                        if (needVer) {
+                        if (needVer()) {
                             EntryGetResult res = entry.innerGetVersioned(
                                 null,
                                 null,
@@ -545,10 +550,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 }
 
                 if (v != null) {
-                    if (!skipVals && cctx.statisticsEnabled())
+                    if (!skipVals() && cctx.statisticsEnabled())
                         cctx.cache().metrics0().onRead(true);
 
-                    if (!skipVals)
+                    if (!skipVals())
                         setResult(v, ver);
                     else
                         setSkipValueResult(true, ver);
@@ -560,10 +565,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
                 // Entry not found, complete future with null result if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.statisticsEnabled())
+                    if (!skipVals() && cctx.statisticsEnabled())
                         colocated.metrics0().onRead(false);
 
-                    if (skipVals)
+                    if (skipVals())
                         setSkipValueResult(false, null);
                     else
                         setResult(null, null);
@@ -617,26 +622,26 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         Message res0 = res.result();
 
-        if (needVer) {
+        if (needVer()) {
             CacheVersionedValue verVal = (CacheVersionedValue)res0;
 
             if (verVal != null) {
-                if (skipVals)
+                if (skipVals())
                     setSkipValueResult(true, verVal.version());
                 else
                     setResult(verVal.value(), verVal.version());
             }
             else {
-                if (skipVals)
+                if (skipVals())
                     setSkipValueResult(false, null);
                 else
                     setResult(null, null);
             }
         }
         else {
-            if (skipVals)
+            if (skipVals())
                 setSkipValueResult(res.containsValue(), null);
-            else if (readThrough && res0 instanceof CacheVersionedValue) {
+            else if (readThrough() && res0 instanceof CacheVersionedValue) {
                 // Could be versioned value for store in backup.
                 CacheVersionedValue verVal = (CacheVersionedValue)res0;
 
@@ -703,7 +708,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (invalidParts) {
             addNodeAsInvalid(cctx.node(nodeId));
 
-            if (canRemap) {
+            if (canRemap()) {
                 awaitVersionAndRemap(rmtTopVer);
             }
             else
@@ -719,9 +724,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param info Entry info.
      */
     private void setResult(@Nullable GridCacheEntryInfo info) {
-        assert info == null || skipVals == (info.value() == null);
+        assert info == null || skipVals() == (info.value() == null);
 
-        if (skipVals) {
+        if (skipVals()) {
             if (info != null)
                 setSkipValueResult(true, info.version());
             else
@@ -740,9 +745,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param ver Version.
      */
     private void setSkipValueResult(boolean res, @Nullable GridCacheVersion ver) {
-        assert skipVals;
+        assert skipVals();
 
-        if (needVer) {
+        if (needVer()) {
             assert ver != null || !res;
 
             onDone(new EntryGetResult(res, ver));
@@ -759,24 +764,24 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         cctx.shared().database().checkpointReadLock();
 
         try {
-            assert !skipVals;
+            assert !skipVals();
 
             if (val != null) {
                 if (postProcessingClos != null)
                     postProcessingClos.apply(val, ver);
 
-                if (!keepCacheObjects) {
+                if (!keepCacheObjects()) {
                     Object res = cctx.unwrapBinaryIfNeeded(
                         val,
-                        !deserializeBinary,
+                        !deserializeBinary(),
                         true,
                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                     );
 
-                    onDone(needVer ? new EntryGetResult(res, ver) : res);
+                    onDone(needVer() ? new EntryGetResult(res, ver) : res);
                 }
                 else
-                    onDone(needVer ? new EntryGetResult(val, ver) : val);
+                    onDone(needVer() ? new EntryGetResult(val, ver) : val);
             }
             else
                 onDone(null);
@@ -854,7 +859,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (!checkRetryPermits(topFut.topologyVersion()))
             return false;
 
-        Throwable error = topFut.validateCache(cctx, recovery, true, key, null);
+        Throwable error = topFut.validateCache(cctx, recovery(), true, key, null);
 
         if (error != null) {
             onDone(error);
@@ -875,7 +880,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (!processResponse(nodeId))
             return false;
 
-        if (canRemap) {
+        if (canRemap()) {
             long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
 
             awaitVersionAndRemap(new AffinityTopologyVersion(maxTopVer));
@@ -943,6 +948,41 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         // No-op.
+    }
+
+    /** Read through flag. */
+    private boolean readThrough() {
+        return (flags & READ_THROUGH) != 0;
+    }
+
+    /** Whether to deserialize binary objects. */
+    private boolean deserializeBinary() {
+        return (flags & DESERIALIZE_BINARY) != 0;
+    }
+
+    /** Skip values flag. */
+    private boolean skipVals() {
+        return (flags & SKIP_VALS) != 0;
+    }
+
+    /** Flag indicating that get should be done on a locked topology version. */
+    private boolean canRemap() {
+        return (flags & CAN_REMAP) != 0;
+    }
+
+    /** */
+    private boolean needVer() {
+        return (flags & NEED_VER) != 0;
+    }
+
+    /** */
+    private boolean recovery() {
+        return (flags & RECOVERY) != 0;
+    }
+
+    /** */
+    private boolean keepCacheObjects() {
+        return (flags & KEEP_CACHE_OBJECTS) != 0;
     }
 
     /** {@inheritDoc} */
