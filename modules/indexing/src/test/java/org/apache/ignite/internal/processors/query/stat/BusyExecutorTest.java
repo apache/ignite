@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -243,7 +243,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         t1.started.await();
         assertEquals(1, t3.started.getCount());
 
-        ConcurrentMap<CancellableTask, Object> cancellableTasks =
+        GridConcurrentHashSet<CancellableTask> cancellableTasks =
             GridTestUtils.getFieldValue(be, "cancellableTasks");
 
         assertEquals(3, cancellableTasks.size());
@@ -276,7 +276,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      * @param be BusyExecutor to check tasks in.
      */
     private void checkNoCancellableTask(BusyExecutor be) {
-        ConcurrentMap<CancellableTask, Object> cancellableTasks =
+        GridConcurrentHashSet<CancellableTask> cancellableTasks =
             GridTestUtils.getFieldValue(be, "cancellableTasks");
 
         assertTrue(cancellableTasks.isEmpty());

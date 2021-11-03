@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
@@ -47,7 +46,7 @@ public class BusyExecutor {
     private final IgniteThreadPoolExecutor pool;
 
     /** Cancellable tasks. */
-    private final ConcurrentMap<CancellableTask, Object> cancellableTasks = new ConcurrentHashMap<>();
+    private final GridConcurrentHashSet<CancellableTask> cancellableTasks = new GridConcurrentHashSet<>();
 
     /** External stopping supplier. */
     Supplier<Boolean> stopping;
@@ -96,7 +95,7 @@ public class BusyExecutor {
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " deactivating.");
 
-        cancellableTasks.keySet().forEach(CancellableTask::cancel);
+        cancellableTasks.forEach(CancellableTask::cancel);
 
         busyLock.block();
 
@@ -174,7 +173,7 @@ public class BusyExecutor {
 
         CompletableFuture<Boolean> res = new CompletableFuture<>();
 
-        cancellableTasks.put(ct, ct);
+        cancellableTasks.add(ct);
 
         pool.execute(() -> {
             res.complete(busyRun(ct, lock));
@@ -204,7 +203,7 @@ public class BusyExecutor {
     public void execute(CancellableTask ct) {
         GridBusyLock lock = busyLock;
 
-        cancellableTasks.put(ct, ct);
+        cancellableTasks.add(ct);
 
         pool.execute(() -> {
             busyRun(ct, lock);
