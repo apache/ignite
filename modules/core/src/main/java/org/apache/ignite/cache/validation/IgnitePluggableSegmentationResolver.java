@@ -210,7 +210,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
                                 log,
                                 "Failed to automatically switch state of the segmented cluster to the READ-ONLY mode" +
                                     " [segmentedNodes=" + formatTopologyNodes(discoCache.allNodes()) + "]. Cache writes" +
-                                    " are already restricted for all configured caches, but this step is still required" +
+                                    " were already restricted for all configured caches, but this step is still required" +
                                     " in order to be able to unlock cache writes in the future. Retry this operation" +
                                     " manually, if possible.",
                                 e
