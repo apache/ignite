@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
@@ -34,28 +35,10 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     private static Ignite client;
 
     /** */
-    private static IgniteCache<TestClass1[], Integer> srvCache0;
+    private static IgniteCache<Object, Object> srvCache;
 
     /** */
-    private static IgniteCache<TestClass1[], Integer> cliCache0;
-
-    /** */
-    private static IgniteCache<Integer, TestClass1[]> srvCache1;
-
-    /** */
-    private static IgniteCache<Integer, TestClass1[]> cliCache1;
-
-    /** */
-    private static IgniteCache<TestClass, Integer> srvCache2;
-
-    /** */
-    private static IgniteCache<TestClass, Integer> cliCache2;
-
-    /** */
-    private static IgniteCache<Integer, TestClass> srvCache3;
-
-    /** */
-    private static IgniteCache<Integer, TestClass> cliCache3;
+    private static IgniteCache<Object, Object> cliCache;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -64,49 +47,40 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         server = startGrid(0);
         client = startClientGrid(1);
 
-        srvCache0 = server.createCache("my-cache-1");
-        cliCache0 = client.getOrCreateCache("my-cache-1");
-
-        srvCache1 = server.createCache("my-cache");
-        cliCache1 = client.getOrCreateCache("my-cache");
-
-        srvCache2 = server.createCache("my-cache-2");
-        cliCache2 = client.getOrCreateCache("my-cache-2");
-
-        srvCache3 = server.createCache("my-cache-3");
-        cliCache3 = client.getOrCreateCache("my-cache-3");
+        srvCache = server.createCache("my-cache");
+        cliCache = client.getOrCreateCache("my-cache");
     }
 
     /** */
     @Test
     public void testArrayKey() {
-        doTestArrayKey(srvCache0);
-        doTestArrayKey(cliCache0);
+        doTestArrayKey(srvCache);
+        doTestArrayKey(cliCache);
     }
 
     /** */
     @Test
     public void testArrayValue() {
-        doTestArrayValue(srvCache1);
-        doTestArrayValue(cliCache1);
+        doTestArrayValue(srvCache);
+        doTestArrayValue(cliCache);
     }
 
     /** */
     @Test
     public void testArrayFieldInKey() {
-        doTestArrayFieldInKey(srvCache2);
-        doTestArrayFieldInKey(cliCache2);
+        doTestArrayFieldInKey(srvCache);
+        doTestArrayFieldInKey(cliCache);
     }
 
     /** */
     @Test
     public void testArrayFieldInValue() {
-        doTestArrayFieldInValue(srvCache3);
-        doTestArrayFieldInValue(cliCache3);
+        doTestArrayFieldInValue(srvCache);
+        doTestArrayFieldInValue(cliCache);
     }
 
     /** */
-    private void doTestArrayKey(IgniteCache<TestClass1[], Integer> c) {
+    private void doTestArrayKey(IgniteCache<Object, Object> c) {
         TestClass1[] key1 = {new TestClass1(), new TestClass1()};
         TestClass1[] key2 = {};
         TestClass1[] key3 = new TestClass1[] {new TestClass1() {}};
@@ -115,9 +89,9 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         c.put(key2, 2);
         c.put(key3, 3);
 
-        assertEquals((Integer)1, c.get(key1));
-        assertEquals((Integer)2, c.get(key2));
-        assertEquals((Integer)3, c.get(key3));
+        assertEquals(1, c.get(key1));
+        assertEquals(2, c.get(key2));
+        assertEquals(3, c.get(key3));
 
         assertTrue(c.remove(key1));
         assertTrue(c.remove(key2));
@@ -125,7 +99,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     }
 
     /** */
-    private void doTestArrayFieldInKey(IgniteCache<TestClass, Integer> c) {
+    private void doTestArrayFieldInKey(IgniteCache<Object, Object> c) {
         TestClass key1 = new TestClass(new TestClass1[] {new TestClass1(), new TestClass1()});
         TestClass key2 = new TestClass(new TestClass1[] {});
         TestClass key3 = new TestClass(new TestClass1[] {new TestClass1() {}});
@@ -134,9 +108,9 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         c.put(key2, 2);
         c.put(key3, 3);
 
-        assertEquals((Integer)1, c.get(key1));
-        assertEquals((Integer)2, c.get(key2));
-        assertEquals((Integer)3, c.get(key3));
+        assertEquals(1, c.get(key1));
+        assertEquals(2, c.get(key2));
+        assertEquals(3, c.get(key3));
 
         assertTrue(c.remove(key1));
         assertTrue(c.remove(key2));
@@ -144,7 +118,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     }
 
     /** */
-    private void doTestArrayValue(IgniteCache<Integer, TestClass1[]> c) {
+    private void doTestArrayValue(IgniteCache<Object, Object> c) {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         c.put(2, new TestClass1[] {});
         c.put(3, new TestClass1[] {new TestClass1() {}});
@@ -163,14 +137,14 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     }
 
     /** */
-    private void doTestArrayFieldInValue(IgniteCache<Integer, TestClass> c) {
+    private void doTestArrayFieldInValue(IgniteCache<Object, Object> c) {
         c.put(1, new TestClass(new TestClass1[] {new TestClass1(), new TestClass1()}));
         c.put(2, new TestClass(new TestClass1[] {}));
         c.put(3, new TestClass(new TestClass1[] {new TestClass1() {}}));
 
-        TestClass val1 = c.get(1);
-        TestClass val2 = c.get(2);
-        TestClass val3 = c.get(3);
+        TestClass val1 = (TestClass)c.get(1);
+        TestClass val2 = (TestClass)c.get(2);
+        TestClass val3 = (TestClass)c.get(3);
 
         assertEquals(2, val1.getArr().length);
         assertEquals(0, val2.getArr().length);
@@ -179,18 +153,17 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertTrue(c.remove(1));
         assertTrue(c.remove(2));
         assertTrue(c.remove(3));
-
     }
 
     /** */
     @Test
     public void testBinaryModeArray() {
-        doTestBinaryModeArray(srvCache1);
-        doTestBinaryModeArray(cliCache1);
+        doTestBinaryModeArray(srvCache);
+        doTestBinaryModeArray(cliCache);
     }
 
     /** */
-    private void doTestBinaryModeArray(IgniteCache<Integer, TestClass1[]> c) {
+    private void doTestBinaryModeArray(IgniteCache<Object, Object> c) {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         Object obj = c.withKeepBinary().get(1);
 
@@ -289,6 +262,42 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals("string", arr[0]);
         assertEquals(1L, arr[1]);
         assertNull(arr[2]);
+    }
+
+    /** */
+    @Test
+    public void testBoxedPrimitivesArrays() {
+        doTestBoxedPrimitivesArrays(srvCache);
+        doTestBoxedPrimitivesArrays(cliCache);
+    }
+
+    /** */
+    private void doTestBoxedPrimitivesArrays(IgniteCache<Object, Object> c) {
+        Object[] data = new Object[] {
+            new Byte[] {1, 2, 3},
+            new Short[] {1, 2, 3},
+            new Integer[] {1, 2, 3},
+            new Long[] {1L, 2L, 3L},
+            new Float[] {1f, 2f, 3f},
+            new Double[] {1d, 2d, 3d},
+            new Character[] {'a', 'b', 'c'},
+            new Boolean[] {true, false},
+        };
+
+        for (Object item : data) {
+            c.put(1, item);
+
+            Object item0 = c.get(1);
+
+            if (useTypedArrays)
+                assertEquals(item.getClass(), item0.getClass());
+
+            assertTrue(Arrays.equals((Object[])item, (Object[])item0));
+
+            c.put(item, 1);
+
+            assertEquals(1, c.get(item));
+        }
     }
 
     /** */
