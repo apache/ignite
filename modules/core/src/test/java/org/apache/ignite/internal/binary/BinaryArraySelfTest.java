@@ -80,6 +80,20 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     }
 
     /** */
+    @Test
+    public void testBoxedPrimitivesArrays() {
+        doTestBoxedPrimitivesArrays(srvCache);
+        doTestBoxedPrimitivesArrays(cliCache);
+    }
+
+    /** */
+    @Test
+    public void testBinaryModeArray() {
+        doTestBinaryModeArray(srvCache);
+        doTestBinaryModeArray(cliCache);
+    }
+
+    /** */
     private void doTestArrayKey(IgniteCache<Object, Object> c) {
         TestClass1[] key1 = {new TestClass1(), new TestClass1()};
         TestClass1[] key2 = {};
@@ -156,13 +170,6 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     }
 
     /** */
-    @Test
-    public void testBinaryModeArray() {
-        doTestBinaryModeArray(srvCache);
-        doTestBinaryModeArray(cliCache);
-    }
-
-    /** */
     private void doTestBinaryModeArray(IgniteCache<Object, Object> c) {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         Object obj = c.withKeepBinary().get(1);
@@ -173,6 +180,35 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
             assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
 
         assertTrue(c.remove(1));
+    }
+
+    /** */
+    private void doTestBoxedPrimitivesArrays(IgniteCache<Object, Object> c) {
+        Object[] data = new Object[] {
+            new Byte[] {1, 2, 3},
+            new Short[] {1, 2, 3},
+            new Integer[] {1, 2, 3},
+            new Long[] {1L, 2L, 3L},
+            new Float[] {1f, 2f, 3f},
+            new Double[] {1d, 2d, 3d},
+            new Character[] {'a', 'b', 'c'},
+            new Boolean[] {true, false},
+        };
+
+        for (Object item : data) {
+            c.put(1, item);
+
+            Object item0 = c.get(1);
+
+            if (useTypedArrays)
+                assertEquals(item.getClass(), item0.getClass());
+
+            assertTrue(Arrays.equals((Object[])item, (Object[])item0));
+
+            c.put(item, 1);
+
+            assertEquals(1, c.get(item));
+        }
     }
 
     /** */
@@ -262,42 +298,6 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals("string", arr[0]);
         assertEquals(1L, arr[1]);
         assertNull(arr[2]);
-    }
-
-    /** */
-    @Test
-    public void testBoxedPrimitivesArrays() {
-        doTestBoxedPrimitivesArrays(srvCache);
-        doTestBoxedPrimitivesArrays(cliCache);
-    }
-
-    /** */
-    private void doTestBoxedPrimitivesArrays(IgniteCache<Object, Object> c) {
-        Object[] data = new Object[] {
-            new Byte[] {1, 2, 3},
-            new Short[] {1, 2, 3},
-            new Integer[] {1, 2, 3},
-            new Long[] {1L, 2L, 3L},
-            new Float[] {1f, 2f, 3f},
-            new Double[] {1d, 2d, 3d},
-            new Character[] {'a', 'b', 'c'},
-            new Boolean[] {true, false},
-        };
-
-        for (Object item : data) {
-            c.put(1, item);
-
-            Object item0 = c.get(1);
-
-            if (useTypedArrays)
-                assertEquals(item.getClass(), item0.getClass());
-
-            assertTrue(Arrays.equals((Object[])item, (Object[])item0));
-
-            c.put(item, 1);
-
-            assertEquals(1, c.get(item));
-        }
     }
 
     /** */
