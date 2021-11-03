@@ -44,7 +44,7 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
     /**
      * Constructor.
      *
-     * @param newRow New row.
+     * @param newRow       New row.
      * @param onlyIfExists Whether to insert a new row only if a previous one exists.
      */
     public GetAndReplaceInvokeClosure(@NotNull DataRow newRow, boolean onlyIfExists) {
@@ -53,19 +53,22 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@Nullable DataRow row) {
+    @Override
+    public void call(@Nullable DataRow row) {
         oldRow = row;
 
         replaces = row != null || !onlyIfExists;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DataRow newRow() {
+    @Override
+    public @Nullable DataRow newRow() {
         return newRow;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable OperationType operationType() {
+    @Override
+    public @Nullable OperationType operationType() {
         return replaces ? OperationType.WRITE : OperationType.NOOP;
     }
 
@@ -79,7 +82,8 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public Boolean result() {
+    @Override
+    public Boolean result() {
         return replaces;
     }
 }

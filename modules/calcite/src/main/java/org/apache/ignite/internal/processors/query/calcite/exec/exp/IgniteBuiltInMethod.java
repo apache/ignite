@@ -14,26 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
-
 import org.apache.calcite.linq4j.tree.Types;
 
 /**
  * Built-in methods.
  */
 public enum IgniteBuiltInMethod {
-    /** */
+    /**
+     *
+     */
     SYSTEM_RANGE2(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class),
 
-    /** */
+    /**
+     *
+     */
     SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class);
 
-    /** */
+    /**
+     *
+     */
     public final Method method;
 
-    /** */
+    /**
+     *
+     */
     IgniteBuiltInMethod(Method method) {
         this.method = method;
     }

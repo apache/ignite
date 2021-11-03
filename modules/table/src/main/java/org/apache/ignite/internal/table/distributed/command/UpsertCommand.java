@@ -37,8 +37,7 @@ public class UpsertCommand implements WriteCommand {
     private byte[] rowBytes;
 
     /**
-     * Creates a new instance of UpsertCommand with the given row to be upserted.
-     * The {@code row} should not be {@code null}.
+     * Creates a new instance of UpsertCommand with the given row to be upserted. The {@code row} should not be {@code null}.
      *
      * @param row Binary row.
      */
@@ -56,8 +55,9 @@ public class UpsertCommand implements WriteCommand {
      * @return Binary row.
      */
     public BinaryRow getRow() {
-        if (row == null)
+        if (row == null) {
             row = new ByteBufferRow(rowBytes);
+        }
 
         return row;
     }

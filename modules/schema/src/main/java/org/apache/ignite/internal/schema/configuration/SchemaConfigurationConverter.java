@@ -105,7 +105,7 @@ public class SchemaConfigurationConverter {
     /**
      * Convert SortedIndexColumn to IndexColumnChange.
      *
-     * @param col IndexColumnChange.
+     * @param col     IndexColumnChange.
      * @param colInit IndexColumnChange to fulfill.
      * @return IndexColumnChange to get result from.
      */
@@ -130,7 +130,7 @@ public class SchemaConfigurationConverter {
     /**
      * Convert TableIndex to TableIndexChange.
      *
-     * @param idx TableIndex.
+     * @param idx    TableIndex.
      * @param idxChg TableIndexChange to fulfill.
      * @return TableIndexChange to get result from.
      */
@@ -140,7 +140,7 @@ public class SchemaConfigurationConverter {
 
         switch (idx.type().toUpperCase()) {
             case HASH_TYPE:
-                HashIndexDefinition hashIdx = (HashIndexDefinition)idx;
+                HashIndexDefinition hashIdx = (HashIndexDefinition) idx;
 
                 String[] colNames = hashIdx.columns().stream().map(IndexColumnDefinition::name).toArray(String[]::new);
 
@@ -149,7 +149,7 @@ public class SchemaConfigurationConverter {
                 break;
 
             case PARTIAL_TYPE:
-                PartialIndexDefinition partIdx = (PartialIndexDefinition)idx;
+                PartialIndexDefinition partIdx = (PartialIndexDefinition) idx;
 
                 idxChg.changeUniq(partIdx.unique());
                 idxChg.changeExpr(partIdx.expr());
@@ -157,21 +157,23 @@ public class SchemaConfigurationConverter {
                 idxChg.changeColumns(colsChg -> {
                     int colIdx = 0;
 
-                    for (SortedIndexColumnDefinition col : partIdx.columns())
+                    for (SortedIndexColumnDefinition col : partIdx.columns()) {
                         colsChg.create(String.valueOf(colIdx++), colInit -> convert(col, colInit));
+                    }
                 });
 
                 break;
 
             case SORTED_TYPE:
-                SortedIndexDefinition sortIdx = (SortedIndexDefinition)idx;
+                SortedIndexDefinition sortIdx = (SortedIndexDefinition) idx;
                 idxChg.changeUniq(sortIdx.unique());
 
                 idxChg.changeColumns(colsInit -> {
                     int colIdx = 0;
 
-                    for (SortedIndexColumnDefinition col : sortIdx.columns())
+                    for (SortedIndexColumnDefinition col : sortIdx.columns()) {
                         colsInit.create(String.valueOf(colIdx++), colInit -> convert(col, colInit));
+                    }
                 });
 
                 break;
@@ -242,30 +244,30 @@ public class SchemaConfigurationConverter {
     /**
      * Convert ColumnType to ColumnTypeChange.
      *
-     * @param colType ColumnType.
+     * @param colType    ColumnType.
      * @param colTypeChg ColumnTypeChange to fulfill.
      * @return ColumnTypeChange to get result from
      */
     public static ColumnTypeChange convert(ColumnType colType, ColumnTypeChange colTypeChg) {
         String typeName = colType.typeSpec().name().toUpperCase();
 
-        if (types.containsKey(typeName))
+        if (types.containsKey(typeName)) {
             colTypeChg.changeType(typeName);
-        else {
+        } else {
             colTypeChg.changeType(typeName);
 
             switch (typeName) {
                 case "BITMASK":
                 case "BLOB":
                 case "STRING":
-                    ColumnType.VarLenColumnType varLenColType = (ColumnType.VarLenColumnType)colType;
+                    ColumnType.VarLenColumnType varLenColType = (ColumnType.VarLenColumnType) colType;
 
                     colTypeChg.changeLength(varLenColType.length());
 
                     break;
 
                 case "DECIMAL":
-                    ColumnType.DecimalColumnType numColType = (ColumnType.DecimalColumnType)colType;
+                    ColumnType.DecimalColumnType numColType = (ColumnType.DecimalColumnType) colType;
 
                     colTypeChg.changePrecision(numColType.precision());
                     colTypeChg.changeScale(numColType.scale());
@@ -273,7 +275,7 @@ public class SchemaConfigurationConverter {
                     break;
 
                 case "NUMBER":
-                    ColumnType.NumberColumnType numType = (ColumnType.NumberColumnType)colType;
+                    ColumnType.NumberColumnType numType = (ColumnType.NumberColumnType) colType;
 
                     colTypeChg.changePrecision(numType.precision());
 
@@ -282,7 +284,7 @@ public class SchemaConfigurationConverter {
                 case "TIME":
                 case "DATETIME":
                 case "TIMESTAMP":
-                    ColumnType.TemporalColumnType temporalColType = (ColumnType.TemporalColumnType)colType;
+                    ColumnType.TemporalColumnType temporalColType = (ColumnType.TemporalColumnType) colType;
 
                     colTypeChg.changePrecision(temporalColType.precision());
 
@@ -306,9 +308,9 @@ public class SchemaConfigurationConverter {
         String typeName = colTypeView.type().toUpperCase();
         ColumnType res = types.get(typeName);
 
-        if (res != null)
+        if (res != null) {
             return res;
-        else {
+        } else {
             switch (typeName) {
                 case "BITMASK":
                     int bitmaskLen = colTypeView.length();
@@ -352,7 +354,7 @@ public class SchemaConfigurationConverter {
     /**
      * Convert column to column change.
      *
-     * @param col Column to convert.
+     * @param col    Column to convert.
      * @param colChg Column
      * @return ColumnChange to get result from.
      */
@@ -360,8 +362,9 @@ public class SchemaConfigurationConverter {
         colChg.changeName(col.name());
         colChg.changeType(colTypeInit -> convert(col.type(), colTypeInit));
 
-        if (col.defaultValue() != null)
+        if (col.defaultValue() != null) {
             colChg.changeDefaultValue(col.defaultValue().toString());
+        }
 
         colChg.changeNullable(col.nullable());
 
@@ -376,16 +379,16 @@ public class SchemaConfigurationConverter {
      */
     public static ColumnDefinition convert(ColumnView colView) {
         return new ColumnDefinitionImpl(
-            colView.name(),
-            convert(colView.type()),
-            colView.nullable(),
-            colView.defaultValue());
+                colView.name(),
+                convert(colView.type()),
+                colView.nullable(),
+                colView.defaultValue());
     }
 
     /**
      * Convert table schema to table changer.
      *
-     * @param tbl Table schema to convert.
+     * @param tbl    Table schema to convert.
      * @param tblChg Change to fulfill.
      * @return TableChange to get result from.
      */
@@ -395,20 +398,22 @@ public class SchemaConfigurationConverter {
         tblChg.changeIndices(idxsChg -> {
             int idxIdx = 0;
 
-            for (IndexDefinition idx : tbl.indices())
+            for (IndexDefinition idx : tbl.indices()) {
                 idxsChg.create(String.valueOf(idxIdx++), idxInit -> convert(idx, idxInit));
+            }
         });
 
         tblChg.changeColumns(colsChg -> {
             int colIdx = 0;
 
-            for (ColumnDefinition col : tbl.columns())
+            for (ColumnDefinition col : tbl.columns()) {
                 colsChg.create(String.valueOf(colIdx++), colChg -> convert(col, colChg));
+            }
         });
 
         tblChg.changePrimaryKey(pkCng -> {
             pkCng.changeColumns(tbl.keyColumns().toArray(String[]::new))
-                .changeAffinityColumns(tbl.affinityColumns().toArray(String[]::new));
+                    .changeAffinityColumns(tbl.affinityColumns().toArray(String[]::new));
         });
 
         return tblChg;
@@ -433,8 +438,8 @@ public class SchemaConfigurationConverter {
     public static TableDefinitionImpl convert(TableView tblView) {
         String canonicalName = tblView.name();
         int sepPos = canonicalName.indexOf('.');
-        String schemaName = canonicalName.substring(0, sepPos);
-        String tableName = canonicalName.substring(sepPos + 1);
+        final String schemaName = canonicalName.substring(0, sepPos);
+        final String tableName = canonicalName.substring(sepPos + 1);
 
         NamedListView<? extends ColumnView> colsView = tblView.columns();
 
@@ -473,7 +478,7 @@ public class SchemaConfigurationConverter {
     /**
      * Create table.
      *
-     * @param tbl Table to create.
+     * @param tbl        Table to create.
      * @param tblsChange Tables change to fulfill.
      * @return TablesChange to get result from.
      */
@@ -484,7 +489,7 @@ public class SchemaConfigurationConverter {
     /**
      * Drop table.
      *
-     * @param tbl table to drop.
+     * @param tbl        table to drop.
      * @param tblsChange TablesChange change to fulfill.
      * @return TablesChange to get result from.
      */
@@ -495,7 +500,7 @@ public class SchemaConfigurationConverter {
     /**
      * Add index.
      *
-     * @param idx Index to add.
+     * @param idx       Index to add.
      * @param tblChange TableChange to fulfill.
      * @return TableChange to get result from.
      */
@@ -517,7 +522,7 @@ public class SchemaConfigurationConverter {
     /**
      * Add table column.
      *
-     * @param column Column to add.
+     * @param column    Column to add.
      * @param tblChange TableChange to fulfill.
      * @return TableChange to get result from.
      */
@@ -529,7 +534,7 @@ public class SchemaConfigurationConverter {
      * Drop table column.
      *
      * @param columnName column name to drop.
-     * @param tblChange TableChange to fulfill.
+     * @param tblChange  TableChange to fulfill.
      * @return TableChange to get result from.
      */
     public static TableChange dropColumn(String columnName, TableChange tblChange) {
@@ -546,52 +551,47 @@ public class SchemaConfigurationConverter {
         assert cls != null;
 
         // Primitives.
-        if (cls == byte.class)
+        if (cls == byte.class) {
             return ColumnType.INT8;
-        else if (cls == short.class)
+        } else if (cls == short.class) {
             return ColumnType.INT16;
-        else if (cls == int.class)
+        } else if (cls == int.class) {
             return ColumnType.INT32;
-        else if (cls == long.class)
+        } else if (cls == long.class) {
             return ColumnType.INT64;
-        else if (cls == float.class)
+        } else if (cls == float.class) {
             return ColumnType.FLOAT;
-        else if (cls == double.class)
+        } else if (cls == double.class) {
             return ColumnType.DOUBLE;
-
-            // Boxed primitives.
-        else if (cls == Byte.class)
+        } else if (cls == Byte.class) { // Boxed primitives.
             return ColumnType.INT8;
-        else if (cls == Short.class)
+        } else if (cls == Short.class) {
             return ColumnType.INT16;
-        else if (cls == Integer.class)
+        } else if (cls == Integer.class) {
             return ColumnType.INT32;
-        else if (cls == Long.class)
+        } else if (cls == Long.class) {
             return ColumnType.INT64;
-        else if (cls == Float.class)
+        } else if (cls == Float.class) {
             return ColumnType.FLOAT;
-        else if (cls == Double.class)
+        } else if (cls == Double.class) {
             return ColumnType.DOUBLE;
-
-            // Temporal types.
-        else if (cls == LocalDate.class)
+        } else if (cls == LocalDate.class) { // Temporal types.
             return ColumnType.DATE;
-        else if (cls == LocalTime.class)
+        } else if (cls == LocalTime.class) {
             return ColumnType.time(ColumnType.TemporalColumnType.DEFAULT_PRECISION);
-        else if (cls == LocalDateTime.class)
+        } else if (cls == LocalDateTime.class) {
             return ColumnType.datetime(ColumnType.TemporalColumnType.DEFAULT_PRECISION);
-        else if (cls == Instant.class)
+        } else if (cls == Instant.class) {
             return ColumnType.timestamp(ColumnType.TemporalColumnType.DEFAULT_PRECISION);
-
-            // Other types
-        else if (cls == String.class)
+        } else if (cls == String.class) { // Other types
             return ColumnType.string();
-        else if (cls == UUID.class)
+        } else if (cls == UUID.class) {
             return ColumnType.UUID;
-        else if (cls == BigInteger.class)
+        } else if (cls == BigInteger.class) {
             return ColumnType.numberOf();
-        else if (cls == BigDecimal.class)
+        } else if (cls == BigDecimal.class) {
             return ColumnType.decimalOf();
+        }
 
         return null;
     }

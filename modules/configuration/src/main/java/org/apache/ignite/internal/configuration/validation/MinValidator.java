@@ -27,10 +27,11 @@ import org.apache.ignite.configuration.validation.Validator;
  */
 public class MinValidator implements Validator<Min, Number> {
     /** {@inheritDoc} */
-    @Override public void validate(Min annotation, ValidationContext<Number> ctx) {
+    @Override
+    public void validate(Min annotation, ValidationContext<Number> ctx) {
         if (ctx.getNewValue().longValue() < annotation.value()) {
             ctx.addIssue(new ValidationIssue(
-                "Configuration value '" + ctx.currentKey() + "' must not be less than " + annotation.value()
+                    "Configuration value '" + ctx.currentKey() + "' must not be less than " + annotation.value()
             ));
         }
     }

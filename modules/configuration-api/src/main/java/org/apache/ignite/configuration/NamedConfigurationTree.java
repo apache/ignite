@@ -22,13 +22,12 @@ import org.apache.ignite.configuration.notifications.ConfigurationNamedListListe
 /**
  * Configuration tree representing arbitrary set of named underlying configuration tree of the same type.
  *
- * @param <T> Type of the underlying configuration tree.
- * @param <VIEW> Value type of the underlying node.
- * @param <CHANGE> Type of the object that changes underlying nodes values.
+ * @param <T>      Type of the underlying configuration tree.
+ * @param <VIEWT>   Value type of the underlying node.
+ * @param <CHANGET> Type of the object that changes underlying nodes values.
  */
-public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW>, VIEW, CHANGE extends VIEW>
-    extends ConfigurationTree<NamedListView<VIEW>, NamedListChange<VIEW, CHANGE>>
-{
+public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEWT>, VIEWT, CHANGET extends VIEWT>
+        extends ConfigurationTree<NamedListView<VIEWT>, NamedListChange<VIEWT, CHANGET>> {
     /**
      * Get named configuration by name.
      *
@@ -42,20 +41,20 @@ public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW>, V
      *
      * @param listener Listener.
      */
-    void listenElements(ConfigurationNamedListListener<VIEW> listener);
+    void listenElements(ConfigurationNamedListListener<VIEWT> listener);
 
     /**
      * Removes named-list-specific configuration values listener.
      *
      * @param listener Listener.
      */
-    void stopListenElements(ConfigurationNamedListListener<VIEW> listener);
+    void stopListenElements(ConfigurationNamedListListener<VIEWT> listener);
 
     /**
-     * Returns a placeholder that allows you to add listeners for changing configuration value
-     * of any element of the named list and any of its nested configurations.
-     * <p>
-     * NOTE: {@link ConfigurationListenOnlyException} will be thrown when trying to get/update the configuration values.
+     * Returns a placeholder that allows you to add listeners for changing configuration value of any element of the named list and any of
+     * its nested configurations.
+     *
+     * <p>NOTE: {@link ConfigurationListenOnlyException} will be thrown when trying to get/update the configuration values.
      *
      * @return Placeholder to add listeners for any configuration.
      */

@@ -29,60 +29,60 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
 public class IgniteCliRunner {
     /** CLI usage message. */
     private static final String USAGE = "IgniteCliRunner [--config conf] nodeName";
-
+    
     /**
      * Main method for run new Ignite node.
      *
-     * For CLI args info see {@link IgniteCliRunner#USAGE}
+     * <p>For CLI args info see {@link IgniteCliRunner#USAGE}
      *
      * @param args CLI args to start new node.
      * @throws IOException if any issues with reading config file.
      */
     public static void main(String[] args) throws IOException {
         Args parsedArgs = null;
-
+        
         try {
             parsedArgs = Args.parseArgs(args);
-        }
-        catch (Args.ParseException e) {
-            if (e.getMessage() != null)
+        } catch (Args.ParseException e) {
+            if (e.getMessage() != null) {
                 System.out.println(e.getMessage() + "\n");
-
+            }
+            
             System.out.println(USAGE);
-
+            
             System.exit(1);
         }
-
+        
         var ignition = new IgnitionImpl();
-
+        
         // TODO use the work dir provided as a parameter: https://issues.apache.org/jira/browse/IGNITE-15060
         ignition.start(
-            parsedArgs.nodeName,
-            parsedArgs.config != null ? parsedArgs.config.toAbsolutePath() : null,
-            Path.of("work", parsedArgs.nodeName));
+                parsedArgs.nodeName,
+                parsedArgs.config != null ? parsedArgs.config.toAbsolutePath() : null,
+                Path.of("work", parsedArgs.nodeName));
     }
-
+    
     /**
      * Simple value object with parsed CLI args of ignite runner.
      */
     private static class Args {
         /** Name of the node. */
         private final String nodeName;
-
+        
         /** Path to config file. */
         private final Path config;
-
+        
         /**
          * Creates new instance with parsed arguments.
          *
          * @param nodeName Name of the node.
-         * @param config Path to config file.
+         * @param config   Path to config file.
          */
         private Args(String nodeName, Path config) {
             this.nodeName = nodeName;
             this.config = config;
         }
-
+        
         /**
          * Simple CLI arguments parser.
          *
@@ -91,24 +91,23 @@ public class IgniteCliRunner {
          * @throws ParseException if required args are absent.
          */
         private static Args parseArgs(String[] args) throws ParseException {
-            if (args.length == 1)
+            if (args.length == 1) {
                 return new Args(args[0], null);
-            else if (args.length == 3) {
+            } else if (args.length == 3) {
                 if ("--config".equals(args[0])) {
                     try {
                         return new Args(args[2], Path.of(args[1]));
-                    }
-                    catch (InvalidPathException e) {
+                    } catch (InvalidPathException e) {
                         throw new ParseException("Couldn't parse configuration path.");
                     }
-                }
-                else
+                } else {
                     throw new ParseException();
-            }
-            else
+                }
+            } else {
                 throw new ParseException();
+            }
         }
-
+        
         /**
          * Exception for indicate any problems with parsing CLI args.
          */
@@ -121,7 +120,7 @@ public class IgniteCliRunner {
             private ParseException(String msg) {
                 super(msg);
             }
-
+            
             /**
              * Creates new exception of parsing.
              */

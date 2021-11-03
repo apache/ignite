@@ -36,7 +36,7 @@ public final class IgniteClientConfigurationImpl implements IgniteClientConfigur
     /** Connect timeout, in milliseconds. */
     private final long connectTimeout;
 
-    /** Reconnect throttling period, in milliseconds.  */
+    /** Reconnect throttling period, in milliseconds. */
     private final long reconnectThrottlingPeriod;
 
     /** Reconnect throttling retries. */
@@ -44,9 +44,10 @@ public final class IgniteClientConfigurationImpl implements IgniteClientConfigur
 
     /**
      * Constructor.
-     *  @param addressFinder Address finder.
-     * @param addresses Addresses.
-     * @param retryLimit Retry limit.
+     *
+     * @param addressFinder  Address finder.
+     * @param addresses      Addresses.
+     * @param retryLimit     Retry limit.
      * @param connectTimeout Socket connect timeout.
      */
     public IgniteClientConfigurationImpl(
@@ -66,32 +67,38 @@ public final class IgniteClientConfigurationImpl implements IgniteClientConfigur
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClientAddressFinder addressesFinder() {
+    @Override
+    public IgniteClientAddressFinder addressesFinder() {
         return addressFinder;
     }
 
     /** {@inheritDoc} */
-    @Override public String[] addresses() {
+    @Override
+    public String[] addresses() {
         return addresses == null ? null : addresses.clone();
     }
 
     /** {@inheritDoc} */
-    @Override public int retryLimit() {
+    @Override
+    public int retryLimit() {
         return retryLimit;
     }
 
     /** {@inheritDoc} */
-    @Override public long connectTimeout() {
+    @Override
+    public long connectTimeout() {
         return connectTimeout;
     }
 
     /** {@inheritDoc} */
-    @Override public long reconnectThrottlingPeriod() {
+    @Override
+    public long reconnectThrottlingPeriod() {
         return reconnectThrottlingPeriod;
     }
 
     /** {@inheritDoc} */
-    @Override public int reconnectThrottlingRetries() {
+    @Override
+    public int reconnectThrottlingRetries() {
         return reconnectThrottlingRetries;
     }
 }

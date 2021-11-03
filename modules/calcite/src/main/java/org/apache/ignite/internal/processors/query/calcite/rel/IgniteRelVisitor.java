@@ -166,6 +166,7 @@ public interface IgniteRelVisitor<T> {
 
     /**
      * Visits a relational node and calculates a result on the basis of node meta information.
+     *
      * @param rel Relational node.
      * @return Visit result.
      */

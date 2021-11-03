@@ -18,4 +18,5 @@
 /**
  * Contains classes for node/cluster configuration related operation.
  */
+
 package org.apache.ignite.cli.builtins.config;

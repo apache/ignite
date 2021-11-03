@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -40,7 +39,7 @@ import org.apache.calcite.tools.RelBuilder;
 public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     /** Instance. */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
-
+    
     /**
      * Constructor.
      *
@@ -49,70 +48,78 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     private LogicalOrToUnionRule(Config config) {
         super(config);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
+    @Override
+    public void onMatch(RelOptRuleCall call) {
         final LogicalFilter rel = call.rel(0);
         final RelOptCluster cluster = rel.getCluster();
-
+        
         RexNode dnf = RexUtil.toDnf(cluster.getRexBuilder(), rel.getCondition());
-
-        if (!dnf.isA(SqlKind.OR))
+    
+        if (!dnf.isA(SqlKind.OR)) {
             return;
-
+        }
+        
         List<RexNode> operands = RelOptUtil.disjunctions(dnf);
-
-        if (operands.size() != 2 || RexUtil.find(SqlKind.IS_NULL).anyContain(operands))
+    
+        if (operands.size() != 2 || RexUtil.find(SqlKind.IS_NULL).anyContain(operands)) {
             return;
-
+        }
+        
         RelNode input = rel.getInput(0);
-
+        
         RelNode rel0 = createUnionAll(cluster, input, operands.get(0), operands.get(1));
-
+        
         call.transformTo(rel0, Map.of(
-            createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
+                createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
         ));
     }
-
+    
     /**
      * Creates 'UnionAll' for conditions.
      *
      * @param cluster The cluster UnionAll expression will belongs to.
-     * @param input Input.
-     * @param op1 First filter condition.
-     * @param op2 Second filter condition.
+     * @param input   Input.
+     * @param op1     First filter condition.
+     * @param op2     Second filter condition.
      * @return UnionAll expression.
      */
     private RelNode createUnionAll(RelOptCluster cluster, RelNode input, RexNode op1, RexNode op2) {
         RelBuilder relBldr = relBuilderFactory.create(cluster, null);
-
+        
         return relBldr
-            .push(input).filter(op1)
-            .push(input).filter(
-                relBldr.and(op2,
-                    relBldr.or(relBldr.isNull(op1), relBldr.not(op1))))
-            .union(true)
-            .build();
+                .push(input).filter(op1)
+                .push(input).filter(
+                        relBldr.and(op2,
+                                relBldr.or(relBldr.isNull(op1), relBldr.not(op1))))
+                .union(true)
+                .build();
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends RelRule.Config {
-        /** */
+        /**
+         *
+         */
         Config DEFAULT = RelRule.Config.EMPTY
-            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-            .withDescription("LogicalOrToUnionRule")
-            .as(Config.class)
-            .withOperandFor(LogicalFilter.class);
-
+                .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+                .withDescription("LogicalOrToUnionRule")
+                .as(Config.class)
+                .withOperandFor(LogicalFilter.class);
+        
         /** Defines an operand tree for the given classes. */
         default Config withOperandFor(Class<? extends Filter> filterClass) {
             return withOperandSupplier(o -> o.operand(filterClass).anyInputs())
-                .as(Config.class);
+                    .as(Config.class);
         }
-
+        
         /** {@inheritDoc} */
-        @Override default LogicalOrToUnionRule toRule() {
+        @Override
+        default LogicalOrToUnionRule toRule() {
             return new LogicalOrToUnionRule(this);
         }
     }

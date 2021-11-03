@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.metastorage.server;
 
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.metastorage.server.RevisionCondition.Type.EQUAL;
 import static org.apache.ignite.internal.metastorage.server.RevisionCondition.Type.GREATER;
 import static org.apache.ignite.internal.metastorage.server.RevisionCondition.Type.GREATER_OR_EQUAL;
@@ -27,6 +25,8 @@ import static org.apache.ignite.internal.metastorage.server.RevisionCondition.Ty
 import static org.apache.ignite.internal.metastorage.server.RevisionCondition.Type.NOT_EQUAL;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
+
 /**
  * Tests for entry revision condition.
  *
@@ -34,10 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class RevisionConditionTest {
     /** Entry key. */
-    private static final byte[] KEY = new byte[] {1};
+    private static final byte[] KEY = new byte[]{1};
 
     /** Entry value. */
-    private static final byte[] VAL = new byte[] {2};
+    private static final byte[] VAL = new byte[]{2};
 
     /**
      * Tests revisions equality.

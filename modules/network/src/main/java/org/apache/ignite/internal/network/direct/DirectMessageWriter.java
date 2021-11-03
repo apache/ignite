@@ -39,35 +39,39 @@ public class DirectMessageWriter implements MessageWriter {
 
     /**
      * @param serializationRegistry Serialization registry.
-     * @param protoVer Protocol version.
+     * @param protoVer              Protocol version.
      */
     public DirectMessageWriter(MessageSerializationRegistry serializationRegistry, byte protoVer) {
         state = new DirectMessageState<>(StateItem.class, () -> new StateItem(serializationRegistry, protoVer));
     }
 
     /** {@inheritDoc} */
-    @Override public void setBuffer(ByteBuffer buf) {
+    @Override
+    public void setBuffer(ByteBuffer buf) {
         state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */
-    @Override public void setCurrentWriteClass(Class<? extends NetworkMessage> msgCls) {
+    @Override
+    public void setCurrentWriteClass(Class<? extends NetworkMessage> msgCls) {
         // No-op.
     }
 
     /** {@inheritDoc} */
     // TODO: compress the header https://issues.apache.org/jira/browse/IGNITE-14818
-    @Override public boolean writeHeader(short groupType, short messageType, byte fieldCnt) {
+    @Override
+    public boolean writeHeader(short groupType, short messageType, byte fieldCnt) {
         DirectByteBufferStream stream = state.item().stream;
 
         // first part of the header might have already been sent in a previous write attempt
         if (!state.item().partialHdrWritten) {
             stream.writeShort(groupType);
 
-            if (stream.lastFinished())
+            if (stream.lastFinished()) {
                 state.item().partialHdrWritten = true;
-            else
+            } else {
                 return false;
+            }
         }
 
         stream.writeShort(messageType);
@@ -76,7 +80,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByte(String name, byte val) {
+    @Override
+    public boolean writeByte(String name, byte val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeByte(val);
@@ -85,7 +90,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeShort(String name, short val) {
+    @Override
+    public boolean writeShort(String name, short val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeShort(val);
@@ -94,7 +100,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeInt(String name, int val) {
+    @Override
+    public boolean writeInt(String name, int val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeInt(val);
@@ -103,7 +110,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeLong(String name, long val) {
+    @Override
+    public boolean writeLong(String name, long val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeLong(val);
@@ -112,7 +120,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeFloat(String name, float val) {
+    @Override
+    public boolean writeFloat(String name, float val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeFloat(val);
@@ -121,7 +130,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeDouble(String name, double val) {
+    @Override
+    public boolean writeDouble(String name, double val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeDouble(val);
@@ -130,7 +140,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeChar(String name, char val) {
+    @Override
+    public boolean writeChar(String name, char val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeChar(val);
@@ -139,7 +150,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeBoolean(String name, boolean val) {
+    @Override
+    public boolean writeBoolean(String name, boolean val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeBoolean(val);
@@ -148,7 +160,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByteArray(String name, @Nullable byte[] val) {
+    @Override
+    public boolean writeByteArray(String name, @Nullable byte[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeByteArray(val);
@@ -157,7 +170,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByteArray(String name, byte[] val, long off, int len) {
+    @Override
+    public boolean writeByteArray(String name, byte[] val, long off, int len) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeByteArray(val, off, len);
@@ -166,7 +180,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeShortArray(String name, @Nullable short[] val) {
+    @Override
+    public boolean writeShortArray(String name, @Nullable short[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeShortArray(val);
@@ -175,7 +190,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeIntArray(String name, @Nullable int[] val) {
+    @Override
+    public boolean writeIntArray(String name, @Nullable int[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeIntArray(val);
@@ -184,7 +200,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeLongArray(String name, @Nullable long[] val) {
+    @Override
+    public boolean writeLongArray(String name, @Nullable long[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeLongArray(val);
@@ -193,7 +210,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeLongArray(String name, long[] val, int len) {
+    @Override
+    public boolean writeLongArray(String name, long[] val, int len) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeLongArray(val, len);
@@ -202,7 +220,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeFloatArray(String name, @Nullable float[] val) {
+    @Override
+    public boolean writeFloatArray(String name, @Nullable float[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeFloatArray(val);
@@ -211,7 +230,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeDoubleArray(String name, @Nullable double[] val) {
+    @Override
+    public boolean writeDoubleArray(String name, @Nullable double[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeDoubleArray(val);
@@ -220,7 +240,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeCharArray(String name, @Nullable char[] val) {
+    @Override
+    public boolean writeCharArray(String name, @Nullable char[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeCharArray(val);
@@ -229,7 +250,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeBooleanArray(String name, @Nullable boolean[] val) {
+    @Override
+    public boolean writeBooleanArray(String name, @Nullable boolean[] val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeBooleanArray(val);
@@ -238,7 +260,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeString(String name, String val) {
+    @Override
+    public boolean writeString(String name, String val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeString(val);
@@ -247,7 +270,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeBitSet(String name, BitSet val) {
+    @Override
+    public boolean writeBitSet(String name, BitSet val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeBitSet(val);
@@ -256,7 +280,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeUuid(String name, UUID val) {
+    @Override
+    public boolean writeUuid(String name, UUID val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeUuid(val);
@@ -265,7 +290,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeIgniteUuid(String name, IgniteUuid val) {
+    @Override
+    public boolean writeIgniteUuid(String name, IgniteUuid val) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeIgniteUuid(val);
@@ -274,7 +300,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(String name, @Nullable NetworkMessage msg) {
+    @Override
+    public boolean writeMessage(String name, @Nullable NetworkMessage msg) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeMessage(msg, this);
@@ -283,7 +310,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType) {
+    @Override
+    public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeObjectArray(arr, itemType, this);
@@ -292,7 +320,8 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
+    @Override
+    public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeCollection(col, itemType, this);
@@ -301,8 +330,9 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType) {
+    @Override
+    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
+            MessageCollectionItemType valType) {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeMap(map, keyType, valType, this);
@@ -311,47 +341,59 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isHeaderWritten() {
+    @Override
+    public boolean isHeaderWritten() {
         return state.item().hdrWritten;
     }
 
     /** {@inheritDoc} */
-    @Override public void onHeaderWritten() {
+    @Override
+    public void onHeaderWritten() {
         state.item().hdrWritten = true;
     }
 
     /** {@inheritDoc} */
-    @Override public int state() {
+    @Override
+    public int state() {
         return state.item().state;
     }
 
     /** {@inheritDoc} */
-    @Override public void incrementState() {
+    @Override
+    public void incrementState() {
         state.item().state++;
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeInnerMessageWrite() {
+    @Override
+    public void beforeInnerMessageWrite() {
         state.forward();
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInnerMessageWrite(boolean finished) {
+    @Override
+    public void afterInnerMessageWrite(boolean finished) {
         state.backward(finished);
     }
 
     /** {@inheritDoc} */
-    @Override public void reset() {
+    @Override
+    public void reset() {
         state.reset();
     }
 
     /**
+     *
      */
     private static class StateItem implements DirectMessageStateItem {
-        /** */
+        /**
+         *
+         */
         private final DirectByteBufferStream stream;
 
-        /** */
+        /**
+         *
+         */
         private int state;
 
         /**
@@ -381,7 +423,8 @@ public class DirectMessageWriter implements MessageWriter {
         }
 
         /** {@inheritDoc} */
-        @Override public void reset() {
+        @Override
+        public void reset() {
             state = 0;
             partialHdrWritten = false;
             hdrWritten = false;

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.table;
 
+import static java.util.concurrent.CompletableFuture.allOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.schema.Column;
@@ -40,30 +43,39 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static java.util.concurrent.CompletableFuture.allOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-/** */
+/**
+ *
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class TxTest {
     /** Accounts table. */
     private Table accounts;
 
-    /** */
+    /**
+     *
+     */
     public static final double BALANCE_1 = 500;
 
-    /** */
+    /**
+     *
+     */
     public static final double BALANCE_2 = 500;
 
-    /** */
+    /**
+     *
+     */
     public static final double DELTA = 500;
 
-    /** */
+    /**
+     *
+     */
     @Mock
     private IgniteTransactions igniteTransactions;
 
-    /** */
+    /**
+     *
+     */
     @Mock
     private Transaction tx;
 
@@ -73,9 +85,9 @@ public class TxTest {
     @BeforeEach
     public void before() {
         SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[]{new Column("accountNumber", NativeTypes.INT64, false)},
-            new Column[]{new Column("balance", NativeTypes.DOUBLE, false)}
+                1,
+                new Column[]{new Column("accountNumber", NativeTypes.INT64, false)},
+                new Column[]{new Column("balance", NativeTypes.DOUBLE, false)}
         );
 
         accounts = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
@@ -147,16 +159,16 @@ public class TxTest {
      */
     @Test
     public void testTxAsync() {
-        igniteTransactions.beginAsync().thenApply(tx -> accounts.recordView().withTransaction(tx)).
-            thenCompose(txAcc -> txAcc.getAsync(makeKey(1))
-            .thenCombine(txAcc.getAsync(makeKey(2)), Pair::new)
-            .thenCompose(pair -> allOf(
-                txAcc.upsertAsync(makeRecord(1, pair.getFirst().doubleValue("balance") - DELTA)),
-                txAcc.upsertAsync(makeRecord(2, pair.getSecond().doubleValue("balance") + DELTA))
-                )
-            )
-            .thenApply(ignore -> txAcc.transaction())
-        ).thenCompose(Transaction::commitAsync);
+        igniteTransactions.beginAsync().thenApply(tx -> accounts.recordView().withTransaction(tx))
+                .thenCompose(txAcc -> txAcc.getAsync(makeKey(1))
+                        .thenCombine(txAcc.getAsync(makeKey(2)), Pair::new)
+                        .thenCompose(pair -> allOf(
+                                        txAcc.upsertAsync(makeRecord(1, pair.getFirst().doubleValue("balance") - DELTA)),
+                                        txAcc.upsertAsync(makeRecord(2, pair.getSecond().doubleValue("balance") + DELTA))
+                                )
+                        )
+                        .thenApply(ignore -> txAcc.transaction())
+                ).thenCompose(Transaction::commitAsync);
 
         Mockito.verify(tx).commitAsync();
 
@@ -169,16 +181,16 @@ public class TxTest {
      */
     @Test
     public void testTxAsyncKeyValue() {
-        igniteTransactions.beginAsync().thenApply(tx -> accounts.keyValueView().withTransaction(tx)).
-            thenCompose(txAcc -> txAcc.getAsync(makeKey(1))
-            .thenCombine(txAcc.getAsync(makeKey(2)), Pair::new)
-            .thenCompose(pair -> allOf(
-                txAcc.putAsync(makeKey(1), makeValue(pair.getFirst().doubleValue("balance") - DELTA)),
-                txAcc.putAsync(makeKey(2), makeValue(pair.getSecond().doubleValue("balance") + DELTA))
-                )
-            )
-            .thenApply(ignore -> txAcc.transaction())
-        ).thenCompose(Transaction::commitAsync);
+        igniteTransactions.beginAsync().thenApply(tx -> accounts.keyValueView().withTransaction(tx))
+                .thenCompose(txAcc -> txAcc.getAsync(makeKey(1))
+                        .thenCombine(txAcc.getAsync(makeKey(2)), Pair::new)
+                        .thenCompose(pair -> allOf(
+                                        txAcc.putAsync(makeKey(1), makeValue(pair.getFirst().doubleValue("balance") - DELTA)),
+                                        txAcc.putAsync(makeKey(2), makeValue(pair.getSecond().doubleValue("balance") + DELTA))
+                                )
+                        )
+                        .thenApply(ignore -> txAcc.transaction())
+                ).thenCompose(Transaction::commitAsync);
 
         Mockito.verify(tx).commitAsync();
 
@@ -195,7 +207,7 @@ public class TxTest {
     }
 
     /**
-     * @param id The id.
+     * @param id      The id.
      * @param balance The balance.
      * @return The value tuple.
      */

@@ -19,28 +19,37 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-
 import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.internal.thread.StripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 
-/** */
+/**
+ *
+ */
 public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.UncaughtExceptionHandler {
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
 
-    /** */
+    /**
+     *
+     */
     private static final IgniteLogger LOG = IgniteLogger.forClass(QueryTaskExecutorImpl.class);
 
-    /** */
+    /**
+     *
+     */
     private final String nodeName;
 
-    /** */
+    /**
+     *
+     */
     private volatile StripedThreadPoolExecutor stripedThreadPoolExecutor;
 
-    /** */
-    private Thread.UncaughtExceptionHandler eHnd;
+    /**
+     *
+     */
+    private Thread.UncaughtExceptionHandler exHnd;
 
     /**
      * @param nodeName Node name.
@@ -50,65 +59,73 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, Thread.Uncaught
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override
+    public void start() {
         this.stripedThreadPoolExecutor = new StripedThreadPoolExecutor(
-            4,
-            NamedThreadFactory.threadPrefix(nodeName, "calciteQry"),
-            null,
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
+                4,
+                NamedThreadFactory.threadPrefix(nodeName, "calciteQry"),
+                null,
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME
         );
     }
 
     /**
-     * @param eHnd Uncaught exception handler.
+     * @param exHnd Uncaught exception handler.
      */
-    public void exceptionHandler(Thread.UncaughtExceptionHandler eHnd) {
-        this.eHnd = eHnd;
+    public void exceptionHandler(Thread.UncaughtExceptionHandler exHnd) {
+        this.exHnd = exHnd;
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
+    @Override
+    public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
         stripedThreadPoolExecutor.execute(
-            () -> {
-                try {
-                    qryTask.run();
-                }
-                catch (Throwable e) {
-                    LOG.warn("Uncaught exception", e);
+                () -> {
+                    try {
+                        qryTask.run();
+                    } catch (Throwable e) {
+                        LOG.warn("Uncaught exception", e);
 
-                    /*
-                     * No exceptions are rethrown here to preserve the current thread from being destroyed,
-                     * because other queries may be pinned to the current thread id.
-                     * However, unrecoverable errors must be processed by FailureHandler.
-                     */
-                    uncaughtException(Thread.currentThread(), e);
-                }
-            },
-            hash(qryId, fragmentId)
+                        /*
+                         * No exceptions are rethrown here to preserve the current thread from being destroyed,
+                         * because other queries may be pinned to the current thread id.
+                         * However, unrecoverable errors must be processed by FailureHandler.
+                         */
+                        uncaughtException(Thread.currentThread(), e);
+                    }
+                },
+                hash(qryId, fragmentId)
         );
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask) {
+    @Override
+    public CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask) {
         return stripedThreadPoolExecutor.submit(qryTask, hash(qryId, fragmentId));
     }
 
     /** {@inheritDoc} */
-    @Override public void uncaughtException(Thread t, Throwable e) {
-        if (eHnd != null)
-            eHnd.uncaughtException(t, e);
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        if (exHnd != null) {
+            exHnd.uncaughtException(t, e);
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private static int hash(UUID qryId, long fragmentId) {
         // inlined Objects.hash(...)
         return IgniteUtils.safeAbs(31 * (31 + (qryId != null ? qryId.hashCode() : 0)) + Long.hashCode(fragmentId));
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
-        if (stripedThreadPoolExecutor != null)
+    @Override
+    public void stop() {
+        if (stripedThreadPoolExecutor != null) {
             stripedThreadPoolExecutor.shutdownNow();
+        }
     }
 }

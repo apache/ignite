@@ -41,9 +41,9 @@ public class ColumnDefinitionImpl implements ColumnDefinition {
     /**
      * Constructor.
      *
-     * @param name Column name.
-     * @param type Column type.
-     * @param nullable Nullability flag.
+     * @param name       Column name.
+     * @param type       Column type.
+     * @param nullable   Nullability flag.
      * @param defValExpr Default value.
      */
     public ColumnDefinitionImpl(String name, ColumnType type, boolean nullable, @Nullable Object defValExpr) {
@@ -54,27 +54,32 @@ public class ColumnDefinitionImpl implements ColumnDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return name;
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnType type() {
+    @Override
+    public ColumnType type() {
         return type;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean nullable() {
+    @Override
+    public boolean nullable() {
         return nullable;
     }
 
     /** {@inheritDoc} */
-    @Override public Object defaultValue() {
+    @Override
+    public Object defaultValue() {
         return defValExpr;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(ColumnDefinitionImpl.class, this);
     }
 }

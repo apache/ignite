@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -35,55 +34,64 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
  * Physical node for REDUCE phase of INTERSECT operator.
  */
 public class IgniteReduceIntersect extends IgniteIntersect implements IgniteReduceSetOp {
-    /** */
+    /**
+     *
+     */
     public IgniteReduceIntersect(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        RelNode input,
-        boolean all,
-        RelDataType rowType
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            RelNode input,
+            boolean all,
+            RelDataType rowType
     ) {
         super(cluster, traitSet, List.of(input), all);
-
+        
         this.rowType = rowType;
     }
-
-    /** */
+    
+    /**
+     *
+     */
     public IgniteReduceIntersect(RelInput input) {
         this(
-            input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getInput(),
-            input.getBoolean("all", false),
-            input.getRowType("rowType")
+                input.getCluster(),
+                input.getTraitSet().replace(IgniteConvention.INSTANCE),
+                input.getInput(),
+                input.getBoolean("all", false),
+                input.getRowType("rowType")
         );
     }
-
+    
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw)
-            .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
-
+                .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
+        
         return pw;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+    @Override
+    public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         return new IgniteReduceIntersect(getCluster(), traitSet, sole(inputs), all, rowType);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteReduceIntersect clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteReduceIntersect clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceIntersect(cluster, getTraitSet(), sole(inputs), all, rowType);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public int aggregateFieldsCount() {
+    @Override
+    public int aggregateFieldsCount() {
         return rowType.getFieldCount() + 2 /* At least two fields required for count aggregation. */;
     }
 }

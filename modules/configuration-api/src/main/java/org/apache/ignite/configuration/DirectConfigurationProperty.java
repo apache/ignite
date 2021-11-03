@@ -21,22 +21,22 @@ import org.apache.ignite.configuration.annotation.DirectAccess;
 
 /**
  * Similar to a {@link ConfigurationProperty} but allows retrieving "direct" values.
- * <p>
- * "Direct" properties always return the most recent value. This makes sense in distributed scenarios, when a local
- * configuration storage may fall behind due to network lags, asynchronous logic, etc. In this case the "direct"
- * property will be retrieved from the distributed storage directly (hence the name).
- * <p>
- * For Named Lists there exists an additional guarantee: if a Named List node has been deleted and then re-created
- * under the same name, it can still be accessed using the same instance of a {@link ConfigurationProperty}, regardless
- * of the fact that it is a completely new node.
- * <p>
- * This is a hack that is intentionally made ugly to use, because it breaks the configuration abstraction and
- * essentially allows to "look into the future" of the distributed property, skipping some intermediate updates.
  *
- * @param <VIEW> Read-only view of the property value.
+ * <p>"Direct" properties always return the most recent value. This makes sense in distributed scenarios, when a local configuration storage
+ * may fall behind due to network lags, asynchronous logic, etc. In this case the "direct" property will be retrieved from the distributed
+ * storage directly (hence the name).
+ *
+ * <p>For Named Lists there exists an additional guarantee: if a Named List node has been deleted and then re-created under the same name,
+ * it can still be accessed using the same instance of a {@link ConfigurationProperty}, regardless of the fact that it is a completely new
+ * node.
+ *
+ * <p>This is a hack that is intentionally made ugly to use, because it breaks the configuration abstraction and essentially allows to "look
+ * into the future" of the distributed property, skipping some intermediate updates.
+ *
+ * @param <VIEWT> Read-only view of the property value.
  * @see DirectAccess
  */
-public interface DirectConfigurationProperty<VIEW> {
+public interface DirectConfigurationProperty<VIEWT> {
     /** Value of this property. */
-    VIEW directValue();
+    VIEWT directValue();
 }

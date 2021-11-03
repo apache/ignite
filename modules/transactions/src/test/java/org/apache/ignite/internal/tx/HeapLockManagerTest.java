@@ -19,9 +19,12 @@ package org.apache.ignite.internal.tx;
 
 import org.apache.ignite.internal.tx.impl.HeapLockManager;
 
-/** */
+/**
+ *
+ */
 public class HeapLockManagerTest extends AbstractLockManagerTest {
-    @Override protected LockManager newInstance() {
+    @Override
+    protected LockManager newInstance() {
         return new HeapLockManager();
     }
 }

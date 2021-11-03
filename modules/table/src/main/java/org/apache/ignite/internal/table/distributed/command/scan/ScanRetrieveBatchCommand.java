@@ -22,23 +22,24 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Scan retrieve batch command for PartitionListener that retrieves batch of data from previously prepared server scan,
- * see {@link ScanInitCommand} for more details.
+ * Scan retrieve batch command for PartitionListener that retrieves batch of data from previously prepared server scan, see {@link
+ * ScanInitCommand} for more details.
  */
 public class ScanRetrieveBatchCommand implements WriteCommand {
     /** Amount of items to retrieve. */
     private final int itemsToRetrieveCnt;
 
     /** Id of scan that is associated with the current command. */
-    @NotNull private final IgniteUuid scanId;
+    @NotNull
+    private final IgniteUuid scanId;
 
     /**
      * @param itemsToRetrieveCnt Amount of items to retrieve.
-     * @param scanId Id of scan that is associated with the current command.
+     * @param scanId             Id of scan that is associated with the current command.
      */
     public ScanRetrieveBatchCommand(
-        int itemsToRetrieveCnt,
-        @NotNull IgniteUuid scanId
+            int itemsToRetrieveCnt,
+            @NotNull IgniteUuid scanId
     ) {
         this.itemsToRetrieveCnt = itemsToRetrieveCnt;
         this.scanId = scanId;
@@ -54,7 +55,8 @@ public class ScanRetrieveBatchCommand implements WriteCommand {
     /**
      * @return Id of scan that is associated with the current command.
      */
-    @NotNull public IgniteUuid scanId() {
+    @NotNull
+    public IgniteUuid scanId() {
         return scanId;
     }
 }

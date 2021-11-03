@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.metastorage.server.persistence;
 
+import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.bytesToValue;
+import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.longToBytes;
+import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.rocksKeyToBytes;
+import static org.apache.ignite.internal.rocksdb.RocksUtils.checkIterator;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -35,21 +40,16 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 
-import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.bytesToValue;
-import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.longToBytes;
-import static org.apache.ignite.internal.metastorage.server.persistence.RocksStorageUtils.rocksKeyToBytes;
-import static org.apache.ignite.internal.rocksdb.RocksUtils.checkIterator;
-
 /**
- * Subscription on updates of entries corresponding to the given keys range (where the upper bound is unlimited)
- * and starting from the given revision number.
+ * Subscription on updates of entries corresponding to the given keys range (where the upper bound is unlimited) and starting from the given
+ * revision number.
  */
 class WatchCursor implements Cursor<WatchEvent> {
     /** Storage. */
-    private final RocksDBKeyValueStorage storage;
+    private final RocksDbKeyValueStorage storage;
 
     /** Key predicate. */
-    private final Predicate<byte[]> p;
+    private final Predicate<byte[]> predicate;
 
     /** Iterator for this cursor. */
     private final Iterator<WatchEvent> it;
@@ -74,36 +74,40 @@ class WatchCursor implements Cursor<WatchEvent> {
      * Constructor.
      *
      * @param storage Storage.
-     * @param rev Starting revision.
-     * @param p Key predicate.
+     * @param rev     Starting revision.
+     * @param predicate       Key predicate.
      */
-    WatchCursor(RocksDBKeyValueStorage storage, long rev, Predicate<byte[]> p) {
+    WatchCursor(RocksDbKeyValueStorage storage, long rev, Predicate<byte[]> predicate) {
         this.storage = storage;
-        this.p = p;
+        this.predicate = predicate;
         this.lastRetRev = rev - 1;
         this.nativeIterator = storage.newDataIterator(options);
         this.it = createIterator();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public WatchEvent next() {
+    @Override
+    public WatchEvent next() {
         return it.next();
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         IgniteUtils.closeAll(options, nativeIterator);
     }
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public Iterator<WatchEvent> iterator() {
+    @Override
+    public Iterator<WatchEvent> iterator() {
         return it;
     }
 
@@ -116,14 +120,16 @@ class WatchCursor implements Cursor<WatchEvent> {
     private Iterator<WatchEvent> createIterator() {
         return new Iterator<>() {
             /** {@inheritDoc} */
-            @Override public boolean hasNext() {
+            @Override
+            public boolean hasNext() {
                 storage.lock().readLock().lock();
 
                 try {
-                    if (nextRetRev != -1)
+                    if (nextRetRev != -1) {
                         // Next revision is already calculated and is not -1, meaning that there is a set of keys
                         // matching the revision and the predicate.
                         return true;
+                    }
 
                     while (true) {
                         long curRev = lastRetRev + 1;
@@ -135,8 +141,7 @@ class WatchCursor implements Cursor<WatchEvent> {
                         if (!nativeIterator.isValid()) {
                             try {
                                 nativeIterator.refresh();
-                            }
-                            catch (RocksDBException e) {
+                            } catch (RocksDBException e) {
                                 throw new IgniteInternalException(e);
                             }
                         }
@@ -147,7 +152,7 @@ class WatchCursor implements Cursor<WatchEvent> {
 
                             byte[] key = rocksKeyToBytes(nativeIterator.key());
 
-                            if (p.test(key)) {
+                            if (predicate.test(key)) {
                                 // Current revision matches.
                                 nextRetRev = curRev;
 
@@ -157,27 +162,29 @@ class WatchCursor implements Cursor<WatchEvent> {
 
                         checkIterator(nativeIterator);
 
-                        if (empty)
+                        if (empty) {
                             return false;
+                        }
 
                         // Go to the next revision.
                         lastRetRev++;
                     }
-                }
-                finally {
+                } finally {
                     storage.lock().readLock().unlock();
                 }
             }
 
             /** {@inheritDoc} */
             @Nullable
-            @Override public WatchEvent next() {
+            @Override
+            public WatchEvent next() {
                 storage.lock().readLock().lock();
 
                 try {
                     while (true) {
-                        if (!hasNext())
+                        if (!hasNext()) {
                             return null;
+                        }
 
                         var ref = new Object() {
                             boolean noItemsInRevision = true;
@@ -193,13 +200,14 @@ class WatchCursor implements Cursor<WatchEvent> {
 
                             Value val = bytesToValue(v);
 
-                            if (p.test(key)) {
+                            if (predicate.test(key)) {
                                 Entry newEntry;
 
-                                if (val.tombstone())
+                                if (val.tombstone()) {
                                     newEntry = Entry.tombstone(key, nextRetRev, val.updateCounter());
-                                else
+                                } else {
                                     newEntry = new Entry(key, val.bytes(), nextRetRev, val.updateCounter());
+                                }
 
                                 Entry oldEntry = storage.doGet(key, nextRetRev - 1, false);
 
@@ -207,11 +215,13 @@ class WatchCursor implements Cursor<WatchEvent> {
                             }
                         });
 
-                        if (ref.noItemsInRevision)
+                        if (ref.noItemsInRevision) {
                             return null;
+                        }
 
-                        if (evts.isEmpty())
+                        if (evts.isEmpty()) {
                             continue;
+                        }
 
                         // Set the last returned revision to the current revision's value.
                         lastRetRev = nextRetRev;
@@ -221,11 +231,9 @@ class WatchCursor implements Cursor<WatchEvent> {
 
                         return new WatchEvent(evts);
                     }
-                }
-                catch (RocksDBException e) {
+                } catch (RocksDBException e) {
                     throw new IgniteInternalException(e);
-                }
-                finally {
+                } finally {
                     storage.lock().readLock().unlock();
                 }
             }

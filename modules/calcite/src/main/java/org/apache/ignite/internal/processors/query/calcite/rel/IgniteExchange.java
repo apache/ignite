@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -33,66 +34,72 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
- * Relational expression that imposes a particular distribution on its input
- * without otherwise changing its content.
+ * Relational expression that imposes a particular distribution on its input without otherwise changing its content.
  */
 public class IgniteExchange extends Exchange implements IgniteRel {
     /**
      * Creates an Exchange.
      *
-     * @param cluster   Cluster this relational expression belongs to
-     * @param traitSet  Trait set
-     * @param input     Input relational expression
+     * @param cluster      Cluster this relational expression belongs to
+     * @param traitSet     Trait set
+     * @param input        Input relational expression
      * @param distribution Distribution specification
      */
     public IgniteExchange(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RelDistribution distribution) {
         super(cluster, traitSet, input, distribution);
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteExchange(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
-        return (IgniteDistribution)distribution;
+    @Override
+    public IgniteDistribution distribution() {
+        return (IgniteDistribution) distribution;
     }
 
     /** {@inheritDoc} */
-    @Override public Exchange copy(RelTraitSet traitSet, RelNode newInput, RelDistribution newDistribution) {
+    @Override
+    public Exchange copy(RelTraitSet traitSet, RelNode newInput, RelDistribution newDistribution) {
         return new IgniteExchange(getCluster(), traitSet, newInput, newDistribution);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(getInput());
         double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
         double totalBytes = rowCount * bytesPerRow;
 
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+        IgniteCostFactory costFactory = (IgniteCostFactory) planner.getCostFactory();
 
-        if (RelDistributions.BROADCAST_DISTRIBUTED.equals(distribution))
+        if (RelDistributions.BROADCAST_DISTRIBUTED.equals(distribution)) {
             totalBytes *= IgniteCost.BROADCAST_DISTRIBUTION_PENALTY;
+        }
 
         return costFactory.makeCost(rowCount, rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0, 0, totalBytes);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEnforcer() {
+    @Override
+    public boolean isEnforcer() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteExchange(cluster, getTraitSet(), sole(inputs), distribution);
     }
 }

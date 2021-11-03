@@ -38,7 +38,7 @@ public interface ConfigurationVisitor<T> {
     /**
      * Invoked on visiting regular inner node.
      *
-     * @param key Name of the node retrieved from its holder object.
+     * @param key  Name of the node retrieved from its holder object.
      * @param node Inner configuration node.
      * @return Anything that implementation decides to return.
      */
@@ -49,7 +49,7 @@ public interface ConfigurationVisitor<T> {
     /**
      * Invoked on visiting named list nodes.
      *
-     * @param key Name of the node retrieved from its holder object.
+     * @param key  Name of the node retrieved from its holder object.
      * @param node Named list inner configuration node.
      * @return Anything that implementation decides to return.
      */

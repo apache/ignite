@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import static org.apache.calcite.util.Static.RESOURCE;
+import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
+
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -56,18 +58,19 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.calcite.util.Static.RESOURCE;
-import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
-
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Decimal of Integer.MAX_VALUE for fetch/offset bounding. */
     private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
 
-    /** **/
+    /**
+     *
+     **/
     private static final int MAX_LENGTH_OF_ALIASES = 256;
 
-    /** **/
+    /**
+     *
+     **/
     private static final Set<SqlKind> HUMAN_READABLE_ALIASES_FOR;
 
     static {
@@ -97,86 +100,95 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param parameters    Dynamic parameters
      */
     public IgniteSqlValidator(SqlOperatorTable opTab, CalciteCatalogReader catalogReader,
-        IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters) {
+            IgniteTypeFactory typeFactory, SqlValidator.Config config, Object[] parameters) {
         super(opTab, catalogReader, typeFactory, config);
 
         this.parameters = parameters;
     }
 
     /** {@inheritDoc} */
-    @Override public void validateInsert(SqlInsert insert) {
-        if (insert.getTargetColumnList() == null)
+    @Override
+    public void validateInsert(SqlInsert insert) {
+        if (insert.getTargetColumnList() == null) {
             insert.setOperand(3, inferColumnList(insert));
+        }
 
         super.validateInsert(insert);
     }
 
     /** {@inheritDoc} */
-    @Override public void validateUpdate(SqlUpdate call) {
+    @Override
+    public void validateUpdate(SqlUpdate call) {
         validateUpdateFields(call);
 
         super.validateUpdate(call);
     }
 
     /** {@inheritDoc} */
-    @Override public void validateLiteral(SqlLiteral literal) {
-        if (literal.getTypeName() != SqlTypeName.DECIMAL)
+    @Override
+    public void validateLiteral(SqlLiteral literal) {
+        if (literal.getTypeName() != SqlTypeName.DECIMAL) {
             super.validateLiteral(literal);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected SqlSelect createSourceSelectForUpdate(SqlUpdate call) {
+    @Override
+    protected SqlSelect createSourceSelectForUpdate(SqlUpdate call) {
         final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
-        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier)call.getTargetTable()).names);
+        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier) call.getTargetTable()).names);
 
-        table.unwrap(IgniteTable.class).descriptor().selectForUpdateRowType((IgniteTypeFactory)typeFactory)
-            .getFieldNames().stream()
-            .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
-            .forEach(selectList::add);
+        table.unwrap(IgniteTable.class).descriptor().selectForUpdateRowType((IgniteTypeFactory) typeFactory)
+                .getFieldNames().stream()
+                .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
+                .forEach(selectList::add);
 
         int ordinal = 0;
         // Force unique aliases to avoid a duplicate for Y with SET X=Y
-        for (SqlNode exp : call.getSourceExpressionList())
+        for (SqlNode exp : call.getSourceExpressionList()) {
             selectList.add(SqlValidatorUtil.addAlias(exp, SqlUtil.deriveAliasFromOrdinal(ordinal++)));
+        }
 
         SqlNode sourceTable = call.getTargetTable();
 
         if (call.getAlias() != null) {
             sourceTable =
-                SqlValidatorUtil.addAlias(
-                    sourceTable,
-                    call.getAlias().getSimple());
+                    SqlValidatorUtil.addAlias(
+                            sourceTable,
+                            call.getAlias().getSimple());
         }
 
         return new SqlSelect(SqlParserPos.ZERO, null, selectList, sourceTable,
-            call.getCondition(), null, null, null, null, null, null, null);
+                call.getCondition(), null, null, null, null, null, null, null);
     }
 
     /** {@inheritDoc} */
-    @Override protected SqlSelect createSourceSelectForDelete(SqlDelete call) {
+    @Override
+    protected SqlSelect createSourceSelectForDelete(SqlDelete call) {
         final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
-        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier)call.getTargetTable()).names);
+        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier) call.getTargetTable()).names);
 
-        table.unwrap(IgniteTable.class).descriptor().deleteRowType((IgniteTypeFactory)typeFactory)
-            .getFieldNames().stream()
-            .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
-            .forEach(selectList::add);
+        table.unwrap(IgniteTable.class).descriptor().deleteRowType((IgniteTypeFactory) typeFactory)
+                .getFieldNames().stream()
+                .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
+                .forEach(selectList::add);
 
         SqlNode sourceTable = call.getTargetTable();
 
         if (call.getAlias() != null) {
             sourceTable =
-                SqlValidatorUtil.addAlias(
-                    sourceTable,
-                    call.getAlias().getSimple());
+                    SqlValidatorUtil.addAlias(
+                            sourceTable,
+                            call.getAlias().getSimple());
         }
 
         return new SqlSelect(SqlParserPos.ZERO, null, selectList, sourceTable,
-            call.getCondition(), null, null, null, null, null, null, null);
+                call.getCondition(), null, null, null, null, null, null, null);
     }
 
     /** {@inheritDoc} */
-    @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
+    @Override
+    protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
         checkIntegerLimit(select.getFetch(), "fetch / limit");
         checkIntegerLimit(select.getOffset(), "offset");
 
@@ -184,40 +196,43 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
-     * @param n Node to check limit.
+     * @param n        Node to check limit.
      * @param nodeName Node name.
      */
     private void checkIntegerLimit(SqlNode n, String nodeName) {
         if (n instanceof SqlLiteral) {
-            BigDecimal offFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+            BigDecimal offFetchLimit = ((SqlLiteral) n).bigDecimalValue();
 
-            if (offFetchLimit.compareTo(DEC_INT_MAX) > 0 || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
+            if (offFetchLimit.compareTo(DEC_INT_MAX) > 0 || offFetchLimit.compareTo(BigDecimal.ZERO) < 0) {
                 throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
-        }
-        else if (n instanceof SqlDynamicParam) {
+            }
+        } else if (n instanceof SqlDynamicParam) {
             // will fail in params check.
-            if (nullOrEmpty(parameters))
+            if (nullOrEmpty(parameters)) {
                 return;
+            }
 
             int idx = ((SqlDynamicParam) n).getIndex();
 
             if (idx < parameters.length) {
                 Object param = parameters[idx];
                 if (parameters[idx] instanceof Integer) {
-                    if ((Integer)param < 0)
+                    if ((Integer) param < 0) {
                         throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+                    }
                 }
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public String deriveAlias(SqlNode node, int ordinal) {
+    @Override
+    public String deriveAlias(SqlNode node, int ordinal) {
         if (node.isA(HUMAN_READABLE_ALIASES_FOR)) {
             String alias = node.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)
-                .withQuoteAllIdentifiers(false)
-                .withAlwaysUseParentheses(false)
-                .withClauseStartsLine(false)
+                    .withQuoteAllIdentifiers(false)
+                    .withAlwaysUseParentheses(false)
+                    .withClauseStartsLine(false)
             ).getSql();
 
             return alias.substring(0, Math.min(alias.length(), MAX_LENGTH_OF_ALIASES));
@@ -227,19 +242,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateAggregateParams(SqlCall aggCall,
-        @Nullable SqlNode filter, @Nullable SqlNodeList distinctList,
-        @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
+    @Override
+    public void validateAggregateParams(SqlCall aggCall,
+            @Nullable SqlNode filter, @Nullable SqlNodeList distinctList,
+            @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
         validateAggregateFunction(aggCall, (SqlAggFunction) aggCall.getOperator());
 
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
     }
 
-    /** */
+    /**
+     *
+     */
     private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
-        if (!SqlKind.AGGREGATE.contains(aggFunction.kind))
+        if (!SqlKind.AGGREGATE.contains(aggFunction.kind)) {
             throw newValidationError(call,
-                IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
+                    IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
+        }
 
         switch (aggFunction.kind) {
             case COUNT:
@@ -251,46 +270,56 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 return;
             default:
                 throw newValidationError(call,
-                    IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
+                        IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private SqlNodeList inferColumnList(SqlInsert call) {
         final SqlValidatorTable table = table(validatedNamespace(call, unknownType));
 
-        if (table == null)
+        if (table == null) {
             return null;
+        }
 
         final TableDescriptor desc = table.unwrap(TableDescriptor.class);
 
-        if (desc == null)
+        if (desc == null) {
             return null;
+        }
 
         final SqlNodeList columnList = new SqlNodeList(SqlParserPos.ZERO);
 
-        for (RelDataTypeField field : desc.insertRowType(typeFactory()).getFieldList())
+        for (RelDataTypeField field : desc.insertRowType(typeFactory()).getFieldList()) {
             columnList.add(new SqlIdentifier(field.getName(), SqlParserPos.ZERO));
+        }
 
         return columnList;
     }
 
-    /** */
+    /**
+     *
+     */
     private void validateUpdateFields(SqlUpdate call) {
-        if (call.getTargetColumnList() == null)
+        if (call.getTargetColumnList() == null) {
             return;
+        }
 
         final SqlValidatorNamespace ns = validatedNamespace(call, unknownType);
 
         final SqlValidatorTable table = table(ns);
 
-        if (table == null)
+        if (table == null) {
             return;
+        }
 
         final TableDescriptor desc = table.unwrap(TableDescriptor.class);
 
-        if (desc == null)
+        if (desc == null) {
             return;
+        }
 
         final RelDataType baseType = table.getRowType();
         final RelOptTable relOptTable = relOptTable(ns);
@@ -299,42 +328,53 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             SqlIdentifier id = (SqlIdentifier) node;
 
             RelDataTypeField target = SqlValidatorUtil.getTargetField(
-                baseType, typeFactory(), id, getCatalogReader(), relOptTable);
+                    baseType, typeFactory(), id, getCatalogReader(), relOptTable);
 
-            if (target == null)
+            if (target == null) {
                 throw newValidationError(id,
-                    RESOURCE.unknownTargetColumn(id.toString()));
+                        RESOURCE.unknownTargetColumn(id.toString()));
+            }
 
-            if (!desc.isUpdateAllowed(relOptTable, target.getIndex()))
+            if (!desc.isUpdateAllowed(relOptTable, target.getIndex())) {
                 throw newValidationError(id,
-                    IgniteResource.INSTANCE.cannotUpdateField(id.toString()));
+                        IgniteResource.INSTANCE.cannotUpdateField(id.toString()));
+            }
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private SqlValidatorTable table(SqlValidatorNamespace ns) {
         RelOptTable relOptTable = relOptTable(ns);
 
-        if (relOptTable != null)
+        if (relOptTable != null) {
             return relOptTable.unwrap(SqlValidatorTable.class);
+        }
 
         return ns.getTable();
     }
 
-    /** */
+    /**
+     *
+     */
     private RelOptTable relOptTable(SqlValidatorNamespace ns) {
         return SqlValidatorUtil.getRelOptTable(
-            ns, getCatalogReader().unwrap(Prepare.CatalogReader.class), null, null);
+                ns, getCatalogReader().unwrap(Prepare.CatalogReader.class), null, null);
     }
 
-    /** */
+    /**
+     *
+     */
     private SqlValidatorNamespace validatedNamespace(SqlNode node, RelDataType targetType) {
         SqlValidatorNamespace ns = getNamespace(node);
         validateNamespace(ns, targetType);
         return ns;
     }
 
-    /** */
+    /**
+     *
+     */
     private IgniteTypeFactory typeFactory() {
         return (IgniteTypeFactory) typeFactory;
     }

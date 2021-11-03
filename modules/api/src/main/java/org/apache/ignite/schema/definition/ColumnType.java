@@ -117,8 +117,9 @@ public class ColumnType {
      * @throws IllegalArgumentException If precision value was invalid.
      */
     public static NumberColumnType numberOf(int precision) {
-        if (precision <= 0)
+        if (precision <= 0) {
             throw new IllegalArgumentException("Precision [" + precision + "] must be positive integer value.");
+        }
 
         return new NumberColumnType(ColumnTypeSpec.NUMBER, precision);
     }
@@ -137,20 +138,23 @@ public class ColumnType {
      * Returns decimal type with given precision and scale.
      *
      * @param precision Precision.
-     * @param scale Scale.
+     * @param scale     Scale.
      * @return Decimal type.
      * @throws IllegalArgumentException If precision and/or scale values were invalid.
      */
     public static DecimalColumnType decimalOf(int precision, int scale) {
-        if (precision <= 0)
+        if (precision <= 0) {
             throw new IllegalArgumentException("Precision [" + precision + "] must be positive integer value.");
+        }
 
-        if (scale < 0)
+        if (scale < 0) {
             throw new IllegalArgumentException("Scale [" + scale + "] must be non-negative integer value.");
+        }
 
-        if (precision < scale)
-            throw new IllegalArgumentException("Precision [" + precision + "] must be" +
-                                                   " not lower than scale [ " + scale + " ].");
+        if (precision < scale) {
+            throw new IllegalArgumentException("Precision [" + precision + "] must be"
+                    + " not lower than scale [ " + scale + " ].");
+        }
 
         return new DecimalColumnType(ColumnTypeSpec.DECIMAL, precision, scale);
     }
@@ -163,15 +167,15 @@ public class ColumnType {
      */
     public static DecimalColumnType decimalOf() {
         return new DecimalColumnType(
-            ColumnTypeSpec.DECIMAL,
-            DecimalColumnType.DEFAULT_PRECISION,
-            DecimalColumnType.DEFAULT_SCALE
+                ColumnTypeSpec.DECIMAL,
+                DecimalColumnType.DEFAULT_PRECISION,
+                DecimalColumnType.DEFAULT_SCALE
         );
     }
 
     /**
-     * Returns timezone-free type representing a time of day in hours, minutes, seconds, and fractional seconds
-     * with the default precision of 6 (microseconds).
+     * Returns timezone-free type representing a time of day in hours, minutes, seconds, and fractional seconds with the default precision
+     * of 6 (microseconds).
      *
      * @return Native type.
      * @see TemporalColumnType#DEFAULT_PRECISION
@@ -183,17 +187,17 @@ public class ColumnType {
 
     /**
      * Returns timezone-free type representing a time of day in hours, minutes, seconds, and fractional seconds.
-     * <p>
-     * Precision is a number of digits in fractional seconds part,
-     * from 0 - whole seconds precision up to 9 - nanoseconds precision.
+     *
+     * <p>Precision is a number of digits in fractional seconds part, from 0 - whole seconds precision up to 9 - nanoseconds precision.
      *
      * @param precision The number of digits in fractional seconds part. Accepted values are in range [0-9].
      * @return Native type.
      * @throws IllegalArgumentException If precision value was invalid.
      */
     public static TemporalColumnType time(int precision) {
-        if (precision < 0 || precision > 9)
+        if (precision < 0 || precision > 9) {
             throw new IllegalArgumentException("Unsupported fractional seconds precision: " + precision);
+        }
 
         return new TemporalColumnType(ColumnTypeSpec.TIME, precision);
     }
@@ -211,24 +215,25 @@ public class ColumnType {
 
     /**
      * Returns timezone-free datetime encoded as (date, time).
-     * <p>
-     * Precision is a number of digits in fractional seconds part of time,
-     * from 0 - whole seconds precision up to 9 - nanoseconds precision.
+     *
+     * <p>Precision is a number of digits in fractional seconds part of time, from 0 - whole seconds precision up to 9 - nanoseconds
+     * precision.
      *
      * @param precision The number of digits in fractional seconds part. Accepted values are in range [0-9].
      * @return Native type.
      * @throws IllegalArgumentException If precision value was invalid.
      */
     public static TemporalColumnType datetime(int precision) {
-        if (precision < 0 || precision > 9)
+        if (precision < 0 || precision > 9) {
             throw new IllegalArgumentException("Unsupported fractional seconds precision: " + precision);
+        }
 
         return new TemporalColumnType(ColumnTypeSpec.DATETIME, precision);
     }
 
     /**
-     * Returns point in time as number of ticks since Jan 1, 1970 00:00:00.000 (with no timezone)
-     * with the default precision of 6 (microseconds).
+     * Returns point in time as number of ticks since Jan 1, 1970 00:00:00.000 (with no timezone) with the default precision of 6
+     * (microseconds).
      *
      * @return Native type.
      * @see TemporalColumnType#DEFAULT_PRECISION
@@ -239,19 +244,20 @@ public class ColumnType {
     }
 
     /**
-     * Returns point in time as number of ticks since Jan 1, 1970 00:00:00.000 (with no timezone).
-     * Ticks that are stored can be precised to second, millisecond, microsecond or nanosecond.
-     * <p>
-     * Precision is a number of digits in fractional seconds part of time,
-     * from 0 - whole seconds precision up to 9 - nanoseconds precision.
+     * Returns point in time as number of ticks since Jan 1, 1970 00:00:00.000 (with no timezone). Ticks that are stored can be precised to
+     * second, millisecond, microsecond or nanosecond.
+     *
+     * <p>Precision is a number of digits in fractional seconds part of time, from 0 - whole seconds precision up to 9 - nanoseconds
+     * precision.
      *
      * @param precision The number of digits in fractional seconds part. Accepted values are in range [0-9].
      * @return Native type.
      * @throws IllegalArgumentException If precision value was invalid.
      */
     public static TemporalColumnType timestamp(int precision) {
-        if (precision < 0 || precision > 9)
+        if (precision < 0 || precision > 9) {
             throw new IllegalArgumentException("Unsupported fractional seconds precision: " + precision);
+        }
 
         return new TemporalColumnType(ColumnTypeSpec.TIMESTAMP, precision);
     }
@@ -273,7 +279,7 @@ public class ColumnType {
          * Creates variable-length column type.
          *
          * @param typeSpec Type spec.
-         * @param length Type max length.
+         * @param length   Type max length.
          */
         private VarLenColumnType(ColumnTypeSpec typeSpec, int length) {
             super(typeSpec);
@@ -291,23 +297,28 @@ public class ColumnType {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            if (!super.equals(o))
+            if (!super.equals(o)) {
                 return false;
+            }
 
-            VarLenColumnType type = (VarLenColumnType)o;
+            VarLenColumnType type = (VarLenColumnType) o;
 
             return length == type.length;
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(super.hashCode(), length);
         }
     }
@@ -331,9 +342,9 @@ public class ColumnType {
         /**
          * Creates numeric column type.
          *
-         * @param typeSpec Type spec.
+         * @param typeSpec  Type spec.
          * @param precision Precision.
-         * @param scale Scale.
+         * @param scale     Scale.
          */
         private DecimalColumnType(ColumnTypeSpec typeSpec, int precision, int scale) {
             super(typeSpec);
@@ -361,23 +372,28 @@ public class ColumnType {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            if (!super.equals(o))
+            if (!super.equals(o)) {
                 return false;
+            }
 
-            DecimalColumnType type = (DecimalColumnType)o;
+            DecimalColumnType type = (DecimalColumnType) o;
 
             return precision == type.precision && scale == type.scale;
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(super.hashCode(), precision, scale);
         }
     }
@@ -395,7 +411,7 @@ public class ColumnType {
         /**
          * Constructor.
          *
-         * @param typeSpec Type specification.
+         * @param typeSpec  Type specification.
          * @param precision Precision.
          */
         private NumberColumnType(ColumnTypeSpec typeSpec, int precision) {
@@ -414,23 +430,28 @@ public class ColumnType {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            if (!super.equals(o))
+            if (!super.equals(o)) {
                 return false;
+            }
 
-            NumberColumnType type = (NumberColumnType)o;
+            NumberColumnType type = (NumberColumnType) o;
 
             return precision == type.precision;
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(super.hashCode(), precision);
         }
     }
@@ -448,9 +469,9 @@ public class ColumnType {
         /**
          * Creates temporal type.
          *
-         * @param typeSpec Type spec.
-         * @param precision Fractional seconds meaningful digits. Allowed values are 0-9,
-         * where {@code 0} means second precision, {@code 9} means 1-ns precision.
+         * @param typeSpec  Type spec.
+         * @param precision Fractional seconds meaningful digits. Allowed values are 0-9, where {@code 0} means second precision, {@code 9}
+         *                  means 1-ns precision.
          */
         private TemporalColumnType(ColumnTypeSpec typeSpec, int precision) {
             super(typeSpec);
@@ -470,23 +491,28 @@ public class ColumnType {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            if (!super.equals(o))
+            if (!super.equals(o)) {
                 return false;
+            }
 
-            TemporalColumnType type = (TemporalColumnType)o;
+            TemporalColumnType type = (TemporalColumnType) o;
 
             return precision == type.precision;
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(super.hashCode(), precision);
         }
     }
@@ -578,20 +604,24 @@ public class ColumnType {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        ColumnType type = (ColumnType)o;
+        ColumnType type = (ColumnType) o;
 
         return typeSpec == type.typeSpec;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(typeSpec);
     }
 }

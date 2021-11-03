@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.network.processor.messages;
 
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.tools.Diagnostic;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
 import org.apache.ignite.internal.network.processor.MessageClass;
 import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
 
@@ -33,7 +33,9 @@ import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
  * Class for generating Builder interfaces for Network Messages.
  */
 public class MessageBuilderGenerator {
-    /** */
+    /**
+     *
+     */
     private final ProcessingEnvironment processingEnvironment;
 
     /** Message group. */
@@ -41,7 +43,7 @@ public class MessageBuilderGenerator {
 
     /**
      * @param processingEnvironment processing environment
-     * @param messageGroup message group
+     * @param messageGroup          message group
      */
     public MessageBuilderGenerator(ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup) {
         this.processingEnvironment = processingEnvironment;
@@ -58,45 +60,45 @@ public class MessageBuilderGenerator {
         ClassName builderName = message.builderClassName();
 
         processingEnvironment.getMessager()
-            .printMessage(Diagnostic.Kind.NOTE, "Generating " + builderName, message.element());
+                .printMessage(Diagnostic.Kind.NOTE, "Generating " + builderName, message.element());
 
         // generate a setter for each getter in the original interface
         List<MethodSpec> setters = message.getters().stream()
-            .map(getter -> {
-                String getterName = getter.getSimpleName().toString();
+                .map(getter -> {
+                    String getterName = getter.getSimpleName().toString();
 
-                return MethodSpec.methodBuilder(getterName)
-                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                    .addParameter(TypeName.get(getter.getReturnType()), getterName)
-                    .returns(builderName)
-                    .build();
-            })
-            .collect(Collectors.toList());
+                    return MethodSpec.methodBuilder(getterName)
+                            .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                            .addParameter(TypeName.get(getter.getReturnType()), getterName)
+                            .returns(builderName)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         // generate a getter for each getter in the original interface
         List<MethodSpec> getters = message.getters().stream()
-            .map(getter -> {
-                String getterName = getter.getSimpleName().toString();
+                .map(getter -> {
+                    String getterName = getter.getSimpleName().toString();
 
-                return MethodSpec.methodBuilder(getterName)
-                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                    .returns(TypeName.get(getter.getReturnType()))
-                    .build();
-            })
-            .collect(Collectors.toList());
+                    return MethodSpec.methodBuilder(getterName)
+                            .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                            .returns(TypeName.get(getter.getReturnType()))
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         MethodSpec buildMethod = MethodSpec.methodBuilder("build")
-            .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-            .returns(message.className())
-            .build();
+                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                .returns(message.className())
+                .build();
 
         return TypeSpec.interfaceBuilder(builderName)
-            .addModifiers(Modifier.PUBLIC)
-            .addMethods(setters)
-            .addMethods(getters)
-            .addMethod(buildMethod)
-            .addOriginatingElement(message.element())
-            .addOriginatingElement(messageGroup.element())
-            .build();
+                .addModifiers(Modifier.PUBLIC)
+                .addMethods(setters)
+                .addMethods(getters)
+                .addMethod(buildMethod)
+                .addOriginatingElement(message.element())
+                .addOriginatingElement(messageGroup.element())
+                .build();
     }
 }

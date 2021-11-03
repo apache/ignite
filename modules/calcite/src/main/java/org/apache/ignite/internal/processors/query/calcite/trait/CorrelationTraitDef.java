@@ -21,33 +21,42 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
 
-/** */
+/**
+ *
+ */
 public class CorrelationTraitDef extends RelTraitDef<CorrelationTrait> {
-    /** */
+    /**
+     *
+     */
     public static final CorrelationTraitDef INSTANCE = new CorrelationTraitDef();
 
     /** {@inheritDoc} */
-    @Override public Class<CorrelationTrait> getTraitClass() {
+    @Override
+    public Class<CorrelationTrait> getTraitClass() {
         return CorrelationTrait.class;
     }
 
     /** {@inheritDoc} */
-    @Override public String getSimpleName() {
+    @Override
+    public String getSimpleName() {
         return "correlation";
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode convert(RelOptPlanner planner, RelNode rel, CorrelationTrait toTrait, boolean allowInfiniteCostConverters) {
+    @Override
+    public RelNode convert(RelOptPlanner planner, RelNode rel, CorrelationTrait toTrait, boolean allowInfiniteCostConverters) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canConvert(RelOptPlanner planner, CorrelationTrait fromTrait, CorrelationTrait toTrait) {
+    @Override
+    public boolean canConvert(RelOptPlanner planner, CorrelationTrait fromTrait, CorrelationTrait toTrait) {
         return fromTrait.satisfies(toTrait);
     }
 
     /** {@inheritDoc} */
-    @Override public CorrelationTrait getDefault() {
+    @Override
+    public CorrelationTrait getDefault() {
         return CorrelationTrait.UNCORRELATED;
     }
 }

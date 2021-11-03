@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.processor;
 
+import com.google.common.base.Functions;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.google.common.base.Functions;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtExecutable;
@@ -29,9 +30,8 @@ import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtReference;
 
 /**
- * Convenient wrapper for parsed source file.
- * Method and constructor signatures are represented by string containing name and list of argument types.
- * E.g.: "foo(java.lang.Integer, java.lang.String)" for method {@code public Object foo(Integer a, String b)}.
+ * Convenient wrapper for parsed source file. Method and constructor signatures are represented by string containing name and list of
+ * argument types. E.g.: "foo(java.lang.Integer, java.lang.String)" for method {@code public Object foo(Integer a, String b)}.
  */
 public class ParsedClass {
     /** Class info. */
@@ -51,6 +51,7 @@ public class ParsedClass {
 
     /**
      * Constructor.
+     *
      * @param cls Class info.
      */
     public ParsedClass(CtClass<?> cls) {
@@ -59,19 +60,21 @@ public class ParsedClass {
         this.qualifiedName = cls.getQualifiedName();
 
         this.fields = cls.getAllFields()
-            .stream()
-            .collect(Collectors.toMap(CtReference::getSimpleName, Functions.identity()));
+                .stream()
+                .collect(Collectors.toMap(CtReference::getSimpleName, Functions.identity()));
 
         this.methods = cls.getMethods()
-            .stream()
-            .collect(Collectors.toMap(this::getMethodName, Functions.identity()));
+                .stream()
+                .collect(Collectors.toMap(this::getMethodName, Functions.identity()));
 
         this.constructors = cls.getConstructors()
-            .stream()
-            .collect(Collectors.toMap(this::getMethodName, Functions.identity()));
+                .stream()
+                .collect(Collectors.toMap(this::getMethodName, Functions.identity()));
     }
 
     /**
+     * Returns qualified class name.
+     *
      * @return Qualified class name.
      */
     public String getClassName() {
@@ -80,6 +83,7 @@ public class ParsedClass {
 
     /**
      * Get method name from method meta info.
+     *
      * @param method Method meta info.
      * @return Method name.
      */
@@ -87,7 +91,7 @@ public class ParsedClass {
         final List<CtParameter<?>> parameters = method.getParameters();
 
         final String params = parameters.stream().map(parameter ->
-            parameter.getType().getQualifiedName()).collect(Collectors.joining(", ")
+                parameter.getType().getQualifiedName()).collect(Collectors.joining(", ")
         );
 
         return method.getSimpleName() + "(" + params + ")";
@@ -95,6 +99,7 @@ public class ParsedClass {
 
     /**
      * Get fields.
+     *
      * @return Fields.
      */
     public Map<String, CtFieldReference<?>> getFields() {
@@ -103,6 +108,7 @@ public class ParsedClass {
 
     /**
      * Get methods.
+     *
      * @return Methods.
      */
     public Map<String, CtMethod<?>> getMethods() {
@@ -111,6 +117,7 @@ public class ParsedClass {
 
     /**
      * Get constructors.
+     *
      * @return Constructors.
      */
     public Map<String, CtConstructor<?>> getConstructors() {

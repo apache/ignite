@@ -33,7 +33,7 @@ public class SchemaModificationException extends SchemaException {
     /**
      * Constructor with error message and cause.
      *
-     * @param msg Message.
+     * @param msg   Message.
      * @param cause Cause.
      */
     public SchemaModificationException(String msg, Throwable cause) {

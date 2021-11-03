@@ -28,8 +28,8 @@ import javax.inject.Singleton;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
 
 /**
- * Due to the nature of Ignite CLI tool it can be runned in the environment without ignitecfg file at all.
- * This class created to simplify the managing of the different cases:
+ * Due to the nature of Ignite CLI tool it can be runned in the environment without ignitecfg file at all. This class created to simplify
+ * the managing of the different cases:
  * <ul>
  *     <li>When user download binary and run it to manage any existence remote cluster</li>
  *     <li>When user download binary and run 'init' to deploy Ignite distribution on the current machine</li>
@@ -47,13 +47,13 @@ public class CliPathsConfigLoader {
     /**
      * Creates new loader.
      *
-     * @param pathRslvr System paths' resolver.
+     * @param pathRslvr  System paths' resolver.
      * @param cliVerInfo CLI version info provider.
      */
     @Inject
     public CliPathsConfigLoader(
-        SystemPathResolver pathRslvr,
-        CliVersionInfo cliVerInfo
+            SystemPathResolver pathRslvr,
+            CliVersionInfo cliVerInfo
     ) {
         this.pathRslvr = pathRslvr;
         ver = cliVerInfo.ver;
@@ -65,8 +65,9 @@ public class CliPathsConfigLoader {
      * @return IgnitePaths if config file exists, empty otherwise.
      */
     public Optional<IgnitePaths> loadIgnitePathsConfig() {
-        if (configFilePath().toFile().exists())
+        if (configFilePath().toFile().exists()) {
             return Optional.of(readConfigFile(configFilePath(), ver));
+        }
 
         return Optional.empty();
     }
@@ -81,14 +82,14 @@ public class CliPathsConfigLoader {
 
         if (ignitePaths.isPresent()) {
             if (!ignitePaths.get().validateDirs()) {
-                throw new IgniteCLIException("Some required directories are absent. " +
-                    "Try to run 'init' command to fix the issue.");
+                throw new IgniteCliException("Some required directories are absent. "
+                        + "Try to run 'init' command to fix the issue.");
             }
 
             return ignitePaths.get();
+        } else {
+            throw new IgniteCliException("To execute node module/node management commands you must run 'init' first");
         }
-        else
-            throw new IgniteCLIException("To execute node module/node management commands you must run 'init' first");
     }
 
     /**
@@ -102,7 +103,7 @@ public class CliPathsConfigLoader {
      * Reads Ignite CLI configuration file and prepare {@link IgnitePaths} instance.
      *
      * @param cfgPath Path to config file.
-     * @param ver Ignite CLI version.
+     * @param ver     Ignite CLI version.
      * @return IgnitePaths with resolved directories of current Ignite distribution.
      */
     private static IgnitePaths readConfigFile(Path cfgPath, String ver) {
@@ -110,22 +111,22 @@ public class CliPathsConfigLoader {
             Properties props = new Properties();
             props.load(inputStream);
 
-            if ((props.getProperty("bin") == null) ||
-                (props.getProperty("work") == null) ||
-                (props.getProperty("config") == null) ||
-                (props.getProperty("log") == null) )
-                throw new IgniteCLIException("Config file has wrong format. " +
-                    "It must contain correct paths to bin, work, config and log dirs");
+            if ((props.getProperty("bin") == null)
+                    || (props.getProperty("work") == null)
+                    || (props.getProperty("config") == null)
+                    || (props.getProperty("log") == null)) {
+                throw new IgniteCliException("Config file has wrong format. "
+                        + "It must contain correct paths to bin, work, config and log dirs");
+            }
 
             return new IgnitePaths(
-                Path.of(props.getProperty("bin")),
-                Path.of(props.getProperty("work")),
-                Path.of(props.getProperty("config")),
-                Path.of(props.getProperty("log")),
-                ver);
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can't read config file");
+                    Path.of(props.getProperty("bin")),
+                    Path.of(props.getProperty("work")),
+                    Path.of(props.getProperty("config")),
+                    Path.of(props.getProperty("log")),
+                    ver);
+        } catch (IOException e) {
+            throw new IgniteCliException("Can't read config file");
         }
     }
 }

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.network.processor;
 
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageReader;
@@ -25,37 +32,31 @@ import org.apache.ignite.network.serialization.MessageWriter;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
- * Test class for checking that writing and reading fields in the generated (de-)serializers is ordered
- * alphanumerically.
+ * Test class for checking that writing and reading fields in the generated (de-)serializers is ordered alphanumerically.
  */
 public class SerializationOrderTest {
-    /** */
+    /**
+     *
+     */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
-    /** */
+    /**
+     *
+     */
     private final SerializationOrderMessageSerializationFactory serializationFactory =
-        new SerializationOrderMessageSerializationFactory(messageFactory);
+            new SerializationOrderMessageSerializationFactory(messageFactory);
 
     /**
      * Tests that a generated {@link MessageSerializer} writes message fields in alphanumerical order.
      */
     @Test
     void testSerializationOrder() {
-        SerializationOrderMessage msg = messageFactory.serializationOrderMessage()
-            .a(1).b("2").c(3).d("4")
-            .build();
+        final SerializationOrderMessage msg = messageFactory.serializationOrderMessage().intA(1).strB("2").intC(3).strD("4").build();
 
-        MessageSerializer<SerializationOrderMessage> serializer = serializationFactory.createSerializer();
+        final MessageSerializer<SerializationOrderMessage> serializer = serializationFactory.createSerializer();
 
-        var mockWriter = mock(MessageWriter.class);
+        final var mockWriter = mock(MessageWriter.class);
 
         when(mockWriter.isHeaderWritten()).thenReturn(true);
         when(mockWriter.writeInt(anyString(), anyInt())).thenReturn(true);
@@ -65,10 +66,10 @@ public class SerializationOrderTest {
 
         InOrder inOrder = inOrder(mockWriter);
 
-        inOrder.verify(mockWriter).writeInt(eq("a"), eq(1));
-        inOrder.verify(mockWriter).writeString(eq("b"), eq("2"));
-        inOrder.verify(mockWriter).writeInt(eq("c"), eq(3));
-        inOrder.verify(mockWriter).writeString(eq("d"), eq("4"));
+        inOrder.verify(mockWriter).writeInt(eq("intA"), eq(1));
+        inOrder.verify(mockWriter).writeInt(eq("intC"), eq(3));
+        inOrder.verify(mockWriter).writeString(eq("strB"), eq("2"));
+        inOrder.verify(mockWriter).writeString(eq("strD"), eq("4"));
     }
 
     /**
@@ -76,9 +77,9 @@ public class SerializationOrderTest {
      */
     @Test
     void testDeserializationOrder() {
-        MessageDeserializer<SerializationOrderMessage> deserializer = serializationFactory.createDeserializer();
+        final MessageDeserializer<SerializationOrderMessage> deserializer = serializationFactory.createDeserializer();
 
-        var mockReader = mock(MessageReader.class);
+        final var mockReader = mock(MessageReader.class);
 
         when(mockReader.beforeMessageRead()).thenReturn(true);
         when(mockReader.isLastRead()).thenReturn(true);
@@ -88,9 +89,9 @@ public class SerializationOrderTest {
 
         InOrder inOrder = inOrder(mockReader);
 
-        inOrder.verify(mockReader).readInt(eq("a"));
-        inOrder.verify(mockReader).readString(eq("b"));
-        inOrder.verify(mockReader).readInt(eq("c"));
-        inOrder.verify(mockReader).readString(eq("d"));
+        inOrder.verify(mockReader).readInt(eq("intA"));
+        inOrder.verify(mockReader).readInt(eq("intC"));
+        inOrder.verify(mockReader).readString(eq("strB"));
+        inOrder.verify(mockReader).readString(eq("strD"));
     }
 }

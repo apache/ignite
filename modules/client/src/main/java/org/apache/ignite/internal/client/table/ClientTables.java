@@ -32,7 +32,9 @@ import org.apache.ignite.table.manager.IgniteTables;
  * Client tables API implementation.
  */
 public class ClientTables implements IgniteTables {
-    /** */
+    /**
+     *
+     */
     private final ReliableChannel ch;
 
     /**
@@ -45,12 +47,14 @@ public class ClientTables implements IgniteTables {
     }
 
     /** {@inheritDoc} */
-    @Override public Table createTable(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public Table createTable(String name, Consumer<TableChange> tableInitChange) {
         return createTableAsync(name, tableInitChange).join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(tableInitChange);
 
@@ -58,12 +62,14 @@ public class ClientTables implements IgniteTables {
     }
 
     /** {@inheritDoc} */
-    @Override public void alterTable(String name, Consumer<TableChange> tableChange) {
+    @Override
+    public void alterTable(String name, Consumer<TableChange> tableChange) {
         alterTableAsync(name, tableChange).join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
+    @Override
+    public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(tableChange);
 
@@ -71,12 +77,14 @@ public class ClientTables implements IgniteTables {
     }
 
     /** {@inheritDoc} */
-    @Override public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
         return createTableIfNotExistsAsync(name, tableInitChange).join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(tableInitChange);
 
@@ -84,43 +92,50 @@ public class ClientTables implements IgniteTables {
     }
 
     /** {@inheritDoc} */
-    @Override public void dropTable(String name) {
+    @Override
+    public void dropTable(String name) {
         dropTableAsync(name).join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> dropTableAsync(String name) {
+    @Override
+    public CompletableFuture<Void> dropTableAsync(String name) {
         Objects.requireNonNull(name);
 
         return ch.requestAsync(ClientOp.TABLE_DROP, w -> w.out().packString(name));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Table> tables() {
+    @Override
+    public List<Table> tables() {
         return tablesAsync().join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<List<Table>> tablesAsync() {
+    @Override
+    public CompletableFuture<List<Table>> tablesAsync() {
         return ch.serviceAsync(ClientOp.TABLES_GET, r -> {
             var in = r.in();
             var cnt = in.unpackMapHeader();
             var res = new ArrayList<Table>(cnt);
 
-            for (int i = 0; i < cnt; i++)
+            for (int i = 0; i < cnt; i++) {
                 res.add(new ClientTable(ch, in.unpackIgniteUuid(), in.unpackString()));
+            }
 
             return res;
         });
     }
 
     /** {@inheritDoc} */
-    @Override public Table table(String name) {
+    @Override
+    public Table table(String name) {
         return tableAsync(name).join();
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> tableAsync(String name) {
+    @Override
+    public CompletableFuture<Table> tableAsync(String name) {
         Objects.requireNonNull(name);
 
         return ch.serviceAsync(ClientOp.TABLE_GET, w -> w.out().packString(name),

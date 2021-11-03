@@ -17,15 +17,15 @@
 
 package org.apache.ignite.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.fakes.FakeIgnite;
 import org.apache.ignite.client.handler.ClientHandlerModule;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests thin client reconnect.
@@ -99,8 +99,9 @@ public class ReconnectTest {
     }
 
     private void stop(IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv) throws Exception {
-        if (srv == null)
+        if (srv == null) {
             return;
+        }
 
         srv.get1().stop();
         srv.get2().stop();

@@ -32,14 +32,16 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkMessage;
 
 /**
- * Class for resolving a "base" part of a (de-)serialization method based on the message type. This part is then used by
- * concrete method resolvers by prepending a "read"/"write" prefix and adding call arguments.
+ * Class for resolving a "base" part of a (de-)serialization method based on the message type. This part is then used by concrete method
+ * resolvers by prepending a "read"/"write" prefix and adding call arguments.
  *
  * @see MessageReaderMethodResolver
  * @see MessageWriterMethodResolver
  */
 class BaseMethodNameResolver {
-    /** */
+    /**
+     *
+     */
     private final ProcessingEnvironment processingEnvironment;
 
     /**
@@ -56,14 +58,15 @@ class BaseMethodNameResolver {
      * @return part of the method name, depending on the parameter type
      */
     String resolveBaseMethodName(TypeMirror parameterType) {
-        if (parameterType.getKind().isPrimitive())
+        if (parameterType.getKind().isPrimitive()) {
             return resolvePrimitiveMethodName(parameterType);
-        else if (parameterType.getKind() == TypeKind.ARRAY)
-            return resolveArrayMethodName((ArrayType)parameterType);
-        else if (parameterType.getKind() == TypeKind.DECLARED)
-            return resolveReferenceMethodName((DeclaredType)parameterType);
-        else
+        } else if (parameterType.getKind() == TypeKind.ARRAY) {
+            return resolveArrayMethodName((ArrayType) parameterType);
+        } else if (parameterType.getKind() == TypeKind.DECLARED) {
+            return resolveReferenceMethodName((DeclaredType) parameterType);
+        } else {
             throw new ProcessingException("Unsupported type for message (de-)serialization: " + parameterType);
+        }
     }
 
     /**
@@ -96,10 +99,11 @@ class BaseMethodNameResolver {
      * Resolves a "base" part of a (de-)serialization method for the given array.
      */
     private static String resolveArrayMethodName(ArrayType parameterType) {
-        if (parameterType.getComponentType().getKind().isPrimitive())
+        if (parameterType.getComponentType().getKind().isPrimitive()) {
             return resolvePrimitiveMethodName(parameterType.getComponentType()) + "Array";
-        else
+        } else {
             return "ObjectArray";
+        }
     }
 
     /**
@@ -108,21 +112,22 @@ class BaseMethodNameResolver {
     private String resolveReferenceMethodName(DeclaredType parameterType) {
         var typeUtils = new TypeUtils(processingEnvironment);
 
-        if (typeUtils.isSameType(parameterType, String.class))
+        if (typeUtils.isSameType(parameterType, String.class)) {
             return "String";
-        else if (typeUtils.isSameType(parameterType, UUID.class))
+        } else if (typeUtils.isSameType(parameterType, UUID.class)) {
             return "Uuid";
-        else if (typeUtils.isSameType(parameterType, IgniteUuid.class))
+        } else if (typeUtils.isSameType(parameterType, IgniteUuid.class)) {
             return "IgniteUuid";
-        else if (typeUtils.isSameType(parameterType, NetworkMessage.class))
+        } else if (typeUtils.isSameType(parameterType, NetworkMessage.class)) {
             return "Message";
-        else if (typeUtils.isSameType(parameterType, BitSet.class))
+        } else if (typeUtils.isSameType(parameterType, BitSet.class)) {
             return "BitSet";
-        else if (typeUtils.isSameType(parameterType, Collection.class))
+        } else if (typeUtils.isSameType(parameterType, Collection.class)) {
             return "Collection";
-        else if (typeUtils.isSameType(parameterType, Map.class))
+        } else if (typeUtils.isSameType(parameterType, Map.class)) {
             return "Map";
-        else
+        } else {
             throw new ProcessingException("Unsupported reference type for message (de-)serialization: " + parameterType);
+        }
     }
 }

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -52,27 +51,39 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class TableDescriptorImpl extends NullInitializerExpressionFactory implements TableDescriptor {
-    /** */
+    /**
+     *
+     */
     private static final ColumnDescriptor[] DUMMY = new ColumnDescriptor[0];
 
     private final TableImpl table;
 
-    /** */
+    /**
+     *
+     */
     private final ColumnDescriptor[] descriptors;
 
-    /** */
+    /**
+     *
+     */
     private final Map<String, ColumnDescriptor> descriptorsMap;
 
-    /** */
+    /**
+     *
+     */
     private final ImmutableBitSet insertFields;
 
-    /** */
+    /**
+     *
+     */
     private final ImmutableBitSet keyFields;
 
-    /** */
+    /**
+     *
+     */
     public TableDescriptorImpl(
-        TableImpl table,
-        List<ColumnDescriptor> columnDescriptors
+            TableImpl table,
+            List<ColumnDescriptor> columnDescriptors
     ) {
         ImmutableBitSet.Builder keyFieldsBuilder = ImmutableBitSet.builder();
 
@@ -80,8 +91,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         for (ColumnDescriptor descriptor : columnDescriptors) {
             descriptorsMap.put(descriptor.name(), descriptor);
 
-            if (descriptor.key())
+            if (descriptor.key()) {
                 keyFieldsBuilder.set(descriptor.fieldIndex());
+            }
         }
 
         this.descriptors = columnDescriptors.toArray(DUMMY);
@@ -93,37 +105,42 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
+    @Override
+    public RelDataType insertRowType(IgniteTypeFactory factory) {
         return rowType(factory, insertFields);
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType deleteRowType(IgniteTypeFactory factory) {
+    @Override
+    public RelDataType deleteRowType(IgniteTypeFactory factory) {
         return rowType(factory, keyFields);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
+    @Override
+    public IgniteDistribution distribution() {
         return IgniteDistributions.random();
     }
 
     /** {@inheritDoc} */
-    @Override public TableImpl table() {
+    @Override
+    public TableImpl table() {
         return table;
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Row toRow(
-        ExecutionContext<Row> ectx,
-        Tuple row,
-        RowHandler.RowFactory<Row> factory,
-        @Nullable ImmutableBitSet requiredColumns
+    @Override
+    public <RowT> RowT toRow(
+            ExecutionContext<RowT> ectx,
+            Tuple row,
+            RowHandler.RowFactory<RowT> factory,
+            @Nullable ImmutableBitSet requiredColumns
     ) {
-        RowHandler<Row> handler = factory.handler();
+        RowHandler<RowT> handler = factory.handler();
 
         assert handler == ectx.rowHandler();
 
-        Row res = factory.create();
+        RowT res = factory.create();
 
         assert handler.columnCount(res) == (requiredColumns == null ? descriptors.length : requiredColumns.cardinality());
 
@@ -133,8 +150,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
                 handler.set(i, res, row.value(desc.fieldIndex()));
             }
-        }
-        else {
+        } else {
             for (int i = 0, j = requiredColumns.nextSetBit(0); j != -1; j = requiredColumns.nextSetBit(j + 1), i++) {
                 ColumnDescriptor desc = descriptors[j];
 
@@ -146,11 +162,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Tuple toTuple(
-        ExecutionContext<Row> ectx,
-        Row row,
-        TableModify.Operation op,
-        Object arg
+    @Override
+    public <RowT> Tuple toTuple(
+            ExecutionContext<RowT> ectx,
+            RowT row,
+            TableModify.Operation op,
+            Object arg
     ) {
         switch (op) {
             case INSERT:
@@ -167,24 +184,29 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
+    @Override
+    public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         return !descriptors[colIdx].key();
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnStrategy generationStrategy(RelOptTable tbl, int colIdx) {
-        if (descriptors[colIdx].hasDefaultValue())
+    @Override
+    public ColumnStrategy generationStrategy(RelOptTable tbl, int colIdx) {
+        if (descriptors[colIdx].hasDefaultValue()) {
             return ColumnStrategy.DEFAULT;
+        }
 
         return super.generationStrategy(tbl, colIdx);
     }
 
     /** {@inheritDoc} */
-    @Override public RexNode newColumnDefaultValue(RelOptTable tbl, int colIdx, InitializerContext ctx) {
+    @Override
+    public RexNode newColumnDefaultValue(RelOptTable tbl, int colIdx, InitializerContext ctx) {
         final ColumnDescriptor desc = descriptors[colIdx];
 
-        if (!desc.hasDefaultValue())
+        if (!desc.hasDefaultValue()) {
             return super.newColumnDefaultValue(tbl, colIdx, ctx);
+        }
 
         final RexBuilder rexBuilder = ctx.getRexBuilder();
         final IgniteTypeFactory typeFactory = (IgniteTypeFactory) rexBuilder.getTypeFactory();
@@ -193,55 +215,66 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
+    @Override
+    public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         if (usedColumns == null) {
-            for (int i = 0; i < descriptors.length; i++)
+            for (int i = 0; i < descriptors.length; i++) {
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
-        }
-        else {
-            for (int i = usedColumns.nextSetBit(0); i != -1; i = usedColumns.nextSetBit(i + 1))
+            }
+        } else {
+            for (int i = usedColumns.nextSetBit(0); i != -1; i = usedColumns.nextSetBit(i + 1)) {
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+            }
         }
 
         return TypeUtils.sqlType(factory, b.build());
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDescriptor columnDescriptor(String fieldName) {
+    @Override
+    public ColumnDescriptor columnDescriptor(String fieldName) {
         return fieldName == null ? null : descriptorsMap.get(fieldName);
     }
 
     /** {@inheritDoc} */
-    @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+    @Override
+    public ColocationGroup colocationGroup(PlanningContext ctx) {
         return partitionedGroup();
     }
 
-    /** */
+    /**
+     *
+     */
     private ColocationGroup partitionedGroup() {
         List<List<String>> assignments = table.internalTable().assignments().stream()
-            .map(Collections::singletonList)
-            .collect(Collectors.toList());
+                .map(Collections::singletonList)
+                .collect(Collectors.toList());
 
         return ColocationGroup.forAssignments(assignments);
     }
 
-    /** */
-    private <Row> Tuple insertTuple(Row row, ExecutionContext<Row> ectx) {
+    /**
+     *
+     */
+    private <RowT> Tuple insertTuple(RowT row, ExecutionContext<RowT> ectx) {
         Tuple tuple = Tuple.create(descriptors.length);
 
-        RowHandler<Row> hnd = ectx.rowHandler();
+        RowHandler<RowT> hnd = ectx.rowHandler();
 
-        for (int i = 0; i < descriptors.length; i++)
+        for (int i = 0; i < descriptors.length; i++) {
             tuple.set(descriptors[i].name(), hnd.get(i, row));
+        }
 
         return tuple;
     }
 
-    /** */
-    private <Row> Tuple updateTuple(Row row, List<String> updateColList, ExecutionContext<Row> ectx) {
-        RowHandler<Row> hnd = ectx.rowHandler();
+    /**
+     *
+     */
+    private <RowT> Tuple updateTuple(RowT row, List<String> updateColList, ExecutionContext<RowT> ectx) {
+        RowHandler<RowT> hnd = ectx.rowHandler();
         int offset = descriptorsMap.size();
         Tuple tuple = Tuple.create(descriptors.length);
         Set<String> colsToSkip = new HashSet<>(updateColList);
@@ -249,8 +282,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         for (int i = 0; i < descriptors.length; i++) {
             String colName = descriptors[i].name();
 
-            if (!colsToSkip.contains(colName))
+            if (!colsToSkip.contains(colName)) {
                 tuple.set(colName, hnd.get(i, row));
+            }
         }
 
         for (int i = 0; i < updateColList.size(); i++) {
@@ -266,17 +300,20 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         return tuple;
     }
 
-    /** */
-    private <Row> Tuple deleteTuple(Row row, ExecutionContext<Row> ectx) {
-        RowHandler<Row> hnd = ectx.rowHandler();
+    /**
+     *
+     */
+    private <RowT> Tuple deleteTuple(RowT row, ExecutionContext<RowT> ectx) {
+        RowHandler<RowT> hnd = ectx.rowHandler();
         Tuple tuple = Tuple.create(keyFields.cardinality());
 
         int idx = 0;
         for (int i = 0; i < descriptors.length; i++) {
             ColumnDescriptor desc = descriptors[i];
 
-            if (desc.key())
+            if (desc.key()) {
                 tuple.set(desc.name(), hnd.get(idx++, row));
+            }
         }
 
         return tuple;

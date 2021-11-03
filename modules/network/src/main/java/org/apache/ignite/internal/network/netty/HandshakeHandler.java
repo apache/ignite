@@ -45,14 +45,16 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void handlerAdded(ChannelHandlerContext ctx) {
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
         HandshakeAction handshakeAction = manager.init(ctx.channel());
 
         handleHandshakeAction(handshakeAction, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void channelActive(ChannelHandlerContext ctx) {
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
         HandshakeAction handshakeAction = manager.onConnectionOpen(ctx.channel());
 
         manager.handshakeFuture().whenComplete((unused, throwable) -> {
@@ -69,7 +71,8 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         HandshakeAction handshakeAction = manager.onMessage(ctx.channel(), (NetworkMessage) msg);
 
         handleHandshakeAction(handshakeAction, ctx);
@@ -77,18 +80,20 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void channelInactive(ChannelHandlerContext ctx) {
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
         // If this method is called that means channel has been closed before handshake has finished or handshake
         // has failed.
         manager.handshakeFuture().completeExceptionally(
-            new HandshakeException("Channel has been closed before handshake has finished or handshake has failed")
+                new HandshakeException("Channel has been closed before handshake has finished or handshake has failed")
         );
 
         ctx.fireChannelInactive();
     }
 
     /** {@inheritDoc} */
-    @Override public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         manager.handshakeFuture().completeExceptionally(cause);
     }
 
@@ -96,7 +101,7 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
      * Handle {@link HandshakeAction}.
      *
      * @param action Handshake action.
-     * @param ctx Netty channel context.
+     * @param ctx    Netty channel context.
      */
     private void handleHandshakeAction(HandshakeAction action, ChannelHandlerContext ctx) {
         switch (action) {
@@ -109,6 +114,9 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
                 break;
 
             case NOOP:
+                break;
+
+            default:
                 break;
         }
     }

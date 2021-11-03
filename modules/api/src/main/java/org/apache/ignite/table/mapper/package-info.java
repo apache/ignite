@@ -18,4 +18,5 @@
 /**
  * Contains user classes mapping API classes and mapper builders.
  */
+
 package org.apache.ignite.table.mapper;

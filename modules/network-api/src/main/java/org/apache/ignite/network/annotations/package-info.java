@@ -18,4 +18,5 @@
 /**
  * Package with various annotations for the Network module.
  */
+
 package org.apache.ignite.network.annotations;

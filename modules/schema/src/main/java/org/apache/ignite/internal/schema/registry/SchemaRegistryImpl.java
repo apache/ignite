@@ -63,7 +63,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      * Constructor.
      *
      * @param initialVer Initial version.
-     * @param history Schema history.
+     * @param history    Schema history.
      */
     public SchemaRegistryImpl(int initialVer, Function<Integer, SchemaDescriptor> history) {
         lastVer = initialVer;
@@ -71,11 +71,13 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema(int ver) {
+    @Override
+    public SchemaDescriptor schema(int ver) {
         SchemaDescriptor desc = schemaCache.get(ver);
 
-        if (desc != null)
+        if (desc != null) {
             return desc;
+        }
 
         desc = history.apply(ver);
 
@@ -85,34 +87,40 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             return desc;
         }
 
-        if (lastVer < ver || ver <= 0)
+        if (lastVer < ver || ver <= 0) {
             throw new SchemaRegistryException("Incorrect schema version requested: ver=" + ver);
-        else
+        } else {
             throw new SchemaRegistryException("Failed to find schema: ver=" + ver);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable SchemaDescriptor schema() {
+    @Override
+    public @Nullable SchemaDescriptor schema() {
         final int lastVer0 = lastVer;
 
-        if (lastVer0 == INITIAL_SCHEMA_VERSION)
+        if (lastVer0 == INITIAL_SCHEMA_VERSION) {
             return null;
+        }
 
         return schema(lastVer0);
     }
 
     /** {@inheritDoc} */
-    @Override public int lastSchemaVersion() {
+    @Override
+    public int lastSchemaVersion() {
         return lastVer;
     }
 
     /** {@inheritDoc} */
-    @Override public Row resolve(BinaryRow row) {
+    @Override
+    public Row resolve(BinaryRow row) {
         final SchemaDescriptor rowSchema = schema(row.schemaVersion());
         final SchemaDescriptor curSchema = schema();
 
-        if (curSchema.version() == rowSchema.version())
+        if (curSchema.version() == rowSchema.version()) {
             return new Row(rowSchema, row);
+        }
 
         ColumnMapper mapping = resolveMapping(curSchema, rowSchema);
 
@@ -127,20 +135,23 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     ColumnMapper resolveMapping(SchemaDescriptor curSchema, SchemaDescriptor rowSchema) {
         assert curSchema.version() > rowSchema.version();
 
-        if (curSchema.version() == rowSchema.version() + 1)
+        if (curSchema.version() == rowSchema.version() + 1) {
             return curSchema.columnMapping();
+        }
 
-        final long mappingKey = (((long)curSchema.version()) << 32) | (rowSchema.version());
+        final long mappingKey = (((long) curSchema.version()) << 32) | (rowSchema.version());
 
         ColumnMapper mapping;
 
-        if ((mapping = mappingCache.get(mappingKey)) != null)
+        if ((mapping = mappingCache.get(mappingKey)) != null) {
             return mapping;
+        }
 
         mapping = schema(rowSchema.version() + 1).columnMapping();
 
-        for (int i = rowSchema.version() + 2; i <= curSchema.version(); i++)
+        for (int i = rowSchema.version() + 2; i <= curSchema.version(); i++) {
             mapping = ColumnMapping.mergeMapping(mapping, schema(i));
+        }
 
         mappingCache.putIfAbsent(mappingKey, mapping);
 
@@ -152,16 +163,18 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      *
      * @param desc Schema descriptor.
      * @throws SchemaRegistrationConflictException If schema of provided version was already registered.
-     * @throws SchemaRegistryException If schema of incorrect version provided.
+     * @throws SchemaRegistryException             If schema of incorrect version provided.
      */
     public void onSchemaRegistered(SchemaDescriptor desc) {
         if (lastVer == INITIAL_SCHEMA_VERSION) {
-            if (desc.version() != 1)
-                throw new SchemaRegistryException("Try to register schema of wrong version: ver=" + desc.version() + ", lastVer=" + lastVer);
-        }
-        else if (desc.version() != lastVer + 1) {
-            if (desc.version() > 0 && desc.version() <= lastVer)
+            if (desc.version() != 1) {
+                throw new SchemaRegistryException(
+                        "Try to register schema of wrong version: ver=" + desc.version() + ", lastVer=" + lastVer);
+            }
+        } else if (desc.version() != lastVer + 1) {
+            if (desc.version() > 0 && desc.version() <= lastVer) {
                 throw new SchemaRegistrationConflictException("Schema with given version has been already registered: " + desc.version());
+            }
 
             throw new SchemaRegistryException("Try to register schema of wrong version: ver=" + desc.version() + ", lastVer=" + lastVer);
         }
@@ -178,11 +191,13 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      * @throws SchemaRegistryException If incorrect schema version provided.
      */
     public void onSchemaDropped(int ver) {
-        if (ver >= lastVer || ver <= 0 || schemaCache.keySet().first() < ver)
+        if (ver >= lastVer || ver <= 0 || schemaCache.keySet().first() < ver) {
             throw new SchemaRegistryException("Incorrect schema version to clean up to: " + ver);
+        }
 
-        if (schemaCache.remove(ver) != null)
+        if (schemaCache.remove(ver) != null) {
             mappingCache.keySet().removeIf(k -> (k & 0xFFFF_FFFFL) == ver);
+        }
     }
 
     /**

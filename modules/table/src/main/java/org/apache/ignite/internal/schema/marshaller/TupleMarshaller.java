@@ -34,16 +34,7 @@ public interface TupleMarshaller {
      * @throws TupleMarshallerException If failed to marshal tuple.
      */
     Row marshal(@NotNull Tuple tuple) throws TupleMarshallerException;
-
-    /**
-     * Marshal tuple key part only.
-     *
-     * @param tuple Record tuple with key columns only.
-     * @return Table row with columns set from given tuples.
-     * @throws TupleMarshallerException If failed to marshal tuple.
-     */
-    Row marshalKey(@NotNull Tuple tuple) throws TupleMarshallerException;
-
+    
     /**
      * Marshals KV pair.
      *
@@ -53,4 +44,13 @@ public interface TupleMarshaller {
      * @throws TupleMarshallerException If failed to marshal tuple.
      */
     Row marshal(@NotNull Tuple keyTuple, @Nullable Tuple valTuple) throws TupleMarshallerException;
+    
+    /**
+     * Marshal tuple key part only.
+     *
+     * @param tuple Record tuple with key columns only.
+     * @return Table row with columns set from given tuples.
+     * @throws TupleMarshallerException If failed to marshal tuple.
+     */
+    Row marshalKey(@NotNull Tuple tuple) throws TupleMarshallerException;
 }

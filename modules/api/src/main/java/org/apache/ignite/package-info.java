@@ -18,4 +18,5 @@
 /**
  * Contains Ignite node API and classes for node lifecycle management.
  */
+
 package org.apache.ignite;

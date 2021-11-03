@@ -23,7 +23,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -70,53 +69,85 @@ import org.apache.ignite.lang.IgniteException;
  * Query planer.
  */
 public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
-    /** */
+    /**
+     *
+     */
     private final SqlOperatorTable operatorTbl;
 
-    /** */
+    /**
+     *
+     */
     private final List<Program> programs;
 
-    /** */
+    /**
+     *
+     */
     private final FrameworkConfig frameworkCfg;
 
-    /** */
+    /**
+     *
+     */
     private final PlanningContext ctx;
 
-    /** */
+    /**
+     *
+     */
     @SuppressWarnings("rawtypes")
     private final List<RelTraitDef> traitDefs;
 
-    /** */
+    /**
+     *
+     */
     private final SqlParser.Config parserCfg;
 
-    /** */
+    /**
+     *
+     */
     private final SqlToRelConverter.Config sqlToRelConverterCfg;
 
-    /** */
+    /**
+     *
+     */
     private final SqlValidator.Config validatorCfg;
 
-    /** */
+    /**
+     *
+     */
     private final SqlRexConvertletTable convertletTbl;
 
-    /** */
+    /**
+     *
+     */
     private final RexBuilder rexBuilder;
 
-    /** */
+    /**
+     *
+     */
     private final RexExecutor rexExecutor;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteTypeFactory typeFactory;
 
-    /** */
+    /**
+     *
+     */
     private final CalciteCatalogReader catalogReader;
 
-    /** */
+    /**
+     *
+     */
     private RelOptPlanner planner;
 
-    /** */
+    /**
+     *
+     */
     private SqlValidator validator;
 
-    /** */
+    /**
+     *
+     */
     private RelOptCluster cluster;
 
     /**
@@ -142,41 +173,46 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** {@inheritDoc} */
-    @Override public RelTraitSet getEmptyTraitSet() {
+    @Override
+    public RelTraitSet getEmptyTraitSet() {
         return planner().emptyTraitSet();
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         reset();
     }
 
     /** {@inheritDoc} */
-    @Override public void reset() {
+    @Override
+    public void reset() {
         planner = null;
         validator = null;
         cluster = null;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlNode parse(Reader reader) throws SqlParseException {
+    @Override
+    public SqlNode parse(Reader reader) throws SqlParseException {
         SqlNodeList sqlNodes = SqlParser.create(reader, parserCfg).parseStmtList();
 
         return sqlNodes.size() == 1 ? sqlNodes.get(0) : sqlNodes;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlNode validate(SqlNode sqlNode) throws ValidationException {
+    @Override
+    public SqlNode validate(SqlNode sqlNode) throws ValidationException {
         try {
             return validator().validate(sqlNode);
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new ValidationException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<SqlNode, RelDataType> validateAndGetType(SqlNode sqlNode) {
+    @Override
+    public Pair<SqlNode, RelDataType> validateAndGetType(SqlNode sqlNode) {
         SqlNode validatedNode = validator().validate(sqlNode);
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         return Pair.of(validatedNode, type);
@@ -190,6 +226,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      */
     public RelDataType convert(SqlDataTypeSpec typeSpec) {
         return typeSpec.deriveType(validator());
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public RelNode convert(SqlNode sql) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -207,12 +249,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode convert(SqlNode sql) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelRoot rel(SqlNode sql) {
+    @Override
+    public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
         root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
@@ -222,19 +260,19 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** {@inheritDoc} */
-    @Override public RelRoot expandView(
-        RelDataType rowType,
-        String qryStr,
-        List<String> schemaPath,
-        List<String> viewPath
+    @Override
+    public RelRoot expandView(
+            RelDataType rowType,
+            String qryStr,
+            List<String> schemaPath,
+            List<String> viewPath
     ) {
         SqlParser parser = SqlParser.create(qryStr, parserCfg);
         SqlNode sqlNode;
         try {
             sqlNode = parser.parseQuery();
-        }
-        catch (SqlParseException e) {
-//            throw new IgniteSQLException("parse failed", IgniteQueryErrorCode.PARSING, e);
+        } catch (SqlParseException e) {
+            //            throw new IgniteSQLException("parse failed", IgniteQueryErrorCode.PARSING, e);
             throw new IgniteException("parse failed", e);
         }
 
@@ -248,16 +286,18 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
+    @Override
+    public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
         return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /**
-     * Converts one relational nodes tree into another relational nodes tree
-     * based on a particular planner type, planning phase and required set of traits.
-     * @param phase Planner phase.
+     * Converts one relational nodes tree into another relational nodes tree based on a particular planner type, planning phase and required
+     * set of traits.
+     *
+     * @param phase        Planner phase.
      * @param targetTraits Target traits.
-     * @param rel Root node of relational tree.
+     * @param rel          Root node of relational tree.
      * @return The root of the new RelNode tree.
      */
     public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel) {
@@ -265,37 +305,46 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTypeFactory getTypeFactory() {
+    @Override
+    public IgniteTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
-    /** */
+    /**
+     *
+     */
     private RelOptPlanner planner() {
         if (planner == null) {
             VolcanoPlannerExt planner = new VolcanoPlannerExt(frameworkCfg.getCostFactory(), ctx);
             planner.setExecutor(rexExecutor);
             this.planner = planner;
 
-            for (RelTraitDef<?> def : traitDefs)
+            for (RelTraitDef<?> def : traitDefs) {
                 this.planner.addRelTraitDef(def);
+            }
         }
 
         return planner;
     }
 
-    /** */
+    /**
+     *
+     */
     public String dump() {
         StringWriter w = new StringWriter();
 
-        ((VolcanoPlanner)planner).dump(new PrintWriter(w));
+        ((VolcanoPlanner) planner).dump(new PrintWriter(w));
 
         return w.toString();
     }
 
-    /** */
+    /**
+     *
+     */
     private SqlValidator validator() {
-        if (validator == null)
+        if (validator == null) {
             validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+        }
 
         return validator;
     }
@@ -311,13 +360,16 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return cluster;
     }
 
-    /** */
+    /**
+     *
+     */
     private List<RelOptLattice> latices() {
         return List.of(); // TODO
     }
 
     /**
      * Returns all applicable materializations (i.e. secondary indexes) for the given rel node,
+     *
      * @return Materializations.
      */
     private List<RelOptMaterialization> materializations() {
@@ -325,68 +377,79 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /**
-     * Walks over a tree of relational expressions, replacing each
-     * {@link org.apache.calcite.rel.RelNode} with a 'slimmed down' relational
-     * expression that projects
-     * only the columns required by its consumer.
+     * Walks over a tree of relational expressions, replacing each {@link org.apache.calcite.rel.RelNode} with a 'slimmed down' relational
+     * expression that projects only the columns required by its consumer.
      *
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
      */
     protected RelRoot trimUnusedFields(RelRoot root) {
         final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-            .withConfig(sqlToRelConverterCfg)
-            // For now, don't trim if there are more than 3 joins. The projects
-            // near the leaves created by trim migrate past joins and seem to
-            // prevent join-reordering.
-            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
-            .build();
+                .withConfig(sqlToRelConverterCfg)
+                // For now, don't trim if there are more than 3 joins. The projects
+                // near the leaves created by trim migrate past joins and seem to
+                // prevent join-reordering.
+                .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
+                .build();
         SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();
         boolean dml = SqlKind.DML.contains(root.kind);
         return root.withRel(converter.trimUnusedFields(dml || ordered, root.rel));
     }
 
-    /** */
+    /**
+     *
+     */
     private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
-        SqlToRelConverter.Config config) {
+            SqlToRelConverter.Config config) {
         return new SqlToRelConverter(this, validator, reader, cluster(), convertletTbl, config);
     }
 
-    /** */
+    /**
+     *
+     */
     public void setDisabledRules(Set<String> disabledRuleNames) {
         ctx.rulesFilter(rulesSet -> {
             List<RelOptRule> newSet = new ArrayList<>();
 
             for (RelOptRule r : rulesSet) {
-                if (!disabledRuleNames.contains(shortRuleName(r.toString())))
+                if (!disabledRuleNames.contains(shortRuleName(r.toString()))) {
                     newSet.add(r);
+                }
             }
 
             return RuleSets.ofList(newSet);
         });
     }
 
-    /** */
+    /**
+     *
+     */
     private static String shortRuleName(String ruleDesc) {
         int pos = ruleDesc.indexOf('(');
 
-        if (pos == -1)
+        if (pos == -1) {
             return ruleDesc;
+        }
 
         return ruleDesc.substring(0, pos);
     }
 
-    /** */
+    /**
+     *
+     */
     private static class VolcanoPlannerExt extends VolcanoPlanner {
-        /** */
+        /**
+         *
+         */
         protected VolcanoPlannerExt(RelOptCostFactory costFactory, Context externalCtx) {
             super(costFactory, externalCtx);
             setTopDownOpt(true);
         }
 
         /** {@inheritDoc} */
-        @Override public RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
+        @Override
+        public RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
             return mq.getCumulativeCost(rel);
         }
     }

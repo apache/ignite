@@ -18,4 +18,5 @@
 /**
  * Table access API.
  */
+
 package org.apache.ignite.table;

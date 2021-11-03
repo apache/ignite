@@ -17,22 +17,21 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.IOException;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test suite for {@link IgniteUtils}.
  */
 class IgniteUtilsTest {
     /**
-     * Tests that all resources are closed by the {@link IgniteUtils#closeAll} even if {@link AutoCloseable#close}
-     * throws an exception.
+     * Tests that all resources are closed by the {@link IgniteUtils#closeAll} even if {@link AutoCloseable#close} throws an exception.
      */
     @Test
     void testCloseAll() {
@@ -40,7 +39,8 @@ class IgniteUtilsTest {
             private boolean closed = false;
 
             /** {@inheritDoc} */
-            @Override public void close() throws Exception {
+            @Override
+            public void close() throws Exception {
                 closed = true;
 
                 throw new IOException();

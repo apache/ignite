@@ -17,23 +17,27 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.io.IOException;
-import io.netty.channel.ChannelHandlerContext;
-import org.junit.jupiter.api.Test;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.netty.channel.ChannelHandlerContext;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+
 /**
  * Test class for the {@link IoExceptionSuppressingHandler}.
  */
 public class IoExceptionSuppressingHandlerTest {
-    /** */
+    /**
+     *
+     */
     private final ChannelHandlerContext context = mock(ChannelHandlerContext.class);
 
-    /** */
+    /**
+     *
+     */
     private final IoExceptionSuppressingHandler handler = new IoExceptionSuppressingHandler();
 
     /**

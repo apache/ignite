@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.configuration.validation;
 
-import org.apache.ignite.configuration.validation.OneOf;
-import org.apache.ignite.configuration.validation.ValidationContext;
-import org.apache.ignite.configuration.validation.ValidationIssue;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -31,16 +24,27 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/** */
+import org.apache.ignite.configuration.validation.OneOf;
+import org.apache.ignite.configuration.validation.ValidationContext;
+import org.apache.ignite.configuration.validation.ValidationIssue;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+
+/**
+ *
+ */
 public class OneOfValidatorTest {
-    /** */
+    /**
+     *
+     */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     public void testValidate(boolean caseSensitive) {
         // Prepare mocked annotation instance.
         OneOf oneOfAnnotation = mock(OneOf.class);
 
-        when(oneOfAnnotation.value()).thenReturn(new String[] {"foo", "bar"});
+        when(oneOfAnnotation.value()).thenReturn(new String[]{"foo", "bar"});
         when(oneOfAnnotation.caseSensitive()).thenReturn(caseSensitive);
 
         // Prepare mocked validation context.
@@ -64,17 +68,19 @@ public class OneOfValidatorTest {
         // Assert that case sencitivity affects validation.
         oneOfValidator.validate(oneOfAnnotation, ctx);
 
-        if (caseSensitive)
+        if (caseSensitive) {
             assertThat(issuesCaptor.getValue().message(), is("'x' configuration value must be one of [foo, bar] (case sensitive)"));
-        else
+        } else {
             assertThat(issuesCaptor.getAllValues(), is(empty()));
+        }
 
         // Assert that unacceptable value produces validation issue.
         oneOfValidator.validate(oneOfAnnotation, ctx);
 
-        if (caseSensitive)
+        if (caseSensitive) {
             assertThat(issuesCaptor.getValue().message(), is("'x' configuration value must be one of [foo, bar] (case sensitive)"));
-        else
+        } else {
             assertThat(issuesCaptor.getValue().message(), is("'x' configuration value must be one of [foo, bar] (case insensitive)"));
+        }
     }
 }

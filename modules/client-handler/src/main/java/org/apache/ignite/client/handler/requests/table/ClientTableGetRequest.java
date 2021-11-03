@@ -30,8 +30,8 @@ public class ClientTableGetRequest {
     /**
      * Processes the request.
      *
-     * @param in Unpacker.
-     * @param out Packer.
+     * @param in     Unpacker.
+     * @param out    Packer.
      * @param tables Ignite tables.
      * @return Future.
      */
@@ -43,10 +43,11 @@ public class ClientTableGetRequest {
         String tableName = in.unpackString();
 
         return tables.tableAsync(tableName).thenAccept(table -> {
-            if (table == null)
+            if (table == null) {
                 out.packNil();
-            else
+            } else {
                 out.packIgniteUuid(((TableImpl) table).tableId());
+            }
         });
     }
 }

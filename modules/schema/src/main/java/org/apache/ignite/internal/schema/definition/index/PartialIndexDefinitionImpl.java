@@ -32,10 +32,10 @@ public class PartialIndexDefinitionImpl extends SortedIndexDefinitionImpl implem
     /**
      * Constructor.
      *
-     * @param name Index name.
+     * @param name    Index name.
      * @param columns Index columns.
-     * @param expr Partial index expression.
-     * @param unique Unique flag.
+     * @param expr    Partial index expression.
+     * @param unique  Unique flag.
      */
     public PartialIndexDefinitionImpl(String name, List<SortedIndexColumnDefinition> columns, String expr, boolean unique) {
         super(name, columns, unique);
@@ -44,16 +44,18 @@ public class PartialIndexDefinitionImpl extends SortedIndexDefinitionImpl implem
     }
 
     /** {@inheritDoc} */
-    @Override public String expr() {
+    @Override
+    public String expr() {
         return expr;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(PartialIndexDefinition.class, this,
-            "type", type(),
-            "name", name(),
-            "uniq", unique(),
-            "cols", columns());
+                "type", type(),
+                "name", name(),
+                "uniq", unique(),
+                "cols", columns());
     }
 }

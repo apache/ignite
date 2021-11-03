@@ -27,21 +27,27 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
  * Ignite convention trait.
  */
 public class IgniteConvention extends Convention.Impl {
-    /** */
+    /**
+     *
+     */
     public static final IgniteConvention INSTANCE = new IgniteConvention();
 
-    /** */
+    /**
+     *
+     */
     private IgniteConvention() {
         super("IGNITE", IgniteRel.class);
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode enforce(RelNode rel, RelTraitSet toTraits) {
+    @Override
+    public RelNode enforce(RelNode rel, RelTraitSet toTraits) {
         return TraitUtils.enforce(rel, toTraits);
     }
 
     /** {@inheritDoc} */
-    @Override public ConventionTraitDef getTraitDef() {
+    @Override
+    public ConventionTraitDef getTraitDef() {
         return ConventionTraitDef.INSTANCE;
     }
 }

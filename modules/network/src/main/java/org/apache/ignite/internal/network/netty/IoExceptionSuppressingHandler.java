@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.io.IOException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import java.io.IOException;
 import org.apache.ignite.lang.IgniteLogger;
 
 /**
@@ -32,9 +32,10 @@ class IoExceptionSuppressingHandler extends ChannelInboundHandlerAdapter {
     /** {@inheritDoc} */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (cause instanceof IOException)
+        if (cause instanceof IOException) {
             LOG.debug(cause.getMessage(), cause);
-        else
+        } else {
             ctx.fireExceptionCaught(cause);
+        }
     }
 }

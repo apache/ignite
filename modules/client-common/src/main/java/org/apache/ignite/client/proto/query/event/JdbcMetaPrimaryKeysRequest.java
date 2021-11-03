@@ -42,7 +42,7 @@ public class JdbcMetaPrimaryKeysRequest implements ClientMessage {
      * Constructor.
      *
      * @param schemaName Schema name.
-     * @param tblName Table name.
+     * @param tblName    Table name.
      */
     public JdbcMetaPrimaryKeysRequest(String schemaName, String tblName) {
         this.schemaName = schemaName;
@@ -68,19 +68,22 @@ public class JdbcMetaPrimaryKeysRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         schemaName = ClientMessageUtils.readStringNullable(unpacker);
         tblName = ClientMessageUtils.readStringNullable(unpacker);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         ClientMessageUtils.writeStringNullable(packer, schemaName);
         ClientMessageUtils.writeStringNullable(packer, tblName);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcMetaPrimaryKeysRequest.class, this);
     }
 }

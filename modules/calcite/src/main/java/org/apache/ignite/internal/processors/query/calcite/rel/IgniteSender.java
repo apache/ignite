@@ -31,33 +31,39 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTra
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
- * Relational expression that iterates over its input
- * and sends elements to remote {@link IgniteReceiver}
+ * Relational expression that iterates over its input and sends elements to remote {@link IgniteReceiver}
  */
 public class IgniteSender extends SingleRel implements IgniteRel {
-    /** */
+    /**
+     *
+     */
     private final long exchangeId;
 
-    /** */
+    /**
+     *
+     */
     private final long targetFragmentId;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteDistribution distribution;
 
     /**
      * Creates a Sender.
-     * @param cluster  Cluster that this relational expression belongs to
-     * @param traits   Traits of this relational expression
-     * @param input    input relational expression
-     * @param exchangeId Exchange ID.
+     *
+     * @param cluster          Cluster that this relational expression belongs to
+     * @param traits           Traits of this relational expression
+     * @param input            input relational expression
+     * @param exchangeId       Exchange ID.
      * @param targetFragmentId Target fragment ID.
      */
     public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, long exchangeId,
-        long targetFragmentId, IgniteDistribution distribution) {
+            long targetFragmentId, IgniteDistribution distribution) {
         super(cluster, traits, input);
 
         assert traitSet.containsIfApplicable(distribution)
-            : "traits=" + traitSet + ", distribution" + distribution;
+                : "traits=" + traitSet + ", distribution" + distribution;
         assert distribution != RelDistributions.ANY;
 
         this.exchangeId = exchangeId;
@@ -65,41 +71,50 @@ public class IgniteSender extends SingleRel implements IgniteRel {
         this.distribution = distribution;
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteSender(RelInput input) {
         this(
-            input.getCluster(),
-            input.getTraitSet()
-                .replace(input.getDistribution())
-                .replace(IgniteConvention.INSTANCE),
-            input.getInput(),
-            ((Number)input.get("exchangeId")).longValue(),
-            ((Number)input.get("targetFragmentId")).longValue(),
-            (IgniteDistribution)input.getDistribution());
+                input.getCluster(),
+                input.getTraitSet()
+                        .replace(input.getDistribution())
+                        .replace(IgniteConvention.INSTANCE),
+                input.getInput(),
+                ((Number) input.get("exchangeId")).longValue(),
+                ((Number) input.get("targetFragmentId")).longValue(),
+                (IgniteDistribution) input.getDistribution());
     }
 
-    /** */
+    /**
+     *
+     */
     public long exchangeId() {
         return exchangeId;
     }
 
-    /** */
+    /**
+     *
+     */
     public long targetFragmentId() {
         return targetFragmentId;
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteSender(getCluster(), traitSet, sole(inputs), exchangeId, targetFragmentId, distribution);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
+    @Override
+    public IgniteDistribution distribution() {
         return distribution;
     }
 
@@ -111,34 +126,39 @@ public class IgniteSender extends SingleRel implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
-        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES)
+        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES) {
             return writer;
+        }
 
         return writer
-            .item("exchangeId", exchangeId)
-            .item("targetFragmentId", targetFragmentId)
-            .item("distribution", distribution());
+                .item("exchangeId", exchangeId)
+                .item("targetFragmentId", targetFragmentId)
+                .item("distribution", distribution());
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
-        RelTraitSet required) {
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+            RelTraitSet required) {
         throw new RuntimeException(getClass().getName()
-            + "#passThroughTraits() is not implemented.");
+                + "#passThroughTraits() is not implemented.");
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
-        RelTraitSet childTraits, int childId) {
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+            RelTraitSet childTraits, int childId) {
         throw new RuntimeException(getClass().getName()
-            + "#deriveTraits() is not implemented.");
+                + "#deriveTraits() is not implemented.");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteSender(cluster, getTraitSet(), sole(inputs), exchangeId(), targetFragmentId(), distribution());
     }
 }

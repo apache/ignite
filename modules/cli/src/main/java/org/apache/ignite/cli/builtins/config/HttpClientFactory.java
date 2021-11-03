@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cli.builtins.config;
 
+import io.micronaut.context.annotation.Factory;
 import java.net.http.HttpClient;
 import javax.inject.Singleton;
-import io.micronaut.context.annotation.Factory;
 
 /**
  * Factory for producing simple HTTP clients.
@@ -34,8 +34,8 @@ public class HttpClientFactory {
     @Singleton
     HttpClient httpClient() {
         return HttpClient
-            .newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
+                .newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
     }
 }

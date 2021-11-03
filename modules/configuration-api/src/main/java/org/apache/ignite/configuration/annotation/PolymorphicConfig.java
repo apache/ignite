@@ -17,16 +17,16 @@
 
 package org.apache.ignite.configuration.annotation;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * This annotation marks the class as a polymorphic configuration schema.
- * Has basically the same properties as a {@link Config}, but it should be treated like an abstract class in java.
+ * This annotation marks the class as a polymorphic configuration schema. Has basically the same properties as a {@link Config}, but it
+ * should be treated like an abstract class in java.
  *
  * <p>To change the type of polymorphic configuration, you must use the {@code PolymorphicConfigChange#convert}.
  *

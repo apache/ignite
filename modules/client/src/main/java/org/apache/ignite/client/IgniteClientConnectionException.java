@@ -36,7 +36,7 @@ public class IgniteClientConnectionException extends IgniteClientException {
     /**
      * Constructs a new exception with the specified cause and detail message.
      *
-     * @param msg the detail message.
+     * @param msg   the detail message.
      * @param cause the cause.
      */
     public IgniteClientConnectionException(String msg, Throwable cause) {

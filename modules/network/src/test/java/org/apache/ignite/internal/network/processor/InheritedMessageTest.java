@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.network.processor;
 
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageReader;
@@ -25,35 +32,31 @@ import org.apache.ignite.network.serialization.MessageWriter;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * Tests for support of network message inheritance hierarchies.
  *
  * @see InheritedMessage
  */
 public class InheritedMessageTest {
-    /** */
+    /**
+     *
+     */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
-    /** */
+    /**
+     *
+     */
     private final InheritedMessageSerializationFactory serializationFactory =
-        new InheritedMessageSerializationFactory(messageFactory);
+            new InheritedMessageSerializationFactory(messageFactory);
 
     /**
-     * Tests that the generated message implementation contains all fields from the superinterfaces and is serialized
-     * in the correct order.
+     * Tests that the generated message implementation contains all fields from the superinterfaces and is serialized in the correct order.
      */
     @Test
     void testSerialization() {
         InheritedMessage msg = messageFactory.inheritedMessage()
-            .x(1).y(2).z(3)
-            .build();
+                .intX(1).intY(2).intZ(3)
+                .build();
 
         MessageSerializer<InheritedMessage> serializer = serializationFactory.createSerializer();
 
@@ -66,9 +69,9 @@ public class InheritedMessageTest {
 
         InOrder inOrder = inOrder(mockWriter);
 
-        inOrder.verify(mockWriter).writeInt(eq("x"), eq(1));
-        inOrder.verify(mockWriter).writeInt(eq("y"), eq(2));
-        inOrder.verify(mockWriter).writeInt(eq("z"), eq(3));
+        inOrder.verify(mockWriter).writeInt(eq("intX"), eq(1));
+        inOrder.verify(mockWriter).writeInt(eq("intY"), eq(2));
+        inOrder.verify(mockWriter).writeInt(eq("intZ"), eq(3));
     }
 
     /**
@@ -87,8 +90,8 @@ public class InheritedMessageTest {
 
         InOrder inOrder = inOrder(mockReader);
 
-        inOrder.verify(mockReader).readInt(eq("x"));
-        inOrder.verify(mockReader).readInt(eq("y"));
-        inOrder.verify(mockReader).readInt(eq("z"));
+        inOrder.verify(mockReader).readInt(eq("intX"));
+        inOrder.verify(mockReader).readInt(eq("intY"));
+        inOrder.verify(mockReader).readInt(eq("intZ"));
     }
 }

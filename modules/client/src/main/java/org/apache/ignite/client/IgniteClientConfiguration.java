@@ -47,9 +47,9 @@ public interface IgniteClientConfiguration {
     IgniteClientAddressFinder addressesFinder();
 
     /**
-     * Gets the addresses of Ignite server nodes within a cluster. An address can be an IP address or a hostname,
-     * with or without port. If port is not set then Ignite will generate multiple addresses for default port range.
-     * See {@link IgniteClientConfiguration#DFLT_PORT}, {@link IgniteClientConfiguration#DFLT_PORT_RANGE}.
+     * Gets the addresses of Ignite server nodes within a cluster. An address can be an IP address or a hostname, with or without port. If
+     * port is not set then Ignite will generate multiple addresses for default port range. See {@link IgniteClientConfiguration#DFLT_PORT},
+     * {@link IgniteClientConfiguration#DFLT_PORT_RANGE}.
      *
      * @return Addresses.
      */

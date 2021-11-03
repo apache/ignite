@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.network.netty;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
@@ -24,10 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.ignite.internal.network.AllTypesMessage;
 import org.apache.ignite.internal.network.AllTypesMessageGenerator;
 import org.apache.ignite.internal.network.NestedMessageMessage;
@@ -43,10 +47,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Tests for {@link InboundDecoder}.
  */
@@ -58,8 +58,7 @@ public class InboundDecoderTest {
     private final MessageSerializationRegistry registry = new TestMessageSerializationRegistryImpl();
 
     /**
-     * Tests that an {@link InboundDecoder} can successfully read a message with all types supported
-     * by direct marshalling.
+     * Tests that an {@link InboundDecoder} can successfully read a message with all types supported by direct marshalling.
      *
      * @param seed Random seed.
      */
@@ -74,14 +73,14 @@ public class InboundDecoderTest {
     }
 
     /**
-     * Tests that the {@link InboundDecoder} is able to transfer a message with a nested {@code null} message
-     * (happy case is tested by {@link #testAllTypes}).
+     * Tests that the {@link InboundDecoder} is able to transfer a message with a nested {@code null} message (happy case is tested by
+     * {@link #testAllTypes}).
      */
     @Test
     public void testNullNestedMessage() {
         NestedMessageMessage msg = new TestMessagesFactory().nestedMessageMessage()
-            .nestedMessage(null)
-            .build();
+                .nestedMessage(null)
+                .build();
 
         NestedMessageMessage received = sendAndReceive(msg);
 
@@ -122,8 +121,7 @@ public class InboundDecoderTest {
     }
 
     /**
-     * Tests that an {@link InboundDecoder} doesn't hang if it encounters a byte buffer with only partially written
-     * header.
+     * Tests that an {@link InboundDecoder} doesn't hang if it encounters a byte buffer with only partially written header.
      *
      * @throws Exception If failed.
      */
@@ -136,19 +134,19 @@ public class InboundDecoderTest {
         buffer.writeByte(1);
 
         CompletableFuture
-            .runAsync(() -> {
-                channel.writeInbound(buffer);
+                .runAsync(() -> {
+                    channel.writeInbound(buffer);
 
-                // In case if a header was written partially, readInbound() should not loop forever, as
-                // there might not be new data anymore (example: remote host gone offline).
-                channel.readInbound();
-            })
-            .get(3, TimeUnit.SECONDS);
+                    // In case if a header was written partially, readInbound() should not loop forever, as
+                    // there might not be new data anymore (example: remote host gone offline).
+                    channel.readInbound();
+                })
+                .get(3, TimeUnit.SECONDS);
     }
 
     /**
-     * Tests that an {@link InboundDecoder} can handle a {@link ByteBuf} where reader index
-     * is not {@code 0} at the start of the {@link InboundDecoder#decode}.
+     * Tests that an {@link InboundDecoder} can handle a {@link ByteBuf} where reader index is not {@code 0} at the start of the {@link
+     * InboundDecoder#decode}.
      *
      * @throws Exception If failed.
      */
@@ -160,9 +158,9 @@ public class InboundDecoderTest {
 
         Mockito.doReturn(channel).when(ctx).channel();
 
-        var decoder = new InboundDecoder(registry);
+        final var decoder = new InboundDecoder(registry);
 
-        var list = new ArrayList<>();
+        final var list = new ArrayList<>();
 
         var writer = new DirectMessageWriter(registry, ConnectionManager.DIRECT_PROTOCOL_VERSION);
 
@@ -184,8 +182,9 @@ public class InboundDecoderTest {
         ByteBuf buffer = allocator.buffer();
 
         // Write first 3 bytes of a message.
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++) {
             buffer.writeByte(nioBuffer.get());
+        }
 
         decoder.decode(ctx, buffer, list);
 
@@ -193,8 +192,9 @@ public class InboundDecoderTest {
         assertEquals(0, list.size());
 
         // Write next 3 bytes of a message.
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++) {
             buffer.writeByte(nioBuffer.get());
+        }
 
         // Reader index of a buffer is not zero and it must be handled correctly by the InboundDecoder.
         decoder.decode(ctx, buffer, list);
@@ -216,8 +216,8 @@ public class InboundDecoderTest {
     }
 
     /**
-     * Source of parameters for the {@link #testAllTypes(long)} method.
-     * Creates seeds for a {@link AllTypesMessage} generation.
+     * Source of parameters for the {@link #testAllTypes(long)} method. Creates seeds for a {@link AllTypesMessage} generation.
+     *
      * @return Random seeds.
      */
     private static LongStream messageGenerationSeed() {

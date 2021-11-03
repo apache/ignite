@@ -38,8 +38,7 @@ public interface KeyValueView<K, V> {
     /**
      * Gets a value associated with the given key.
      *
-     * @param key A key which associated the value is to be returned.
-     * The key cannot be {@code null}.
+     * @param key A key which associated the value is to be returned. The key cannot be {@code null}.
      * @return Value or {@code null}, if it does not exist.
      */
     V get(@NotNull K key);
@@ -47,8 +46,7 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously gets a value associated with the given key.
      *
-     * @param key A key which associated the value is to be returned.
-     * The key cannot be {@code null}.
+     * @param key A key which associated the value is to be returned. The key cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
     @NotNull CompletableFuture<V> getAsync(@NotNull K key);
@@ -56,8 +54,7 @@ public interface KeyValueView<K, V> {
     /**
      * Get values associated with given keys.
      *
-     * @param keys Keys which associated values are to be returned.
-     * The keys cannot be {@code null}.
+     * @param keys Keys which associated values are to be returned. The keys cannot be {@code null}.
      * @return Values associated with given keys.
      */
     Map<K, V> getAll(@NotNull Collection<K> keys);
@@ -65,8 +62,7 @@ public interface KeyValueView<K, V> {
     /**
      * Get values associated with given keys.
      *
-     * @param keys Keys whose associated values are to be returned.
-     * The keys cannot be {@code null}.
+     * @param keys Keys whose associated values are to be returned. The keys cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
     @NotNull CompletableFuture<Map<K, V>> getAllAsync(@NotNull Collection<K> keys);
@@ -74,8 +70,7 @@ public interface KeyValueView<K, V> {
     /**
      * Determines if the table contains an entry for the specified key.
      *
-     * @param key A key which presence is to be tested.
-     * The key cannot be {@code null}.
+     * @param key A key which presence is to be tested. The key cannot be {@code null}.
      * @return {@code True} if a value exists for the specified key, {@code false} otherwise.
      */
     boolean contains(@NotNull K key);
@@ -83,8 +78,7 @@ public interface KeyValueView<K, V> {
     /**
      * Determines if the table contains an entry for the specified key.
      *
-     * @param key A key which presence is to be tested.
-     * The key cannot be {@code null}.
+     * @param key A key which presence is to be tested. The key cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
     CompletableFuture<Boolean> containsAsync(@NotNull K key);
@@ -92,8 +86,7 @@ public interface KeyValueView<K, V> {
     /**
      * Puts value associated with given key into the table.
      *
-     * @param key A key with which the specified value is to be associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is to be associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      */
     void put(@NotNull K key, V val);
@@ -101,8 +94,7 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously puts value associated with given key into the table.
      *
-     * @param key A key with which the specified value is to be associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is to be associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return Future representing pending completion of the operation.
      */
@@ -111,16 +103,14 @@ public interface KeyValueView<K, V> {
     /**
      * Put associated key-value pairs.
      *
-     * @param pairs Key-value pairs.
-     * The pairs cannot be {@code null}.
+     * @param pairs Key-value pairs. The pairs cannot be {@code null}.
      */
     void putAll(@NotNull Map<K, V> pairs);
 
     /**
      * Asynchronously put associated key-value pairs.
      *
-     * @param pairs Key-value pairs.
-     * The pairs cannot be {@code null}.
+     * @param pairs Key-value pairs. The pairs cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
     @NotNull CompletableFuture<Void> putAllAsync(@NotNull Map<K, V> pairs);
@@ -128,8 +118,7 @@ public interface KeyValueView<K, V> {
     /**
      * Puts new or replaces existed value associated with given key into the table.
      *
-     * @param key A key with which the specified value is to be associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is to be associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return Replaced value or {@code null}, if not existed.
      */
@@ -138,8 +127,7 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously puts new or replaces existed value associated with given key into the table.
      *
-     * @param key A key with which the specified value is to be associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is to be associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return Future representing pending completion of the operation.
      */
@@ -148,8 +136,7 @@ public interface KeyValueView<K, V> {
     /**
      * Puts value associated with given key into the table if not exists.
      *
-     * @param key A key with which the specified value is to be associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is to be associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return {@code True} if successful, {@code false} otherwise.
      */
@@ -158,8 +145,7 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously puts value associated with given key into the table if not exists.
      *
-     * @param key Key with which the specified value is to be associated.
-     * The key cannot be {@code null}.
+     * @param key Key with which the specified value is to be associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return Future representing pending completion of the operation.
      */
@@ -168,36 +154,32 @@ public interface KeyValueView<K, V> {
     /**
      * Removes value associated with given key from the table.
      *
-     * @param key A key which mapping is to be removed from the table.
-     * The key cannot be {@code null}.
+     * @param key A key which mapping is to be removed from the table. The key cannot be {@code null}.
      * @return {@code True} if a value associated with the specified key was successfully removed, {@code false} otherwise.
      */
     boolean remove(@NotNull K key);
 
     /**
-     * Asynchronously removes value associated with given key from the table.
-     *
-     * @param key A key which mapping is to be removed from the table.
-     * The key cannot be {@code null}.
-     * @return Future representing pending completion of the operation.
-     */
-    @NotNull CompletableFuture<Boolean> removeAsync(@NotNull K key);
-
-    /**
      * Removes an expected value associated with the given key from the table.
      *
-     * @param key A key which associated value is to be removed from the table.
-     * The key cannot be {@code null}.
+     * @param key A key which associated value is to be removed from the table. The key cannot be {@code null}.
      * @param val Expected value. The value cannot be {@code null}.
      * @return {@code True} if the expected value for the specified key was successfully removed, {@code false} otherwise.
      */
     boolean remove(@NotNull K key, @NotNull V val);
 
     /**
+     * Asynchronously removes value associated with given key from the table.
+     *
+     * @param key A key which mapping is to be removed from the table. The key cannot be {@code null}.
+     * @return Future representing pending completion of the operation.
+     */
+    @NotNull CompletableFuture<Boolean> removeAsync(@NotNull K key);
+
+    /**
      * Asynchronously removes expected value associated with given key from the table.
      *
-     * @param key A key which associated the value is to be removed from the table.
-     * The key cannot be {@code null}.
+     * @param key A key which associated the value is to be removed from the table. The key cannot be {@code null}.
      * @param val Expected value. The value cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
@@ -206,8 +188,7 @@ public interface KeyValueView<K, V> {
     /**
      * Remove values associated with given keys from the table.
      *
-     * @param keys Keys which mapping is to be removed from the table.
-     * The keys cannot be {@code null}.
+     * @param keys Keys which mapping is to be removed from the table. The keys cannot be {@code null}.
      * @return Keys which did not exist.
      */
     Collection<K> removeAll(@NotNull Collection<K> keys);
@@ -215,8 +196,7 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously remove values associated with given keys from the table.
      *
-     * @param keys Keys which mapping is to be removed from the table.
-     * The keys cannot be {@code null}.
+     * @param keys Keys which mapping is to be removed from the table. The keys cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
     @NotNull CompletableFuture<Collection<K>> removeAllAsync(@NotNull Collection<K> keys);
@@ -224,8 +204,7 @@ public interface KeyValueView<K, V> {
     /**
      * Gets then removes value associated with given key from the table.
      *
-     * @param key A key which associated value is to be removed from the table.
-     * The key cannot be {@code null}.
+     * @param key A key which associated value is to be removed from the table. The key cannot be {@code null}.
      * @return Removed value or {@code null}, if not existed.
      */
     V getAndRemove(@NotNull K key);
@@ -233,8 +212,7 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously gets then removes value associated with given key from the table.
      *
-     * @param key A Key which mapping is to be removed from the table.
-     * The key cannot be {@code null}.
+     * @param key A Key which mapping is to be removed from the table. The key cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
     @NotNull CompletableFuture<V> getAndRemoveAsync(@NotNull K key);
@@ -250,23 +228,11 @@ public interface KeyValueView<K, V> {
      * }</code></pre>
      * except that the action is performed atomically.
      *
-     * @param key A key with which the specified value is associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return {@code True} if an old value was replaced, {@code false} otherwise.
      */
     boolean replace(@NotNull K key, V val);
-
-    /**
-     * Asynchronously replaces the value for a key only if exists.
-     * See {@link #replace(Object, Object)}.
-     *
-     * @param key A key with which the specified value is associated.
-     * The key cannot be {@code null}.
-     * @param val Value to be associated with the specified key.
-     * @return Future representing pending completion of the operation.
-     */
-    @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull K key, V val);
 
     /**
      * Replaces the expected value for a key. This is equivalent to
@@ -279,8 +245,7 @@ public interface KeyValueView<K, V> {
      * }</code></pre>
      * except that the action is performed atomically.
      *
-     * @param key A key with which the specified value is associated.
-     * The key cannot be {@code null}.
+     * @param key    A key with which the specified value is associated. The key cannot be {@code null}.
      * @param oldVal Expected value associated with the specified key.
      * @param newVal Value to be associated with the specified key.
      * @return {@code True} if an old value was replaced, {@code false} otherwise.
@@ -288,11 +253,18 @@ public interface KeyValueView<K, V> {
     boolean replace(@NotNull K key, V oldVal, V newVal);
 
     /**
-     * Asynchronously replaces the expected value for a key.
-     * See {@link #replace(Object, Object, Object)}
+     * Asynchronously replaces the value for a key only if exists. See {@link #replace(Object, Object)}.
      *
-     * @param key A key with which the specified value is associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is associated. The key cannot be {@code null}.
+     * @param val Value to be associated with the specified key.
+     * @return Future representing pending completion of the operation.
+     */
+    @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull K key, V val);
+
+    /**
+     * Asynchronously replaces the expected value for a key. See {@link #replace(Object, Object, Object)}
+     *
+     * @param key    A key with which the specified value is associated. The key cannot be {@code null}.
      * @param oldVal Expected value associated with the specified key.
      * @param newVal Value to be associated with the specified key.
      * @return Future representing pending completion of the operation.
@@ -312,19 +284,16 @@ public interface KeyValueView<K, V> {
      * </code></pre>
      * except that the action is performed atomically.
      *
-     * @param key A key with which the specified value is associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return Replaced value, or {@code null} if not existed.
      */
     V getAndReplace(@NotNull K key, V val);
 
     /**
-     * Asynchronously replaces the value for a given key only if exists.
-     * See {@link #getAndReplace(Object, Object)}
+     * Asynchronously replaces the value for a given key only if exists. See {@link #getAndReplace(Object, Object)}
      *
-     * @param key A key with which the specified value is associated.
-     * The key cannot be {@code null}.
+     * @param key A key with which the specified value is associated. The key cannot be {@code null}.
      * @param val Value to be associated with the specified key.
      * @return Future representing pending completion of the operation.
      */
@@ -333,11 +302,10 @@ public interface KeyValueView<K, V> {
     /**
      * Executes invoke processor code against the value associated with the provided key.
      *
-     * @param key A key associated with the value that invoke processor will be applied to.
-     * The key cannot be {@code null}.
+     * @param key  A key associated with the value that invoke processor will be applied to. The key cannot be {@code null}.
      * @param proc Invoke processor.
      * @param args Optional invoke processor arguments.
-     * @param <R> Invoke processor result type.
+     * @param <R>  Invoke processor result type.
      * @return Result of the processing.
      * @see InvokeProcessor
      */
@@ -346,50 +314,47 @@ public interface KeyValueView<K, V> {
     /**
      * Asynchronously executes invoke processor code against the value associated with the provided key.
      *
-     * @param key A key associated with the value that invoke processor will be applied to.
-     * The key cannot be {@code null}.
+     * @param key  A key associated with the value that invoke processor will be applied to. The key cannot be {@code null}.
      * @param proc Invoke processor.
      * @param args Optional invoke processor arguments.
-     * @param <R> Invoke processor result type.
+     * @param <R>  Invoke processor result type.
      * @return Future representing pending completion of the operation.
      * @see InvokeProcessor
      */
     @NotNull <R extends Serializable> CompletableFuture<R> invokeAsync(
-        @NotNull K key,
-        InvokeProcessor<K, V, R> proc,
-        Serializable... args);
+            @NotNull K key,
+            InvokeProcessor<K, V, R> proc,
+            Serializable... args);
 
     /**
      * Executes invoke processor code against values associated with the provided keys.
      *
-     * @param <R> Invoke processor result type.
-     * @param keys Ordered collection of keys which values associated with should be processed.
-     * The keys cannot be {@code null}.
+     * @param <R>  Invoke processor result type.
+     * @param keys Ordered collection of keys which values associated with should be processed. The keys cannot be {@code null}.
      * @param proc Invoke processor.
      * @param args Optional invoke processor arguments.
      * @return Results of the processing.
      * @see InvokeProcessor
      */
     <R extends Serializable> Map<K, R> invokeAll(
-        @NotNull Collection<K> keys,
-        InvokeProcessor<K, V, R> proc,
-        Serializable... args);
+            @NotNull Collection<K> keys,
+            InvokeProcessor<K, V, R> proc,
+            Serializable... args);
 
     /**
      * Asynchronously executes invoke processor code against values associated with the provided keys.
      *
-     * @param <R> Invoke processor result type.
-     * @param keys Ordered collection of keys which values associated with should be processed.
-     * The keys cannot be {@code null}.
+     * @param <R>  Invoke processor result type.
+     * @param keys Ordered collection of keys which values associated with should be processed. The keys cannot be {@code null}.
      * @param proc Invoke processor.
      * @param args Optional invoke processor arguments.
      * @return Future representing pending completion of the operation.
      * @see InvokeProcessor
      */
     @NotNull <R extends Serializable> CompletableFuture<Map<K, R>> invokeAllAsync(
-        @NotNull Collection<K> keys,
-        InvokeProcessor<K, V, R> proc,
-        Serializable... args);
+            @NotNull Collection<K> keys,
+            InvokeProcessor<K, V, R> proc,
+            Serializable... args);
 
     /**
      * Returns current transaction.

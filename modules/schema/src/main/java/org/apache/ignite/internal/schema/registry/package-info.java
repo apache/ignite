@@ -18,4 +18,5 @@
 /**
  * Schema registry responsible for maintaining versioned schema history.
  */
+
 package org.apache.ignite.internal.schema.registry;

@@ -17,24 +17,22 @@
 
 package org.apache.ignite.configuration.annotation;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import org.apache.ignite.configuration.ConfigurationProperty;
-import org.apache.ignite.configuration.DirectConfigurationProperty;
-
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.apache.ignite.configuration.ConfigurationProperty;
+import org.apache.ignite.configuration.DirectConfigurationProperty;
+
 /**
- * Annotation that marks a configuration field or a whole configuration that can be accessed directly from the storage.
- * Such fields or configurations will be generated as a {@link DirectConfigurationProperty} in addition to regular
- * {@link ConfigurationProperty}.
- * <p>
- * Usage note: for implementation-specific reasons it is illegal to place this annotation on schema fields that are
- * either annotated with {@link ConfigValue} or {@link NamedConfigValue}. For creating direct nested configurations
- * this annotation should be placed on the corresponding {@link Config} classes.
+ * Annotation that marks a configuration field or a whole configuration that can be accessed directly from the storage. Such fields or
+ * configurations will be generated as a {@link DirectConfigurationProperty} in addition to regular {@link ConfigurationProperty}.
+ *
+ * <p>Usage note: for implementation-specific reasons it is illegal to place this annotation on schema fields that are either annotated with
+ * {@link ConfigValue} or {@link NamedConfigValue}. For creating direct nested configurations this annotation should be placed on the
+ * corresponding {@link Config} classes.
  *
  * @see DirectConfigurationProperty DirectConfigurationProperty class for details about direct properties.
  */

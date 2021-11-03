@@ -30,20 +30,20 @@ public class AffinityUtils {
      * Calculates affinity assignments.
      *
      * @param partitions Partitions count.
-     * @param replicas Replicas count.
+     * @param replicas   Replicas count.
      * @return List nodes by partition.
      */
     public static List<List<ClusterNode>> calculateAssignments(
-        @NotNull Collection<ClusterNode> baselineNodes,
-        int partitions,
-        int replicas
+            @NotNull Collection<ClusterNode> baselineNodes,
+            int partitions,
+            int replicas
     ) {
         return RendezvousAffinityFunction.assignPartitions(
-            baselineNodes,
-            partitions,
-            replicas,
-            false,
-            null
+                baselineNodes,
+                partitions,
+                replicas,
+                false,
+                null
         );
     }
 }

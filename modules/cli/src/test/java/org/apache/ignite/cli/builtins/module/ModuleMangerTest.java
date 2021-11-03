@@ -17,6 +17,14 @@
 
 package org.apache.ignite.cli.builtins.module;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.micronaut.test.annotation.MockBean;
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,8 +35,6 @@ import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import javax.inject.Inject;
-import io.micronaut.test.annotation.MockBean;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.apache.ignite.cli.AbstractCliTest;
 import org.apache.ignite.cli.IgnitePaths;
 import org.junit.jupiter.api.Test;
@@ -37,31 +43,33 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
 import picocli.CommandLine;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 /**
  * Tests for CLI module manager logic.
  */
 @ExtendWith(MockitoExtension.class)
 @MicronautTest
 public class ModuleMangerTest extends AbstractCliTest {
-    /** */
+    /**
+     *
+     */
     @Inject
     MavenArtifactResolver mavenArtifactRslvr;
 
-    /** */
+    /**
+     *
+     */
     @Inject
     ModuleManager moduleMgr;
 
-    /** */
+    /**
+     *
+     */
     @Inject
     ModuleRegistry moduleRegistry;
 
-    /** */
+    /**
+     *
+     */
     @TempDir
     Path artifactsDir;
 
@@ -69,61 +77,69 @@ public class ModuleMangerTest extends AbstractCliTest {
     @TempDir
     Path homeDir;
 
-    /** */
+    /**
+     *
+     */
     @Test
     void testCliModuleInstallation() throws IOException {
-       var rootArtifact = generateJar("test-module", "1.0", true);
-       var depArtifact = generateJar("dep-artifact", "0.1", false);
+        var rootArtifact = generateJar("test-module", "1.0", true);
+        var depArtifact = generateJar("dep-artifact", "0.1", false);
 
-       when(mavenArtifactRslvr.resolve(any(), any(), any(), any(), any())).thenReturn(
-           new ResolveResult(Arrays.asList(rootArtifact, depArtifact)));
+        when(mavenArtifactRslvr.resolve(any(), any(), any(), any(), any())).thenReturn(
+                new ResolveResult(Arrays.asList(rootArtifact, depArtifact)));
 
-       var ignitePaths = new IgnitePaths(
-           homeDir.resolve("bin"),
-           homeDir.resolve("work"),
-           homeDir.resolve("config"),
-           homeDir.resolve("log"),
-           "n/a");
-       moduleMgr.setOut(new PrintWriter(System.out));
-       moduleMgr.setColorScheme(CommandLine.Help.defaultColorScheme(CommandLine.Help.Ansi.AUTO));
-       moduleMgr.addModule("mvn:any-group:test-module:1.0", ignitePaths, Collections.emptyList());
+        var ignitePaths = new IgnitePaths(
+                homeDir.resolve("bin"),
+                homeDir.resolve("work"),
+                homeDir.resolve("config"),
+                homeDir.resolve("log"),
+                "n/a");
+        moduleMgr.setOut(new PrintWriter(System.out));
+        moduleMgr.setColorScheme(CommandLine.Help.defaultColorScheme(CommandLine.Help.Ansi.AUTO));
+        moduleMgr.addModule("mvn:any-group:test-module:1.0", ignitePaths, Collections.emptyList());
 
-       verify(moduleRegistry).saveModule(argThat(m ->
-           m.cliArtifacts.equals(Arrays.asList(rootArtifact, depArtifact)) &&
-                m.artifacts.equals(Collections.emptyList())));
+        verify(moduleRegistry).saveModule(argThat(m ->
+                m.cliArtifacts.equals(Arrays.asList(rootArtifact, depArtifact))
+                        && m.artifacts.equals(Collections.emptyList())));
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     void testServerModuleInstallation() throws IOException {
         var rootArtifact = generateJar("test-module", "1.0", false);
         var depArtifact = generateJar("dep-artifact", "0.1", false);
 
         when(mavenArtifactRslvr.resolve(any(), any(), any(), any(), any())).thenReturn(
-            new ResolveResult(Arrays.asList(rootArtifact, depArtifact)));
+                new ResolveResult(Arrays.asList(rootArtifact, depArtifact)));
 
         var ignitePaths = new IgnitePaths(
-            homeDir.resolve("bin"),
-            homeDir.resolve("work"),
-            homeDir.resolve("config"),
-            homeDir.resolve("log"),
-            "n/a");
+                homeDir.resolve("bin"),
+                homeDir.resolve("work"),
+                homeDir.resolve("config"),
+                homeDir.resolve("log"),
+                "n/a");
         moduleMgr.setOut(new PrintWriter(System.out));
         moduleMgr.setColorScheme(CommandLine.Help.defaultColorScheme(CommandLine.Help.Ansi.AUTO));
         moduleMgr.addModule("mvn:any-group:test-module:1.0", ignitePaths, Collections.emptyList());
 
         verify(moduleRegistry).saveModule(argThat(m ->
-            m.artifacts.equals(Arrays.asList(rootArtifact, depArtifact)) &&
-                m.cliArtifacts.equals(Collections.emptyList())));
+                m.artifacts.equals(Arrays.asList(rootArtifact, depArtifact))
+                        && m.cliArtifacts.equals(Collections.emptyList())));
     }
 
-    /** */
+    /**
+     *
+     */
     @MockBean(MavenArtifactResolver.class)
     MavenArtifactResolver mavenArtifactResolver() {
         return mock(MavenArtifactResolver.class);
     }
 
-    /** */
+    /**
+     *
+     */
     @MockBean(ModuleRegistry.class)
     ModuleRegistry moduleStorage() {
         return mock(ModuleRegistry.class);
@@ -138,8 +154,9 @@ public class ModuleMangerTest extends AbstractCliTest {
 
         var jarPath = artifactsDir.resolve(MavenArtifactResolver.fileNameByArtifactPattern(artifactId, ver));
 
-        if (isCliModule)
+        if (isCliModule) {
             manifest.getMainAttributes().put(new Attributes.Name(ModuleManager.CLI_MODULE_MANIFEST_HEADER), "true");
+        }
 
         var target = new JarOutputStream(new FileOutputStream(jarPath.toString()), manifest);
         target.close();

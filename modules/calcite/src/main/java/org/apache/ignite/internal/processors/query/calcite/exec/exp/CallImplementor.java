@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import org.apache.calcite.linq4j.tree.Expression;
@@ -31,12 +32,12 @@ public interface CallImplementor {
      * Implements a call.
      *
      * @param translator Translator for the call
-     * @param call Call that should be implemented
-     * @param nullAs The desired mode of {@code null} translation
+     * @param call       Call that should be implemented
+     * @param nullAs     The desired mode of {@code null} translation
      * @return Translated call
      */
     Expression implement(
-        RexToLixTranslator translator,
-        RexCall call,
-        RexImpTable.NullAs nullAs);
+            RexToLixTranslator translator,
+            RexCall call,
+            RexImpTable.NullAs nullAs);
 }

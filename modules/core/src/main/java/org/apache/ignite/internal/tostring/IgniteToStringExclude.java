@@ -24,9 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Class or field annotated with IgniteToStringInclude claims the element <b>must be</b> excluded
- * from {@code toString()} output.
- * This annotation is used to override the default exclusion policy.
+ * Class or field annotated with IgniteToStringInclude claims the element <b>must be</b> excluded from {@code toString()} output. This
+ * annotation is used to override the default exclusion policy.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

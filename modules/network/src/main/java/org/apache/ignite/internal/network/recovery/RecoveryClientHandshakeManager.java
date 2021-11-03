@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.network.recovery;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeException;
@@ -48,12 +48,12 @@ public class RecoveryClientHandshakeManager implements HandshakeManager {
     private final NetworkMessagesFactory messageFactory;
 
     /**
-     * @param launchId launch id
-     * @param consistentId consistent id
+     * @param launchId       launch id
+     * @param consistentId   consistent id
      * @param messageFactory message factory
      */
     public RecoveryClientHandshakeManager(
-        UUID launchId, String consistentId, NetworkMessagesFactory messageFactory
+            UUID launchId, String consistentId, NetworkMessagesFactory messageFactory
     ) {
         this.launchId = launchId;
         this.consistentId = consistentId;
@@ -61,50 +61,55 @@ public class RecoveryClientHandshakeManager implements HandshakeManager {
     }
 
     /** {@inheritDoc} */
-    @Override public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
+    @Override
+    public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
         if (message instanceof HandshakeStartMessage) {
             HandshakeStartMessage msg = (HandshakeStartMessage) message;
 
             HandshakeStartResponseMessage response = messageFactory.handshakeStartResponseMessage()
-                .launchId(launchId)
-                .consistentId(consistentId)
-                .receivedCount(0)
-                .connectionsCount(0)
-                .build();
+                    .launchId(launchId)
+                    .consistentId(consistentId)
+                    .receivedCount(0)
+                    .connectionsCount(0)
+                    .build();
 
             ChannelFuture sendFuture = channel.writeAndFlush(response);
 
             NettyUtils.toCompletableFuture(sendFuture).whenComplete((unused, throwable) -> {
-                if (throwable != null)
+                if (throwable != null) {
                     handshakeCompleteFuture.completeExceptionally(
-                        new HandshakeException("Failed to send handshake response: " + throwable.getMessage(), throwable)
+                            new HandshakeException("Failed to send handshake response: " + throwable.getMessage(), throwable)
                     );
-                else
+                } else {
                     handshakeCompleteFuture.complete(new NettySender(channel, msg.launchId().toString(), msg.consistentId()));
+                }
             });
 
             return HandshakeAction.REMOVE_HANDLER;
         }
 
         handshakeCompleteFuture.completeExceptionally(
-            new HandshakeException("Unexpected message during handshake: " + message.toString())
+                new HandshakeException("Unexpected message during handshake: " + message.toString())
         );
 
         return HandshakeAction.FAIL;
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<NettySender> handshakeFuture() {
+    @Override
+    public CompletableFuture<NettySender> handshakeFuture() {
         return handshakeCompleteFuture;
     }
 
     /** {@inheritDoc} */
-    @Override public HandshakeAction init(Channel channel) {
+    @Override
+    public HandshakeAction init(Channel channel) {
         return HandshakeAction.NOOP;
     }
 
     /** {@inheritDoc} */
-    @Override public HandshakeAction onConnectionOpen(Channel channel) {
+    @Override
+    public HandshakeAction onConnectionOpen(Channel channel) {
         return HandshakeAction.NOOP;
     }
 }

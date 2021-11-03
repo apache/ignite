@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.network;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Test;
+
 /**
- * Test suite for the network annotation processor that uses the {@link AllTypesMessage} to test support of all
- * possible types.
+ * Test suite for the network annotation processor that uses the {@link AllTypesMessage} to test support of all possible types.
  */
 public class AllTypesMessageTest {
     /**
@@ -56,8 +55,9 @@ public class AllTypesMessageTest {
         for (int i = 1; i <= 100; ++i) {
             AllTypesMessage msg2 = AllTypesMessageGenerator.generate(i, true);
 
-            if (msg2.hashCode() != msg.hashCode())
+            if (msg2.hashCode() != msg.hashCode()) {
                 return;
+            }
         }
 
         fail("All generated messages had the same hash code");

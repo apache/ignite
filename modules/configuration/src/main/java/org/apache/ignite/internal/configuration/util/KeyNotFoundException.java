@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.configuration.util;
 
-/** */
+/**
+ *
+ */
 public class KeyNotFoundException extends RuntimeException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

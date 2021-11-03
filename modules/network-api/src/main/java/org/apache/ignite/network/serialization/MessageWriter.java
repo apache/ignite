@@ -47,9 +47,9 @@ public interface MessageWriter {
     /**
      * Writes the header of a message.
      *
-     * @param groupType Message group type.
+     * @param groupType   Message group type.
      * @param messageType Message type.
-     * @param fieldCnt Fields count.
+     * @param fieldCnt    Fields count.
      * @return {@code true} if successfully. Otherwise returns {@code false}.
      */
     public boolean writeHeader(short groupType, short messageType, byte fieldCnt);
@@ -58,7 +58,7 @@ public interface MessageWriter {
      * Writes a {@code byte} value.
      *
      * @param name Field name.
-     * @param val {@code byte} value.
+     * @param val  {@code byte} value.
      * @return Whether a value was fully written.
      */
     public boolean writeByte(String name, byte val);
@@ -67,7 +67,7 @@ public interface MessageWriter {
      * Writes a {@code short} value.
      *
      * @param name Field name.
-     * @param val {@code short} value.
+     * @param val  {@code short} value.
      * @return Whether a value was fully written.
      */
     public boolean writeShort(String name, short val);
@@ -76,7 +76,7 @@ public interface MessageWriter {
      * Writes an {@code int} value.
      *
      * @param name Field name.
-     * @param val {@code int} value.
+     * @param val  {@code int} value.
      * @return Whether a value was fully written.
      */
     public boolean writeInt(String name, int val);
@@ -85,7 +85,7 @@ public interface MessageWriter {
      * Writes a {@code long} value.
      *
      * @param name Field name.
-     * @param val {@code long} value.
+     * @param val  {@code long} value.
      * @return Whether a value was fully written.
      */
     public boolean writeLong(String name, long val);
@@ -94,7 +94,7 @@ public interface MessageWriter {
      * Writes a {@code float} value.
      *
      * @param name Field name.
-     * @param val {@code float} value.
+     * @param val  {@code float} value.
      * @return Whether a value was fully written.
      */
     public boolean writeFloat(String name, float val);
@@ -103,7 +103,7 @@ public interface MessageWriter {
      * Writes a {@code double} value.
      *
      * @param name Field name.
-     * @param val {@code double} value.
+     * @param val  {@code double} value.
      * @return Whether a value was fully written.
      */
     public boolean writeDouble(String name, double val);
@@ -112,7 +112,7 @@ public interface MessageWriter {
      * Writes a {@code char} value.
      *
      * @param name Field name.
-     * @param val {@code char} value.
+     * @param val  {@code char} value.
      * @return Whether a value was fully written.
      */
     public boolean writeChar(String name, char val);
@@ -121,7 +121,7 @@ public interface MessageWriter {
      * Writes a {@code boolean} value.
      *
      * @param name Field name.
-     * @param val {@code boolean} value.
+     * @param val  {@code boolean} value.
      * @return Whether a value was fully written.
      */
     public boolean writeBoolean(String name, boolean val);
@@ -130,7 +130,7 @@ public interface MessageWriter {
      * Writes a {@code byte} array.
      *
      * @param name Field name.
-     * @param val {@code byte} array.
+     * @param val  {@code byte} array.
      * @return Whether an array was fully written.
      */
     public boolean writeByteArray(String name, byte[] val);
@@ -139,9 +139,9 @@ public interface MessageWriter {
      * Writes a {@code byte} array.
      *
      * @param name Field name.
-     * @param val {@code byte} array.
-     * @param off Offset.
-     * @param len Length.
+     * @param val  {@code byte} array.
+     * @param off  Offset.
+     * @param len  Length.
      * @return Whether an array was fully written.
      */
     public boolean writeByteArray(String name, byte[] val, long off, int len);
@@ -150,7 +150,7 @@ public interface MessageWriter {
      * Writes a {@code short} array.
      *
      * @param name Field name.
-     * @param val {@code short} array.
+     * @param val  {@code short} array.
      * @return Whether an array was fully written.
      */
     public boolean writeShortArray(String name, short[] val);
@@ -159,7 +159,7 @@ public interface MessageWriter {
      * Writes an {@code int} array.
      *
      * @param name Field name.
-     * @param val {@code int} array.
+     * @param val  {@code int} array.
      * @return Whether an array was fully written.
      */
     public boolean writeIntArray(String name, int[] val);
@@ -168,7 +168,7 @@ public interface MessageWriter {
      * Writes a {@code long} array.
      *
      * @param name Field name.
-     * @param val {@code long} array.
+     * @param val  {@code long} array.
      * @return Whether an array was fully written.
      */
     public boolean writeLongArray(String name, long[] val);
@@ -177,8 +177,8 @@ public interface MessageWriter {
      * Writes a {@code long} array.
      *
      * @param name Field name.
-     * @param val {@code long} array.
-     * @param len Length.
+     * @param val  {@code long} array.
+     * @param len  Length.
      * @return Whether an array was fully written.
      */
     public boolean writeLongArray(String name, long[] val, int len);
@@ -187,7 +187,7 @@ public interface MessageWriter {
      * Writes a {@code float} array.
      *
      * @param name Field name.
-     * @param val {@code float} array.
+     * @param val  {@code float} array.
      * @return Whether an array was fully written.
      */
     public boolean writeFloatArray(String name, float[] val);
@@ -196,7 +196,7 @@ public interface MessageWriter {
      * Writes a {@code double} array.
      *
      * @param name Field name.
-     * @param val {@code double} array.
+     * @param val  {@code double} array.
      * @return Whether an array was fully written.
      */
     public boolean writeDoubleArray(String name, double[] val);
@@ -205,7 +205,7 @@ public interface MessageWriter {
      * Writes a {@code char} array.
      *
      * @param name Field name.
-     * @param val {@code char} array.
+     * @param val  {@code char} array.
      * @return Whether an array was fully written.
      */
     public boolean writeCharArray(String name, char[] val);
@@ -214,7 +214,7 @@ public interface MessageWriter {
      * Writes a {@code boolean} array.
      *
      * @param name Field name.
-     * @param val {@code boolean} array.
+     * @param val  {@code boolean} array.
      * @return Whether an array was fully written.
      */
     public boolean writeBooleanArray(String name, boolean[] val);
@@ -223,7 +223,7 @@ public interface MessageWriter {
      * Writes a {@link String}.
      *
      * @param name Field name.
-     * @param val {@link String}.
+     * @param val  {@link String}.
      * @return Whether a value was fully written.
      */
     public boolean writeString(String name, String val);
@@ -232,7 +232,7 @@ public interface MessageWriter {
      * Writes a {@link BitSet}.
      *
      * @param name Field name.
-     * @param val {@link BitSet}.
+     * @param val  {@link BitSet}.
      * @return Whether a value was fully written.
      */
     public boolean writeBitSet(String name, BitSet val);
@@ -241,7 +241,7 @@ public interface MessageWriter {
      * Writes an {@link UUID}.
      *
      * @param name Field name.
-     * @param val {@link UUID}.
+     * @param val  {@link UUID}.
      * @return Whether a value was fully written.
      */
     public boolean writeUuid(String name, UUID val);
@@ -250,7 +250,7 @@ public interface MessageWriter {
      * Writes an {@link IgniteUuid}.
      *
      * @param name Field name.
-     * @param val {@link IgniteUuid}.
+     * @param val  {@link IgniteUuid}.
      * @return Whether a value was fully written.
      */
     public boolean writeIgniteUuid(String name, IgniteUuid val);
@@ -259,7 +259,7 @@ public interface MessageWriter {
      * Writes a nested message.
      *
      * @param name Field name.
-     * @param val Message.
+     * @param val  Message.
      * @return Whether a value was fully written.
      */
     public boolean writeMessage(String name, NetworkMessage val);
@@ -267,9 +267,9 @@ public interface MessageWriter {
     /**
      * Writes an array of objects.
      *
-     * @param <T> Type of an array.
-     * @param name Field name.
-     * @param arr Array of objects.
+     * @param <T>      Type of an array.
+     * @param name     Field name.
+     * @param arr      Array of objects.
      * @param itemType A component type of the array.
      * @return Whether an array was fully written.
      */
@@ -278,9 +278,9 @@ public interface MessageWriter {
     /**
      * Writes collection.
      *
-     * @param <T> Type of a collection.
-     * @param name Field name.
-     * @param col Collection.
+     * @param <T>      Type of a collection.
+     * @param name     Field name.
+     * @param col      Collection.
      * @param itemType An item type of the collection.
      * @return Whether a value was fully written.
      */
@@ -289,16 +289,16 @@ public interface MessageWriter {
     /**
      * Writes a map.
      *
-     * @param <K> Type of the map's keys.
-     * @param <V> Type of the map's values.
-     * @param name Field name.
-     * @param map Map.
+     * @param <K>     Type of the map's keys.
+     * @param <V>     Type of the map's values.
+     * @param name    Field name.
+     * @param map     Map.
      * @param keyType The type of the map's key.
      * @param valType The type of the map's value.
      * @return Whether a value was fully written.
      */
     public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType);
+            MessageCollectionItemType valType);
 
     /**
      * Returns {@code true} if the header of the current message has been written, {@code false} otherwise.

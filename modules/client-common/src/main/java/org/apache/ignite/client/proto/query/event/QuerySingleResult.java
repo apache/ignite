@@ -55,7 +55,7 @@ public class QuerySingleResult extends Response {
      * Constructor.
      *
      * @param status Status code.
-     * @param err Error message.
+     * @param err    Error message.
      */
     public QuerySingleResult(int status, String err) {
         super(status, err);
@@ -65,8 +65,8 @@ public class QuerySingleResult extends Response {
      * Constructor.
      *
      * @param cursorId Cursor ID.
-     * @param items Query result rows.
-     * @param last Flag indicates the query has no unfetched results.
+     * @param items    Query result rows.
+     * @param last     Flag indicates the query has no unfetched results.
      */
     public QuerySingleResult(long cursorId, List<List<Object>> items, boolean last) {
         super();
@@ -84,7 +84,7 @@ public class QuerySingleResult extends Response {
     /**
      * Constructor.
      *
-     * @param cursorId Cursor ID.
+     * @param cursorId  Cursor ID.
      * @param updateCnt Update count for DML queries.
      */
     public QuerySingleResult(long cursorId, long updateCnt) {
@@ -145,11 +145,13 @@ public class QuerySingleResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         packer.packLong(cursorId);
         packer.packBoolean(isQuery);
@@ -158,16 +160,19 @@ public class QuerySingleResult extends Response {
 
         packer.packArrayHeader(items.size());
 
-        for (List<Object> item : items)
+        for (List<Object> item : items) {
             packer.packObjectArray(item.toArray());
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         cursorId = unpacker.unpackLong();
         isQuery = unpacker.unpackBoolean();
@@ -178,12 +183,14 @@ public class QuerySingleResult extends Response {
 
         items = new ArrayList<>(size);
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             items.add(Arrays.asList(unpacker.unpackObjectArray()));
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(QuerySingleResult.class, this);
     }
 }

@@ -34,8 +34,8 @@ public class RevisionCondition extends AbstractCondition {
      * Constructs revision condition with the given type, the key and revision.
      *
      * @param type Condition type. Can't be {@code null}.
-     * @param key Key identifies an entry which condition will be applied to. Can't be {@code null}.
-     * @param rev Revision which will be tested against an entry revision. Must be positive.
+     * @param key  Key identifies an entry which condition will be applied to. Can't be {@code null}.
+     * @param rev  Revision which will be tested against an entry revision. Must be positive.
      */
     public RevisionCondition(@NotNull Type type, @NotNull byte[] key, long rev) {
         super(key);
@@ -47,7 +47,8 @@ public class RevisionCondition extends AbstractCondition {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean test(@NotNull Entry e) {
+    @Override
+    public boolean test(@NotNull Entry e) {
         int res = Long.compare(e.revision(), rev);
 
         return type.test(res);
@@ -59,42 +60,48 @@ public class RevisionCondition extends AbstractCondition {
     public enum Type {
         /** Equality condition type. */
         EQUAL {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res == 0;
             }
         },
 
         /** Inequality condition type. */
         NOT_EQUAL {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res != 0;
             }
         },
 
         /** Greater than condition type. */
         GREATER {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res > 0;
             }
         },
 
         /** Less than condition type. */
         LESS {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res < 0;
             }
         },
 
         /** Less than or equal to condition type. */
         LESS_OR_EQUAL {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res <= 0;
             }
         },
 
         /** Greater than or equal to condition type. */
         GREATER_OR_EQUAL {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res >= 0;
             }
         };

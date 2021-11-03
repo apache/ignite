@@ -41,10 +41,10 @@ public class ClientColumn {
     /**
      * Constructor.
      *
-     * @param name Column name.
-     * @param type Column type code.
-     * @param nullable Nullable flag.
-     * @param isKey Key column flag.
+     * @param name        Column name.
+     * @param type        Column type code.
+     * @param nullable    Nullable flag.
+     * @param isKey       Key column flag.
      * @param schemaIndex Index of the column in the schema.
      */
     public ClientColumn(String name, int type, boolean nullable, boolean isKey, int schemaIndex) {
@@ -64,6 +64,7 @@ public class ClientColumn {
 
     /**
      * Client data type, see {@link ClientDataType}.
+     *
      * @return Data type code.
      */
     public int type() {

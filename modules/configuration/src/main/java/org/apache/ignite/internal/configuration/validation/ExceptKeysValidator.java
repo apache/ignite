@@ -29,15 +29,15 @@ import org.apache.ignite.configuration.validation.Validator;
  */
 public class ExceptKeysValidator implements Validator<ExceptKeys, NamedListView<?>> {
     /** {@inheritDoc} */
-    @Override public void validate(ExceptKeys annotation, ValidationContext<NamedListView<?>> ctx) {
+    @Override
+    public void validate(ExceptKeys annotation, ValidationContext<NamedListView<?>> ctx) {
         NamedListView<?> nameList = ctx.getNewValue();
 
         List<String> actualNames = nameList.namedListKeys();
 
         for (String exceptedName : annotation.value()) {
             if (actualNames.contains(exceptedName)) {
-                String message = "'" + ctx.currentKey() + "' configuration must not contain elements named '" +
-                    exceptedName + "'";
+                String message = "'" + ctx.currentKey() + "' configuration must not contain elements named '" + exceptedName + "'";
 
                 ctx.addIssue(new ValidationIssue(message));
             }

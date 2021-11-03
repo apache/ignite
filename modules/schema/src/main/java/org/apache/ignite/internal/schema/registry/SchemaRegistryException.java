@@ -35,7 +35,7 @@ public class SchemaRegistryException extends SchemaException {
     /**
      * Constructor with error message and cause.
      *
-     * @param msg Message.
+     * @param msg   Message.
      * @param cause Cause.
      */
     public SchemaRegistryException(String msg, Throwable cause) {

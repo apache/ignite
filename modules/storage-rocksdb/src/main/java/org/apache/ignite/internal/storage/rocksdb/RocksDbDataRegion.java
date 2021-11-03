@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
+import static org.apache.ignite.configuration.schemas.store.DataRegionConfigurationSchema.ROCKSDB_CLOCK_CACHE;
+import static org.apache.ignite.configuration.schemas.store.DataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
+import static org.apache.ignite.configuration.schemas.store.DataRegionConfigurationSchema.ROCKSDB_LRU_CACHE;
+
 import java.util.Locale;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataRegionView;
@@ -26,10 +30,6 @@ import org.rocksdb.Cache;
 import org.rocksdb.ClockCache;
 import org.rocksdb.LRUCache;
 import org.rocksdb.WriteBufferManager;
-
-import static org.apache.ignite.configuration.schemas.store.DataRegionConfigurationSchema.ROCKSDB_CLOCK_CACHE;
-import static org.apache.ignite.configuration.schemas.store.DataRegionConfigurationSchema.ROCKSDB_DATA_REGION_TYPE;
-import static org.apache.ignite.configuration.schemas.store.DataRegionConfigurationSchema.ROCKSDB_LRU_CACHE;
 
 /**
  * Data region implementation for {@link RocksDbStorageEngine}. Based on a {@link Cache}.
@@ -56,7 +56,8 @@ public class RocksDbDataRegion implements DataRegion {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override
+    public void start() {
         DataRegionView dataRegionView = cfg.value();
 
         long writeBufferSize = dataRegionView.writeBufferSize();
@@ -82,7 +83,8 @@ public class RocksDbDataRegion implements DataRegion {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws Exception {
+    @Override
+    public void stop() throws Exception {
         IgniteUtils.closeAll(writeBufferManager, cache);
     }
 

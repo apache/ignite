@@ -33,12 +33,14 @@ public interface HashIndexDefinitionBuilder extends SchemaObjectBuilder {
     HashIndexDefinitionBuilder withColumns(String... columns);
 
     /** {@inheritDoc} */
-    @Override HashIndexDefinitionBuilder withHints(Map<String, String> hints);
+    @Override
+    HashIndexDefinitionBuilder withHints(Map<String, String> hints);
 
     /**
      * Builds hash index.
      *
      * @return Hash index.
      */
-    @Override HashIndexDefinition build();
+    @Override
+    HashIndexDefinition build();
 }

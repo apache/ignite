@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.processor;
 
+import static java.util.stream.Collectors.joining;
+
+import com.squareup.javapoet.ClassName;
 import java.lang.annotation.Annotation;
 import java.util.stream.Stream;
-import com.squareup.javapoet.ClassName;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * Annotation processing utilities.
@@ -29,7 +30,7 @@ public class Utils {
     /** Private constructor. */
     private Utils() {
     }
-
+    
     /**
      * Get {@link ClassName} for configuration class' public interface.
      *
@@ -38,11 +39,11 @@ public class Utils {
      */
     public static ClassName getConfigurationInterfaceName(ClassName schemaClassName) {
         return ClassName.get(
-            schemaClassName.packageName(),
-            schemaClassName.simpleName().replaceAll("Schema$", "")
+                schemaClassName.packageName(),
+                schemaClassName.simpleName().replaceAll("Schema$", "")
         );
     }
-
+    
     /**
      * Get {@link ClassName} for configuration VIEW object class.
      *
@@ -51,11 +52,11 @@ public class Utils {
      */
     public static ClassName getViewName(ClassName schemaClassName) {
         return ClassName.get(
-            schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("ConfigurationSchema", "View")
+                schemaClassName.packageName(),
+                schemaClassName.simpleName().replace("ConfigurationSchema", "View")
         );
     }
-
+    
     /**
      * Get {@link ClassName} for configuration CHANGE object class.
      *
@@ -64,11 +65,11 @@ public class Utils {
      */
     public static ClassName getChangeName(ClassName schemaClassName) {
         return ClassName.get(
-            schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("ConfigurationSchema", "Change")
+                schemaClassName.packageName(),
+                schemaClassName.simpleName().replace("ConfigurationSchema", "Change")
         );
     }
-
+    
     /**
      * Returns the simple name of the annotation as: @Config.
      *
@@ -78,11 +79,11 @@ public class Utils {
     public static String simpleName(Class<? extends Annotation> annotationClass) {
         return '@' + annotationClass.getSimpleName();
     }
-
+    
     /**
      * Create a string with simple annotation names like: @Config and @PolymorphicConfig.
      *
-     * @param delimiter Delimiter between elements.
+     * @param delimiter   Delimiter between elements.
      * @param annotations Annotations.
      * @return String with simple annotation names.
      */

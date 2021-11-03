@@ -26,8 +26,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Row to Tuple adapter.
- * <p>
- * Provides methods to access columns values by column names.
+ *
+ * <p>Provides methods to access columns values by column names.
  */
 public class TableRow extends MutableRowTupleAdapter {
     /**
@@ -83,14 +83,17 @@ public class TableRow extends MutableRowTupleAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public int columnCount() {
+        @Override
+        public int columnCount() {
             return tuple != null ? tuple.columnCount() : schema().keyColumns().length();
         }
 
         /** {@inheritDoc} */
-        @Override public int columnIndex(@NotNull String columnName) {
-            if (tuple != null)
+        @Override
+        public int columnIndex(@NotNull String columnName) {
+            if (tuple != null) {
                 return tuple.columnIndex(columnName);
+            }
 
             Objects.requireNonNull(columnName);
 
@@ -100,17 +103,20 @@ public class TableRow extends MutableRowTupleAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override protected Column rowColumnByName(@NotNull String columnName) {
+        @Override
+        protected Column rowColumnByName(@NotNull String columnName) {
             final Column col = super.rowColumnByName(columnName);
 
-            if (!schema().isKeyColumn(col.schemaIndex()))
+            if (!schema().isKeyColumn(col.schemaIndex())) {
                 throw new IllegalArgumentException("Invalid column name: columnName=" + columnName);
+            }
 
             return col;
         }
 
         /** {@inheritDoc} */
-        @Override protected Column rowColumnByIndex(int columnIndex) {
+        @Override
+        protected Column rowColumnByIndex(int columnIndex) {
             Objects.checkIndex(columnIndex, schema().keyColumns().length());
 
             return schema().column(columnIndex);
@@ -131,14 +137,17 @@ public class TableRow extends MutableRowTupleAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public int columnCount() {
+        @Override
+        public int columnCount() {
             return tuple != null ? tuple.columnCount() : schema().valueColumns().length();
         }
 
         /** {@inheritDoc} */
-        @Override public int columnIndex(@NotNull String columnName) {
-            if (tuple != null)
+        @Override
+        public int columnIndex(@NotNull String columnName) {
+            if (tuple != null) {
                 return tuple.columnIndex(columnName);
+            }
 
             Objects.requireNonNull(columnName);
 
@@ -149,17 +158,20 @@ public class TableRow extends MutableRowTupleAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override protected Column rowColumnByName(@NotNull String columnName) {
+        @Override
+        protected Column rowColumnByName(@NotNull String columnName) {
             final Column col = super.rowColumnByName(columnName);
 
-            if (schema().isKeyColumn(col.schemaIndex()))
+            if (schema().isKeyColumn(col.schemaIndex())) {
                 throw new IllegalArgumentException("Invalid column name: columnName=" + columnName);
+            }
 
             return col;
         }
 
         /** {@inheritDoc} */
-        @Override protected Column rowColumnByIndex(int columnIndex) {
+        @Override
+        protected Column rowColumnByIndex(int columnIndex) {
             Objects.checkIndex(columnIndex, schema().valueColumns().length());
 
             return schema().column(columnIndex + schema().keyColumns().length());

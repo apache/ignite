@@ -25,10 +25,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Validation context for the validators.
  *
- * @param <VIEW> Type of the subtree or the value that is being validated.
+ * @param <VIEWT> Type of the subtree or the value that is being validated.
  * @see Validator#validate(Annotation, ValidationContext)
  */
-public interface ValidationContext<VIEW> {
+public interface ValidationContext<VIEWT> {
     /**
      * Returns the key of validated node.
      *
@@ -41,22 +41,21 @@ public interface ValidationContext<VIEW> {
      *
      * @return Previous value of the configuration. Might be null for leaves only.
      */
-    @Nullable VIEW getOldValue();
+    @Nullable VIEWT getOldValue();
 
     /**
      * Returns updated value of the configuration.
      *
      * @return Updated value of the configuration. Cannot be null.
      */
-    @NotNull VIEW getNewValue();
+    @NotNull VIEWT getNewValue();
 
     /**
      * Returns previous value of the configuration root.
      *
      * @param rootKey Root key.
+     * @param <ROOT>  Root view type derived from the root key.
      * @return Configuration root view before updates.
-     *
-     * @param <ROOT> Root view type derived from the root key.
      */
     @Nullable <ROOT> ROOT getOldRoot(RootKey<?, ROOT> rootKey);
 
@@ -64,9 +63,8 @@ public interface ValidationContext<VIEW> {
      * Returns updated value of the configuration root.
      *
      * @param rootKey Root key.
+     * @param <ROOT>  Root view type derived from the root key.
      * @return Configuration root view after updates.
-     *
-     * @param <ROOT> Root view type derived from the root key.
      */
     @Nullable <ROOT> ROOT getNewRoot(RootKey<?, ROOT> rootKey);
 

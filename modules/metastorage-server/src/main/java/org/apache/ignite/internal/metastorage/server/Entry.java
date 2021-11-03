@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  *     <li>updateCounter - a number which increments on every update in the change under one revision.</li>
  * </ul>
  *
- * Instance of {@link #Entry} could represents:
+ * <p>Instance of {@link #Entry} could represents:
  * <ul>
  *     <li>A regular entry which stores a particular key, a value and a revision number.</li>
  *     <li>An empty entry which denotes absence a regular entry in the meta storage for a given key.
@@ -46,7 +46,7 @@ public class Entry {
     /**
      * Entry value.
      * <p>
-     *     {@code val == null} only for {@link #empty()} and {@link #tombstone()} entries.
+     * {@code val == null} only for {@link #empty()} and {@link #tombstone()} entries.
      * </p>
      */
     @Nullable
@@ -55,8 +55,7 @@ public class Entry {
     /**
      * Revision number corresponding to this particular entry.
      * <p>
-     *     {@code rev == 0} for {@link #empty()} entry,
-     *     {@code rev > 0} for regular and {@link #tombstone()} entries.
+     * {@code rev == 0} for {@link #empty()} entry, {@code rev > 0} for regular and {@link #tombstone()} entries.
      * </p>
      */
     private final long rev;
@@ -64,8 +63,7 @@ public class Entry {
     /**
      * Update counter corresponds to this particular entry.
      * <p>
-     *     {@code updCntr == 0} for {@link #empty()} entry,
-     *     {@code updCntr > 0} for regular and {@link #tombstone()} entries.
+     * {@code updCntr == 0} for {@link #empty()} entry, {@code updCntr > 0} for regular and {@link #tombstone()} entries.
      * </p>
      */
     private final long updCntr;
@@ -73,12 +71,13 @@ public class Entry {
     /**
      * Constructor.
      *
-     * @param key Key bytes. Couldn't be {@code null}.
-     * @param val Value bytes. Couldn't be {@code null}.
-     * @param rev Revision.
+     * @param key     Key bytes. Couldn't be {@code null}.
+     * @param val     Value bytes. Couldn't be {@code null}.
+     * @param rev     Revision.
      * @param updCntr Update counter.
      */
-    // TODO: It seems user will never create Entry, so we can reduce constructor scope to protected or package-private and reuse it from two-place private constructor.
+    // TODO: It seems user will never create Entry, so we can reduce constructor scope to protected or package-private
+    //  and reuse it from two-place private constructor.
     public Entry(@NotNull byte[] key, @NotNull byte[] val, long rev, long updCntr) {
         assert key != null : "key can't be null";
         assert val != null : "value can't be null";
@@ -92,8 +91,8 @@ public class Entry {
     /**
      * Constructor for empty and tombstone entries.
      *
-     * @param key Key bytes. Couldn't be {@code null}.
-     * @param rev Revision.
+     * @param key     Key bytes. Couldn't be {@code null}.
+     * @param rev     Revision.
      * @param updCntr Update counter.
      */
     private Entry(@NotNull byte[] key, long rev, long updCntr) {
@@ -117,10 +116,19 @@ public class Entry {
     }
 
     /**
+     * Returns value which denotes whether entry is empty or not.
+     *
+     * @return {@code True} if entry is empty, otherwise - {@code false}.
+     */
+    public boolean empty() {
+        return val == null && rev == 0 && updCntr == 0;
+    }
+
+    /**
      * Creates an instance of tombstone entry for a given key and a revision.
      *
-     * @param key Key bytes. Couldn't be {@code null}.
-     * @param rev Revision.
+     * @param key     Key bytes. Couldn't be {@code null}.
+     * @param rev     Revision.
      * @param updCntr Update counter.
      * @return Empty entry.
      */
@@ -131,6 +139,16 @@ public class Entry {
 
         return new Entry(key, rev, updCntr);
     }
+
+    /**
+     * Returns value which denotes whether entry is tombstone or not.
+     *
+     * @return {@code True} if entry is tombstone, otherwise - {@code false}.
+     */
+    public boolean tombstone() {
+        return val == null && rev > 0 && updCntr > 0;
+    }
+
 
     /**
      * Returns a key.
@@ -168,23 +186,5 @@ public class Entry {
      */
     public long updateCounter() {
         return updCntr;
-    }
-
-    /**
-     * Returns value which denotes whether entry is tombstone or not.
-     *
-     * @return {@code True} if entry is tombstone, otherwise - {@code false}.
-     */
-    public boolean tombstone() {
-        return val == null && rev > 0 && updCntr > 0;
-    }
-
-    /**
-     * Returns value which denotes whether entry is empty or not.
-     *
-     * @return {@code True} if entry is empty, otherwise - {@code false}.
-     */
-    public boolean empty() {
-        return val == null && rev == 0 && updCntr == 0;
     }
 }

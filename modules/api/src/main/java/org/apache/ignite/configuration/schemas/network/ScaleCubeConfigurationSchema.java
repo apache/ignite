@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.annotation.Value;
 @Config
 public class ScaleCubeConfigurationSchema {
     /**
-     * This multiplier is used to calculate the timeout after which the node is considered dead.
-     * For more information see io.scalecube.cluster.ClusterMath#suspicionTimeout.
+     * This multiplier is used to calculate the timeout after which the node is considered dead. For more information see
+     * io.scalecube.cluster.ClusterMath#suspicionTimeout.
      */
     @Value(hasDefault = true)
     public final int membershipSuspicionMultiplier = 1;
@@ -40,7 +40,8 @@ public class ScaleCubeConfigurationSchema {
 
     /**
      * Gossip spreading interval.
-     * @see <a href="https://en.wikipedia.org/wiki/Gossip_protocol">Gossip Protocol</a>.
+     *
+     * @see <a href="https://en.wikipedia.org/wiki/Gossip_protocol">Gossip Protocol</a>
      */
     @Value(hasDefault = true)
     public final int gossipInterval = 10;

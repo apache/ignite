@@ -18,4 +18,5 @@
 /**
  * Ignite jdbc client internal classes.
  */
+
 package org.apache.ignite.internal.jdbc;

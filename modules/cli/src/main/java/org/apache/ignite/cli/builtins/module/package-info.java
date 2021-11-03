@@ -18,4 +18,5 @@
 /**
  * Contains classes for Ignite module management.
  */
+
 package org.apache.ignite.cli.builtins.module;

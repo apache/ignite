@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -29,15 +30,15 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
  * Relational operator that returns the contents of a table.
  */
 public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgniteRel {
-    /** */
+    /**
+     *
+     */
     private final long sourceId;
-
+    
     /**
      * Constructor used for deserialization.
      *
@@ -45,103 +46,112 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      */
     public IgniteIndexScan(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-
+        
         Object srcIdObj = input.get("sourceId");
-        if (srcIdObj != null)
-            sourceId = ((Number)srcIdObj).longValue();
-        else
+        if (srcIdObj != null) {
+            sourceId = ((Number) srcIdObj).longValue();
+        } else {
             sourceId = -1;
+        }
     }
-
+    
     /**
      * Creates a TableScan.
+     *
      * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-     * @param tbl Table definition.
+     * @param traits  Traits of this relational expression
+     * @param tbl     Table definition.
      * @param idxName Index name.
      */
     public IgniteIndexScan(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelOptTable tbl,
-        String idxName) {
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelOptTable tbl,
+            String idxName) {
         this(cluster, traits, tbl, idxName, null, null, null, null);
     }
-
+    
     /**
      * Creates a TableScan.
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-     * @param tbl Table definition.
-     * @param idxName Index name.
-     * @param proj Projects.
-     * @param cond Filters.
+     *
+     * @param cluster      Cluster that this relational expression belongs to
+     * @param traits       Traits of this relational expression
+     * @param tbl          Table definition.
+     * @param idxName      Index name.
+     * @param proj         Projects.
+     * @param cond         Filters.
      * @param requiredCols Participating columns.
      */
     public IgniteIndexScan(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelOptTable tbl,
-        String idxName,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable IndexConditions idxCond,
-        @Nullable ImmutableBitSet requiredCols
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelOptTable tbl,
+            String idxName,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable IndexConditions idxCond,
+            @Nullable ImmutableBitSet requiredCols
     ) {
         this(-1L, cluster, traits, tbl, idxName, proj, cond, idxCond, requiredCols);
     }
-
+    
     /**
      * Creates a TableScan.
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-     * @param tbl Table definition.
-     * @param idxName Index name.
-     * @param proj Projects.
-     * @param cond Filters.
+     *
+     * @param cluster      Cluster that this relational expression belongs to
+     * @param traits       Traits of this relational expression
+     * @param tbl          Table definition.
+     * @param idxName      Index name.
+     * @param proj         Projects.
+     * @param cond         Filters.
      * @param requiredCols Participating colunms.
      */
     private IgniteIndexScan(
-        long sourceId,
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelOptTable tbl,
-        String idxName,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable IndexConditions idxCond,
-        @Nullable ImmutableBitSet requiredCols
+            long sourceId,
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelOptTable tbl,
+            String idxName,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable IndexConditions idxCond,
+            @Nullable ImmutableBitSet requiredCols
     ) {
         super(cluster, traits, List.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
-
+        
         this.sourceId = sourceId;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public long sourceId() {
+    @Override
+    public long sourceId() {
         return sourceId;
     }
-
+    
     /** {@inheritDoc} */
-    @Override protected RelWriter explainTerms0(RelWriter pw) {
+    @Override
+    protected RelWriter explainTerms0(RelWriter pw) {
         return super.explainTerms0(pw)
-            .itemIf("sourceId", sourceId, sourceId != -1);
+                .itemIf("sourceId", sourceId, sourceId != -1);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(long sourceId) {
+    @Override
+    public IgniteRel clone(long sourceId) {
         return new IgniteIndexScan(sourceId, getCluster(), getTraitSet(), getTable(),
-            idxName, projects, condition, idxCond, requiredColumns);
+                idxName, projects, condition, idxCond, requiredColumns);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexScan(sourceId, cluster, getTraitSet(), getTable(),
-            idxName, projects, condition, idxCond, requiredColumns);
+                idxName, projects, condition, idxCond, requiredColumns);
     }
 }

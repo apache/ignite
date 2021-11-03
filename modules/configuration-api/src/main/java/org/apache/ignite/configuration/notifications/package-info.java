@@ -18,4 +18,5 @@
 /**
  * Interfaces and classes for configuration notifications.
  */
+
 package org.apache.ignite.configuration.notifications;

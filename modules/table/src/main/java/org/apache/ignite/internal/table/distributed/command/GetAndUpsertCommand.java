@@ -37,8 +37,7 @@ public class GetAndUpsertCommand implements WriteCommand {
     private byte[] keyRowBytes;
 
     /**
-     * Creates a new instance of GetAndUpsertCommand with the given row to be got and upserted.
-     * The {@code row} should not be {@code null}.
+     * Creates a new instance of GetAndUpsertCommand with the given row to be got and upserted. The {@code row} should not be {@code null}.
      *
      * @param row Binary row.
      */
@@ -56,8 +55,9 @@ public class GetAndUpsertCommand implements WriteCommand {
      * @return Binary key.
      */
     public BinaryRow getKeyRow() {
-        if (keyRow == null)
+        if (keyRow == null) {
             keyRow = new ByteBufferRow(keyRowBytes);
+        }
 
         return keyRow;
     }

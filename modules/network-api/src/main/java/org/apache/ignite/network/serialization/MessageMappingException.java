@@ -34,7 +34,7 @@ public class MessageMappingException extends RuntimeException {
      * Constructor.
      *
      * @param message Message mapping error message.
-     * @param cause Cause of message mapping error.
+     * @param cause   Cause of message mapping error.
      */
     public MessageMappingException(String message, Throwable cause) {
         super(message, cause);

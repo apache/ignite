@@ -33,17 +33,20 @@ public interface PartialIndexDefinitionBuilder extends SortedIndexDefinitionBuil
     PartialIndexDefinitionBuilder withExpression(String expr);
 
     /** {@inheritDoc} */
-    @Override PartialIndexColumnBuilder addIndexColumn(String name);
+    @Override
+    PartialIndexColumnBuilder addIndexColumn(String name);
 
     /** {@inheritDoc} */
-    @Override PartialIndexDefinitionBuilder withHints(Map<String, String> hints);
+    @Override
+    PartialIndexDefinitionBuilder withHints(Map<String, String> hints);
 
     /**
      * Builds partial index.
      *
      * @return Partial index.
      */
-    @Override PartialIndexDefinition build();
+    @Override
+    PartialIndexDefinition build();
 
     /**
      * Index column builder.
@@ -51,15 +54,19 @@ public interface PartialIndexDefinitionBuilder extends SortedIndexDefinitionBuil
     @SuppressWarnings("PublicInnerClass")
     interface PartialIndexColumnBuilder extends SortedIndexColumnBuilder {
         /** {@inheritDoc} */
-        @Override PartialIndexColumnBuilder desc();
+        @Override
+        PartialIndexColumnBuilder desc();
 
         /** {@inheritDoc} */
-        @Override PartialIndexColumnBuilder asc();
+        @Override
+        PartialIndexColumnBuilder asc();
 
         /** {@inheritDoc} */
-        @Override PartialIndexColumnBuilder withName(String name);
+        @Override
+        PartialIndexColumnBuilder withName(String name);
 
         /** {@inheritDoc} */
-        @Override PartialIndexDefinitionBuilder done();
+        @Override
+        PartialIndexDefinitionBuilder done();
     }
 }

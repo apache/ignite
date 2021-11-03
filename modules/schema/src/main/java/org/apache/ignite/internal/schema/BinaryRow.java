@@ -22,8 +22,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Binary row interface.
- * The class contains low-level methods to read row data.
+ * Binary row interface. The class contains low-level methods to read row data.
  */
 public interface BinaryRow {
     /** Row schema version field offset. */
@@ -98,44 +97,44 @@ public interface BinaryRow {
      * @param off Offset.
      * @return Integer primitive value.
      */
-     int readInteger(int off);
+    int readInteger(int off);
 
     /**
      * @param off Offset.
      * @return Long primitive value.
      */
-     long readLong(int off);
+    long readLong(int off);
 
     /**
      * @param off Offset.
      * @return Float primitive value.
      */
-     float readFloat(int off);
+    float readFloat(int off);
 
     /**
      * @param off Offset.
      * @return Double primitive value.
      */
-     double readDouble(int off);
+    double readDouble(int off);
 
     /**
      * @param off Offset.
      * @param len Length.
      * @return String value.
      */
-     String readString(int off, int len);
+    String readString(int off, int len);
 
     /**
      * @param off Offset.
      * @param len Length.
      * @return Byte array.
      */
-     byte[] readBytes(int off, int len);
+    byte[] readBytes(int off, int len);
 
     /**
      * @return Byte array of the row.
      */
-     byte[] bytes();
+    byte[] bytes();
 
     /**
      * Row flags.

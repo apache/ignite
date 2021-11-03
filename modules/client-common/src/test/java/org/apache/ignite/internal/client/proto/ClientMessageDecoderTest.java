@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.client.proto;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import org.apache.ignite.lang.IgniteException;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.apache.ignite.lang.IgniteException;
+import org.junit.jupiter.api.Test;
 
 /**
  * Message decoding tests.
@@ -72,10 +72,11 @@ public class ClientMessageDecoderTest {
     }
 
     private static byte[] decode(byte[] request) throws Exception {
-        var resBuf = (ByteBuf)new ClientMessageDecoder().decode(null, Unpooled.wrappedBuffer(request));
+        var resBuf = (ByteBuf) new ClientMessageDecoder().decode(null, Unpooled.wrappedBuffer(request));
 
-        if (resBuf == null)
+        if (resBuf == null) {
             return null;
+        }
 
         var bytes = new byte[resBuf.readableBytes()];
         resBuf.readBytes(bytes);

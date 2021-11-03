@@ -18,33 +18,44 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.function.ToIntFunction;
-
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.IgniteUtils;
 
-/** */
-final class AffinityAdapter<Row> implements ToIntFunction<Row> {
-    /** */
+/**
+ *
+ */
+final class AffinityAdapter<RowT> implements ToIntFunction<RowT> {
+    /**
+     *
+     */
     private final ToIntFunction<Object> affinity;
 
-    /** */
+    /**
+     *
+     */
     private final int[] keys;
 
-    /** */
-    private final RowHandler<Row> hndlr;
+    /**
+     *
+     */
+    private final RowHandler<RowT> hndlr;
 
-    /** */
-    AffinityAdapter(ToIntFunction<Object> affinity, int[] keys, RowHandler<Row> hndlr) {
+    /**
+     *
+     */
+    AffinityAdapter(ToIntFunction<Object> affinity, int[] keys, RowHandler<RowT> hndlr) {
         this.affinity = affinity;
         this.keys = keys;
         this.hndlr = hndlr;
     }
 
     /** {@inheritDoc} */
-    @Override public int applyAsInt(Row r) {
+    @Override
+    public int applyAsInt(RowT r) {
         int hash = 0;
-        for (int i = 0; i < keys.length; i++)
+        for (int i = 0; i < keys.length; i++) {
             hash = 31 * hash + affinity.applyAsInt(hndlr.get(keys[i], r));
+        }
 
         return IgniteUtils.safeAbs(hash);
     }

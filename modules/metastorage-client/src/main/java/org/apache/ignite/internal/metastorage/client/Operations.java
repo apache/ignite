@@ -20,8 +20,8 @@ package org.apache.ignite.internal.metastorage.client;
 import org.apache.ignite.lang.ByteArray;
 
 /**
- * This class contains fabric methods which produce operations needed for conditional multi update functionality
- * (invoke) provided by meta storage service.
+ * This class contains fabric methods which produce operations needed for conditional multi update functionality (invoke) provided by meta
+ * storage service.
  *
  * @see Operation
  */
@@ -42,7 +42,7 @@ public final class Operations {
     /**
      * Creates operation of type <i>put</i>. This type of operation inserts or updates value of entry.
      *
-     * @param key Identifies an entry which operation will be applied to.
+     * @param key   Identifies an entry which operation will be applied to.
      * @param value Value.
      * @return Operation of type <i>put</i>.
      */

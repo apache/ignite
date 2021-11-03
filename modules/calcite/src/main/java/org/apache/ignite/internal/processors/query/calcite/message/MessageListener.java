@@ -25,7 +25,7 @@ import org.apache.ignite.network.NetworkMessage;
 public interface MessageListener {
     /**
      * @param nodeId Sender node ID.
-     * @param msg Message.
+     * @param msg    Message.
      */
     void onMessage(String nodeId, NetworkMessage msg);
 }

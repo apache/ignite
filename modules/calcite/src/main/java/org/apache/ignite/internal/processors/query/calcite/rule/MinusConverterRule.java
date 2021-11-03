@@ -37,26 +37,37 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  * MINUS (EXCEPT) operation converter rule.
  */
 public class MinusConverterRule {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule SINGLE = new SingleMinusConverterRule();
 
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule MAP_REDUCE = new MapReduceMinusConverterRule();
 
-    /** */
+    /**
+     *
+     */
     private MinusConverterRule() {
         // No-op.
     }
 
-    /** */
+    /**
+     *
+     */
     private static class SingleMinusConverterRule extends AbstractIgniteConverterRule<LogicalMinus> {
-        /** */
+        /**
+         *
+         */
         SingleMinusConverterRule() {
             super(LogicalMinus.class, "SingleMinusConverterRule");
         }
 
         /** {@inheritDoc} */
-        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalMinus setOp) {
+        @Override
+        protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalMinus setOp) {
             RelOptCluster cluster = setOp.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
@@ -66,15 +77,20 @@ public class MinusConverterRule {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class MapReduceMinusConverterRule extends AbstractIgniteConverterRule<LogicalMinus> {
-        /** */
+        /**
+         *
+         */
         MapReduceMinusConverterRule() {
             super(LogicalMinus.class, "MapReduceMinusConverterRule");
         }
 
         /** {@inheritDoc} */
-        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalMinus setOp) {
+        @Override
+        protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalMinus setOp) {
             RelOptCluster cluster = setOp.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
@@ -83,11 +99,11 @@ public class MinusConverterRule {
             RelNode map = new IgniteMapMinus(cluster, outTrait, inputs, setOp.all);
 
             return new IgniteReduceMinus(
-                cluster,
-                outTrait.replace(IgniteDistributions.single()),
-                convert(map, inTrait.replace(IgniteDistributions.single())),
-                setOp.all,
-                cluster.getTypeFactory().leastRestrictive(Util.transform(inputs, RelNode::getRowType))
+                    cluster,
+                    outTrait.replace(IgniteDistributions.single()),
+                    convert(map, inTrait.replace(IgniteDistributions.single())),
+                    setOp.all,
+                    cluster.getTypeFactory().leastRestrictive(Util.transform(inputs, RelNode::getRowType))
             );
         }
     }

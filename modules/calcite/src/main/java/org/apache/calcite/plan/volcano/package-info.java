@@ -18,4 +18,5 @@
 /**
  * Contains utils for access to package-private Calcite Volcano classes.
  */
+
 package org.apache.calcite.plan.volcano;

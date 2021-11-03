@@ -82,9 +82,9 @@ public class TupleMarshallerFixlenOnlyBenchmark {
      */
     public static void main(String[] args) throws RunnerException {
         new Runner(
-            new OptionsBuilder()
-                .include(TupleMarshallerFixlenOnlyBenchmark.class.getSimpleName())
-                .build()
+                new OptionsBuilder()
+                        .include(TupleMarshallerFixlenOnlyBenchmark.class.getSimpleName())
+                        .build()
         ).run();
     }
 
@@ -98,31 +98,35 @@ public class TupleMarshallerFixlenOnlyBenchmark {
         rnd = new Random(seed);
 
         schema = new SchemaDescriptor(
-            42,
-            new Column[] {new Column("key", NativeTypes.INT64, false)},
-            IntStream.range(0, fieldsCount).boxed()
-                .map(i -> new Column("col" + i, NativeTypes.INT64, nullable))
-                .toArray(Column[]::new)
+                42,
+                new Column[]{new Column("key", NativeTypes.INT64, false)},
+                IntStream.range(0, fieldsCount).boxed()
+                        .map(i -> new Column("col" + i, NativeTypes.INT64, nullable))
+                        .toArray(Column[]::new)
         );
 
         marshaller = new TupleMarshallerImpl(null, null, new SchemaRegistryImpl(v -> null) {
-            @Override public SchemaDescriptor schema() {
+            @Override
+            public SchemaDescriptor schema() {
                 return schema;
             }
 
-            @Override public SchemaDescriptor schema(int ver) {
+            @Override
+            public SchemaDescriptor schema(int ver) {
                 return schema;
             }
 
-            @Override public int lastSchemaVersion() {
+            @Override
+            public int lastSchemaVersion() {
                 return schema.version();
             }
         });
 
         vals = new Object[schema.valueColumns().length()];
 
-        for (int i = 0; i < vals.length; i++)
+        for (int i = 0; i < vals.length; i++) {
             vals[i] = rnd.nextLong();
+        }
     }
 
     /**
@@ -136,8 +140,9 @@ public class TupleMarshallerFixlenOnlyBenchmark {
 
         final Tuple valBld = Tuple.create(cols.length());
 
-        for (int i = 0; i < cols.length(); i++)
+        for (int i = 0; i < cols.length(); i++) {
             valBld.set(cols.column(i).name(), vals[i]);
+        }
 
         Tuple keyTuple = Tuple.create(1).set("key", rnd.nextLong());
 

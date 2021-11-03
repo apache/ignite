@@ -53,19 +53,19 @@ public class ColumnFamily implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param db Db.
-     * @param handle Column family handle.
-     * @param cfName Column family name.
+     * @param db        Db.
+     * @param handle    Column family handle.
+     * @param cfName    Column family name.
      * @param cfOptions Column family options.
-     * @param options Options for the column family options.
+     * @param options   Options for the column family options.
      * @throws RocksDBException If failed.
      */
     public ColumnFamily(
-        RocksDB db,
-        ColumnFamilyHandle handle,
-        String cfName,
-        ColumnFamilyOptions cfOptions,
-        Options options
+            RocksDB db,
+            ColumnFamilyHandle handle,
+            String cfName,
+            ColumnFamilyOptions cfOptions,
+            Options options
     ) {
         this.db = db;
         this.cfName = cfName;
@@ -75,7 +75,8 @@ public class ColumnFamily implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         IgniteUtils.closeAll(cfHandle, cfOptions, options);
     }
 
@@ -94,7 +95,7 @@ public class ColumnFamily implements AutoCloseable {
     /**
      * Puts a key-value pair into this column family.
      *
-     * @param key Key.
+     * @param key   Key.
      * @param value Value.
      * @throws RocksDBException If failed.
      * @see RocksDB#put(ColumnFamilyHandle, byte[], byte[])
@@ -107,7 +108,7 @@ public class ColumnFamily implements AutoCloseable {
      * Puts a key-value pair into this column family within the write batch.
      *
      * @param batch Write batch.
-     * @param key Key.
+     * @param key   Key.
      * @param value Value.
      * @throws RocksDBException If failed.
      * @see WriteBatch#put(ColumnFamilyHandle, byte[], byte[])
@@ -131,7 +132,7 @@ public class ColumnFamily implements AutoCloseable {
      * Deletes the entry mapped by the key and associated with this column family within the write batch.
      *
      * @param batch Write batch.
-     * @param key Key.
+     * @param key   Key.
      * @throws RocksDBException If failed.
      * @see WriteBatch#delete(ColumnFamilyHandle, byte[])
      */
@@ -163,7 +164,7 @@ public class ColumnFamily implements AutoCloseable {
     /**
      * Ingests external files into this column family.
      *
-     * @param paths Paths to the external files.
+     * @param paths   Paths to the external files.
      * @param options Ingestion options.
      * @throws RocksDBException If failed.
      * @see RocksDB#ingestExternalFile(ColumnFamilyHandle, List, IngestExternalFileOptions)

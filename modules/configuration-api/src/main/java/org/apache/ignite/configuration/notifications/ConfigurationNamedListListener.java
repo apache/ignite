@@ -17,42 +17,43 @@
 
 package org.apache.ignite.configuration.notifications;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.NotNull;
-
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * Configuration property change listener for named list configurations.
  *
- * @param <VIEW> VIEW type configuration.
+ * @param <VIEWT> VIEW type configuration.
  */
-public interface ConfigurationNamedListListener<VIEW> extends ConfigurationListener<VIEW> {
+public interface ConfigurationNamedListListener<VIEWT> extends ConfigurationListener<VIEWT> {
     /**
      * Called when new named list element is created.
      *
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull default CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<VIEW> ctx) {
+    @NotNull
+    default CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 
     /**
-     * Called when a named list element is renamed. Semantically equivalent to
-     * {@link #onUpdate(ConfigurationNotificationEvent)} with the difference that the content of the element might
-     * have not been changed. No separate {@link #onUpdate(ConfigurationNotificationEvent)} call is performed when
-     * {@link #onRename(String, String, ConfigurationNotificationEvent)} is already invoked.
+     * Called when a named list element is renamed. Semantically equivalent to {@link #onUpdate(ConfigurationNotificationEvent)} with the
+     * difference that the content of the element might have not been changed. No separate {@link #onUpdate(ConfigurationNotificationEvent)}
+     * call is performed when {@link #onRename(String, String, ConfigurationNotificationEvent)} is already invoked.
      *
      * @param oldName Name, previously assigned to the element.
      * @param newName New name of the element.
-     * @param ctx Notification context.
+     * @param ctx     Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull default CompletableFuture<?> onRename(
-        @NotNull String oldName,
-        @NotNull String newName,
-        @NotNull ConfigurationNotificationEvent<VIEW> ctx
+    @NotNull
+    default CompletableFuture<?> onRename(
+            @NotNull String oldName,
+            @NotNull String newName,
+            @NotNull ConfigurationNotificationEvent<VIEWT> ctx
     ) {
         return completedFuture(null);
     }
@@ -63,12 +64,15 @@ public interface ConfigurationNamedListListener<VIEW> extends ConfigurationListe
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull default CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<VIEW> ctx) {
+    @NotNull
+    default CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull default CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx) {
+    @Override
+    @NotNull
+    default CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEWT> ctx) {
         return completedFuture(null);
     }
 }

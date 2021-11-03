@@ -28,48 +28,52 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class WatchRangeKeysCommand implements WriteCommand {
     /** Start key of range (inclusive). Couldn't be {@code null}. */
-    @Nullable private final byte[] keyFrom;
+    @Nullable
+    private final byte[] keyFrom;
 
     /** End key of range (exclusive). Could be {@code null}. */
-    @Nullable private final byte[] keyTo;
+    @Nullable
+    private final byte[] keyTo;
 
     /** Start revision inclusive. {@code 0} - all revisions. */
     private final long revision;
 
     /** Id of the node that requests watch. */
-    @NotNull private final String requesterNodeId;
+    @NotNull
+    private final String requesterNodeId;
 
     /** Id of cursor that is associated with the current command. */
-    @NotNull private final IgniteUuid cursorId;
+    @NotNull
+    private final IgniteUuid cursorId;
 
     /**
-     * @param keyFrom Start key of range (inclusive).
-     * @param keyTo End key of range (exclusive).
+     * @param keyFrom         Start key of range (inclusive).
+     * @param keyTo           End key of range (exclusive).
      * @param requesterNodeId Id of the node that requests watch.
-     * @param cursorId Id of cursor that is associated with the current command.*
+     * @param cursorId        Id of cursor that is associated with the current command.*
      */
     public WatchRangeKeysCommand(
-        @Nullable ByteArray keyFrom,
-        @Nullable ByteArray keyTo,
-        @NotNull String requesterNodeId,
-        @NotNull IgniteUuid cursorId
+            @Nullable ByteArray keyFrom,
+            @Nullable ByteArray keyTo,
+            @NotNull String requesterNodeId,
+            @NotNull IgniteUuid cursorId
     ) {
         this(keyFrom, keyTo, 0L, requesterNodeId, cursorId);
     }
 
     /**
-     * @param keyFrom Start key of range (inclusive).
-     * @param keyTo End key of range (exclusive).
-     * @param revision Start revision inclusive. {@code 0} - all revisions.
+     * @param keyFrom         Start key of range (inclusive).
+     * @param keyTo           End key of range (exclusive).
+     * @param revision        Start revision inclusive. {@code 0} - all revisions.
      * @param requesterNodeId Id of the node that requests watch.
-     * @param cursorId Id of cursor that is associated with the current command.
+     * @param cursorId        Id of cursor that is associated with the current command.
      */
     public WatchRangeKeysCommand(
-        @Nullable ByteArray keyFrom,
-        @Nullable ByteArray keyTo,
-        long revision,
-        @NotNull String requesterNodeId,
-        @NotNull IgniteUuid cursorId
+            @Nullable ByteArray keyFrom,
+            @Nullable ByteArray keyTo,
+            long revision,
+            @NotNull String requesterNodeId,
+            @NotNull IgniteUuid cursorId
     ) {
         this.keyFrom = keyFrom == null ? null : keyFrom.bytes();
         this.keyTo = keyTo == null ? null : keyTo.bytes();

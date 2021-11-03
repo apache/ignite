@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
-
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rex.RexCall;
@@ -31,7 +31,9 @@ import org.apache.calcite.rex.RexCall;
  * created.
  */
 public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
-    /** */
+    /**
+     *
+     */
     protected final Method method;
 
     /**
@@ -44,38 +46,43 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
     }
 
     /** {@inheritDoc} */
-    @Override public Expression implement(RexToLixTranslator translator,
-        RexCall call, List<Expression> translatedOperands) {
+    @Override
+    public Expression implement(RexToLixTranslator translator,
+            RexCall call, List<Expression> translatedOperands) {
         translatedOperands =
-            ConverterUtils.fromInternal(method.getParameterTypes(), translatedOperands);
+                ConverterUtils.fromInternal(method.getParameterTypes(), translatedOperands);
         translatedOperands =
-            ConverterUtils.convertAssignableTypes(method.getParameterTypes(), translatedOperands);
+                ConverterUtils.convertAssignableTypes(method.getParameterTypes(), translatedOperands);
         final Expression callExpr;
-        if ((method.getModifiers() & Modifier.STATIC) != 0)
+        if ((method.getModifiers() & Modifier.STATIC) != 0) {
             callExpr = Expressions.call(method, translatedOperands);
-
-        else {
+        } else {
             // The UDF class must have a public zero-args constructor.
             // Assume that the validator checked already.
             final Expression target =
-                Expressions.new_(method.getDeclaringClass());
+                    Expressions.new_(method.getDeclaringClass());
             callExpr = Expressions.call(target, method, translatedOperands);
         }
-        if (!containsCheckedException(method))
+        if (!containsCheckedException(method)) {
             return callExpr;
+        }
 
         return translator.handleMethodCheckedExceptions(callExpr);
     }
 
-    /** */
+    /**
+     *
+     */
     private boolean containsCheckedException(Method method) {
         Class[] exceptions = method.getExceptionTypes();
-        if (exceptions == null || exceptions.length == 0)
+        if (exceptions == null || exceptions.length == 0) {
             return false;
+        }
 
         for (Class clazz : exceptions) {
-            if (!RuntimeException.class.isAssignableFrom(clazz))
+            if (!RuntimeException.class.isAssignableFrom(clazz)) {
                 return true;
+            }
         }
         return false;
     }

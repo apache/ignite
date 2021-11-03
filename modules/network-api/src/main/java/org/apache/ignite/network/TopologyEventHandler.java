@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network;
 
 /**
@@ -28,8 +29,8 @@ public interface TopologyEventHandler {
     void onAppeared(ClusterNode member);
 
     /**
-     * Indicates that a member has left a cluster. This method is only called when a member leaves permanently (i.e.
-     * it is not possible to re-establish a connection to it).
+     * Indicates that a member has left a cluster. This method is only called when a member leaves permanently (i.e. it is not possible to
+     * re-establish a connection to it).
      *
      * @param member Disappeared cluster member.
      */

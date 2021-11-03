@@ -18,4 +18,5 @@
 /**
  * Contains classes for Ignite node management.
  */
+
 package org.apache.ignite.cli.builtins.node;

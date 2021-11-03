@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
+
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Flow;
@@ -24,7 +26,6 @@ import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -35,71 +36,93 @@ import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.TableRow;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
-
 /**
  * Scan node.
  */
-public class TableScanNode<Row> extends AbstractNode<Row> {
+public class TableScanNode<RowT> extends AbstractNode<RowT> {
     /** Special value to highlights that all row were received and we are not waiting any more. */
     private static final int NOT_WAITING = -1;
 
-    /** */
+    /**
+     *
+     */
     private final TableImpl table;
 
-    /** */
+    /**
+     *
+     */
     private final TableDescriptor desc;
 
-    /** */
-    private final RowHandler.RowFactory<Row> factory;
+    /**
+     *
+     */
+    private final RowHandler.RowFactory<RowT> factory;
 
-    /** */
+    /**
+     *
+     */
     private final int[] parts;
 
-    /** */
-    private final Queue<Row> inBuff = new LinkedBlockingQueue<>(inBufSize);
+    /**
+     *
+     */
+    private final Queue<RowT> inBuff = new LinkedBlockingQueue<>(inBufSize);
 
-    /** */
-    private final @Nullable Predicate<Row> filters;
+    /**
+     *
+     */
+    private final @Nullable Predicate<RowT> filters;
 
-    /** */
-    private final @Nullable Function<Row, Row> rowTransformer;
+    /**
+     *
+     */
+    private final @Nullable Function<RowT, RowT> rowTransformer;
 
     /** Participating columns. */
     private final @Nullable ImmutableBitSet requiredColumns;
 
-    /** */
+    /**
+     *
+     */
     private int requested;
 
-    /** */
+    /**
+     *
+     */
     private int waiting;
 
-    /** */
+    /**
+     *
+     */
     private boolean inLoop;
 
-    /** */
+    /**
+     *
+     */
     private Subscription activeSubscription;
 
-    /** */
+    /**
+     *
+     */
     private int curPartIdx;
 
     /**
-     * @param ctx Execution context.
-     * @param rowType Output type of the current node.
-     * @param desc Table descriptor this node should scan.
-     * @param parts Partition numbers to scan.
-     * @param filters Optional filter to filter out rows.
-     * @param rowTransformer Optional projection function.
+     * @param ctx             Execution context.
+     * @param rowType         Output type of the current node.
+     * @param desc            Table descriptor this node should scan.
+     * @param parts           Partition numbers to scan.
+     * @param filters         Optional filter to filter out rows.
+     * @param rowTransformer  Optional projection function.
      * @param requiredColumns Optional set of column of interest.
      */
     public TableScanNode(
-        ExecutionContext<Row> ctx,
-        RelDataType rowType,
-        TableDescriptor desc,
-        int[] parts,
-        @Nullable Predicate<Row> filters,
-        @Nullable Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet requiredColumns
+            ExecutionContext<RowT> ctx,
+            RelDataType rowType,
+            TableDescriptor desc,
+            int[] parts,
+            @Nullable Predicate<RowT> filters,
+            @Nullable Function<RowT, RowT> rowTransformer,
+            @Nullable ImmutableBitSet requiredColumns
     ) {
         super(ctx, rowType);
 
@@ -116,19 +139,22 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
         checkState();
 
         requested = rowsCnt;
 
-        if (!inLoop)
+        if (!inLoop) {
             context().execute(this::push, this::onError);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void closeInternal() {
+    @Override
+    public void closeInternal() {
         super.closeInternal();
 
         if (activeSubscription != null) {
@@ -139,7 +165,8 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         if (activeSubscription != null) {
             activeSubscription.cancel();
 
@@ -148,18 +175,21 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<Row>> sources) {
+    @Override
+    public void register(List<Node<RowT>> sources) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
     private void push() throws Exception {
-        if (isClosed())
+        if (isClosed()) {
             return;
+        }
 
         checkState();
 
@@ -169,28 +199,31 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
                 while (requested > 0 && !inBuff.isEmpty()) {
                     checkState();
 
-                    Row row = inBuff.poll();
+                    RowT row = inBuff.poll();
 
-                    if (filters != null && !filters.test(row))
+                    if (filters != null && !filters.test(row)) {
                         continue;
+                    }
 
-                    if (rowTransformer != null)
+                    if (rowTransformer != null) {
                         row = rowTransformer.apply(row);
+                    }
 
                     requested--;
                     downstream().push(row);
                 }
-            }
-            finally {
+            } finally {
                 inLoop = false;
             }
         }
 
-        if (waiting == 0 || activeSubscription == null)
+        if (waiting == 0 || activeSubscription == null) {
             requestNextBatch();
+        }
 
-        if (waiting == NOT_WAITING && !inBuff.isEmpty())
+        if (waiting == NOT_WAITING && !inBuff.isEmpty()) {
             context().execute(this::push, this::onError);
+        }
 
         if (requested > 0 && waiting == NOT_WAITING && inBuff.isEmpty()) {
             requested = 0;
@@ -199,26 +232,30 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
     }
 
     private void requestNextBatch() {
-        if (waiting == NOT_WAITING)
+        if (waiting == NOT_WAITING) {
             return;
+        }
 
-        if (waiting == 0)
+        if (waiting == 0) {
             waiting = inBufSize;
+        }
 
         Subscription subscription = this.activeSubscription;
-        if (subscription != null)
+        if (subscription != null) {
             subscription.request(waiting);
-        else if (curPartIdx < parts.length)
+        } else if (curPartIdx < parts.length) {
             table.internalTable().scan(parts[curPartIdx++], null).subscribe(new SubscriberImpl());
-        else
+        } else {
             waiting = NOT_WAITING;
+        }
     }
 
     private class SubscriberImpl implements Flow.Subscriber<BinaryRow> {
         private int received;
 
         /** {@inheritDoc} */
-        @Override public void onSubscribe(Subscription subscription) {
+        @Override
+        public void onSubscribe(Subscription subscription) {
             assert TableScanNode.this.activeSubscription == null;
 
             TableScanNode.this.activeSubscription = subscription;
@@ -226,8 +263,9 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onNext(BinaryRow binRow) {
-            Row row = convert(binRow);
+        @Override
+        public void onNext(BinaryRow binRow) {
+            RowT row = convert(binRow);
 
             inBuff.add(row);
 
@@ -242,14 +280,16 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onError(Throwable throwable) {
+        @Override
+        public void onError(Throwable throwable) {
             context().execute(() -> {
                 throw throwable;
             }, TableScanNode.this::onError);
         }
 
         /** {@inheritDoc} */
-        @Override public void onComplete() {
+        @Override
+        public void onComplete() {
             int received0 = received;
 
             context().execute(() -> {
@@ -261,8 +301,10 @@ public class TableScanNode<Row> extends AbstractNode<Row> {
         }
     }
 
-    /** */
-    private Row convert(BinaryRow binRow) {
+    /**
+     *
+     */
+    private RowT convert(BinaryRow binRow) {
         final org.apache.ignite.internal.schema.row.Row wrapped = table.schemaView().resolve(binRow);
 
         return desc.toRow(context(), TableRow.tuple(wrapped), factory, requiredColumns);

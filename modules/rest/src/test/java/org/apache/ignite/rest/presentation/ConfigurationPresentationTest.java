@@ -17,6 +17,11 @@
 
 package org.apache.ignite.rest.presentation;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,77 +43,84 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * Testing the {@link ConfigurationPresentation}.
  */
 public class ConfigurationPresentationTest {
     /** Configuration registry. */
     private static ConfigurationRegistry cfgRegistry;
-
+    
     /** Configuration presentation. */
     private static ConfigurationPresentation<String> cfgPresentation;
-
+    
     /** Test root configuration. */
     private static TestRootConfiguration cfg;
-
-    /**  */
+    
+    /**
+     *
+     */
     @BeforeAll
     static void beforeAll() {
         Validator<Value, Object> validator = new Validator<>() {
             /** {@inheritDoc} */
-            @Override public void validate(Value annotation, ValidationContext<Object> ctx) {
-                if (Objects.equals("error", ctx.getNewValue()))
+            @Override
+            public void validate(Value annotation, ValidationContext<Object> ctx) {
+                if (Objects.equals("error", ctx.getNewValue())) {
                     ctx.addIssue(new ValidationIssue("Error word"));
+                }
             }
         };
-
+        
         cfgRegistry = new ConfigurationRegistry(
-            List.of(TestRootConfiguration.KEY),
-            Map.of(Value.class, Set.of(validator)),
-            new TestConfigurationStorage(LOCAL),
-            List.of(),
-            List.of()
+                List.of(TestRootConfiguration.KEY),
+                Map.of(Value.class, Set.of(validator)),
+                new TestConfigurationStorage(LOCAL),
+                List.of(),
+                List.of()
         );
-
+        
         cfgRegistry.start();
-
+        
         cfgPresentation = new HoconPresentation(cfgRegistry);
-
+        
         cfg = cfgRegistry.getConfiguration(TestRootConfiguration.KEY);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @AfterAll
     static void afterAll() {
         cfgRegistry.stop();
         cfgRegistry = null;
-
+        
         cfgPresentation = null;
-
+        
         cfg = null;
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @BeforeEach
     void beforeEach() throws Exception {
         cfg.change(cfg -> cfg.changeFoo("foo").changeSubCfg(subCfg -> subCfg.changeBar("bar"))).get(1, SECONDS);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @Test
     void testRepresentWholeCfg() {
         String s = "{\"root\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"bar\"}}}";
-
+        
         assertEquals(s, cfgPresentation.represent());
         assertEquals(s, cfgPresentation.representByPath(null));
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @Test
     void testCorrectRepresentCfgByPath() {
         assertEquals("{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"bar\"}}", cfgPresentation.representByPath("root"));
@@ -116,61 +128,69 @@ public class ConfigurationPresentationTest {
         assertEquals("{\"bar\":\"bar\"}", cfgPresentation.representByPath("root.subCfg"));
         assertEquals("\"bar\"", cfgPresentation.representByPath("root.subCfg.bar"));
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @Test
     void testErrorRepresentCfgByPath() {
         assertThrows(
-            IllegalArgumentException.class,
-            () -> cfgPresentation.representByPath(UUID.randomUUID().toString())
+                IllegalArgumentException.class,
+                () -> cfgPresentation.representByPath(UUID.randomUUID().toString())
         );
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @Test
     void testCorrectUpdateFullCfg() {
         String updateVal = "{\"root\":{\"foo\":\"bar\",\"subCfg\":{\"bar\":\"foo\"}}}";
-
+        
         cfgPresentation.update(updateVal);
-
+        
         assertEquals("bar", cfg.foo().value());
         assertEquals("foo", cfg.subCfg().bar().value());
         assertEquals(updateVal, cfgPresentation.represent());
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @Test
     void testCorrectUpdateSubCfg() {
         cfgPresentation.update("{\"root\":{\"subCfg\":{\"bar\":\"foo\"}}}");
-
+        
         assertEquals("foo", cfg.foo().value());
         assertEquals("foo", cfg.subCfg().bar().value());
         assertEquals("{\"root\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"foo\"}}}", cfgPresentation.represent());
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @Test
     void testErrorUpdateCfg() {
         assertThrows(
-            IllegalArgumentException.class,
-            () -> cfgPresentation.update("{\"root\":{\"foo\":100,\"subCfg\":{\"bar\":\"foo\"}}}")
+                IllegalArgumentException.class,
+                () -> cfgPresentation.update("{\"root\":{\"foo\":100,\"subCfg\":{\"bar\":\"foo\"}}}")
         );
-
+        
         assertThrows(
-            IllegalArgumentException.class,
-            () -> cfgPresentation.update("{\"root0\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"foo\"}}}")
+                IllegalArgumentException.class,
+                () -> cfgPresentation.update("{\"root0\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"foo\"}}}")
         );
-
+        
         assertThrows(IllegalArgumentException.class, () -> cfgPresentation.update("{"));
-
+        
         assertThrows(IllegalArgumentException.class, () -> cfgPresentation.update(""));
-
+        
         assertThrows(
-            ConfigurationValidationException.class,
-            () -> cfgPresentation.update("{\"root\":{\"foo\":\"error\",\"subCfg\":{\"bar\":\"foo\"}}}")
+                ConfigurationValidationException.class,
+                () -> cfgPresentation.update("{\"root\":{\"foo\":\"error\",\"subCfg\":{\"bar\":\"foo\"}}}")
         );
     }
-
+    
     /**
      * Test root configuration schema.
      */
@@ -179,12 +199,12 @@ public class ConfigurationPresentationTest {
         /** Foo field. */
         @Value(hasDefault = true)
         public String foo = "foo";
-
+        
         /** Sub configuration schema. */
         @ConfigValue
         public TestSubConfigurationSchema subCfg;
     }
-
+    
     /**
      * Test sub configuration schema.
      */

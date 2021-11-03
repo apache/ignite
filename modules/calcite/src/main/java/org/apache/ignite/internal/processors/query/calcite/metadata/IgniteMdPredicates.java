@@ -29,22 +29,27 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
-/** */
+/**
+ *
+ */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdPredicates extends RelMdPredicates {
-    /** */
+    /**
+     *
+     */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider
-        .reflectiveSource(BuiltInMethod.PREDICATES.method, new IgniteMdPredicates());
+            .reflectiveSource(BuiltInMethod.PREDICATES.method, new IgniteMdPredicates());
 
     /**
      * See {@link RelMdPredicates#getPredicates(org.apache.calcite.rel.RelNode, org.apache.calcite.rel.metadata.RelMetadataQuery)}
      */
     public RelOptPredicateList getPredicates(ProjectableFilterableTableScan rel, RelMetadataQuery mq) {
         RexNode predicate = rel.pushUpPredicate();
-        if (predicate == null)
+        if (predicate == null) {
             return RelOptPredicateList.EMPTY;
+        }
 
         return RelOptPredicateList.of(RexUtils.builder(rel),
-            RexUtil.retainDeterministic(RelOptUtil.conjunctions(predicate)));
+                RexUtil.retainDeterministic(RelOptUtil.conjunctions(predicate)));
     }
 }

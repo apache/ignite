@@ -24,53 +24,58 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Range command for MetaStorageCommandListener that retrieves entries for the given key range in lexicographic order.
- * Entries will be filtered out by upper bound of given revision number.
+ * Range command for MetaStorageCommandListener that retrieves entries for the given key range in lexicographic order. Entries will be
+ * filtered out by upper bound of given revision number.
  */
 public final class RangeCommand implements WriteCommand {
     /** Start key of range (inclusive). Couldn't be {@code null}. */
-    @NotNull private final byte[] keyFrom;
+    @NotNull
+    private final byte[] keyFrom;
 
     /** End key of range (exclusive). Could be {@code null}. */
-    @Nullable private final byte[] keyTo;
+    @Nullable
+    private final byte[] keyTo;
 
     /** The upper bound for entry revision. {@code -1} means latest revision. */
-    @NotNull private final long revUpperBound;
+    @NotNull
+    private final long revUpperBound;
 
     /** Id of the node that requests range. */
-    @NotNull private final String requesterNodeId;
+    @NotNull
+    private final String requesterNodeId;
 
     /** Id of cursor that is associated with the current command. */
-    @NotNull private final IgniteUuid cursorId;
+    @NotNull
+    private final IgniteUuid cursorId;
 
     /**
-     * @param keyFrom Start key of range (inclusive).
-     * @param keyTo End key of range (exclusive).
+     * @param keyFrom         Start key of range (inclusive).
+     * @param keyTo           End key of range (exclusive).
      * @param requesterNodeId Id of the node that requests range.
-     * @param cursorId Id of cursor that is associated with the current command.
+     * @param cursorId        Id of cursor that is associated with the current command.
      */
     public RangeCommand(
-        @NotNull ByteArray keyFrom,
-        @Nullable ByteArray keyTo,
-        @NotNull String requesterNodeId,
-        @NotNull IgniteUuid cursorId
+            @NotNull ByteArray keyFrom,
+            @Nullable ByteArray keyTo,
+            @NotNull String requesterNodeId,
+            @NotNull IgniteUuid cursorId
     ) {
         this(keyFrom, keyTo, -1L, requesterNodeId, cursorId);
     }
 
     /**
-     * @param keyFrom Start key of range (inclusive).
-     * @param keyTo End key of range (exclusive).
-     * @param revUpperBound The upper bound for entry revision. {@code -1} means latest revision.
+     * @param keyFrom         Start key of range (inclusive).
+     * @param keyTo           End key of range (exclusive).
+     * @param revUpperBound   The upper bound for entry revision. {@code -1} means latest revision.
      * @param requesterNodeId Id of the node that requests range.
-     * @param cursorId Id of cursor that is associated with the current command.
+     * @param cursorId        Id of cursor that is associated with the current command.
      */
     public RangeCommand(
-        @NotNull ByteArray keyFrom,
-        @Nullable ByteArray keyTo,
-        long revUpperBound,
-        @NotNull String requesterNodeId,
-        @NotNull IgniteUuid cursorId
+            @NotNull ByteArray keyFrom,
+            @Nullable ByteArray keyTo,
+            long revUpperBound,
+            @NotNull String requesterNodeId,
+            @NotNull IgniteUuid cursorId
     ) {
         this.keyFrom = keyFrom.bytes();
         this.keyTo = keyTo == null ? null : keyTo.bytes();
@@ -110,7 +115,8 @@ public final class RangeCommand implements WriteCommand {
     /**
      * @return Id of cursor that is associated with the current command.
      */
-    @NotNull public IgniteUuid getCursorId() {
+    @NotNull
+    public IgniteUuid getCursorId() {
         return cursorId;
     }
 }

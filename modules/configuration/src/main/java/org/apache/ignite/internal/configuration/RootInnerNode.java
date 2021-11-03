@@ -35,7 +35,7 @@ public class RootInnerNode {
      * Constructor.
      *
      * @param node Root node.
-     * @param key Root key.
+     * @param key  Root key.
      */
     public RootInnerNode(RootKey<?, ?> key, InnerNode node) {
         this.node = node;

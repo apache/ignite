@@ -20,8 +20,7 @@ package org.apache.ignite.internal.metastorage.server;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Condition tests an entry's value is tombstone in meta storage.
- * Entry is tombstone if it is not empty and doesn't exists.
+ * Condition tests an entry's value is tombstone in meta storage. Entry is tombstone if it is not empty and doesn't exists.
  */
 public class TombstoneCondition extends AbstractCondition {
     /**
@@ -34,7 +33,8 @@ public class TombstoneCondition extends AbstractCondition {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean test(@NotNull Entry e) {
+    @Override
+    public boolean test(@NotNull Entry e) {
         return e.tombstone();
     }
 }

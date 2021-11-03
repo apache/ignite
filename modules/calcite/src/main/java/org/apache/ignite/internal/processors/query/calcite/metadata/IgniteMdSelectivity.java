@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.List;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -36,88 +37,105 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndex
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
-/** */
+/**
+ *
+ */
 public class IgniteMdSelectivity extends RelMdSelectivity {
-    /** */
+    /**
+     *
+     */
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.SELECTIVITY.method, new IgniteMdSelectivity());
+            ReflectiveRelMetadataProvider.reflectiveSource(
+                    BuiltInMethod.SELECTIVITY.method, new IgniteMdSelectivity());
 
-    /** */
+    /**
+     *
+     */
     public Double getSelectivity(AbstractIndexScan rel, RelMetadataQuery mq, RexNode predicate) {
-        if (predicate != null)
-            return getSelectivity((ProjectableFilterableTableScan)rel, mq, predicate);
+        if (predicate != null) {
+            return getSelectivity((ProjectableFilterableTableScan) rel, mq, predicate);
+        }
 
         List<RexNode> lowerCond = rel.lowerCondition();
         List<RexNode> upperCond = rel.upperCondition();
 
-        if (nullOrEmpty(lowerCond) && nullOrEmpty(upperCond))
+        if (nullOrEmpty(lowerCond) && nullOrEmpty(upperCond)) {
             return RelMdUtil.guessSelectivity(rel.condition());
+        }
 
         double idxSelectivity = 1.0;
         int len = nullOrEmpty(lowerCond) ? upperCond.size() : nullOrEmpty(upperCond) ? lowerCond.size() :
-            Math.max(lowerCond.size(), upperCond.size());
+                Math.max(lowerCond.size(), upperCond.size());
 
         for (int i = 0; i < len; i++) {
-            RexCall lower = nullOrEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall)lowerCond.get(i);
-            RexCall upper = nullOrEmpty(upperCond) || upperCond.size() <= i ? null : (RexCall)upperCond.get(i);
+            RexCall lower = nullOrEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall) lowerCond.get(i);
+            RexCall upper = nullOrEmpty(upperCond) || upperCond.size() <= i ? null : (RexCall) upperCond.get(i);
 
             assert lower != null || upper != null;
 
-            if (lower != null && upper != null)
+            if (lower != null && upper != null) {
                 idxSelectivity *= lower.op.kind == SqlKind.EQUALS ? .1 : .2;
-            else
+            } else {
                 idxSelectivity *= .35;
+            }
         }
 
         List<RexNode> conjunctions = RelOptUtil.conjunctions(rel.condition());
 
-        if (!nullOrEmpty(lowerCond))
+        if (!nullOrEmpty(lowerCond)) {
             conjunctions.removeAll(lowerCond);
-        if (!nullOrEmpty(upperCond))
+        }
+        if (!nullOrEmpty(upperCond)) {
             conjunctions.removeAll(upperCond);
+        }
 
         RexNode remaining = RexUtil.composeConjunction(RexUtils.builder(rel), conjunctions, true);
 
         return idxSelectivity * RelMdUtil.guessSelectivity(remaining);
     }
 
-    /** */
+    /**
+     *
+     */
     public Double getSelectivity(ProjectableFilterableTableScan rel, RelMetadataQuery mq, RexNode predicate) {
-        if (predicate == null)
+        if (predicate == null) {
             return RelMdUtil.guessSelectivity(rel.condition());
+        }
 
         RexNode condition = rel.pushUpPredicate();
-        if (condition == null)
+        if (condition == null) {
             return RelMdUtil.guessSelectivity(predicate);
+        }
 
         RexNode diff = RelMdUtil.minusPreds(RexUtils.builder(rel), predicate, condition);
         return RelMdUtil.guessSelectivity(diff);
     }
 
-    /** */
+    /**
+     *
+     */
     public Double getSelectivity(IgniteSortedIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
         if (predicate != null) {
             return mq.getSelectivity(rel.getInput(),
-                RelMdUtil.minusPreds(
-                    rel.getCluster().getRexBuilder(),
-                    predicate,
-                    rel.condition()));
+                    RelMdUtil.minusPreds(
+                            rel.getCluster().getRexBuilder(),
+                            predicate,
+                            rel.condition()));
         }
 
         return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 
-    /** */
+    /**
+     *
+     */
     public Double getSelectivity(IgniteHashIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
         if (predicate != null) {
             return mq.getSelectivity(rel.getInput(),
-                RelMdUtil.minusPreds(
-                    rel.getCluster().getRexBuilder(),
-                    predicate,
-                    rel.condition()));
+                    RelMdUtil.minusPreds(
+                            rel.getCluster().getRexBuilder(),
+                            predicate,
+                            rel.condition()));
         }
 
         return mq.getSelectivity(rel.getInput(), rel.condition());

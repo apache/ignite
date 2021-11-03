@@ -40,108 +40,117 @@ import org.apache.ignite.schema.definition.index.IndexDefinition;
 public class TableDefinitionBuilderImpl implements TableDefinitionBuilder {
     /** Schema name. */
     private final String schemaName;
-
+    
     /** Table name. */
     private final String tableName;
-
+    
     /** Columns definitions. */
     private final LinkedHashMap<String, ColumnDefinition> columns = new LinkedHashMap<>();
-
+    
     /** Indices definitions. */
     private final Map<String, IndexDefinition> indices = new HashMap<>();
-
+    
     /** Table primary key. */
     private PrimaryKeyDefinition primaryKeyDefinition;
-
+    
     /**
      * Constructor.
      *
      * @param schemaName Schema name.
-     * @param tableName Table name.
+     * @param tableName  Table name.
      */
     public TableDefinitionBuilderImpl(String schemaName, String tableName) {
         this.schemaName = schemaName;
         this.tableName = tableName;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public TableDefinitionBuilderImpl columns(ColumnDefinition... columns) {
+    @Override
+    public TableDefinitionBuilderImpl columns(ColumnDefinition... columns) {
         for (ColumnDefinition column : columns) {
-            if (this.columns.put(column.name(), column) != null)
+            if (this.columns.put(column.name(), column) != null) {
                 throw new IllegalArgumentException("Column with same name already exists: columnName=" + column.name());
+            }
         }
-
+        
         return this;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public TableDefinitionBuilder withIndex(IndexDefinition indexDefinition) {
-        if (indices.put(indexDefinition.name(), indexDefinition) != null)
+    @Override
+    public TableDefinitionBuilder withIndex(IndexDefinition indexDefinition) {
+        if (indices.put(indexDefinition.name(), indexDefinition) != null) {
             throw new IllegalArgumentException("Index with same name already exists: " + indexDefinition.name());
-
+        }
+        
         return this;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public TableDefinitionBuilder withPrimaryKey(String colName) {
+    @Override
+    public TableDefinitionBuilder withPrimaryKey(String colName) {
         primaryKeyDefinition = SchemaBuilders.primaryKey().withColumns(colName).build();
-
+        
         return this;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public TableDefinitionBuilder withPrimaryKey(PrimaryKeyDefinition primaryKeyDefinition) {
+    @Override
+    public TableDefinitionBuilder withPrimaryKey(PrimaryKeyDefinition primaryKeyDefinition) {
         this.primaryKeyDefinition = primaryKeyDefinition;
-
+        
         return this;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public TableDefinitionBuilder withHints(Map<String, String> hints) {
+    @Override
+    public TableDefinitionBuilder withHints(Map<String, String> hints) {
         // No op.
         return this;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public TableDefinition build() {
+    @Override
+    public TableDefinition build() {
         assert schemaName != null : "Database schema name must be specified.";
-
+        
         assert columns.size() > primaryKeyDefinition.columns().size() : "Key or/and value columns must be defined.";
         assert primaryKeyDefinition != null : "Primary key index must be configured.";
-
+        
         validateIndices(indices.values(), columns.values(), primaryKeyDefinition.affinityColumns());
-
+        
         return new TableDefinitionImpl(
-            schemaName,
-            tableName,
-            columns,
-            primaryKeyDefinition,
-            Collections.unmodifiableMap(indices)
+                schemaName,
+                tableName,
+                columns,
+                primaryKeyDefinition,
+                Collections.unmodifiableMap(indices)
         );
     }
-
+    
     /**
      * Validate indices.
      *
-     * @param indices Table indices.
-     * @param cols Table columns.
+     * @param indices     Table indices.
+     * @param cols        Table columns.
      * @param affColNames Affinity columns names.
      */
     public static void validateIndices(Collection<IndexDefinition> indices, Collection<ColumnDefinition> cols, Set<String> affColNames) {
         Set<String> colNames = cols.stream().map(ColumnDefinition::name).collect(Collectors.toSet());
-
+        
         for (IndexDefinition idx : indices) {
             assert idx instanceof ColumnarIndexDefinition : "Only columnar indices are supported.";
             // Note: E.g. functional index is not columnar index as it index an expression result only.
-
-            ColumnarIndexDefinition idx0 = (ColumnarIndexDefinition)idx;
-
-            if (!idx0.columns().stream().map(IndexColumnDefinition::name).allMatch(colNames::contains))
+            
+            ColumnarIndexDefinition idx0 = (ColumnarIndexDefinition) idx;
+    
+            if (!idx0.columns().stream().map(IndexColumnDefinition::name).allMatch(colNames::contains)) {
                 throw new IllegalStateException("Index column must exist in the schema.");
-
-            if (idx0.unique() &&
-                    !(idx0.columns().stream().map(IndexColumnDefinition::name).allMatch(affColNames::contains)))
+            }
+    
+            if (idx0.unique() && !(idx0.columns().stream().map(IndexColumnDefinition::name).allMatch(affColNames::contains))) {
                 throw new IllegalStateException("Unique index must contains all affinity columns.");
+            }
         }
     }
 }

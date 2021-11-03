@@ -43,8 +43,7 @@ public class IgniteInternalCheckedException extends Exception {
     }
 
     /**
-     * Creates a new grid exception with the given throwable as a cause and
-     * source of error message.
+     * Creates a new grid exception with the given throwable as a cause and source of error message.
      *
      * @param cause Non-null throwable cause.
      */
@@ -55,8 +54,8 @@ public class IgniteInternalCheckedException extends Exception {
     /**
      * Creates a new exception with the given error message and optional nested exception.
      *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
+     * @param msg                Error message.
+     * @param cause              Optional nested exception (can be {@code null}).
      * @param writableStackTrace Whether or not the stack trace should be writable.
      */
     public IgniteInternalCheckedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
@@ -66,7 +65,7 @@ public class IgniteInternalCheckedException extends Exception {
     /**
      * Creates a new exception with the given error message and optional nested exception.
      *
-     * @param msg Error message.
+     * @param msg   Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
     public IgniteInternalCheckedException(String msg, @Nullable Throwable cause) {
@@ -74,7 +73,8 @@ public class IgniteInternalCheckedException extends Exception {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return getClass() + ": " + getMessage();
     }
 }

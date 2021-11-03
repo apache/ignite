@@ -18,4 +18,5 @@
 /**
  * Ignite general purpose classes and interfaces.
  */
+
 package org.apache.ignite.lang;

@@ -24,8 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * {@link Repeatable} for the {@link WithSystemProperty}.<br/>
- * Not intended for direct usage. Use multiple {@link WithSystemProperty} annotation instead.
+ * {@link Repeatable} for the {@link WithSystemProperty}.<br/> Not intended for direct usage. Use multiple {@link WithSystemProperty}
+ * annotation instead.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})

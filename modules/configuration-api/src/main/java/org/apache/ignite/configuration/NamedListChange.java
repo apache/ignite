@@ -24,10 +24,10 @@ import org.apache.ignite.configuration.notifications.ConfigurationNotificationEv
 /**
  * Closure parameter for {@link NamedConfigurationTree#change(Consumer)} method. Contains methods to modify named lists.
  *
- * @param <VIEW> Type for the reading named list elements of this particular list.
- * @param <CHANGE> Type for changing named list elements of this particular list.
+ * @param <VIEWT> Type for the reading named list elements of this particular list.
+ * @param <CHANGET> Type for changing named list elements of this particular list.
  */
-public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListView<VIEW> {
+public interface NamedListChange<VIEWT, CHANGET extends VIEWT> extends NamedListView<VIEWT> {
     /**
      * Creates a new value in the named list configuration.
      *
@@ -39,7 +39,7 @@ public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListVie
      * @throws NullPointerException If one of the parameters is null.
      * @throws IllegalArgumentException If an element with the given name already exists.
      */
-    NamedListChange<VIEW, CHANGE> create(String key, Consumer<CHANGE> valConsumer);
+    NamedListChange<VIEWT, CHANGET> create(String key, Consumer<CHANGET> valConsumer);
 
     /**
      * Creates a new value at the given position in the named list configuration.
@@ -54,7 +54,7 @@ public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListVie
      * @throws IndexOutOfBoundsException If index is negative of exceeds the size of the list.
      * @throws IllegalArgumentException If an element with the given name already exists.
      */
-    NamedListChange<VIEW, CHANGE> create(int index, String key, Consumer<CHANGE> valConsumer);
+    NamedListChange<VIEWT, CHANGET> create(int index, String key, Consumer<CHANGET> valConsumer);
 
     /**
      * Create a new value after a given precedingKey key in the named list configuration.
@@ -69,7 +69,7 @@ public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListVie
      * @throws IllegalArgumentException If element with given name already exists
      *      or if {@code precedingKey} element doesn't exist.
      */
-    NamedListChange<VIEW, CHANGE> createAfter(String precedingKey, String key, Consumer<CHANGE> valConsumer);
+    NamedListChange<VIEWT, CHANGET> createAfter(String precedingKey, String key, Consumer<CHANGET> valConsumer);
 
     /**
      * Updates a value in the named list configuration. If the value cannot be found, creates a new one instead.
@@ -82,7 +82,7 @@ public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListVie
      * @throws NullPointerException If one of parameters is null.
      * @throws IllegalArgumentException If {@link #delete(String)} has been invoked with the same key previously.
      */
-    NamedListChange<VIEW, CHANGE> createOrUpdate(String key, Consumer<CHANGE> valConsumer);
+    NamedListChange<VIEWT, CHANGET> createOrUpdate(String key, Consumer<CHANGET> valConsumer);
 
     /**
      * Renames the existing value in the named list configuration. Element with key {@code oldKey} must exist and key
@@ -100,7 +100,7 @@ public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListVie
      *      {@code oldKey} doesn't exist, or {@link #delete(String)} has previously been invoked with either the
      *      {@code newKey} or the {@code oldKey}.
      */
-    NamedListChange<VIEW, CHANGE> rename(String oldKey, String newKey);
+    NamedListChange<VIEWT, CHANGET> rename(String oldKey, String newKey);
 
     /**
      * Removes the value from the named list configuration.
@@ -112,5 +112,5 @@ public interface NamedListChange<VIEW, CHANGE extends VIEW> extends NamedListVie
      * @throws IllegalArgumentException If {@link #createOrUpdate(String, Consumer)} has been invoked with the same key
      *      previously.
      */
-    NamedListChange<VIEW, CHANGE> delete(String key);
+    NamedListChange<VIEWT, CHANGET> delete(String key);
 }

@@ -27,10 +27,11 @@ import org.apache.ignite.configuration.validation.Validator;
  */
 public class MaxValidator implements Validator<Max, Number> {
     /** {@inheritDoc} */
-    @Override public void validate(Max annotation, ValidationContext<Number> ctx) {
+    @Override
+    public void validate(Max annotation, ValidationContext<Number> ctx) {
         if (ctx.getNewValue().longValue() > annotation.value()) {
             ctx.addIssue(new ValidationIssue(
-                "Configuration value '" + ctx.currentKey() + "' must not be greater than " + annotation.value()
+                    "Configuration value '" + ctx.currentKey() + "' must not be greater than " + annotation.value()
             ));
         }
     }

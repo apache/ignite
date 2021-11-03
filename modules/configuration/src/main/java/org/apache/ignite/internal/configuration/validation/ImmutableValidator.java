@@ -25,14 +25,15 @@ import org.apache.ignite.configuration.validation.Validator;
 
 public class ImmutableValidator implements Validator<Immutable, Object> {
     /** {@inheritDoc} */
-    @Override public void validate(Immutable annotation, ValidationContext<Object> ctx) {
+    @Override
+    public void validate(Immutable annotation, ValidationContext<Object> ctx) {
         Object oldValue = ctx.getOldValue();
         Object newValue = ctx.getNewValue();
 
         if (oldValue != null && !Objects.deepEquals(oldValue, newValue)) {
             ctx.addIssue(new ValidationIssue(
-                "'" + ctx.currentKey() + "' configuration value is immutable and cannot be updated [curVal="
-                    + oldValue + ", newVal=" + newValue + ']'
+                    "'" + ctx.currentKey() + "' configuration value is immutable and cannot be updated [curVal="
+                            + oldValue + ", newVal=" + newValue + ']'
             ));
         }
     }

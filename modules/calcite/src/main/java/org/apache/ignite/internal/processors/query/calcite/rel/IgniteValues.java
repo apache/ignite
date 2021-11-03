@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
+
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -26,8 +28,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
@@ -37,38 +37,41 @@ public class IgniteValues extends Values implements IgniteRel {
      * Creates a new Values.
      *
      * <p>Note that tuples passed in become owned by
-     * this rel (without a deep copy), so caller must not modify them after this
-     * call, otherwise bad things will happen.
+     * this rel (without a deep copy), so caller must not modify them after this call, otherwise bad things will happen.
      *
      * @param cluster Cluster that this relational expression belongs to
      * @param rowType Row type for tuples produced by this rel
-     * @param tuples  2-dimensional array of tuple values to be produced; outer
-     *                list contains tuples; each inner list is one tuple; all
+     * @param tuples  2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all
      *                tuples must be of same length, conforming to rowType
      */
     public IgniteValues(RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits) {
         super(cluster, rowType, tuples, traits);
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteValues(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.isEmpty();
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteValues(cluster, getRowType(), getTuples(), getTraitSet());
     }
 }

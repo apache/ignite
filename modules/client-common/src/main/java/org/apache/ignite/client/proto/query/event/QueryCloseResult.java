@@ -34,14 +34,15 @@ public class QueryCloseResult extends Response {
      * Constructor.
      *
      * @param status Status code.
-     * @param err Error message.
+     * @param err    Error message.
      */
     public QueryCloseResult(int status, String err) {
         super(status, err);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(QueryCloseResult.class, this);
     }
 }

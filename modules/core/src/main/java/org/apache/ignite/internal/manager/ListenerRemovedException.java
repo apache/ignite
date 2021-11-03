@@ -30,6 +30,8 @@ public class ListenerRemovedException extends IgniteInternalCheckedException {
     }
 
     /**
+     * Constructor.
+     *
      * @param cause The exception that was a cause which a listener is removed.
      */
     public ListenerRemovedException(IgniteInternalCheckedException cause) {

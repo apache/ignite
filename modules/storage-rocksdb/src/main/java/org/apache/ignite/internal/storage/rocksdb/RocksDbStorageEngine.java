@@ -38,24 +38,26 @@ public class RocksDbStorageEngine implements StorageEngine {
     }
 
     /** {@inheritDoc} */
-    @Override public DataRegion createDataRegion(DataRegionConfiguration regionCfg) {
+    @Override
+    public DataRegion createDataRegion(DataRegionConfiguration regionCfg) {
         return new RocksDbDataRegion(regionCfg);
     }
 
     /** {@inheritDoc} */
-    @Override public TableStorage createTable(
-        Path tablePath,
-        TableConfiguration tableCfg,
-        DataRegion dataRegion,
-        BiFunction<TableView, String, Comparator<ByteBuffer>> indexComparatorFactory
+    @Override
+    public TableStorage createTable(
+            Path tablePath,
+            TableConfiguration tableCfg,
+            DataRegion dataRegion,
+            BiFunction<TableView, String, Comparator<ByteBuffer>> indexComparatorFactory
     ) {
         assert dataRegion instanceof RocksDbDataRegion : dataRegion;
 
         return new RocksDbTableStorage(
-            tablePath,
-            tableCfg,
-            (RocksDbDataRegion)dataRegion,
-            indexComparatorFactory
+                tablePath,
+                tableCfg,
+                (RocksDbDataRegion) dataRegion,
+                indexComparatorFactory
         );
     }
 }

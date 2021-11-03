@@ -43,7 +43,7 @@ public class ReplaceExactInvokeClosure implements InvokeClosure<Boolean> {
      * Constructor.
      *
      * @param expectedRow Expected row.
-     * @param newRow New row.
+     * @param newRow      New row.
      */
     public ReplaceExactInvokeClosure(@NotNull DataRow expectedRow, @NotNull DataRow newRow) {
         this.expectedRow = expectedRow;
@@ -51,23 +51,27 @@ public class ReplaceExactInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@Nullable DataRow row) {
+    @Override
+    public void call(@Nullable DataRow row) {
         replaces = row != null && Arrays.equals(row.valueBytes(), expectedRow.valueBytes());
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DataRow newRow() {
+    @Override
+    public @Nullable DataRow newRow() {
         return newRow;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable OperationType operationType() {
+    @Override
+    public @Nullable OperationType operationType() {
         return replaces ? OperationType.WRITE : OperationType.NOOP;
     }
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public Boolean result() {
+    @Override
+    public Boolean result() {
         return replaces;
     }
 }

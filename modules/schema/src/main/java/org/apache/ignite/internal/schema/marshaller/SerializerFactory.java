@@ -43,7 +43,7 @@ public interface SerializerFactory {
     /**
      * Creates serializer.
      *
-     * @param schema Schema descriptor.
+     * @param schema   Schema descriptor.
      * @param keyClass Key class.
      * @param valClass Value class.
      * @return Serializer.

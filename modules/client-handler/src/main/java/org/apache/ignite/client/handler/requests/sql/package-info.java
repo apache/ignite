@@ -18,4 +18,5 @@
 /**
  * Sql API handler.
  */
+
 package org.apache.ignite.client.handler.requests.sql;

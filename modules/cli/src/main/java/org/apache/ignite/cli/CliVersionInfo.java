@@ -39,14 +39,14 @@ public class CliVersionInfo {
             prop.load(inputStream);
 
             ver = prop.getProperty("version", "undefined");
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can' read ignite version info");
+        } catch (IOException e) {
+            throw new IgniteCliException("Can' read ignite version info");
         }
     }
 
     /**
      * Creates Ignite CLI version provider from the manually setted version.
+     *
      * @param ver Ignite CLI version
      */
     public CliVersionInfo(String ver) {

@@ -34,9 +34,9 @@ public final class BinaryObjects {
     /**
      * Deserializes binary object.
      *
-     * @param obj Object to deserialize.
+     * @param obj       Object to deserialize.
      * @param targetCls Target class.
-     * @param <T> Target type.
+     * @param <T>       Target type.
      * @return Deserialized object.
      */
     public static <T> T deserialize(BinaryObject obj, Class<T> targetCls) {

@@ -23,49 +23,35 @@ import org.apache.ignite.internal.schema.TemporalNativeType;
 
 /**
  * Helper class for temporal type conversions.
- * <p>
- * Provides methods to encode/decode temporal types in a compact way for further writing to row.
- * Conversion preserves natural type order.
- * <p>
- * DATE is a fixed-length type which compacted representation keeps ordering, value is signed and fit into a 3-bytes.
- * Thus, DATE value can be compared by bytes where first byte is signed and others - unsigned.
- * Thus temporal functions, like YEAR(), can easily extracts fields with a mask,
- * <p>
- * Date compact structure:
- * ┌──────────────┬─────────┬────────┐
- * │ Year(signed) │ Month   │ Day    │
- * ├──────────────┼─────────┼────────┤
- * │ 15 bits      │ 4 bits  │ 5 bits │
- * └──────────────┴─────────┴────────┘
- * <p>
- * TIME is a fixed-length type supporting accuracy from 1 second up to 1 nanosecond.
- * Compacted time representation keeps ordering, values fits to 4-6 bytes value.
- * The first 18 bits is used for hours, minutes and seconds, and the last bits for fractional seconds:
- * 14 for millisecond precision and 30 for nanosecond.
- * Values of a type of any intermediate precisions is normalized to the type,
- * then stored as shortest possible structure without a precision lost.
- * <p>
- * Time compact structure:
- * ┌─────────┬─────────┬──────────┬─────────────┐
- * │ Hours   │ Minutes │ Seconds  │ Sub-seconds │
- * ├─────────┼─────────┼──────────┼─────────────┤
- * │ 6 bit   │ 6 bits  │ 6 bit    │ 14 bits     │ - 32-bits in total.
- * │ 6 bit   │ 6 bits  │ 6 bit    │ 30 bits     │ - 48-bits in total.
- * └─────────┴─────────┴──────────┴─────────────┘
- * <p>
- * DATETIME is just a concatenation of DATE and TIME values.
- * <p>
- * TIMESTAMP has similar structure to {@link java.time.Instant} and supports precision from 1 second up to 1 nanosecond.
- * Fractional seconds part is stored in a separate bit sequence which is omitted for {@code 0} accuracy.
- * <p>
- * Total value size is 8/12 bytes depending on the type precision.
- * <p>
- * Timestamp compact structure:
- * ┌──────────────────────────┬─────────────┐
- * │ Seconds since the epoch  │ Sub-seconds │
- * ├──────────────────────────┼─────────────┤
- * │    64 bits               │ 0/32 bits   │
- * └──────────────────────────┴─────────────┘
+ *
+ * <p>Provides methods to encode/decode temporal types in a compact way for further writing to row. Conversion preserves natural type
+ * order.
+ *
+ * <p>DATE is a fixed-length type which compacted representation keeps ordering, value is signed and fit into a 3-bytes. Thus, DATE value
+ * canbe compared by bytes where first byte is signed and others - unsigned. Thus temporal functions, like YEAR(), can easily extracts
+ * fields with a mask,
+ *
+ * <p>Date compact structure: ┌──────────────┬─────────┬────────┐ │ Year(signed) │ Month   │ Day    │ ├──────────────┼─────────┼────────┤ │
+ * 15 bits      │ 4 bits  │ 5 bits │ └──────────────┴─────────┴────────┘
+ *
+ * <p>TIME is a fixed-length type supporting accuracy from 1 second up to 1 nanosecond. Compacted time representation keeps ordering,
+ * values fits to 4-6 bytes value. The first 18 bits is used for hours, minutes and seconds, and the last bits for fractional seconds: 14
+ * for millisecond precision and 30 for nanosecond. Values of a type of any intermediate precisions is normalized to the type, then stored
+ * as shortest possible structure without a precision lost.
+ *
+ * <p>Time compact structure: ┌─────────┬─────────┬──────────┬─────────────┐ │ Hours   │ Minutes │ Seconds  │ Sub-seconds │
+ * ├─────────┼─────────┼──────────┼─────────────┤ │ 6 bit   │ 6 bits  │ 6 bit    │ 14 bits     │ - 32-bits in total. │ 6 bit   │ 6 bits  │
+ * 6 bit    │ 30 bits     │ - 48-bits in total. └─────────┴─────────┴──────────┴─────────────┘
+ *
+ * <p>DATETIME is just a concatenation of DATE and TIME values.
+ *
+ * <p>TIMESTAMP has similar structure to {@link java.time.Instant} and supports precision from 1 second up to 1 nanosecond. Fractional
+ * seconds part is stored in a separate bit sequence which is omitted for {@code 0} accuracy.
+ *
+ * <p>Total value size is 8/12 bytes depending on the type precision.
+ *
+ * <p>Timestamp compact structure: ┌──────────────────────────┬─────────────┐ │ Seconds since the epoch  │ Sub-seconds │
+ * ├──────────────────────────┼─────────────┤ │    64 bits               │ 0/32 bits   │ └──────────────────────────┴─────────────┘
  *
  * @see org.apache.ignite.internal.schema.row.Row
  * @see org.apache.ignite.internal.schema.row.RowAssembler
@@ -143,10 +129,9 @@ public class TemporalTypesHelper {
     }
 
     /**
-     * Encode LocalTime to long as concatenation of 2 int values:
-     * encoded time with precision of seconds and fractional seconds.
+     * Encode LocalTime to long as concatenation of 2 int values: encoded time with precision of seconds and fractional seconds.
      *
-     * @param type Native temporal type.
+     * @param type      Native temporal type.
      * @param localTime Time.
      * @return Encoded local time.
      * @see #NANOSECOND_PART_LEN
@@ -159,7 +144,7 @@ public class TemporalTypesHelper {
 
         int fractional = truncateTo(type.precision(), localTime.getNano());
 
-        return ((long)time << 32) | fractional;
+        return ((long) time << 32) | fractional;
     }
 
     /**
@@ -170,8 +155,8 @@ public class TemporalTypesHelper {
      * @return LocalTime instance.
      */
     public static LocalTime decodeTime(TemporalNativeType type, long time) {
-        int fractional = (int)time;
-        int time0 = (int)(time >>> 32);
+        int fractional = (int) time;
+        int time0 = (int) (time >>> 32);
 
         int sec = time0 & mask(SECONDS_FIELD_LENGTH);
         int min = (time0 >>>= SECONDS_FIELD_LENGTH) & mask(MINUTES_FIELD_LENGTH);
@@ -203,7 +188,7 @@ public class TemporalTypesHelper {
     /**
      * Normalize nanoseconds regarding the precision.
      *
-     * @param nanos Nanoseconds.
+     * @param nanos     Nanoseconds.
      * @param precision Meaningful digits.
      * @return Normalized nanoseconds.
      */
@@ -257,7 +242,7 @@ public class TemporalTypesHelper {
      * Normalize to given precision and truncate to meaningful time unit.
      *
      * @param precision Precision.
-     * @param nanos Seconds' fractional part.
+     * @param nanos     Seconds' fractional part.
      * @return Truncated fractional seconds (millis, micros or nanos).
      */
     private static int truncateTo(int precision, int nanos) {

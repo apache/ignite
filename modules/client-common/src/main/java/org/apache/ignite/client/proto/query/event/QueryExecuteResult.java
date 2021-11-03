@@ -42,7 +42,7 @@ public class QueryExecuteResult extends Response {
      * Constructor.
      *
      * @param status Status code.
-     * @param err Error message.
+     * @param err    Error message.
      */
     public QueryExecuteResult(int status, String err) {
         super(status, err);
@@ -64,24 +64,29 @@ public class QueryExecuteResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         packer.packArrayHeader(results.size());
 
-        for (QuerySingleResult result : results)
+        for (QuerySingleResult result : results) {
             result.writeBinary(packer);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         int size = unpacker.unpackArrayHeader();
 
@@ -111,7 +116,8 @@ public class QueryExecuteResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(QueryExecuteResult.class, this);
     }
 }

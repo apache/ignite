@@ -25,12 +25,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implementation of the {@link ConfigurationNotificationEvent}.
  */
-class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificationEvent<VIEW> {
+class ConfigurationNotificationEventImpl<VIEWT> implements ConfigurationNotificationEvent<VIEWT> {
     /** Previous value of the updated configuration. */
-    private final VIEW oldValue;
+    private final VIEWT oldValue;
 
     /** Updated value of the configuration. */
-    private final VIEW newValue;
+    private final VIEWT newValue;
 
     /** Storage revision. */
     private final long storageRevision;
@@ -41,16 +41,16 @@ class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificat
     /**
      * Constructor.
      *
-     * @param oldValue Previous value of the updated configuration.
-     * @param newValue Updated value of the configuration.
+     * @param oldValue        Previous value of the updated configuration.
+     * @param newValue        Updated value of the configuration.
      * @param storageRevision Storage revision.
-     * @param configs Configuration containers.
+     * @param configs         Configuration containers.
      */
     ConfigurationNotificationEventImpl(
-        VIEW oldValue,
-        VIEW newValue,
-        long storageRevision,
-        Map<Class<? extends ConfigurationProperty>, ConfigurationContainer> configs
+            VIEWT oldValue,
+            VIEWT newValue,
+            long storageRevision,
+            Map<Class<? extends ConfigurationProperty>, ConfigurationContainer> configs
     ) {
         this.oldValue = oldValue;
         this.newValue = newValue;
@@ -59,32 +59,37 @@ class ConfigurationNotificationEventImpl<VIEW> implements ConfigurationNotificat
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable VIEW oldValue() {
+    @Override
+    public @Nullable VIEWT oldValue() {
         return oldValue;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable VIEW newValue() {
+    @Override
+    public @Nullable VIEWT newValue() {
         return newValue;
     }
 
     /** {@inheritDoc} */
-    @Override public long storageRevision() {
+    @Override
+    public long storageRevision() {
         return storageRevision;
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends ConfigurationProperty> @Nullable T config(
-        Class<? extends ConfigurationProperty> configClass
+    @Override
+    public <T extends ConfigurationProperty> @Nullable T config(
+            Class<? extends ConfigurationProperty> configClass
     ) {
         ConfigurationContainer container = configs.get(configClass);
 
-        return container == null ? null : (T)container.config;
+        return container == null ? null : (T) container.config;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable <T extends ConfigurationProperty> String name(
-        Class<? extends ConfigurationProperty> configClass
+    @Override
+    public @Nullable <T extends ConfigurationProperty> String name(
+            Class<? extends ConfigurationProperty> configClass
     ) {
         ConfigurationContainer container = configs.get(configClass);
 

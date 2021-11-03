@@ -33,7 +33,7 @@ public class Pair<T, V> {
     /**
      * Constructor.
      *
-     * @param first First object.
+     * @param first  First object.
      * @param second Second object.
      */
     public Pair(T first, V second) {

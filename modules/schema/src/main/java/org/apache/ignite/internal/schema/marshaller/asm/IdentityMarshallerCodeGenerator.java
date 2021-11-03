@@ -32,47 +32,52 @@ class IdentityMarshallerCodeGenerator implements MarshallerCodeGenerator {
     private final ColumnAccessCodeGenerator columnAccessor;
 
     /** Target class. */
-    private final Class<?> tClass;
+    private final Class<?> targetClass;
 
     /**
      * Constructor.
      *
-     * @param tClass Target class.
+     * @param targetClass         Target class.
      * @param columnAccessor Row column code generator.
      */
-    IdentityMarshallerCodeGenerator(Class<?> tClass, ColumnAccessCodeGenerator columnAccessor) {
-        this.tClass = tClass;
+    IdentityMarshallerCodeGenerator(Class<?> targetClass, ColumnAccessCodeGenerator columnAccessor) {
+        this.targetClass = targetClass;
         this.columnAccessor = columnAccessor;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSimpleType() {
+    @Override
+    public boolean isSimpleType() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<?> targetClass() {
-        return tClass;
+    @Override
+    public Class<?> targetClass() {
+        return targetClass;
     }
 
     /** {@inheritDoc} */
-    @Override public BytecodeNode getValue(ParameterizedType type, Variable key, int i) {
+    @Override
+    public BytecodeNode getValue(ParameterizedType type, Variable key, int i) {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public BytecodeNode marshallObject(ParameterizedType serializerClass, Variable asm, Variable obj) {
+    @Override
+    public BytecodeNode marshallObject(ParameterizedType serializerClass, Variable asm, Variable obj) {
         return asm.invoke(columnAccessor.writeMethodName(), RowAssembler.class, obj.cast(columnAccessor.writeArgType()));
     }
 
     /** {@inheritDoc} */
-    @Override public BytecodeNode unmarshallObject(ParameterizedType type, Variable row, Variable obj) {
+    @Override
+    public BytecodeNode unmarshallObject(ParameterizedType type, Variable row, Variable obj) {
         return obj.set(
-            row.invoke(
-                columnAccessor.readMethodName(),
-                columnAccessor.mappedType(),
-                BytecodeExpressions.constantInt(columnAccessor.columnIdx())
-            )
+                row.invoke(
+                        columnAccessor.readMethodName(),
+                        columnAccessor.mappedType(),
+                        BytecodeExpressions.constantInt(columnAccessor.columnIdx())
+                )
         );
     }
 }

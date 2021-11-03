@@ -21,54 +21,78 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-/** */
+/**
+ *
+ */
 public class FragmentDescription implements Serializable {
-    /** */
+    /**
+     *
+     */
     private long fragmentId;
 
-    /** */
+    /**
+     *
+     */
     private FragmentMapping mapping;
 
-    /** */
+    /**
+     *
+     */
     private ColocationGroup target;
 
-    /** */
+    /**
+     *
+     */
     private Map<Long, List<String>> remoteSources;
 
-    /** */
+    /**
+     *
+     */
     public FragmentDescription() {
     }
 
-    /** */
+    /**
+     *
+     */
     public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
-        Map<Long, List<String>> remoteSources) {
+            Map<Long, List<String>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
         this.target = target;
         this.remoteSources = remoteSources;
     }
 
-    /** */
+    /**
+     *
+     */
     public long fragmentId() {
         return fragmentId;
     }
 
-    /** */
+    /**
+     *
+     */
     public List<String> nodeIds() {
         return mapping.nodeIds();
     }
 
-    /** */
+    /**
+     *
+     */
     public ColocationGroup target() {
         return target;
     }
 
-    /** */
+    /**
+     *
+     */
     public Map<Long, List<String>> remotes() {
         return remoteSources;
     }
 
-    /** */
+    /**
+     *
+     */
     public FragmentMapping mapping() {
         return mapping;
     }

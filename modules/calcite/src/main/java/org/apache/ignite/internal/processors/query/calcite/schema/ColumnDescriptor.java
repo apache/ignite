@@ -14,32 +14,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.schema.NativeType;
 
-/** */
+/**
+ *
+ */
 public interface ColumnDescriptor {
-    /** */
+    /**
+     *
+     */
     boolean key();
 
-    /** */
+    /**
+     *
+     */
     boolean hasDefaultValue();
 
-    /** */
+    /**
+     *
+     */
     String name();
 
-    /** */
+    /**
+     *
+     */
     int fieldIndex();
 
-    /** */
+    /**
+     *
+     */
     RelDataType logicalType(IgniteTypeFactory f);
 
-    /** */
+    /**
+     *
+     */
     NativeType storageType();
 
-    /** */
+    /**
+     *
+     */
     Object defaultValue();
 }

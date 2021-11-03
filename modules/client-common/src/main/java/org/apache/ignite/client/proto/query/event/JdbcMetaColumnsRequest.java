@@ -45,8 +45,8 @@ public class JdbcMetaColumnsRequest implements ClientMessage {
      * Constructor.
      *
      * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @param colName Column name.
+     * @param tblName    Table name.
+     * @param colName    Column name.
      */
     public JdbcMetaColumnsRequest(String schemaName, String tblName, String colName) {
         this.schemaName = schemaName;
@@ -82,21 +82,24 @@ public class JdbcMetaColumnsRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packString(schemaName);
         packer.packString(tblName);
         packer.packString(colName);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         schemaName = unpacker.unpackString();
         tblName = unpacker.unpackString();
         colName = unpacker.unpackString();
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcMetaColumnsRequest.class, this);
     }
 }

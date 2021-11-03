@@ -28,18 +28,20 @@ import org.apache.ignite.configuration.validation.Validator;
  */
 public class OneOfValidator implements Validator<OneOf, String> {
     /** {@inheritDoc} */
-    @Override public void validate(OneOf annotation, ValidationContext<String> ctx) {
+    @Override
+    public void validate(OneOf annotation, ValidationContext<String> ctx) {
         String value = ctx.getNewValue();
 
         boolean caseSensitive = annotation.caseSensitive();
 
         for (String exp : annotation.value()) {
-            if (caseSensitive ? exp.equals(value) : exp.equalsIgnoreCase(value))
+            if (caseSensitive ? exp.equals(value) : exp.equalsIgnoreCase(value)) {
                 return;
+            }
         }
 
-        String message = "'" + ctx.currentKey() + "' configuration value must be one of " +
-            Arrays.toString(annotation.value()) + (caseSensitive ? " (case sensitive)" : " (case insensitive)");
+        String message = "'" + ctx.currentKey() + "' configuration value must be one of "
+                + Arrays.toString(annotation.value()) + (caseSensitive ? " (case sensitive)" : " (case insensitive)");
 
         ctx.addIssue(new ValidationIssue(message));
     }

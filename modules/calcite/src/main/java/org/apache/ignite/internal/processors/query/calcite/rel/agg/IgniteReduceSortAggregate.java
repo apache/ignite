@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -45,16 +44,18 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
     /** Collation. */
     private final RelCollation collation;
 
-    /** */
+    /**
+     *
+     */
     public IgniteReduceSortAggregate(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls,
-        RelDataType rowType,
-        RelCollation collation
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelNode input,
+            ImmutableBitSet groupSet,
+            List<ImmutableBitSet> groupSets,
+            List<AggregateCall> aggCalls,
+            RelDataType rowType,
+            RelCollation collation
     ) {
         super(cluster, traits, input, groupSet, groupSets, aggCalls, rowType);
 
@@ -64,7 +65,9 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
         this.collation = collation;
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteReduceSortAggregate(RelInput input) {
         super(input);
         collation = input.getCollation();
@@ -74,53 +77,58 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteReduceSortAggregate(
-            getCluster(),
-            traitSet,
-            sole(inputs),
-            groupSet,
-            groupSets,
-            aggCalls,
-            rowType,
-            TraitUtils.collation(traitSet)
+                getCluster(),
+                traitSet,
+                sole(inputs),
+                groupSet,
+                groupSets,
+                aggCalls,
+                rowType,
+                TraitUtils.collation(traitSet)
         );
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceSortAggregate(
-            cluster,
-            getTraitSet().replace(collation),
-            sole(inputs),
-            groupSet,
-            groupSets,
-            aggCalls,
-            rowType,
-            collation
+                cluster,
+                getTraitSet().replace(collation),
+                sole(inputs),
+                groupSet,
+                groupSets,
+                aggCalls,
+                rowType,
+                collation
         );
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw).item("collation", collation);
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        IgniteCostFactory costFactory = (IgniteCostFactory) planner.getCostFactory();
 
         double rows = mq.getRowCount(getInput());
 
         return costFactory.makeCost(
-            rows,
-            rows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0
+                rows,
+                rows * IgniteCost.ROW_PASS_THROUGH_COST,
+                0
         );
     }
 }

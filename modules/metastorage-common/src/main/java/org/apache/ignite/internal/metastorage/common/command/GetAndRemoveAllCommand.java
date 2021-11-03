@@ -25,12 +25,12 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get and remove all command for MetaStorageCommandListener that removes entries
- * for given keys and retrieves previous entries.
+ * Get and remove all command for MetaStorageCommandListener that removes entries for given keys and retrieves previous entries.
  */
 public final class GetAndRemoveAllCommand implements WriteCommand {
     /** The keys collection. Couldn't be {@code null}. */
-    @NotNull private final List<byte[]> keys;
+    @NotNull
+    private final List<byte[]> keys;
 
     /**
      * @param keys The keys collection. Couldn't be {@code null}.
@@ -38,8 +38,9 @@ public final class GetAndRemoveAllCommand implements WriteCommand {
     public GetAndRemoveAllCommand(@NotNull Set<ByteArray> keys) {
         this.keys = new ArrayList<>(keys.size());
 
-        for (ByteArray key : keys)
+        for (ByteArray key : keys) {
             this.keys.add(key.bytes());
+        }
     }
 
     /**

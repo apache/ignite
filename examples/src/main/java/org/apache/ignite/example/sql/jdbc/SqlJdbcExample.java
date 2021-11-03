@@ -33,8 +33,8 @@ import org.apache.ignite.schema.definition.TableDefinition;
 
 /**
  * This example demonstrates the usage of the Apache Ignite JDBC driver.
- * <p>
- * To run the example, do the following:
+ *
+ * <p>To run the example, do the following:
  * <ol>
  *     <li>Import the examples project into you IDE.</li>
  *     <li>
@@ -61,9 +61,9 @@ public class SqlJdbcExample {
         System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
 
         try (Ignite ignite = IgnitionManager.start(
-            "example-node",
-            Files.readString(Path.of("config", "ignite-config.json")),
-            Path.of("work")
+                "example-node",
+                Files.readString(Path.of("config", "ignite-config.json")),
+                Path.of("work")
         )) {
             //--------------------------------------------------------------------------------------
             //
@@ -79,17 +79,17 @@ public class SqlJdbcExample {
             System.out.println("\nCreating 'CITIES' table...");
 
             TableDefinition citiesTableDef = SchemaBuilders.tableBuilder("PUBLIC", "CITIES")
-                .columns(
-                    SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
-                    SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build()
-                )
-                .withPrimaryKey("ID")
-                .build();
+                    .columns(
+                            SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
+                            SchemaBuilders.column("NAME", ColumnType.string()).asNullable().build()
+                    )
+                    .withPrimaryKey("ID")
+                    .build();
 
             ignite.tables().createTable(citiesTableDef.canonicalName(), tableChange ->
-                SchemaConfigurationConverter.convert(citiesTableDef, tableChange)
-                    .changeReplicas(1)
-                    .changePartitions(10)
+                    SchemaConfigurationConverter.convert(citiesTableDef, tableChange)
+                            .changeReplicas(1)
+                            .changePartitions(10)
             );
 
             //--------------------------------------------------------------------------------------
@@ -109,20 +109,20 @@ public class SqlJdbcExample {
             System.out.println("\nCreating 'ACCOUNTS' table...");
 
             TableDefinition accountsTableDef = SchemaBuilders.tableBuilder("PUBLIC", "ACCOUNTS")
-                .columns(
-                    SchemaBuilders.column("ACCOUNT_ID", ColumnType.INT32).asNonNull().build(),
-                    SchemaBuilders.column("CITY_ID", ColumnType.INT32).asNonNull().build(),
-                    SchemaBuilders.column("FIRST_NAME", ColumnType.string()).asNullable().build(),
-                    SchemaBuilders.column("LAST_NAME", ColumnType.string()).asNullable().build(),
-                    SchemaBuilders.column("BALANCE", ColumnType.DOUBLE).asNullable().build()
-                )
-                .withPrimaryKey("ACCOUNT_ID")
-                .build();
+                    .columns(
+                            SchemaBuilders.column("ACCOUNT_ID", ColumnType.INT32).asNonNull().build(),
+                            SchemaBuilders.column("CITY_ID", ColumnType.INT32).asNonNull().build(),
+                            SchemaBuilders.column("FIRST_NAME", ColumnType.string()).asNullable().build(),
+                            SchemaBuilders.column("LAST_NAME", ColumnType.string()).asNullable().build(),
+                            SchemaBuilders.column("BALANCE", ColumnType.DOUBLE).asNullable().build()
+                    )
+                    .withPrimaryKey("ACCOUNT_ID")
+                    .build();
 
             ignite.tables().createTable(accountsTableDef.canonicalName(), tableChange ->
-                SchemaConfigurationConverter.convert(accountsTableDef, tableChange)
-                    .changeReplicas(1)
-                    .changePartitions(10)
+                    SchemaConfigurationConverter.convert(accountsTableDef, tableChange)
+                            .changeReplicas(1)
+                            .changePartitions(10)
             );
 
             //--------------------------------------------------------------------------------------
@@ -206,13 +206,13 @@ public class SqlJdbcExample {
 
                 try (Statement stmt = conn.createStatement()) {
                     try (ResultSet rs = stmt.executeQuery(
-                            "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a " +
-                            "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
+                            "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a "
+                                    + "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
                         while (rs.next()) {
-                            System.out.println("    " +
-                                rs.getString(1) + ", " +
-                                rs.getString(2) + ", " +
-                                rs.getString(3));
+                            System.out.println("    "
+                                    + rs.getString(1) + ", "
+                                    + rs.getString(2) + ", "
+                                    + rs.getString(3));
                         }
                     }
                 }
@@ -229,10 +229,10 @@ public class SqlJdbcExample {
                     try (ResultSet rs = stmt.executeQuery(
                             "SELECT a.FIRST_NAME, a.LAST_NAME, a.BALANCE FROM ACCOUNTS a WHERE a.BALANCE < 1500.0")) {
                         while (rs.next()) {
-                            System.out.println("    " +
-                                rs.getString(1) + ", " +
-                                rs.getString(2) + ", " +
-                                rs.getDouble(3));
+                            System.out.println("    "
+                                    + rs.getString(1) + ", "
+                                    + rs.getString(2) + ", "
+                                    + rs.getDouble(3));
                         }
                     }
                 }
@@ -261,13 +261,13 @@ public class SqlJdbcExample {
 
                 try (Statement stmt = conn.createStatement()) {
                     try (ResultSet rs = stmt.executeQuery(
-                            "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a " +
-                            "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
+                            "SELECT a.FIRST_NAME, a.LAST_NAME, c.NAME FROM ACCOUNTS a "
+                                    + "INNER JOIN CITIES c on c.ID = a.CITY_ID")) {
                         while (rs.next()) {
-                            System.out.println("    " +
-                                rs.getString(1) + ", " +
-                                rs.getString(2) + ", " +
-                                rs.getString(3));
+                            System.out.println("    "
+                                    + rs.getString(1) + ", "
+                                    + rs.getString(2) + ", "
+                                    + rs.getString(3));
                         }
                     }
                 }

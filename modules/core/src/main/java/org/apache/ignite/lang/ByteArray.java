@@ -21,8 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
- * A class wraps {@code byte[]} which provides {@link Object#equals}, {@link Object#hashCode} and
- * lexicographical comparison implementation.
+ * A class wraps {@code byte[]} which provides {@link Object#equals}, {@link Object#hashCode} and lexicographical comparison
+ * implementation.
  */
 public final class ByteArray implements Comparable<ByteArray> {
     /** Wrapped byte array. */
@@ -58,8 +58,8 @@ public final class ByteArray implements Comparable<ByteArray> {
     }
 
     /**
-     * Constructs {@code ByteArray} instance from the given string. {@link StandardCharsets#UTF_8} charset is used for
-     * encoding the input string.
+     * Constructs {@code ByteArray} instance from the given string. {@link StandardCharsets#UTF_8} charset is used for encoding the input
+     * string.
      *
      * @param s The string {@code ByteArray} representation. Can't be {@code null}.
      * @return {@code ByteArray} instance from the given string.
@@ -78,28 +78,36 @@ public final class ByteArray implements Comparable<ByteArray> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o) return true;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
-        ByteArray byteArray = (ByteArray)o;
+        ByteArray byteArray = (ByteArray) o;
 
         return Arrays.equals(arr, byteArray.arr);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Arrays.hashCode(arr);
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(ByteArray other) {
+    @Override
+    public int compareTo(ByteArray other) {
         return Arrays.compare(this.arr, other.arr);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return new String(arr, StandardCharsets.UTF_8);
     }
 }

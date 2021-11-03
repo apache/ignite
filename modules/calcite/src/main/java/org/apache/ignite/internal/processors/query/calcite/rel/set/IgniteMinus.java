@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -37,7 +36,9 @@ public abstract class IgniteMinus extends Minus implements IgniteSetOp {
     /** Count of counter fields used to aggregate results. */
     protected static final int COUNTER_FIELDS_CNT = 2;
 
-    /** */
+    /**
+     *
+     */
     IgniteMinus(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all) {
         super(cluster, traits, inputs, all);
     }
@@ -48,24 +49,28 @@ public abstract class IgniteMinus extends Minus implements IgniteSetOp {
     }
 
     /** {@inheritDoc} */
-    @Override public double estimateRowCount(RelMetadataQuery mq) {
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
         final List<RelNode> inputs = getInputs();
 
         double rows = mq.getRowCount(inputs.get(0));
 
-        for (int i = 1; i < inputs.size(); i++)
+        for (int i = 1; i < inputs.size(); i++) {
             rows -= 0.5 * Math.min(rows, mq.getRowCount(inputs.get(i)));
+        }
 
         return rows;
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return computeSetOpCost(planner, mq);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean all() {
+    @Override
+    public boolean all() {
         return all;
     }
 }

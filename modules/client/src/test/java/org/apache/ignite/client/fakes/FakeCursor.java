@@ -22,32 +22,35 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-
 import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
 
 public class FakeCursor implements SqlCursor<List<?>> {
-
+    
     private final Random random;
-
+    
     FakeCursor() {
         random = new Random();
     }
-
-    @Override public void close() throws Exception {
-
+    
+    @Override
+    public void close() throws Exception {
+    
     }
-
-    @Override public Iterator<List<?>> iterator() {
+    
+    @Override
+    public Iterator<List<?>> iterator() {
         return null;
     }
-
-    @Override public boolean hasNext() {
+    
+    @Override
+    public boolean hasNext() {
         return true;
     }
-
-    @Override public List<?> next() {
+    
+    @Override
+    public List<?> next() {
         List<Object> result = new ArrayList<>();
         result.add(random.nextInt());
         result.add(random.nextLong());
@@ -55,15 +58,17 @@ public class FakeCursor implements SqlCursor<List<?>> {
         result.add(random.nextDouble());
         result.add(UUID.randomUUID().toString());
         result.add(null);
-
+        
         return result;
     }
-
-    @Override public SqlQueryType queryType() {
+    
+    @Override
+    public SqlQueryType queryType() {
         return SqlQueryType.QUERY;
     }
-
-    @Override public ResultSetMetadata metadata() {
+    
+    @Override
+    public ResultSetMetadata metadata() {
         return null;
     }
 }

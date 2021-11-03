@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
@@ -32,10 +33,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
  * Converter rule for sort operator.
  */
 public class SortConverterRule extends RelRule<SortConverterRule.Config> {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule INSTANCE =
-        SortConverterRule.Config.DEFAULT
-            .as(SortConverterRule.Config.class).toRule();
+            SortConverterRule.Config.DEFAULT
+                    .as(SortConverterRule.Config.class).toRule();
 
     /** Creates a LimitConverterRule. */
     protected SortConverterRule(SortConverterRule.Config config) {
@@ -45,18 +48,20 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
     /** Rule configuration. */
     public interface Config extends RelRule.Config {
         SortConverterRule.Config DEFAULT = EMPTY
-            .withOperandSupplier(b ->
-                b.operand(LogicalSort.class).anyInputs())
-            .as(SortConverterRule.Config.class);
+                .withOperandSupplier(b ->
+                        b.operand(LogicalSort.class).anyInputs())
+                .as(SortConverterRule.Config.class);
 
         /** {@inheritDoc} */
-        @Override default SortConverterRule toRule() {
+        @Override
+        default SortConverterRule toRule() {
             return new SortConverterRule(this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
+    @Override
+    public void onMatch(RelOptRuleCall call) {
         final Sort sort = call.rel(0);
         RelOptCluster cluster = sort.getCluster();
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
@@ -67,7 +72,7 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
             RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
 
             call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
-                sort.fetch));
+                    sort.fetch));
 
             return;
         }

@@ -47,7 +47,7 @@ public class BatchExecuteRequest implements ClientMessage {
      * Constructor.
      *
      * @param schemaName Schema name.
-     * @param queries Queries.
+     * @param queries    Queries.
      * @param autoCommit Client auto commit flag state.
      */
     public BatchExecuteRequest(String schemaName, List<Query> queries, boolean autoCommit) {
@@ -87,17 +87,20 @@ public class BatchExecuteRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packString(schemaName);
 
         packer.packArrayHeader(queries.size());
 
-        for (Query q : queries)
+        for (Query q : queries) {
             q.writeBinary(packer);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         schemaName = unpacker.unpackString();
 
         int n = unpacker.unpackArrayHeader();
@@ -114,7 +117,8 @@ public class BatchExecuteRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(BatchExecuteRequest.class, this);
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 
 /**
@@ -30,7 +29,7 @@ public interface ExecutionService extends LifecycleAware {
      * Executes a query.
      *
      * @param schema Schema name.
-     * @param query Query.
+     * @param query  Query.
      * @param params Query parameters.
      * @return Query cursor.
      */

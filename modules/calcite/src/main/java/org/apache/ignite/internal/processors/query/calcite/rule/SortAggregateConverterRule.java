@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -35,39 +37,50 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleS
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
  *
  */
 public class SortAggregateConverterRule {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule SINGLE = new SortSingleAggregateConverterRule();
 
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule MAP_REDUCE = new SortMapReduceAggregateConverterRule();
 
-    /** */
+    /**
+     *
+     */
     private SortAggregateConverterRule() {
         // No-op.
     }
 
-    /** */
+    /**
+     *
+     */
     private static class SortSingleAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
-        /** */
+        /**
+         *
+         */
         SortSingleAggregateConverterRule() {
             super(LogicalAggregate.class, "SortSingleAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
-        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
-            LogicalAggregate agg) {
+        @Override
+        protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+                LogicalAggregate agg) {
             // Applicable only for GROUP BY or SELECT DISTINCT
-            if (nullOrEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
+            if (nullOrEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1) {
                 return null;
+            }
 
-            if (HintUtils.isExpandDistinctAggregate(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg)) {
                 return null;
+            }
 
             RelOptCluster cluster = agg.getCluster();
             RelNode input = agg.getInput();
@@ -75,40 +88,47 @@ public class SortAggregateConverterRule {
             RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(agg.getGroupSet().asList()));
 
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(collation)
-                .replace(IgniteDistributions.single());
+                    .replace(collation)
+                    .replace(IgniteDistributions.single());
 
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(collation)
-                .replace(IgniteDistributions.single());
+                    .replace(collation)
+                    .replace(IgniteDistributions.single());
 
             return new IgniteSingleSortAggregate(
-                cluster,
-                outTrait,
-                convert(input, inTrait),
-                agg.getGroupSet(),
-                agg.getGroupSets(),
-                agg.getAggCallList()
+                    cluster,
+                    outTrait,
+                    convert(input, inTrait),
+                    agg.getGroupSet(),
+                    agg.getGroupSets(),
+                    agg.getAggCallList()
             );
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class SortMapReduceAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
-        /** */
+        /**
+         *
+         */
         SortMapReduceAggregateConverterRule() {
             super(LogicalAggregate.class, "SortMapReduceAggregateConverterRule");
         }
 
         /** {@inheritDoc} */
-        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
-            LogicalAggregate agg) {
+        @Override
+        protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
+                LogicalAggregate agg) {
             // Applicable only for GROUP BY or SELECT DISTINCT
-            if (nullOrEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
+            if (nullOrEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1) {
                 return null;
+            }
 
-            if (HintUtils.isExpandDistinctAggregate(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg)) {
                 return null;
+            }
 
             RelOptCluster cluster = agg.getCluster();
             RelNode input = agg.getInput();
@@ -117,27 +137,27 @@ public class SortAggregateConverterRule {
 
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(collation);
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replace(collation);
+                    .replace(collation);
 
             RelNode map = new IgniteMapSortAggregate(
-                cluster,
-                outTrait,
-                convert(input, inTrait),
-                agg.getGroupSet(),
-                agg.getGroupSets(),
-                agg.getAggCallList(),
-                collation
+                    cluster,
+                    outTrait,
+                    convert(input, inTrait),
+                    agg.getGroupSet(),
+                    agg.getGroupSets(),
+                    agg.getAggCallList(),
+                    collation
             );
 
             return new IgniteReduceSortAggregate(
-                cluster,
-                outTrait.replace(IgniteDistributions.single()),
-                convert(map, inTrait.replace(IgniteDistributions.single())),
-                agg.getGroupSet(),
-                agg.getGroupSets(),
-                agg.getAggCallList(),
-                agg.getRowType(),
-                collation
+                    cluster,
+                    outTrait.replace(IgniteDistributions.single()),
+                    convert(map, inTrait.replace(IgniteDistributions.single())),
+                    agg.getGroupSet(),
+                    agg.getGroupSets(),
+                    agg.getAggCallList(),
+                    agg.getRowType(),
+                    collation
             );
         }
     }

@@ -46,29 +46,29 @@ public class SqlExamplesTest {
     @Test
     public void testSqlJdbcExample() throws Exception {
         ExampleTestUtils.assertConsoleOutputContains(SqlJdbcExample::main, EMPTY_ARGS,
-            "\nAll accounts:\n" +
-            "    John, Doe, Forest Hill\n" +
-            "    Jane, Roe, Forest Hill\n" +
-            "    Mary, Major, Denver\n" +
-            "    Richard, Miles, St. Petersburg\n",
+                "\nAll accounts:\n"
+                        + "    John, Doe, Forest Hill\n"
+                        + "    Jane, Roe, Forest Hill\n"
+                        + "    Mary, Major, Denver\n"
+                        + "    Richard, Miles, St. Petersburg\n",
 
-            "\nAccounts with balance lower than 1,500:\n" +
-            "    John, Doe, 1000.0\n" +
-            "    Richard, Miles, 1450.0\n",
+                "\nAccounts with balance lower than 1,500:\n"
+                        + "    John, Doe, 1000.0\n"
+                        + "    Richard, Miles, 1450.0\n",
 
-            "\nAll accounts:\n" +
-            "    Jane, Roe, Forest Hill\n" +
-            "    Mary, Major, Denver\n" +
-            "    Richard, Miles, St. Petersburg\n"
+                "\nAll accounts:\n"
+                        + "    Jane, Roe, Forest Hill\n"
+                        + "    Mary, Major, Denver\n"
+                        + "    Richard, Miles, St. Petersburg\n"
         );
     }
 
     @BeforeEach
     public void startNode(@WorkDirectory Path workDir) throws IOException {
         IgnitionManager.start(
-            "my-first-node",
-            Files.readString(Path.of("config", "ignite-config.json")),
-            workDir
+                "my-first-node",
+                Files.readString(Path.of("config", "ignite-config.json")),
+                workDir
         );
     }
 
@@ -85,7 +85,8 @@ public class SqlExamplesTest {
     public void removeWorkDir() {
         Path workDir = Path.of("work");
 
-        if (Files.exists(workDir))
+        if (Files.exists(workDir)) {
             IgniteUtils.deleteIfExists(workDir);
+        }
     }
 }

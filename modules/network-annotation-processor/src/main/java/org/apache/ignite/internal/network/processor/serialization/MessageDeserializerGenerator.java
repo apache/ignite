@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.network.processor.serialization;
 
-import java.util.List;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
-import javax.tools.Diagnostic;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+import java.util.List;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.tools.Diagnostic;
 import org.apache.ignite.internal.network.processor.MessageClass;
 import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
 import org.apache.ignite.network.serialization.MessageDeserializer;
@@ -38,7 +38,9 @@ import org.apache.ignite.network.serialization.MessageReader;
  * Class for generating {@link MessageDeserializer} classes.
  */
 public class MessageDeserializerGenerator {
-    /** */
+    /**
+     *
+     */
     private final ProcessingEnvironment processingEnv;
 
     /**
@@ -48,7 +50,7 @@ public class MessageDeserializerGenerator {
 
     /**
      * @param processingEnv processing environment
-     * @param messageGroup message group
+     * @param messageGroup  message group
      */
     public MessageDeserializerGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;
@@ -63,41 +65,41 @@ public class MessageDeserializerGenerator {
      */
     public TypeSpec generateDeserializer(MessageClass message) {
         processingEnv.getMessager()
-            .printMessage(Diagnostic.Kind.NOTE, "Generating a MessageDeserializer", message.element());
+                .printMessage(Diagnostic.Kind.NOTE, "Generating a MessageDeserializer", message.element());
 
         FieldSpec msgField = FieldSpec.builder(message.builderClassName(), "msg")
-            .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-            .build();
+                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .build();
 
         return TypeSpec.classBuilder(message.simpleName() + "Deserializer")
-            .addSuperinterface(ParameterizedTypeName.get(ClassName.get(MessageDeserializer.class), message.className()))
-            .addField(msgField)
-            .addMethod(
-                MethodSpec.constructorBuilder()
-                    .addParameter(messageGroup.messageFactoryClassName(), "messageFactory")
-                    .addStatement("this.$N = messageFactory.$L()", msgField, message.asMethodName())
-                    .build()
-            )
-            .addMethod(
-                MethodSpec.methodBuilder("klass")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(ParameterizedTypeName.get(ClassName.get(Class.class), message.className()))
-                    .addStatement("return $T.class", message.className())
-                    .build()
-            )
-            .addMethod(
-                MethodSpec.methodBuilder("getMessage")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PUBLIC)
-                    .returns(message.className())
-                    .addStatement("return $N.build()", msgField)
-                    .build()
-            )
-            .addMethod(readMessageMethod(message, msgField))
-            .addOriginatingElement(message.element())
-            .addOriginatingElement(messageGroup.element())
-            .build();
+                .addSuperinterface(ParameterizedTypeName.get(ClassName.get(MessageDeserializer.class), message.className()))
+                .addField(msgField)
+                .addMethod(
+                        MethodSpec.constructorBuilder()
+                                .addParameter(messageGroup.messageFactoryClassName(), "messageFactory")
+                                .addStatement("this.$N = messageFactory.$L()", msgField, message.asMethodName())
+                                .build()
+                )
+                .addMethod(
+                        MethodSpec.methodBuilder("klass")
+                                .addAnnotation(Override.class)
+                                .addModifiers(Modifier.PUBLIC)
+                                .returns(ParameterizedTypeName.get(ClassName.get(Class.class), message.className()))
+                                .addStatement("return $T.class", message.className())
+                                .build()
+                )
+                .addMethod(
+                        MethodSpec.methodBuilder("getMessage")
+                                .addAnnotation(Override.class)
+                                .addModifiers(Modifier.PUBLIC)
+                                .returns(message.className())
+                                .addStatement("return $N.build()", msgField)
+                                .build()
+                )
+                .addMethod(readMessageMethod(message, msgField))
+                .addOriginatingElement(message.element())
+                .addOriginatingElement(messageGroup.element())
+                .build();
     }
 
     /**
@@ -105,37 +107,37 @@ public class MessageDeserializerGenerator {
      */
     private MethodSpec readMessageMethod(MessageClass message, FieldSpec msgField) {
         MethodSpec.Builder method = MethodSpec.methodBuilder("readMessage")
-            .addAnnotation(Override.class)
-            .addModifiers(Modifier.PUBLIC)
-            .returns(boolean.class)
-            .addParameter(MessageReader.class, "reader")
-            .addException(MessageMappingException.class);
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(boolean.class)
+                .addParameter(MessageReader.class, "reader")
+                .addException(MessageMappingException.class);
 
         List<ExecutableElement> getters = message.getters();
 
         method
-            .beginControlFlow("if (!reader.beforeMessageRead())")
-            .addStatement("return false")
-            .endControlFlow()
-            .addCode("\n");
+                .beginControlFlow("if (!reader.beforeMessageRead())")
+                .addStatement("return false")
+                .endControlFlow()
+                .addCode("\n");
 
         method.beginControlFlow("switch (reader.state())");
 
         for (int i = 0; i < getters.size(); ++i) {
             method
-                .beginControlFlow("case $L:", i)
-                .addStatement(readMessageCodeBlock(getters.get(i), msgField))
-                .addCode("\n")
-                .addCode(CodeBlock.builder()
-                    .beginControlFlow("if (!reader.isLastRead())")
-                    .addStatement("return false")
+                    .beginControlFlow("case $L:", i)
+                    .addStatement(readMessageCodeBlock(getters.get(i), msgField))
+                    .addCode("\n")
+                    .addCode(CodeBlock.builder()
+                            .beginControlFlow("if (!reader.isLastRead())")
+                            .addStatement("return false")
+                            .endControlFlow()
+                            .build()
+                    )
+                    .addCode("\n")
+                    .addStatement("reader.incrementState()")
                     .endControlFlow()
-                    .build()
-                )
-                .addCode("\n")
-                .addStatement("reader.incrementState()")
-                .endControlFlow()
-                .addComment("Falls through");
+                    .addComment("Falls through");
         }
 
         method.endControlFlow();
@@ -152,9 +154,9 @@ public class MessageDeserializerGenerator {
         var methodResolver = new MessageReaderMethodResolver(processingEnv);
 
         return CodeBlock.builder()
-            .add("$N.$N(reader.", msgField, getter.getSimpleName())
-            .add(methodResolver.resolveReadMethod(getter))
-            .add(")")
-            .build();
+                .add("$N.$N(reader.", msgField, getter.getSimpleName())
+                .add(methodResolver.resolveReadMethod(getter))
+                .add(")")
+                .build();
     }
 }

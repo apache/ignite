@@ -14,12 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
+
+import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -47,66 +50,68 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
-import static java.util.Arrays.asList;
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
  */
 public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableScan> extends RelOptRule {
     /** Instance. */
     public static final FilterScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new FilterScanMergeRule<IgniteLogicalIndexScan>(LogicalFilter.class, IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule") {
-            /** {@inheritDoc} */
-            @Override protected IgniteLogicalIndexScan createNode(
-                RelOptCluster cluster,
-                IgniteLogicalIndexScan scan,
-                RelTraitSet traits,
-                RexNode cond) {
-                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
+            new FilterScanMergeRule<IgniteLogicalIndexScan>(LogicalFilter.class, IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule") {
+                /** {@inheritDoc} */
+                @Override
+                protected IgniteLogicalIndexScan createNode(
+                        RelOptCluster cluster,
+                        IgniteLogicalIndexScan scan,
+                        RelTraitSet traits,
+                        RexNode cond) {
+                    Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
 
-                if (!nullOrEmpty(corrIds))
-                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+                    if (!nullOrEmpty(corrIds)) {
+                        traits = traits.replace(CorrelationTrait.correlations(corrIds));
+                    }
 
-                return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
-                    scan.projects(), cond, scan.requiredColumns());
-            }
-        };
+                    return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
+                            scan.projects(), cond, scan.requiredColumns());
+                }
+            };
 
     /** Instance. */
     public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new FilterScanMergeRule<IgniteLogicalTableScan>(LogicalFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
-            /** {@inheritDoc} */
-            @Override protected IgniteLogicalTableScan createNode(
-                RelOptCluster cluster,
-                IgniteLogicalTableScan scan,
-                RelTraitSet traits,
-                RexNode cond) {
-                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
+            new FilterScanMergeRule<IgniteLogicalTableScan>(LogicalFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
+                /** {@inheritDoc} */
+                @Override
+                protected IgniteLogicalTableScan createNode(
+                        RelOptCluster cluster,
+                        IgniteLogicalTableScan scan,
+                        RelTraitSet traits,
+                        RexNode cond) {
+                    Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
 
-                if (!nullOrEmpty(corrIds))
-                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+                    if (!nullOrEmpty(corrIds)) {
+                        traits = traits.replace(CorrelationTrait.correlations(corrIds));
+                    }
 
-                return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.projects(),
-                    cond, scan.requiredColumns());
-            }
-        };
+                    return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.projects(),
+                            cond, scan.requiredColumns());
+                }
+            };
 
     /**
      * Constructor.
      *
      * @param clazz Class of relational expression to match.
-     * @param desc Description, or null to guess description.
+     * @param desc  Description, or null to guess description.
      */
     private FilterScanMergeRule(Class<? extends RelNode> clazz, Class<T> tableClass, String desc) {
         super(operand(clazz,
-            operand(tableClass, none())),
-            RelFactories.LOGICAL_BUILDER,
-            desc);
+                        operand(tableClass, none())),
+                RelFactories.LOGICAL_BUILDER,
+                desc);
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
+    @Override
+    public void onMatch(RelOptRuleCall call) {
         LogicalFilter filter = call.rel(0);
         T scan = call.rel(1);
 
@@ -116,8 +121,9 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         RexNode condition = filter.getCondition();
         RexNode remaining = null;
 
-        if (scan.condition() != null)
+        if (scan.condition() != null) {
             condition = RexUtil.composeConjunction(builder, asList(scan.condition(), condition));
+        }
 
         if (scan.projects() != null) {
             IgniteTypeFactory typeFactory = Commons.typeFactory(scan);
@@ -134,10 +140,12 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             List<RexNode> remaining0 = new ArrayList<>(conjunctions.size());
 
             RexShuttle shuttle = new RexShuttle() {
-                @Override public RexNode visitInputRef(RexInputRef ref) {
+                @Override
+                public RexNode visitInputRef(RexInputRef ref) {
                     int targetRef = permutation.getTargetOpt(ref.getIndex());
-                    if (targetRef == -1)
+                    if (targetRef == -1) {
                         throw new ControlFlowException();
+                    }
                     return new RexInputRef(targetRef, ref.getType());
                 }
             };
@@ -145,8 +153,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             for (RexNode cond0 : conjunctions) {
                 try {
                     condition0.add(shuttle.apply(cond0));
-                }
-                catch (ControlFlowException e) {
+                } catch (ControlFlowException e) {
                     remaining0.add(cond0);
                 }
             }
@@ -162,21 +169,24 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         RelTraitSet trait = scan.getTraitSet();
         CorrelationTrait filterCorr = TraitUtils.correlation(filter);
 
-        if (filterCorr.correlated())
+        if (filterCorr.correlated()) {
             trait = trait.replace(filterCorr);
+        }
 
         RelNode res = createNode(cluster, scan, trait, condition);
 
         if (remaining != null) {
             res = relBuilderFactory.create(cluster, null)
-                .push(res)
-                .filter(remaining)
-                .build();
+                    .push(res)
+                    .filter(remaining)
+                    .build();
         }
 
         call.transformTo(res);
     }
 
-    /** */
+    /**
+     *
+     */
     protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, RexNode cond);
 }

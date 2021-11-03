@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.metastorage.server;
 
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.metastorage.server.ValueCondition.Type.EQUAL;
 import static org.apache.ignite.internal.metastorage.server.ValueCondition.Type.NOT_EQUAL;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for entry value condition.
@@ -30,13 +30,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class ValueConditionTest {
     /** Entry key. */
-    private static final byte[] KEY = new byte[] {1};
+    private static final byte[] KEY = new byte[]{1};
 
     /** Entry value. */
-    private static final byte[] VAL_1 = new byte[] {11};
+    private static final byte[] VAL_1 = new byte[]{11};
 
     /** Other entry value. */
-    private static final byte[] VAL_2 = new byte[] {22};
+    private static final byte[] VAL_2 = new byte[]{22};
 
     /**
      * Tests values equality.

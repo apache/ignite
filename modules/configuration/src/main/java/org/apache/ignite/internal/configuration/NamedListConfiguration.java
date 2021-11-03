@@ -34,115 +34,127 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Named configuration wrapper.
  */
-public class NamedListConfiguration<T extends ConfigurationProperty<VIEW>, VIEW, CHANGE extends VIEW>
-    extends DynamicConfiguration<NamedListView<VIEW>, NamedListChange<VIEW, CHANGE>>
-    implements NamedConfigurationTree<T, VIEW, CHANGE>
-{
+public class NamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEWT, CHANGET extends VIEWT>
+        extends DynamicConfiguration<NamedListView<VIEWT>, NamedListChange<VIEWT, CHANGET>>
+        implements NamedConfigurationTree<T, VIEWT, CHANGET> {
     /** Listeners of property update. */
-    private final List<ConfigurationNamedListListener<VIEW>> extendedListeners = new CopyOnWriteArrayList<>();
-
+    private final List<ConfigurationNamedListListener<VIEWT>> extendedListeners = new CopyOnWriteArrayList<>();
+    
     /** Creator of named configuration. */
     private final BiFunction<List<String>, String, T> creator;
-
+    
     /** Placeholder to add listeners for any configuration. */
     private final T anyConfig;
-
-    /** */
+    
+    /** Notification cache. */
     private volatile Map<String, T> notificationCache = Collections.emptyMap();
-
+    
     /**
      * Constructor.
      *
-     * @param prefix Configuration prefix.
-     * @param key Configuration key.
-     * @param rootKey Root key.
-     * @param changer Configuration changer.
+     * @param prefix     Configuration prefix.
+     * @param key        Configuration key.
+     * @param rootKey    Root key.
+     * @param changer    Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
-     * @param creator Underlying configuration creator function.
-     * @param anyConfig Placeholder to add listeners for any configuration.
+     * @param creator    Underlying configuration creator function.
+     * @param anyConfig  Placeholder to add listeners for any configuration.
      */
     public NamedListConfiguration(
-        List<String> prefix,
-        String key,
-        RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer,
-        boolean listenOnly,
-        BiFunction<List<String>, String, T> creator,
-        T anyConfig
+            List<String> prefix,
+            String key,
+            RootKey<?, ?> rootKey,
+            DynamicConfigurationChanger changer,
+            boolean listenOnly,
+            BiFunction<List<String>, String, T> creator,
+            T anyConfig
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
-
+        
         this.creator = creator;
         this.anyConfig = anyConfig;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public T get(String name) {
+    @Override
+    public T get(String name) {
         refreshValue();
-
+        
         ConfigurationProperty<?> configProperty = members.get(name);
-
-        return configProperty == null ? null : (T)((DynamicConfiguration<?, ?>)configProperty).specificConfigTree();
+        
+        return configProperty == null ? null : (T) ((DynamicConfiguration<?, ?>) configProperty).specificConfigTree();
     }
-
+    
     /** {@inheritDoc} */
-    @Override protected synchronized void beforeRefreshValue(
-        NamedListView<VIEW> newValue,
-        @Nullable NamedListView<VIEW> oldValue
+    @Override
+    protected synchronized void beforeRefreshValue(
+            NamedListView<VIEWT> newValue,
+            @Nullable NamedListView<VIEWT> oldValue
     ) {
         Map<String, ConfigurationProperty<?>> oldValues = this.members;
         Map<String, ConfigurationProperty<?>> newValues = new LinkedHashMap<>();
-
+        
         for (String key : newValue.namedListKeys()) {
             ConfigurationProperty<?> oldElement = oldValues.get(key);
-
-            if (oldElement != null)
+    
+            if (oldElement != null) {
                 newValues.put(key, oldElement);
-            else
+            } else {
                 newValues.put(key, creator.apply(keys, key));
+            }
         }
-
+        
         this.members = newValues;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Map<String, ConfigurationProperty<?>> touchMembers() {
+    @Override
+    public Map<String, ConfigurationProperty<?>> touchMembers() {
         Map<String, T> res = notificationCache;
-
+        
         refreshValue();
-
-        notificationCache = (Map<String, T>)members;
-
+        
+        notificationCache = (Map<String, T>) members;
+        
         return Collections.unmodifiableMap(res);
     }
-
-    /** @return List of listeners that are specific for named configurations.*/
-    public List<ConfigurationNamedListListener<VIEW>> extendedListeners() {
+    
+    /**
+     * Returns list of listeners that are specific for named configurations.
+     *
+     * @return List of listeners that are specific for named configurations.
+     */
+    public List<ConfigurationNamedListListener<VIEWT>> extendedListeners() {
         return Collections.unmodifiableList(extendedListeners);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void listenElements(ConfigurationNamedListListener<VIEW> listener) {
+    @Override
+    public void listenElements(ConfigurationNamedListListener<VIEWT> listener) {
         extendedListeners.add(listener);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void stopListenElements(ConfigurationNamedListListener<VIEW> listener) {
+    @Override
+    public void stopListenElements(ConfigurationNamedListListener<VIEWT> listener) {
         extendedListeners.remove(listener);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public T any() {
+    @Override
+    public T any() {
         return anyConfig;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Class<? extends ConfigurationProperty<NamedListView<VIEW>>> configType() {
+    @Override
+    public Class<? extends ConfigurationProperty<NamedListView<VIEWT>>> configType() {
         throw new UnsupportedOperationException("Not supported.");
     }
-
+    
     /** {@inheritDoc} */
-    @Override public NamedListView<VIEW> value() {
+    @Override
+    public NamedListView<VIEWT> value() {
         return refreshValue();
     }
 }

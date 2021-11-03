@@ -33,8 +33,8 @@ public interface IgniteTransactions {
 
     /**
      * Synchronously executes a closure within a transaction.
-     * <p>
-     * If the closure is executed normally (no exceptions), the transaction is automatically committed.
+     *
+     * <p>If the closure is executed normally (no exceptions), the transaction is automatically committed.
      *
      * @param clo The closure.
      */

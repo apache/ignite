@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -28,13 +30,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
-
 /**
  *
  */
 public class ValuesConverterRule extends AbstractIgniteConverterRule<LogicalValues> {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule INSTANCE = new ValuesConverterRule();
 
     /**
@@ -45,11 +47,12 @@ public class ValuesConverterRule extends AbstractIgniteConverterRule<LogicalValu
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalValues rel) {
+    @Override
+    protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalValues rel) {
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(broadcast())
-            .replace(RewindabilityTrait.REWINDABLE);
+                .replace(broadcast())
+                .replace(RewindabilityTrait.REWINDABLE);
 
         return new IgniteValues(cluster, rel.getRowType(), rel.getTuples(), traits);
     }

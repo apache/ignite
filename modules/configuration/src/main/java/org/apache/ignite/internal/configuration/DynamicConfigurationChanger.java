@@ -26,8 +26,8 @@ import org.apache.ignite.internal.configuration.tree.ConfigurationSource;
 import org.apache.ignite.internal.configuration.tree.InnerNode;
 
 /**
- * Interface to provide configuration access to up-to-date configuration trees in {@link DynamicConfiguration},
- * {@link NamedListConfiguration} and {@link DynamicProperty}.
+ * Interface to provide configuration access to up-to-date configuration trees in {@link DynamicConfiguration}, {@link
+ * NamedListConfiguration} and {@link DynamicProperty}.
  */
 public interface DynamicConfigurationChanger {
     /**
@@ -47,8 +47,8 @@ public interface DynamicConfigurationChanger {
     InnerNode getRootNode(RootKey<?, ?> rootKey);
 
     /**
-     * Retrieves the latest configuration value for the given path directly from the storage.
-     * This method is needed to support the {@link DirectConfigurationProperty} implementation.
+     * Retrieves the latest configuration value for the given path directly from the storage. This method is needed to support the {@link
+     * DirectConfigurationProperty} implementation.
      *
      * @param path Path to the value.
      * @return Configuration value.

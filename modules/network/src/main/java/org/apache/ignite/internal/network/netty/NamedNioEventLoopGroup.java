@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.FastThreadLocalThread;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Named netty event loop.
@@ -35,7 +35,7 @@ public class NamedNioEventLoopGroup extends NioEventLoopGroup {
     private NamedNioEventLoopGroup(ThreadFactory threadFactory) {
         super(threadFactory);
     }
-
+    
     /**
      * Creates event loop.
      *
@@ -46,9 +46,10 @@ public class NamedNioEventLoopGroup extends NioEventLoopGroup {
         var factory = new DefaultThreadFactory(namePrefix, Thread.MAX_PRIORITY) {
             /** Thread index. */
             private final AtomicInteger nextId = new AtomicInteger();
-
+            
             /** {@inheritDoc} */
-            @Override protected Thread newThread(Runnable r, String unused) {
+            @Override
+            protected Thread newThread(Runnable r, String unused) {
                 return new FastThreadLocalThread(threadGroup, r, namePrefix + '-' + nextId.incrementAndGet());
             }
         };

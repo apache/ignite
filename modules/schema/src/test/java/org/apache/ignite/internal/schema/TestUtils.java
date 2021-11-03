@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.schema;
 
+import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.MAX_YEAR;
+import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.MIN_YEAR;
+import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.normalizeNanos;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -28,10 +32,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 
-import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.MAX_YEAR;
-import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.MIN_YEAR;
-import static org.apache.ignite.internal.schema.row.TemporalTypesHelper.normalizeNanos;
-
 /**
  * Test utility class.
  */
@@ -39,17 +39,17 @@ public final class TestUtils {
     /**
      * Generates random value of given type.
      *
-     * @param rnd Random generator.
+     * @param rnd  Random generator.
      * @param type Type.
      * @return Random object of asked type.
      */
     public static Object generateRandomValue(Random rnd, NativeType type) {
         switch (type.spec()) {
             case INT8:
-                return (byte)rnd.nextInt(255);
+                return (byte) rnd.nextInt(255);
 
             case INT16:
-                return (short)rnd.nextInt(65535);
+                return (short) rnd.nextInt(65535);
 
             case INT32:
                 return rnd.nextInt();
@@ -76,12 +76,12 @@ public final class TestUtils {
                 return BigInteger.probablePrime(12, rnd);
 
             case DECIMAL:
-                DecimalNativeType decimalType = (DecimalNativeType)type;
+                DecimalNativeType decimalType = (DecimalNativeType) type;
 
                 return BigDecimal.valueOf(rnd.nextInt(), decimalType.scale());
 
             case BITMASK: {
-                BitmaskNativeType maskType = (BitmaskNativeType)type;
+                BitmaskNativeType maskType = (BitmaskNativeType) type;
 
                 return IgniteTestUtils.randomBitSet(rnd, maskType.bits());
             }
@@ -94,21 +94,21 @@ public final class TestUtils {
 
             case TIME:
                 return LocalTime.of(rnd.nextInt(24), rnd.nextInt(60), rnd.nextInt(60),
-                    normalizeNanos(rnd.nextInt(1_000_000_000), ((TemporalNativeType)type).precision()));
+                        normalizeNanos(rnd.nextInt(1_000_000_000), ((TemporalNativeType) type).precision()));
 
             case DATETIME: {
                 Year year = Year.of(rnd.nextInt(MAX_YEAR - MIN_YEAR) + MIN_YEAR);
 
                 LocalDate date = LocalDate.ofYearDay(year.getValue(), rnd.nextInt(year.length()) + 1);
                 LocalTime time = LocalTime.of(rnd.nextInt(24), rnd.nextInt(60), rnd.nextInt(60),
-                    normalizeNanos(rnd.nextInt(1_000_000_000), ((TemporalNativeType)type).precision()));
+                        normalizeNanos(rnd.nextInt(1_000_000_000), ((TemporalNativeType) type).precision()));
 
                 return LocalDateTime.of(date, time);
             }
 
             case TIMESTAMP:
                 return Instant.ofEpochMilli(rnd.nextLong()).truncatedTo(ChronoUnit.SECONDS)
-                    .plusNanos(normalizeNanos(rnd.nextInt(1_000_000_000), ((TemporalNativeType)type).precision()));
+                        .plusNanos(normalizeNanos(rnd.nextInt(1_000_000_000), ((TemporalNativeType) type).precision()));
 
             default:
                 throw new IllegalArgumentException("Unsupported type: " + type);

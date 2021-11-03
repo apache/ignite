@@ -17,20 +17,21 @@
 
 package org.apache.ignite.configuration.annotation;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
 /**
- * This annotation can only be applied to a class that is either marked with {@link ConfigurationRoot}
- * or the superclass is marked with {@link ConfigurationRoot}, {@link Config}.
- * <p>
- * It indicates that this is an internal configuration that should be hidden from the end user.
- * Any extensions are allowed for any configuration.
- * <p>
- * NOTE: Field name collisions are not allowed.
+ * This annotation can only be applied to a class that is either marked with {@link ConfigurationRoot} or the superclass is marked with
+ * {@link ConfigurationRoot}, {@link Config}.
+ *
+ * <p>It indicates that this is an internal configuration that should be hidden from the end user. Any extensions are allowed for any
+ * configuration.
+ *
+ * <p>NOTE: Field name collisions are not allowed.
  *
  * @see ConfigurationRoot
  * @see Config

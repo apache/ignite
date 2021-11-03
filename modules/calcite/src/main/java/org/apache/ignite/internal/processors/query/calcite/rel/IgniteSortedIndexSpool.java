@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -36,11 +35,12 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 
 /**
- * Relational operator that returns the sorted contents of a table
- * and allow to lookup rows by specified bounds.
+ * Relational operator that returns the sorted contents of a table and allow to lookup rows by specified bounds.
  */
 public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements IgniteRel {
-    /** */
+    /**
+     *
+     */
     private final RelCollation collation;
 
     /** Index condition. */
@@ -49,14 +49,16 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     /** Filters. */
     protected final RexNode condition;
 
-    /** */
+    /**
+     *
+     */
     public IgniteSortedIndexSpool(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelNode input,
-        RelCollation collation,
-        RexNode condition,
-        IndexConditions idxCond
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelNode input,
+            RelCollation collation,
+            RexNode condition,
+            IndexConditions idxCond
     ) {
         super(cluster, traits, Type.LAZY, input);
 
@@ -75,36 +77,45 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
      */
     public IgniteSortedIndexSpool(RelInput input) {
         this(input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getInputs().get(0),
-            input.getCollation(),
-            input.getExpression("condition"),
-            new IndexConditions(input)
+                input.getTraitSet().replace(IgniteConvention.INSTANCE),
+                input.getInputs().get(0),
+                input.getCollation(),
+                input.getExpression("condition"),
+                new IndexConditions(input)
         );
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
-    /** */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    /**
+     *
+     */
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteSortedIndexSpool(cluster, getTraitSet(), inputs.get(0), collation, condition, idxCond);
     }
 
     /** {@inheritDoc} */
-    @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
+    @Override
+    protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
         return new IgniteSortedIndexSpool(getCluster(), traitSet, input, collation, condition, idxCond);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEnforcer() {
+    @Override
+    public boolean isEnforcer() {
         return true;
     }
 
-    /** */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    /**
+     *
+     */
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
         writer.item("condition", condition);
@@ -114,38 +125,48 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public double estimateRowCount(RelMetadataQuery mq) {
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
         return mq.getRowCount(getInput()) * mq.getSelectivity(this, null);
     }
 
-    /** */
+    /**
+     *
+     */
     public IndexConditions indexCondition() {
         return idxCond;
     }
 
-    /** */
-    @Override public RelCollation collation() {
+    /**
+     *
+     */
+    @Override
+    public RelCollation collation() {
         return collation;
     }
 
-    /** */
+    /**
+     *
+     */
     public RexNode condition() {
         return condition;
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCnt = mq.getRowCount(getInput());
         double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
         double totalBytes = rowCnt * bytesPerRow;
         double cpuCost;
 
-        if (idxCond.lowerCondition() != null)
+        if (idxCond.lowerCondition() != null) {
             cpuCost = Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
-        else
+        } else {
             cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
+        }
 
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+        IgniteCostFactory costFactory = (IgniteCostFactory) planner.getCostFactory();
 
         return costFactory.makeCost(rowCnt, cpuCost, 0, totalBytes, 0);
     }

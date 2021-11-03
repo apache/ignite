@@ -30,15 +30,13 @@ public class ReplaceIfExistCommand implements WriteCommand {
     private transient BinaryRow row;
 
     /**
-     * Row bytes.
-     * It is a temporary solution, before network have not implement correct serialization BinaryRow.
+     * Row bytes. It is a temporary solution, before network have not implement correct serialization BinaryRow.
      * TODO: Remove the field after (IGNITE-14793).
      */
     private byte[] rowBytes;
 
     /**
-     * Creates a new instance of ReplaceIfExistCommand with the given row to be replaced.
-     * The {@code row} should not be {@code null}.
+     * Creates a new instance of ReplaceIfExistCommand with the given row to be replaced. The {@code row} should not be {@code null}.
      *
      * @param row Binary row.
      */
@@ -56,8 +54,9 @@ public class ReplaceIfExistCommand implements WriteCommand {
      * @return Binary row.
      */
     public BinaryRow getRow() {
-        if (row == null)
+        if (row == null) {
             row = new ByteBufferRow(rowBytes);
+        }
 
         return row;
     }

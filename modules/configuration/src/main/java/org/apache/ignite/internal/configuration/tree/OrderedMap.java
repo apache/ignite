@@ -91,51 +91,53 @@ class OrderedMap<V> {
     public V remove(String key) {
         V res = map.remove(key);
 
-        if (res != null)
+        if (res != null) {
             orderedKeys.remove(key);
+        }
 
         return res;
     }
 
     /**
-     * Inserts a value into the map under the specified key. If the key was not present in the map, it will be ordered last.
-     * ordering index will be used.
+     * Inserts a value into the map under the specified key. If the key was not present in the map, it will be ordered last. ordering index
+     * will be used.
      *
-     * @param key Key to put.
+     * @param key   Key to put.
      * @param value Value associated with the key.
      */
     public void put(String key, V value) {
-        if (map.put(key, value) == null)
+        if (map.put(key, value) == null) {
             orderedKeys.add(key);
+        }
     }
 
     /**
-     * Inserts a value into the map under the specified key. The key will be positioned at the given index, shifting any
-     * existing values at that position to the right. Key must not be present in the map when the method is called.
+     * Inserts a value into the map under the specified key. The key will be positioned at the given index, shifting any existing values at
+     * that position to the right. Key must not be present in the map when the method is called.
      *
-     * @param idx Ordering index for the key. Can't be negative. Every value bigger or equal than {@code size()} is
-     *            treated like {@code size()}.
-     * @param key Key to put.
+     * @param idx   Ordering index for the key. Can't be negative. Every value bigger or equal than {@code size()} is treated like {@code
+     *              size()}.
+     * @param key   Key to put.
      * @param value Value associated with the key.
      */
     public void putByIndex(int idx, String key, V value) {
         assert !map.containsKey(key) : key + " " + map;
 
-        if (idx >= orderedKeys.size())
+        if (idx >= orderedKeys.size()) {
             orderedKeys.add(key);
-        else
+        } else {
             orderedKeys.add(idx, key);
+        }
 
         map.put(key, value);
     }
 
     /**
-     * Put value to the map at the position after the {@code precedingKey}. Key must not be present in the map when the
-     * method is called.
+     * Put value to the map at the position after the {@code precedingKey}. Key must not be present in the map when the method is called.
      *
      * @param precedingKey Previous key for the new key. Last key will be used if this one is missing from the map.
-     * @param key Key to put.
-     * @param value Value associated with the key.
+     * @param key          Key to put.
+     * @param value        Value associated with the key.
      */
     public void putAfter(String precedingKey, String key, V value) {
         assert map.containsKey(precedingKey) : precedingKey + " " + map;
@@ -147,21 +149,21 @@ class OrderedMap<V> {
     }
 
     /**
-     * Re-associates the value under the {@code oldKey} to the {@code newKey}. Does nothing if the {@code oldKey}
-     * is not present in the map.
+     * Re-associates the value under the {@code oldKey} to the {@code newKey}. Does nothing if the {@code oldKey} is not present in the map.
      * was missing from the map.
      *
      * @param oldKey Old key.
      * @param newKey New key.
-     *
      * @throws IllegalArgumentException If both {@code oldKey} and {@code newKey} already exist in the map.
      */
     public void rename(String oldKey, String newKey) {
-        if (!map.containsKey(oldKey))
+        if (!map.containsKey(oldKey)) {
             return;
+        }
 
-        if (map.containsKey(newKey))
+        if (map.containsKey(newKey)) {
             throw new IllegalArgumentException();
+        }
 
         int idx = orderedKeys.indexOf(oldKey);
 
@@ -173,6 +175,8 @@ class OrderedMap<V> {
     }
 
     /**
+     * Returns list of keys.
+     *
      * @return List of keys.
      */
     public List<String> keys() {
@@ -193,6 +197,8 @@ class OrderedMap<V> {
     }
 
     /**
+     * Returns size of the map.
+     *
      * @return Size of the map.
      */
     public int size() {

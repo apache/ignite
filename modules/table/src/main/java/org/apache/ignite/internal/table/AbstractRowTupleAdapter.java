@@ -39,8 +39,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     /**
-     * Underlying row.
-     * Note: Marked transient to prevent unwanted serialization of the schema and\or other context.
+     * Underlying row. Note: Marked transient to prevent unwanted serialization of the schema and\or other context.
      */
     protected transient Row row;
 
@@ -54,22 +53,26 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema() {
+    @Override
+    public SchemaDescriptor schema() {
         return row.schema();
     }
 
     /** {@inheritDoc} */
-    @Override public int columnCount() {
+    @Override
+    public int columnCount() {
         return row.hasValue() ? row.schema().length() : row.schema().keyColumns().length();
     }
 
     /** {@inheritDoc} */
-    @Override public String columnName(int columnIndex) {
+    @Override
+    public String columnName(int columnIndex) {
         return rowColumnByIndex(columnIndex).name();
     }
 
     /** {@inheritDoc} */
-    @Override public int columnIndex(@NotNull String columnName) {
+    @Override
+    public int columnIndex(@NotNull String columnName) {
         Objects.requireNonNull(columnName);
 
         var col = row.schema().column(columnName);
@@ -78,254 +81,293 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T valueOrDefault(@NotNull String columnName, T defaultValue) {
+    @Override
+    public <T> T valueOrDefault(@NotNull String columnName, T defaultValue) {
         Objects.requireNonNull(columnName);
 
         final Column col = row.schema().column(columnName);
 
-        return col == null ? defaultValue : (T)col.type().spec().objectValue(row, col.schemaIndex());
+        return col == null ? defaultValue : (T) col.type().spec().objectValue(row, col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T value(@NotNull String columnName) {
+    @Override
+    public <T> T value(@NotNull String columnName) {
         final Column col = rowColumnByName(columnName);
 
-        return (T)col.type().spec().objectValue(row, col.schemaIndex());
+        return (T) col.type().spec().objectValue(row, col.schemaIndex());
     }
 
-    @Override public <T> T value(int columnIndex) {
+    @Override
+    public <T> T value(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
-        return (T)col.type().spec().objectValue(row, col.schemaIndex());
+        return (T) col.type().spec().objectValue(row, col.schemaIndex());
     }
 
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
+    @Override
+    public BinaryObject binaryObjectValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return BinaryObjects.wrap(row.bytesValue(col.schemaIndex()));
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject binaryObjectValue(int columnIndex) {
+    @Override
+    public BinaryObject binaryObjectValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return BinaryObjects.wrap(row.bytesValue(col.schemaIndex()));
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(@NotNull String columnName) {
+    @Override
+    public byte byteValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.byteValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public byte byteValue(int columnIndex) {
+    @Override
+    public byte byteValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.byteValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(@NotNull String columnName) {
+    @Override
+    public short shortValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.shortValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public short shortValue(int columnIndex) {
+    @Override
+    public short shortValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.shortValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(@NotNull String columnName) {
+    @Override
+    public int intValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.intValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public int intValue(int columnIndex) {
+    @Override
+    public int intValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.intValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(@NotNull String columnName) {
+    @Override
+    public long longValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.longValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public long longValue(int columnIndex) {
+    @Override
+    public long longValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.longValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(@NotNull String columnName) {
+    @Override
+    public float floatValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.floatValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public float floatValue(int columnIndex) {
+    @Override
+    public float floatValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.floatValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(@NotNull String columnName) {
+    @Override
+    public double doubleValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.doubleValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public double doubleValue(int columnIndex) {
+    @Override
+    public double doubleValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.doubleValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(@NotNull String columnName) {
+    @Override
+    public String stringValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.stringValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public String stringValue(int columnIndex) {
+    @Override
+    public String stringValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.stringValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(@NotNull String columnName) {
+    @Override
+    public UUID uuidValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.uuidValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public UUID uuidValue(int columnIndex) {
+    @Override
+    public UUID uuidValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.uuidValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(@NotNull String columnName) {
+    @Override
+    public BitSet bitmaskValue(@NotNull String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.bitmaskValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public BitSet bitmaskValue(int columnIndex) {
+    @Override
+    public BitSet bitmaskValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.bitmaskValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public LocalDate dateValue(String columnName) {
+    @Override
+    public LocalDate dateValue(String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.dateValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public LocalDate dateValue(int columnIndex) {
+    @Override
+    public LocalDate dateValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.dateValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public LocalTime timeValue(String columnName) {
+    @Override
+    public LocalTime timeValue(String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.timeValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public LocalTime timeValue(int columnIndex) {
+    @Override
+    public LocalTime timeValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.timeValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public LocalDateTime datetimeValue(String columnName) {
+    @Override
+    public LocalDateTime datetimeValue(String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.dateTimeValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public LocalDateTime datetimeValue(int columnIndex) {
+    @Override
+    public LocalDateTime datetimeValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.dateTimeValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public Instant timestampValue(String columnName) {
+    @Override
+    public Instant timestampValue(String columnName) {
         Column col = rowColumnByName(columnName);
 
         return row.timestampValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @Override public Instant timestampValue(int columnIndex) {
+    @Override
+    public Instant timestampValue(int columnIndex) {
         Column col = rowColumnByIndex(columnIndex);
 
         return row.timestampValue(col.schemaIndex());
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<Object> iterator() {
+    @NotNull
+    @Override
+    public Iterator<Object> iterator() {
         return new Iterator<>() {
             /** Current column index. */
             private int cur;
 
             /** {@inheritDoc} */
-            @Override public boolean hasNext() {
+            @Override
+            public boolean hasNext() {
                 return cur < row.schema().length();
             }
 
             /** {@inheritDoc} */
-            @Override public Object next() {
+            @Override
+            public Object next() {
                 return hasNext() ? value(cur++) : null;
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Tuple.hashCode(this);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
+        }
 
-        if (obj instanceof Tuple)
-            return Tuple.equals(this, (Tuple)obj);
+        if (obj instanceof Tuple) {
+            return Tuple.equals(this, (Tuple) obj);
+        }
 
         return false;
     }
@@ -341,8 +383,9 @@ public abstract class AbstractRowTupleAdapter implements Tuple, SchemaAware {
 
         final Column col = row.schema().column(columnName);
 
-        if (col == null)
+        if (col == null) {
             throw new IllegalArgumentException("Invalid column name: columnName=" + columnName);
+        }
 
         return col;
     }

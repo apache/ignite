@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.metastorage.server;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for entry tombstone condition.
@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class TombstoneConditionTest {
     /** Entry key. */
-    private static final byte[] KEY = new byte[] {1};
+    private static final byte[] KEY = new byte[]{1};
 
     /** Entry value. */
-    private static final byte[] VAL = new byte[] {1};
+    private static final byte[] VAL = new byte[]{1};
 
     /** Regular entry. */
     private static final Entry ENTRY = new Entry(KEY, VAL, 1, 1);

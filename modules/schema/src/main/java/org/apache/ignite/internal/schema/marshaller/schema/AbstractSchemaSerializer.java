@@ -31,7 +31,7 @@ public abstract class AbstractSchemaSerializer implements SchemaSerializer {
     protected final AbstractSchemaSerializer previous;
 
     /**
-     * @param ver Serializer version.
+     * @param ver      Serializer version.
      * @param previous Previous version serializer.
      */
     protected AbstractSchemaSerializer(short ver, AbstractSchemaSerializer previous) {
@@ -89,10 +89,11 @@ public abstract class AbstractSchemaSerializer implements SchemaSerializer {
      * @throws IllegalArgumentException If SchemaSerializer with right version is not found.
      */
     private SchemaSerializer getSerializerByVersion(short ver) {
-        if (ver == this.version)
+        if (ver == this.version) {
             return this;
-        else if (this.previous == null)
+        } else if (this.previous == null) {
             throw new IllegalArgumentException("Unable to find schema serializer with version " + ver);
+        }
 
         return this.previous.getSerializerByVersion(ver);
     }

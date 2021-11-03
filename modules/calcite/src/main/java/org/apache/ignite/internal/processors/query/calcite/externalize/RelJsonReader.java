@@ -14,8 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.externalize;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -24,11 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -50,38 +50,59 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.lang.IgniteException;
 
-/** */
+/**
+ *
+ */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class RelJsonReader {
-    /** */
-    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<>() {};
+    /**
+     *
+     */
+    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<>() {
+    };
 
-    /** */
+    /**
+     *
+     */
     private final ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
-    /** */
+    /**
+     *
+     */
     private final RelOptCluster cluster;
 
-    /** */
+    /**
+     *
+     */
     private final RelOptSchema relOptSchema;
 
-    /** */
+    /**
+     *
+     */
     private final RelJson relJson;
 
-    /** */
+    /**
+     *
+     */
     private final Map<String, RelNode> relMap = new LinkedHashMap<>();
 
-    /** */
+    /**
+     *
+     */
     private RelNode lastRel;
 
-    /** */
+    /**
+     *
+     */
     public static <T extends RelNode> T fromJson(PlanningContext ctx, String json) {
         RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
 
-        return (T)reader.read(json);
+        return (T) reader.read(json);
     }
 
-    /** */
+    /**
+     *
+     */
     public RelJsonReader(RelOptCluster cluster, RelOptSchema relOptSchema) {
         this.cluster = cluster;
         this.relOptSchema = relOptSchema;
@@ -89,249 +110,302 @@ public class RelJsonReader {
         relJson = new RelJson(cluster);
     }
 
-    /** */
+    /**
+     *
+     */
     public RelNode read(String s) {
         try {
             lastRel = null;
             Map<String, Object> o = mapper.readValue(s, TYPE_REF);
-            List<Map<String, Object>> rels = (List)o.get("rels");
+            List<Map<String, Object>> rels = (List) o.get("rels");
             readRels(rels);
             return lastRel;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IgniteException(e);
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private void readRels(List<Map<String, Object>> jsonRels) {
-        for (Map<String, Object> jsonRel : jsonRels)
+        for (Map<String, Object> jsonRel : jsonRels) {
             readRel(jsonRel);
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private void readRel(Map<String, Object> jsonRel) {
-        String id = (String)jsonRel.get("id");
-        String type = (String)jsonRel.get("relOp");
+        String id = (String) jsonRel.get("id");
+        String type = (String) jsonRel.get("relOp");
         Function<RelInput, RelNode> factory = relJson.factory(type);
         RelNode rel = factory.apply(new RelInputImpl(jsonRel));
         relMap.put(id, rel);
         lastRel = rel;
     }
 
-    /** */
+    /**
+     *
+     */
     private class RelInputImpl implements RelInputEx {
-        /** */
+        /**
+         *
+         */
         private final Map<String, Object> jsonRel;
 
-        /** */
+        /**
+         *
+         */
         private RelInputImpl(Map<String, Object> jsonRel) {
             this.jsonRel = jsonRel;
         }
 
         /** {@inheritDoc} */
-        @Override public RelOptCluster getCluster() {
+        @Override
+        public RelOptCluster getCluster() {
             return cluster;
         }
 
         /** {@inheritDoc} */
-        @Override public RelTraitSet getTraitSet() {
+        @Override
+        public RelTraitSet getTraitSet() {
             return cluster.traitSet();
         }
 
         /** {@inheritDoc} */
-        @Override public RelOptTable getTable(String table) {
+        @Override
+        public RelOptTable getTable(String table) {
             List<String> list = getStringList(table);
             return relOptSchema.getTableForMember(list);
         }
 
         /** {@inheritDoc} */
-        @Override public RelNode getInput() {
+        @Override
+        public RelNode getInput() {
             List<RelNode> inputs = getInputs();
             assert inputs.size() == 1;
             return inputs.get(0);
         }
 
         /** {@inheritDoc} */
-        @Override public List<RelNode> getInputs() {
+        @Override
+        public List<RelNode> getInputs() {
             List<String> jsonInputs = getStringList("inputs");
-            if (jsonInputs == null)
+            if (jsonInputs == null) {
                 return List.of(lastRel);
+            }
             List<RelNode> inputs = new ArrayList<>();
-            for (String jsonInput : jsonInputs)
+            for (String jsonInput : jsonInputs) {
                 inputs.add(lookupInput(jsonInput));
+            }
             return inputs;
         }
 
         /** {@inheritDoc} */
-        @Override public RexNode getExpression(String tag) {
+        @Override
+        public RexNode getExpression(String tag) {
             return relJson.toRex(this, jsonRel.get(tag));
         }
 
         /** {@inheritDoc} */
-        @Override public ImmutableBitSet getBitSet(String tag) {
+        @Override
+        public ImmutableBitSet getBitSet(String tag) {
             return ImmutableBitSet.of(getIntegerList(tag));
         }
 
         /** {@inheritDoc} */
-        @Override public List<ImmutableBitSet> getBitSetList(String tag) {
+        @Override
+        public List<ImmutableBitSet> getBitSetList(String tag) {
             List<List<Integer>> list = getIntegerListList(tag);
 
-            if (list == null)
+            if (list == null) {
                 return null;
+            }
 
             List<ImmutableBitSet> bitSets = new ArrayList<>();
 
-            for (List<Integer> integers : list)
+            for (List<Integer> integers : list) {
                 bitSets.add(ImmutableBitSet.of(integers));
+            }
 
             return List.copyOf(bitSets);
         }
 
         /** {@inheritDoc} */
-        @Override public List<String> getStringList(String tag) {
-            return (List<String>)jsonRel.get(tag);
+        @Override
+        public List<String> getStringList(String tag) {
+            return (List<String>) jsonRel.get(tag);
         }
 
         /** {@inheritDoc} */
-        @Override public List<Integer> getIntegerList(String tag) {
-            return (List<Integer>)jsonRel.get(tag);
+        @Override
+        public List<Integer> getIntegerList(String tag) {
+            return (List<Integer>) jsonRel.get(tag);
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<Integer>> getIntegerListList(String tag) {
-            return (List<List<Integer>>)jsonRel.get(tag);
+        @Override
+        public List<List<Integer>> getIntegerListList(String tag) {
+            return (List<List<Integer>>) jsonRel.get(tag);
         }
 
         /** {@inheritDoc} */
-        @Override public List<AggregateCall> getAggregateCalls(String tag) {
-            List<Map<String, Object>> jsonAggs = (List)jsonRel.get(tag);
+        @Override
+        public List<AggregateCall> getAggregateCalls(String tag) {
+            List<Map<String, Object>> jsonAggs = (List) jsonRel.get(tag);
             List<AggregateCall> inputs = new ArrayList<>();
-            for (Map<String, Object> jsonAggCall : jsonAggs)
+            for (Map<String, Object> jsonAggCall : jsonAggs) {
                 inputs.add(toAggCall(jsonAggCall));
+            }
             return inputs;
         }
 
         /** {@inheritDoc} */
-        @Override public Object get(String tag) {
+        @Override
+        public Object get(String tag) {
             return jsonRel.get(tag);
         }
 
         /** {@inheritDoc} */
-        @Override public String getString(String tag) {
-            return (String)jsonRel.get(tag);
+        @Override
+        public String getString(String tag) {
+            return (String) jsonRel.get(tag);
         }
 
         /** {@inheritDoc} */
-        @Override public float getFloat(String tag) {
-            return ((Number)jsonRel.get(tag)).floatValue();
+        @Override
+        public float getFloat(String tag) {
+            return ((Number) jsonRel.get(tag)).floatValue();
         }
 
         /** {@inheritDoc} */
-        @Override public boolean getBoolean(String tag, boolean default_) {
-            Boolean b = (Boolean)jsonRel.get(tag);
-            return b != null ? b : default_;
+        @Override
+        public boolean getBoolean(String tag, boolean def) {
+            Boolean b = (Boolean) jsonRel.get(tag);
+            return b != null ? b : def;
         }
 
         /** {@inheritDoc} */
-        @Override public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {
+        @Override
+        public <E extends Enum<E>> E getEnum(String tag, Class<E> enumClass) {
             return Util.enumVal(enumClass,
-                getString(tag).toUpperCase(Locale.ROOT));
+                    getString(tag).toUpperCase(Locale.ROOT));
         }
 
         /** {@inheritDoc} */
-        @Override public List<RexNode> getExpressionList(String tag) {
-            List<Object> jsonNodes = (List)jsonRel.get(tag);
+        @Override
+        public List<RexNode> getExpressionList(String tag) {
+            List<Object> jsonNodes = (List) jsonRel.get(tag);
             List<RexNode> nodes = new ArrayList<>();
-            for (Object jsonNode : jsonNodes)
+            for (Object jsonNode : jsonNodes) {
                 nodes.add(relJson.toRex(this, jsonNode));
+            }
             return nodes;
         }
 
         /** {@inheritDoc} */
-        @Override public RelDataType getRowType(String tag) {
+        @Override
+        public RelDataType getRowType(String tag) {
             Object o = jsonRel.get(tag);
             return relJson.toType(Commons.typeFactory(cluster), o);
         }
 
         /** {@inheritDoc} */
-        @Override public RelDataType getRowType(String expressionsTag, String fieldsTag) {
+        @Override
+        public RelDataType getRowType(String expressionsTag, String fieldsTag) {
             List<RexNode> expressionList = getExpressionList(expressionsTag);
             List<String> names =
-                (List<String>)get(fieldsTag);
+                    (List<String>) get(fieldsTag);
             return Commons.typeFactory(cluster).createStructType(
-                new AbstractList<Map.Entry<String, RelDataType>>() {
-                    @Override public Map.Entry<String, RelDataType> get(int index) {
-                        return Pair.of(names.get(index),
-                            expressionList.get(index).getType());
-                    }
+                    new AbstractList<Map.Entry<String, RelDataType>>() {
+                        @Override
+                        public Map.Entry<String, RelDataType> get(int index) {
+                            return Pair.of(names.get(index),
+                                    expressionList.get(index).getType());
+                        }
 
-                    @Override public int size() {
-                        return names.size();
-                    }
-                });
+                        @Override
+                        public int size() {
+                            return names.size();
+                        }
+                    });
         }
 
         /** {@inheritDoc} */
-        @Override public RelCollation getCollation() {
-            return relJson.toCollation((List)get("collation"));
+        @Override
+        public RelCollation getCollation() {
+            return relJson.toCollation((List) get("collation"));
         }
 
         /** {@inheritDoc} */
-        @Override public RelCollation getCollation(String tag) {
-            return relJson.toCollation((List)get(tag));
+        @Override
+        public RelCollation getCollation(String tag) {
+            return relJson.toCollation((List) get(tag));
         }
 
         /** {@inheritDoc} */
-        @Override public RelDistribution getDistribution() {
+        @Override
+        public RelDistribution getDistribution() {
             return relJson.toDistribution(get("distribution"));
         }
 
         /** {@inheritDoc} */
-        @Override public ImmutableList<ImmutableList<RexLiteral>> getTuples(String tag) {
-            List<List> jsonTuples = (List)get(tag);
+        @Override
+        public ImmutableList<ImmutableList<RexLiteral>> getTuples(String tag) {
+            List<List> jsonTuples = (List) get(tag);
             ImmutableList.Builder<ImmutableList<RexLiteral>> builder =
-                ImmutableList.builder();
+                    ImmutableList.builder();
 
-            for (List jsonTuple : jsonTuples)
+            for (List jsonTuple : jsonTuples) {
                 builder.add(getTuple(jsonTuple));
+            }
 
             return builder.build();
         }
 
-        /** */
+        /**
+         *
+         */
         private RelNode lookupInput(String jsonInput) {
             RelNode node = relMap.get(jsonInput);
-            if (node == null)
+            if (node == null) {
                 throw new RuntimeException("unknown id " + jsonInput
-                    + " for relational expression");
+                        + " for relational expression");
+            }
             return node;
         }
 
-        /** */
+        /**
+         *
+         */
         private ImmutableList<RexLiteral> getTuple(List jsonTuple) {
             ImmutableList.Builder<RexLiteral> builder =
-                ImmutableList.builder();
+                    ImmutableList.builder();
 
-            for (Object jsonValue : jsonTuple)
-                builder.add((RexLiteral)relJson.toRex(this, jsonValue));
+            for (Object jsonValue : jsonTuple) {
+                builder.add((RexLiteral) relJson.toRex(this, jsonValue));
+            }
 
             return builder.build();
         }
 
-        /** */
+        /**
+         *
+         */
         private AggregateCall toAggCall(Map<String, Object> jsonAggCall) {
-            Map<String, Object> aggMap = (Map)jsonAggCall.get("agg");
-            SqlAggFunction aggregation = (SqlAggFunction)relJson.toOp(aggMap);
-            Boolean distinct = (Boolean)jsonAggCall.get("distinct");
-            List<Integer> operands = (List<Integer>)jsonAggCall.get("operands");
-            Integer filterOperand = (Integer)jsonAggCall.get("filter");
+            Map<String, Object> aggMap = (Map) jsonAggCall.get("agg");
+            SqlAggFunction aggregation = (SqlAggFunction) relJson.toOp(aggMap);
+            Boolean distinct = (Boolean) jsonAggCall.get("distinct");
+            List<Integer> operands = (List<Integer>) jsonAggCall.get("operands");
+            Integer filterOperand = (Integer) jsonAggCall.get("filter");
             RelDataType type = relJson.toType(Commons.typeFactory(cluster), jsonAggCall.get("type"));
-            String name = (String)jsonAggCall.get("name");
+            String name = (String) jsonAggCall.get("name");
             return AggregateCall.create(aggregation, distinct, false, false, operands,
-                filterOperand == null ? -1 : filterOperand,
-                RelCollations.EMPTY,
-                type, name);
+                    filterOperand == null ? -1 : filterOperand,
+                    RelCollations.EMPTY,
+                    type, name);
         }
     }
 }

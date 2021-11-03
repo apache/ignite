@@ -26,36 +26,45 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
 /**
  * Execution node for INTERSECT operator.
  */
-public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
-    /** */
-    public IntersectNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, boolean all,
-        RowFactory<Row> rowFactory, int inputsCnt) {
+public class IntersectNode<RowT> extends AbstractSetOpNode<RowT> {
+    /**
+     *
+     */
+    public IntersectNode(ExecutionContext<RowT> ctx, RelDataType rowType, AggregateType type, boolean all,
+            RowFactory<RowT> rowFactory, int inputsCnt) {
         super(ctx, rowType, type, all, rowFactory, new IntersectGrouping<>(ctx, rowFactory, type, all, inputsCnt));
     }
 
-    /** */
-    private static class IntersectGrouping<Row> extends Grouping<Row> {
+    /**
+     *
+     */
+    private static class IntersectGrouping<RowT> extends Grouping<RowT> {
         /** Inputs count. */
         private final int inputsCnt;
 
-        /** */
-        private IntersectGrouping(ExecutionContext<Row> ctx, RowFactory<Row> rowFactory, AggregateType type,
-            boolean all, int inputsCnt) {
+        /**
+         *
+         */
+        private IntersectGrouping(ExecutionContext<RowT> ctx, RowFactory<RowT> rowFactory, AggregateType type,
+                boolean all, int inputsCnt) {
             super(ctx, rowFactory, type, all);
 
             this.inputsCnt = inputsCnt;
         }
 
         /** {@inheritDoc} */
-        @Override protected void endOfSet(int setIdx) {
-            if (type == AggregateType.SINGLE && rowsCnt == 0)
+        @Override
+        protected void endOfSet(int setIdx) {
+            if (type == AggregateType.SINGLE && rowsCnt == 0) {
                 groups.clear();
+            }
 
             super.endOfSet(setIdx);
         }
 
         /** {@inheritDoc} */
-        @Override protected void addOnSingle(Row row, int setIdx) {
+        @Override
+        protected void addOnSingle(RowT row, int setIdx) {
             int[] cntrs;
 
             GroupKey key = key(row);
@@ -64,51 +73,56 @@ public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
                 cntrs = groups.computeIfAbsent(key, k -> new int[inputsCnt]);
 
                 cntrs[0]++;
-            }
-            else {
+            } else {
                 cntrs = groups.get(key);
 
                 if (cntrs != null) {
-                    if (cntrs[setIdx - 1] == 0)
+                    if (cntrs[setIdx - 1] == 0) {
                         groups.remove(key);
-                    else
+                    } else {
                         cntrs[setIdx]++;
+                    }
                 }
             }
         }
 
         /** {@inheritDoc} */
-        @Override protected void addOnMapper(Row row, int setIdx) {
+        @Override
+        protected void addOnMapper(RowT row, int setIdx) {
             int[] cntrs = groups.computeIfAbsent(key(row), k -> new int[inputsCnt]);
 
             cntrs[setIdx]++;
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean affectResult(int[] cntrs) {
+        @Override
+        protected boolean affectResult(int[] cntrs) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override protected int availableRows(int[] cntrs) {
+        @Override
+        protected int availableRows(int[] cntrs) {
             int cnt = cntrs[0];
 
             for (int i = 1; i < cntrs.length; i++) {
-                if (cntrs[i] < cnt)
+                if (cntrs[i] < cnt) {
                     cnt = cntrs[i];
+                }
             }
 
             if (all) {
                 cntrs[0] = cnt; // Whith this we can decrement only the first element to get the same result.
 
                 return cnt;
-            }
-            else
+            } else {
                 return cnt == 0 ? 0 : 1;
+            }
         }
 
         /** {@inheritDoc} */
-        @Override protected void decrementAvailableRows(int[] cntrs, int amount) {
+        @Override
+        protected void decrementAvailableRows(int[] cntrs, int amount) {
             assert amount > 0;
             assert all;
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
-
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -45,128 +44,154 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  *
  */
 public abstract class IgniteReduceAggregateBase extends SingleRel implements TraitsAwareIgniteRel {
-    /** */
+    /**
+     *
+     */
     protected final ImmutableBitSet groupSet;
 
-    /** */
+    /**
+     *
+     */
     protected final List<ImmutableBitSet> groupSets;
 
-    /** */
+    /**
+     *
+     */
     protected final List<AggregateCall> aggCalls;
 
-    /** */
+    /**
+     *
+     */
     protected IgniteReduceAggregateBase(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls,
-        RelDataType rowType
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelNode input,
+            ImmutableBitSet groupSet,
+            List<ImmutableBitSet> groupSets,
+            List<AggregateCall> aggCalls,
+            RelDataType rowType
     ) {
         super(cluster, traits, input);
 
         assert rowType != null;
         this.groupSet = groupSet;
-        if (groupSets == null)
+        if (groupSets == null) {
             groupSets = List.of(groupSet);
+        }
         this.groupSets = groupSets;
         this.aggCalls = aggCalls;
         this.rowType = rowType;
     }
 
-    /** */
+    /**
+     *
+     */
     protected IgniteReduceAggregateBase(RelInput input) {
         this(
-            input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getInput(),
-            input.getBitSet("group"),
-            input.getBitSetList("groups"),
-            input.getAggregateCalls("aggs"),
-            input.getRowType("rowType"));
+                input.getCluster(),
+                input.getTraitSet().replace(IgniteConvention.INSTANCE),
+                input.getInput(),
+                input.getBitSet("group"),
+                input.getBitSetList("groups"),
+                input.getAggregateCalls("aggs"),
+                input.getRowType("rowType"));
     }
 
     /** {@inheritDoc} */
-    @Override protected RelDataType deriveRowType() {
+    @Override
+    protected RelDataType deriveRowType() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw)
-            .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES)
-            .item("group", groupSet)
-            .itemIf("groups", groupSets, Group.induce(groupSet, groupSets) != Group.SIMPLE)
-            .itemIf("aggs", aggCalls, pw.nest());
+                .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES)
+                .item("group", groupSet)
+                .itemIf("groups", groupSets, Group.induce(groupSet, groupSets) != Group.SIMPLE)
+                .itemIf("aggs", aggCalls, pw.nest());
 
         if (!pw.nest()) {
-            for (Ord<AggregateCall> ord : Ord.zip(aggCalls))
+            for (Ord<AggregateCall> ord : Ord.zip(aggCalls)) {
                 pw.item(Util.first(ord.e.name, "agg#" + ord.i), ord.e);
+            }
         }
 
         return pw;
     }
 
-    /** */
+    /**
+     *
+     */
     public ImmutableBitSet getGroupSet() {
         return groupSet;
     }
 
-    /** */
+    /**
+     *
+     */
     public List<ImmutableBitSet> getGroupSets() {
         return groupSets;
     }
 
-    /** */
+    /**
+     *
+     */
     public List<AggregateCall> getAggregateCalls() {
         return aggCalls;
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        if (TraitUtils.distribution(nodeTraits) == IgniteDistributions.single())
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
+            List<RelTraitSet> inTraits) {
+        if (TraitUtils.distribution(nodeTraits) == IgniteDistributions.single()) {
             return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(IgniteDistributions.single())));
+        }
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+            RelTraitSet nodeTraits,
+            List<RelTraitSet> inputTraits
     ) {
         return List.of(
-            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), List.of(inputTraits.get(0))));
+                Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), List.of(inputTraits.get(0))));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+            RelTraitSet nodeTraits,
+            List<RelTraitSet> inputTraits
     ) {
         RelTraitSet in = inputTraits.get(0);
 
         return List.of(
-            Pair.of(
-                nodeTraits.replace(IgniteDistributions.single()),
-                List.of(in.replace(IgniteDistributions.single()))
-            )
+                Pair.of(
+                        nodeTraits.replace(IgniteDistributions.single()),
+                        List.of(in.replace(IgniteDistributions.single()))
+                )
         );
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
+            RelTraitSet nodeTraits,
+            List<RelTraitSet> inTraits
     ) {
         return List.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
-            inTraits));
+                inTraits));
     }
 
     /** {@inheritDoc} */
-    @Override public double estimateRowCount(RelMetadataQuery mq) {
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
         // Reduce aggregate doesn't change result's row count until we don't use
         // cluster parallelism at the model (devide source rows by nodes for partitioned data).
         return mq.getRowCount(getInput());

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 import java.util.List;
-
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,8 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CreateTableCommand implements DdlCommand {
     /**
-     * Schema name upon which this statement has been issued - <b>not</b> the name of the schema where this new table
-     * will be created.
+     * Schema name upon which this statement has been issued - <b>not</b> the name of the schema where this new table will be created.
      */
     private String schemaName;
 
@@ -48,12 +46,12 @@ public class CreateTableCommand implements DdlCommand {
 
     /** Group to put new cache into. */
     private String cacheGrp;
-//
-//    /** Atomicity mode for new cache. */
-//    private CacheAtomicityMode atomicityMode;
-//
-//    /** Write sync mode. */
-//    private CacheWriteSynchronizationMode writeSyncMode;
+
+    //    /** Atomicity mode for new cache. */
+    //    private CacheAtomicityMode atomicityMode;
+    //
+    //    /** Write sync mode. */
+    //    private CacheWriteSynchronizationMode writeSyncMode;
 
     /** Backups number for new cache. */
     private Integer backups;
@@ -145,39 +143,40 @@ public class CreateTableCommand implements DdlCommand {
     public void cacheGroup(String cacheGrp) {
         this.cacheGrp = cacheGrp;
     }
-//
-//    /**
-//     * @return Atomicity mode for new cache.
-//     */
-//    public CacheAtomicityMode atomicityMode() {
-//        return atomicityMode;
-//    }
-//
-//    /**
-//     * @param atomicityMode Atomicity mode for new cache.
-//     */
-//    public void atomicityMode(CacheAtomicityMode atomicityMode) {
-//        this.atomicityMode = atomicityMode;
-//    }
-//
-//    /**
-//     * @return Write sync mode for new cache.
-//     */
-//    public CacheWriteSynchronizationMode writeSynchronizationMode() {
-//        return writeSyncMode;
-//    }
-//
-//    /**
-//     * @param writeSyncMode Write sync mode for new cache.
-//     */
-//    public void writeSynchronizationMode(CacheWriteSynchronizationMode writeSyncMode) {
-//        this.writeSyncMode = writeSyncMode;
-//    }
+
+    //    /**
+    //     * @return Atomicity mode for new cache.
+    //     */
+    //    public CacheAtomicityMode atomicityMode() {
+    //        return atomicityMode;
+    //    }
+    //
+    //    /**
+    //     * @param atomicityMode Atomicity mode for new cache.
+    //     */
+    //    public void atomicityMode(CacheAtomicityMode atomicityMode) {
+    //        this.atomicityMode = atomicityMode;
+    //    }
+    //
+    //    /**
+    //     * @return Write sync mode for new cache.
+    //     */
+    //    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+    //        return writeSyncMode;
+    //    }
+    //
+    //    /**
+    //     * @param writeSyncMode Write sync mode for new cache.
+    //     */
+    //    public void writeSynchronizationMode(CacheWriteSynchronizationMode writeSyncMode) {
+    //        this.writeSyncMode = writeSyncMode;
+    //    }
 
     /**
      * @return Backups number for new cache.
      */
-    @Nullable public Integer backups() {
+    @Nullable
+    public Integer backups() {
         return backups;
     }
 

@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.schema.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -32,10 +36,6 @@ import org.apache.ignite.internal.schema.marshaller.schema.AbstractSchemaSeriali
 import org.apache.ignite.internal.schema.marshaller.schema.SchemaSerializerImpl;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 /**
  * SchemaDescriptor (de)serializer test.
  */
@@ -48,25 +48,25 @@ public class AbstractSerializerTest {
         AbstractSchemaSerializer assembler = SchemaSerializerImpl.INSTANCE;
 
         SchemaDescriptor desc = new SchemaDescriptor(100500,
-            new Column[] {
-                new Column("A", NativeTypes.INT8, false),
-                new Column("B", NativeTypes.INT16, false),
-                new Column("C", NativeTypes.INT32, false),
-                new Column("D", NativeTypes.INT64, false),
-                new Column("E", NativeTypes.UUID, false),
-                new Column("F", NativeTypes.FLOAT, false),
-                new Column("G", NativeTypes.DOUBLE, false),
-                new Column("H", NativeTypes.DATE, false),
-            },
-            new Column[] {
-                new Column("A1", NativeTypes.stringOf(128), false),
-                new Column("B1", NativeTypes.numberOf(255), false),
-                new Column("C1", NativeTypes.decimalOf(128, 64), false),
-                new Column("D1", NativeTypes.bitmaskOf(256), false),
-                new Column("E1", NativeTypes.datetime(8), false),
-                new Column("F1", NativeTypes.time(8), false),
-                new Column("G1", NativeTypes.timestamp(8), true)
-            }
+                new Column[]{
+                        new Column("A", NativeTypes.INT8, false),
+                        new Column("B", NativeTypes.INT16, false),
+                        new Column("C", NativeTypes.INT32, false),
+                        new Column("D", NativeTypes.INT64, false),
+                        new Column("E", NativeTypes.UUID, false),
+                        new Column("F", NativeTypes.FLOAT, false),
+                        new Column("G", NativeTypes.DOUBLE, false),
+                        new Column("H", NativeTypes.DATE, false),
+                },
+                new Column[]{
+                        new Column("A1", NativeTypes.stringOf(128), false),
+                        new Column("B1", NativeTypes.numberOf(255), false),
+                        new Column("C1", NativeTypes.decimalOf(128, 64), false),
+                        new Column("D1", NativeTypes.bitmaskOf(256), false),
+                        new Column("E1", NativeTypes.datetime(8), false),
+                        new Column("F1", NativeTypes.time(8), false),
+                        new Column("G1", NativeTypes.timestamp(8), true)
+                }
         );
 
         byte[] serialize = assembler.serialize(desc);
@@ -127,22 +127,22 @@ public class AbstractSerializerTest {
         AbstractSchemaSerializer assembler = SchemaSerializerImpl.INSTANCE;
 
         SchemaDescriptor desc = new SchemaDescriptor(100500,
-            new Column[] {
-                new Column("A", NativeTypes.INT8, false, () -> (byte)1),
-                new Column("B", NativeTypes.INT16, false, () -> (short)1),
-                new Column("C", NativeTypes.INT32, false, () -> 1),
-                new Column("D", NativeTypes.INT64, false, () -> 1L),
-                new Column("E", NativeTypes.UUID, false, () -> new UUID(12,34)),
-                new Column("F", NativeTypes.FLOAT, false, () -> 1.0f),
-                new Column("G", NativeTypes.DOUBLE, false, () -> 1.0d),
-                new Column("H", NativeTypes.DATE, false),
-            },
-            new Column[] {
-                new Column("A1", NativeTypes.stringOf(128), false, () -> "test"),
-                new Column("B1", NativeTypes.numberOf(255), false, () -> BigInteger.TEN),
-                new Column("C1", NativeTypes.decimalOf(128, 64), false, () -> BigDecimal.TEN),
-                new Column("D1", NativeTypes.bitmaskOf(256), false, BitSet::new)
-            }
+                new Column[]{
+                        new Column("A", NativeTypes.INT8, false, () -> (byte) 1),
+                        new Column("B", NativeTypes.INT16, false, () -> (short) 1),
+                        new Column("C", NativeTypes.INT32, false, () -> 1),
+                        new Column("D", NativeTypes.INT64, false, () -> 1L),
+                        new Column("E", NativeTypes.UUID, false, () -> new UUID(12, 34)),
+                        new Column("F", NativeTypes.FLOAT, false, () -> 1.0f),
+                        new Column("G", NativeTypes.DOUBLE, false, () -> 1.0d),
+                        new Column("H", NativeTypes.DATE, false),
+                },
+                new Column[]{
+                        new Column("A1", NativeTypes.stringOf(128), false, () -> "test"),
+                        new Column("B1", NativeTypes.numberOf(255), false, () -> BigInteger.TEN),
+                        new Column("C1", NativeTypes.decimalOf(128, 64), false, () -> BigDecimal.TEN),
+                        new Column("D1", NativeTypes.bitmaskOf(256), false, BitSet::new)
+                }
         );
 
         byte[] serialize = assembler.serialize(desc);
@@ -150,11 +150,11 @@ public class AbstractSerializerTest {
         SchemaDescriptor deserialize = assembler.deserialize(serialize);
 
         //key columns
-        assertEquals(deserialize.column("A").defaultValue(), (byte)1);
-        assertEquals(deserialize.column("B").defaultValue(), (short)1);
+        assertEquals(deserialize.column("A").defaultValue(), (byte) 1);
+        assertEquals(deserialize.column("B").defaultValue(), (short) 1);
         assertEquals(deserialize.column("C").defaultValue(), 1);
         assertEquals(deserialize.column("D").defaultValue(), 1L);
-        assertEquals(deserialize.column("E").defaultValue(), new UUID(12,34));
+        assertEquals(deserialize.column("E").defaultValue(), new UUID(12, 34));
         assertEquals(deserialize.column("F").defaultValue(), 1.0f);
         assertEquals(deserialize.column("G").defaultValue(), 1.0d);
         assertNull(deserialize.column("H").defaultValue());
@@ -171,16 +171,16 @@ public class AbstractSerializerTest {
      */
     @Test
     public void columnMappingSerializeTest() {
-        AbstractSchemaSerializer assembler = SchemaSerializerImpl.INSTANCE;
+        final AbstractSchemaSerializer assembler = SchemaSerializerImpl.INSTANCE;
 
         SchemaDescriptor desc = new SchemaDescriptor(100500,
-            new Column[] {
-                new Column("A", NativeTypes.INT8, false, () -> (byte)1)
-            },
-            new Column[] {
-                new Column("A1", NativeTypes.stringOf(128), false, () -> "test"),
-                new Column("B1", NativeTypes.numberOf(255), false, () -> BigInteger.TEN)
-            }
+                new Column[]{
+                        new Column("A", NativeTypes.INT8, false, () -> (byte) 1)
+                },
+                new Column[]{
+                        new Column("A1", NativeTypes.stringOf(128), false, () -> "test"),
+                        new Column("B1", NativeTypes.numberOf(255), false, () -> BigInteger.TEN)
+                }
         );
 
         ColumnMapper mapper = ColumnMapping.createMapper(desc);

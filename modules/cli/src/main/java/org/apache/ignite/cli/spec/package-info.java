@@ -18,4 +18,5 @@
 /**
  * Contains classes with specification of CLI commands and parameters.
  */
+
 package org.apache.ignite.cli.spec;

@@ -18,4 +18,5 @@
 /**
  * Package, that contains serialization-related classes.
  */
+
 package org.apache.ignite.network.serialization;

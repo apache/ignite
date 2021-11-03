@@ -23,7 +23,9 @@ import org.junit.jupiter.api.BeforeAll;
  * Base class for any CLI tests.
  */
 public class AbstractCliTest {
-    /** */
+    /**
+     *
+     */
     @BeforeAll
     private static void beforeAll() {
         System.setProperty("org.jline.terminal.dumb", "true");

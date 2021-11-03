@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cli.spec;
 
+import io.micronaut.context.ApplicationContext;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -25,12 +26,11 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.CommandFactory;
 import org.apache.ignite.cli.ErrorHandler;
 import org.apache.ignite.cli.HelpFactoryImpl;
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 import org.apache.ignite.cli.InteractiveWrapper;
 import org.apache.ignite.cli.builtins.module.ModuleRegistry;
 import org.apache.ignite.cli.common.IgniteCommand;
@@ -41,14 +41,14 @@ import picocli.CommandLine;
  * Root command of Ignite CLI.
  */
 @CommandLine.Command(
-    name = "ignite",
-    description = "Type @|green ignite <COMMAND>|@ @|yellow --help|@ to get help for any command.",
-    subcommands = {
-        InitIgniteCommandSpec.class,
-        ModuleCommandSpec.class,
-        NodeCommandSpec.class,
-        ConfigCommandSpec.class,
-    }
+        name = "ignite",
+        description = "Type @|green ignite <COMMAND>|@ @|yellow --help|@ to get help for any command.",
+        subcommands = {
+                InitIgniteCommandSpec.class,
+                ModuleCommandSpec.class,
+                NodeCommandSpec.class,
+                ConfigCommandSpec.class,
+        }
 )
 public class IgniteCliSpec extends CommandSpec {
     /** Interactive mode option. */
@@ -59,20 +59,21 @@ public class IgniteCliSpec extends CommandSpec {
     private Terminal terminal;
 
     /** {@inheritDoc} */
-    @Override public void run() {
+    @Override
+    public void run() {
         CommandLine cli = spec.commandLine();
 
         cli.getOut().print(banner());
 
-        if (interactive)
+        if (interactive) {
             new InteractiveWrapper(terminal).run(cli);
-        else
+        } else {
             cli.usage(cli.getOut());
+        }
     }
 
     /**
-     * Init Ignite command line with needed look&amp;feel options
-     * and loads external extensions if any exists.
+     * Init Ignite command line with needed look&amp;feel options and loads external extensions if any exists.
      *
      * @param applicationCtx DI application context.
      * @return Initialized command line instance.
@@ -83,30 +84,30 @@ public class IgniteCliSpec extends CommandSpec {
         ErrorHandler errorHnd = applicationCtx.createBean(ErrorHandler.class);
 
         CommandLine cli = new CommandLine(IgniteCliSpec.class, factory)
-            .setExecutionExceptionHandler(errorHnd)
-            .setParameterExceptionHandler(errorHnd);
+                .setExecutionExceptionHandler(errorHnd)
+                .setParameterExceptionHandler(errorHnd);
 
         cli.setHelpFactory(new HelpFactoryImpl());
 
         cli.setColorScheme(new CommandLine.Help.ColorScheme.Builder()
-            .commands(CommandLine.Help.Ansi.Style.fg_green)
-            .options(CommandLine.Help.Ansi.Style.fg_yellow)
-            .parameters(CommandLine.Help.Ansi.Style.fg_cyan)
-            .errors(CommandLine.Help.Ansi.Style.fg_red, CommandLine.Help.Ansi.Style.bold)
-            .build());
+                .commands(CommandLine.Help.Ansi.Style.fg_green)
+                .options(CommandLine.Help.Ansi.Style.fg_yellow)
+                .parameters(CommandLine.Help.Ansi.Style.fg_cyan)
+                .errors(CommandLine.Help.Ansi.Style.fg_red, CommandLine.Help.Ansi.Style.bold)
+                .build());
 
         applicationCtx.createBean(CliPathsConfigLoader.class)
-            .loadIgnitePathsConfig()
-            .ifPresent(ignitePaths ->
-                loadSubcommands(
-                    cli,
-                    applicationCtx.createBean(ModuleRegistry.class)
-                        .listInstalled()
-                        .modules
-                        .stream()
-                        .flatMap(m -> m.cliArtifacts.stream())
-                        .collect(Collectors.toList()))
-            );
+                .loadIgnitePathsConfig()
+                .ifPresent(ignitePaths ->
+                        loadSubcommands(
+                                cli,
+                                applicationCtx.createBean(ModuleRegistry.class)
+                                        .listInstalled()
+                                        .modules
+                                        .stream()
+                                        .flatMap(m -> m.cliArtifacts.stream())
+                                        .collect(Collectors.toList()))
+                );
         return cli;
     }
 
@@ -118,23 +119,22 @@ public class IgniteCliSpec extends CommandSpec {
      */
     public static void loadSubcommands(CommandLine cmdLine, List<Path> cliLibs) {
         URL[] urls = cliLibs.stream()
-            .map(p -> {
-                try {
-                    return p.toUri().toURL();
-                }
-                catch (MalformedURLException e) {
-                    throw new IgniteCLIException("Can't convert cli module path to URL for loading by classloader");
-                }
-            }).toArray(URL[]::new);
+                .map(p -> {
+                    try {
+                        return p.toUri().toURL();
+                    } catch (MalformedURLException e) {
+                        throw new IgniteCliException("Can't convert cli module path to URL for loading by classloader");
+                    }
+                }).toArray(URL[]::new);
 
         ClassLoader clsLdr = new URLClassLoader(
-            urls,
-            IgniteCliSpec.class.getClassLoader());
+                urls,
+                IgniteCliSpec.class.getClassLoader());
 
         ServiceLoader<IgniteCommand> ldr = ServiceLoader.load(IgniteCommand.class, clsLdr);
         ldr.reload();
 
-        for (IgniteCommand igniteCommand: ldr) {
+        for (IgniteCommand igniteCommand : ldr) {
             cmdLine.addSubcommand(igniteCommand);
         }
     }

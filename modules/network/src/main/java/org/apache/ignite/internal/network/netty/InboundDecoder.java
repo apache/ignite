@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.nio.ByteBuffer;
-import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import java.nio.ByteBuffer;
+import java.util.List;
 import org.apache.ignite.internal.network.direct.DirectMarshallingUtils;
 import org.apache.ignite.internal.network.direct.DirectMessageReader;
 import org.apache.ignite.lang.IgniteLogger;
@@ -58,7 +58,8 @@ public class InboundDecoder extends ByteToMessageDecoder {
     }
 
     /** {@inheritDoc} */
-    @Override public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+    @Override
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         ByteBuffer buffer = in.nioBuffer();
 
         Attribute<MessageReader> readerAttr = ctx.channel().attr(READER_KEY);
@@ -79,10 +80,12 @@ public class InboundDecoder extends ByteToMessageDecoder {
             try {
                 // Read message type.
                 if (msg == null) {
-                    if (buffer.remaining() >= NetworkMessage.MSG_TYPE_SIZE_BYTES)
-                        msg = serializationRegistry.createDeserializer(DirectMarshallingUtils.getShort(buffer), DirectMarshallingUtils.getShort(buffer));
-                    else
+                    if (buffer.remaining() >= NetworkMessage.MSG_TYPE_SIZE_BYTES) {
+                        msg = serializationRegistry.createDeserializer(DirectMarshallingUtils.getShort(buffer),
+                                DirectMarshallingUtils.getShort(buffer));
+                    } else {
                         break;
+                    }
                 }
 
                 boolean finished = false;
@@ -105,18 +108,17 @@ public class InboundDecoder extends ByteToMessageDecoder {
                     messageAttr.set(null);
 
                     out.add(msg.getMessage());
-                }
-                else
+                } else {
                     messageAttr.set(msg);
-            }
-            catch (Throwable e) {
+                }
+            } catch (Throwable e) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(
-                        String.format(
-                            "Failed to read message [msg=%s, buf=%s, reader=%s]: %s",
-                            msg, buffer, reader, e.getMessage()
-                        ),
-                        e
+                            String.format(
+                                    "Failed to read message [msg=%s, buf=%s, reader=%s]: %s",
+                                    msg, buffer, reader, e.getMessage()
+                            ),
+                            e
                     );
                 }
 

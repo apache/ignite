@@ -25,21 +25,19 @@ import java.lang.annotation.Target;
 import org.apache.ignite.lang.IgniteSystemProperties;
 
 /**
- * Class or field annotated with IgniteToStringInclude claims the element <b>should</b> be included
- * in {@code toString()} output.
- * This annotation is used to override the default exclusion policy.
+ * Class or field annotated with IgniteToStringInclude claims the element <b>should</b> be included in {@code toString()} output. This
+ * annotation is used to override the default exclusion policy.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.TYPE})
 public @interface IgniteToStringInclude {
     /**
-     * A flag indicating if sensitive information stored in the field or fields of the class.
-     * Such information will be included to {@code toString()} output according to
-     * {@link IgniteSystemProperties#IGNITE_SENSITIVE_DATA_LOGGING} policy.
+     * A flag indicating if sensitive information stored in the field or fields of the class. Such information will be included to {@code
+     * toString()} output according to {@link IgniteSystemProperties#IGNITE_SENSITIVE_DATA_LOGGING} policy.
      *
      * @return Attribute value.
-     * @see SensitiveDataLoggingPolicy}.
+     * @see SensitiveDataLoggingPolicy
      */
     boolean sensitive() default false;
 }

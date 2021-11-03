@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import static org.apache.calcite.rel.RelDistribution.Type.ANY;
+import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.RANDOM_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
+
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
@@ -32,175 +37,198 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
-import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.RANDOM_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
-
 /**
  * Description of the physical distribution of a relational expression.
  */
 public final class DistributionTrait implements IgniteDistribution {
-    /** */
+    /**
+     *
+     */
     private static final Comparator<Iterable<Integer>> ORDERING = (iterable0, iterable1) -> {
         Iterator<Integer> it0 = iterable0.iterator();
         Iterator<Integer> it1 = iterable1.iterator();
-
+        
         while (it0.hasNext()) {
             if (!it1.hasNext()) {
                 return 1;
             }
-
+            
             int result = Integer.compare(it0.next(), it1.next());
-
+            
             if (result != 0) {
                 return result;
             }
         }
-
+        
         if (it1.hasNext()) {
             return -1;
         }
-
+        
         return 0;
     };
-
-    /** */
+    
+    /**
+     *
+     */
     private final DistributionFunction function;
-
-    /** */
+    
+    /**
+     *
+     */
     private final ImmutableIntList keys;
-
+    
     /**
      * @param function Distribution function.
      */
     DistributionTrait(DistributionFunction function) {
         assert function.type() != HASH_DISTRIBUTED;
-
+        
         this.function = function;
-
+        
         keys = ImmutableIntList.of();
     }
-
+    
     /**
-     * @param keys Distribution keys.
+     * @param keys     Distribution keys.
      * @param function Distribution function.
      */
     DistributionTrait(ImmutableIntList keys, DistributionFunction function) {
         this.keys = keys;
         this.function = function;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Type getType() {
+    @Override
+    public Type getType() {
         return function.type();
     }
-
+    
     /** {@inheritDoc} */
-    @Override public DistributionFunction function() {
+    @Override
+    public DistributionFunction function() {
         return function;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ectx, AffinityService affSrvc, ColocationGroup target) {
+    @Override
+    public <RowT> Destination<RowT> destination(ExecutionContext<RowT> ectx, AffinityService affSrvc, ColocationGroup target) {
         return function.destination(ectx, affSrvc, target, keys);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public ImmutableIntList getKeys() {
+    @Override
+    public ImmutableIntList getKeys() {
         return keys;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void register(RelOptPlanner planner) {}
-
+    @Override
+    public void register(RelOptPlanner planner) {
+    }
+    
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-
+        }
+        
         if (o instanceof DistributionTrait) {
             DistributionTrait that = (DistributionTrait) o;
-
+            
             return Objects.equals(function, that.function) && Objects.equals(keys, that.keys);
         }
-
+        
         return false;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(function, keys);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return function.name() + (function.type() == HASH_DISTRIBUTED ? keys : "");
     }
-
+    
     /** {@inheritDoc} */
-    @Override public DistributionTraitDef getTraitDef() {
+    @Override
+    public DistributionTraitDef getTraitDef() {
         return DistributionTraitDef.INSTANCE;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public boolean satisfies(RelTrait trait) {
-        if (trait == this)
+    @Override
+    public boolean satisfies(RelTrait trait) {
+        if (trait == this) {
             return true;
-
-        if (!(trait instanceof DistributionTrait))
+        }
+    
+        if (!(trait instanceof DistributionTrait)) {
             return false;
-
+        }
+        
         DistributionTrait other = (DistributionTrait) trait;
-
-        if (other.getType() == ANY)
+    
+        if (other.getType() == ANY) {
             return true;
-
-        if (getType() == other.getType())
+        }
+    
+        if (getType() == other.getType()) {
             return getType() != HASH_DISTRIBUTED
-                || (Objects.equals(keys, other.keys)
+                    || (Objects.equals(keys, other.keys)
                     && DistributionFunction.satisfy(function, other.function));
-
-        if (other.getType() == RANDOM_DISTRIBUTED)
+        }
+    
+        if (other.getType() == RANDOM_DISTRIBUTED) {
             return getType() == HASH_DISTRIBUTED;
-
+        }
+        
         return other.getType() == SINGLETON && getType() == BROADCAST_DISTRIBUTED;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {
-        if (getType() != HASH_DISTRIBUTED)
+    @Override
+    public IgniteDistribution apply(Mappings.TargetMapping mapping) {
+        if (getType() != HASH_DISTRIBUTED) {
             return this;
-
-        for (int key : keys) {
-            if (mapping.getTargetOpt(key) == -1)
-                return IgniteDistributions.random(); // Some distribution keys are not mapped => any.
         }
-
+        
+        for (int key : keys) {
+            if (mapping.getTargetOpt(key) == -1) {
+                return IgniteDistributions.random(); // Some distribution keys are not mapped => any.
+            }
+        }
+        
         List<Integer> res = Mappings.apply2((Mapping) mapping, keys);
-
+        
         return IgniteDistributions.hash(ImmutableIntList.copyOf(res), function);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public boolean isTop() {
+    @Override
+    public boolean isTop() {
         return getType() == Type.ANY;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public int compareTo(RelMultipleTrait o) {
+    @Override
+    public int compareTo(RelMultipleTrait o) {
         final IgniteDistribution distribution = (IgniteDistribution) o;
-
+        
         if (getType() == distribution.getType() && getType() == Type.HASH_DISTRIBUTED) {
             int cmp = ORDERING.compare(getKeys(), distribution.getKeys());
-
-            if (cmp == 0)
+    
+            if (cmp == 0) {
                 cmp = function.name().compareTo(distribution.function().name());
-
+            }
+            
             return cmp;
         }
-
+        
         return getType().compareTo(distribution.getType());
     }
 }

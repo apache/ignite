@@ -18,4 +18,5 @@
 /**
  * This package contains classes related to HOCON representation.
  */
+
 package org.apache.ignite.rest.presentation.hocon;

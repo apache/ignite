@@ -39,21 +39,24 @@ public class HashIndexDefinitionBuilderImpl extends AbstractIndexBuilder impleme
     }
 
     /** {@inheritDoc} */
-    @Override public HashIndexDefinitionBuilder withColumns(String... columns) {
+    @Override
+    public HashIndexDefinitionBuilder withColumns(String... columns) {
         this.columns = columns.clone();
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public HashIndexDefinitionBuilderImpl withHints(Map<String, String> hints) {
+    @Override
+    public HashIndexDefinitionBuilderImpl withHints(Map<String, String> hints) {
         super.withHints(hints);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public HashIndexDefinition build() {
+    @Override
+    public HashIndexDefinition build() {
         assert columns != null;
         assert columns.length > 0;
 

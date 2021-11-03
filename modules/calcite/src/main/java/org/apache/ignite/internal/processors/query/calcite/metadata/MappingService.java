@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.List;
 import java.util.function.Predicate;
-
 import org.apache.ignite.network.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,11 +27,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface MappingService {
     /**
-     * Returns Nodes responsible for executing intermediate fragments (fragments without Scan leafs). Such fragments may be executed
-     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy (using node filter).
+     * Returns Nodes responsible for executing intermediate fragments (fragments without Scan leafs). Such fragments may be executed on any
+     * cluster node, actual list of nodes is chosen on the basis of adopted selection strategy (using node filter).
      *
-     * @param topVer Topology version.
-     * @param single Flag, indicating that a fragment should execute in a single node.
+     * @param topVer     Topology version.
+     * @param single     Flag, indicating that a fragment should execute in a single node.
      * @param nodeFilter Node filter.
      * @return Nodes mapping for intermediate fragments.
      */

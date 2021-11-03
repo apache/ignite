@@ -18,4 +18,5 @@
 /**
  * Interfaces and classes for configuration validation.
  */
+
 package org.apache.ignite.configuration.validation;

@@ -32,10 +32,14 @@ import org.jetbrains.annotations.Nullable;
  * Various shortcuts over the {@link Types} utilities.
  */
 public class TypeUtils {
-    /** */
+    /**
+     *
+     */
     private final Types types;
 
-    /** */
+    /**
+     *
+     */
     private final Elements elements;
 
     /**
@@ -60,8 +64,7 @@ public class TypeUtils {
     }
 
     /**
-     * Returns the primitive type represented by its boxed value or {@code null} if the given type is not a boxed
-     * primitive type.
+     * Returns the primitive type represented by its boxed value or {@code null} if the given type is not a boxed primitive type.
      *
      * @param type boxed wrapper of a primitive type
      * @return corresponding primitive type
@@ -70,18 +73,17 @@ public class TypeUtils {
     public PrimitiveType unboxedType(TypeMirror type) {
         try {
             return types.unboxedType(type);
-        }
-        catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException ignored) {
             return null;
         }
     }
 
     /**
-     * Returns {@code true} if the given type element implements the given interface (represented by its {@link Class})
-     * either directly or indirectly.
+     * Returns {@code true} if the given type element implements the given interface (represented by its {@link Class}) either directly or
+     * indirectly.
      *
      * @param element element which parent interfaces are to be inspected
-     * @param cls target superinterface to search for
+     * @param cls     target superinterface to search for
      * @return {@code true} if the given {@code element} is a subtype of {@code cls}
      */
     public boolean hasSuperInterface(TypeElement element, Class<?> cls) {
@@ -100,9 +102,9 @@ public class TypeUtils {
 
         return Stream.iterate(start, Objects::nonNull, currentElement -> {
             currentElement.getInterfaces().stream()
-                .map(types::asElement)
-                .map(TypeElement.class::cast)
-                .forEach(queue::add);
+                    .map(types::asElement)
+                    .map(TypeElement.class::cast)
+                    .forEach(queue::add);
 
             return queue.poll();
         });
@@ -120,7 +122,7 @@ public class TypeUtils {
      */
     private TypeMirror typeMirrorFromClass(Class<?> cls) {
         return elements
-            .getTypeElement(cls.getCanonicalName())
-            .asType();
+                .getTypeElement(cls.getCanonicalName())
+                .asType();
     }
 }

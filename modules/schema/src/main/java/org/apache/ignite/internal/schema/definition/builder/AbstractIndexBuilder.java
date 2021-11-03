@@ -46,7 +46,7 @@ public abstract class AbstractIndexBuilder implements SchemaObjectBuilder {
     /**
      * Constructor.
      *
-     * @param name Index name.
+     * @param name   Index name.
      * @param unique Unique flag.
      */
     AbstractIndexBuilder(String name, boolean unique) {
@@ -75,7 +75,8 @@ public abstract class AbstractIndexBuilder implements SchemaObjectBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public AbstractIndexBuilder withHints(Map<String, String> hints) {
+    @Override
+    public AbstractIndexBuilder withHints(Map<String, String> hints) {
         this.hints = Collections.unmodifiableMap(hints);
 
         return this;

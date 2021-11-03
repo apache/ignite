@@ -18,8 +18,7 @@
 package org.apache.ignite.lang;
 
 /**
- * This exception is thrown when a new table failed to be created,
- * because a table with same name already exists.
+ * This exception is thrown when a new table failed to be created, because a table with same name already exists.
  */
 public class TableAlreadyExistsException extends IgniteException {
     /**

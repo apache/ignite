@@ -37,198 +37,204 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class represents configuration root or node.
  */
-public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNode<VIEW>
-    implements ConfigurationTree<VIEW, CHANGE>
-{
+public abstract class DynamicConfiguration<VIEWT, CHANGET> extends ConfigurationNode<VIEWT>
+        implements ConfigurationTree<VIEWT, CHANGET> {
     /** Configuration members (leaves and nodes). */
     protected volatile Map<String, ConfigurationProperty<?>> members = new LinkedHashMap<>();
-
+    
     /**
      * Constructor.
      *
-     * @param prefix Configuration prefix.
-     * @param key Configuration key.
-     * @param rootKey Root key.
-     * @param changer Configuration changer.
+     * @param prefix     Configuration prefix.
+     * @param key        Configuration key.
+     * @param rootKey    Root key.
+     * @param changer    Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      */
     public DynamicConfiguration(
-        List<String> prefix,
-        String key,
-        RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer,
-        boolean listenOnly
+            List<String> prefix,
+            String key,
+            RootKey<?, ?> rootKey,
+            DynamicConfigurationChanger changer,
+            boolean listenOnly
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
     }
-
+    
     /**
      * Add new configuration member.
      *
      * @param member Configuration member (leaf or node).
-     * @param <P> Type of member.
+     * @param <P>    Type of member.
      */
     protected final <P extends ConfigurationProperty<?>> void add(P member) {
         addMember(members, member);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public final CompletableFuture<Void> change(Consumer<CHANGE> change) {
+    @Override
+    public final CompletableFuture<Void> change(Consumer<CHANGET> change) {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
-
-        if (listenOnly)
+    
+        if (listenOnly) {
             throw listenOnlyException();
-
+        }
+        
         assert keys instanceof RandomAccess;
-
+        
         ConfigurationSource src = new ConfigurationSource() {
             /** Current index in the {@code keys}. */
             private int level = 0;
-
+            
             /** {@inheritDoc} */
-            @Override public void descend(ConstructableTreeNode node) {
+            @Override
+            public void descend(ConstructableTreeNode node) {
                 if (level == keys.size()) {
                     if (node instanceof InnerNode) {
                         // To support polymorphic configuration.
-                        change.accept(((InnerNode)node).specificNode());
-                    }
-                    else {
+                        change.accept(((InnerNode) node).specificNode());
+                    } else {
                         // To support namedList configuration.
-                        change.accept((CHANGE)node);
+                        change.accept((CHANGET) node);
                     }
-                }
-                else
+                } else {
                     node.construct(keys.get(level++), this, true);
+                }
             }
-
+            
             /** {@inheritDoc} */
-            @Override public void reset() {
+            @Override
+            public void reset() {
                 level = 0;
             }
         };
-
+        
         // Use resulting tree as update request for the storage.
         return changer.change(src);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public final String key() {
+    @Override
+    public final String key() {
         return key;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public VIEW value() {
+    @Override
+    public VIEWT value() {
         // To support polymorphic configuration.
-        return ((InnerNode)refreshValue()).specificNode();
+        return ((InnerNode) refreshValue()).specificNode();
     }
-
+    
     /** {@inheritDoc} */
-    @Override protected void beforeRefreshValue(VIEW newValue, @Nullable VIEW oldValue) {
-        if (oldValue == null || ((InnerNode)oldValue).schemaType() != ((InnerNode)newValue).schemaType()) {
+    @Override
+    protected void beforeRefreshValue(VIEWT newValue, @Nullable VIEWT oldValue) {
+        if (oldValue == null || ((InnerNode) oldValue).schemaType() != ((InnerNode) newValue).schemaType()) {
             Map<String, ConfigurationProperty<?>> newMembers = new LinkedHashMap<>(members);
-
-            if (oldValue != null)
+    
+            if (oldValue != null) {
                 removeMembers(oldValue, newMembers);
-
+            }
+            
             addMembers(newValue, newMembers);
-
+            
             members = newMembers;
         }
     }
-
+    
     /**
      * Returns all child nodes of the current configuration tree node.
      *
      * @return Map from child keys to a corresponding {@link ConfigurationProperty}.
      */
     public Map<String, ConfigurationProperty<?>> members() {
-        if (!listenOnly)
+        if (!listenOnly) {
             refreshValue();
-
+        }
+        
         return Collections.unmodifiableMap(members);
     }
-
+    
     /**
-     * Touches current Dynamic Configuration node. Currently this method makes sense for {@link NamedListConfiguration}
-     * class only, but this will be changed in <a href="https://issues.apache.org/jira/browse/IGNITE-14645">IGNITE-14645
+     * Touches current Dynamic Configuration node. Currently this method makes sense for {@link NamedListConfiguration} class only, but this
+     * will be changed in <a href="https://issues.apache.org/jira/browse/IGNITE-14645">IGNITE-14645
      * </a>.
-     * Method is invoked on configuration initialization and on every configuration update, even those that don't affect
-     * current node. Its goal is to have a fine control over sub-nodes of the configuration. Accessor methods on the
-     * Dynamic Configuration nodes can be called at any time and have to return up-to-date value. This means that one
-     * can read updated configuration value before notification listeners have been invoked on it. At that point, for
-     * example, deleted named list elements disappear from the object and cannot be accessed with a regular API. The
-     * only way to access them is to have a cached copy of all elements (members). This method does exactly that. It
-     * returns cached copy of members and then sets it to a new, maybe different, set of members. No one except for
-     * {@link ConfigurationNotificationsUtil} should ever call this method.
+     * Method is invoked on configuration initialization and on every configuration update, even those that don't affect current node. Its
+     * goal is to have a fine control over sub-nodes of the configuration. Accessor methods on the Dynamic Configuration nodes can be called
+     * at any time and have to return up-to-date value. This means that one can read updated configuration value before notification
+     * listeners have been invoked on it. At that point, for example, deleted named list elements disappear from the object and cannot be
+     * accessed with a regular API. The only way to access them is to have a cached copy of all elements (members). This method does exactly
+     * that. It returns cached copy of members and then sets it to a new, maybe different, set of members. No one except for {@link
+     * ConfigurationNotificationsUtil} should ever call this method.
      *
      * @return Members map associated with "previous" node state.
      */
     public Map<String, ConfigurationProperty<?>> touchMembers() {
         return members();
     }
-
+    
     /**
      * Returns configuration interface.
      *
      * @return Configuration interface, for example {@code RootConfiguration}.
      * @throws UnsupportedOperationException In the case of a named list.
      */
-    public abstract Class<? extends ConfigurationProperty<VIEW>> configType();
-
+    public abstract Class<? extends ConfigurationProperty<VIEWT>> configType();
+    
     /**
      * Returns specific configuration tree.
      *
      * @return Specific configuration tree.
      */
-    public ConfigurationTree<VIEW, CHANGE> specificConfigTree() {
+    public ConfigurationTree<VIEWT, CHANGET> specificConfigTree() {
         // To work with polymorphic configuration.
         return this;
     }
-
+    
     /**
      * Removes members of the previous instance of polymorphic configuration.
      *
      * @param oldValue Old configuration value.
-     * @param members Configuration members (leaves and nodes).
+     * @param members  Configuration members (leaves and nodes).
      */
-    protected void removeMembers(VIEW oldValue, Map<String, ConfigurationProperty<?>> members) {
+    protected void removeMembers(VIEWT oldValue, Map<String, ConfigurationProperty<?>> members) {
         // No-op.
     }
-
+    
     /**
      * Adds members of the previous instance of polymorphic configuration.
      *
      * @param newValue New configuration value.
-     * @param members Configuration members (leaves and nodes).
+     * @param members  Configuration members (leaves and nodes).
      */
-    protected void addMembers(VIEW newValue, Map<String, ConfigurationProperty<?>> members) {
+    protected void addMembers(VIEWT newValue, Map<String, ConfigurationProperty<?>> members) {
         // No-op.
     }
-
+    
     /**
      * Add configuration member.
      *
      * @param members Configuration members (leaves and nodes).
-     * @param member Configuration member (leaf or node).
-     * @param <P> Type of member.
+     * @param member  Configuration member (leaf or node).
+     * @param <P>     Type of member.
      */
     protected <P extends ConfigurationProperty<?>> void addMember(
-        Map<String, ConfigurationProperty<?>> members,
-        P member
+            Map<String, ConfigurationProperty<?>> members,
+            P member
     ) {
         members.put(member.key(), member);
     }
-
+    
     /**
      * Remove configuration member.
      *
      * @param members Configuration members (leaves and nodes).
-     * @param member Configuration member (leaf or node).
-     * @param <P> Type of member.
+     * @param member  Configuration member (leaf or node).
+     * @param <P>     Type of member.
      */
     protected <P extends ConfigurationProperty<?>> void removeMember(
-        Map<String, ConfigurationProperty<?>> members,
-        P member
+            Map<String, ConfigurationProperty<?>> members,
+            P member
     ) {
         members.remove(member.key());
     }

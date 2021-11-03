@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.List;
-
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rex.RexCall;
 
@@ -31,13 +31,13 @@ public interface NotNullImplementor {
     /**
      * Implements a call with assumption that all the null-checking is implemented by caller.
      *
-     * @param translator translator to implement the code
-     * @param call call to implement
+     * @param translator         translator to implement the code
+     * @param call               call to implement
      * @param translatedOperands arguments of a call
      * @return expression that implements given call
      */
     Expression implement(
-        RexToLixTranslator translator,
-        RexCall call,
-        List<Expression> translatedOperands);
+            RexToLixTranslator translator,
+            RexCall call,
+            List<Expression> translatedOperands);
 }

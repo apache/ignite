@@ -17,12 +17,12 @@
 
 package org.apache.ignite.network;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 import java.util.Arrays;
 import org.apache.ignite.configuration.schemas.network.NodeFinderType;
 import org.apache.ignite.configuration.schemas.network.NodeFinderView;
-
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toUnmodifiableList;
 
 /**
  * {@link NodeFinder} factory.
@@ -41,16 +41,15 @@ public class NodeFinderFactory {
 
         try {
             type = NodeFinderType.valueOf(typeString);
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Failed to create NodeFinder " + typeString, e);
         }
 
         switch (type) {
             case STATIC:
                 return Arrays.stream(nodeFinderConfiguration.netClusterNodes())
-                    .map(NetworkAddress::from)
-                    .collect(collectingAndThen(toUnmodifiableList(), StaticNodeFinder::new));
+                        .map(NetworkAddress::from)
+                        .collect(collectingAndThen(toUnmodifiableList(), StaticNodeFinder::new));
 
             default:
                 throw new IllegalArgumentException("Unsupported NodeFinder type " + type);

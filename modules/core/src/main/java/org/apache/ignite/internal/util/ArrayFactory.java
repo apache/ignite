@@ -23,8 +23,10 @@ package org.apache.ignite.internal.util;
 @FunctionalInterface
 public interface ArrayFactory<T> {
     /**
+     * Returns new array.
+     *
      * @param len Array length.
      * @return New array.
      */
-    public T of(int len);
+    T of(int len);
 }

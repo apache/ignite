@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.configuration.tree;
 
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.leafNodeVisitor;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -29,66 +35,86 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.leafNodeVisitor;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 /**
  * Test configuration with array of primitives and {@code String} fields.
  */
 public class ConfigurationArrayTest {
-    /** */
+    /**
+     *
+     */
     @Config
     public static class TestArrayConfigurationSchema {
-        /** */
+        /**
+         *
+         */
         @Value
         public boolean[] booleanArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public byte[] byteArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public short[] shortArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public int[] intArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public long[] longArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public char[] charArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public float[] floatArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public double[] doubleArray;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public String[] stringArray;
     }
 
-    /** */
+    /**
+     *
+     */
     private static ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
 
-    /** */
+    /**
+     *
+     */
     @BeforeAll
     public static void beforeAll() {
         cgen.compileRootSchema(TestArrayConfigurationSchema.class, Map.of(), Map.of());
     }
 
-    /** */
+    /**
+     *
+     */
     @AfterAll
     public static void afterAll() {
         cgen = null;
@@ -99,15 +125,15 @@ public class ConfigurationArrayTest {
      */
     static Stream<Class<?>> supportedTypes() {
         return Stream.of(
-            boolean[].class,
-            byte[].class,
-            short[].class,
-            int[].class,
-            long[].class,
-            char[].class,
-            float[].class,
-            double[].class,
-            String[].class
+                boolean[].class,
+                byte[].class,
+                short[].class,
+                int[].class,
+                long[].class,
+                char[].class,
+                float[].class,
+                double[].class,
+                String[].class
         );
     }
 
@@ -173,26 +199,27 @@ public class ConfigurationArrayTest {
      * Returns the field name of {@link TestArrayConfigurationSchema} based on its type.
      */
     private static String getFieldName(Class<?> cls) {
-        if (cls == boolean[].class)
+        if (cls == boolean[].class) {
             return "booleanArray";
-        else if (cls == byte[].class)
+        } else if (cls == byte[].class) {
             return "byteArray";
-        else if (cls == short[].class)
+        } else if (cls == short[].class) {
             return "shortArray";
-        else if (cls == int[].class)
+        } else if (cls == int[].class) {
             return "intArray";
-        else if (cls == long[].class)
+        } else if (cls == long[].class) {
             return "longArray";
-        else if (cls == char[].class)
+        } else if (cls == char[].class) {
             return "charArray";
-        else if (cls == float[].class)
+        } else if (cls == float[].class) {
             return "floatArray";
-        else if (cls == double[].class)
+        } else if (cls == double[].class) {
             return "doubleArray";
-        else if (cls == String[].class)
+        } else if (cls == String[].class) {
             return "stringArray";
-        else
+        } else {
             throw new AssertionError("Invalid field type: " + cls);
+        }
     }
 
     /**
@@ -201,25 +228,26 @@ public class ConfigurationArrayTest {
     private static Object createTestValue(Class<?> cls) {
         var random = new Random();
 
-        if (cls == boolean[].class)
-            return new boolean[] { random.nextBoolean(), random.nextBoolean(), random.nextBoolean() };
-        else if (cls == byte[].class)
-            return new byte[] { (byte) random.nextInt(), (byte) random.nextInt(), (byte) random.nextInt() };
-        else if (cls == short[].class)
-            return new short[] { (short) random.nextInt(), (short) random.nextInt(), (short) random.nextInt() };
-        else if (cls == int[].class)
-            return new int[] { random.nextInt(), random.nextInt(), random.nextInt() };
-        else if (cls == long[].class)
-            return new long[] { random.nextLong(), random.nextLong(), random.nextLong() };
-        else if (cls == char[].class)
-            return new char[] { (char) random.nextInt(), (char) random.nextInt(), (char) random.nextInt() };
-        else if (cls == float[].class)
-            return new float[] { random.nextFloat(), random.nextFloat(), random.nextFloat() };
-        else if (cls == double[].class)
-            return new double[] { random.nextDouble(), random.nextDouble(), random.nextDouble() };
-        else if (cls == String[].class)
-            return new String[] { UUID.randomUUID().toString(), UUID.randomUUID().toString(), UUID.randomUUID().toString() };
-        else
+        if (cls == boolean[].class) {
+            return new boolean[]{random.nextBoolean(), random.nextBoolean(), random.nextBoolean()};
+        } else if (cls == byte[].class) {
+            return new byte[]{(byte) random.nextInt(), (byte) random.nextInt(), (byte) random.nextInt()};
+        } else if (cls == short[].class) {
+            return new short[]{(short) random.nextInt(), (short) random.nextInt(), (short) random.nextInt()};
+        } else if (cls == int[].class) {
+            return new int[]{random.nextInt(), random.nextInt(), random.nextInt()};
+        } else if (cls == long[].class) {
+            return new long[]{random.nextLong(), random.nextLong(), random.nextLong()};
+        } else if (cls == char[].class) {
+            return new char[]{(char) random.nextInt(), (char) random.nextInt(), (char) random.nextInt()};
+        } else if (cls == float[].class) {
+            return new float[]{random.nextFloat(), random.nextFloat(), random.nextFloat()};
+        } else if (cls == double[].class) {
+            return new double[]{random.nextDouble(), random.nextDouble(), random.nextDouble()};
+        } else if (cls == String[].class) {
+            return new String[]{UUID.randomUUID().toString(), UUID.randomUUID().toString(), UUID.randomUUID().toString()};
+        } else {
             throw new AssertionError("Invalid field type: " + cls);
+        }
     }
 }

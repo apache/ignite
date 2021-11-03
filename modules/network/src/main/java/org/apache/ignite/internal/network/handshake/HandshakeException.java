@@ -34,7 +34,7 @@ public class HandshakeException extends Exception {
      * Constructor.
      *
      * @param message Handshake error message.
-     * @param cause Handshake error cause.
+     * @param cause   Handshake error cause.
      */
     public HandshakeException(String message, Throwable cause) {
         super(message, cause);

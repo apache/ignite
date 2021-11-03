@@ -17,16 +17,16 @@
 
 package org.apache.ignite.configuration.annotation;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * This annotation marks the class as an instance of polymorphic configuration schema.
- * Has basically the same properties as {@link Config}, but must inherit from the {@link PolymorphicConfig}.
+ * This annotation marks the class as an instance of polymorphic configuration schema. Has basically the same properties as {@link Config},
+ * but must inherit from the {@link PolymorphicConfig}.
  *
  * <p>NOTE: Field name conflicts with the parent ({@link PolymorphicConfig}) are not allowed.
  */

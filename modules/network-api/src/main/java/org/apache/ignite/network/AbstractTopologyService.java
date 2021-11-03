@@ -29,7 +29,8 @@ public abstract class AbstractTopologyService implements TopologyService {
     private final Collection<TopologyEventHandler> eventHandlers = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
-    @Override public void addEventHandler(TopologyEventHandler handler) {
+    @Override
+    public void addEventHandler(TopologyEventHandler handler) {
         eventHandlers.add(handler);
     }
 

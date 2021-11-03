@@ -29,7 +29,7 @@ import org.apache.ignite.network.serialization.MessageSerializer;
 public class MessageSerializationRegistryImpl implements MessageSerializationRegistry {
     /** group type → message type → MessageSerializerProvider instance. */
     private final MessageSerializationFactory<?>[][] factories =
-        new MessageSerializationFactory<?>[Short.MAX_VALUE + 1][];
+            new MessageSerializationFactory<?>[Short.MAX_VALUE + 1][];
 
     /**
      * Default constructor that also registers standard message types from the network module.
@@ -41,7 +41,7 @@ public class MessageSerializationRegistryImpl implements MessageSerializationReg
     /** {@inheritDoc} */
     @Override
     public MessageSerializationRegistry registerFactory(
-        short groupType, short messageType, MessageSerializationFactory<?> factory
+            short groupType, short messageType, MessageSerializationFactory<?> factory
     ) {
         assert groupType >= 0 : "group type must not be negative";
         assert messageType >= 0 : "message type must not be negative";
@@ -51,11 +51,10 @@ public class MessageSerializationRegistryImpl implements MessageSerializationReg
         if (groupFactories == null) {
             groupFactories = new MessageSerializationFactory<?>[Short.MAX_VALUE + 1];
             factories[groupType] = groupFactories;
-        }
-        else if (groupFactories[messageType] != null) {
+        } else if (groupFactories[messageType] != null) {
             throw new NetworkConfigurationException(String.format(
-                "Message serialization factory for message type %d in module %d is already defined",
-                messageType, groupType
+                    "Message serialization factory for message type %d in module %d is already defined",
+                    messageType, groupType
             ));
         }
 
@@ -67,12 +66,11 @@ public class MessageSerializationRegistryImpl implements MessageSerializationReg
     /**
      * Gets a {@link MessageSerializationFactory} for the given message type.
      *
-     * @param <T> Type of a message.
-     * @param groupType Group type of a message.
+     * @param <T>         Type of a message.
+     * @param groupType   Group type of a message.
      * @param messageType Message type.
      * @return Message's serialization factory.
-     * @throws NetworkConfigurationException if no serializers have been registered for the given group type
-     * and message type.
+     * @throws NetworkConfigurationException if no serializers have been registered for the given group type and message type.
      */
     private <T extends NetworkMessage> MessageSerializationFactory<T> getFactory(short groupType, short messageType) {
         assert groupType >= 0 : "group type must not be negative";
@@ -84,7 +82,7 @@ public class MessageSerializationRegistryImpl implements MessageSerializationReg
 
         if (provider == null) {
             throw new NetworkConfigurationException(String.format(
-                "No serializer provider defined for group type %d and message type %d", groupType, messageType
+                    "No serializer provider defined for group type %d and message type %d", groupType, messageType
             ));
         }
 

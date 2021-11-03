@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /**
  * Table spool node.
  */
-public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class TableSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT> {
     /** How many rows are requested by downstream. */
     private int requested;
 
@@ -39,24 +38,23 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     private int rowIdx;
 
     /** Rows buffer. */
-    private final List<Row> rows;
+    private final List<RowT> rows;
 
     /**
-     * If {@code true} this spool should emit rows as soon as it stored.
-     * If {@code false} the spool have to collect all rows from underlying input.
+     * If {@code true} this spool should emit rows as soon as it stored. If {@code false} the spool have to collect all rows from underlying
+     * input.
      */
     private final boolean lazyRead;
 
     /**
-     * Flag indicates that spool pushes row to downstream.
-     * Need to check a case when a downstream produces requests on push.
+     * Flag indicates that spool pushes row to downstream. Need to check a case when a downstream produces requests on push.
      */
     private boolean inLoop;
 
     /**
      * @param ctx Execution context.
      */
-    public TableSpoolNode(ExecutionContext<Row> ctx, RelDataType rowType, boolean lazyRead) {
+    public TableSpoolNode(ExecutionContext<RowT> ctx, RelDataType rowType, boolean lazyRead) {
         super(ctx, rowType);
 
         this.lazyRead = lazyRead;
@@ -65,26 +63,31 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         requested = 0;
         rowIdx = 0;
     }
 
     /** {@inheritDoc} */
-    @Override public void rewind() {
+    @Override
+    public void rewind() {
         rewindInternal();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
+        if (idx != 0) {
             throw new IndexOutOfBoundsException();
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert !nullOrEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
@@ -92,19 +95,24 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         requested += rowsCnt;
 
-        if ((waiting == -1 || rowIdx < rows.size()) && !inLoop)
+        if ((waiting == -1 || rowIdx < rows.size()) && !inLoop) {
             context().execute(this::doPush, this::onError);
-        else if (waiting == 0)
+        } else if (waiting == 0) {
             source().request(waiting = inBufSize);
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private void doPush() throws Exception {
-        if (isClosed())
+        if (isClosed()) {
             return;
+        }
 
-        if (!lazyRead && waiting != -1)
+        if (!lazyRead && waiting != -1) {
             return;
+        }
 
         int processed = 0;
         inLoop = true;
@@ -115,21 +123,21 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
                 rowIdx++;
                 requested--;
             }
-        }
-        finally {
+        } finally {
             inLoop = false;
         }
 
         if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
             requested = 0;
             downstream().end();
-        }
-        else if (requested > 0 && processed >= inBufSize)
+        } else if (requested > 0 && processed >= inBufSize) {
             context().execute(this::doPush, this::onError);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) throws Exception {
+    @Override
+    public void push(RowT row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
@@ -139,15 +147,18 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         rows.add(row);
 
-        if (waiting == 0)
+        if (waiting == 0) {
             source().request(waiting = inBufSize);
+        }
 
-        if (requested > 0 && rowIdx < rows.size())
+        if (requested > 0 && rowIdx < rows.size()) {
             doPush();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void end() throws Exception {
+    @Override
+    public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 

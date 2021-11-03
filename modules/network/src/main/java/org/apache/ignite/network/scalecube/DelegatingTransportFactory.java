@@ -17,19 +17,19 @@
 
 package org.apache.ignite.network.scalecube;
 
-import java.util.Objects;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.cluster.transport.api.Transport;
 import io.scalecube.cluster.transport.api.TransportConfig;
 import io.scalecube.cluster.transport.api.TransportFactory;
 import io.scalecube.net.Address;
+import java.util.Objects;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * This class is a hack designed to handle a single use-case: sending a message from a node to itself. In all other
- * cases it should behave as the default ScaleCube transport factory.
+ * This class is a hack designed to handle a single use-case: sending a message from a node to itself. In all other cases it should behave
+ * as the default ScaleCube transport factory.
  */
 class DelegatingTransportFactory implements TransportFactory {
     /** Messaging service. */
@@ -42,7 +42,7 @@ class DelegatingTransportFactory implements TransportFactory {
      * Constructor.
      *
      * @param messagingService Messaging service.
-     * @param factory Delegate transport factory.
+     * @param factory          Delegate transport factory.
      */
     DelegatingTransportFactory(ScaleCubeMessagingService messagingService, TransportFactory factory) {
         this.messagingService = messagingService;
@@ -50,45 +50,51 @@ class DelegatingTransportFactory implements TransportFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public Transport createTransport(TransportConfig config) {
+    @Override
+    public Transport createTransport(TransportConfig config) {
         Transport delegate = factory.createTransport(config);
 
         return new Transport() {
             /** {@inheritDoc} */
-            @Override public Address address() {
+            @Override
+            public Address address() {
                 return delegate.address();
             }
 
             /** {@inheritDoc} */
-            @Override public Mono<Transport> start() {
+            @Override
+            public Mono<Transport> start() {
                 return delegate.start().thenReturn(this);
             }
 
             /** {@inheritDoc} */
-            @Override public Mono<Void> stop() {
+            @Override
+            public Mono<Void> stop() {
                 return delegate.stop();
             }
 
             /** {@inheritDoc} */
-            @Override public boolean isStopped() {
+            @Override
+            public boolean isStopped() {
                 return delegate.isStopped();
             }
 
             /** {@inheritDoc} */
-            @Override public Mono<Void> send(Address address, Message message) {
+            @Override
+            public Mono<Void> send(Address address, Message message) {
                 return delegate.send(address, message);
             }
 
             /** {@inheritDoc} */
-            @Override public Flux<Message> listen() {
+            @Override
+            public Flux<Message> listen() {
                 return delegate.listen();
             }
 
             /** {@inheritDoc} */
-            @Override public Mono<Message> requestResponse(Address address, Message request) {
-                return address.equals(address()) ?
-                    requestResponseToSelf(request) :
-                    delegate.requestResponse(address, request);
+            @Override
+            public Mono<Message> requestResponse(Address address, Message request) {
+                return address.equals(address()) ? requestResponseToSelf(request) : delegate.requestResponse(address, request);
             }
 
             /**
@@ -106,10 +112,10 @@ class DelegatingTransportFactory implements TransportFactory {
                     // Otherwise, message handlers can execute faster than the consumer will be able to start listening
                     // to incoming messages.
                     Disposable disposable = listen()
-                        .filter(resp -> resp.correlationId() != null)
-                        .filter(resp -> resp.correlationId().equals(request.correlationId()))
-                        .take(1)
-                        .subscribe(sink::success, sink::error, sink::success);
+                            .filter(resp -> resp.correlationId() != null)
+                            .filter(resp -> resp.correlationId().equals(request.correlationId()))
+                            .take(1)
+                            .subscribe(sink::success, sink::error, sink::success);
 
                     // cancel the nested subscription if the client cancels the outer Mono
                     sink.onDispose(disposable);

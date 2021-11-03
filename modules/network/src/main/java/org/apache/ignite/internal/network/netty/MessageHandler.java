@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.net.SocketAddress;
-import java.util.function.BiConsumer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import java.net.SocketAddress;
+import java.util.function.BiConsumer;
 import org.apache.ignite.network.NetworkMessage;
 
 /**
  * Network message handler that delegates handling to {@link #messageListener}.
  */
 public class MessageHandler extends ChannelInboundHandlerAdapter {
-    /** Message listener.  */
+    /** Message listener. */
     private final BiConsumer<SocketAddress, NetworkMessage> messageListener;
 
     /**
@@ -40,7 +40,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         SocketAddress address = ctx.channel().remoteAddress();
         NetworkMessage message = (NetworkMessage) msg;
 

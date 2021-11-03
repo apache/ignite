@@ -51,31 +51,37 @@ public class JdbcMetaSchemasResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         packer.packArrayHeader(schemas.size());
 
-        for (String schema : schemas)
+        for (String schema : schemas) {
             packer.packString(schema);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         int size = unpacker.unpackArrayHeader();
 
         schemas = new ArrayList<>(size);
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             schemas.add(unpacker.unpackString());
+        }
     }
 
     /**
@@ -88,7 +94,8 @@ public class JdbcMetaSchemasResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcMetaSchemasResult.class, this);
     }
 }

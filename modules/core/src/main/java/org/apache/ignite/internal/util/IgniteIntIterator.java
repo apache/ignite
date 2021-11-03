@@ -22,12 +22,16 @@ package org.apache.ignite.internal.util;
  */
 public interface IgniteIntIterator {
     /**
+     * Returns {@code true} if the iteration has more elements.
+     *
      * @return {@code true} if the iteration has more elements.
      */
-    public boolean hasNext();
+    boolean hasNext();
 
     /**
+     * Returns next int.
+     *
      * @return Next int.
      */
-    public int next();
+    int next();
 }

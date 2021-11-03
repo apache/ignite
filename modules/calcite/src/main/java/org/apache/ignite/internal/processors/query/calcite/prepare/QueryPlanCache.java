@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.ignite.internal.processors.query.calcite.exec.LifecycleAware;
 
 /**
@@ -26,8 +25,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.LifecycleAware;
  */
 public interface QueryPlanCache extends LifecycleAware {
     /**
-     * @param ctx Context.
-     * @param key Cache key.
+     * @param ctx     Context.
+     * @param key     Cache key.
      * @param factory Factory method to generate a plan on cache miss.
      * @return Query plan.
      */

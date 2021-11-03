@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.vault;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,25 +41,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-
 /**
  * Base class for testing {@link VaultService} implementations.
  */
 public abstract class VaultServiceTest {
-    /** */
+    /**
+     *
+     */
     private static final int TIMEOUT_SECONDS = 1;
 
     /** Vault. */
     private VaultService vaultService;
 
-    /** */
+    /**
+     *
+     */
     @BeforeEach
     public void setUp() throws IOException {
         vaultService = getVaultService();
@@ -59,7 +63,9 @@ public abstract class VaultServiceTest {
         vaultService.start();
     }
 
-    /** */
+    /**
+     *
+     */
     @AfterEach
     void tearDown() throws Exception {
         vaultService.stop();
@@ -139,8 +145,8 @@ public abstract class VaultServiceTest {
     @Test
     public void testPutAll() throws Exception {
         Map<ByteArray, byte[]> batch = IntStream.range(0, 10)
-            .boxed()
-            .collect(toMap(VaultServiceTest::getKey, VaultServiceTest::getValue));
+                .boxed()
+                .collect(toMap(VaultServiceTest::getKey, VaultServiceTest::getValue));
 
         doAwait(() -> vaultService.putAll(batch));
 
@@ -157,8 +163,8 @@ public abstract class VaultServiceTest {
     @Test
     public void testPutAllWithNull() throws Exception {
         Map<ByteArray, byte[]> batch = IntStream.range(0, 10)
-            .boxed()
-            .collect(toMap(VaultServiceTest::getKey, VaultServiceTest::getValue));
+                .boxed()
+                .collect(toMap(VaultServiceTest::getKey, VaultServiceTest::getValue));
 
         doAwait(() -> vaultService.putAll(batch));
 
@@ -196,8 +202,7 @@ public abstract class VaultServiceTest {
     }
 
     /**
-     * Tests that the {@link VaultService#range} returns valid entries when passed a larger range, than the available
-     * data.
+     * Tests that the {@link VaultService#range} returns valid entries when passed a larger range, than the available data.
      */
     @Test
     public void testRangeBoundaries() throws Exception {
@@ -265,8 +270,8 @@ public abstract class VaultServiceTest {
      */
     private List<VaultEntry> getRange(int from, int to) {
         return IntStream.range(from, to)
-            .mapToObj(i -> new VaultEntry(getKey(i), getValue(i)))
-            .collect(toList());
+                .mapToObj(i -> new VaultEntry(getKey(i), getValue(i)))
+                .collect(toList());
     }
 
     /**

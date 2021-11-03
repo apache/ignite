@@ -51,24 +51,20 @@ public interface Ignite extends AutoCloseable {
     /**
      * Set new baseline nodes for table assignments.
      *
-     * Current implementation has significant restrictions:
-     * - Only alive nodes can be a part of new baseline.
-     * If any passed nodes are not alive, {@link IgniteException} with appropriate message will be thrown.
-     * - Potentially it can be a long operation and current
-     * synchronous changePeers-based implementation can't handle this issue well.
-     * - No recovery logic supported, if setBaseline fails - it can produce random state of cluster.
-     *
+     * <p>Current implementation has significant restrictions: - Only alive nodes can be a part of new baseline. If any passed nodes are not
+     * alive, {@link IgniteException} with appropriate message will be thrown. - Potentially it can be a long operation and current
+     * synchronous changePeers-based implementation can't handle this issue well. - No recovery logic supported, if setBaseline fails - it
+     * can produce random state of cluster.
      * TODO: IGNITE-14209 issues above must be fixed.
      * TODO: IGNITE-15815 add a test for stopping node and asynchronous implementation.
      *
      * @param baselineNodes Names of baseline nodes.
-     * @throws IgniteException If an unspecified platform exception has happened internally.
-     * Is thrown when:
-     * <ul>
-     *     <li>the node is stopping,</li>
-     *     <li>{@code baselineNodes} argument is empty or null,</li>
-     *     <li>any node from {@code baselineNodes} is not alive.</li>
-     * </ul>
+     * @throws IgniteException If an unspecified platform exception has happened internally. Is thrown when:
+     *                         <ul>
+     *                             <li>the node is stopping,</li>
+     *                             <li>{@code baselineNodes} argument is empty or null,</li>
+     *                             <li>any node from {@code baselineNodes} is not alive.</li>
+     *                         </ul>
      */
     @Experimental
     void setBaseline(Set<String> baselineNodes);

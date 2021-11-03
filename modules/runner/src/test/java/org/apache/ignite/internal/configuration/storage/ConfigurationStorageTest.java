@@ -17,22 +17,24 @@
 
 package org.apache.ignite.internal.configuration.storage;
 
+import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anEmptyMap;
+import static org.hamcrest.Matchers.equalTo;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anEmptyMap;
-import static org.hamcrest.Matchers.equalTo;
-
 /**
  * Base class for testing {@link ConfigurationStorage} implementations.
  */
 public abstract class ConfigurationStorageTest {
-    /** */
+    /**
+     *
+     */
     private ConfigurationStorage storage;
 
     /**
@@ -40,7 +42,9 @@ public abstract class ConfigurationStorageTest {
      */
     public abstract ConfigurationStorage getStorage();
 
-    /** */
+    /**
+     *
+     */
     @BeforeEach
     void setUp() {
         storage = getStorage();

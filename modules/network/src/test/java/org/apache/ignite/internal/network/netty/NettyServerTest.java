@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -32,6 +37,9 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
 import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
@@ -50,14 +58,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyShort;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * Tests for {@link NettyServer}.
  */
@@ -65,17 +65,19 @@ import static org.mockito.Mockito.when;
 public class NettyServerTest {
     /** Server. */
     private NettyServer server;
-
+    
     /** Server configuration. */
     @InjectConfiguration
     private NetworkConfiguration serverCfg;
-
-    /** */
+    
+    /**
+     *
+     */
     @AfterEach
     final void tearDown() {
         server.stop().join();
     }
-
+    
     /**
      * Tests a successful server start scenario.
      *
@@ -84,12 +86,12 @@ public class NettyServerTest {
     @Test
     public void testSuccessfulServerStart() throws Exception {
         var channel = new EmbeddedServerChannel();
-
+        
         server = getServer(channel.newSucceededFuture(), true);
-
+        
         assertTrue(server.isRunning());
     }
-
+    
     /**
      * Tests a graceful server shutdown scenario.
      *
@@ -98,15 +100,15 @@ public class NettyServerTest {
     @Test
     public void testServerGracefulShutdown() throws Exception {
         var channel = new EmbeddedServerChannel();
-
+        
         server = getServer(channel.newSucceededFuture(), true);
-
+        
         server.stop().join();
-
+        
         assertTrue(server.getBossGroup().isTerminated());
         assertTrue(server.getWorkerGroup().isTerminated());
     }
-
+    
     /**
      * Tests an unsuccessful server start scenario.
      *
@@ -115,13 +117,13 @@ public class NettyServerTest {
     @Test
     public void testServerFailedToStart() throws Exception {
         var channel = new EmbeddedServerChannel();
-
+        
         server = getServer(channel.newFailedFuture(new ClosedChannelException()), false);
-
+        
         assertTrue(server.getBossGroup().isTerminated());
         assertTrue(server.getWorkerGroup().isTerminated());
     }
-
+    
     /**
      * Tests a non-graceful server shutdown scenario.
      *
@@ -130,15 +132,15 @@ public class NettyServerTest {
     @Test
     public void testServerChannelClosedAbruptly() throws Exception {
         var channel = new EmbeddedServerChannel();
-
+        
         server = getServer(channel.newSucceededFuture(), true);
-
+        
         channel.close();
-
+        
         assertTrue(server.getBossGroup().isShuttingDown());
         assertTrue(server.getWorkerGroup().isShuttingDown());
     }
-
+    
     /**
      * Tests a scenario where a server is stopped before a server socket is successfully bound.
      *
@@ -147,35 +149,33 @@ public class NettyServerTest {
     @Test
     public void testServerStoppedBeforeStarted() throws Exception {
         var channel = new EmbeddedServerChannel();
-
+        
         ChannelPromise future = channel.newPromise();
-
+        
         server = getServer(future, false);
-
+        
         CompletableFuture<Void> stop = server.stop();
-
+        
         future.setSuccess(null);
-
+        
         stop.get(3, TimeUnit.SECONDS);
-
+        
         assertTrue(server.getBossGroup().isTerminated());
         assertTrue(server.getWorkerGroup().isTerminated());
     }
-
+    
     /**
      * Tests that a {@link NettyServer#start} method can be called only once.
-     *
-     * @throws Exception
      */
     @Test
-    public void testStartTwice() throws Exception {
+    public void testStartTwice() {
         var channel = new EmbeddedServerChannel();
-
+        
         server = getServer(channel.newSucceededFuture(), true);
-
+        
         assertThrows(IgniteInternalException.class, server::start);
     }
-
+    
     /**
      * Tests that handshake manager is invoked upon a client connecting to a server.
      *
@@ -184,116 +184,123 @@ public class NettyServerTest {
     @Test
     public void testHandshakeManagerInvoked() throws Exception {
         HandshakeManager handshakeManager = mock(HandshakeManager.class);
-
+        
         when(handshakeManager.handshakeFuture()).thenReturn(CompletableFuture.completedFuture(mock(NettySender.class)));
         when(handshakeManager.init(any())).thenReturn(HandshakeAction.NOOP);
         when(handshakeManager.onConnectionOpen(any())).thenReturn(HandshakeAction.NOOP);
         when(handshakeManager.onMessage(any(), any())).thenReturn(HandshakeAction.NOOP);
-
+        
         MessageSerializationRegistry registry = mock(MessageSerializationRegistry.class);
-
+        
         when(registry.createDeserializer(anyShort(), anyShort()))
-            .thenReturn(new MessageDeserializer<>() {
-                /** {@inheritDoc} */
-                @Override public boolean readMessage(MessageReader reader) throws MessageMappingException {
-                    return true;
-                }
-
-                /** {@inheritDoc} */
-                @Override public Class<NetworkMessage> klass() {
-                    return NetworkMessage.class;
-                }
-
-                /** {@inheritDoc} */
-                @Override public NetworkMessage getMessage() {
-                    return mock(NetworkMessage.class);
-                }
-            });
-
-        server = new NettyServer(
-            "test",
-            serverCfg.value(),
-            () -> handshakeManager,
-            sender -> {},
-            (socketAddress, message) -> {},
-            registry
-        );
-
-        server.start().get(3, TimeUnit.SECONDS);
-
-        CompletableFuture<Channel> connectFut = NettyUtils.toChannelCompletableFuture(
-            new Bootstrap()
-                .channel(NioSocketChannel.class)
-                .group(new NioEventLoopGroup())
-                .handler(new ChannelInitializer<>() {
+                .thenReturn(new MessageDeserializer<>() {
                     /** {@inheritDoc} */
-                    @Override protected void initChannel(Channel ch) throws Exception {
-                        // No-op.
+                    @Override
+                    public boolean readMessage(MessageReader reader) throws MessageMappingException {
+                        return true;
                     }
-                })
-                .connect(server.address())
+                    
+                    /** {@inheritDoc} */
+                    @Override
+                    public Class<NetworkMessage> klass() {
+                        return NetworkMessage.class;
+                    }
+                    
+                    /** {@inheritDoc} */
+                    @Override
+                    public NetworkMessage getMessage() {
+                        return mock(NetworkMessage.class);
+                    }
+                });
+        
+        server = new NettyServer(
+                "test",
+                serverCfg.value(),
+                () -> handshakeManager,
+                sender -> {
+                },
+                (socketAddress, message) -> {
+                },
+                registry
         );
-
+        
+        server.start().get(3, TimeUnit.SECONDS);
+        
+        CompletableFuture<Channel> connectFut = NettyUtils.toChannelCompletableFuture(
+                new Bootstrap()
+                        .channel(NioSocketChannel.class)
+                        .group(new NioEventLoopGroup())
+                        .handler(new ChannelInitializer<>() {
+                            /** {@inheritDoc} */
+                            @Override
+                            protected void initChannel(Channel ch) throws Exception {
+                                // No-op.
+                            }
+                        })
+                        .connect(server.address())
+        );
+        
         Channel channel = connectFut.get(3, TimeUnit.SECONDS);
-
+        
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-
+        
         // One message only.
-        for (int i = 0; i < (NetworkMessage.MSG_TYPE_SIZE_BYTES + 1); i++)
+        for (int i = 0; i < (NetworkMessage.MSG_TYPE_SIZE_BYTES + 1); i++) {
             buffer.writeByte(1);
-
+        }
+        
         channel.writeAndFlush(buffer).get(3, TimeUnit.SECONDS);
-
+        
         channel.close().get(3, TimeUnit.SECONDS);
-
+        
         InOrder order = Mockito.inOrder(handshakeManager);
-
+        
         order.verify(handshakeManager, timeout()).init(any());
         order.verify(handshakeManager, timeout()).handshakeFuture();
         order.verify(handshakeManager, timeout()).onConnectionOpen(any());
         order.verify(handshakeManager, timeout()).onMessage(any(), any());
     }
-
+    
     /**
      * @return Verification mode for a one call with a 3 second timeout.
      */
     private static VerificationMode timeout() {
         return Mockito.timeout(TimeUnit.SECONDS.toMillis(3));
     }
-
+    
     /**
      * Creates a server from a backing {@link ChannelFuture}.
      *
-     * @param future Server channel future.
+     * @param future      Server channel future.
      * @param shouldStart {@code true} if a server should start successfully
      * @return NettyServer.
      */
     private NettyServer getServer(ChannelFuture future, boolean shouldStart) {
         ServerBootstrap bootstrap = Mockito.spy(new ServerBootstrap());
-
+        
         Mockito.doReturn(future).when(bootstrap).bind(Mockito.anyInt());
-
+        
         var server = new NettyServer(
-            "test",
-            bootstrap,
-            serverCfg.value(),
-            () -> mock(HandshakeManager.class),
-            null,
-            null,
-            null
+                "test",
+                bootstrap,
+                serverCfg.value(),
+                () -> mock(HandshakeManager.class),
+                null,
+                null,
+                null
         );
-
+        
         try {
             server.start().get(3, TimeUnit.SECONDS);
-        }
-        catch (Exception e) {
-            if (shouldStart)
+        } catch (Exception e) {
+            if (shouldStart) {
                 fail(e);
+            }
         }
-
+        
         return server;
     }
-
+    
     /** Server channel on top of the {@link EmbeddedChannel}. */
     private static class EmbeddedServerChannel extends EmbeddedChannel implements ServerChannel {
         // No-op.

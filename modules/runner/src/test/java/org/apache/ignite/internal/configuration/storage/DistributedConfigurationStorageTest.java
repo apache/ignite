@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.configuration.storage;
 
+import static java.util.stream.Collectors.toList;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -39,26 +45,28 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import static java.util.stream.Collectors.toList;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * Tests for the {@link DistributedConfigurationStorage}.
  */
 public class DistributedConfigurationStorageTest extends ConfigurationStorageTest {
-    /** */
+    /**
+     *
+     */
     private final VaultManager vaultManager = new VaultManager(new InMemoryVaultService());
 
-    /** */
+    /**
+     *
+     */
     private final KeyValueStorage metaStorage = new SimpleInMemoryKeyValueStorage();
 
-    /** */
+    /**
+     *
+     */
     private final MetaStorageManager metaStorageManager = mockMetaStorageManager();
 
-    /** */
+    /**
+     *
+     */
     @BeforeEach
     void start() {
         vaultManager.start();
@@ -66,7 +74,9 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
         metaStorageManager.start();
     }
 
-    /** */
+    /**
+     *
+     */
     @AfterEach
     void stop() throws Exception {
         metaStorageManager.stop();
@@ -75,7 +85,8 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
     }
 
     /** {@inheritDoc} */
-    @Override public ConfigurationStorage getStorage() {
+    @Override
+    public ConfigurationStorage getStorage() {
         return new DistributedConfigurationStorage(metaStorageManager, vaultManager);
     }
 
@@ -91,9 +102,9 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
             Collection<Operation> failure = invocation.getArgument(2);
 
             boolean invokeResult = metaStorage.invoke(
-                toServerCondition(condition),
-                success.stream().map(DistributedConfigurationStorageTest::toServerOperation).collect(toList()),
-                failure.stream().map(DistributedConfigurationStorageTest::toServerOperation).collect(toList())
+                    toServerCondition(condition),
+                    success.stream().map(DistributedConfigurationStorageTest::toServerOperation).collect(toList()),
+                    failure.stream().map(DistributedConfigurationStorageTest::toServerOperation).collect(toList())
             );
 
             return CompletableFuture.completedFuture(invokeResult);
@@ -106,8 +117,7 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
 
                 return new CursorAdapter(metaStorage.range(keyFrom.bytes(), keyTo == null ? null : keyTo.bytes()));
             });
-        }
-        catch (NodeStoppingException e) {
+        } catch (NodeStoppingException e) {
             throw new RuntimeException(e);
         }
 
@@ -121,14 +131,14 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
         switch (condition.type()) {
             case REV_LESS_OR_EQUAL:
                 return new RevisionCondition(
-                    RevisionCondition.Type.LESS_OR_EQUAL,
-                    condition.inner().key(),
-                    ((Condition.RevisionCondition)condition.inner()).revision()
+                        RevisionCondition.Type.LESS_OR_EQUAL,
+                        condition.inner().key(),
+                        ((Condition.RevisionCondition) condition.inner()).revision()
                 );
             case KEY_NOT_EXISTS:
                 return new ExistenceCondition(
-                    ExistenceCondition.Type.NOT_EXISTS,
-                    condition.inner().key()
+                        ExistenceCondition.Type.NOT_EXISTS,
+                        condition.inner().key()
                 );
             default:
                 throw new UnsupportedOperationException("Unsupported condition type: " + condition.type());
@@ -142,21 +152,21 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
         switch (operation.type()) {
             case PUT:
                 return new org.apache.ignite.internal.metastorage.server.Operation(
-                    OperationType.PUT,
-                    operation.inner().key(),
-                    ((Operation.PutOp)(operation.inner())).value()
+                        OperationType.PUT,
+                        operation.inner().key(),
+                        ((Operation.PutOp) (operation.inner())).value()
                 );
             case REMOVE:
                 return new org.apache.ignite.internal.metastorage.server.Operation(
-                    OperationType.REMOVE,
-                    operation.inner().key(),
-                    null
+                        OperationType.REMOVE,
+                        operation.inner().key(),
+                        null
                 );
             case NO_OP:
                 return new org.apache.ignite.internal.metastorage.server.Operation(
-                    OperationType.NO_OP,
-                    null,
-                    null
+                        OperationType.NO_OP,
+                        null,
+                        null
                 );
             default:
                 throw new UnsupportedOperationException("Unsupported operation type: " + operation.type());
@@ -170,52 +180,65 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
         /** Internal cursor. */
         private final Cursor<org.apache.ignite.internal.metastorage.server.Entry> internalCursor;
 
-        /** */
+        /**
+         *
+         */
         CursorAdapter(Cursor<org.apache.ignite.internal.metastorage.server.Entry> internalCursor) {
             this.internalCursor = internalCursor;
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override
+        public void close() throws Exception {
             internalCursor.close();
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Entry> iterator() {
+        @NotNull
+        @Override
+        public Iterator<Entry> iterator() {
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNext() {
+        @Override
+        public boolean hasNext() {
             return internalCursor.hasNext();
         }
 
         /** {@inheritDoc} */
-        @Override public Entry next() {
+        @Override
+        public Entry next() {
             org.apache.ignite.internal.metastorage.server.Entry next = internalCursor.next();
 
             return new Entry() {
-                @Override public @NotNull ByteArray key() {
+                @Override
+                public @NotNull ByteArray key() {
                     return new ByteArray(next.key());
                 }
 
-                @Override public byte @Nullable [] value() {
+                @Override
+                public byte @Nullable [] value() {
                     return next.value();
                 }
 
-                @Override public long revision() {
+                @Override
+                public long revision() {
                     return next.revision();
                 }
 
-                @Override public long updateCounter() {
+                @Override
+                public long updateCounter() {
                     return next.updateCounter();
                 }
 
-                @Override public boolean empty() {
+                @Override
+                public boolean empty() {
                     return next.empty();
                 }
 
-                @Override public boolean tombstone() {
+                @Override
+                public boolean tombstone() {
                     return next.tombstone();
                 }
             };

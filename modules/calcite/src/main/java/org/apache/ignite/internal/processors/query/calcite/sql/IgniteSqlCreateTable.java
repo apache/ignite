@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -35,22 +35,30 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Parse tree for {@code CREATE TABLE} statement with Ignite specific features.
  */
 public class IgniteSqlCreateTable extends SqlCreate {
-    /** */
+    /**
+     *
+     */
     private final SqlIdentifier name;
 
-    /** */
+    /**
+     *
+     */
     private final @Nullable SqlNodeList columnList;
 
-    /** */
+    /**
+     *
+     */
     private final @Nullable SqlNodeList createOptionList;
 
-    /** */
+    /**
+     *
+     */
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
+            new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
     /** Creates a SqlCreateTable. */
     public IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists,
-        SqlIdentifier name, @Nullable SqlNodeList columnList, @Nullable SqlNodeList createOptionList) {
+            SqlIdentifier name, @Nullable SqlNodeList columnList, @Nullable SqlNodeList createOptionList) {
         super(OPERATOR, pos, false, ifNotExists);
         this.name = Objects.requireNonNull(name, "name");
         this.columnList = columnList;
@@ -59,16 +67,19 @@ public class IgniteSqlCreateTable extends SqlCreate {
 
     /** {@inheritDoc} */
     @SuppressWarnings("nullness")
-    @Override public List<SqlNode> getOperandList() {
+    @Override
+    public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of(name, columnList, createOptionList);
     }
 
     /** {@inheritDoc} */
-    @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+    @Override
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("CREATE");
         writer.keyword("TABLE");
-        if (ifNotExists)
+        if (ifNotExists) {
             writer.keyword("IF NOT EXISTS");
+        }
 
         name.unparse(writer, leftPrec, rightPrec);
         if (columnList != null) {

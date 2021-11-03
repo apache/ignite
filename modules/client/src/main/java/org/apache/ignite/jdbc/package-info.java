@@ -18,4 +18,5 @@
 /**
  * Ignite jdbc client.
  */
+
 package org.apache.ignite.jdbc;

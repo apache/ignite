@@ -43,9 +43,9 @@ public final class EntryImpl implements Entry {
     /**
      * Construct entry with given paramteters.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param rev Revision.
+     * @param key     Key.
+     * @param val     Value.
+     * @param rev     Revision.
      * @param updCntr Update counter.
      */
     EntryImpl(@NotNull ByteArray key, @Nullable byte[] val, long rev, long updCntr) {
@@ -55,69 +55,83 @@ public final class EntryImpl implements Entry {
         this.updCntr = updCntr;
     }
 
-    /** {@inheritDoc} */    @NotNull
-    @Override public ByteArray key() {
+    /** {@inheritDoc} */
+    @NotNull
+    @Override
+    public ByteArray key() {
         return key;
     }
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public byte[] value() {
+    @Override
+    public byte[] value() {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public long revision() {
+    @Override
+    public long revision() {
         return rev;
     }
 
     /** {@inheritDoc} */
-    @Override public long updateCounter() {
+    @Override
+    public long updateCounter() {
         return updCntr;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tombstone() {
+    @Override
+    public boolean tombstone() {
         return val == null && rev > 0 && updCntr > 0;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean empty() {
+    @Override
+    public boolean empty() {
         return val == null && rev == 0 && updCntr == 0;
     }
 
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        EntryImpl entry = (EntryImpl)o;
+        EntryImpl entry = (EntryImpl) o;
 
-        if (rev != entry.rev)
+        if (rev != entry.rev) {
             return false;
+        }
 
-        if (updCntr != entry.updCntr)
+        if (updCntr != entry.updCntr) {
             return false;
+        }
 
-        if (!key.equals(entry.key))
+        if (!key.equals(entry.key)) {
             return false;
+        }
 
         return Arrays.equals(val, entry.val);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int res = key.hashCode();
 
         res = 31 * res + Arrays.hashCode(val);
 
-        res = 31 * res + (int)(rev ^ (rev >>> 32));
+        res = 31 * res + (int) (rev ^ (rev >>> 32));
 
-        res = 31 * res + (int)(updCntr ^ (updCntr >>> 32));
+        res = 31 * res + (int) (updCntr ^ (updCntr >>> 32));
 
         return res;
     }

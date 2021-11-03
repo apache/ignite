@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.configuration.validation;
 
+import static java.util.Collections.emptySet;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.appendKey;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -35,37 +38,38 @@ import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.util.AnyNodeConfigurationVisitor;
 import org.apache.ignite.internal.configuration.util.KeysTrackingConfigurationVisitor;
 
-import static java.util.Collections.emptySet;
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.appendKey;
-
-/** */
+/**
+ *
+ */
 public class ValidationUtil {
     /**
      * Validate configuration changes.
      *
-     * @param oldRoots Old known roots.
-     * @param newRoots New roots.
-     * @param otherRoots Provider for arbitrary roots that might not be accociated with the same storage.
+     * @param oldRoots               Old known roots.
+     * @param newRoots               New roots.
+     * @param otherRoots             Provider for arbitrary roots that might not be accociated with the same storage.
      * @param memberAnnotationsCache Mutable map that contains annotations associated with corresponding member keys.
-     * @param validators Current validators map to look into.
+     * @param validators             Current validators map to look into.
      * @return List of validation results.
      */
     public static List<ValidationIssue> validate(
-        SuperRoot oldRoots,
-        SuperRoot newRoots,
-        Function<RootKey<?, ?>, InnerNode> otherRoots,
-        Map<MemberKey, Annotation[]> memberAnnotationsCache,
-        Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators
+            SuperRoot oldRoots,
+            SuperRoot newRoots,
+            Function<RootKey<?, ?>, InnerNode> otherRoots,
+            Map<MemberKey, Annotation[]> memberAnnotationsCache,
+            Map<Class<? extends Annotation>, Set<Validator<?, ?>>> validators
     ) {
         List<ValidationIssue> issues = new ArrayList<>();
 
         newRoots.traverseChildren(new KeysTrackingConfigurationVisitor<>() {
             /** {@inheritDoc} */
-            @Override protected Object doVisitInnerNode(String key, InnerNode innerNode) {
+            @Override
+            protected Object doVisitInnerNode(String key, InnerNode innerNode) {
                 assert innerNode != null;
 
                 innerNode.traverseChildren(new AnyNodeConfigurationVisitor<Void>() {
-                    @Override protected Void visitNode(String key, Object node) {
+                    @Override
+                    protected Void visitNode(String key, Object node) {
                         validate(innerNode, key, node);
 
                         return null;
@@ -98,15 +102,15 @@ public class ValidationUtil {
                         Field field = lastInnerNode.schemaType().getDeclaredField(fieldName);
 
                         return field.getDeclaredAnnotations();
-                    }
-                    catch (NoSuchFieldException e) {
+                    } catch (NoSuchFieldException e) {
                         // Should be impossible.
                         return new Annotation[0];
                     }
                 });
 
-                if (fieldAnnotations.length == 0)
+                if (fieldAnnotations.length == 0) {
                     return;
+                }
 
                 String currentKey = currentKey() + fieldName;
                 List<String> currentPath = appendKey(currentPath(), fieldName);
@@ -115,23 +119,23 @@ public class ValidationUtil {
                     for (Validator<?, ?> validator : validators.getOrDefault(annotation.annotationType(), emptySet())) {
                         // Making this a compile-time check would be too expensive to implement.
                         assert assertValidatorTypesCoherence(validator.getClass(), annotation.annotationType(), val)
-                            : "Validator coherence is violated [" +
-                            "class=" + lastInnerNode.getClass().getCanonicalName() + ", " +
-                            "field=" + fieldName + ", " +
-                            "annotation=" + annotation.annotationType().getCanonicalName() + ", " +
-                            "validator=" + validator.getClass().getName() + ']';
+                                : "Validator coherence is violated ["
+                                + "class=" + lastInnerNode.getClass().getCanonicalName() + ", "
+                                + "field=" + fieldName + ", "
+                                + "annotation=" + annotation.annotationType().getCanonicalName() + ", "
+                                + "validator=" + validator.getClass().getName() + ']';
 
                         ValidationContextImpl<Object> ctx = new ValidationContextImpl<>(
-                            oldRoots,
-                            newRoots,
-                            otherRoots,
-                            val,
-                            currentKey,
-                            currentPath,
-                            issues
+                                oldRoots,
+                                newRoots,
+                                otherRoots,
+                                val,
+                                currentKey,
+                                currentPath,
+                                issues
                         );
 
-                        ((Validator<Annotation, Object>)validator).validate(annotation, ctx);
+                        ((Validator<Annotation, Object>) validator).validate(annotation, ctx);
                     }
                 }
             }
@@ -140,39 +144,46 @@ public class ValidationUtil {
         return issues;
     }
 
-    /** */
+    /**
+     *
+     */
     private static boolean assertValidatorTypesCoherence(
-        Class<?> validatorClass,
-        Class<? extends Annotation> annotationType,
-        Object val
+            Class<?> validatorClass,
+            Class<? extends Annotation> annotationType,
+            Object val
     ) {
         // Find superclass that directly extends Validator.
-        if (!Arrays.asList(validatorClass.getInterfaces()).contains(Validator.class))
+        if (!Arrays.asList(validatorClass.getInterfaces()).contains(Validator.class)) {
             return assertValidatorTypesCoherence(validatorClass.getSuperclass(), annotationType, val);
+        }
 
         Type genericSuperClass = Arrays.stream(validatorClass.getGenericInterfaces())
-            .filter(i -> i instanceof ParameterizedType && ((ParameterizedType)i).getRawType() == Validator.class)
-            .findAny()
-            .get();
+                .filter(i -> i instanceof ParameterizedType && ((ParameterizedType) i).getRawType() == Validator.class)
+                .findAny()
+                .get();
 
-        if (!(genericSuperClass instanceof ParameterizedType))
+        if (!(genericSuperClass instanceof ParameterizedType)) {
             return false;
+        }
 
-        ParameterizedType parameterizedSuperClass = (ParameterizedType)genericSuperClass;
+        ParameterizedType parameterizedSuperClass = (ParameterizedType) genericSuperClass;
 
         Type[] actualTypeParameters = parameterizedSuperClass.getActualTypeArguments();
 
-        if (actualTypeParameters.length != 2)
+        if (actualTypeParameters.length != 2) {
             return false;
+        }
 
-        if (actualTypeParameters[0] != annotationType)
+        if (actualTypeParameters[0] != annotationType) {
             return false;
+        }
 
         Type sndParam = actualTypeParameters[1];
 
-        if (sndParam instanceof ParameterizedType)
-            sndParam = ((ParameterizedType)sndParam).getRawType();
+        if (sndParam instanceof ParameterizedType) {
+            sndParam = ((ParameterizedType) sndParam).getRawType();
+        }
 
-        return (sndParam instanceof Class) && (val == null || ((Class<?>)sndParam).isInstance(val));
+        return (sndParam instanceof Class) && (val == null || ((Class<?>) sndParam).isInstance(val));
     }
 }

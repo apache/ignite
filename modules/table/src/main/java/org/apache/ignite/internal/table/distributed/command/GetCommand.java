@@ -37,8 +37,7 @@ public class GetCommand implements ReadCommand {
     private byte[] keyRowBytes;
 
     /**
-     * Creates a new instance of GetCommand with the given key to be got.
-     * The {@code keyRow} should not be {@code null}.
+     * Creates a new instance of GetCommand with the given key to be got. The {@code keyRow} should not be {@code null}.
      *
      * @param keyRow Binary key row.
      */
@@ -56,8 +55,9 @@ public class GetCommand implements ReadCommand {
      * @return Binary key.
      */
     public BinaryRow getKeyRow() {
-        if (keyRow == null)
+        if (keyRow == null) {
             keyRow = new ByteBufferRow(keyRowBytes);
+        }
 
         return keyRow;
     }

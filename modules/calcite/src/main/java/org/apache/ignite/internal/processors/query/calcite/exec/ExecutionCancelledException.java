@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 
-/** */
+/**
+ *
+ */
 public class ExecutionCancelledException extends IgniteInternalCheckedException {
 }

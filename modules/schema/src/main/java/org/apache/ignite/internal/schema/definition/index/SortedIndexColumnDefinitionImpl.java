@@ -34,7 +34,7 @@ public class SortedIndexColumnDefinitionImpl implements SortedIndexColumnDefinit
     /**
      * Constructor.
      *
-     * @param name Column name.
+     * @param name      Column name.
      * @param sortOrder Sort order flag.
      */
     public SortedIndexColumnDefinitionImpl(String name, SortOrder sortOrder) {
@@ -43,17 +43,20 @@ public class SortedIndexColumnDefinitionImpl implements SortedIndexColumnDefinit
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return name;
     }
 
     /** {@inheritDoc} */
-    @Override public SortOrder sortOrder() {
+    @Override
+    public SortOrder sortOrder() {
         return sortOrder;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(SortedIndexColumnDefinitionImpl.class, this);
     }
 }

@@ -76,7 +76,7 @@ public interface KeyValueStorage extends AutoCloseable {
     /**
      * Returns all entries corresponding to given keys and bounded by the given revision.
      *
-     * @param keys Keys collection.
+     * @param keys          Keys collection.
      * @param revUpperBound Upper bound of revision.
      * @return Entries corresponding to given keys.
      */
@@ -85,7 +85,7 @@ public interface KeyValueStorage extends AutoCloseable {
     /**
      * Inserts an entry with the given key and given value.
      *
-     * @param key The key.
+     * @param key   The key.
      * @param value The value.
      */
     void put(byte[] key, byte[] value);
@@ -93,7 +93,7 @@ public interface KeyValueStorage extends AutoCloseable {
     /**
      * Inserts an entry with the given key and given value and returns previous entry.
      *
-     * @param key The key.
+     * @param key   The key.
      * @param value The value.
      * @return Previous entry corresponding to the given key.
      */
@@ -102,7 +102,7 @@ public interface KeyValueStorage extends AutoCloseable {
     /**
      * Inserts entries with given keys and given values.
      *
-     * @param keys The key list.
+     * @param keys   The key list.
      * @param values The values list.
      */
     void putAll(List<byte[]> keys, List<byte[]> values);
@@ -110,7 +110,7 @@ public interface KeyValueStorage extends AutoCloseable {
     /**
      * Inserts entries with given keys and given values and returns previous entries.
      *
-     * @param keys The key list.
+     * @param keys   The key list.
      * @param values The values list.
      * @return Collection of previous entries corresponding to given keys.
      */
@@ -147,12 +147,11 @@ public interface KeyValueStorage extends AutoCloseable {
     @NotNull Collection<Entry> getAndRemoveAll(List<byte[]> keys);
 
     /**
-     * Performs {@code success} operation if condition is {@code true}, otherwise performs
-     * {@code failure} operations.
+     * Performs {@code success} operation if condition is {@code true}, otherwise performs {@code failure} operations.
      *
      * @param condition Condition.
-     * @param success Success operations.
-     * @param failure Failure operations.
+     * @param success   Success operations.
+     * @param failure   Failure operations.
      * @return Result of test condition.
      */
     boolean invoke(Condition condition, Collection<Operation> success, Collection<Operation> failure);
@@ -161,7 +160,7 @@ public interface KeyValueStorage extends AutoCloseable {
      * Returns cursor by entries which correspond to the given keys range.
      *
      * @param keyFrom Start key of range (inclusive).
-     * @param keyTo Last key of range (exclusive).
+     * @param keyTo   Last key of range (exclusive).
      * @return Cursor by entries which correspond to the given keys range.
      */
     Cursor<Entry> range(byte[] keyFrom, byte @Nullable [] keyTo);
@@ -169,27 +168,26 @@ public interface KeyValueStorage extends AutoCloseable {
     /**
      * Returns cursor by entries which correspond to the given keys range and bounded by revision number..
      *
-     * @param keyFrom Start key of range (inclusive).
-     * @param keyTo Last key of range (exclusive).
+     * @param keyFrom       Start key of range (inclusive).
+     * @param keyTo         Last key of range (exclusive).
      * @param revUpperBound Upper bound of revision.
      * @return Cursor by entries which correspond to the given keys range.
      */
     Cursor<Entry> range(byte[] keyFrom, byte[] keyTo, long revUpperBound);
 
     /**
-     * Creates subscription on updates of entries corresponding to the given keys range and starting from
-     * the given revision number.
+     * Creates subscription on updates of entries corresponding to the given keys range and starting from the given revision number.
      *
      * @param keyFrom Start key of range (inclusive).
-     * @param keyTo Last key of range (exclusive).
-     * @param rev Start revision number.
+     * @param keyTo   Last key of range (exclusive).
+     * @param rev     Start revision number.
      * @return Cursor by update events.
      */
     Cursor<WatchEvent> watch(byte[] keyFrom, byte @Nullable [] keyTo, long rev);
 
     /**
-     * Creates subscription on updates of entries corresponding to the given keys range (where upper bound is unlimited)
-     * and starting from the given revision number.
+     * Creates subscription on updates of entries corresponding to the given keys range (where upper bound is unlimited) and starting from
+     * the given revision number.
      *
      * @param key Start key of range (inclusive).
      * @param rev Start revision number.
@@ -198,11 +196,10 @@ public interface KeyValueStorage extends AutoCloseable {
     Cursor<WatchEvent> watch(byte[] key, long rev);
 
     /**
-     * Creates subscription on updates of entries corresponding to the given keys collection
-     * and starting from the given revision number.
+     * Creates subscription on updates of entries corresponding to the given keys collection and starting from the given revision number.
      *
      * @param keys Collection of keys
-     * @param rev Start revision number.
+     * @param rev  Start revision number.
      * @return Cursor by update events.
      */
     Cursor<WatchEvent> watch(Collection<byte[]> keys, long rev);

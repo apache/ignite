@@ -26,9 +26,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface InvokeClosure<T> {
     /**
-     * In this method closure decides what type of operation should be performed on the storage, based on the
-     * current data in the storage passed as an argument.
-     * The result of the operation can be obtained via the {@link #result()} method.
+     * In this method closure decides what type of operation should be performed on the storage, based on the current data in the storage
+     * passed as an argument. The result of the operation can be obtained via the {@link #result()} method.
      *
      * @param row Old row or {@code null} if no old row has been found.
      */
@@ -48,9 +47,8 @@ public interface InvokeClosure<T> {
     @Nullable DataRow newRow();
 
     /**
-     * @return Operation type for this closure or {@code null} if it is unknown.
-     * After method {@link #call(DataRow)} has been called, operation type must
-     * be computed and this method cannot return {@code null}.
+     * @return Operation type for this closure or {@code null} if it is unknown. After method {@link #call(DataRow)} has been called,
+     *      operation type must be computed and this method cannot return {@code null}.
      */
     @Nullable OperationType operationType();
 }

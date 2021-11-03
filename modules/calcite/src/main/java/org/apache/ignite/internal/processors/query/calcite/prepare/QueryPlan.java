@@ -22,7 +22,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
  */
 public interface QueryPlan {
     /** Query type */
-    enum Type { QUERY, FRAGMENT, DML, DDL, EXPLAIN }
+    enum Type {
+        QUERY, FRAGMENT, DML, DDL, EXPLAIN
+    }
 
     /**
      * @return Query type.

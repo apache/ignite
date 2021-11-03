@@ -22,8 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Simple class descriptor containing simple and fully qualified class names as well as
- * the list of class fields.
+ * Simple class descriptor containing simple and fully qualified class names as well as the list of class fields.
  */
 class ClassDescriptor {
     /** Class simple name. */
@@ -36,6 +35,8 @@ class ClassDescriptor {
     private final ArrayList<FieldDescriptor> fields = new ArrayList<>();
 
     /**
+     * Constructor.
+     *
      * @param cls Class.
      */
     ClassDescriptor(Class<?> cls) {
@@ -46,6 +47,8 @@ class ClassDescriptor {
     }
 
     /**
+     * Adds field descriptor.
+     *
      * @param field Field descriptor to be added.
      */
     void addField(FieldDescriptor field) {
@@ -55,7 +58,7 @@ class ClassDescriptor {
     }
 
     /**
-     *
+     * Sort fields.
      */
     void sortFields() {
         fields.trimToSize();
@@ -64,6 +67,8 @@ class ClassDescriptor {
     }
 
     /**
+     * Returns simple class name.
+     *
      * @return Simple class name.
      */
     String getSimpleClassName() {
@@ -71,6 +76,8 @@ class ClassDescriptor {
     }
 
     /**
+     * Returns fully qualified class name.
+     *
      * @return Fully qualified class name.
      */
     String getFullyQualifiedClassName() {
@@ -78,6 +85,8 @@ class ClassDescriptor {
     }
 
     /**
+     * Returns list of fields.
+     *
      * @return List of fields.
      */
     List<FieldDescriptor> getFields() {

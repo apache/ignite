@@ -18,4 +18,5 @@
 /**
  * Contains classes and packages for Ignite CLI tool.
  */
+
 package org.apache.ignite.cli;

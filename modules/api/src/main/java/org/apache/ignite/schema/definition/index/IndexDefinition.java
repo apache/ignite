@@ -28,13 +28,14 @@ public interface IndexDefinition extends SchemaObject {
      *
      * @return Index name.
      */
-    @Override String name();
+    @Override
+    String name();
 
     /**
      * Unique index flag.
-     * <p>
-     * Limitation: Index MUST have all affinity columns declared explicitly.
-     * This requirement allows omitting cluster wide constraint checks.
+     *
+     * <p>Limitation: Index MUST have all affinity columns declared explicitly. This requirement allows omitting cluster wide constraint
+     * checks.
      *
      * @return Unique flag.
      */

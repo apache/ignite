@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
@@ -28,93 +29,113 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
- * Correlation trait is created by node that creates and sets correlation variables {@link RelNode#getVariablesSet()}}
- * (e.g. {@link IgniteCorrelatedNestedLoopJoin}) and pass through this trait to input that uses correlation variable(s).
+ * Correlation trait is created by node that creates and sets correlation variables {@link RelNode#getVariablesSet()}} (e.g. {@link
+ * IgniteCorrelatedNestedLoopJoin}) and pass through this trait to input that uses correlation variable(s).
  *
- * The correlation trait is used to prevent the insertion of nodes that cannot preserve correlation in
- * the correlated data stream. e.g. these nodes are IgniteExchange, IgniteTableSpool, etc.
+ * <p>The correlation trait is used to prevent the insertion of nodes that cannot preserve correlation in the correlated data stream. e.g.
+ * these nodes are IgniteExchange, IgniteTableSpool, etc.
  *
- * Let's describe more details:
- * IgniteExchange: current implementation is not rewindable and not send values of the correlation variables to
- * Senders.
- * TableSpool: stores the input data stream and rewind it many times So. it cannot be depends on the value of the
+ * <p>Let's describe more details: IgniteExchange: current implementation is not rewindable and not send values of the correlation
+ * variables to Senders. TableSpool: stores the input data stream and rewind it many times So. it cannot be depends on the value of the
  * correlation variables.
  */
 public class CorrelationTrait implements RelTrait {
-    /** */
+    /**
+     *
+     */
     public static final CorrelationTrait UNCORRELATED = canonize(new CorrelationTrait(Collections.emptyList()));
-
-    /** */
+    
+    /**
+     *
+     */
     private final Set<CorrelationId> correlations;
-
-    /** */
+    
+    /**
+     *
+     */
     public CorrelationTrait(Collection<CorrelationId> correlationIds) {
         correlations = Set.copyOf(correlationIds);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     public boolean correlated() {
         return !nullOrEmpty(correlations);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-
-        if (!(o instanceof CorrelationTrait))
+        }
+    
+        if (!(o instanceof CorrelationTrait)) {
             return false;
-
-        return correlations.equals(((CorrelationTrait)o).correlations);
+        }
+        
+        return correlations.equals(((CorrelationTrait) o).correlations);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return correlations.hashCode();
     }
-
+    
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return correlated() ? "correlated" + correlations : "uncorrelated";
     }
-
+    
     /** {@inheritDoc} */
-    @Override public RelTraitDef<CorrelationTrait> getTraitDef() {
+    @Override
+    public RelTraitDef<CorrelationTrait> getTraitDef() {
         return CorrelationTraitDef.INSTANCE;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public boolean satisfies(RelTrait trait) {
-        if (trait == this || this == UNCORRELATED)
+    @Override
+    public boolean satisfies(RelTrait trait) {
+        if (trait == this || this == UNCORRELATED) {
             return true;
-
-        if (!(trait instanceof CorrelationTrait))
+        }
+    
+        if (!(trait instanceof CorrelationTrait)) {
             return false;
-
+        }
+        
         CorrelationTrait other = (CorrelationTrait) trait;
-
+        
         return other.correlated() && other.correlationIds().containsAll(correlationIds());
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void register(RelOptPlanner planner) {
+    @Override
+    public void register(RelOptPlanner planner) {
         // no-op
     }
-
-    /** */
+    
+    /**
+     *
+     */
     private static CorrelationTrait canonize(CorrelationTrait trait) {
         return CorrelationTraitDef.INSTANCE.canonize(trait);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     public Set<CorrelationId> correlationIds() {
         return correlations;
     }
-
-    /** */
+    
+    /**
+     *
+     */
     public static CorrelationTrait correlations(Collection<CorrelationId> correlationIds) {
         return canonize(new CorrelationTrait(correlationIds));
     }

@@ -22,8 +22,8 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Watch event contains all entry updates done under one revision. Each particular entry update in this revision
- * is represented by {@link EntryEvent} entity.
+ * Watch event contains all entry updates done under one revision. Each particular entry update in this revision is represented by {@link
+ * EntryEvent} entity.
  */
 public class WatchEvent {
     /** Events about each entry update in the revision. */

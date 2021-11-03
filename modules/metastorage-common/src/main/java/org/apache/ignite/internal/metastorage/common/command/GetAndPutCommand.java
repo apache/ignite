@@ -22,15 +22,17 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get and put command for MetaStorageCommandListener that inserts or updates an entry
- * with the given key and the given value and retrieves a previous entry for the given key.
+ * Get and put command for MetaStorageCommandListener that inserts or updates an entry with the given key and the given value and retrieves
+ * a previous entry for the given key.
  */
 public final class GetAndPutCommand implements WriteCommand {
     /** The key. Couldn't be {@code null}. */
-    @NotNull private final byte[] key;
+    @NotNull
+    private final byte[] key;
 
     /** The value. Couldn't be {@code null}. */
-    @NotNull private final byte[] val;
+    @NotNull
+    private final byte[] val;
 
     /**
      * @param key The key. Couldn't be {@code null}.

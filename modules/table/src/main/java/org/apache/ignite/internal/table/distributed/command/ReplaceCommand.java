@@ -46,11 +46,10 @@ public class ReplaceCommand implements WriteCommand {
     private byte[] oldRowBytes;
 
     /**
-     * Creates a new instance of ReplaceCommand with the given two rows to be replaced each other.
-     * Both rows should not be {@code null}.
+     * Creates a new instance of ReplaceCommand with the given two rows to be replaced each other. Both rows should not be {@code null}.
      *
      * @param oldRow Old Binary row.
-     * @param row Binary row.
+     * @param row    Binary row.
      */
     public ReplaceCommand(@NotNull BinaryRow oldRow, @NotNull BinaryRow row) {
         assert oldRow != null;
@@ -70,8 +69,9 @@ public class ReplaceCommand implements WriteCommand {
      */
     @NotNull
     public BinaryRow getRow() {
-        if (row == null)
+        if (row == null) {
             row = new ByteBufferRow(rowBytes);
+        }
 
         return row;
     }
@@ -83,8 +83,9 @@ public class ReplaceCommand implements WriteCommand {
      */
     @NotNull
     public BinaryRow getOldRow() {
-        if (oldRow == null)
+        if (oldRow == null) {
             oldRow = new ByteBufferRow(oldRowBytes);
+        }
 
         return oldRow;
     }

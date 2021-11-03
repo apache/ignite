@@ -22,9 +22,9 @@ import java.util.List;
 /**
  * View type for a {@link NamedConfigurationTree}. Represents an immutable snapshot of a named list configuration.
  *
- * @param <VIEW> Type for immutable snapshots of named list elements.
+ * @param <VIEWT> Type for immutable snapshots of named list elements.
  */
-public interface NamedListView<VIEW> {
+public interface NamedListView<VIEWT> {
     /**
      * Returns an immutable collection of keys contained within this list.
      *
@@ -38,7 +38,7 @@ public interface NamedListView<VIEW> {
      * @param key Key string.
      * @return Requested value or {@code null} if it's not found.
      */
-    VIEW get(String key);
+    VIEWT get(String key);
 
     /**
      * Returns value located at the specified index.
@@ -47,7 +47,7 @@ public interface NamedListView<VIEW> {
      * @return Requested value.
      * @throws IndexOutOfBoundsException If index is out of bounds.
      */
-    VIEW get(int index) throws IndexOutOfBoundsException;
+    VIEWT get(int index) throws IndexOutOfBoundsException;
 
     /**
      * Returns the number of elements in this list.

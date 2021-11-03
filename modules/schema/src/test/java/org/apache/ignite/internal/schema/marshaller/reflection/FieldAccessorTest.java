@@ -17,6 +17,19 @@
 
 package org.apache.ignite.internal.schema.marshaller.reflection;
 
+import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
+import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
+import static org.apache.ignite.internal.schema.NativeTypes.INT16;
+import static org.apache.ignite.internal.schema.NativeTypes.INT32;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+import static org.apache.ignite.internal.schema.NativeTypes.INT8;
+import static org.apache.ignite.internal.schema.NativeTypes.STRING;
+import static org.apache.ignite.internal.schema.NativeTypes.UUID;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -39,19 +52,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
-import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
-import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
-import static org.apache.ignite.internal.schema.NativeTypes.INT16;
-import static org.apache.ignite.internal.schema.NativeTypes.INT32;
-import static org.apache.ignite.internal.schema.NativeTypes.INT64;
-import static org.apache.ignite.internal.schema.NativeTypes.INT8;
-import static org.apache.ignite.internal.schema.NativeTypes.STRING;
-import static org.apache.ignite.internal.schema.NativeTypes.UUID;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Check field accessor correctness.
@@ -77,27 +77,27 @@ public class FieldAccessorTest {
      */
     @Test
     public void fieldAccessor() throws Exception {
-        Column[] cols = new Column[] {
-            new Column("pByteCol", INT8, false),
-            new Column("pShortCol", INT16, false),
-            new Column("pIntCol", INT32, false),
-            new Column("pLongCol", INT64, false),
-            new Column("pFloatCol", FLOAT, false),
-            new Column("pDoubleCol", DOUBLE, false),
+        Column[] cols = new Column[]{
+                new Column("primitiveByteCol", INT8, false),
+                new Column("primitiveShortCol", INT16, false),
+                new Column("primitiveIntCol", INT32, false),
+                new Column("primitiveLongCol", INT64, false),
+                new Column("primitiveFloatCol", FLOAT, false),
+                new Column("primitiveDoubleCol", DOUBLE, false),
 
-            new Column("byteCol", INT8, false),
-            new Column("shortCol", INT16, false),
-            new Column("intCol", INT32, false),
-            new Column("longCol", INT64, false),
-            new Column("floatCol", FLOAT, false),
-            new Column("doubleCol", DOUBLE, false),
+                new Column("byteCol", INT8, false),
+                new Column("shortCol", INT16, false),
+                new Column("intCol", INT32, false),
+                new Column("longCol", INT64, false),
+                new Column("floatCol", FLOAT, false),
+                new Column("doubleCol", DOUBLE, false),
 
-            new Column("uuidCol", UUID, false),
-            new Column("bitmaskCol", NativeTypes.bitmaskOf(9), false),
-            new Column("stringCol", STRING, false),
-            new Column("bytesCol", BYTES, false),
-            new Column("numberCol", NativeTypes.numberOf(21), false),
-            new Column("decimalCol", NativeTypes.decimalOf(19, 3), false),
+                new Column("uuidCol", UUID, false),
+                new Column("bitmaskCol", NativeTypes.bitmaskOf(9), false),
+                new Column("stringCol", STRING, false),
+                new Column("bytesCol", BYTES, false),
+                new Column("numberCol", NativeTypes.numberOf(21), false),
+                new Column("decimalCol", NativeTypes.decimalOf(19, 3), false),
         };
 
         final Pair<RowAssembler, Row> mocks = createMocks();
@@ -121,12 +121,12 @@ public class FieldAccessorTest {
             accessor.read(row, restoredObj);
         }
 
-        assertEquals(obj.pByteCol, restoredObj.pByteCol);
-        assertEquals(obj.pShortCol, restoredObj.pShortCol);
-        assertEquals(obj.pIntCol, restoredObj.pIntCol);
-        assertEquals(obj.pLongCol, restoredObj.pLongCol);
-        assertEquals(obj.pFloatCol, restoredObj.pFloatCol);
-        assertEquals(obj.pDoubleCol, restoredObj.pDoubleCol);
+        assertEquals(obj.primitiveByteCol, restoredObj.primitiveByteCol);
+        assertEquals(obj.primitiveShortCol, restoredObj.primitiveShortCol);
+        assertEquals(obj.primitiveIntCol, restoredObj.primitiveIntCol);
+        assertEquals(obj.primitiveLongCol, restoredObj.primitiveLongCol);
+        assertEquals(obj.primitiveFloatCol, restoredObj.primitiveFloatCol);
+        assertEquals(obj.primitiveDoubleCol, restoredObj.primitiveDoubleCol);
 
         assertEquals(obj.byteCol, restoredObj.byteCol);
         assertEquals(obj.shortCol, restoredObj.shortCol);
@@ -148,12 +148,12 @@ public class FieldAccessorTest {
      */
     @Test
     public void nullableFieldsAccessor() throws Exception {
-        Column[] cols = new Column[] {
-            new Column("intCol", INT32, true),
-            new Column("longCol", INT64, true),
+        Column[] cols = new Column[]{
+                new Column("intCol", INT32, true),
+                new Column("longCol", INT64, true),
 
-            new Column("stringCol", STRING, true),
-            new Column("bytesCol", BYTES, true),
+                new Column("stringCol", STRING, true),
+                new Column("bytesCol", BYTES, true),
         };
 
         final Pair<RowAssembler, Row> mocks = createMocks();
@@ -192,9 +192,9 @@ public class FieldAccessorTest {
     @Test
     public void identityAccessor() throws Exception {
         final FieldAccessor accessor = FieldAccessor.createIdentityAccessor(
-            new Column("col0", STRING, true),
-            0,
-            BinaryMode.STRING);
+                new Column("col0", STRING, true),
+                0,
+                BinaryMode.STRING);
 
         assertEquals("Some string", accessor.value("Some string"));
 
@@ -210,23 +210,23 @@ public class FieldAccessorTest {
     @Test
     public void wrongIdentityAccessor() {
         final FieldAccessor accessor = FieldAccessor.createIdentityAccessor(
-            new Column("col0", STRING, true),
-            42,
-            BinaryMode.UUID);
+                new Column("col0", STRING, true),
+                42,
+                BinaryMode.UUID);
 
         assertEquals("Some string", accessor.value("Some string"));
 
         final Pair<RowAssembler, Row> mocks = createMocks();
 
         assertThrows(
-            SerializationException.class,
-            () -> accessor.write(mocks.getFirst(), "Other string"),
-            "Failed to write field [id=42]"
+                SerializationException.class,
+                () -> accessor.write(mocks.getFirst(), "Other string"),
+                "Failed to write field [id=42]"
         );
     }
 
     /**
-     * Creates mock pair for {@link Row} and {@link RowAssembler ).
+     * Creates mock pair for {@link Row} and {@link RowAssembler}.
      *
      * @return Pair of mocks.
      */
@@ -237,18 +237,21 @@ public class FieldAccessorTest {
         final Row mockedRow = Mockito.mock(Row.class);
 
         final Answer<Void> asmAnswer = new Answer<>() {
-            @Override public Void answer(InvocationOnMock invocation) {
-                if ("appendNull".equals(invocation.getMethod().getName()))
+            @Override
+            public Void answer(InvocationOnMock invocation) {
+                if ("appendNull".equals(invocation.getMethod().getName())) {
                     vals.add(null);
-                else
+                } else {
                     vals.add(invocation.getArguments()[0]);
+                }
 
                 return null;
             }
         };
 
         final Answer<Object> rowAnswer = new Answer<>() {
-            @Override public Object answer(InvocationOnMock invocation) {
+            @Override
+            public Object answer(InvocationOnMock invocation) {
                 final int idx = invocation.getArgument(0, Integer.class);
 
                 return vals.get(idx);
@@ -304,15 +307,15 @@ public class FieldAccessorTest {
         public static TestObject randomObject(Random rnd) {
             final TestObject obj = new TestObject();
 
-            obj.pByteCol = (byte)rnd.nextInt(255);
-            obj.pShortCol = (short)rnd.nextInt(65535);
-            obj.pIntCol = rnd.nextInt();
-            obj.pLongCol = rnd.nextLong();
-            obj.pFloatCol = rnd.nextFloat();
-            obj.pDoubleCol = rnd.nextDouble();
+            obj.primitiveByteCol = (byte) rnd.nextInt(255);
+            obj.primitiveShortCol = (short) rnd.nextInt(65535);
+            obj.primitiveIntCol = rnd.nextInt();
+            obj.primitiveLongCol = rnd.nextLong();
+            obj.primitiveFloatCol = rnd.nextFloat();
+            obj.primitiveDoubleCol = rnd.nextDouble();
 
-            obj.byteCol = (byte)rnd.nextInt(255);
-            obj.shortCol = (short)rnd.nextInt(65535);
+            obj.byteCol = (byte) rnd.nextInt(255);
+            obj.shortCol = (short) rnd.nextInt(65535);
             obj.intCol = rnd.nextInt();
             obj.longCol = rnd.nextLong();
             obj.floatCol = rnd.nextFloat();
@@ -322,24 +325,24 @@ public class FieldAccessorTest {
             obj.bitmaskCol = IgniteTestUtils.randomBitSet(rnd, rnd.nextInt(42));
             obj.stringCol = IgniteTestUtils.randomString(rnd, rnd.nextInt(255));
             obj.bytesCol = IgniteTestUtils.randomBytes(rnd, rnd.nextInt(255));
-            obj.numberCol = (BigInteger)TestUtils.generateRandomValue(rnd, NativeTypes.numberOf(12));
+            obj.numberCol = (BigInteger) TestUtils.generateRandomValue(rnd, NativeTypes.numberOf(12));
             obj.decimalCol = (BigDecimal) TestUtils.generateRandomValue(rnd, NativeTypes.decimalOf(19, 3));
 
             return obj;
         }
 
         // Primitive typed
-        private byte pByteCol;
+        private byte primitiveByteCol;
 
-        private short pShortCol;
+        private short primitiveShortCol;
 
-        private int pIntCol;
+        private int primitiveIntCol;
 
-        private long pLongCol;
+        private long primitiveLongCol;
 
-        private float pFloatCol;
+        private float primitiveFloatCol;
 
-        private double pDoubleCol;
+        private double primitiveDoubleCol;
 
         // Reference typed
         private Byte byteCol;
@@ -367,34 +370,38 @@ public class FieldAccessorTest {
         private BigDecimal decimalCol;
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
-            TestObject object = (TestObject)o;
-            return pByteCol == object.pByteCol &&
-                pShortCol == object.pShortCol &&
-                pIntCol == object.pIntCol &&
-                pLongCol == object.pLongCol &&
-                Float.compare(object.pFloatCol, pFloatCol) == 0 &&
-                Double.compare(object.pDoubleCol, pDoubleCol) == 0 &&
-                Objects.equals(byteCol, object.byteCol) &&
-                Objects.equals(shortCol, object.shortCol) &&
-                Objects.equals(intCol, object.intCol) &&
-                Objects.equals(longCol, object.longCol) &&
-                Objects.equals(floatCol, object.floatCol) &&
-                Objects.equals(doubleCol, object.doubleCol) &&
-                Objects.equals(uuidCol, object.uuidCol) &&
-                Objects.equals(bitmaskCol, object.bitmaskCol) &&
-                Objects.equals(stringCol, object.stringCol) &&
-                Arrays.equals(bytesCol, object.bytesCol) &&
-                Objects.equals(numberCol, object.numberCol) &&
-                Objects.equals(decimalCol, object.decimalCol);
+            }
+            TestObject object = (TestObject) o;
+            return primitiveByteCol == object.primitiveByteCol
+                    && primitiveShortCol == object.primitiveShortCol
+                    && primitiveIntCol == object.primitiveIntCol
+                    && primitiveLongCol == object.primitiveLongCol
+                    && Float.compare(object.primitiveFloatCol, primitiveFloatCol) == 0
+                    && Double.compare(object.primitiveDoubleCol, primitiveDoubleCol) == 0
+                    && Objects.equals(byteCol, object.byteCol)
+                    && Objects.equals(shortCol, object.shortCol)
+                    && Objects.equals(intCol, object.intCol)
+                    && Objects.equals(longCol, object.longCol)
+                    && Objects.equals(floatCol, object.floatCol)
+                    && Objects.equals(doubleCol, object.doubleCol)
+                    && Objects.equals(uuidCol, object.uuidCol)
+                    && Objects.equals(bitmaskCol, object.bitmaskCol)
+                    && Objects.equals(stringCol, object.stringCol)
+                    && Arrays.equals(bytesCol, object.bytesCol)
+                    && Objects.equals(numberCol, object.numberCol)
+                    && Objects.equals(decimalCol, object.decimalCol);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return 73;
         }
     }
@@ -413,23 +420,27 @@ public class FieldAccessorTest {
         String stringCol;
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            TestSimpleObject object = (TestSimpleObject)o;
+            TestSimpleObject object = (TestSimpleObject) o;
 
-            return Objects.equals(longCol, object.longCol) &&
-                Objects.equals(intCol, object.intCol) &&
-                Arrays.equals(bytesCol, object.bytesCol) &&
-                Objects.equals(stringCol, object.stringCol);
+            return Objects.equals(longCol, object.longCol)
+                    && Objects.equals(intCol, object.intCol)
+                    && Arrays.equals(bytesCol, object.bytesCol)
+                    && Objects.equals(stringCol, object.stringCol);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return 42;
         }
     }

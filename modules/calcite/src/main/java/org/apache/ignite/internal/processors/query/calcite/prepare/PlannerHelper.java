@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -47,9 +46,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 import org.apache.ignite.lang.IgniteLogger;
 
-/** */
+/**
+ *
+ */
 public class PlannerHelper {
-    /** */
+    /**
+     *
+     */
     private static final IgniteLogger LOG = IgniteLogger.forClass(PlannerHelper.class);
 
     /**
@@ -70,17 +73,18 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            if (HintUtils.containsDisabledRules(root.hints))
+            if (HintUtils.containsDisabledRules(root.hints)) {
                 planner.setDisabledRules(HintUtils.disabledRules(root.hints));
+            }
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
-                .simplify();
+                    .replace(IgniteConvention.INSTANCE)
+                    .replace(IgniteDistributions.single())
+                    .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
+                    .simplify();
 
             IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
@@ -88,44 +92,42 @@ public class PlannerHelper {
                 final List<RexNode> projects = new ArrayList<>();
                 final RexBuilder rexBuilder = igniteRel.getCluster().getRexBuilder();
 
-                for (int field : Pair.left(root.fields))
+                for (int field : Pair.left(root.fields)) {
                     projects.add(rexBuilder.makeInputRef(igniteRel, field));
+                }
 
                 igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects, root.validatedRowType);
             }
 
-            if (sqlNode.isA(Set.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
+            if (sqlNode.isA(Set.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE))) {
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
+            }
 
             return igniteRel;
-        }
-        catch (Throwable ex) {
+        } catch (Throwable ex) {
             LOG.error("Unexpected error at query optimizer.", ex);
 
-            if (LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled()) {
                 LOG.error(planner.dump());
+            }
 
             throw ex;
         }
     }
 
     /**
-     * This shuttle analyzes a relational tree and inserts an eager spool node
-     * just under the TableModify node in case latter depends upon a table used
-     * to query the data for modify node to avoid the double processing
-     * of the retrieved rows.
+     * This shuttle analyzes a relational tree and inserts an eager spool node just under the TableModify node in case latter depends upon a
+     * table used to query the data for modify node to avoid the double processing of the retrieved rows.
      * <p/>
      * It considers two cases: <ol>
-     *     <li>
-     *         Modify node produces rows to insert, then a spool is required.
-     *     </li>
-     *     <li>
-     *         Modify node updates rows only, then a spool is required if 1) we
-     *         are scaning an index and 2) any of the indexed column is updated
-     *         by modify node.
-     *     </li>
-     * <ol/>
-     *
+     * <li>
+     * Modify node produces rows to insert, then a spool is required.
+     * </li>
+     * <li>
+     * Modify node updates rows only, then a spool is required if 1) we are scaning an index and 2) any of the indexed column is updated by
+     * modify node.
+     * </li>
+     * </ol>
      */
     private static class FixDependentModifyNodeShuttle extends IgniteRelShuttle {
         /**
@@ -137,22 +139,24 @@ public class PlannerHelper {
         private IgniteTableModify modifyNode;
 
         /** {@inheritDoc} */
-        @Override public IgniteRel visit(IgniteTableModify rel) {
+        @Override
+        public IgniteRel visit(IgniteTableModify rel) {
             assert modifyNode == null;
 
             modifyNode = rel;
 
-            if (rel.isDelete())
+            if (rel.isDelete()) {
                 return rel;
+            }
 
             processNode(rel);
 
             if (spoolNeeded) {
                 IgniteTableSpool spool = new IgniteTableSpool(
-                    rel.getCluster(),
-                    rel.getInput().getTraitSet(),
-                    Spool.Type.EAGER,
-                    rel.getInput()
+                        rel.getCluster(),
+                        rel.getInput().getTraitSet(),
+                        Spool.Type.EAGER,
+                        rel.getInput()
                 );
 
                 rel.replaceInput(0, spool);
@@ -162,22 +166,26 @@ public class PlannerHelper {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteRel visit(IgniteTableScan rel) {
+        @Override
+        public IgniteRel visit(IgniteTableScan rel) {
             return processScan(rel);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteRel visit(IgniteIndexScan rel) {
+        @Override
+        public IgniteRel visit(IgniteIndexScan rel) {
             return processScan(rel);
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteRel processNode(IgniteRel rel) {
+        @Override
+        protected IgniteRel processNode(IgniteRel rel) {
             List<IgniteRel> inputs = Commons.cast(rel.getInputs());
 
             for (int i = 0; i < inputs.size(); i++) {
-                if (spoolNeeded)
+                if (spoolNeeded) {
                     break;
+                }
 
                 visitChild(rel, i, inputs.get(i));
             }
@@ -194,29 +202,31 @@ public class PlannerHelper {
         private IgniteRel processScan(TableScan scan) {
             IgniteTable tbl = modifyNode != null ? modifyNode.getTable().unwrap(IgniteTable.class) : null;
 
-            if (tbl == null || scan.getTable().unwrap(IgniteTable.class) != tbl)
-                return (IgniteRel)scan;
+            if (tbl == null || scan.getTable().unwrap(IgniteTable.class) != tbl) {
+                return (IgniteRel) scan;
+            }
 
             if (modifyNodeInsertsData()) {
                 spoolNeeded = true;
 
-                return (IgniteRel)scan;
+                return (IgniteRel) scan;
             }
 
             // for update-only node the spool needed if any of the updated
             // column is part of the index we are going to scan
-            if (scan instanceof IgniteTableScan)
-                return (IgniteRel)scan;
+            if (scan instanceof IgniteTableScan) {
+                return (IgniteRel) scan;
+            }
 
             Set<Integer> indexedCols = Set.copyOf(
-                tbl.getIndex(((AbstractIndexScan)scan).indexName()).collation().getKeys());
+                    tbl.getIndex(((AbstractIndexScan) scan).indexName()).collation().getKeys());
 
             spoolNeeded = modifyNode.getUpdateColumnList().stream()
-                .map(tbl.descriptor()::columnDescriptor)
-                .map(ColumnDescriptor::fieldIndex)
-                .anyMatch(indexedCols::contains);
+                    .map(tbl.descriptor()::columnDescriptor)
+                    .map(ColumnDescriptor::fieldIndex)
+                    .anyMatch(indexedCols::contains);
 
-            return (IgniteRel)scan;
+            return (IgniteRel) scan;
         }
 
         /**
@@ -224,7 +234,7 @@ public class PlannerHelper {
          */
         private boolean modifyNodeInsertsData() {
             return modifyNode.isInsert(); // MERGE should be analyzed too
-                                          // but currently it is not implemented
+            // but currently it is not implemented
         }
     }
 }

@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * @param <V2> Second element type.
  */
 public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
-    Iterable<Object>, Externalizable, Cloneable {
+        Iterable<Object>, Externalizable, Cloneable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -121,17 +121,22 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V1 getKey() {
+    @Nullable
+    @Override
+    public V1 getKey() {
         return val1;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 getValue() {
+    @Nullable
+    @Override
+    public V2 getValue() {
         return val2;
     }
 
     /** {@inheritDoc} */
-    @Override public V2 setValue(@Nullable V2 val) {
+    @Override
+    public V2 setValue(@Nullable V2 val) {
         V2 old = val2;
 
         set2(val);
@@ -140,64 +145,79 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Object> iterator() {
-        return new Iterator<Object>() {
-            /** */
+    @Override
+    public Iterator<Object> iterator() {
+        return new Iterator<>() {
+            /** Next index. */
             private int nextIdx = 1;
 
-            @Override public boolean hasNext() {
+            @Override
+            public boolean hasNext() {
                 return nextIdx < 3;
             }
 
-            @Nullable @Override public Object next() {
-                if (!hasNext())
+            @Nullable
+            @Override
+            public Object next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
+                }
 
                 Object res = null;
 
-                if (nextIdx == 1)
+                if (nextIdx == 1) {
                     res = get1();
-                else if (nextIdx == 2)
+                } else if (nextIdx == 2) {
                     res = get2();
+                }
 
                 nextIdx++;
 
                 return res;
             }
 
-            @Override public void remove() {
+            @Override
+            public void remove() {
                 throw new UnsupportedOperationException();
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override
+    public int size() {
         return val1 == null && val2 == null ? 0 : 1;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
+    @Override
+    public boolean isEmpty() {
         return size() == 0;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsKey(Object key) {
+    @Override
+    public boolean containsKey(Object key) {
         return eq(val1, key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsValue(Object val) {
+    @Override
+    public boolean containsValue(Object val) {
         return eq(val2, val);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 get(Object key) {
+    @Nullable
+    @Override
+    public V2 get(Object key) {
         return containsKey(key) ? val2 : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 put(V1 key, V2 val) {
+    @Nullable
+    @Override
+    public V2 put(V1 key, V2 val) {
         V2 old = containsKey(key) ? val2 : null;
 
         set(key, val);
@@ -206,7 +226,9 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 remove(Object key) {
+    @Nullable
+    @Override
+    public V2 remove(Object key) {
         if (containsKey(key)) {
             V2 v2 = val2;
 
@@ -220,35 +242,39 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends V1, ? extends V2> m) {
+    @Override
+    public void putAll(Map<? extends V1, ? extends V2> m) {
         assert m != null : "m";
         assert m.size() <= 1 : "m.size() <= 1";
 
-        for (Entry<? extends V1, ? extends V2> e : m.entrySet())
+        for (Entry<? extends V1, ? extends V2> e : m.entrySet()) {
             put(e.getKey(), e.getValue());
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void clear() {
+    @Override
+    public void clear() {
         val1 = null;
         val2 = null;
     }
 
     /** {@inheritDoc} */
-    @Override public Set<V1> keySet() {
+    @Override
+    public Set<V1> keySet() {
         return Collections.singleton(val1);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V2> values() {
+    @Override
+    public Collection<V2> values() {
         return Collections.singleton(val2);
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<V1, V2>> entrySet() {
-        return isEmpty() ?
-            Collections.<Entry<V1,V2>>emptySet() :
-            Collections.<Entry<V1, V2>>singleton(this);
+    @Override
+    public Set<Entry<V1, V2>> entrySet() {
+        return isEmpty() ? Collections.emptySet() : Collections.singleton(this);
     }
 
     /**
@@ -261,41 +287,47 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Override public Object clone() {
+    @Override
+    public Object clone() {
         try {
             return super.clone();
-        }
-        catch (CloneNotSupportedException ignore) {
+        } catch (CloneNotSupportedException ignore) {
             throw new InternalError();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(val1);
         out.writeObject(val2);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        val1 = (V1)in.readObject();
-        val2 = (V2)in.readObject();
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        val1 = (V1) in.readObject();
+        val2 = (V2) in.readObject();
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return val1 == null ? 0 : val1.hashCode() * 31 + (val2 == null ? 0 : val2.hashCode());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (!(o instanceof IgniteBiTuple))
+        if (!(o instanceof IgniteBiTuple)) {
             return false;
+        }
 
-        IgniteBiTuple<?, ?> t = (IgniteBiTuple<?, ?>)o;
+        IgniteBiTuple<?, ?> t = (IgniteBiTuple<?, ?>) o;
 
         // Both nulls or equals.
         return eq(val1, t.val1) && eq(val2, t.val2);
@@ -313,7 +345,8 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "S.toString(IgniteBiTuple.class, this)";
     }
 }

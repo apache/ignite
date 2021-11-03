@@ -18,4 +18,5 @@
 /**
  * Contains entities required by both meta storage client and server implementations.
  */
+
 package org.apache.ignite.internal.metastorage.common;

@@ -45,7 +45,7 @@ public class QueryFetchResult extends Response {
      * Constructor.
      *
      * @param status Status code.
-     * @param err Error message.
+     * @param err    Error message.
      */
     public QueryFetchResult(int status, String err) {
         super(status, err);
@@ -55,7 +55,7 @@ public class QueryFetchResult extends Response {
      * Constructor.
      *
      * @param items Query result rows.
-     * @param last Flag indicating the query has no unfetched results.
+     * @param last  Flag indicating the query has no unfetched results.
      */
     public QueryFetchResult(List<List<Object>> items, boolean last) {
         Objects.requireNonNull(items);
@@ -85,26 +85,31 @@ public class QueryFetchResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         packer.packBoolean(last);
 
         packer.packArrayHeader(items.size());
 
-        for (List<Object> item : items)
+        for (List<Object> item : items) {
             packer.packObjectArray(item.toArray());
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         last = unpacker.unpackBoolean();
 
@@ -112,12 +117,14 @@ public class QueryFetchResult extends Response {
 
         items = new ArrayList<>(size);
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             items.add(Arrays.asList(unpacker.unpackObjectArray()));
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(QueryFetchResult.class, this);
     }
 }

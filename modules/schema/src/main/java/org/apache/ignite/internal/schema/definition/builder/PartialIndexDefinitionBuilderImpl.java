@@ -41,33 +41,37 @@ public class PartialIndexDefinitionBuilderImpl extends SortedIndexDefinitionBuil
     }
 
     /** {@inheritDoc} */
-    @Override public PartialIndexDefinitionBuilderImpl withHints(Map<String, String> hints) {
+    @Override
+    public PartialIndexDefinitionBuilderImpl withHints(Map<String, String> hints) {
         super.withHints(hints);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public PartialIndexDefinition build() {
+    @Override
+    public PartialIndexDefinition build() {
         assert expr != null && !expr.trim().isEmpty();
 
         return new PartialIndexDefinitionImpl(
-            name,
-            cols.values().stream().map(c -> new SortedIndexColumnDefinitionImpl(c.name, c.asc)).collect(Collectors.toList()),
-            expr,
-            unique()
+                name,
+                cols.values().stream().map(c -> new SortedIndexColumnDefinitionImpl(c.name, c.asc)).collect(Collectors.toList()),
+                expr,
+                unique()
         );
     }
 
     /** {@inheritDoc} */
-    @Override public PartialIndexDefinitionBuilder withExpression(String expr) {
+    @Override
+    public PartialIndexDefinitionBuilder withExpression(String expr) {
         this.expr = expr;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public PartialIndexColumnBuilderImpl addIndexColumn(String name) {
+    @Override
+    public PartialIndexColumnBuilderImpl addIndexColumn(String name) {
         return new PartialIndexColumnBuilderImpl(this).withName(name);
     }
 
@@ -85,29 +89,33 @@ public class PartialIndexDefinitionBuilderImpl extends SortedIndexDefinitionBuil
         }
 
         /** {@inheritDoc} */
-        @Override public PartialIndexColumnBuilderImpl desc() {
+        @Override
+        public PartialIndexColumnBuilderImpl desc() {
             super.desc();
 
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public PartialIndexColumnBuilderImpl asc() {
+        @Override
+        public PartialIndexColumnBuilderImpl asc() {
             super.asc();
 
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public PartialIndexColumnBuilderImpl withName(String name) {
+        @Override
+        public PartialIndexColumnBuilderImpl withName(String name) {
             super.withName(name);
 
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public PartialIndexDefinitionBuilderImpl done() {
-            return (PartialIndexDefinitionBuilderImpl)super.done();
+        @Override
+        public PartialIndexDefinitionBuilderImpl done() {
+            return (PartialIndexDefinitionBuilderImpl) super.done();
         }
     }
 }

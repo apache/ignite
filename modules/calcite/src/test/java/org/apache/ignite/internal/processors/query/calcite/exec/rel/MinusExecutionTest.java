@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
@@ -29,52 +28,53 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
  */
 public class MinusExecutionTest extends AbstractSetOpExecutionTest {
     /** {@inheritDoc} */
-    @Override protected AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx,
-        RelDataType rowType, AggregateType type, boolean all, int inputsCnt) {
+    @Override
+    protected AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx,
+            RelDataType rowType, AggregateType type, boolean all, int inputsCnt) {
         return new MinusNode<>(ctx, rowType, type, all, rowFactory());
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkSetOp(boolean single, boolean all) {
+    @Override
+    protected void checkSetOp(boolean single, boolean all) {
         List<Object[]> ds1 = Arrays.asList(
-            row("Igor", 1),
-            row("Roman", 1),
-            row("Igor", 1),
-            row("Roman", 2),
-            row("Igor", 1),
-            row("Igor", 1),
-            row("Igor", 1),
-            row("Igor", 2),
-            row("Alexey", 2)
+                row("Igor", 1),
+                row("Roman", 1),
+                row("Igor", 1),
+                row("Roman", 2),
+                row("Igor", 1),
+                row("Igor", 1),
+                row("Igor", 1),
+                row("Igor", 2),
+                row("Alexey", 2)
         );
 
         List<Object[]> ds2 = Arrays.asList(
-            row("Igor", 1),
-            row("Roman", 1),
-            row("Igor", 1),
-            row("Alexey", 1)
+                row("Igor", 1),
+                row("Roman", 1),
+                row("Igor", 1),
+                row("Alexey", 1)
         );
 
         List<Object[]> ds3 = Arrays.asList(
-            row("Igor", 1),
-            row("Alexey", 1),
-            row("Alexey", 2)
+                row("Igor", 1),
+                row("Alexey", 1),
+                row("Alexey", 2)
         );
 
         List<Object[]> expectedResult;
 
         if (all) {
             expectedResult = Arrays.asList(
-                row("Igor", 1),
-                row("Igor", 1),
-                row("Igor", 2),
-                row("Roman", 2)
+                    row("Igor", 1),
+                    row("Igor", 1),
+                    row("Igor", 2),
+                    row("Roman", 2)
             );
-        }
-        else {
+        } else {
             expectedResult = Arrays.asList(
-                row("Igor", 2),
-                row("Roman", 2)
+                    row("Igor", 2),
+                    row("Roman", 2)
             );
         }
 

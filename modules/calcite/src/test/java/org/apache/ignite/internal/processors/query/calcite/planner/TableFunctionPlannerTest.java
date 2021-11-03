@@ -40,7 +40,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
 
-    /** */
+    /**
+     *
+     */
     @BeforeAll
     public void setup() {
         publicSchema = new IgniteSchema("PUBLIC");
@@ -48,10 +50,10 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         RelDataType type = new RelDataTypeFactory.Builder(f)
-            .add("ID", f.createJavaType(Integer.class))
-            .add("NAME", f.createJavaType(String.class))
-            .add("SALARY", f.createJavaType(Double.class))
-            .build();
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("SALARY", f.createJavaType(Double.class))
+                .build();
 
         createTable(publicSchema, "RANDOM_TBL", type, IgniteDistributions.random());
         createTable(publicSchema, "BROADCAST_TBL", type, IgniteDistributions.broadcast());
@@ -75,10 +77,10 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
         String sql = "SELECT * FROM broadcast_tbl t JOIN TABLE(system_range(1, 1)) r ON (t.id = r.x)";
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteExchange.class)).negate()
-            .and(nodeOrAnyChild(isInstanceOf(Join.class)
-                .and(input(0, nodeOrAnyChild(isTableScan("broadcast_tbl"))))
-                .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
-            )));
+                .and(nodeOrAnyChild(isInstanceOf(Join.class)
+                        .and(input(0, nodeOrAnyChild(isTableScan("broadcast_tbl"))))
+                        .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
+                )));
     }
 
     /**
@@ -89,9 +91,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
         String sql = "SELECT * FROM random_tbl t JOIN TABLE(system_range(1, 1)) r ON (t.id = r.x)";
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(Join.class)
-            .and(input(0, nodeOrAnyChild(isInstanceOf(IgniteExchange.class)
-                .and(nodeOrAnyChild(isTableScan("random_tbl"))))))
-            .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
+                .and(input(0, nodeOrAnyChild(isInstanceOf(IgniteExchange.class)
+                        .and(nodeOrAnyChild(isTableScan("random_tbl"))))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
         ));
     }
 
@@ -103,8 +105,8 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
         String sql = "SELECT t.id, (SELECT x FROM TABLE(system_range(t.id, t.id))) FROM random_tbl t";
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-            .and(input(0, nodeOrAnyChild(isTableScan("random_tbl"))))
-            .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
+                .and(input(0, nodeOrAnyChild(isTableScan("random_tbl"))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
         ));
     }
 }

@@ -48,9 +48,8 @@ public final class Condition {
     }
 
     /**
-     * Represents condition on entry revision. Only one type of condition could be applied to
-     * the one instance of condition. Subsequent invocations of any method which produces condition will throw
-     * {@link IllegalStateException}.
+     * Represents condition on entry revision. Only one type of condition could be applied to the one instance of condition. Subsequent
+     * invocations of any method which produces condition will throw {@link IllegalStateException}.
      */
     public static final class RevisionCondition extends AbstractCondition {
         /** The revision as the condition argument. */
@@ -70,8 +69,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#REV_EQUAL}. This condition tests the given revision on equality with
-         * target entry revision.
+         * Produces the condition of type {@link ConditionType#REV_EQUAL}. This condition tests the given revision on equality with target
+         * entry revision.
          *
          * @param rev The revision.
          * @return The condition of type {@link ConditionType#REV_EQUAL}.
@@ -88,8 +87,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#REV_NOT_EQUAL}. This condition tests the given revision on inequality
-         * with target entry revision.
+         * Produces the condition of type {@link ConditionType#REV_NOT_EQUAL}. This condition tests the given revision on inequality with
+         * target entry revision.
          *
          * @param rev The revision.
          * @return The condition of type {@link ConditionType#REV_NOT_EQUAL}.
@@ -106,8 +105,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#REV_GREATER}. This condition tests that the target entry revision
-         * is greater than given revision.
+         * Produces the condition of type {@link ConditionType#REV_GREATER}. This condition tests that the target entry revision is greater
+         * than given revision.
          *
          * @param rev The revision.
          * @return The condition of type {@link ConditionType#REV_GREATER}.
@@ -124,8 +123,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#REV_GREATER_OR_EQUAL}. This condition tests that the target entry
-         * revision is greater than or equal to given revision.
+         * Produces the condition of type {@link ConditionType#REV_GREATER_OR_EQUAL}. This condition tests that the target entry revision is
+         * greater than or equal to given revision.
          *
          * @param rev The revision.
          * @return The condition of type {@link ConditionType#REV_GREATER_OR_EQUAL}.
@@ -142,8 +141,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#REV_LESS}. This condition tests that target entry revision
-         * is less than the given revision.
+         * Produces the condition of type {@link ConditionType#REV_LESS}. This condition tests that target entry revision is less than the
+         * given revision.
          *
          * @param rev The revision.
          * @return The condition of type {@link ConditionType#REV_LESS}.
@@ -159,8 +158,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#REV_LESS_OR_EQUAL}. This condition tests that target entry revision
-         * is less than or equal to the given revision.
+         * Produces the condition of type {@link ConditionType#REV_LESS_OR_EQUAL}. This condition tests that target entry revision is less
+         * than or equal to the given revision.
          *
          * @param rev The revision.
          * @return The condition of type {@link ConditionType#REV_LESS_OR_EQUAL}.
@@ -178,9 +177,8 @@ public final class Condition {
     }
 
     /**
-     * Represents condition on entry value. Only one type of condition could be applied to
-     * the one instance of condition. Subsequent invocations of any method which produces condition will throw
-     * {@link IllegalStateException}.
+     * Represents condition on entry value. Only one type of condition could be applied to the one instance of condition. Subsequent
+     * invocations of any method which produces condition will throw {@link IllegalStateException}.
      */
     public static final class ValueCondition extends AbstractCondition {
         /** The value as the condition argument. */
@@ -200,8 +198,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#VAL_EQUAL}. This condition tests the given value on equality with
-         * target entry value.
+         * Produces the condition of type {@link ConditionType#VAL_EQUAL}. This condition tests the given value on equality with target
+         * entry value.
          *
          * @param val The value.
          * @return The condition of type {@link ConditionType#VAL_EQUAL}.
@@ -218,8 +216,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#VAL_NOT_EQUAL}. This condition tests the given value on inequality
-         * with target entry value.
+         * Produces the condition of type {@link ConditionType#VAL_NOT_EQUAL}. This condition tests the given value on inequality with
+         * target entry value.
          *
          * @param val The value.
          * @return The condition of type {@link ConditionType#VAL_NOT_EQUAL}.
@@ -237,9 +235,8 @@ public final class Condition {
     }
 
     /**
-     * Represents condition on an entry existence. Only one type of condition could be applied to
-     * the one instance of condition. Subsequent invocations of any method which produces condition will throw
-     * {@link IllegalStateException}.
+     * Represents condition on an entry existence. Only one type of condition could be applied to the one instance of condition. Subsequent
+     * invocations of any method which produces condition will throw {@link IllegalStateException}.
      */
     public static final class ExistenceCondition extends AbstractCondition {
         /**
@@ -252,8 +249,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#KEY_EXISTS}. This condition tests the existence of an entry
-         * identified by the given key.
+         * Produces the condition of type {@link ConditionType#KEY_EXISTS}. This condition tests the existence of an entry identified by the
+         * given key.
          *
          * @return The condition of type {@link ConditionType#KEY_EXISTS}.
          * @throws IllegalStateException In case when the condition is already defined.
@@ -283,9 +280,9 @@ public final class Condition {
     }
 
     /**
-     * Represents condition on an entry's value which checks whether value is tombstone or not. Only one type of
-     * condition could be applied to the one instance of condition. Subsequent invocations of any method which produces
-     * condition will throw {@link IllegalStateException}.
+     * Represents condition on an entry's value which checks whether value is tombstone or not. Only one type of condition could be applied
+     * to the one instance of condition. Subsequent invocations of any method which produces condition will throw {@link
+     * IllegalStateException}.
      */
     public static final class TombstoneCondition extends AbstractCondition {
         /**
@@ -298,8 +295,8 @@ public final class Condition {
         }
 
         /**
-         * Produces the condition of type {@link ConditionType#TOMBSTONE}. This condition tests that an entry's value,
-         * identified by the given key, is tombstone.
+         * Produces the condition of type {@link ConditionType#TOMBSTONE}. This condition tests that an entry's value, identified by the
+         * given key, is tombstone.
          *
          * @return The condition of type {@link ConditionType#TOMBSTONE}.
          * @throws IllegalStateException In case when the condition is already defined.
@@ -319,8 +316,9 @@ public final class Condition {
      * @throws IllegalStateException In case when the condition is already defined.
      */
     private static void validate(Enum<?> type) {
-        if (type != null)
+        if (type != null) {
             throw new IllegalStateException("Condition type " + type.name() + " is already defined.");
+        }
     }
 
     /**
@@ -363,11 +361,13 @@ public final class Condition {
          *
          * @return Key which identifies an entry which condition will be applied to.
          */
-        @Override public byte[] key() {
+        @Override
+        public byte[] key() {
             return key;
         }
 
-        @Override public ConditionType type() {
+        @Override
+        public ConditionType type() {
             return type;
         }
 

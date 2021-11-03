@@ -17,23 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.List;
-
-import org.jetbrains.annotations.NotNull;
-
 import static org.apache.ignite.internal.util.CollectionUtils.first;
+
+import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A node with a single input
  */
-public interface SingleNode<Row> extends Node<Row> {
-    /** */
-    default void register(@NotNull Node<Row> src) {
+public interface SingleNode<RowT> extends Node<RowT> {
+    /**
+     *
+     */
+    default void register(@NotNull Node<RowT> src) {
         register(List.of(src));
     }
 
-    /** */
-    default @NotNull Node<Row> source() {
+    /**
+     *
+     */
+    default @NotNull Node<RowT> source() {
         return first(sources());
     }
 }

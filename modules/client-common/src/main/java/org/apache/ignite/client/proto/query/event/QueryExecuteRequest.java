@@ -51,10 +51,10 @@ public class QueryExecuteRequest implements ClientMessage {
      * Constructor.
      *
      * @param schemaName Cache name.
-     * @param pageSize Fetch size.
-     * @param maxRows Max rows.
-     * @param sqlQry SQL query.
-     * @param args Arguments list.
+     * @param pageSize   Fetch size.
+     * @param maxRows    Max rows.
+     * @param sqlQry     SQL query.
+     * @param args       Arguments list.
      */
     public QueryExecuteRequest(String schemaName, int pageSize, int maxRows, String sqlQry, Object[] args) {
 
@@ -111,7 +111,8 @@ public class QueryExecuteRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packString(schemaName);
         packer.packInt(pageSize);
         packer.packInt(maxRows);
@@ -121,7 +122,8 @@ public class QueryExecuteRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         schemaName = unpacker.unpackString();
         pageSize = unpacker.unpackInt();
         maxRows = unpacker.unpackInt();
@@ -131,7 +133,8 @@ public class QueryExecuteRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(QueryExecuteRequest.class, this);
     }
 }

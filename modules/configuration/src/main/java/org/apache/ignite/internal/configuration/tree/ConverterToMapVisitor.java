@@ -31,8 +31,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * {@link ConfigurationVisitor} implementation that converts a configuration tree to a combination of {@link Map} and
- * {@link List} objects.
+ * {@link ConfigurationVisitor} implementation that converts a configuration tree to a combination of {@link Map} and {@link List} objects.
  */
 public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     /** Include internal configuration nodes (private configuration extensions). */
@@ -51,13 +50,15 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object visitLeafNode(String key, Serializable val) {
+    @Override
+    public Object visitLeafNode(String key, Serializable val) {
         Object valObj = val;
 
-        if (val instanceof Character)
+        if (val instanceof Character) {
             valObj = val.toString();
-        else if (val != null && val.getClass().isArray())
+        } else if (val != null && val.getClass().isArray()) {
             valObj = toListOfObjects(val);
+        }
 
         addToParent(key, valObj);
 
@@ -65,7 +66,8 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object visitInnerNode(String key, InnerNode node) {
+    @Override
+    public Object visitInnerNode(String key, InnerNode node) {
         Map<String, Object> innerMap = new HashMap<>();
 
         deque.push(innerMap);
@@ -80,7 +82,8 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object visitNamedListNode(String key, NamedListNode<?> node) {
+    @Override
+    public Object visitNamedListNode(String key, NamedListNode<?> node) {
         List<Object> list = new ArrayList<>(node.size());
 
         deque.push(list);
@@ -88,7 +91,7 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
         for (String subkey : node.namedListKeys()) {
             node.getInnerNode(subkey).accept(subkey, this);
 
-            ((Map<String, Object>)list.get(list.size() - 1)).put(node.syntheticKeyName(), subkey);
+            ((Map<String, Object>) list.get(list.size() - 1)).put(node.syntheticKeyName(), subkey);
         }
 
         deque.pop();
@@ -107,10 +110,11 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     private void addToParent(String key, Object val) {
         Object parent = deque.peek();
 
-        if (parent instanceof Map)
-            ((Map<String, Object>)parent).put(key, val);
-        else if (parent instanceof List)
-            ((Collection<Object>)parent).add(val);
+        if (parent instanceof Map) {
+            ((Map<String, Object>) parent).put(key, val);
+        } else if (parent instanceof List) {
+            ((Collection<Object>) parent).add(val);
+        }
     }
 
     /**
@@ -122,8 +126,9 @@ public class ConverterToMapVisitor implements ConfigurationVisitor<Object> {
     private List<?> toListOfObjects(Serializable val) {
         Stream<?> stream = IntStream.range(0, Array.getLength(val)).mapToObj(i -> Array.get(val, i));
 
-        if (val.getClass().getComponentType() == char.class)
+        if (val.getClass().getComponentType() == char.class) {
             stream = stream.map(Object::toString);
+        }
 
         return stream.collect(Collectors.toList());
     }

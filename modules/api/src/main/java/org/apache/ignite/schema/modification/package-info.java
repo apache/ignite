@@ -18,4 +18,5 @@
 /**
  * Table schema manipulation API.
  */
+
 package org.apache.ignite.schema.modification;

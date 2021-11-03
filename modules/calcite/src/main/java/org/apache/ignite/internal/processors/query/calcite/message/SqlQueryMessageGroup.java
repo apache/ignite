@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.network.annotations.MessageGroup;
-
 import static org.apache.ignite.internal.processors.query.calcite.message.SqlQueryMessageGroup.GROUP_TYPE;
+
+import org.apache.ignite.network.annotations.MessageGroup;
 
 /**
  * Message types for the sql query processing module.

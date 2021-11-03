@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import static org.apache.ignite.internal.util.IgniteUtils.igniteClassLoader;
+
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -30,32 +31,34 @@ import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ConfigurationBuilder;
 
-import static org.apache.ignite.internal.util.IgniteUtils.igniteClassLoader;
-
 /**
  * See {@link RelMetadataQuery}
  */
 public class RelMetadataQueryEx extends RelMetadataQuery {
     static {
         ConfigurationBuilder cfg = new ConfigurationBuilder()
-            .forPackages("org.apache.ignite.internal.processors.query.calcite.rel")
-            .addClassLoaders(igniteClassLoader())
-            .addScanners(new SubTypesScanner());
+                .forPackages("org.apache.ignite.internal.processors.query.calcite.rel")
+                .addClassLoaders(igniteClassLoader())
+                .addScanners(new SubTypesScanner());
 
         List<Class<? extends RelNode>> types = new Reflections(cfg)
-            .getSubTypesOf(IgniteRel.class).stream()
-            .filter(type -> !type.isInterface())
-            .filter(type -> !Modifier.isAbstract(type.getModifiers()))
-            .collect(Collectors.toList());
+                .getSubTypesOf(IgniteRel.class).stream()
+                .filter(type -> !type.isInterface())
+                .filter(type -> !Modifier.isAbstract(type.getModifiers()))
+                .collect(Collectors.toList());
 
         JaninoRelMetadataProvider.DEFAULT.register(types);
     }
 
-    /** */
+    /**
+     *
+     */
     private static final IgniteMetadata.FragmentMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
-        initialHandler(IgniteMetadata.FragmentMappingMetadata.Handler.class);
+            initialHandler(IgniteMetadata.FragmentMappingMetadata.Handler.class);
 
-    /** */
+    /**
+     *
+     */
     private IgniteMetadata.FragmentMappingMetadata.Handler sourceDistributionHandler;
 
     /**
@@ -76,13 +79,14 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(metadataProvider));
         try {
             return new RelMetadataQueryEx();
-        }
-        finally {
+        } finally {
             THREAD_PROVIDERS.remove();
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private RelMetadataQueryEx() {
         sourceDistributionHandler = SOURCE_DISTRIBUTION_INITIAL_HANDLER;
     }
@@ -94,7 +98,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
      * @return Fragment meta information.
      */
     public FragmentMapping fragmentMapping(RelNode rel) {
-        for (;;) {
+        for (; ; ) {
             try {
                 return sourceDistributionHandler.fragmentMapping(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {

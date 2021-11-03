@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.configuration.processor;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,26 +15,25 @@ package org.apache.ignite.internal.configuration.processor;/*
  * limitations under the License.
  */
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.internal.configuration.processor.Utils;
-import org.junit.jupiter.api.Test;
+package org.apache.ignite.internal.configuration.processor;
 
 import static org.apache.ignite.internal.configuration.processor.Utils.joinSimpleName;
 import static org.apache.ignite.internal.configuration.processor.Utils.simpleName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.apache.ignite.configuration.annotation.Config;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.junit.jupiter.api.Test;
+
 /**
  * Class for testing the {@link Utils}.
  */
 public class UtilsTest {
-    /** */
     @Test
     void testSimpleName() {
         assertEquals("@Config", simpleName(Config.class));
     }
-
-    /** */
+    
     @Test
     void testJoinSimpleName() {
         assertEquals("@Config", joinSimpleName(" and ", Config.class));

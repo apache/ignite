@@ -21,8 +21,8 @@ import java.io.File;
 import java.nio.file.Path;
 
 /**
- * The main resolver of Ignite paths for the current installation (like bin, work and etc. dirs).
- * Current Ignite distributive has the following dirs structure:
+ * The main resolver of Ignite paths for the current installation (like bin, work and etc. dirs). Current Ignite distributive has the
+ * following dirs structure:
  * <ul>
  *      <li>bin
  *          <ul>
@@ -53,8 +53,7 @@ import java.nio.file.Path;
  */
 public class IgnitePaths {
     /**
-     * Path to Ignite bin directory.
-     * Bin directory contains jar artifacts for Ignite server and CLI modules.
+     * Path to Ignite bin directory. Bin directory contains jar artifacts for Ignite server and CLI modules.
      */
     public final Path binDir;
 
@@ -68,19 +67,18 @@ public class IgnitePaths {
     public final Path logDir;
 
     /**
-     * Ignite CLI version.
-     * Also, the same version will be used for addressing any binaries inside bin dir
+     * Ignite CLI version. Also, the same version will be used for addressing any binaries inside bin dir
      */
     private final String ver;
 
     /**
      * Creates resolved ignite paths instance from Ignite CLI version and base dirs paths.
      *
-     * @param binDir Bin directory.
+     * @param binDir  Bin directory.
      * @param workDir Work directory.
-     * @param cfgDir Config directory.
-     * @param logDir Log directory.
-     * @param ver Ignite CLI version.
+     * @param cfgDir  Config directory.
+     * @param logDir  Log directory.
+     * @param ver     Ignite CLI version.
      */
     public IgnitePaths(Path binDir, Path workDir, Path cfgDir, Path logDir, String ver) {
         this.binDir = binDir;
@@ -143,24 +141,25 @@ public class IgnitePaths {
      * Init or recovers Ignite distributive directories structure.
      */
     public void initOrRecover() {
-        initDirIfNeeded(workDir,"Can't create working directory: " + workDir);
-        initDirIfNeeded(binDir,"Can't create bin directory: " + binDir);
-        initDirIfNeeded(libsDir(),"Can't create a directory for ignite modules: " + libsDir());
-        initDirIfNeeded(cliLibsDir(),"Can't create a directory for cli modules: " + cliLibsDir());
-        initDirIfNeeded(cfgDir,"Can't create a directory for server configs: " + cfgDir);
-        initDirIfNeeded(logDir,"Can't create a directory for server logs: " + logDir);
+        initDirIfNeeded(workDir, "Can't create working directory: " + workDir);
+        initDirIfNeeded(binDir, "Can't create bin directory: " + binDir);
+        initDirIfNeeded(libsDir(), "Can't create a directory for ignite modules: " + libsDir());
+        initDirIfNeeded(cliLibsDir(), "Can't create a directory for cli modules: " + cliLibsDir());
+        initDirIfNeeded(cfgDir, "Can't create a directory for server configs: " + cfgDir);
+        initDirIfNeeded(logDir, "Can't create a directory for server logs: " + logDir);
     }
 
     /**
      * Create directory if not exists.
      *
-     * @param dir Directory
+     * @param dir              Directory
      * @param exceptionMessage Exception message if directory wasn't created
      */
     private void initDirIfNeeded(Path dir, String exceptionMessage) {
         File dirFile = dir.toFile();
-        if (!(dirFile.exists() || dirFile.mkdirs()))
-            throw new IgniteCLIException(exceptionMessage);
+        if (!(dirFile.exists() || dirFile.mkdirs())) {
+            throw new IgniteCliException(exceptionMessage);
+        }
     }
 
     /**
@@ -169,11 +168,11 @@ public class IgnitePaths {
      * @return true if check passes, false otherwise.
      */
     public boolean validateDirs() {
-        return workDir.toFile().exists() &&
-                binDir.toFile().exists() &&
-                libsDir().toFile().exists() &&
-                cliLibsDir().toFile().exists() &&
-                cfgDir.toFile().exists() &&
-                logDir.toFile().exists();
+        return workDir.toFile().exists()
+                && binDir.toFile().exists()
+                && libsDir().toFile().exists()
+                && cliLibsDir().toFile().exists()
+                && cfgDir.toFile().exists()
+                && logDir.toFile().exists();
     }
 }

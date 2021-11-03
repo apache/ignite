@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.ignite.internal.processors.query.calcite.ResultFieldMetadata;
 import org.apache.ignite.internal.schema.NativeType;
 
@@ -28,25 +27,25 @@ import org.apache.ignite.internal.schema.NativeType;
 public class ResultFieldMetadataImpl implements ResultFieldMetadata {
     /** Name of the result's field. */
     private final String name;
-
+    
     /** Type of the result's field. */
     private final NativeType type;
-
+    
     /** Order of the result's field. */
     private final int order;
-
+    
     /** Nullable flag of the result's field. */
     private final boolean nullable;
-
+    
     /** Origin of the result's field. */
     private final List<String> origin;
-
+    
     public ResultFieldMetadataImpl(
-        String name,
-        NativeType type,
-        int order,
-        boolean nullable,
-        List<String> origin
+            String name,
+            NativeType type,
+            int order,
+            boolean nullable,
+            List<String> origin
     ) {
         this.name = name;
         this.type = type;
@@ -54,29 +53,34 @@ public class ResultFieldMetadataImpl implements ResultFieldMetadata {
         this.nullable = nullable;
         this.origin = origin;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return name;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public int order() {
+    @Override
+    public int order() {
         return order;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public NativeType type() {
+    @Override
+    public NativeType type() {
         return type;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public boolean isNullable() {
+    @Override
+    public boolean isNullable() {
         return nullable;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public List<String> origin() {
+    @Override
+    public List<String> origin() {
         return origin;
     }
 }

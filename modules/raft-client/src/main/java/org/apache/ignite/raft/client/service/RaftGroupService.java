@@ -28,20 +28,20 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * A service providing operations on a replication group.
- * <p>
- * Most of operations require a known group leader. The group leader can be refreshed at any time by calling
- * {@link #refreshLeader()} method, otherwise it will happen automatically on a first call.
- * <p>
- * If a leader has been changed while the operation in progress, the operation will be transparently retried until
- * timeout is reached. The current leader will be refreshed automatically (maybe several times) in the process.
- * <p>
- * Each asynchronous method (returning a future) uses a default timeout to finish, see {@link #timeout()}.
- * If a result is not available within the timeout, the future will be completed with a {@link TimeoutException}
- * <p>
- * If an error is occured during operation execution, the future will be completed with the corresponding
- * IgniteException having an error code and a related message.
- * <p>
- * All async operations provided by the service are not cancellable.
+ *
+ * <p>Most of operations require a known group leader. The group leader can be refreshed at any time by calling {@link #refreshLeader()}
+ * method, otherwise it will happen automatically on a first call.
+ *
+ * <p>If a leader has been changed while the operation in progress, the operation will be transparently retried until timeout is reached.
+ * The current leader will be refreshed automatically (maybe several times) in the process.
+ *
+ * <p>Each asynchronous method (returning a future) uses a default timeout to finish, see {@link #timeout()}. If a result is not available
+ * within the timeout, the future will be completed with a {@link TimeoutException}
+ *
+ * <p>If an error is occured during operation execution, the future will be completed with the corresponding IgniteException having an
+ * error code and a related message.
+ *
+ * <p>All async operations provided by the service are not cancellable.
  */
 public interface RaftGroupService {
     /**
@@ -67,24 +67,23 @@ public interface RaftGroupService {
     @Nullable Peer leader();
 
     /**
-     * @return A list of voting peers or {@code null} if it has not been yet initialized. The order is corresponding
-     * to the time of joining to the replication group.
+     * @return A list of voting peers or {@code null} if it has not been yet initialized. The order is corresponding to the time of joining
+     *      to the replication group.
      */
     @Nullable List<Peer> peers();
 
     /**
-     * @return A list of leaners or {@code null} if it has not been yet initialized. The order is corresponding
-     * to the time of joining to the replication group.
+     * @return A list of leaners or {@code null} if it has not been yet initialized. The order is corresponding to the time of joining to
+     *      the replication group.
      */
     @Nullable List<Peer> learners();
 
     /**
      * Refreshes a replication group leader.
-     * <p>
-     * After the future completion the method {@link #leader()}
-     * can be used to retrieve a current group leader.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion the method {@link #leader()} can be used to retrieve a current group leader.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @return A future.
      */
@@ -92,11 +91,11 @@ public interface RaftGroupService {
 
     /**
      * Refreshes replication group members.
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param onlyAlive {@code True} to exclude dead nodes.
      * @return A future.
@@ -105,11 +104,11 @@ public interface RaftGroupService {
 
     /**
      * Adds a voting peer to the replication group.
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param peer Peer
      * @return A future.
@@ -118,11 +117,11 @@ public interface RaftGroupService {
 
     /**
      * Removes peer from the replication group.
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param peer Peer.
      * @return A future.
@@ -131,11 +130,11 @@ public interface RaftGroupService {
 
     /**
      * Changes peers of the replication group.
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param peers Peers.
      * @return A future.
@@ -144,11 +143,11 @@ public interface RaftGroupService {
 
     /**
      * Adds learners (non-voting members).
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param learners List of learners.
      * @return A future.
@@ -157,11 +156,11 @@ public interface RaftGroupService {
 
     /**
      * Removes learners.
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param learners List of learners.
      * @return A future.
@@ -170,11 +169,11 @@ public interface RaftGroupService {
 
     /**
      * Set learners of the raft group to needed list of learners.
-     * <p>
-     * After the future completion methods like {@link #peers()} and {@link #learners()}
-     * can be used to retrieve current members of a group.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>After the future completion methods like {@link #peers()} and {@link #learners()} can be used to retrieve current members of a
+     * group.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param learners List of learners.
      * @return A future.
@@ -191,8 +190,8 @@ public interface RaftGroupService {
 
     /**
      * Transfers leadership to other peer.
-     * <p>
-     * This operation is executed on a group leader.
+     *
+     * <p>This operation is executed on a group leader.
      *
      * @param newLeader New leader.
      * @return A future.
@@ -201,8 +200,8 @@ public interface RaftGroupService {
 
     /**
      * Runs a command on a replication group leader.
-     * <p>
-     * Read commands always see up to date data.
+     *
+     * <p>Read commands always see up to date data.
      *
      * @param cmd The command.
      * @param <R> Execution result type.
@@ -212,12 +211,12 @@ public interface RaftGroupService {
 
     /**
      * Runs a read command on a given peer.
-     * <p>
-     * Read commands can see stale data (in the past).
+     *
+     * <p>Read commands can see stale data (in the past).
      *
      * @param peer Peer id.
-     * @param cmd The command.
-     * @param <R> Execution result type.
+     * @param cmd  The command.
+     * @param <R>  Execution result type.
      * @return A future with the execution result.
      */
     <R> CompletableFuture<R> run(Peer peer, ReadCommand cmd);

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.configuration.notifications;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -25,13 +32,6 @@ import org.apache.ignite.configuration.notifications.ConfigurationListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.notifications.ConfigurationNotificationEvent;
 import org.jetbrains.annotations.NotNull;
-
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.CompletableFuture.failedFuture;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Utility class for testing configuration listeners.
@@ -59,8 +59,7 @@ class ConfigurationListenerTestUtils {
         return ctx -> {
             try {
                 consumer.accept(ctx);
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 return failedFuture(t);
             }
 
@@ -71,41 +70,43 @@ class ConfigurationListenerTestUtils {
     /**
      * Helper method for testing listeners.
      *
-     * @param changeFun Configuration change function.
-     * @param events Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
-     * @param expContains Listeners that are expected are contained in the {@code events}.
+     * @param changeFun      Configuration change function.
+     * @param events         Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
+     * @param expContains    Listeners that are expected are contained in the {@code events}.
      * @param expNotContains Listeners that are expected are not contained in the {@code events}.
      * @throws Exception If failed.
      */
     static void checkContainsListeners(
-        Supplier<CompletableFuture<Void>> changeFun,
-        List<String> events,
-        List<String> expContains,
-        List<String> expNotContains
+            Supplier<CompletableFuture<Void>> changeFun,
+            List<String> events,
+            List<String> expContains,
+            List<String> expNotContains
     ) throws Exception {
         events.clear();
 
         changeFun.get().get(1, SECONDS);
 
-        for (String exp : expContains)
+        for (String exp : expContains) {
             assertTrue(events.contains(exp), () -> exp + " not contains in " + events);
+        }
 
-        for (String exp : expNotContains)
+        for (String exp : expNotContains) {
             assertFalse(events.contains(exp), () -> exp + " contains in " + events);
+        }
     }
 
     /**
      * Helper method for testing listeners.
      *
      * @param changeFun Configuration change function.
-     * @param exp Expected list of executing listeners.
-     * @param act Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
+     * @param exp       Expected list of executing listeners.
+     * @param act       Reference to the list of executing listeners that is filled after the {@code changeFun} is executed.
      * @throws Exception If failed.
      */
     static void checkEqualsListeners(
-        Supplier<CompletableFuture<Void>> changeFun,
-        List<String> exp,
-        List<String> act
+            Supplier<CompletableFuture<Void>> changeFun,
+            List<String> exp,
+            List<String> act
     ) throws Exception {
         act.clear();
 
@@ -119,15 +120,15 @@ class ConfigurationListenerTestUtils {
      * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnDelete(
-        Consumer<ConfigurationNotificationEvent<T>> consumer
+            Consumer<ConfigurationNotificationEvent<T>> consumer
     ) {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
-            @Override public @NotNull CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<T> ctx) {
+            @Override
+            public @NotNull CompletableFuture<?> onDelete(@NotNull ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     return failedFuture(t);
                 }
 
@@ -141,19 +142,19 @@ class ConfigurationListenerTestUtils {
      * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnRename(
-        Consumer<ConfigurationNotificationEvent<T>> consumer
+            Consumer<ConfigurationNotificationEvent<T>> consumer
     ) {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
-            @Override public @NotNull CompletableFuture<?> onRename(
-                @NotNull String oldName,
-                @NotNull String newName,
-                @NotNull ConfigurationNotificationEvent<T> ctx
+            @Override
+            public @NotNull CompletableFuture<?> onRename(
+                    @NotNull String oldName,
+                    @NotNull String newName,
+                    @NotNull ConfigurationNotificationEvent<T> ctx
             ) {
                 try {
                     consumer.accept(ctx);
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     return failedFuture(t);
                 }
 
@@ -167,15 +168,15 @@ class ConfigurationListenerTestUtils {
      * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnCreate(
-        Consumer<ConfigurationNotificationEvent<T>> consumer
+            Consumer<ConfigurationNotificationEvent<T>> consumer
     ) {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
-            @Override public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<T> ctx) {
+            @Override
+            public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     return failedFuture(t);
                 }
 
@@ -189,15 +190,15 @@ class ConfigurationListenerTestUtils {
      * @return Named config value change listener.
      */
     static <T> ConfigurationNamedListListener<T> configNamedListenerOnUpdate(
-        Consumer<ConfigurationNotificationEvent<T>> consumer
+            Consumer<ConfigurationNotificationEvent<T>> consumer
     ) {
         return new ConfigurationNamedListListener<>() {
             /** {@inheritDoc} */
-            @Override public @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<T> ctx) {
+            @Override
+            public @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<T> ctx) {
                 try {
                     consumer.accept(ctx);
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     return failedFuture(t);
                 }
 

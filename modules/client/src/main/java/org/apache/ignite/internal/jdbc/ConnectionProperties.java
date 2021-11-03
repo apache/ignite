@@ -122,10 +122,10 @@ public interface ConnectionProperties {
     /**
      * Note: zero value means there is no limits.
      *
-     * @param ReconnectThrottlingRetries Reconnect throttling retries.
+     * @param reconnectThrottlingRetries Reconnect throttling retries.
      * @throws SQLException On error.
      */
-    void setReconnectThrottlingRetries(Integer ReconnectThrottlingRetries) throws SQLException;
+    void setReconnectThrottlingRetries(Integer reconnectThrottlingRetries) throws SQLException;
 
     /**
      * Note: zero value means there is no limits.

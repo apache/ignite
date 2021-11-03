@@ -31,25 +31,26 @@ import org.jetbrains.annotations.Nullable;
 abstract class AbstractTableView {
     /** Internal table. */
     protected final InternalTable tbl;
-
+    
     /** Schema registry. */
     protected final SchemaRegistry schemaReg;
-
+    
     /** The transaction */
     protected final @Nullable Transaction tx;
-
+    
     /**
      * Constructor
-     * @param tbl Internal table.
+     *
+     * @param tbl       Internal table.
      * @param schemaReg Schema registry.
-     * @param tx The transaction.
+     * @param tx        The transaction.
      */
     protected AbstractTableView(InternalTable tbl, SchemaRegistry schemaReg, @Nullable Transaction tx) {
         this.tbl = tbl;
         this.schemaReg = schemaReg;
         this.tx = tx;
     }
-
+    
     /**
      * Waits for operation completion.
      *
@@ -60,27 +61,24 @@ abstract class AbstractTableView {
     protected <T> T sync(CompletableFuture<T> fut) {
         try {
             return fut.get();
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Restore interrupt flag.
-
+            
             throw convertException(e);
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             throw convertException(e.getCause());
-        }
-        catch (IgniteInternalException e) {
+        } catch (IgniteInternalException e) {
             throw convertException(e);
         }
     }
-
+    
     /**
      * @return Current transaction.
      */
     public @Nullable Transaction transaction() {
         return tx;
     }
-
+    
     /**
      * Converts an internal exception to a public one.
      *

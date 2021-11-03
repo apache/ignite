@@ -20,8 +20,7 @@ package org.apache.ignite.internal.metastorage.watch;
 import org.apache.ignite.internal.metastorage.client.WatchListener;
 
 /**
- * Watch implementation with associated revision.
- * Instance of this watch produced by {@link WatchAggregator}.
+ * Watch implementation with associated revision. Instance of this watch produced by {@link WatchAggregator}.
  */
 public class AggregatedWatch {
     /** Watch key criterion. */
@@ -37,8 +36,8 @@ public class AggregatedWatch {
      * Creates the instance of aggregated watch.
      *
      * @param keyCriterion Aggregated key criterion.
-     * @param revision Aggregated revision.
-     * @param lsnr Aggregated listener.
+     * @param revision     Aggregated revision.
+     * @param lsnr         Aggregated listener.
      */
     public AggregatedWatch(KeyCriterion keyCriterion, long revision, WatchListener lsnr) {
         this.keyCriterion = keyCriterion;

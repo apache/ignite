@@ -27,14 +27,13 @@ public interface WatchListener {
      * The method will be called on each meta storage update.
      *
      * @param evt A single event or a batch. The batch always contains updates for specific revision.
-     * @return {@code True} if listener must continue event handling. If returns {@code false} then the listener and
-     * corresponding watch will be unregistered.
+     * @return {@code True} if listener must continue event handling. If returns {@code false} then the listener and corresponding watch
+     *      will be unregistered.
      */
     boolean onUpdate(@NotNull WatchEvent evt);
 
     /**
-     * The method will be called in case of an error occurred. The listener and corresponding watch will be
-     * unregistered.
+     * The method will be called in case of an error occurred. The listener and corresponding watch will be unregistered.
      *
      * @param e Exception.
      */

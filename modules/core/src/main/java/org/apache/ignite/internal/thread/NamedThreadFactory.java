@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.thread;
 
 import java.util.concurrent.ThreadFactory;
@@ -40,10 +41,10 @@ public class NamedThreadFactory implements ThreadFactory {
     private final boolean daemon;
 
     /** Exception handler. */
-    private final Thread.UncaughtExceptionHandler eHnd;
+    private final Thread.UncaughtExceptionHandler exHnd;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param prefix Thread name prefix.
      */
@@ -52,7 +53,7 @@ public class NamedThreadFactory implements ThreadFactory {
     }
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param prefix Thread name prefix.
      * @param daemon Daemon flag.
@@ -62,25 +63,26 @@ public class NamedThreadFactory implements ThreadFactory {
     }
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param prefix Thread name prefix.
      * @param daemon Daemon flag.
-     * @param eHnd Uncaught exception handler.
+     * @param exHnd   Uncaught exception handler.
      */
-    public NamedThreadFactory(String prefix, boolean daemon, Thread.UncaughtExceptionHandler eHnd) {
+    public NamedThreadFactory(String prefix, boolean daemon, Thread.UncaughtExceptionHandler exHnd) {
         super();
         this.prefix = prefix;
         this.daemon = daemon;
-        this.eHnd = eHnd != null ? eHnd : DFLT_LOG_UNCAUGHT_EX_HANDLER;
+        this.exHnd = exHnd != null ? exHnd : DFLT_LOG_UNCAUGHT_EX_HANDLER;
     }
 
     /** {@inheritDoc} */
-    @Override public Thread newThread(Runnable r) {
+    @Override
+    public Thread newThread(Runnable r) {
         Thread t = new Thread(r);
 
         t.setDaemon(this.daemon);
-        t.setUncaughtExceptionHandler(eHnd);
+        t.setUncaughtExceptionHandler(exHnd);
         t.setName(this.prefix + counter.getAndIncrement());
 
         return t;
@@ -94,12 +96,12 @@ public class NamedThreadFactory implements ThreadFactory {
     }
 
     /**
-     * Print uncaught exceptions to log.
-     * Default handler of uncaught exceptions for thread pools.
+     * Print uncaught exceptions to log. Default handler of uncaught exceptions for thread pools.
      */
     private static final class LogUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
         /** {@inheritDoc} */
-        @Override public void uncaughtException(Thread t, Throwable e) {
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
             LOG.error("Uncaught exception in thread {}", e, t);
         }
     }

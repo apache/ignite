@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.TopologyService;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
  *
  */
 public class MappingServiceImpl implements MappingService {
-    /** */
+    /**
+     *
+     */
     private final TopologyService topSrvc;
 
     public MappingServiceImpl(TopologyService topSrvc) {
@@ -43,17 +44,21 @@ public class MappingServiceImpl implements MappingService {
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> executionNodes(long topVer, boolean single, @Nullable Predicate<ClusterNode> nodeFilter) {
+    @Override
+    public List<String> executionNodes(long topVer, boolean single, @Nullable Predicate<ClusterNode> nodeFilter) {
         List<ClusterNode> nodes = new ArrayList<>(topSrvc.allMembers());
 
-        if (nodeFilter != null)
+        if (nodeFilter != null) {
             nodes = nodes.stream().filter(nodeFilter).collect(Collectors.toList());
+        }
 
-        if (single && nodes.size() > 1)
+        if (single && nodes.size() > 1) {
             nodes = singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
+        }
 
-        if (nullOrEmpty(nodes))
+        if (nullOrEmpty(nodes)) {
             throw new IllegalStateException("failed to map query to execution nodes. Nodes list is empty.");
+        }
 
         return Commons.transform(nodes, ClusterNode::id);
     }

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.client;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,9 +31,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
 import org.apache.ignite.client.IgniteClientAuthenticationException;
 import org.apache.ignite.client.IgniteClientAuthorizationException;
 import org.apache.ignite.client.IgniteClientConnectionException;
@@ -84,7 +84,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /**
      * Constructor.
      *
-     * @param cfg Config.
+     * @param cfg     Config.
      * @param connMgr Connection multiplexer.
      */
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) {
@@ -100,18 +100,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         close(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onMessage(ByteBuf buf) {
-        processNextMessage(buf);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDisconnected(@Nullable Exception e) {
-        close(e);
     }
 
     /**
@@ -121,13 +112,27 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         if (closed.compareAndSet(false, true)) {
             sock.close();
 
-            for (ClientRequestFuture pendingReq : pendingReqs.values())
+            for (ClientRequestFuture pendingReq : pendingReqs.values()) {
                 pendingReq.completeExceptionally(new IgniteClientConnectionException("Channel is closed", cause));
+            }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public <T> CompletableFuture<T> serviceAsync(
+    @Override
+    public void onMessage(ByteBuf buf) {
+        processNextMessage(buf);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void onDisconnected(@Nullable Exception e) {
+        close(e);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public <T> CompletableFuture<T> serviceAsync(
             int opCode,
             PayloadWriter payloadWriter,
             PayloadReader<T> payloadReader
@@ -136,8 +141,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             ClientRequestFuture fut = send(opCode, payloadWriter);
 
             return receiveAsync(fut, payloadReader);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             CompletableFuture<T> fut = new CompletableFuture<>();
             fut.completeExceptionally(t);
 
@@ -146,7 +150,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /**
-     * @param opCode Operation code.
+     * @param opCode        Operation code.
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
      * @return Request future.
      */
@@ -154,8 +158,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             throws IgniteClientException {
         long id = reqId.getAndIncrement();
 
-        if (closed())
+        if (closed()) {
             throw new IgniteClientConnectionException("Channel is closed");
+        }
 
         ClientRequestFuture fut = new ClientRequestFuture();
 
@@ -169,12 +174,14 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             req.packInt(opCode);
             req.packLong(id);
 
-            if (payloadWriter != null)
+            if (payloadWriter != null) {
                 payloadWriter.accept(payloadCh);
+            }
 
             write(req).addListener(f -> {
-                if (!f.isSuccess())
+                if (!f.isSuccess()) {
                     fut.completeExceptionally(new IgniteClientConnectionException("Failed to send request", f.cause()));
+                }
             });
 
             return fut;
@@ -190,14 +197,15 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /**
      * Receives the response asynchronously.
      *
-     * @param pendingReq Request future.
+     * @param pendingReq    Request future.
      * @param payloadReader Payload reader from stream.
      * @return Future for the operation.
      */
     private <T> CompletableFuture<T> receiveAsync(ClientRequestFuture pendingReq, PayloadReader<T> payloadReader) {
         return pendingReq.thenApplyAsync(payload -> {
-            if (payload == null || payloadReader == null)
+            if (payload == null || payloadReader == null) {
                 return null;
+            }
 
             try (var in = new PayloadInputChannel(this, payload)) {
                 return payloadReader.apply(in);
@@ -209,6 +217,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /**
      * Converts exception to {@link IgniteClientException}.
+     *
      * @param e Exception to convert.
      * @return Resulting exception.
      */
@@ -217,11 +226,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         // We could rethrow e.getCause() when instanceof IgniteClientException,
         // but this results in an incomplete stack trace from the receiver thread.
         // This is similar to IgniteUtils.exceptionConverters.
-        if (e.getCause() instanceof IgniteClientConnectionException)
+        if (e.getCause() instanceof IgniteClientConnectionException) {
             return new IgniteClientConnectionException(e.getMessage(), e.getCause());
+        }
 
-        if (e.getCause() instanceof IgniteClientAuthorizationException)
+        if (e.getCause() instanceof IgniteClientAuthorizationException) {
             return new IgniteClientAuthorizationException(e.getMessage(), e.getCause());
+        }
 
         return new IgniteClientException(e.getMessage(), ClientErrorCode.FAILED, e);
     }
@@ -240,8 +251,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         var type = unpacker.unpackInt();
 
-        if (type != ServerMessageType.RESPONSE)
+        if (type != ServerMessageType.RESPONSE) {
             throw new IgniteClientException("Unexpected message type: " + type);
+        }
 
         Long resId = unpacker.unpackLong();
 
@@ -249,8 +261,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         ClientRequestFuture pendingReq = pendingReqs.remove(resId);
 
-        if (pendingReq == null)
+        if (pendingReq == null) {
             throw new IgniteClientException(String.format("Unexpected response ID [%s]", resId));
+        }
 
         if (status == 0) {
             pendingReq.complete(unpacker);
@@ -262,7 +275,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** {@inheritDoc} */
-    @Override public boolean closed() {
+    @Override
+    public boolean closed() {
         return closed.get();
     }
 
@@ -271,13 +285,15 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         InetSocketAddress addr = cfg.getAddress();
 
-        if (addr == null)
+        if (addr == null) {
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
-        else if (addr.getPort() < 1024 || addr.getPort() > 49151)
+        } else if (addr.getPort() < 1024 || addr.getPort() > 49151) {
             error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
+        }
 
-        if (error != null)
+        if (error != null) {
             throw new IllegalArgumentException(error);
+        }
     }
 
     /** Client handshake. */
@@ -291,8 +307,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             var res = connectTimeout > 0 ? fut.get(connectTimeout, TimeUnit.MILLISECONDS) : fut.get();
             handshakeRes(res, ver);
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             throw convertException(e);
         }
     }
@@ -334,18 +349,18 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (errCode != ClientErrorCode.SUCCESS) {
                 var msg = unpacker.unpackString();
 
-                if (errCode == ClientErrorCode.AUTH_FAILED)
+                if (errCode == ClientErrorCode.AUTH_FAILED) {
                     throw new IgniteClientAuthenticationException(msg);
-                else if (proposedVer.equals(srvVer))
+                } else if (proposedVer.equals(srvVer)) {
                     throw new IgniteClientException("Client protocol error: unexpected server response.");
-                else if (!supportedVers.contains(srvVer))
+                } else if (!supportedVers.contains(srvVer)) {
                     throw new IgniteClientException(String.format(
                             "Protocol version mismatch: client %s / server %s. Server details: %s",
                             proposedVer,
                             srvVer,
                             msg
                     ));
-                else { // Retry with server version.
+                } else { // Retry with server version.
                     handshake(srvVer);
                 }
 

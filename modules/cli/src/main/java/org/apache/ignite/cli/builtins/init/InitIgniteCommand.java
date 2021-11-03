@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.Properties;
 import javax.inject.Inject;
 import org.apache.ignite.cli.CliPathsConfigLoader;
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 import org.apache.ignite.cli.IgnitePaths;
 import org.apache.ignite.cli.Table;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
@@ -40,8 +40,7 @@ import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Help.ColorScheme;
 
 /**
- * Implementation of command for initializing Ignite distro on the current machine.
- * This process has the following steps:
+ * Implementation of command for initializing Ignite distro on the current machine. This process has the following steps:
  * <ul>
  *     <li>Initialize configuration file with the needed directories paths (@see {@link IgnitePaths})</li>
  *     <li>Create all needed directories for Ignite deployment</li>
@@ -61,36 +60,36 @@ public class InitIgniteCommand {
     /**
      * Creates init command instance.
      *
-     * @param pathRslvr Resolver of paths like home directory and etc.
-     * @param moduleMgr Manager of Ignite server and CLI modules.
+     * @param pathRslvr      Resolver of paths like home directory and etc.
+     * @param moduleMgr      Manager of Ignite server and CLI modules.
      * @param cliPathsCfgLdr Loader of current Ignite distro dirs configuration.
      */
     @Inject
     public InitIgniteCommand(
-        SystemPathResolver pathRslvr,
-        ModuleManager moduleMgr,
-        CliPathsConfigLoader cliPathsCfgLdr) {
+            SystemPathResolver pathRslvr,
+            ModuleManager moduleMgr,
+            CliPathsConfigLoader cliPathsCfgLdr) {
         this.pathRslvr = pathRslvr;
         this.moduleMgr = moduleMgr;
         this.cliPathsCfgLdr = cliPathsCfgLdr;
     }
 
     /**
-     * Executes init process with initialization of config file,
-     * directories, and download of current Ignite release.
-     * Also, it can be used to recover after corruption of node directories structure.
+     * Executes init process with initialization of config file, directories, and download of current Ignite release. Also, it can be used
+     * to recover after corruption of node directories structure.
      *
      * @param urls Urls with custom maven repositories for Ignite download.
-     * @param out PrintWriter for output user message.
-     * @param cs ColorScheme for enriching user outputs with colors.
+     * @param out  PrintWriter for output user message.
+     * @param cs   ColorScheme for enriching user outputs with colors.
      */
     public void init(URL[] urls, PrintWriter out, ColorScheme cs) {
         moduleMgr.setOut(out);
 
         Optional<IgnitePaths> ignitePathsOpt = cliPathsCfgLdr.loadIgnitePathsConfig();
 
-        if (ignitePathsOpt.isEmpty())
+        if (ignitePathsOpt.isEmpty()) {
             initConfigFile();
+        }
 
         IgnitePaths cfg = cliPathsCfgLdr.loadIgnitePathsConfig().get();
 
@@ -117,8 +116,8 @@ public class InitIgniteCommand {
         initJavaUtilLoggingPros(cfg.serverJavaUtilLoggingPros());
 
         out.println();
-        out.println("Apache Ignite is successfully initialized. Use the " +
-            cs.commandText("ignite node start") + " command to start a new local node.");
+        out.println("Apache Ignite is successfully initialized. Use the "
+                + cs.commandText("ignite node start") + " command to start a new local node.");
     }
 
     /**
@@ -128,13 +127,13 @@ public class InitIgniteCommand {
      */
     private void initDefaultServerConfigs(Path srvCfgFile) {
         try {
-            if (!srvCfgFile.toFile().exists())
+            if (!srvCfgFile.toFile().exists()) {
                 Files.copy(
-                    InitIgniteCommand.class
-                        .getResourceAsStream("/default-config.xml"), srvCfgFile);
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can't create default config file for server", e);
+                        InitIgniteCommand.class
+                                .getResourceAsStream("/default-config.xml"), srvCfgFile);
+            }
+        } catch (IOException e) {
+            throw new IgniteCliException("Can't create default config file for server", e);
         }
     }
 
@@ -145,13 +144,13 @@ public class InitIgniteCommand {
      */
     private void initJavaUtilLoggingPros(Path javaUtilLogProps) {
         try {
-            if (!javaUtilLogProps.toFile().exists())
+            if (!javaUtilLogProps.toFile().exists()) {
                 Files.copy(
-                    InitIgniteCommand.class
-                        .getResourceAsStream("/ignite.java.util.logging.properties"), javaUtilLogProps);
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can't create default config file for server", e);
+                        InitIgniteCommand.class
+                                .getResourceAsStream("/ignite.java.util.logging.properties"), javaUtilLogProps);
+            }
+        } catch (IOException e) {
+            throw new IgniteCliException("Can't create default config file for server", e);
         }
     }
 
@@ -159,11 +158,11 @@ public class InitIgniteCommand {
      * Downloads ignite node distro with all needed dependencies.
      *
      * @param ignitePaths Ignite distributive paths (bin, config, etc.).
-     * @param urls Urls for custom maven repositories.
+     * @param urls        Urls for custom maven repositories.
      */
     private void installIgnite(IgnitePaths ignitePaths, URL[] urls) {
         moduleMgr.addModule("_server", ignitePaths,
-            urls == null ? Collections.emptyList() : Arrays.asList(urls));
+                urls == null ? Collections.emptyList() : Arrays.asList(urls));
     }
 
     /**
@@ -186,25 +185,24 @@ public class InitIgniteCommand {
             fillNewConfigFile(newCfgFile, binDir, workDir, cfgDir, logDir);
 
             return newCfgFile;
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can't create configuration file in current directory: " + newCfgPath);
+        } catch (IOException e) {
+            throw new IgniteCliException("Can't create configuration file in current directory: " + newCfgPath);
         }
     }
 
     /**
      * Fills config file with bin and work directories paths.
      *
-     * @param f Config file.
-     * @param binDir Path for bin dir.
+     * @param f       Config file.
+     * @param binDir  Path for bin dir.
      * @param workDir Path for work dir.
      */
     private void fillNewConfigFile(File f,
-        @NotNull Path binDir,
-        @NotNull Path workDir,
-        @NotNull Path cfgDir,
-        @NotNull Path logDir
-        ) {
+            @NotNull Path binDir,
+            @NotNull Path workDir,
+            @NotNull Path cfgDir,
+            @NotNull Path logDir
+    ) {
         try (FileWriter fileWriter = new FileWriter(f)) {
             Properties props = new Properties();
 
@@ -213,9 +211,8 @@ public class InitIgniteCommand {
             props.setProperty("config", cfgDir.toString());
             props.setProperty("log", logDir.toString());
             props.store(fileWriter, "");
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can't write to ignitecfg file");
+        } catch (IOException e) {
+            throw new IgniteCliException("Can't write to ignitecfg file");
         }
     }
 }

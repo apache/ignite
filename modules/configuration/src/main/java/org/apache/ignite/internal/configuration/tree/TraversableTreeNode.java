@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.configuration.tree;
 
-/** */
+/**
+ *
+ */
 public interface TraversableTreeNode {
     /**
-     * @param key Name of the node retrieved from its holder object.
+     * @param key     Name of the node retrieved from its holder object.
      * @param visitor Configuration visitor.
-     * @param <T> Parameter type of the passed visitor.
+     * @param <T>     Parameter type of the passed visitor.
      * @return Whatever {@code visitor} returned.
      */
     <T> T accept(String key, ConfigurationVisitor<T> visitor);

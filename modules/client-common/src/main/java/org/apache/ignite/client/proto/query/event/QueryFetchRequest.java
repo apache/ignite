@@ -68,19 +68,22 @@ public class QueryFetchRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packLong(cursorId);
         packer.packInt(pageSize);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         cursorId = unpacker.unpackLong();
         pageSize = unpacker.unpackInt();
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(QueryFetchRequest.class, this);
     }
 }

@@ -18,4 +18,5 @@
 /**
  * Contains tests for Ignite CLI module management.
  */
+
 package org.apache.ignite.cli.builtins.module;

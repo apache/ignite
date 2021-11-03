@@ -17,6 +17,13 @@
 
 package org.apache.ignite.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionException;
@@ -26,13 +33,6 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Table tests.
@@ -116,8 +116,8 @@ public class ClientTableTest extends AbstractClientTableTest {
             var tuple2 = tuple();
             var resTuple = table2.get(tuple2);
 
-            assertEquals(1, ((ClientTuple)tuple2).schema().version());
-            assertEquals(2, ((ClientTuple)resTuple).schema().version());
+            assertEquals(1, ((ClientTuple) tuple2).schema().version());
+            assertEquals(2, ((ClientTuple) resTuple).schema().version());
 
             assertEquals(DEFAULT_NAME, resTuple.stringValue("name"));
             assertEquals(DEFAULT_ID, resTuple.longValue("id"));
@@ -209,7 +209,7 @@ public class ClientTableTest extends AbstractClientTableTest {
         assertEquals("2", table.get(tuple(2L)).stringValue("name"));
         assertEquals("30", table.get(tuple(3L)).stringValue("name"));
     }
-    
+
     @Test
     public void testReplace() {
         var table = defaultTable().recordView();

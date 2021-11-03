@@ -18,4 +18,5 @@
 /**
  * Contains Communication plugin API classes and interfaces.
  */
+
 package org.apache.ignite.plugin.extensions.communication;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -27,50 +26,72 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /**
  * Universal accessor and mutator for rows. It also has factory methods.
  */
-public interface RowHandler<Row> {
-    /** */
-    Object get(int field, Row row);
+public interface RowHandler<RowT> {
+    /**
+     *
+     */
+    Object get(int field, RowT row);
 
-    /** */
-    void set(int field, Row row, Object val);
+    /**
+     *
+     */
+    void set(int field, RowT row, Object val);
 
-    /** */
-    Row concat(Row left, Row right);
+    /**
+     *
+     */
+    RowT concat(RowT left, RowT right);
 
-    /** */
-    int columnCount(Row row);
+    /**
+     *
+     */
+    int columnCount(RowT row);
 
-    /** */
-    String toString(Row row);
+    /**
+     *
+     */
+    String toString(RowT row);
 
-    /** */
-    default RowFactory<Row> factory(IgniteTypeFactory typeFactory, RelDataType rowType) {
-        if (rowType.isStruct())
+    /**
+     *
+     */
+    default RowFactory<RowT> factory(IgniteTypeFactory typeFactory, RelDataType rowType) {
+        if (rowType.isStruct()) {
             return factory(typeFactory, RelOptUtil.getFieldTypeList(rowType));
+        }
 
         return factory(typeFactory.getJavaClass(rowType));
     }
 
-    /** */
-    default RowFactory<Row> factory(IgniteTypeFactory typeFactory, List<RelDataType> fieldTypes) {
+    /**
+     *
+     */
+    default RowFactory<RowT> factory(IgniteTypeFactory typeFactory, List<RelDataType> fieldTypes) {
         Type[] types = new Type[fieldTypes.size()];
-        for (int i = 0; i < fieldTypes.size(); i++)
+        for (int i = 0; i < fieldTypes.size(); i++) {
             types[i] = typeFactory.getJavaClass(fieldTypes.get(i));
+        }
 
         return factory(types);
     }
 
-    RowFactory<Row> factory(Type... types);
+    RowFactory<RowT> factory(Type... types);
 
     @SuppressWarnings("PublicInnerClass")
-    interface RowFactory<Row> {
-        /** */
-        RowHandler<Row> handler();
+    interface RowFactory<RowT> {
+        /**
+         *
+         */
+        RowHandler<RowT> handler();
 
-        /** */
-        Row create();
+        /**
+         *
+         */
+        RowT create();
 
-        /** */
-        Row create(Object... fields);
+        /**
+         *
+         */
+        RowT create(Object... fields);
     }
 }

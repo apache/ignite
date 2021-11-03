@@ -25,31 +25,38 @@ import org.apache.calcite.rel.RelNode;
  *
  */
 public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
-    /** */
+    /**
+     *
+     */
     public static final DistributionTraitDef INSTANCE = new DistributionTraitDef();
 
     /** {@inheritDoc} */
-    @Override public Class<IgniteDistribution> getTraitClass() {
+    @Override
+    public Class<IgniteDistribution> getTraitClass() {
         return IgniteDistribution.class;
     }
 
     /** {@inheritDoc} */
-    @Override public String getSimpleName() {
+    @Override
+    public String getSimpleName() {
         return "distr";
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode convert(RelOptPlanner planner, RelNode rel, IgniteDistribution toDist, boolean allowInfiniteCostConverters) {
+    @Override
+    public RelNode convert(RelOptPlanner planner, RelNode rel, IgniteDistribution toDist, boolean allowInfiniteCostConverters) {
         return TraitUtils.convertDistribution(planner, toDist, rel);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canConvert(RelOptPlanner planner, IgniteDistribution fromTrait, IgniteDistribution toTrait) {
+    @Override
+    public boolean canConvert(RelOptPlanner planner, IgniteDistribution fromTrait, IgniteDistribution toTrait) {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteDistribution getDefault() {
+    @Override
+    public IgniteDistribution getDefault() {
         return IgniteDistributions.any();
     }
 }

@@ -42,6 +42,7 @@ public interface IgniteRel extends PhysicalNode {
 
     /**
      * Clones this rel associating it with given cluster.
+     *
      * @param cluster Cluster.
      * @return New rel.
      */
@@ -76,14 +77,16 @@ public interface IgniteRel extends PhysicalNode {
     }
 
     /** {@inheritDoc} */
-    @Override default Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
-        RelTraitSet required) {
+    @Override
+    default Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+            RelTraitSet required) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override default Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
-        RelTraitSet childTraits, int childId) {
+    @Override
+    default Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+            RelTraitSet childTraits, int childId) {
         return null;
     }
 }

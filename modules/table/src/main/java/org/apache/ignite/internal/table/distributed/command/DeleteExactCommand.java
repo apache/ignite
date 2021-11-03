@@ -37,8 +37,7 @@ public class DeleteExactCommand implements WriteCommand {
     private byte[] rowBytes;
 
     /**
-     * Creates a new instance of DeleteExactCommand with the given row to be deleted.
-     * The {@code row} should not be {@code null}.
+     * Creates a new instance of DeleteExactCommand with the given row to be deleted. The {@code row} should not be {@code null}.
      *
      * @param row Binary row.
      */
@@ -56,8 +55,9 @@ public class DeleteExactCommand implements WriteCommand {
      * @return Binary row.
      */
     public BinaryRow getRow() {
-        if (row == null)
+        if (row == null) {
             row = new ByteBufferRow(rowBytes);
+        }
 
         return row;
     }

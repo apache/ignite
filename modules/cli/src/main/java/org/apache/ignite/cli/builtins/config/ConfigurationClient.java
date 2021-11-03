@@ -17,6 +17,11 @@
 
 package org.apache.ignite.cli.builtins.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigRenderOptions;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
@@ -26,12 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigRenderOptions;
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine.Help.ColorScheme;
 
@@ -66,62 +66,63 @@ public class ConfigurationClient {
     /**
      * Gets server node configuration as a raw JSON string.
      *
-     * @param host String representation of server node host.
-     * @param port Host REST port.
+     * @param host         String representation of server node host.
+     * @param port         Host REST port.
      * @param rawHoconPath HOCON dot-delimited path of requested configuration.
-     * @param type Configuration type: {@code node} or {@code cluster}.
+     * @param type         Configuration type: {@code node} or {@code cluster}.
      * @return JSON string with node configuration.
      */
     //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
     public String get(
-        String host,
-        int port,
-        @Nullable String rawHoconPath,
-        String type
+            String host,
+            int port,
+            @Nullable String rawHoconPath,
+            String type
     ) {
         var req = HttpRequest
-            .newBuilder()
-            .header("Content-Type", "application/json");
+                .newBuilder()
+                .header("Content-Type", "application/json");
 
-        if (rawHoconPath == null)
+        if (rawHoconPath == null) {
             req.uri(URI.create("http://" + host + ":" + port + GET_URL + type + "/"));
-        else
+        } else {
             req.uri(URI.create("http://" + host + ":" + port + GET_URL + type + "/" + rawHoconPath));
+        }
 
         try {
             HttpResponse<String> res =
-                httpClient.send(req.build(),
-                    HttpResponse.BodyHandlers.ofString());
+                    httpClient.send(req.build(),
+                            HttpResponse.BodyHandlers.ofString());
 
-            if (res.statusCode() == HttpURLConnection.HTTP_OK)
+            if (res.statusCode() == HttpURLConnection.HTTP_OK) {
                 return mapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(mapper.readValue(res.body(), JsonNode.class));
-            else
+                        .writeValueAsString(mapper.readValue(res.body(), JsonNode.class));
+            } else {
                 throw error("Can't get configuration", res);
-        }
-        catch (IOException | InterruptedException e) {
-            throw new IgniteCLIException("Connection issues while trying to send http request");
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new IgniteCliException("Connection issues while trying to send http request");
         }
     }
 
     /**
      * Sets node configuration from JSON string with configs.
      *
-     * @param host String representation of server node host.
-     * @param port Host REST port.
+     * @param host         String representation of server node host.
+     * @param port         Host REST port.
      * @param rawHoconData Valid HOCON represented as a string.
-     * @param out PrintWriter for printing user messages.
-     * @param cs ColorScheme to enrich user messages.
-     * @param type Configuration type: {@code node} or {@code cluster}.
+     * @param out          PrintWriter for printing user messages.
+     * @param cs           ColorScheme to enrich user messages.
+     * @param type         Configuration type: {@code node} or {@code cluster}.
      */
     //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
     public void set(String host, int port, String rawHoconData, PrintWriter out, ColorScheme cs, String type) {
         var req = HttpRequest
-            .newBuilder()
-            .PUT(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
-            .header("Content-Type", "application/json")
-            .uri(URI.create("http://" + host + ":" + port + SET_URL + type + "/"))
-            .build();
+                .newBuilder()
+                .PUT(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
+                .header("Content-Type", "application/json")
+                .uri(URI.create("http://" + host + ":" + port + SET_URL + type + "/"))
+                .build();
 
         try {
             HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
@@ -129,14 +130,13 @@ public class ConfigurationClient {
             if (res.statusCode() == HttpURLConnection.HTTP_OK) {
                 out.println("Configuration was updated successfully.");
                 out.println();
-                out.println("Use the " + cs.commandText("ignite config get") +
-                    " command to view the updated configuration.");
-            }
-            else
+                out.println("Use the " + cs.commandText("ignite config get")
+                        + " command to view the updated configuration.");
+            } else {
                 throw error("Failed to set configuration", res);
-        }
-        catch (IOException | InterruptedException e) {
-            throw new IgniteCLIException("Connection issues while trying to send http request", e);
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new IgniteCliException("Connection issues while trying to send http request", e);
         }
     }
 
@@ -148,11 +148,11 @@ public class ConfigurationClient {
      * @return Exception with detailed message.
      * @throws JsonProcessingException if response has incorrect error format.
      */
-    private IgniteCLIException error(String msg, HttpResponse<String> res) throws JsonProcessingException {
+    private IgniteCliException error(String msg, HttpResponse<String> res) throws JsonProcessingException {
         var errorMsg = mapper.writerWithDefaultPrettyPrinter()
-            .writeValueAsString(mapper.readValue(res.body(), JsonNode.class));
+                .writeValueAsString(mapper.readValue(res.body(), JsonNode.class));
 
-        return new IgniteCLIException(msg + "\n\n" + errorMsg);
+        return new IgniteCliException(msg + "\n\n" + errorMsg);
     }
 
     /**
@@ -163,6 +163,6 @@ public class ConfigurationClient {
      */
     private static String renderJsonFromHocon(String rawHoconData) {
         return ConfigFactory.parseString(rawHoconData)
-            .root().render(ConfigRenderOptions.concise());
+                .root().render(ConfigRenderOptions.concise());
     }
 }

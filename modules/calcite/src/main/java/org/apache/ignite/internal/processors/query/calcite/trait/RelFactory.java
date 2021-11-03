@@ -18,17 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 
-/** */
+/**
+ *
+ */
 public interface RelFactory {
     /**
      * Creates a node for given traits combination.
      *
      * @param outTraits Relational node output traits.
-     * @param inTraits Relational node input traits.
+     * @param inTraits  Relational node input traits.
      * @return Relational node for given traits combination.
      */
     RelNode create(RelTraitSet outTraits, List<RelTraitSet> inTraits);

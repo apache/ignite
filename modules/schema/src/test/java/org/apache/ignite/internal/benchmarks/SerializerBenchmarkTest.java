@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.benchmarks;
 
-import java.lang.reflect.Field;
-import java.util.EnumSet;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.processing.Generated;
+import static org.apache.ignite.internal.schema.NativeTypes.INT64;
+
 import com.facebook.presto.bytecode.Access;
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.ClassDefinition;
@@ -30,6 +27,11 @@ import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
+import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.processing.Generated;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
@@ -55,8 +57,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import static org.apache.ignite.internal.schema.NativeTypes.INT64;
-
 /**
  * Serializer benchmark.
  */
@@ -69,62 +69,62 @@ import static org.apache.ignite.internal.schema.NativeTypes.INT64;
 public class SerializerBenchmarkTest {
     /** Random. */
     private Random rnd = new Random();
-
+    
     /** Reflection-based Serializer. */
     private Serializer serializer;
-
+    
     /** Test object factory. */
     private Factory<?> objectFactory;
-
+    
     /** Object fields count. */
     @Param({"0", "1", "10", "100"})
     public int fieldsCount;
-
+    
     /** Serializer. */
     @Param({"ASM", "Java"})
     public String serializerName;
-
+    
     /**
      * Runner.
      */
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(SerializerBenchmarkTest.class.getSimpleName())
-            .build();
-
+                .include(SerializerBenchmarkTest.class.getSimpleName())
+                .build();
+        
         new Runner(opt).run();
     }
-
+    
     /**
      *
      */
     @Setup
     public void init() {
         long seed = System.currentTimeMillis();
-
+        
         rnd = new Random(seed);
-
+        
         final Class<?> valClass;
-
+        
         if (fieldsCount == 0) {
             valClass = Long.class;
-            objectFactory = (Factory<Object>)rnd::nextLong;
-        }
-        else {
+            objectFactory = (Factory<Object>) rnd::nextLong;
+        } else {
             valClass = createGeneratedObjectClass(fieldsCount, long.class);
             objectFactory = new ObjectFactory<>(valClass);
         }
-
-        Column[] keyCols = new Column[] {new Column("key", INT64, true)};
+        
+        Column[] keyCols = new Column[]{new Column("key", INT64, true)};
         Column[] valCols = mapFieldsToColumns(valClass);
         final SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
-
-        if ("Java".equals(serializerName))
+    
+        if ("Java".equals(serializerName)) {
             serializer = SerializerFactory.createJavaSerializerFactory().create(schema, Long.class, valClass);
-        else
+        } else {
             serializer = SerializerFactory.createGeneratedSerializerFactory().create(schema, Long.class, valClass);
+        }
     }
-
+    
     /**
      * Measure serialization-deserialization operation cost.
      *
@@ -134,39 +134,40 @@ public class SerializerBenchmarkTest {
     @Benchmark
     public void measureSerializeDeserializeCost(Blackhole bh) throws Exception {
         Long key = rnd.nextLong();
-
+        
         Object val = objectFactory.create();
         BinaryRow row = serializer.serialize(key, val);
-
+        
         Object restoredKey = serializer.deserializeKey(new Row(serializer.schema(), row));
         Object restoredVal = serializer.deserializeValue(new Row(serializer.schema(), row));
-
+        
         bh.consume(restoredVal);
         bh.consume(restoredKey);
     }
-
+    
     /**
      * Map fields to columns.
      *
-     * @param aClass Object class.
+     * @param cls Object class.
      * @return Columns for schema
      */
-    private Column[] mapFieldsToColumns(Class<?> aClass) {
-        if (aClass == Long.class)
-            return new Column[] {new Column("col0", INT64, true)};
-
-        final Field[] fields = aClass.getDeclaredFields();
+    private Column[] mapFieldsToColumns(Class<?> cls) {
+        if (cls == Long.class) {
+            return new Column[]{new Column("col0", INT64, true)};
+        }
+        
+        final Field[] fields = cls.getDeclaredFields();
         final Column[] cols = new Column[fields.length];
-
+        
         for (int i = 0; i < fields.length; i++) {
             assert fields[i].getType() == Long.TYPE : "Only 'long' field type is supported.";
-
+            
             cols[i] = new Column("col" + i, INT64, false);
         }
-
+        
         return cols;
     }
-
+    
     /**
      * Generate class for test objects.
      *
@@ -177,32 +178,33 @@ public class SerializerBenchmarkTest {
     private Class<?> createGeneratedObjectClass(int maxFields, Class<?> fieldType) {
         final String packageName = "org.apache.ignite.internal.benchmarks";
         final String className = "TestObject";
-
+        
         final ClassDefinition classDef = new ClassDefinition(
-            EnumSet.of(Access.PUBLIC),
-            packageName.replace('.', '/') + '/' + className,
-            ParameterizedType.type(Object.class)
+                EnumSet.of(Access.PUBLIC),
+                packageName.replace('.', '/') + '/' + className,
+                ParameterizedType.type(Object.class)
         );
         classDef.declareAnnotation(Generated.class).setValue("value", getClass().getCanonicalName());
-
-        for (int i = 0; i < maxFields; i++)
+    
+        for (int i = 0; i < maxFields; i++) {
             classDef.declareField(EnumSet.of(Access.PRIVATE), "col" + i, ParameterizedType.type(fieldType));
-
-        { // Build constructor.
-            final MethodDefinition methodDef = classDef.declareConstructor(EnumSet.of(Access.PUBLIC));
-            final Variable rnd = methodDef.getScope().declareVariable(Random.class, "rnd");
-
-            final BytecodeBlock body = methodDef.getBody()
+        }
+    
+        // Build constructor.
+        final MethodDefinition methodDef = classDef.declareConstructor(EnumSet.of(Access.PUBLIC));
+        final Variable rnd = methodDef.getScope().declareVariable(Random.class, "rnd");
+    
+        final BytecodeBlock body = methodDef.getBody()
                 .append(methodDef.getThis())
                 .invokeConstructor(classDef.getSuperClass())
                 .append(rnd.set(BytecodeExpressions.newInstance(Random.class)));
-
-            for (int i = 0; i < maxFields; i++)
-                body.append(methodDef.getThis().setField("col" + i, rnd.invoke("nextLong", long.class).cast(fieldType)));
-
-            body.ret();
+    
+        for (int i = 0; i < maxFields; i++) {
+            body.append(methodDef.getThis().setField("col" + i, rnd.invoke("nextLong", long.class).cast(fieldType)));
         }
-
+    
+        body.ret();
+        
         return ClassGenerator.classGenerator(getClass().getClassLoader()).defineClass(classDef, Object.class);
     }
 }

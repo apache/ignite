@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.io.Serializable;
-
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 
@@ -26,16 +25,20 @@ import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
  * Ignite type system.
  */
 public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializable {
-    /** */
+    /**
+     *
+     */
     public static final RelDataTypeSystem INSTANCE = new IgniteTypeSystem();
 
     /** {@inheritDoc} */
-    @Override public int getMaxNumericScale() {
+    @Override
+    public int getMaxNumericScale() {
         return Short.MAX_VALUE;
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxNumericPrecision() {
+    @Override
+    public int getMaxNumericPrecision() {
         return Short.MAX_VALUE;
     }
 }

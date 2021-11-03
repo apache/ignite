@@ -76,17 +76,21 @@ public final class VaultEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
-        VaultEntry entry = (VaultEntry)o;
+        }
+        VaultEntry entry = (VaultEntry) o;
         return key.equals(entry.key) && Arrays.equals(val, entry.val);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = Objects.hash(key);
         result = 31 * result + Arrays.hashCode(val);
         return result;

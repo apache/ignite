@@ -42,30 +42,37 @@ public class InMemoryVaultService implements VaultService {
     private final Object mux = new Object();
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override
+    public void start() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override
+    public void stop() {
         // TODO: IGNITE-15161 Implement component's stop.
         close();
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull public CompletableFuture<VaultEntry> get(@NotNull ByteArray key) {
+    @Override
+    @NotNull
+    public CompletableFuture<VaultEntry> get(@NotNull ByteArray key) {
         synchronized (mux) {
             return CompletableFuture.completedFuture(new VaultEntry(key, storage.get(key)));
         }
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull public CompletableFuture<Void> put(@NotNull ByteArray key, byte @Nullable [] val) {
+    @Override
+    @NotNull
+    public CompletableFuture<Void> put(@NotNull ByteArray key, byte @Nullable [] val) {
         synchronized (mux) {
             storage.put(key, val);
 
@@ -74,7 +81,9 @@ public class InMemoryVaultService implements VaultService {
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull public CompletableFuture<Void> remove(@NotNull ByteArray key) {
+    @Override
+    @NotNull
+    public CompletableFuture<Void> remove(@NotNull ByteArray key) {
         synchronized (mux) {
             storage.remove(key);
 
@@ -83,46 +92,55 @@ public class InMemoryVaultService implements VaultService {
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull public Cursor<VaultEntry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey) {
+    @Override
+    @NotNull
+    public Cursor<VaultEntry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey) {
         Iterator<VaultEntry> it;
 
-        if (fromKey.compareTo(toKey) >= 0)
+        if (fromKey.compareTo(toKey) >= 0) {
             it = Collections.emptyIterator();
-        else {
+        } else {
             synchronized (mux) {
                 it = storage.subMap(fromKey, toKey).entrySet().stream()
-                    .map(e -> new VaultEntry(new ByteArray(e.getKey()), e.getValue()))
-                    .collect(Collectors.toList())
-                    .iterator();
+                        .map(e -> new VaultEntry(new ByteArray(e.getKey()), e.getValue()))
+                        .collect(Collectors.toList())
+                        .iterator();
             }
         }
 
         return new Cursor<>() {
-            @Override public void close() {
+            @Override
+            public void close() {
             }
 
-            @NotNull @Override public Iterator<VaultEntry> iterator() {
+            @NotNull
+            @Override
+            public Iterator<VaultEntry> iterator() {
                 return this;
             }
 
-            @Override public boolean hasNext() {
+            @Override
+            public boolean hasNext() {
                 return it.hasNext();
             }
 
-            @Override public VaultEntry next() {
+            @Override
+            public VaultEntry next() {
                 return it.next();
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
+    @Override
+    public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         synchronized (mux) {
             for (var entry : vals.entrySet()) {
-                if (entry.getValue() == null)
+                if (entry.getValue() == null) {
                     storage.remove(entry.getKey());
-                else
+                } else {
                     storage.put(entry.getKey(), entry.getValue());
+                }
             }
 
             return CompletableFuture.completedFuture(null);

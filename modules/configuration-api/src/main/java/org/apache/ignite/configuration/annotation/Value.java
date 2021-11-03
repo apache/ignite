@@ -17,19 +17,18 @@
 
 package org.apache.ignite.configuration.annotation;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * This annotation marks configuration schema field as a configuration tree leaf.
- * Every field annotated with this annotation will produce a {@code DynamicProperty} field in generated configuration
- * class.
- * <p>
- * Type must be one of the following (or array of one of the following):
+ * This annotation marks configuration schema field as a configuration tree leaf. Every field annotated with this annotation will produce a
+ * {@code DynamicProperty} field in generated configuration class.
+ *
+ * <p>Type must be one of the following (or array of one of the following):
  * <ul>
  *     <li>boolean</li>
  *     <li>int</li>
@@ -43,8 +42,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 public @interface Value {
     /**
-     * Indicates that the current configuration value has a default value. Value itself is derived from the instantiated object
-     * of a corresponding schema type. This means that the default is not necessarily a constant value.
+     * Indicates that the current configuration value has a default value. Value itself is derived from the instantiated object of a
+     * corresponding schema type. This means that the default is not necessarily a constant value.
      *
      * @return {@code hasDefault} flag value.
      */

@@ -37,7 +37,9 @@ public final class Operation {
         this.upd = upd;
     }
 
-    /** */
+    /**
+     *
+     */
     public InnerOp inner() {
         return upd;
     }
@@ -125,17 +127,22 @@ public final class Operation {
         @NotNull OperationType type();
     }
 
-    /** */
+    /**
+     *
+     */
     private static class AbstractOp implements InnerOp {
         /** Key. */
-        @Nullable private final byte[] key;
+        @Nullable
+        private final byte[] key;
 
         /** Operation type. */
-        @NotNull private final OperationType type;
+        @NotNull
+        private final OperationType type;
 
         /**
          * Ctor.
-         * @param key Key.
+         *
+         * @param key  Key.
          * @param type Operation type.
          */
         private AbstractOp(@Nullable byte[] key, OperationType type) {
@@ -149,7 +156,8 @@ public final class Operation {
          * @return Key.
          */
         @Nullable
-        @Override public byte[] key() {
+        @Override
+        public byte[] key() {
             return key;
         }
 
@@ -159,7 +167,8 @@ public final class Operation {
          * @return Operation type.
          */
         @NotNull
-        @Override public OperationType type() {
+        @Override
+        public OperationType type() {
             return type;
         }
     }

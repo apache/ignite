@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.processor;
 
 import java.util.ArrayList;
@@ -41,38 +42,45 @@ public class HasMethodMatcher extends BaseMatcher<ParsedClass> {
 
     /**
      * Create matcher for fields with types.
+     *
      * @param arguments Array of field names and field types, paired.
      * @return Matcher.
      */
     public static BaseMatcher<ParsedClass> hasMethods(String... arguments) {
-        if (arguments.length % 2 != 0)
+        if (arguments.length % 2 != 0) {
             throw new RuntimeException("Number of method names should be equal to number of method return types");
+        }
 
         List<HasMethodMatcher> matcherList = new ArrayList<>();
 
-        for (int i = 0; i < arguments.length; i += 2)
+        for (int i = 0; i < arguments.length; i += 2) {
             matcherList.add(new HasMethodMatcher(arguments[i], arguments[i + 1]));
+        }
 
         return new BaseMatcher<ParsedClass>() {
             /** Currently used matcher. */
             int currentMatcher = 0;
 
             /** {@inheritDoc} */
-            @Override public void describeTo(Description description) {
+            @Override
+            public void describeTo(Description description) {
                 matcherList.get(currentMatcher).describeTo(description);
             }
 
             /** {@inheritDoc} */
-            @Override public void describeMismatch(Object item, Description description) {
+            @Override
+            public void describeMismatch(Object item, Description description) {
                 matcherList.get(currentMatcher).describeMismatch(item, description);
             }
 
             /** {@inheritDoc} */
-            @Override public boolean matches(Object o) {
+            @Override
+            public boolean matches(Object o) {
                 for (int i = 0; i < matcherList.size(); i++) {
                     currentMatcher = i;
-                    if (!matcherList.get(i).matches(o))
+                    if (!matcherList.get(i).matches(o)) {
                         return false;
+                    }
                 }
 
                 return true;
@@ -81,28 +89,33 @@ public class HasMethodMatcher extends BaseMatcher<ParsedClass> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(Object o) {
-        if (!(o instanceof ParsedClass))
+    @Override
+    public boolean matches(Object o) {
+        if (!(o instanceof ParsedClass)) {
             return false;
+        }
 
         ParsedClass cls = (ParsedClass) o;
 
         final Map<String, CtMethod<?>> methods = cls.getMethods();
         final CtMethod<?> method = methods.get(methodName);
 
-        if (method == null)
+        if (method == null) {
             return false;
+        }
 
         return method.getType().getQualifiedName().equals(methodReturnType);
     }
 
     /** {@inheritDoc} */
-    @Override public void describeTo(Description description) {
+    @Override
+    public void describeTo(Description description) {
         description.appendText(String.format("has method \"%s\" with return type \"%s\"", methodName, methodReturnType));
     }
 
     /** {@inheritDoc} */
-    @Override public void describeMismatch(Object item, Description description) {
+    @Override
+    public void describeMismatch(Object item, Description description) {
         if (!(item instanceof ParsedClass)) {
             description.appendText("is not ParsedClass instance");
             return;
@@ -120,7 +133,8 @@ public class HasMethodMatcher extends BaseMatcher<ParsedClass> {
 
         final String actualMethodReturnType = method.getType().getQualifiedName();
 
-        if (!actualMethodReturnType.equals(methodReturnType))
+        if (!actualMethodReturnType.equals(methodReturnType)) {
             description.appendText(String.format("\"%s\" has incorrect return type \"%s\"", methodName, actualMethodReturnType));
+        }
     }
 }

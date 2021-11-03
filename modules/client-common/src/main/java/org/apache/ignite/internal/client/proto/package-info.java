@@ -18,4 +18,5 @@
 /**
  * Ignite thin client shared logic (client and server: serialization, op codes, etc).
  */
+
 package org.apache.ignite.internal.client.proto;

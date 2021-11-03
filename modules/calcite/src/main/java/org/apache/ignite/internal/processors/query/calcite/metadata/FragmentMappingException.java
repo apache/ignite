@@ -24,17 +24,20 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
  *
  */
 public class FragmentMappingException extends RuntimeException {
-    /** */
+    /**
+     *
+     */
     private final Fragment fragment;
-
-    /** */
-    private final RelNode node;
 
     /**
      *
+     */
+    private final RelNode node;
+
+    /**
      * @param message Message.
-     * @param node Node of a query plan, where the exception was thrown.
-     * @param cause Cause.
+     * @param node    Node of a query plan, where the exception was thrown.
+     * @param cause   Cause.
      */
     public FragmentMappingException(String message, Fragment fragment, RelNode node, Throwable cause) {
         super(message, cause);

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network;
 
 /**
@@ -23,9 +24,8 @@ public interface NetworkMessageHandler {
     /**
      * Method that gets invoked when a network message is received.
      *
-     * @param message Message, which was received from the cluster.
-     * @param senderAddr Sender address. Use {@link TopologyService#getByAddress} to resolve
-     *                   the corresponding {@link ClusterNode}.
+     * @param message       Message, which was received from the cluster.
+     * @param senderAddr    Sender address. Use {@link TopologyService#getByAddress} to resolve the corresponding {@link ClusterNode}.
      * @param correlationId Correlation id. Used to track correspondence between requests and responses.
      */
     void onReceived(NetworkMessage message, NetworkAddress senderAddr, String correlationId);

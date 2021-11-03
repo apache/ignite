@@ -18,4 +18,5 @@
 /**
  * Contains a base interface that provides the ability to convert representation to other formats.
  */
+
 package org.apache.ignite.rest.presentation;

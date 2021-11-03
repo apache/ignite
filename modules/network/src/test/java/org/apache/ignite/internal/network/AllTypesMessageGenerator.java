@@ -36,7 +36,7 @@ public class AllTypesMessageGenerator {
     /**
      * Generate a new {@link AllTypesMessage}.
      *
-     * @param seed Random seed.
+     * @param seed      Random seed.
      * @param nestedMsg {@code true} if nested messages should be generated, {@code false} otherwise.
      * @return Message.
      */
@@ -55,22 +55,21 @@ public class AllTypesMessageGenerator {
             }
 
             if (nestedMsg) {
-                message.v(
-                    IntStream.range(0, 10).mapToObj(unused -> generate(seed, false)).toArray(NetworkMessage[]::new)
+                message.netMsgArrV(
+                        IntStream.range(0, 10).mapToObj(unused -> generate(seed, false)).toArray(NetworkMessage[]::new)
                 );
 
-                message.w(IntStream.range(0, 10)
-                    .mapToObj(unused -> generate(seed, false))
-                    .collect(Collectors.toList()));
+                message.netMsgCollW(IntStream.range(0, 10)
+                        .mapToObj(unused -> generate(seed, false))
+                        .collect(Collectors.toList()));
 
-                message.x(IntStream.range(0, 10)
-                    .boxed()
-                    .collect(Collectors.toMap(String::valueOf, unused -> generate(seed, false))));
+                message.newMsgMapX(IntStream.range(0, 10)
+                        .boxed()
+                        .collect(Collectors.toMap(String::valueOf, unused -> generate(seed, false))));
             }
 
             return message.build();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -78,8 +77,8 @@ public class AllTypesMessageGenerator {
     /**
      * Generate random value.
      *
-     * @param random Seeded random.
-     * @param field Field which value is being generated.
+     * @param random    Seeded random.
+     * @param field     Field which value is being generated.
      * @param nestedMsg {@code true} if nested messages should be generated, {@code false} otherwise.
      * @return Random value.
      */
@@ -87,116 +86,110 @@ public class AllTypesMessageGenerator {
     private static Object randomValue(Random random, Field field, boolean nestedMsg) {
         Class<?> type = field.getType();
 
-        if (type == byte.class)
+        if (type == byte.class) {
             return (byte) random.nextInt();
-        else if (type == short.class)
+        } else if (type == short.class) {
             return (short) random.nextInt();
-        else if (type == int.class)
+        } else if (type == int.class) {
             return random.nextInt();
-        else if (type == long.class)
+        } else if (type == long.class) {
             return random.nextLong();
-        else if (type == float.class)
+        } else if (type == float.class) {
             return random.nextFloat();
-        else if (type == double.class)
+        } else if (type == double.class) {
             return random.nextDouble();
-        else if (type == char.class)
+        } else if (type == char.class) {
             return (char) random.nextInt();
-        else if (type == boolean.class)
+        } else if (type == boolean.class) {
             return random.nextBoolean();
-
-        else if (type == byte[].class) {
+        } else if (type == byte[].class) {
             int byteArrLen = random.nextInt(1024);
             byte[] bytes = new byte[byteArrLen];
             random.nextBytes(bytes);
             return bytes;
-        }
-        else if (type == short[].class) {
+        } else if (type == short[].class) {
             int shortArrLen = random.nextInt(1024);
             short[] shorts = new short[1024];
-            for (int i = 0; i < shortArrLen; i++)
+            for (int i = 0; i < shortArrLen; i++) {
                 shorts[i] = (short) random.nextInt();
+            }
             return shorts;
-        }
-        else if (type == int[].class) {
+        } else if (type == int[].class) {
             int intArrLen = random.nextInt(1024);
             int[] ints = new int[1024];
-            for (int i = 0; i < intArrLen; i++)
+            for (int i = 0; i < intArrLen; i++) {
                 ints[i] = random.nextInt();
+            }
             return ints;
-        }
-        else if (type == long[].class) {
+        } else if (type == long[].class) {
             int longArrLen = random.nextInt(1024);
             long[] longs = new long[1024];
-            for (int i = 0; i < longArrLen; i++)
+            for (int i = 0; i < longArrLen; i++) {
                 longs[i] = random.nextLong();
+            }
             return longs;
-        }
-        else if (type == float[].class) {
+        } else if (type == float[].class) {
             int floatArrLen = random.nextInt(1024);
             float[] floats = new float[1024];
-            for (int i = 0; i < floatArrLen; i++)
+            for (int i = 0; i < floatArrLen; i++) {
                 floats[i] = random.nextFloat();
+            }
             return floats;
-        }
-        else if (type == double[].class) {
+        } else if (type == double[].class) {
             int doubleArrLen = random.nextInt(1024);
             double[] doubles = new double[1024];
-            for (int i = 0; i < doubleArrLen; i++)
+            for (int i = 0; i < doubleArrLen; i++) {
                 doubles[i] = random.nextDouble();
+            }
             return doubles;
-        }
-        else if (type == char[].class) {
+        } else if (type == char[].class) {
             int charArrLen = random.nextInt(1024);
             char[] chars = new char[1024];
-            for (int i = 0; i < charArrLen; i++)
+            for (int i = 0; i < charArrLen; i++) {
                 chars[i] = (char) random.nextInt();
+            }
             return chars;
-        }
-        else if (type == boolean[].class) {
+        } else if (type == boolean[].class) {
             int booleanArrLen = random.nextInt(1024);
             boolean[] booleans = new boolean[1024];
-            for (int i = 0; i < booleanArrLen; i++)
+            for (int i = 0; i < booleanArrLen; i++) {
                 booleans[i] = random.nextBoolean();
+            }
             return booleans;
-        }
-
-        else if (type == String.class) {
-            int aLetter = 'a';
+        } else if (type == String.class) {
+            int l = 'a';
             int strLen = random.nextInt(1024);
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < strLen; i++) {
-                int letter = aLetter + random.nextInt(26);
+                int letter = l + random.nextInt(26);
                 sb.append(letter);
             }
             return sb.toString();
-        }
-        else if (type == BitSet.class) {
+        } else if (type == BitSet.class) {
             BitSet set = new BitSet();
             int setLen = random.nextInt(10);
             for (int i = 0; i < setLen; i++) {
-                if (random.nextBoolean())
+                if (random.nextBoolean()) {
                     set.set(i);
+                }
             }
             return set;
-        }
-        else if (type == UUID.class) {
+        } else if (type == UUID.class) {
             byte[] uuidBytes = new byte[16];
             random.nextBytes(uuidBytes);
             return UUID.nameUUIDFromBytes(uuidBytes);
-        }
-        else if (type == IgniteUuid.class) {
+        } else if (type == IgniteUuid.class) {
             byte[] igniteUuidBytes = new byte[16];
             random.nextBytes(igniteUuidBytes);
             var generator = new IgniteUuidGenerator(UUID.nameUUIDFromBytes(igniteUuidBytes), 0);
             return generator.randomUuid();
-        }
-        else if (NetworkMessage.class.isAssignableFrom(type)) {
-            if (nestedMsg)
+        } else if (NetworkMessage.class.isAssignableFrom(type)) {
+            if (nestedMsg) {
                 return generate(random.nextLong(), false);
+            }
+            return null;
+        } else {
             return null;
         }
-
-        else
-            return null;
     }
 }

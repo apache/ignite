@@ -17,46 +17,56 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /**
  *
  */
-public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** */
-    private final Predicate<Row> pred;
+public class FilterNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT> {
+    /**
+     *
+     */
+    private final Predicate<RowT> pred;
 
-    /** */
-    private final Deque<Row> inBuf = new ArrayDeque<>(inBufSize);
+    /**
+     *
+     */
+    private final Deque<RowT> inBuf = new ArrayDeque<>(inBufSize);
 
-    /** */
+    /**
+     *
+     */
     private int requested;
 
-    /** */
+    /**
+     *
+     */
     private int waiting;
 
-    /** */
+    /**
+     *
+     */
     private boolean inLoop;
 
     /**
-     * @param ctx Execution context.
+     * @param ctx  Execution context.
      * @param pred Predicate.
      */
-    public FilterNode(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> pred) {
+    public FilterNode(ExecutionContext<RowT> ctx, RelDataType rowType, Predicate<RowT> pred) {
         super(ctx, rowType);
 
         this.pred = pred;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert !nullOrEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
@@ -64,12 +74,14 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         requested = rowsCnt;
 
-        if (!inLoop)
+        if (!inLoop) {
             context().execute(this::doFilter, this::onError);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) throws Exception {
+    @Override
+    public void push(RowT row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
@@ -77,14 +89,16 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         waiting--;
 
-        if (pred.test(row))
+        if (pred.test(row)) {
             inBuf.add(row);
+        }
 
         filter();
     }
 
     /** {@inheritDoc} */
-    @Override public void end() throws Exception {
+    @Override
+    public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
@@ -96,28 +110,35 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
+        if (idx != 0) {
             throw new IndexOutOfBoundsException();
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         requested = 0;
         waiting = 0;
         inBuf.clear();
     }
 
-    /** */
+    /**
+     *
+     */
     private void doFilter() throws Exception {
         checkState();
 
         filter();
     }
 
-    /** */
+    /**
+     *
+     */
     private void filter() throws Exception {
         inLoop = true;
         try {
@@ -127,13 +148,13 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
                 requested--;
                 downstream().push(inBuf.remove());
             }
-        }
-        finally {
+        } finally {
             inLoop = false;
         }
 
-        if (inBuf.isEmpty() && waiting == 0)
+        if (inBuf.isEmpty() && waiting == 0) {
             source().request(waiting = inBufSize);
+        }
 
         if (waiting == -1 && requested > 0) {
             assert inBuf.isEmpty();

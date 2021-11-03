@@ -36,7 +36,7 @@ public class SerializationException extends IgniteInternalCheckedException {
      * Constructor.
      *
      * @param message Message.
-     * @param cause Cause.
+     * @param cause   Cause.
      */
     public SerializationException(String message, Throwable cause) {
         super(message, cause);

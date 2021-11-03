@@ -232,7 +232,7 @@ public interface MessageReader {
     /**
      * Reads a nested message.
      *
-     * @param <T> Type of a message;
+     * @param <T>  Type of a message;
      * @param name Field name.
      * @return Message.
      */
@@ -241,10 +241,10 @@ public interface MessageReader {
     /**
      * Reads an array of objects.
      *
-     * @param <T> Type of an array.
-     * @param name Field name.
+     * @param <T>      Type of an array.
+     * @param name     Field name.
      * @param itemType A component type of the array.
-     * @param itemCls A component class of the array.
+     * @param itemCls  A component class of the array.
      * @return Array of objects.
      */
     public <T> T[] readObjectArray(String name, MessageCollectionItemType itemType, Class<T> itemCls);
@@ -252,8 +252,8 @@ public interface MessageReader {
     /**
      * Reads a collection.
      *
-     * @param <C> Type of a collection.
-     * @param name Field name.
+     * @param <C>      Type of a collection.
+     * @param name     Field name.
      * @param itemType An item type of the Collection.
      * @return Collection.
      */
@@ -262,19 +262,18 @@ public interface MessageReader {
     /**
      * Reads a map.
      *
-     * @param <M> Type of a map.
-     * @param name Field name.
+     * @param <M>     Type of a map.
+     * @param name    Field name.
      * @param keyType The type of the map's key.
      * @param valType The type of the map's value.
-     * @param linked Whether a {@link LinkedHashMap} should be created.
+     * @param linked  Whether a {@link LinkedHashMap} should be created.
      * @return Map.
      */
     public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,
-       MessageCollectionItemType valType, boolean linked);
+            MessageCollectionItemType valType, boolean linked);
 
     /**
-     * Tells whether the last invocation of any of the {@code readXXX(...)}
-     * methods has fully written the value. {@code False} is returned
+     * Tells whether the last invocation of any of the {@code readXXX(...)} methods has fully written the value. {@code False} is returned
      * if there were not enough remaining bytes in a byte buffer.
      *
      * @return Whether the last value was fully read.

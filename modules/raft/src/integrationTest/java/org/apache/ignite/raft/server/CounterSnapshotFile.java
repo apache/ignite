@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.raft.server;
 
 import java.io.File;
@@ -53,13 +54,13 @@ class CounterSnapshotFile {
 
     /**
      * Save value to snapshot file.
+     *
      * @param value The value.
      */
     public void save(final long value) throws IOException {
         try {
             Files.writeString(new File(path).toPath(), String.valueOf(value));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.error("Fail to save snapshot", e);
 
             throw e;

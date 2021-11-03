@@ -32,16 +32,21 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
  *
  */
 public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalProject> {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule INSTANCE = new ProjectConverterRule();
 
-    /** */
+    /**
+     *
+     */
     public ProjectConverterRule() {
         super(LogicalProject.class, "ProjectConverterRule");
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalProject rel) {
+    @Override
+    protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalProject rel) {
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode input = convert(rel.getInput(), traits);

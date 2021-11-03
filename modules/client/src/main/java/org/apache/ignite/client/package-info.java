@@ -18,4 +18,5 @@
 /**
  * Ignite thin client.
  */
+
 package org.apache.ignite.client;

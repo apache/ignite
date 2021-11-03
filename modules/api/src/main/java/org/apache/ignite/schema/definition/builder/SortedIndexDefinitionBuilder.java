@@ -33,7 +33,8 @@ public interface SortedIndexDefinitionBuilder extends SchemaObjectBuilder {
     SortedIndexColumnBuilder addIndexColumn(String name);
 
     /** {@inheritDoc} */
-    @Override SortedIndexDefinitionBuilder withHints(Map<String, String> hints);
+    @Override
+    SortedIndexDefinitionBuilder withHints(Map<String, String> hints);
 
     /**
      * Unique index flag.
@@ -47,7 +48,8 @@ public interface SortedIndexDefinitionBuilder extends SchemaObjectBuilder {
      *
      * @return Sorted index.
      */
-    @Override SortedIndexDefinition build();
+    @Override
+    SortedIndexDefinition build();
 
     /**
      * Index column builder.

@@ -30,31 +30,34 @@ import org.apache.ignite.configuration.validation.Validator;
 public class ColumnTypeValidatorImpl implements Validator<ColumnTypeValidator, ColumnTypeView> {
     /** Static instance. */
     public static final ColumnTypeValidatorImpl INSTANCE = new ColumnTypeValidatorImpl();
-
+    
     /** {@inheritDoc} */
-    @Override public void validate(ColumnTypeValidator annotation, ValidationContext<ColumnTypeView> ctx) {
+    @Override
+    public void validate(ColumnTypeValidator annotation, ValidationContext<ColumnTypeView> ctx) {
         ColumnTypeView newType = ctx.getNewValue();
         ColumnTypeView oldType = ctx.getOldValue();
-
+        
         try {
             SchemaConfigurationConverter.convert(newType);
         } catch (IllegalArgumentException ex) {
             ctx.addIssue(new ValidationIssue(ctx.currentKey() + ": " + ex.getMessage()));
-
+            
             return;
         }
-
-        if (oldType == null)
+    
+        if (oldType == null) {
             return; // Nothing to do.
-
-        if (!Objects.deepEquals(newType.type(), oldType.type()) ||
-                newType.precision() != oldType.precision() ||
-                newType.scale() != oldType.scale() ||
-                newType.length() != oldType.length())
+        }
+    
+        if (!Objects.deepEquals(newType.type(), oldType.type())
+                || newType.precision() != oldType.precision()
+                || newType.scale() != oldType.scale()
+                || newType.length() != oldType.length()) {
             ctx.addIssue(new ValidationIssue("Unsupported column type change: " + ctx.currentKey()));
-
+        }
+        
     }
-
+    
     /** Private constructor. */
     private ColumnTypeValidatorImpl() {
     }

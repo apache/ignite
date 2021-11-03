@@ -25,29 +25,36 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 
-/** */
+/**
+ *
+ */
 public abstract class AbstractIgniteConverterRule<T extends RelNode> extends ConverterRule {
-    /** */
+    /**
+     *
+     */
     protected AbstractIgniteConverterRule(Class<T> clazz) {
         this(clazz, clazz.getName() + "Converter");
     }
 
-    /** */
+    /**
+     *
+     */
     protected AbstractIgniteConverterRule(Class<T> clazz, String descriptionPrefix) {
         super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPrefix);
     }
 
     /** {@inheritDoc} */
-    @Override public final RelNode convert(RelNode rel) {
-        return convert(rel.getCluster().getPlanner(), rel.getCluster().getMetadataQuery(), (T)rel);
+    @Override
+    public final RelNode convert(RelNode rel) {
+        return convert(rel.getCluster().getPlanner(), rel.getCluster().getMetadataQuery(), (T) rel);
     }
 
     /**
      * Converts given rel to physical node.
      *
      * @param planner Planner.
-     * @param mq Metadata query.
-     * @param rel Rel node.
+     * @param mq      Metadata query.
+     * @param rel     Rel node.
      * @return Physical rel.
      */
     protected abstract PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, T rel);

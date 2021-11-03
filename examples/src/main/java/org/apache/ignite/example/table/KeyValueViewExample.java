@@ -31,8 +31,8 @@ import org.apache.ignite.table.Tuple;
 
 /**
  * This example demonstrates the usage of the {@link KeyValueView} API.
- * <p>
- * To run the example, do the following:
+ *
+ * <p>To run the example, do the following:
  * <ol>
  *     <li>Import the examples project into you IDE.</li>
  *     <li>
@@ -59,9 +59,9 @@ public class KeyValueViewExample {
         System.setProperty("java.util.logging.config.file", "config/java.util.logging.properties");
 
         try (Ignite server = IgnitionManager.start(
-            "example-node",
-            Files.readString(Path.of("config", "ignite-config.json")),
-            Path.of("work")
+                "example-node",
+                Files.readString(Path.of("config", "ignite-config.json")),
+                Path.of("work")
         )) {
             //--------------------------------------------------------------------------------------
             //
@@ -79,19 +79,19 @@ public class KeyValueViewExample {
             System.out.println("\nCreating 'accounts' table...");
 
             TableDefinition accountsTableDef = SchemaBuilders.tableBuilder("PUBLIC", "accounts")
-                .columns(
-                    SchemaBuilders.column("accountNumber", ColumnType.INT32).asNonNull().build(),
-                    SchemaBuilders.column("firstName", ColumnType.string()).asNullable().build(),
-                    SchemaBuilders.column("lastName", ColumnType.string()).asNullable().build(),
-                    SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable().build()
-                )
-                .withPrimaryKey("accountNumber")
-                .build();
+                    .columns(
+                            SchemaBuilders.column("accountNumber", ColumnType.INT32).asNonNull().build(),
+                            SchemaBuilders.column("firstName", ColumnType.string()).asNullable().build(),
+                            SchemaBuilders.column("lastName", ColumnType.string()).asNullable().build(),
+                            SchemaBuilders.column("balance", ColumnType.DOUBLE).asNullable().build()
+                    )
+                    .withPrimaryKey("accountNumber")
+                    .build();
 
             server.tables().createTable(accountsTableDef.canonicalName(), tableChange ->
-                SchemaConfigurationConverter.convert(accountsTableDef, tableChange)
-                    .changeReplicas(1)
-                    .changePartitions(10)
+                    SchemaConfigurationConverter.convert(accountsTableDef, tableChange)
+                            .changeReplicas(1)
+                            .changePartitions(10)
             );
 
             //--------------------------------------------------------------------------------------
@@ -103,8 +103,8 @@ public class KeyValueViewExample {
             System.out.println("\nConnecting to server...");
 
             try (IgniteClient client = IgniteClient.builder()
-                .addresses("127.0.0.1:10800")
-                .build()
+                    .addresses("127.0.0.1:10800")
+                    .build()
             ) {
                 //--------------------------------------------------------------------------------------
                 //
@@ -123,12 +123,12 @@ public class KeyValueViewExample {
                 System.out.println("\nInserting a key-value pair into the 'accounts' table...");
 
                 Tuple key = Tuple.create()
-                    .set("accountNumber", 123456);
+                        .set("accountNumber", 123456);
 
                 Tuple value = Tuple.create()
-                    .set("firstName", "Val")
-                    .set("lastName", "Kulichenko")
-                    .set("balance", 100.00d);
+                        .set("firstName", "Val")
+                        .set("lastName", "Kulichenko")
+                        .set("balance", 100.00d);
 
                 kvView.put(key, value);
 
@@ -143,10 +143,10 @@ public class KeyValueViewExample {
                 value = kvView.get(key);
 
                 System.out.println(
-                    "\nRetrieved value:\n" +
-                    "    Account Number: " + key.intValue("accountNumber") + '\n' +
-                    "    Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n' +
-                    "    Balance: $" + value.doubleValue("balance"));
+                        "\nRetrieved value:\n"
+                                + "    Account Number: " + key.intValue("accountNumber") + '\n'
+                                + "    Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n'
+                                + "    Balance: $" + value.doubleValue("balance"));
             }
 
             System.out.println("\nDropping the table and stopping the server...");

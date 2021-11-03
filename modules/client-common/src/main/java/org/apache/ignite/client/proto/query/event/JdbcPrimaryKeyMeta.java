@@ -52,9 +52,9 @@ public class JdbcPrimaryKeyMeta implements ClientMessage {
      * Constructor.
      *
      * @param schemaName Schema.
-     * @param tblName Table.
-     * @param name Primary key name.
-     * @param fields Primary key fields.
+     * @param tblName    Table.
+     * @param name       Primary key name.
+     * @param fields     Primary key fields.
      */
     public JdbcPrimaryKeyMeta(String schemaName, String tblName, String name, List<String> fields) {
         this.schemaName = schemaName;
@@ -101,13 +101,15 @@ public class JdbcPrimaryKeyMeta implements ClientMessage {
 
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packString(schemaName);
         packer.packString(tblName);
         packer.packString(name);
 
-        if (fields == null || fields.isEmpty())
+        if (fields == null || fields.isEmpty()) {
             packer.packNil();
+        }
 
         packer.packArrayHeader(fields.size());
 
@@ -117,7 +119,8 @@ public class JdbcPrimaryKeyMeta implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         schemaName = unpacker.unpackString();
         tblName = unpacker.unpackString();
         name = unpacker.unpackString();
@@ -132,27 +135,32 @@ public class JdbcPrimaryKeyMeta implements ClientMessage {
 
         fields = new ArrayList<>(size);
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             fields.add(unpacker.unpackString());
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta)o;
+        JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta) o;
 
         return Objects.equals(schemaName, meta.schemaName)
-            && Objects.equals(tblName, meta.tblName)
-            && Objects.equals(name, meta.name)
-            && Objects.equals(fields, meta.fields);
+                && Objects.equals(tblName, meta.tblName)
+                && Objects.equals(name, meta.name)
+                && Objects.equals(fields, meta.fields);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = schemaName.hashCode();
         result = 31 * result + tblName.hashCode();
         result = 31 * result + name.hashCode();
@@ -161,7 +169,8 @@ public class JdbcPrimaryKeyMeta implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcPrimaryKeyMeta.class, this);
     }
 }

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.lang.IgniteException;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.apache.ignite.lang.IgniteException;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests thin client configuration.
@@ -56,7 +56,7 @@ public class ConfigurationTest extends AbstractClientTest {
         IgniteClient.Builder builder = IgniteClient.builder();
 
         IgniteClient client = builder
-                .addressFinder(() -> new String[] {addr})
+                .addressFinder(() -> new String[]{addr})
                 .build();
 
         try (client) {
@@ -76,7 +76,7 @@ public class ConfigurationTest extends AbstractClientTest {
                 .retryLimit(7)
                 .reconnectThrottlingPeriod(123)
                 .reconnectThrottlingRetries(8)
-                .addressFinder(() -> new String[] {addr})
+                .addressFinder(() -> new String[]{addr})
                 .build();
 
         // Builder can be reused and it won't affect already created clients.
@@ -118,7 +118,9 @@ public class ConfigurationTest extends AbstractClientTest {
     @Test
     public void testClientBuilderFailsOnExceptionInAddressFinder() {
         IgniteClient.Builder builder = IgniteClient.builder()
-                .addressFinder(() -> { throw new IllegalArgumentException("bad finder"); });
+                .addressFinder(() -> {
+                    throw new IllegalArgumentException("bad finder");
+                });
 
         assertThrows(IllegalArgumentException.class, builder::build);
     }

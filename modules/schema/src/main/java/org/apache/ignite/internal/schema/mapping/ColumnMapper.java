@@ -37,7 +37,7 @@ public interface ColumnMapper extends Serializable {
      * Remap column with new index.
      *
      * @param from Source column index.
-     * @param to Target column index.
+     * @param to   Target column index.
      * @return {@code this} for chaining.
      */
     public ColumnMapper add(int from, int to);
@@ -51,8 +51,8 @@ public interface ColumnMapper extends Serializable {
     int map(int idx);
 
     /**
-     * Returns a column descriptor with proper default for the given column idx
-     * if column doesn't exists in target schema ({@link #map(int)} returns {@code -1}).
+     * Returns a column descriptor with proper default for the given column idx if column doesn't exists in target schema ({@link #map(int)}
+     * returns {@code -1}).
      *
      * @param idx Column index in source schema.
      * @return Column descriptor or {@code null}.

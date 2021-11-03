@@ -17,6 +17,13 @@
 
 package org.apache.ignite.table;
 
+import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomBitSet;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,22 +45,15 @@ import java.util.stream.IntStream;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.testframework.IgniteTestUtils.randomBitSet;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * Tests server tuple builder implementation.
- * <p>
- * Should be in sync with org.apache.ignite.client.ClientTupleBuilderTest.
+ *
+ * <p>Should be in sync with org.apache.ignite.client.ClientTupleBuilderTest.
  */
 public class TupleImplTest {
     @Test
     public void testValueReturnsValueByName() {
-        assertEquals(3L, (Long)getTuple().value("id"));
+        assertEquals(3L, (Long) getTuple().value("id"));
         assertEquals("Shirt", getTuple().value("name"));
     }
 
@@ -65,7 +65,7 @@ public class TupleImplTest {
 
     @Test
     public void testValueReturnsValueByIndex() {
-        assertEquals(3L, (Long)getTuple().value(0));
+        assertEquals(3L, (Long) getTuple().value(0));
         assertEquals("Shirt", getTuple().value(1));
     }
 
@@ -153,30 +153,31 @@ public class TupleImplTest {
         Random rnd = new Random();
 
         Tuple tuple = new TupleImpl()
-                          .set("valByteCol", (byte)1)
-                          .set("valShortCol", (short)2)
-                          .set("valIntCol", 3)
-                          .set("valLongCol", 4L)
-                          .set("valFloatCol", 0.055f)
-                          .set("valDoubleCol", 0.066d)
-                          .set("keyUuidCol", UUID.randomUUID())
-                          .set("valDateCol", LocalDate.now())
-                          .set("valDateTimeCol", LocalDateTime.now())
-                          .set("valTimeCol", LocalTime.now())
-                          .set("valTimeStampCol", Instant.now())
-                          .set("valBitmask1Col", randomBitSet(rnd, 12))
-                          .set("valBytesCol", IgniteTestUtils.randomBytes(rnd, 13))
-                          .set("valStringCol", IgniteTestUtils.randomString(rnd, 14))
-                          .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
-                          .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
+                .set("valByteCol", (byte) 1)
+                .set("valShortCol", (short) 2)
+                .set("valIntCol", 3)
+                .set("valLongCol", 4L)
+                .set("valFloatCol", 0.055f)
+                .set("valDoubleCol", 0.066d)
+                .set("keyUuidCol", UUID.randomUUID())
+                .set("valDateCol", LocalDate.now())
+                .set("valDateTimeCol", LocalDateTime.now())
+                .set("valTimeCol", LocalTime.now())
+                .set("valTimeStampCol", Instant.now())
+                .set("valBitmask1Col", randomBitSet(rnd, 12))
+                .set("valBytesCol", IgniteTestUtils.randomBytes(rnd, 13))
+                .set("valStringCol", IgniteTestUtils.randomString(rnd, 14))
+                .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
+                .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
 
         for (int i = 0; i < tuple.columnCount(); i++) {
             String name = tuple.columnName(i);
 
-            if (tuple.value(i) instanceof byte[])
-                assertArrayEquals((byte[])tuple.value(i), tuple.value(tuple.columnIndex(name)), "columnIdx=" + i);
-            else
-                assertEquals((Object)tuple.value(i), tuple.value(tuple.columnIndex(name)), "columnIdx=" + i);
+            if (tuple.value(i) instanceof byte[]) {
+                assertArrayEquals((byte[]) tuple.value(i), tuple.value(tuple.columnIndex(name)), "columnIdx=" + i);
+            } else {
+                assertEquals((Object) tuple.value(i), tuple.value(tuple.columnIndex(name)), "columnIdx=" + i);
+            }
         }
     }
 
@@ -195,7 +196,7 @@ public class TupleImplTest {
         assertNotEquals(new TupleImpl().set("foo", "foo"), new TupleImpl().set("bar", "bar"));
 
         TupleImpl tuple = new TupleImpl();
-        TupleImpl tuple2 = new TupleImpl();
+        final TupleImpl tuple2 = new TupleImpl();
 
         assertEquals(tuple, tuple);
 
@@ -221,22 +222,22 @@ public class TupleImplTest {
         Random rnd = new Random();
 
         Tuple tuple = new TupleImpl()
-                          .set("valByteCol", (byte)1)
-                          .set("valShortCol", (short)2)
-                          .set("valIntCol", 3)
-                          .set("valLongCol", 4L)
-                          .set("valFloatCol", 0.055f)
-                          .set("valDoubleCol", 0.066d)
-                          .set("keyUuidCol", UUID.randomUUID())
-                          .set("valDateCol", LocalDate.now())
-                          .set("valDateTimeCol", LocalDateTime.now())
-                          .set("valTimeCol", LocalTime.now())
-                          .set("valTimeStampCol", Instant.now())
-                          .set("valBitmask1Col", randomBitSet(rnd, 12))
-                          .set("valBytesCol", IgniteTestUtils.randomBytes(rnd, 13))
-                          .set("valStringCol", IgniteTestUtils.randomString(rnd, 14))
-                          .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
-                          .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
+                .set("valByteCol", (byte) 1)
+                .set("valShortCol", (short) 2)
+                .set("valIntCol", 3)
+                .set("valLongCol", 4L)
+                .set("valFloatCol", 0.055f)
+                .set("valDoubleCol", 0.066d)
+                .set("keyUuidCol", UUID.randomUUID())
+                .set("valDateCol", LocalDate.now())
+                .set("valDateTimeCol", LocalDateTime.now())
+                .set("valTimeCol", LocalTime.now())
+                .set("valTimeStampCol", Instant.now())
+                .set("valBitmask1Col", randomBitSet(rnd, 12))
+                .set("valBytesCol", IgniteTestUtils.randomBytes(rnd, 13))
+                .set("valStringCol", IgniteTestUtils.randomString(rnd, 14))
+                .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
+                .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
 
         List<Integer> randomIdx = IntStream.range(0, tuple.columnCount()).boxed().collect(Collectors.toList());
 
@@ -244,8 +245,9 @@ public class TupleImplTest {
 
         Tuple shuffledTuple = new TupleImpl();
 
-        for (Integer i : randomIdx)
+        for (Integer i : randomIdx) {
             shuffledTuple.set(tuple.columnName(i), tuple.value(i));
+        }
 
         assertEquals(tuple, shuffledTuple);
         assertEquals(tuple.hashCode(), shuffledTuple.hashCode());
@@ -256,22 +258,22 @@ public class TupleImplTest {
         Random rnd = new Random();
 
         Tuple tup1 = new TupleImpl()
-                         .set("valByteCol", (byte)1)
-                         .set("valShortCol", (short)2)
-                         .set("valIntCol", 3)
-                         .set("valLongCol", 4L)
-                         .set("valFloatCol", 0.055f)
-                         .set("valDoubleCol", 0.066d)
-                         .set("keyUuidCol", UUID.randomUUID())
-                         .set("valDateCol", LocalDate.now())
-                         .set("valDateTimeCol", LocalDateTime.now())
-                         .set("valTimeCol", LocalTime.now())
-                         .set("valTimeStampCol", Instant.now())
-                         .set("valBitmask1Col", randomBitSet(rnd, 12))
-                         .set("valBytesCol", IgniteTestUtils.randomBytes(rnd, 13))
-                         .set("valStringCol", IgniteTestUtils.randomString(rnd, 14))
-                         .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
-                         .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
+                .set("valByteCol", (byte) 1)
+                .set("valShortCol", (short) 2)
+                .set("valIntCol", 3)
+                .set("valLongCol", 4L)
+                .set("valFloatCol", 0.055f)
+                .set("valDoubleCol", 0.066d)
+                .set("keyUuidCol", UUID.randomUUID())
+                .set("valDateCol", LocalDate.now())
+                .set("valDateTimeCol", LocalDateTime.now())
+                .set("valTimeCol", LocalTime.now())
+                .set("valTimeStampCol", Instant.now())
+                .set("valBitmask1Col", randomBitSet(rnd, 12))
+                .set("valBytesCol", IgniteTestUtils.randomBytes(rnd, 13))
+                .set("valStringCol", IgniteTestUtils.randomString(rnd, 14))
+                .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
+                .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
 
         Tuple tup2;
 
@@ -282,7 +284,7 @@ public class TupleImplTest {
         }
 
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
-            tup2 = (Tuple)is.readObject();
+            tup2 = (Tuple) is.readObject();
         }
 
         assertEquals(tup1, tup2);
@@ -294,10 +296,10 @@ public class TupleImplTest {
         assertEquals(Tuple.create().set("id", 42L), Tuple.create(10).set("id", 42L));
 
         assertEquals(Tuple.create().set("id", 42L).set("name", "universe"),
-            Tuple.create(Map.of("id", 42L, "name", "universe")));
+                Tuple.create(Map.of("id", 42L, "name", "universe")));
 
         assertEquals(Tuple.create().set("id", 42L).set("name", "universe"),
-            Tuple.create(Tuple.create().set("id", 42L).set("name", "universe")));
+                Tuple.create(Tuple.create().set("id", 42L).set("name", "universe")));
     }
 
     private static TupleImpl createTuple() {
@@ -306,7 +308,7 @@ public class TupleImplTest {
 
     private static Tuple getTuple() {
         return new TupleImpl()
-                   .set("id", 3L)
-                   .set("name", "Shirt");
+                .set("id", 3L)
+                .set("name", "Shirt");
     }
 }

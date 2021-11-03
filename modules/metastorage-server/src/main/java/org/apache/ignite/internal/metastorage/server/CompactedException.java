@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.metastorage.server;
 
 /**
- * Thrown when a requested operation on meta storage could not be performed because target revisions were removed
- * from storage due to a compaction procedure. In such case the operation should be retried with actual revision.
+ * Thrown when a requested operation on meta storage could not be performed because target revisions were removed from storage due to a
+ * compaction procedure. In such case the operation should be retried with actual revision.
  */
 public class CompactedException extends RuntimeException {
     /**
@@ -42,7 +42,7 @@ public class CompactedException extends RuntimeException {
      * Constructs an exception with a given message and a cause.
      *
      * @param message Detail message.
-     * @param cause Cause.
+     * @param cause   Cause.
      */
     public CompactedException(String message, Throwable cause) {
         super(message, cause);

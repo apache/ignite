@@ -17,11 +17,15 @@
 
 package org.apache.ignite.client;
 
+import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import io.netty.util.ResourceLeakDetector;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import io.netty.util.ResourceLeakDetector;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.fakes.FakeIgnite;
 import org.apache.ignite.client.handler.ClientHandlerModule;
@@ -34,109 +38,107 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
-import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 /**
  * Base class for client tests.
  */
 public abstract class AbstractClientTest {
     protected static final String DEFAULT_TABLE = "default_test_table";
-
+    
     protected static ConfigurationRegistry configurationRegistry;
-
+    
     protected static ClientHandlerModule clientHandlerModule;
-
+    
     protected static Ignite server;
-
+    
     protected static Ignite client;
-
+    
     protected static int serverPort;
-
+    
     @BeforeAll
     public static void beforeAll() {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
-
+        
         server = new FakeIgnite();
-
+        
         IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv = startServer(10800, 10, server);
-
+        
         clientHandlerModule = srv.get1();
         configurationRegistry = srv.get2();
-
+        
         serverPort = getPort(clientHandlerModule);
-
+        
         client = startClient();
     }
-
+    
     @AfterAll
     public static void afterAll() throws Exception {
         client.close();
         clientHandlerModule.stop();
         configurationRegistry.stop();
     }
-
+    
     @BeforeEach
     public void beforeEach() {
-        for (var t : server.tables().tables())
+        for (var t : server.tables().tables()) {
             server.tables().dropTable(t.tableName());
+        }
     }
-
+    
     public static Ignite startClient(String... addrs) {
-        if (addrs == null || addrs.length == 0)
+        if (addrs == null || addrs.length == 0) {
             addrs = new String[]{"127.0.0.1:" + serverPort};
-
+        }
+        
         var builder = IgniteClient.builder().addresses(addrs);
-
+        
         return builder.build();
     }
-
+    
     public static IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> startServer(
             int port,
             int portRange,
             Ignite ignite
     ) {
         var cfg = new ConfigurationRegistry(
-            List.of(ClientConnectorConfiguration.KEY),
-            Map.of(),
-            new TestConfigurationStorage(LOCAL),
-            List.of(),
-            List.of()
+                List.of(ClientConnectorConfiguration.KEY),
+                Map.of(),
+                new TestConfigurationStorage(LOCAL),
+                List.of(),
+                List.of()
         );
-
+        
         cfg.start();
-
+        
         cfg.getConfiguration(ClientConnectorConfiguration.KEY).change(
                 local -> local.changePort(port).changePortRange(portRange)
         ).join();
-
-        var module = new ClientHandlerModule(((FakeIgnite)ignite).queryEngine(), ignite.tables(), cfg);
+        
+        var module = new ClientHandlerModule(((FakeIgnite) ignite).queryEngine(), ignite.tables(), cfg);
         module.start();
-
+        
         return new IgniteBiTuple<>(module, cfg);
     }
-
+    
     public static void assertTupleEquals(Tuple x, Tuple y) {
         if (x == null) {
             assertNull(y);
             return;
         }
-
+        
         if (y == null) {
             //noinspection ConstantConditions
             assertNull(x);
             return;
         }
-
+        
         assertEquals(x.columnCount(), y.columnCount(), x + " != " + y);
-
+        
         for (var i = 0; i < x.columnCount(); i++) {
             assertEquals(x.columnName(i), y.columnName(i));
             assertEquals((Object) x.value(i), y.value(i));
         }
     }
-
+    
     public static int getPort(ClientHandlerModule hnd) {
         return ((InetSocketAddress) Objects.requireNonNull(hnd.localAddress())).getPort();
     }

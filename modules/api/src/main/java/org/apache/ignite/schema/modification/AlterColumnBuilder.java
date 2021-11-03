@@ -22,7 +22,7 @@ import org.apache.ignite.schema.definition.ColumnType;
 /**
  * Alter column builder.
  *
- * NOTE: Only safe actions that can be applied automatically on-fly are allowed.
+ * <p>NOTE: Only safe actions that can be applied automatically on-fly are allowed.
  */
 public interface AlterColumnBuilder {
     /**
@@ -35,8 +35,8 @@ public interface AlterColumnBuilder {
 
     /**
      * Convert column to a new type.
-     * <p>
-     * Note: New type must be compatible with old.
+     *
+     * <p>Note: New type must be compatible with old.
      *
      * @param newType New column type.
      * @return {@code this} for chaining.
@@ -61,8 +61,7 @@ public interface AlterColumnBuilder {
     /**
      * Mark column as non-nullable.
      *
-     * Note: Replacement param is mandatory, all previously stored 'nulls'
-     * will be treated as replacement value on read.
+     * <p>Note: Replacement param is mandatory, all previously stored 'nulls' will be treated as replacement value on read.
      *
      * @param replacement Non-null value, that 'null' will be converted to.
      * @return {@code this} for chaining.

@@ -24,8 +24,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines operation which will be applied to an entry identified by the key.
- * <p>
- * Invariants:
+ *
+ * <p>Invariants:
  * <ul>
  *     <li>Any operation identifies a target entry by not null {@code key} except of {@link OperationType#NO_OP}.</li>
  *     <li>Only {@link OperationType#PUT} operation contains value which will be written to meta storage.</li>
@@ -39,14 +39,14 @@ public final class Operation {
     private final byte[] key;
 
     /**
-     * Value which will be associated with the {@link #key}. Value is not {@code null} only for {@link OperationType#PUT}
-     * operation.
+     * Value which will be associated with the {@link #key}. Value is not {@code null} only for {@link OperationType#PUT} operation.
      */
     @Nullable
     private final byte[] val;
 
     /**
      * Operation type.
+     *
      * @see OperationType
      */
     @NotNull
@@ -56,16 +56,16 @@ public final class Operation {
      * Constructs operation which will be applied to an entry identified by the given key.
      *
      * @param type Operation type. Can't be {@code null}.
-     * @param key Key identifies an entry which operation will be applied to.
-     * @param val Value will be associated with an entry identified by the {@code key}.
+     * @param key  Key identifies an entry which operation will be applied to.
+     * @param val  Value will be associated with an entry identified by the {@code key}.
      */
     public Operation(@NotNull OperationType type, byte @Nullable [] key, byte @Nullable [] val) {
         assert (type == OperationType.NO_OP && key == null && val == null)
                 || (type == OperationType.PUT && key != null && val != null)
                 || (type == OperationType.REMOVE && key != null && val == null)
-                : "Invalid operation parameters: [type=" + type +
-                        ", key=" + (key == null ? "null" : IgniteUtils.toHexString(key, 256)) +
-                        ", val=" + (val == null ? "null" : IgniteUtils.toHexString(val, 256)) + ']';
+                : "Invalid operation parameters: [type=" + type
+                + ", key=" + (key == null ? "null" : IgniteUtils.toHexString(key, 256))
+                + ", val=" + (val == null ? "null" : IgniteUtils.toHexString(val, 256)) + ']';
 
         this.key = key;
         this.val = val;
@@ -77,7 +77,8 @@ public final class Operation {
      *
      * @return A key which identifies an entry which operation will be applied to.
      */
-    @Nullable public byte[] key() {
+    @Nullable
+    public byte[] key() {
         return key;
     }
 
@@ -86,7 +87,8 @@ public final class Operation {
      *
      * @return A value which will be associated with an entry identified by the {@code key}.
      */
-    @Nullable public byte[] value() {
+    @Nullable
+    public byte[] value() {
         return val;
     }
 
@@ -95,7 +97,8 @@ public final class Operation {
      *
      * @return An operation type.
      */
-    @NotNull public OperationType type() {
+    @NotNull
+    public OperationType type() {
         return type;
     }
 }

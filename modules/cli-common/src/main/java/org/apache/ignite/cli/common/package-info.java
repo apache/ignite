@@ -16,7 +16,7 @@
  */
 
 /**
- * Contains base classes and interfaces
- * for implement Ignite CLI extension module.
+ * Contains base classes and interfaces for implement Ignite CLI extension module.
  */
+
 package org.apache.ignite.cli.common;

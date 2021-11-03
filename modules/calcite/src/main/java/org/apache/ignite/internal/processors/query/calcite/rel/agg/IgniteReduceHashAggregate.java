@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -42,74 +41,84 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  *
  */
 public class IgniteReduceHashAggregate extends IgniteReduceAggregateBase implements IgniteHashAggregateBase {
-    /** */
+    /**
+     *
+     */
     public IgniteReduceHashAggregate(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls,
-        RelDataType rowType
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelNode input,
+            ImmutableBitSet groupSet,
+            List<ImmutableBitSet> groupSets,
+            List<AggregateCall> aggCalls,
+            RelDataType rowType
     ) {
         super(cluster, traits, input, groupSet, groupSets, aggCalls, rowType);
 
         assert RelOptUtil.areRowTypesEqual(input.getRowType(),
-            IgniteMapHashAggregate.rowType(Commons.typeFactory(cluster), !aggCalls.isEmpty()), true);
+                IgniteMapHashAggregate.rowType(Commons.typeFactory(cluster), !aggCalls.isEmpty()), true);
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteReduceHashAggregate(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteReduceHashAggregate(getCluster(), traitSet, sole(inputs), groupSet, groupSets, aggCalls, rowType);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceHashAggregate(cluster, getTraitSet(), sole(inputs),
-            groupSet, groupSets, aggCalls, rowType);
+                groupSet, groupSets, aggCalls, rowType);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        IgniteCostFactory costFactory = (IgniteCostFactory) planner.getCostFactory();
 
         double rows = mq.getRowCount(getInput());
 
         double mem = 0d;
-        if (aggCalls.isEmpty())
+        if (aggCalls.isEmpty()) {
             mem = groupSet.cardinality() * IgniteCost.AVERAGE_FIELD_SIZE;
-        else {
+        } else {
             for (AggregateCall aggCall : aggCalls) {
-                if (aggCall.isDistinct())
+                if (aggCall.isDistinct()) {
                     mem += IgniteCost.AGG_CALL_MEM_COST * rows;
-                else
+                } else {
                     mem += IgniteCost.AGG_CALL_MEM_COST;
+                }
             }
         }
 
         return costFactory.makeCost(
-            rows,
-            rows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0,
-            mem,
-            0
+                rows,
+                rows * IgniteCost.ROW_PASS_THROUGH_COST,
+                0,
+                mem,
+                0
         );
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
+            List<RelTraitSet> inTraits) {
         return List.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            List.of(inTraits.get(0).replace(RelCollations.EMPTY))));
+                List.of(inTraits.get(0).replace(RelCollations.EMPTY))));
     }
 }

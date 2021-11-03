@@ -35,7 +35,8 @@ class IndexColumnDefinitionImpl extends AbstractSchemaObject implements IndexCol
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(IndexColumnDefinitionImpl.class.getSimpleName(), "name", name());
     }
 }

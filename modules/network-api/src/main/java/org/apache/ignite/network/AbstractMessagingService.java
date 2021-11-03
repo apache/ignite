@@ -31,7 +31,7 @@ public abstract class AbstractMessagingService implements MessagingService {
      * Class holding a pair of a message group class and corresponding handlers.
      */
     private static class Handler {
-        /** Message group.  */
+        /** Message group. */
         final Class<?> messageGroup;
 
         /** Handlers, registered for the corresponding message group. */
@@ -41,7 +41,7 @@ public abstract class AbstractMessagingService implements MessagingService {
          * Constructor.
          *
          * @param messageGroup Message group.
-         * @param handlers Message handlers.
+         * @param handlers     Message handlers.
          */
         Handler(Class<?> messageGroup, List<NetworkMessageHandler> handlers) {
             this.messageGroup = messageGroup;
@@ -53,16 +53,18 @@ public abstract class AbstractMessagingService implements MessagingService {
     private final AtomicReferenceArray<Handler> handlersByGroupType = new AtomicReferenceArray<>(Short.MAX_VALUE + 1);
 
     /** {@inheritDoc} */
-    @Override public void addMessageHandler(Class<?> messageGroup, NetworkMessageHandler handler) {
+    @Override
+    public void addMessageHandler(Class<?> messageGroup, NetworkMessageHandler handler) {
         handlersByGroupType.getAndUpdate(getMessageGroupType(messageGroup), oldHandler -> {
-            if (oldHandler == null)
+            if (oldHandler == null) {
                 return new Handler(messageGroup, List.of(handler));
+            }
 
             if (oldHandler.messageGroup != messageGroup) {
                 throw new IllegalArgumentException(String.format(
-                    "Handlers are already registered for a message group with the same group ID " +
-                        "but different class. Group ID: %d, given message group: %s, existing message group: %s",
-                    getMessageGroupType(messageGroup), messageGroup, oldHandler.messageGroup
+                        "Handlers are already registered for a message group with the same group ID "
+                                + "but different class. Group ID: %d, given message group: %s, existing message group: %s",
+                        getMessageGroupType(messageGroup), messageGroup, oldHandler.messageGroup
                 ));
             }
 

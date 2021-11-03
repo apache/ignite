@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.network.netty;
 
-import java.nio.ByteBuffer;
-import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.stream.ChunkedInput;
+import java.nio.ByteBuffer;
+import java.util.List;
 import org.apache.ignite.internal.network.direct.DirectMessageWriter;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
@@ -46,9 +46,10 @@ public class OutboundEncoder extends MessageToMessageEncoder<NetworkMessage> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void encode(ChannelHandlerContext ctx, NetworkMessage msg, List<Object> out) throws Exception {
+    @Override
+    protected void encode(ChannelHandlerContext ctx, NetworkMessage msg, List<Object> out) throws Exception {
         MessageSerializer<NetworkMessage> serializer =
-            serializationRegistry.createSerializer(msg.groupType(), msg.messageType());
+                serializationRegistry.createSerializer(msg.groupType(), msg.messageType());
 
         out.add(new NetworkMessageChunkedInput(msg, serializer, serializationRegistry));
     }
@@ -72,13 +73,13 @@ public class OutboundEncoder extends MessageToMessageEncoder<NetworkMessage> {
         /**
          * Constructor.
          *
-         * @param msg Network message.
+         * @param msg        Network message.
          * @param serializer Serializer.
          */
         private NetworkMessageChunkedInput(
-            NetworkMessage msg,
-            MessageSerializer<NetworkMessage> serializer,
-            MessageSerializationRegistry registry
+                NetworkMessage msg,
+                MessageSerializer<NetworkMessage> serializer,
+                MessageSerializationRegistry registry
         ) {
             this.msg = msg;
             this.serializer = serializer;
@@ -86,23 +87,27 @@ public class OutboundEncoder extends MessageToMessageEncoder<NetworkMessage> {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isEndOfInput() throws Exception {
+        @Override
+        public boolean isEndOfInput() throws Exception {
             return finished;
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override
+        public void close() throws Exception {
 
         }
 
         /** {@inheritDoc} */
         @Deprecated
-        @Override public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
+        @Override
+        public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
             return readChunk(ctx.alloc());
         }
 
         /** {@inheritDoc} */
-        @Override public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
+        @Override
+        public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
             ByteBuf buffer = allocator.ioBuffer();
             int capacity = buffer.capacity();
 
@@ -120,13 +125,15 @@ public class OutboundEncoder extends MessageToMessageEncoder<NetworkMessage> {
         }
 
         /** {@inheritDoc} */
-        @Override public long length() {
+        @Override
+        public long length() {
             // Return negative values, because object's size is unknown.
             return -1;
         }
 
         /** {@inheritDoc} */
-        @Override public long progress() {
+        @Override
+        public long progress() {
             // Not really needed, as there won't be listeners for the write operation's progress.
             return 0;
         }

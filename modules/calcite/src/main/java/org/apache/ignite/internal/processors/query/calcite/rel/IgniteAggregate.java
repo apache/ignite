@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -32,20 +33,18 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
  *
  */
 public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
     /** {@inheritDoc} */
     protected IgniteAggregate(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            RelNode input,
+            ImmutableBitSet groupSet,
+            List<ImmutableBitSet> groupSets,
+            List<AggregateCall> aggCalls
     ) {
         super(cluster, traitSet, List.of(), input, groupSet, groupSets, aggCalls);
     }
@@ -56,18 +55,22 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public double estimateRowCount(RelMetadataQuery mq) {
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
         Double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
 
-        if (groupsCnt != null)
+        if (groupsCnt != null) {
             return groupsCnt;
+        }
 
         // Estimation of the groups count is not available.
         // Use heuristic estimation for result rows count.
         return super.estimateRowCount(mq);
     }
 
-    /** */
+    /**
+     *
+     */
     public double estimateMemoryForGroup(RelMetadataQuery mq) {
         double mem = groupSet.cardinality() * IgniteCost.AVERAGE_FIELD_SIZE;
 
@@ -76,44 +79,49 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
             double rows = input.estimateRowCount(mq);
 
             for (AggregateCall aggCall : aggCalls) {
-                if (aggCall.isDistinct())
+                if (aggCall.isDistinct()) {
                     mem += IgniteCost.AGG_CALL_MEM_COST * rows / grps;
-                else
+                } else {
                     mem += IgniteCost.AGG_CALL_MEM_COST;
+                }
             }
         }
 
         return mem;
     }
 
-    /** */
+    /**
+     *
+     */
     public RelOptCost computeSelfCostHash(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+        IgniteCostFactory costFactory = (IgniteCostFactory) planner.getCostFactory();
 
         double inRows = mq.getRowCount(getInput());
         double groups = estimateRowCount(mq);
 
         return costFactory.makeCost(
-            inRows,
-            inRows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0,
-            groups * estimateMemoryForGroup(mq),
-            0
+                inRows,
+                inRows * IgniteCost.ROW_PASS_THROUGH_COST,
+                0,
+                groups * estimateMemoryForGroup(mq),
+                0
         );
     }
 
-    /** */
+    /**
+     *
+     */
     public RelOptCost computeSelfCostSort(RelOptPlanner planner, RelMetadataQuery mq) {
-        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+        IgniteCostFactory costFactory = (IgniteCostFactory) planner.getCostFactory();
 
         double inRows = mq.getRowCount(getInput());
 
         return costFactory.makeCost(
-            inRows,
-            inRows * IgniteCost.ROW_PASS_THROUGH_COST,
-            0,
-            estimateMemoryForGroup(mq),
-            0
+                inRows,
+                inRows * IgniteCost.ROW_PASS_THROUGH_COST,
+                0,
+                estimateMemoryForGroup(mq),
+                0
         );
     }
 }

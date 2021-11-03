@@ -29,19 +29,22 @@ public class SimpleReadInvokeClosure implements InvokeClosure<Void> {
     private DataRow row;
 
     /** {@inheritDoc} */
-    @Override public void call(@Nullable DataRow row) {
+    @Override
+    public void call(@Nullable DataRow row) {
         this.row = row == null ? null : new SimpleDataRow(row.keyBytes(), row.valueBytes());
     }
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public DataRow newRow() {
+    @Override
+    public DataRow newRow() {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public OperationType operationType() {
+    @Override
+    public OperationType operationType() {
         return OperationType.NOOP;
     }
 

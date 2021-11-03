@@ -33,7 +33,7 @@ final class ClientChannelConfiguration {
     /**
      * Constructor.
      *
-     * @param cfg Config.
+     * @param cfg  Config.
      * @param addr Address.
      */
     ClientChannelConfiguration(IgniteClientConfiguration cfg, InetSocketAddress addr) {

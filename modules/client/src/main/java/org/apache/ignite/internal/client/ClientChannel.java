@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client;
 
 import java.util.concurrent.CompletableFuture;
-
 import org.apache.ignite.client.IgniteClientAuthorizationException;
 import org.apache.ignite.client.IgniteClientConnectionException;
 import org.apache.ignite.client.IgniteClientException;
@@ -30,14 +29,14 @@ interface ClientChannel extends AutoCloseable {
     /**
      * Send request and handle response asynchronously for client operation.
      *
-     * @param opCode Operation code.
+     * @param opCode        Operation code.
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
      * @param payloadReader Payload reader from stream.
-     * @param <T> Response type.
+     * @param <T>           Response type.
      * @return Future for the operation.
-     * @throws IgniteClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws IgniteClientException              Thrown by {@code payloadWriter} or {@code payloadReader}.
      * @throws IgniteClientAuthorizationException When user has no permission to perform operation.
-     * @throws IgniteClientConnectionException In case of IO errors.
+     * @throws IgniteClientConnectionException    In case of IO errors.
      */
     public <T> CompletableFuture<T> serviceAsync(
             int opCode,

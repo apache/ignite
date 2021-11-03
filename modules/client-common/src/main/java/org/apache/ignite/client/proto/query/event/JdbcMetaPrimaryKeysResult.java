@@ -53,11 +53,13 @@ public class JdbcMetaPrimaryKeysResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         if (meta == null || meta.isEmpty()) {
             packer.packNil();
@@ -73,11 +75,13 @@ public class JdbcMetaPrimaryKeysResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         if (unpacker.tryUnpackNil()) {
             meta = Collections.emptyList();
@@ -108,7 +112,8 @@ public class JdbcMetaPrimaryKeysResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcMetaPrimaryKeysResult.class, this);
     }
 }

@@ -17,13 +17,6 @@
 
 package org.apache.ignite.network;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-import org.apache.ignite.network.annotations.MessageGroup;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,21 +24,28 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.withSettings;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.network.annotations.MessageGroup;
+import org.junit.jupiter.api.Test;
+
 /**
  * Test suite for the {@link AbstractMessagingService} class.
  */
 public class AbstractMessagingServiceTest {
     /**
-     * Tests a situation when multiple modules declare message group descriptors with the same group ID.
-     * Adding handlers for both of these groups should result in an exception being thrown.
-     * <p>
-     * Since we can't declare multiple message groups in a single module, we have to reside to hacks using reflection.
+     * Tests a situation when multiple modules declare message group descriptors with the same group ID. Adding handlers for both of these
+     * groups should result in an exception being thrown.
+     *
+     * <p>Since we can't declare multiple message groups in a single module, we have to reside to hacks using reflection.
      */
     @Test
     public void testGroupIdClash() throws Exception {
         var messagingService = mock(
-            AbstractMessagingService.class,
-            withSettings().useConstructor().defaultAnswer(CALLS_REAL_METHODS)
+                AbstractMessagingService.class,
+                withSettings().useConstructor().defaultAnswer(CALLS_REAL_METHODS)
         );
 
         // get the static inner class that is stored inside the handlers list
@@ -67,8 +67,9 @@ public class AbstractMessagingServiceTest {
         handlers.set(groupType, dummyHandler);
 
         Exception e = assertThrows(
-            IllegalArgumentException.class,
-            () -> messagingService.addMessageHandler(TestMessageTypes.class, (m, s, c) -> {})
+                IllegalArgumentException.class,
+                () -> messagingService.addMessageHandler(TestMessageTypes.class, (m, s, c) -> {
+                })
         );
 
         assertThat(e.getMessage(), startsWith("Handlers are already registered"));

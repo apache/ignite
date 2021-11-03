@@ -33,14 +33,13 @@ public interface VaultService extends AutoCloseable, IgniteComponent {
      * Retrieves an entry for the given key.
      *
      * @param key Key. Couldn't be {@code null}.
-     * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key},
-     * then {@code Entry} with value that equals to null will be returned.
+     * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key}, then {@code Entry}
+     *      with value that equals to null will be returned.
      */
     @NotNull CompletableFuture<VaultEntry> get(@NotNull ByteArray key);
 
     /**
-     * Write value with key to vault. If value is equal to null, then previous value with key will be deleted if there
-     * was any mapping.
+     * Write value with key to vault. If value is equal to null, then previous value with key will be deleted if there was any mapping.
      *
      * @param key Vault key. Couldn't be {@code null}.
      * @param val Value. If value is equal to null, then previous value with key will be deleted if there was any mapping.
@@ -60,14 +59,14 @@ public interface VaultService extends AutoCloseable, IgniteComponent {
      * Returns a view of the portion of vault whose keys range from fromKey, inclusive, to toKey, exclusive.
      *
      * @param fromKey Start key of range (inclusive). Couldn't be {@code null}.
-     * @param toKey End key of range (exclusive). Could be {@code null}.
+     * @param toKey   End key of range (exclusive). Could be {@code null}.
      * @return Iterator built upon entries corresponding to the given range.
      */
     @NotNull Cursor<VaultEntry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey);
 
     /**
-     * Inserts or updates entries with given keys and given values. If the given value in {@code vals} is null,
-     * then corresponding value with key will be deleted if there was any mapping.
+     * Inserts or updates entries with given keys and given values. If the given value in {@code vals} is null, then corresponding value
+     * with key will be deleted if there was any mapping.
      *
      * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
      * @return Future representing pending completion of the operation. Couldn't be {@code null}.

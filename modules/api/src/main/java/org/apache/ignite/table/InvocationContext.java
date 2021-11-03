@@ -18,14 +18,12 @@
 package org.apache.ignite.table;
 
 /**
- * Invocation context provides access to invoke operation call parameters,
- * a method to set a new value for the key.
- * <p>
- * InvokeProcessor executes atomically under lock which makes impossible
- * to trigger 'live-schema' upgrade within the invoke operation.
+ * Invocation context provides access to invoke operation call parameters, a method to set a new value for the key.
+ *
+ * <p>InvokeProcessor executes atomically under lock which makes impossible to trigger 'live-schema' upgrade within the invoke operation.
  * Any try to update the row leading to schema change will end up with {@link InvokeProcessorException}.
- * <p>
- * New value MUST BE compliant with the current schema version.
+ *
+ * <p>New value MUST BE compliant with the current schema version.
  *
  * @param <K> Target object type.
  * @param <V> Value object type.
@@ -41,9 +39,9 @@ public interface InvocationContext<K, V> {
 
     /**
      * Returns an object the user provide to invoke call for running invoke processor against the associated row.
-     * <p>
-     * Depending on Table view the invoke operation is called on, the returning value is either value object or
-     * record object or tuple with value fields set.
+     *
+     * <p>Depending on Table view the invoke operation is called on, the returning value is either value object or record object or tuple
+     * with value fields set.
      *
      * @return Object which target row is associated with.
      */
@@ -51,9 +49,9 @@ public interface InvocationContext<K, V> {
 
     /**
      * Returns current value object for the target row.
-     * <p>
-     * Depending on Table view the invoke operation is called on, the returning value is either value object or
-     * record object or tuple with value fields set or {@code null} for non-existed row.
+     *
+     * <p>Depending on Table view the invoke operation is called on, the returning value is either value object or record object or tuple
+     * with value fields set or {@code null} for non-existed row.
      *
      * @return Current value of target row or {@code null} if value associated with the key is not exists.
      */
@@ -61,9 +59,9 @@ public interface InvocationContext<K, V> {
 
     /**
      * Sets a new value object for the target row.
-     * <p>
-     * Depending on Table view the invoke operation is called on, a new value can be either value object or
-     * record object or tuple with value fields set or {@code null} for removal.
+     *
+     * <p>Depending on Table view the invoke operation is called on, a new value can be either value object or record object or tuple with
+     * value fields set or {@code null} for removal.
      *
      * @param val Value object to set.
      * @throws InvokeProcessorException if new value is not compliant with the current schema.

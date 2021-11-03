@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -45,15 +44,21 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
  * Ignite table implementation.
  */
 public class IgniteTableImpl extends AbstractTable implements IgniteTable {
-    /** */
+    /**
+     *
+     */
     private final TableDescriptor desc;
-
-    /** */
+    
+    /**
+     *
+     */
     private final Statistic statistic;
-
-    /** */
+    
+    /**
+     *
+     */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
-
+    
     /**
      * @param desc Table descriptor.
      */
@@ -61,108 +66,129 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         this.desc = desc;
         statistic = new StatisticsImpl();
     }
-
+    
     /** {@inheritDoc} */
-    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet requiredColumns) {
-        return desc.rowType((IgniteTypeFactory)typeFactory, requiredColumns);
+    @Override
+    public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet requiredColumns) {
+        return desc.rowType((IgniteTypeFactory) typeFactory, requiredColumns);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Statistic getStatistic() {
+    @Override
+    public Statistic getStatistic() {
         return statistic;
     }
-
-
+    
+    
     /** {@inheritDoc} */
-    @Override public TableDescriptor descriptor() {
+    @Override
+    public TableDescriptor descriptor() {
         return desc;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
+    @Override
+    public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
         RelTraitSet traitSet = cluster.traitSetOf(distribution())
-            .replace(RewindabilityTrait.REWINDABLE);
-
+                .replace(RewindabilityTrait.REWINDABLE);
+        
         return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+    @Override
+    public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
         RelTraitSet traitSet = cluster.traitSetOf(Convention.Impl.NONE)
-            .replace(distribution())
-            .replace(RewindabilityTrait.REWINDABLE)
-            .replace(getIndex(idxName).collation());
-
+                .replace(distribution())
+                .replace(RewindabilityTrait.REWINDABLE)
+                .replace(getIndex(idxName).collation());
+        
         return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
+    @Override
+    public IgniteDistribution distribution() {
         return desc.distribution();
     }
-
+    
     /** {@inheritDoc} */
-    @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+    @Override
+    public ColocationGroup colocationGroup(PlanningContext ctx) {
         return desc.colocationGroup(ctx);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Map<String, IgniteIndex> indexes() {
+    @Override
+    public Map<String, IgniteIndex> indexes() {
         return Collections.unmodifiableMap(indexes);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void addIndex(IgniteIndex idxTbl) {
+    @Override
+    public void addIndex(IgniteIndex idxTbl) {
         indexes.put(idxTbl.name(), idxTbl);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteIndex getIndex(String idxName) {
+    @Override
+    public IgniteIndex getIndex(String idxName) {
         return indexes.get(idxName);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void removeIndex(String idxName) {
+    @Override
+    public void removeIndex(String idxName) {
         indexes.remove(idxName);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <C> C unwrap(Class<C> aCls) {
-        if (aCls.isInstance(desc))
-            return aCls.cast(desc);
-
-        return super.unwrap(aCls);
+    @Override
+    public <C> C unwrap(Class<C> cls) {
+        if (cls.isInstance(desc)) {
+            return cls.cast(desc);
+        }
+        
+        return super.unwrap(cls);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     private class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */
-        @Override public Double getRowCount() {
+        @Override
+        public Double getRowCount() {
             return 10_000d;
         }
-
+        
         /** {@inheritDoc} */
-        @Override public boolean isKey(ImmutableBitSet cols) {
+        @Override
+        public boolean isKey(ImmutableBitSet cols) {
             return false; // TODO
         }
-
+        
         /** {@inheritDoc} */
-        @Override public List<ImmutableBitSet> getKeys() {
+        @Override
+        public List<ImmutableBitSet> getKeys() {
             return null; // TODO
         }
-
+        
         /** {@inheritDoc} */
-        @Override public List<RelReferentialConstraint> getReferentialConstraints() {
+        @Override
+        public List<RelReferentialConstraint> getReferentialConstraints() {
             return List.of();
         }
-
+        
         /** {@inheritDoc} */
-        @Override public List<RelCollation> getCollations() {
+        @Override
+        public List<RelCollation> getCollations() {
             return List.of(); // The method isn't used
         }
-
+        
         /** {@inheritDoc} */
-        @Override public IgniteDistribution getDistribution() {
+        @Override
+        public IgniteDistribution getDistribution() {
             return distribution();
         }
     }

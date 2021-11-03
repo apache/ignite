@@ -30,7 +30,7 @@ public class ErrorResult {
     /**
      * Constructor.
      *
-     * @param type Error type describing the class of the error occurred.
+     * @param type    Error type describing the class of the error occurred.
      * @param message User-friendly error message.
      */
     public ErrorResult(String type, String message) {

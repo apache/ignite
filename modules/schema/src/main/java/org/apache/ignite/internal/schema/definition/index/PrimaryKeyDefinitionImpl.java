@@ -38,7 +38,7 @@ public class PrimaryKeyDefinitionImpl extends AbstractSchemaObject implements Pr
     /**
      * Constructor.
      *
-     * @param columns Index columns.
+     * @param columns         Index columns.
      * @param affinityColumns Affinity columns.
      */
     public PrimaryKeyDefinitionImpl(Set<String> columns, Set<String> affinityColumns) {
@@ -49,20 +49,23 @@ public class PrimaryKeyDefinitionImpl extends AbstractSchemaObject implements Pr
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> columns() {
+    @Override
+    public Set<String> columns() {
         return columns;
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> affinityColumns() {
+    @Override
+    public Set<String> affinityColumns() {
         return affCols;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(PrimaryKeyDefinitionImpl.class, this,
-            "name", name(),
-            "cols", columns(),
-            "affCols", affinityColumns());
+                "name", name(),
+                "cols", columns(),
+                "affCols", affinityColumns());
     }
 }

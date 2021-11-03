@@ -14,50 +14,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.processor;
 
+import static com.google.testing.compile.Compiler.javac;
+
+import com.google.common.base.Functions;
+import com.google.testing.compile.Compilation;
+import com.google.testing.compile.JavaFileObjects;
+import com.squareup.javapoet.ClassName;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.tools.JavaFileObject;
-import com.google.common.base.Functions;
-import com.google.testing.compile.Compilation;
-import com.google.testing.compile.JavaFileObjects;
-import com.squareup.javapoet.ClassName;
-
-import static com.google.testing.compile.Compiler.javac;
 
 /**
  * Base class for configuration annotation processor tests.
  */
 public class AbstractProcessorTest {
-
     /**
-     * Compile set of classes
+     * Compile set of classes.
+     *
      * @param schemaClasses Configuration schema classes.
      * @return Result of batch compilation.
      */
     protected static BatchCompilation batchCompile(ClassName... schemaClasses) {
         List<String> fileNames = Arrays.stream(schemaClasses)
-            .map(name -> {
-                final String folderName = name.packageName().replace(".", "/");
-                return String.format("%s/%s.java", folderName, name.simpleName());
-            })
-            .collect(Collectors.toList());
+                .map(name -> {
+                    final String folderName = name.packageName().replace(".", "/");
+                    return String.format("%s/%s.java", folderName, name.simpleName());
+                })
+                .collect(Collectors.toList());
 
         final List<JavaFileObject> fileObjects = fileNames.stream().map(JavaFileObjects::forResource).collect(Collectors.toList());
 
         final Compilation compilation = javac()
-            .withProcessors(new Processor())
-            .compile(fileObjects);
+                .withProcessors(new Processor())
+                .compile(fileObjects);
 
         return new BatchCompilation(Arrays.asList(schemaClasses), compilation);
     }
 
     /**
      * Get {@link ConfigSet} object from generated classes.
-     * @param clazz Configuration schema ClassName.
+     *
+     * @param clazz            Configuration schema ClassName.
      * @param generatedClasses Map with all generated classes.
      * @return ConfigSet.
      */
@@ -73,6 +75,7 @@ public class AbstractProcessorTest {
 
     /**
      * Get {@link ClassName} object from generated file path.
+     *
      * @param fileName File path.
      * @return ClassName.
      */
@@ -83,6 +86,7 @@ public class AbstractProcessorTest {
 
     /**
      * Get {@link ClassName} object from file path.
+     *
      * @param fileName File path.
      * @return ClassName.
      */
@@ -115,8 +119,9 @@ public class AbstractProcessorTest {
 
         /**
          * Constructor.
+         *
          * @param schemaClasses List of schema class names.
-         * @param compilation Compilation status.
+         * @param compilation   Compilation status.
          */
         public BatchCompilation(List<ClassName> schemaClasses, Compilation compilation) {
             this.compilationStatus = compilation;
@@ -124,15 +129,16 @@ public class AbstractProcessorTest {
             generatedSources = compilation.generatedSourceFiles();
 
             generatedClasses = generatedSources.stream()
-                .collect(Collectors.toMap(object -> fromGeneratedFilePath(object.getName()), Functions.identity()));
+                    .collect(Collectors.toMap(object -> fromGeneratedFilePath(object.getName()), Functions.identity()));
 
             classSets = schemaClasses.stream().collect(
-                Collectors.toMap(name -> name, name -> getConfigSet(name, generatedClasses))
+                    Collectors.toMap(name -> name, name -> getConfigSet(name, generatedClasses))
             );
         }
 
         /**
          * Get config class set by schema class name.
+         *
          * @param schemaClass Schema class name.
          * @return Config class set.
          */
@@ -142,6 +148,7 @@ public class AbstractProcessorTest {
 
         /**
          * Get compilation status.
+         *
          * @return Compilation status.
          */
         public Compilation getCompilationStatus() {
@@ -150,6 +157,7 @@ public class AbstractProcessorTest {
 
         /**
          * Get all generated source files.
+         *
          * @return Generated source files.
          */
         public List<JavaFileObject> generated() {

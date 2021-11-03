@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 
 /**
@@ -28,31 +27,34 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
 public interface ExchangeService extends LifecycleAware {
     /**
      * Sends a batch of data to remote node.
-     * @param nodeId Target node ID.
-     * @param qryId Query ID.
+     *
+     * @param nodeId     Target node ID.
+     * @param qryId      Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
-     * @param batchId Batch ID.
-     * @param last Last batch flag.
-     * @param rows Data rows.
+     * @param batchId    Batch ID.
+     * @param last       Last batch flag.
+     * @param rows       Data rows.
      */
-    <Row> void sendBatch(String nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last,
-        List<Row> rows) throws IgniteInternalCheckedException;
+    <RowT> void sendBatch(String nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last,
+            List<RowT> rows) throws IgniteInternalCheckedException;
 
     /**
      * Acknowledges a batch with given ID is processed.
-     * @param nodeId Node ID to notify.
-     * @param qryId Query ID.
+     *
+     * @param nodeId     Node ID to notify.
+     * @param qryId      Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
-     * @param batchId Batch ID.
+     * @param batchId    Batch ID.
      */
     void acknowledge(String nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId) throws IgniteInternalCheckedException;
 
     /**
      * Sends cancel request.
-     * @param nodeId Target node ID.
-     * @param qryId Query ID.
+     *
+     * @param nodeId     Target node ID.
+     * @param qryId      Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      */
@@ -60,18 +62,19 @@ public interface ExchangeService extends LifecycleAware {
 
     /**
      * Sends cancel request.
-     * @param nodeId Target node ID.
-     * @param qryId Query ID.
+     *
+     * @param nodeId     Target node ID.
+     * @param qryId      Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      */
     void closeOutbox(String nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteInternalCheckedException;
 
     /**
-     * @param nodeId Target node ID.
-     * @param qryId Query ID.
+     * @param nodeId     Target node ID.
+     * @param qryId      Query ID.
      * @param fragmentId Source fragment ID.
-     * @param err Exception to send.
+     * @param err        Exception to send.
      * @throws IgniteInternalCheckedException On error marshaling or send ErrorMessage.
      */
     void sendError(String nodeId, UUID qryId, long fragmentId, Throwable err) throws IgniteInternalCheckedException;

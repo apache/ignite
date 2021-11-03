@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.internal.storage.DataRow;
@@ -94,56 +93,60 @@ public class PartitionListener implements RaftGroupListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
+    @Override
+    public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
         iterator.forEachRemaining((CommandClosure<? extends ReadCommand> clo) -> {
-            if (clo.command() instanceof GetCommand)
+            if (clo.command() instanceof GetCommand) {
                 handleGetCommand((CommandClosure<GetCommand>) clo);
-            else if (clo.command() instanceof GetAllCommand)
+            } else if (clo.command() instanceof GetAllCommand) {
                 handleGetAllCommand((CommandClosure<GetAllCommand>) clo);
-            else
+            } else {
                 assert false : "Command was not found [cmd=" + clo.command() + ']';
+            }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
+    @Override
+    public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
         iterator.forEachRemaining((CommandClosure<? extends WriteCommand> clo) -> {
             Command command = clo.command();
 
-            if (command instanceof InsertCommand)
+            if (command instanceof InsertCommand) {
                 handleInsertCommand((CommandClosure<InsertCommand>) clo);
-            else if (command instanceof DeleteCommand)
+            } else if (command instanceof DeleteCommand) {
                 handleDeleteCommand((CommandClosure<DeleteCommand>) clo);
-            else if (command instanceof ReplaceCommand)
+            } else if (command instanceof ReplaceCommand) {
                 handleReplaceCommand((CommandClosure<ReplaceCommand>) clo);
-            else if (command instanceof UpsertCommand)
+            } else if (command instanceof UpsertCommand) {
                 handleUpsertCommand((CommandClosure<UpsertCommand>) clo);
-            else if (command instanceof InsertAllCommand)
+            } else if (command instanceof InsertAllCommand) {
                 handleInsertAllCommand((CommandClosure<InsertAllCommand>) clo);
-            else if (command instanceof UpsertAllCommand)
+            } else if (command instanceof UpsertAllCommand) {
                 handleUpsertAllCommand((CommandClosure<UpsertAllCommand>) clo);
-            else if (command instanceof DeleteAllCommand)
+            } else if (command instanceof DeleteAllCommand) {
                 handleDeleteAllCommand((CommandClosure<DeleteAllCommand>) clo);
-            else if (command instanceof DeleteExactCommand)
+            } else if (command instanceof DeleteExactCommand) {
                 handleDeleteExactCommand((CommandClosure<DeleteExactCommand>) clo);
-            else if (command instanceof DeleteExactAllCommand)
+            } else if (command instanceof DeleteExactAllCommand) {
                 handleDeleteExactAllCommand((CommandClosure<DeleteExactAllCommand>) clo);
-            else if (command instanceof ReplaceIfExistCommand)
+            } else if (command instanceof ReplaceIfExistCommand) {
                 handleReplaceIfExistsCommand((CommandClosure<ReplaceIfExistCommand>) clo);
-            else if (command instanceof GetAndDeleteCommand)
+            } else if (command instanceof GetAndDeleteCommand) {
                 handleGetAndDeleteCommand((CommandClosure<GetAndDeleteCommand>) clo);
-            else if (command instanceof GetAndReplaceCommand)
+            } else if (command instanceof GetAndReplaceCommand) {
                 handleGetAndReplaceCommand((CommandClosure<GetAndReplaceCommand>) clo);
-            else if (command instanceof GetAndUpsertCommand)
+            } else if (command instanceof GetAndUpsertCommand) {
                 handleGetAndUpsertCommand((CommandClosure<GetAndUpsertCommand>) clo);
-            else if (command instanceof ScanInitCommand)
+            } else if (command instanceof ScanInitCommand) {
                 handleScanInitCommand((CommandClosure<ScanInitCommand>) clo);
-            else if (command instanceof ScanRetrieveBatchCommand)
+            } else if (command instanceof ScanRetrieveBatchCommand) {
                 handleScanRetrieveBatchCommand((CommandClosure<ScanRetrieveBatchCommand>) clo);
-            else if (command instanceof ScanCloseCommand)
+            } else if (command instanceof ScanCloseCommand) {
                 handleScanCloseCommand((CommandClosure<ScanCloseCommand>) clo);
-            else
+            } else {
                 assert false : "Command was not found [cmd=" + command + ']';
+            }
         });
     }
 
@@ -173,12 +176,12 @@ public class PartitionListener implements RaftGroupListener {
         assert keyRows != null && !keyRows.isEmpty();
 
         List<SearchRow> keys = keyRows.stream()
-            .map(BinarySearchRow::new)
-            .collect(Collectors.toList());
+                .map(BinarySearchRow::new)
+                .collect(Collectors.toList());
 
         List<BinaryRow> res = storage.readAll(keys).stream()
-            .map(read -> new ByteBufferRow(read.valueBytes()))
-            .collect(Collectors.toList());
+                .map(read -> new ByteBufferRow(read.valueBytes()))
+                .collect(Collectors.toList());
 
         clo.result(new MultiRowsResponse(res));
     }
@@ -261,12 +264,12 @@ public class PartitionListener implements RaftGroupListener {
         assert rows != null && !rows.isEmpty();
 
         List<DataRow> keyValues = rows.stream()
-            .map(PartitionListener::extractAndWrapKeyValue)
-            .collect(Collectors.toList());
+                .map(PartitionListener::extractAndWrapKeyValue)
+                .collect(Collectors.toList());
 
         List<BinaryRow> res = storage.insertAll(keyValues).stream()
-            .map(skipped -> new ByteBufferRow(skipped.valueBytes()))
-            .collect(Collectors.toList());
+                .map(skipped -> new ByteBufferRow(skipped.valueBytes()))
+                .collect(Collectors.toList());
 
         clo.result(new MultiRowsResponse(res));
     }
@@ -282,8 +285,8 @@ public class PartitionListener implements RaftGroupListener {
         assert rows != null && !rows.isEmpty();
 
         List<DataRow> keyValues = rows.stream()
-            .map(PartitionListener::extractAndWrapKeyValue)
-            .collect(Collectors.toList());
+                .map(PartitionListener::extractAndWrapKeyValue)
+                .collect(Collectors.toList());
 
         storage.writeAll(keyValues);
 
@@ -301,12 +304,12 @@ public class PartitionListener implements RaftGroupListener {
         assert rows != null && !rows.isEmpty();
 
         List<SearchRow> keys = rows.stream()
-            .map(BinarySearchRow::new)
-            .collect(Collectors.toList());
+                .map(BinarySearchRow::new)
+                .collect(Collectors.toList());
 
         List<BinaryRow> res = storage.removeAll(keys).stream()
-            .map(skipped -> ((BinarySearchRow)skipped).sourceRow)
-            .collect(Collectors.toList());
+                .map(skipped -> ((BinarySearchRow) skipped).sourceRow)
+                .collect(Collectors.toList());
 
         clo.result(new MultiRowsResponse(res));
     }
@@ -341,12 +344,12 @@ public class PartitionListener implements RaftGroupListener {
         assert rows != null && !rows.isEmpty();
 
         List<DataRow> keyValues = rows.stream()
-            .map(PartitionListener::extractAndWrapKeyValue)
-            .collect(Collectors.toList());
+                .map(PartitionListener::extractAndWrapKeyValue)
+                .collect(Collectors.toList());
 
         List<BinaryRow> res = storage.removeAllExact(keyValues).stream()
-            .map(skipped -> new ByteBufferRow(skipped.valueBytes()))
-            .collect(Collectors.toList());
+                .map(skipped -> new ByteBufferRow(skipped.valueBytes()))
+                .collect(Collectors.toList());
 
         clo.result(new MultiRowsResponse(res));
     }
@@ -386,9 +389,8 @@ public class PartitionListener implements RaftGroupListener {
 
         storage.invoke(keyRow, getAndRemoveClosure);
 
-        BinaryRow removedRow = getAndRemoveClosure.result() ?
-            new ByteBufferRow(getAndRemoveClosure.oldRow().valueBytes()) :
-            null;
+        BinaryRow removedRow = getAndRemoveClosure.result()
+                ? new ByteBufferRow(getAndRemoveClosure.oldRow().valueBytes()) : null;
 
         clo.result(new SingleRowResponse(removedRow));
     }
@@ -453,14 +455,13 @@ public class PartitionListener implements RaftGroupListener {
             Cursor<DataRow> cursor = storage.scan(key -> true);
 
             cursors.put(
-                cursorId,
-                new CursorMeta(
-                    cursor,
-                    rangeCmd.requesterNodeId()
-                )
+                    cursorId,
+                    new CursorMeta(
+                            cursor,
+                            rangeCmd.requesterNodeId()
+                    )
             );
-        }
-        catch (StorageException e) {
+        } catch (StorageException e) {
             clo.result(e);
         }
 
@@ -477,16 +478,16 @@ public class PartitionListener implements RaftGroupListener {
 
         if (cursorDesc == null) {
             clo.result(new NoSuchElementException(LoggerMessageHelper.format(
-                "Cursor with id={} is not found on server side.", clo.command().scanId())));
+                    "Cursor with id={} is not found on server side.", clo.command().scanId())));
         }
 
         List<BinaryRow> res = new ArrayList<>();
 
         try {
-            for (int i = 0; i < clo.command().itemsToRetrieveCount() && cursorDesc.cursor().hasNext(); i++)
+            for (int i = 0; i < clo.command().itemsToRetrieveCount() && cursorDesc.cursor().hasNext(); i++) {
                 res.add(new ByteBufferRow(cursorDesc.cursor().next().valueBytes()));
-        }
-        catch (Exception e) {
+            }
+        } catch (Exception e) {
             clo.result(e);
         }
 
@@ -509,8 +510,7 @@ public class PartitionListener implements RaftGroupListener {
 
         try {
             cursorDesc.cursor().close();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IgniteInternalException(e);
         }
 
@@ -518,24 +518,26 @@ public class PartitionListener implements RaftGroupListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
+    @Override
+    public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
         storage.snapshot(path).whenComplete((unused, throwable) -> {
             doneClo.accept(throwable);
         });
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onSnapshotLoad(Path path) {
+    @Override
+    public boolean onSnapshotLoad(Path path) {
         storage.restoreSnapshot(path);
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public void onShutdown() {
+    @Override
+    public void onShutdown() {
         try {
             storage.close();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IgniteInternalException("Failed to close storage: " + e.getMessage(), e);
         }
     }
@@ -546,7 +548,8 @@ public class PartitionListener implements RaftGroupListener {
      * @param row Binary row.
      * @return Data row.
      */
-    @NotNull private static DataRow extractAndWrapKeyValue(@NotNull BinaryRow row) {
+    @NotNull
+    private static DataRow extractAndWrapKeyValue(@NotNull BinaryRow row) {
         byte[] key = new byte[row.keySlice().capacity()];
 
         row.keySlice().get(key);
@@ -577,12 +580,14 @@ public class PartitionListener implements RaftGroupListener {
         }
 
         /** {@inheritDoc} */
-        @Override public byte @NotNull [] keyBytes() {
+        @Override
+        public byte @NotNull [] keyBytes() {
             return keyBytes;
         }
 
         /** {@inheritDoc} */
-        @Override public @NotNull ByteBuffer key() {
+        @Override
+        public @NotNull ByteBuffer key() {
             return ByteBuffer.wrap(keyBytes);
         }
     }
@@ -608,12 +613,12 @@ public class PartitionListener implements RaftGroupListener {
         /**
          * The constructor.
          *
-         * @param cursor Cursor.
+         * @param cursor          Cursor.
          * @param requesterNodeId Id of the node that creates cursor.
          */
         CursorMeta(
-            Cursor<DataRow> cursor,
-            String requesterNodeId
+                Cursor<DataRow> cursor,
+                String requesterNodeId
         ) {
             this.cursor = cursor;
             this.requesterNodeId = requesterNodeId;

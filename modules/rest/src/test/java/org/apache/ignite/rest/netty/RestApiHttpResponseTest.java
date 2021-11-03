@@ -17,29 +17,31 @@
 
 package org.apache.ignite.rest.netty;
 
-import java.util.Map;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.HttpVersion;
-import org.apache.ignite.rest.ErrorResult;
-import org.junit.jupiter.api.Test;
-
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_JSON;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.HttpVersion;
+import java.util.Map;
+import org.apache.ignite.rest.ErrorResult;
+import org.junit.jupiter.api.Test;
+
 /**
  * Testing the {@link RestApiHttpResponse}.
  */
 public class RestApiHttpResponseTest {
-    /** */
+    /**
+     *
+     */
     @Test
     void testToJson() {
         RestApiHttpResponse res = new RestApiHttpResponse(new DefaultHttpResponse(HttpVersion.HTTP_1_1, OK));
 
         Map<?, String> value = Map.of(
-            "{root:{foo:foo,subCfg:{bar:bar}}}", "\"{root:{foo:foo,subCfg:{bar:bar}}}\"",
-            Map.of("err", new ErrorResult("t", "m")), "{\"err\":{\"type\":\"t\",\"message\":\"m\"}}"
+                "{root:{foo:foo,subCfg:{bar:bar}}}", "\"{root:{foo:foo,subCfg:{bar:bar}}}\"",
+                Map.of("err", new ErrorResult("t", "m")), "{\"err\":{\"type\":\"t\",\"message\":\"m\"}}"
         );
 
         for (Map.Entry<?, String> e : value.entrySet()) {

@@ -17,28 +17,34 @@
 
 package org.apache.ignite.internal.vault;
 
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.internal.vault.inmemory.InMemoryVaultService;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.testframework.matchers.CompletableFutureMatcher.willBe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.vault.inmemory.InMemoryVaultService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 /**
  * Test suite for the {@link VaultManager}.
  */
 public class VaultManagerTest {
-    /** */
+    /**
+     *
+     */
     private static final int TIMEOUT_SECONDS = 1;
 
-    /** */
+    /**
+     *
+     */
     private final VaultManager vaultManager = new VaultManager(new InMemoryVaultService());
 
-    /** */
+    /**
+     *
+     */
     @AfterEach
     void tearDown() throws Exception {
         vaultManager.stop();
@@ -66,8 +72,8 @@ public class VaultManagerTest {
     @Test
     void testEmptyName() {
         assertThrows(
-            IllegalArgumentException.class,
-            () -> vaultManager.putName("").get(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                IllegalArgumentException.class,
+                () -> vaultManager.putName("").get(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         );
     }
 }

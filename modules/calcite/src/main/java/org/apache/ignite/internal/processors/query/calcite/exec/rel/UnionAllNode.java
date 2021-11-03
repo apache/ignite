@@ -17,30 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /**
  *
  */
-public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<Row> {
-    /** */
+public class UnionAllNode<RowT> extends AbstractNode<RowT> implements Downstream<RowT> {
+    /**
+     *
+     */
     private int curSrc;
 
-    /** */
+    /**
+     *
+     */
     private int waiting;
 
     /**
      * @param ctx Execution context.
      */
-    public UnionAllNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+    public UnionAllNode(ExecutionContext<RowT> ctx, RelDataType rowType) {
         super(ctx, rowType);
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
         assert sources() != null;
         assert idx >= 0 && idx < sources().size();
 
@@ -48,7 +53,8 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert !nullOrEmpty(sources());
         assert rowsCnt > 0 && waiting == 0;
 
@@ -58,7 +64,8 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) throws Exception {
+    @Override
+    public void push(RowT row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
@@ -70,28 +77,32 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     }
 
     /** {@inheritDoc} */
-    @Override public void end() throws Exception {
+    @Override
+    public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
         checkState();
 
-        if (++curSrc < sources().size())
+        if (++curSrc < sources().size()) {
             source().request(waiting);
-        else {
+        } else {
             waiting = -1;
             downstream().end();
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         curSrc = 0;
         waiting = 0;
     }
 
-    /** */
-    private Node<Row> source() {
+    /**
+     *
+     */
+    private Node<RowT> source() {
         return sources().get(curSrc);
     }
 }

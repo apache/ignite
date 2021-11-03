@@ -20,14 +20,13 @@ package org.apache.ignite.internal.client;
 import java.io.Serializable;
 import java.net.Inet6Address;
 import java.net.UnknownHostException;
-
 import org.apache.ignite.lang.IgniteException;
 
 /**
  * Represents address along with port range.
  */
 public class HostAndPortRange implements Serializable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Host. */
@@ -42,9 +41,9 @@ public class HostAndPortRange implements Serializable {
     /**
      * Parse string into host and port pair.
      *
-     * @param addrStr String.
+     * @param addrStr      String.
      * @param dfltPortFrom Default port from.
-     * @param dfltPortTo Default port to.
+     * @param dfltPortTo   Default port to.
      * @param errMsgPrefix Error message prefix.
      * @return Result.
      * @throws IgniteException If failed.
@@ -59,30 +58,30 @@ public class HostAndPortRange implements Serializable {
         int portFrom;
         int portTo;
 
-        if (addrStr == null || addrStr.isEmpty())
+        if (addrStr == null || addrStr.isEmpty()) {
             throw createParseError(addrStr, errMsgPrefix, "Address is empty");
+        }
 
         if (addrStr.charAt(0) == '[') { // IPv6 with port(s)
             int hostEndIdx = addrStr.indexOf(']');
 
-            if (hostEndIdx == -1)
+            if (hostEndIdx == -1) {
                 throw createParseError(addrStr, errMsgPrefix, "Failed to parse IPv6 address, missing ']'");
+            }
 
             host = addrStr.substring(1, hostEndIdx);
 
             if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
                 portFrom = dfltPortFrom;
                 portTo = dfltPortTo;
-            }
-            else { // port specified
+            } else { // port specified
                 portStr = addrStr.substring(hostEndIdx + 2);
 
                 int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
                 portFrom = ports[0];
                 portTo = ports[1];
             }
-        }
-        else { // IPv4 || IPv6 without port || empty host
+        } else { // IPv4 || IPv6 without port || empty host
             final int colIdx = addrStr.lastIndexOf(':');
 
             if (colIdx > 0) {
@@ -92,22 +91,19 @@ public class HostAndPortRange implements Serializable {
                         host = addrStr;
                         portFrom = dfltPortFrom;
                         portTo = dfltPortTo;
-                    }
-                    catch (UnknownHostException e) {
+                    } catch (UnknownHostException e) {
                         throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect", e);
                     }
-                }
-                else {
+                } else {
                     host = addrStr.substring(0, colIdx);
                     portStr = addrStr.substring(colIdx + 1);
                     int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
                     portFrom = ports[0];
                     portTo = ports[1];
                 }
-            }
-            else if (colIdx == 0)
+            } else if (colIdx == 0) {
                 throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
-            else { // Port is not specified, use defaults.
+            } else { // Port is not specified, use defaults.
                 host = addrStr;
 
                 portFrom = dfltPortFrom;
@@ -121,9 +117,9 @@ public class HostAndPortRange implements Serializable {
     /**
      * Verifies string containing single port or ports range.
      *
-     * @param addrStr Address String.
+     * @param addrStr      Address String.
      * @param errMsgPrefix Error message prefix.
-     * @param portStr Port or port range string.
+     * @param portStr      Port or port range string.
      * @return Array of int[portFrom, portTo].
      * @throws IgniteException If failed.
      */
@@ -132,8 +128,9 @@ public class HostAndPortRange implements Serializable {
         String portFromStr;
         String portToStr;
 
-        if (portStr == null || portStr.isEmpty())
+        if (portStr == null || portStr.isEmpty()) {
             throw createParseError(addrStr, errMsgPrefix, "port range is not specified");
+        }
 
         int portRangeIdx = portStr.indexOf("..");
 
@@ -141,8 +138,7 @@ public class HostAndPortRange implements Serializable {
             // Port range is specified.
             portFromStr = portStr.substring(0, portRangeIdx);
             portToStr = portStr.substring(portRangeIdx + 2);
-        }
-        else {
+        } else {
             // Single port is specified.
             portFromStr = portStr;
             portToStr = portStr;
@@ -151,17 +147,18 @@ public class HostAndPortRange implements Serializable {
         int portFrom = parsePort(portFromStr, addrStr, errMsgPrefix);
         int portTo = parsePort(portToStr, addrStr, errMsgPrefix);
 
-        if (portFrom > portTo)
+        if (portFrom > portTo) {
             throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
+        }
 
-        return new int[] {portFrom, portTo};
+        return new int[]{portFrom, portTo};
     }
 
     /**
      * Parse port.
      *
-     * @param portStr Port string.
-     * @param addrStr Address string.
+     * @param portStr      Port string.
+     * @param addrStr      Address string.
      * @param errMsgPrefix Error message prefix.
      * @return Parsed port.
      * @throws IgniteException If failed.
@@ -170,12 +167,12 @@ public class HostAndPortRange implements Serializable {
         try {
             int port = Integer.parseInt(portStr);
 
-            if (port <= 0 || port > 65535)
+            if (port <= 0 || port > 65535) {
                 throw createParseError(addrStr, errMsgPrefix, "port range contains invalid port " + portStr);
+            }
 
             return port;
-        }
-        catch (NumberFormatException ignored) {
+        } catch (NumberFormatException ignored) {
             throw createParseError(addrStr, errMsgPrefix, "port range contains invalid port " + portStr);
         }
     }
@@ -183,9 +180,9 @@ public class HostAndPortRange implements Serializable {
     /**
      * Create parse error.
      *
-     * @param addrStr Address string.
+     * @param addrStr      Address string.
      * @param errMsgPrefix Error message prefix.
-     * @param errMsg Error message.
+     * @param errMsg       Error message.
      * @return Exception.
      */
     private static IgniteException createParseError(String addrStr, String errMsgPrefix, String errMsg) {
@@ -195,10 +192,10 @@ public class HostAndPortRange implements Serializable {
     /**
      * Create parse error with cause - nested exception.
      *
-     * @param addrStr Address string.
+     * @param addrStr      Address string.
      * @param errMsgPrefix Error message prefix.
-     * @param errMsg Error message.
-     * @param cause Cause exception.
+     * @param errMsg       Error message.
+     * @param cause        Cause exception.
      * @return Exception.
      */
     private static IgniteException createParseError(String addrStr, String errMsgPrefix, String errMsg, Throwable cause) {
@@ -218,9 +215,9 @@ public class HostAndPortRange implements Serializable {
     /**
      * Constructor.
      *
-     * @param host Host.
+     * @param host     Host.
      * @param portFrom Port from.
-     * @param portTo Port to.
+     * @param portTo   Port to.
      */
     public HostAndPortRange(String host, int portFrom, int portTo) {
         assert host != null && !host.isEmpty();
@@ -253,18 +250,20 @@ public class HostAndPortRange implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (o instanceof HostAndPortRange) {
-            HostAndPortRange other = (HostAndPortRange)o;
+            HostAndPortRange other = (HostAndPortRange) o;
 
             return host.equals(other.host) && portFrom == other.portFrom && portTo == other.portTo;
-        }
-        else
+        } else {
             return false;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int res = host.hashCode();
 
         res = 31 * res + portFrom;
@@ -274,7 +273,8 @@ public class HostAndPortRange implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return host + ":" + (portFrom == portTo ? portFrom : portFrom + ".." + portTo);
     }
 }

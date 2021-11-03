@@ -31,15 +31,15 @@ public class ClientSqlExecuteBatchRequest {
     /**
      * Processes remote {@code JdbcBatchExecuteRequest}.
      *
-     * @param in Client message unpacker.
-     * @param out Client message packer.
+     * @param in      Client message unpacker.
+     * @param out     Client message packer.
      * @param handler Query event handler.
      * @return null value indicates synchronous operation.
      */
     public static CompletableFuture<Void> process(
-        ClientMessageUnpacker in,
-        ClientMessagePacker out,
-        JdbcQueryEventHandler handler
+            ClientMessageUnpacker in,
+            ClientMessagePacker out,
+            JdbcQueryEventHandler handler
     ) {
         var req = new BatchExecuteRequest();
 

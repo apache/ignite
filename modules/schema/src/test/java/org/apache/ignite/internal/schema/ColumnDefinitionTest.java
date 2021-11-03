@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.schema;
 
-import java.util.Arrays;
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.DATE;
 import static org.apache.ignite.internal.schema.NativeTypes.INT32;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -35,12 +35,12 @@ public class ColumnDefinitionTest {
      */
     @Test
     public void compareColumns() {
-        Column[] cols = new Column[] {
-            new Column("C", BYTES, false),
-            new Column("B", INT32, false),
-            new Column("A", DATE, false),
-            new Column("AD", STRING, false),
-            new Column("AA", STRING, false),
+        Column[] cols = new Column[]{
+                new Column("C", BYTES, false),
+                new Column("B", INT32, false),
+                new Column("A", DATE, false),
+                new Column("AD", STRING, false),
+                new Column("AA", STRING, false),
         };
 
         Arrays.sort(cols, Columns.COLUMN_COMPARATOR);

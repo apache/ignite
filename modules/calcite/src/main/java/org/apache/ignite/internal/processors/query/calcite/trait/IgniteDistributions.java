@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.util.ImmutableIntList;
 
@@ -26,16 +25,24 @@ import org.apache.calcite.util.ImmutableIntList;
  *
  */
 public class IgniteDistributions {
-    /** */
+    /**
+     *
+     */
     private static final IgniteDistribution BROADCAST = canonize(new DistributionTrait(DistributionFunction.broadcast()));
 
-    /** */
+    /**
+     *
+     */
     private static final IgniteDistribution SINGLETON = canonize(new DistributionTrait(DistributionFunction.singleton()));
 
-    /** */
+    /**
+     *
+     */
     private static final IgniteDistribution RANDOM = canonize(new DistributionTrait(DistributionFunction.random()));
 
-    /** */
+    /**
+     *
+     */
     private static final IgniteDistribution ANY = canonize(new DistributionTrait(DistributionFunction.any()));
 
     /**
@@ -67,9 +74,9 @@ public class IgniteDistributions {
     }
 
     /**
-     * @param key Affinity key.
+     * @param key       Affinity key.
      * @param cacheName Affinity cache name.
-     * @param identity Affinity identity key.
+     * @param identity  Affinity identity key.
      * @return Affinity distribution.
      */
     public static IgniteDistribution affinity(int key, String cacheName, Object identity) {
@@ -78,8 +85,8 @@ public class IgniteDistributions {
     }
 
     /**
-     * @param key Affinity key.
-     * @param cacheId Affinity cache ID.
+     * @param key      Affinity key.
+     * @param cacheId  Affinity cache ID.
      * @param identity Affinity identity key.
      * @return Affinity distribution.
      */
@@ -88,8 +95,8 @@ public class IgniteDistributions {
     }
 
     /**
-     * @param keys Affinity keys.
-     * @param cacheId Affinity cache ID.
+     * @param keys     Affinity keys.
+     * @param cacheId  Affinity cache ID.
      * @param identity Affinity identity key.
      * @return Affinity distribution.
      */
@@ -106,7 +113,7 @@ public class IgniteDistributions {
     }
 
     /**
-     * @param keys Distribution keys.
+     * @param keys     Distribution keys.
      * @param function Specific hash function.
      * @return Hash distribution.
      */

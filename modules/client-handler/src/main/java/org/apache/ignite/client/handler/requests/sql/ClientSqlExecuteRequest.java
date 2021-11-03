@@ -31,8 +31,8 @@ public class ClientSqlExecuteRequest {
     /**
      * Processes remote {@code JdbcQueryExecuteRequest}.
      *
-     * @param in Client message unpacker.
-     * @param out Client message packer.
+     * @param in      Client message unpacker.
+     * @param out     Client message packer.
      * @param handler Query event handler.
      * @return null value indicates synchronous operation.
      */

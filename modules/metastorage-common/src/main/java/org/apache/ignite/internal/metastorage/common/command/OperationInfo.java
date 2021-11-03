@@ -36,8 +36,8 @@ public class OperationInfo implements Serializable {
     /**
      * Constructs operation with given parameters.
      *
-     * @param key Key.
-     * @param val Value.
+     * @param key  Key.
+     * @param val  Value.
      * @param type Operation type.
      */
     public OperationInfo(byte[] key, byte[] val, OperationType type) {

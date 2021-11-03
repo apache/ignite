@@ -25,10 +25,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class EntryEvent implements Serializable {
     /** Old (previous) entry. */
-    @NotNull private final Entry oldEntry;
+    @NotNull
+    private final Entry oldEntry;
 
     /** New (updated) entry. */
-    @NotNull private final Entry newEntry;
+    @NotNull
+    private final Entry newEntry;
 
     /**
      * Constructs an event with given old and new entries.
@@ -62,23 +64,28 @@ public final class EntryEvent implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        EntryEvent that = (EntryEvent)o;
+        EntryEvent that = (EntryEvent) o;
 
-        if (!oldEntry.equals(that.oldEntry))
+        if (!oldEntry.equals(that.oldEntry)) {
             return false;
+        }
 
         return newEntry.equals(that.newEntry);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int res = oldEntry.hashCode();
 
         res = 31 * res + newEntry.hashCode();

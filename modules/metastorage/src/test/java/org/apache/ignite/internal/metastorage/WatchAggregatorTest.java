@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.metastorage;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,13 +39,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  *
@@ -66,7 +66,8 @@ public class WatchAggregatorTest {
                 entry("2", "value2n", 1, 1)
         );
 
-        watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
+        watchAggregator.watch(1, (v1, v2) -> {
+        }).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
 
         var watchEvt1Res = ArgumentCaptor.forClass(WatchEvent.class);
         verify(lsnr1).onUpdate(watchEvt1Res.capture());
@@ -87,7 +88,7 @@ public class WatchAggregatorTest {
         when(lsnr1.onUpdate(any())).thenReturn(true);
         var lsnr2 = mock(WatchListener.class);
         when(lsnr2.onUpdate(any())).thenReturn(true);
-        var id1 = watchAggregator.add(new ByteArray("1"), lsnr1);
+        final var id1 = watchAggregator.add(new ByteArray("1"), lsnr1);
         var id2 = watchAggregator.add(new ByteArray("2"), lsnr2);
 
         var entryEvt1 = new EntryEvent(
@@ -100,13 +101,15 @@ public class WatchAggregatorTest {
                 entry("2", "value2n", 1, 1)
         );
 
-        watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
+        watchAggregator.watch(1, (v1, v2) -> {
+        }).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
 
         verify(lsnr1, times(1)).onUpdate(any());
         verify(lsnr2, times(1)).onUpdate(any());
 
         watchAggregator.cancel(id1);
-        watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
+        watchAggregator.watch(1, (v1, v2) -> {
+        }).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
 
         verify(lsnr1, times(1)).onUpdate(any());
         verify(lsnr2, times(2)).onUpdate(any());
@@ -126,21 +129,23 @@ public class WatchAggregatorTest {
         var id2 = watchAggregator.add(new ByteArray("2"), lsnr2);
 
         var entryEvt1 = new EntryEvent(
-            entry("1", "value1", 1, 1),
-            entry("1", "value1n", 1, 1)
+                entry("1", "value1", 1, 1),
+                entry("1", "value1n", 1, 1)
         );
 
         var entryEvt2 = new EntryEvent(
-            entry("2", "value2", 1, 1),
-            entry("2", "value2n", 1, 1)
+                entry("2", "value2", 1, 1),
+                entry("2", "value2n", 1, 1)
         );
 
-        watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
+        watchAggregator.watch(1, (v1, v2) -> {
+        }).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
 
         verify(lsnr1, times(1)).onUpdate(any());
         verify(lsnr2, times(1)).onUpdate(any());
 
-        watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
+        watchAggregator.watch(1, (v1, v2) -> {
+        }).get().listener().onUpdate(new WatchEvent(List.of(entryEvt1, entryEvt2)));
 
         verify(lsnr1, times(1)).onUpdate(any());
         verify(lsnr2, times(2)).onUpdate(any());
@@ -172,7 +177,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.CollectionCriterion(
-            new HashSet<>(Arrays.asList(new ByteArray("key1"), new ByteArray("key2")))
+                new HashSet<>(Arrays.asList(new ByteArray("key1"), new ByteArray("key2")))
         );
         assertEquals(expKeyCriterion, keyCriterion);
     }
@@ -197,13 +202,14 @@ public class WatchAggregatorTest {
     @Test
     public void testThatKeyCriteriaUnionAssociative() {
         var data = Arrays.asList(
-            new KeyCriterion.RangeCriterion(new ByteArray("0"), new ByteArray("5")),
-            new KeyCriterion.CollectionCriterion(Arrays.asList(new ByteArray("1"), new ByteArray("2"))),
-            new KeyCriterion.ExactCriterion(new ByteArray("3")));
+                new KeyCriterion.RangeCriterion(new ByteArray("0"), new ByteArray("5")),
+                new KeyCriterion.CollectionCriterion(Arrays.asList(new ByteArray("1"), new ByteArray("2"))),
+                new KeyCriterion.ExactCriterion(new ByteArray("3")));
 
         for (int i = 0; i < data.size() - 1; i++) {
-            for (int j = i + 1; j < data.size(); j++)
+            for (int j = i + 1; j < data.size(); j++) {
                 assertEquals(data.get(i).union(data.get(j)), data.get(j).union(data.get(i)));
+            }
         }
     }
 
@@ -219,7 +225,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.CollectionCriterion(
-            new HashSet<>(Arrays.asList(new ByteArray("key1"), new ByteArray("key2")))
+                new HashSet<>(Arrays.asList(new ByteArray("key1"), new ByteArray("key2")))
         );
         assertEquals(expKeyCriterion, keyCriterion);
     }
@@ -236,7 +242,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.RangeCriterion(
-            new ByteArray("key0"), new ByteArray("key2"));
+                new ByteArray("key0"), new ByteArray("key2"));
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
@@ -252,7 +258,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.RangeCriterion(
-            new ByteArray("key0"), new ByteArray("key4"));
+                new ByteArray("key0"), new ByteArray("key4"));
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
@@ -268,7 +274,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.RangeCriterion(
-            null, new ByteArray("key2"));
+                null, new ByteArray("key2"));
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
@@ -284,7 +290,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.RangeCriterion(
-            new ByteArray("key1"), null);
+                new ByteArray("key1"), null);
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
@@ -301,7 +307,7 @@ public class WatchAggregatorTest {
 
         var keyCriterion = watchAggregator.watch(0, null).get().keyCriterion();
         var expKeyCriterion = new KeyCriterion.RangeCriterion(
-            new ByteArray("key0"), new ByteArray("key4"));
+                new ByteArray("key0"), new ByteArray("key4"));
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
@@ -311,32 +317,38 @@ public class WatchAggregatorTest {
     private Entry entry(String key, String val, long revision, long updateCntr) {
         return new Entry() {
             /** {@inheritDoc} */
-            @Override public @NotNull ByteArray key() {
+            @Override
+            public @NotNull ByteArray key() {
                 return new ByteArray(key);
             }
 
             /** {@inheritDoc} */
-            @Override public @Nullable byte[] value() {
+            @Override
+            public @Nullable byte[] value() {
                 return val.getBytes(StandardCharsets.UTF_8);
             }
 
             /** {@inheritDoc} */
-            @Override public long revision() {
+            @Override
+            public long revision() {
                 return revision;
             }
 
             /** {@inheritDoc} */
-            @Override public long updateCounter() {
+            @Override
+            public long updateCounter() {
                 return updateCntr;
             }
 
             /** {@inheritDoc} */
-            @Override public boolean empty() {
+            @Override
+            public boolean empty() {
                 return false;
             }
 
             /** {@inheritDoc} */
-            @Override public boolean tombstone() {
+            @Override
+            public boolean tombstone() {
                 return false;
             }
         };

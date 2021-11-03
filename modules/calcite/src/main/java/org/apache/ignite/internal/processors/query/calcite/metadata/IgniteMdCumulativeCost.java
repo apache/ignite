@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.Set;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.distribution;
 
+import java.util.Set;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
@@ -35,37 +37,45 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.distribution;
-
-/** */
+/**
+ *
+ */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.CumulativeCost> {
-    /** */
+    /**
+     *
+     */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
-        BuiltInMethod.CUMULATIVE_COST.method, new IgniteMdCumulativeCost());
+            BuiltInMethod.CUMULATIVE_COST.method, new IgniteMdCumulativeCost());
 
     /** {@inheritDoc} */
-    @Override public MetadataDef<BuiltInMetadata.CumulativeCost> getDef() {
+    @Override
+    public MetadataDef<BuiltInMetadata.CumulativeCost> getDef() {
         return BuiltInMetadata.CumulativeCost.DEF;
     }
 
-    /** */
+    /**
+     *
+     */
     public RelOptCost getCumulativeCost(RelSubset rel, RelMetadataQuery mq) {
         return VolcanoUtils.bestCost(rel);
     }
 
-    /** */
+    /**
+     *
+     */
     public RelOptCost getCumulativeCost(RelNode rel, RelMetadataQuery mq) {
         RelOptCost cost = nonCumulativeCost(rel, mq);
 
-        if (cost.isInfinite())
+        if (cost.isInfinite()) {
             return cost;
+        }
 
         for (RelNode input : rel.getInputs()) {
             RelOptCost inputCost = mq.getCumulativeCost(input);
-            if (inputCost.isInfinite())
+            if (inputCost.isInfinite()) {
                 return inputCost;
+            }
 
             cost = cost.plus(inputCost);
         }
@@ -73,12 +83,15 @@ public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.C
         return cost;
     }
 
-    /** */
+    /**
+     *
+     */
     public RelOptCost getCumulativeCost(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
         RelOptCost cost = nonCumulativeCost(rel, mq);
 
-        if (cost.isInfinite())
+        if (cost.isInfinite()) {
             return cost;
+        }
 
         RelNode left = rel.getLeft();
         RelNode right = rel.getRight();
@@ -86,27 +99,33 @@ public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.C
         Set<CorrelationId> corIds = rel.getVariablesSet();
 
         RelOptCost leftCost = mq.getCumulativeCost(left);
-        if (leftCost.isInfinite())
+        if (leftCost.isInfinite()) {
             return leftCost;
+        }
 
         RelOptCost rightCost = mq.getCumulativeCost(right);
-        if (rightCost.isInfinite())
+        if (rightCost.isInfinite()) {
             return rightCost;
+        }
 
         return cost.plus(leftCost).plus(rightCost.multiplyBy(left.estimateRowCount(mq) / corIds.size()));
     }
 
-    /** */
+    /**
+     *
+     */
     private static RelOptCost nonCumulativeCost(RelNode rel, RelMetadataQuery mq) {
         RelOptCost cost = mq.getNonCumulativeCost(rel);
 
-        if (cost.isInfinite())
+        if (cost.isInfinite()) {
             return cost;
+        }
 
         RelOptCostFactory costFactory = rel.getCluster().getPlanner().getCostFactory();
 
-        if (rel.getConvention() == Convention.NONE || distribution(rel) == any())
+        if (rel.getConvention() == Convention.NONE || distribution(rel) == any()) {
             return costFactory.makeInfiniteCost();
+        }
 
         return costFactory.makeZeroCost().isLt(cost) ? cost : costFactory.makeTinyCost();
     }

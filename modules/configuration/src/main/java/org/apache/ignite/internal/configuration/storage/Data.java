@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.storage;
 
 import java.io.Serializable;
@@ -31,7 +32,8 @@ public class Data {
 
     /**
      * Constructor.
-     * @param values Values.
+     *
+     * @param values   Values.
      * @param changeId Version.
      */
     public Data(Map<String, ? extends Serializable> values, long changeId) {
@@ -41,6 +43,7 @@ public class Data {
 
     /**
      * Get values.
+     *
      * @return Values.
      */
     public Map<String, ? extends Serializable> values() {
@@ -49,6 +52,7 @@ public class Data {
 
     /**
      * Get version.
+     *
      * @return version.
      */
     public long changeId() {

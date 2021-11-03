@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -46,101 +45,116 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  *
  */
 public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
-    /** */
+    /**
+     *
+     */
     public IgniteUnionAll(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs) {
         super(cluster, traits, inputs, true);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     public IgniteUnionAll(RelInput input) {
         this(
-            input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getInputs());
+                input.getCluster(),
+                input.getTraitSet().replace(IgniteConvention.INSTANCE),
+                input.getInputs());
     }
-
+    
     /** {@inheritDoc} */
-    @Override public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+    @Override
+    public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         assert all;
-
+        
         return new IgniteUnionAll(getCluster(), traitSet, inputs);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Union node erases collation. TODO union all using merge sort algorythm
-
+        
         return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY)));
+                Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY)));
     }
-
+    
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Union node requires the same traits from all its inputs.
-
+        
         boolean rewindable = inputTraits.stream()
-            .map(TraitUtils::rewindability)
-            .allMatch(RewindabilityTrait::rewindable);
-
-        if (rewindable)
+                .map(TraitUtils::rewindability)
+                .allMatch(RewindabilityTrait::rewindable);
+    
+        if (rewindable) {
             return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
-
+        }
+        
         return List.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
-            Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
+                Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
     }
-
+    
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Union node requires the same traits from all its inputs.
-
+        
         Set<IgniteDistribution> distributions = inputTraits.stream()
-            .map(TraitUtils::distribution)
-            .collect(Collectors.toSet());
-
+                .map(TraitUtils::distribution)
+                .collect(Collectors.toSet());
+        
         List<Pair<RelTraitSet, List<RelTraitSet>>> deriveTraits = new ArrayList<>();
-
-        for (IgniteDistribution distribution : distributions)
+    
+        for (IgniteDistribution distribution : distributions) {
             deriveTraits.add(Pair.of(nodeTraits.replace(distribution),
-                Commons.transform(inputTraits, t -> t.replace(distribution))));
-
+                    Commons.transform(inputTraits, t -> t.replace(distribution))));
+        }
+        
         return List.copyOf(deriveTraits);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Union node erases collation. TODO union all using merge sort algorythm
-
+        
         return List.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
+                Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
-
+    
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+            List<RelTraitSet> inTraits) {
+        
         Set<CorrelationId> correlationIds = inTraits.stream()
-            .map(TraitUtils::correlation)
-            .flatMap(corrTr -> corrTr.correlationIds().stream())
-            .collect(Collectors.toSet());
-
+                .map(TraitUtils::correlation)
+                .flatMap(corrTr -> corrTr.correlationIds().stream())
+                .collect(Collectors.toSet());
+        
         return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
-            inTraits));
+                inTraits));
     }
-
+    
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = mq.getRowCount(this);
-
+        
         return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteUnionAll(cluster, getTraitSet(), Commons.cast(inputs));
     }
 }

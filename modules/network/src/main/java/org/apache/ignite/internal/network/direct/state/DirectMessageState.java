@@ -37,7 +37,7 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
     private int pos;
 
     /**
-     * @param cls State item type.
+     * @param cls     State item type.
      * @param factory Item factory.
      */
     public DirectMessageState(Class<T> cls, Supplier<T> factory) {
@@ -64,13 +64,14 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
         if (pos == stack.length) {
             T[] stack0 = stack;
 
-            stack = (T[])Array.newInstance(stack.getClass().getComponentType(), stack.length << 1);
+            stack = (T[]) Array.newInstance(stack.getClass().getComponentType(), stack.length << 1);
 
             System.arraycopy(stack0, 0, stack, 0, stack0.length);
         }
 
-        if (stack[pos] == null)
+        if (stack[pos] == null) {
             stack[pos] = factory.get();
+        }
     }
 
     /**
@@ -79,8 +80,9 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
      * @param reset Whether to reset current item.
      */
     public void backward(boolean reset) {
-        if (reset)
+        if (reset) {
             stack[pos].reset();
+        }
 
         pos--;
     }

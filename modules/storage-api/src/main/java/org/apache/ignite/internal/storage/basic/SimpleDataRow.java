@@ -33,7 +33,7 @@ public class SimpleDataRow implements DataRow {
     private final byte[] value;
 
     /**
-     * @param key Key.
+     * @param key   Key.
      * @param value Value.
      */
     public SimpleDataRow(byte[] key, byte[] value) {
@@ -43,37 +43,45 @@ public class SimpleDataRow implements DataRow {
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public ByteBuffer key() {
+    @Override
+    public ByteBuffer key() {
         return ByteBuffer.wrap(key);
     }
 
     /** {@inheritDoc} */
-    @Override public byte @NotNull [] keyBytes() {
+    @Override
+    public byte @NotNull [] keyBytes() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer value() {
+    @Override
+    public ByteBuffer value() {
         return ByteBuffer.wrap(value);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes() {
+    @Override
+    public byte[] valueBytes() {
         return value;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
-        SimpleDataRow row = (SimpleDataRow)o;
+        }
+        SimpleDataRow row = (SimpleDataRow) o;
         return Arrays.equals(key, row.key) && Arrays.equals(value, row.value);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = Arrays.hashCode(key);
         result = 31 * result + Arrays.hashCode(value);
         return result;

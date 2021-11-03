@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.replaceLocalRefs;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -47,9 +50,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.replaceLocalRefs;
-
 /** Scan with projects and filters. */
 public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Filters. */
@@ -61,15 +61,17 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Participating columns. */
     protected final ImmutableBitSet requiredColumns;
 
-    /** */
+    /**
+     *
+     */
     protected ProjectableFilterableTableScan(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        List<RelHint> hints,
-        RelOptTable table,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet reqColumns
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            List<RelHint> hints,
+            RelOptTable table,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table);
 
@@ -78,7 +80,9 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         requiredColumns = reqColumns;
     }
 
-    /** */
+    /**
+     *
+     */
     protected ProjectableFilterableTableScan(RelInput input) {
         super(input);
         condition = input.getExpression("filters");
@@ -86,86 +90,108 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         requiredColumns = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
     }
 
-    /** @return Projections. */
+    /**
+     * @return Projections.
+     */
     public List<RexNode> projects() {
         return projects;
     }
 
-    /** @return Rex condition. */
+    /**
+     * @return Rex condition.
+     */
     public RexNode condition() {
         return condition;
     }
 
-    /** @return Participating columns. */
+    /**
+     * @return Participating columns.
+     */
     public ImmutableBitSet requiredColumns() {
         return requiredColumns;
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.isEmpty();
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         return explainTerms0(super.explainTerms(pw));
     }
 
-    /** */
+    /**
+     *
+     */
     protected RelWriter explainTerms0(RelWriter pw) {
         return pw
-            .itemIf("filters", condition, condition != null)
-            .itemIf("projects", projects, projects != null)
-            .itemIf("requiredColumns", requiredColumns, requiredColumns != null);
+                .itemIf("filters", condition, condition != null)
+                .itemIf("projects", projects, projects != null)
+                .itemIf("requiredColumns", requiredColumns, requiredColumns != null);
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = table.getRowCount();
         double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
 
-        if (condition != null)
+        if (condition != null) {
             cost += rows * IgniteCost.ROW_COMPARISON_COST;
+        }
 
         return planner.getCostFactory().makeCost(rows, cost, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public double estimateRowCount(RelMetadataQuery mq) {
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
         return table.getRowCount() * mq.getSelectivity(this, null);
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType deriveRowType() {
-        if (projects != null)
+    @Override
+    public RelDataType deriveRowType() {
+        if (projects != null) {
             return RexUtil.createStructType(Commons.typeFactory(getCluster()), projects);
-        else
+        } else {
             return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns);
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     public boolean simple() {
         return condition == null && projects == null && requiredColumns == null;
     }
 
-    /** */
+    /**
+     *
+     */
     public RexNode pushUpPredicate() {
-        if (condition == null || projects == null)
+        if (condition == null || projects == null) {
             return replaceLocalRefs(condition);
+        }
 
         IgniteTypeFactory typeFactory = Commons.typeFactory(getCluster());
         IgniteTable tbl = getTable().unwrap(IgniteTable.class);
 
         Mappings.TargetMapping mapping = RexUtils.inversePermutation(projects,
-            tbl.getRowType(typeFactory, requiredColumns), true);
+                tbl.getRowType(typeFactory, requiredColumns), true);
 
         RexShuttle shuttle = new RexShuttle() {
-            @Override public RexNode visitLocalRef(RexLocalRef ref) {
+            @Override
+            public RexNode visitLocalRef(RexLocalRef ref) {
                 int targetRef = mapping.getSourceOpt(ref.getIndex());
-                if (targetRef == -1)
+                if (targetRef == -1) {
                     throw new ControlFlowException();
+                }
                 return new RexInputRef(targetRef, ref.getType());
             }
         };
@@ -174,8 +200,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         for (RexNode conjunction : RelOptUtil.conjunctions(condition)) {
             try {
                 conjunctions.add(shuttle.apply(conjunction));
-            }
-            catch (ControlFlowException ignore) {
+            } catch (ControlFlowException ignore) {
                 // No-op
             }
         }

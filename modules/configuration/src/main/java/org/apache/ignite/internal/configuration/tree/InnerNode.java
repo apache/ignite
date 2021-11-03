@@ -24,10 +24,11 @@ import java.util.NoSuchElementException;
  */
 public abstract class InnerNode implements TraversableTreeNode, ConstructableTreeNode, Cloneable {
     /** {@inheritDoc} */
-    @Override public final <T> T accept(String key, ConfigurationVisitor<T> visitor) {
+    @Override
+    public final <T> T accept(String key, ConfigurationVisitor<T> visitor) {
         return visitor.visitInnerNode(key, this);
     }
-
+    
     /**
      * Method with auto-generated implementation. Must look like this:
      * <pre><code>
@@ -44,18 +45,19 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * }
      * </code></pre>
      *
-     * Order of fields must be the same as they are described in configuration schema.
+     * <p>Order of fields must be the same as they are described in configuration schema.
      *
-     * @param visitor Configuration visitor.
+     * @param visitor         Configuration visitor.
      * @param includeInternal Include internal configuration nodes (private configuration extensions).
-     * @param <T> Parameter type of the passed visitor.
+     * @param <T>             Parameter type of the passed visitor.
      */
     public abstract <T> void traverseChildren(ConfigurationVisitor<T> visitor, boolean includeInternal);
-
+    
     /**
      * Method with auto-generated implementation. Must look like this:
      * <pre><code>
-     * {@literal @}Override public void traverseChild(String key, ConfigurationVisitor visitor, boolean includeInternal) throws NoSuchElementException {
+     * {@literal @}Override public void traverseChild(String key, ConfigurationVisitor visitor, boolean includeInternal) throws
+     *     NoSuchElementException {
      *     if (boolean includeInternal) {
      *         switch (key) {
      *             case "pojoField1":
@@ -90,23 +92,24 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * }
      * </code></pre>
      *
-     * @param key Name of the child.
-     * @param visitor Configuration visitor.
+     * @param key             Name of the child.
+     * @param visitor         Configuration visitor.
      * @param includeInternal Include internal configuration nodes (private configuration extensions).
-     * @param <T> Parameter type of passed visitor.
+     * @param <T>             Parameter type of passed visitor.
      * @return Whatever {@code visitor} returned.
      * @throws NoSuchElementException If field {@code key} is not found.
      */
     public abstract <T> T traverseChild(
-        String key,
-        ConfigurationVisitor<T> visitor,
-        boolean includeInternal
+            String key,
+            ConfigurationVisitor<T> visitor,
+            boolean includeInternal
     ) throws NoSuchElementException;
-
+    
     /**
      * Method with auto-generated implementation. Must look like this:
      * <pre><code>
-     * {@literal @}Override public abstract void construct(String key, ConfigurationSource src, boolean includeInternal) throws NoSuchElementException {
+     * {@literal @}Override public abstract void construct(String key, ConfigurationSource src, boolean includeInternal)
+     *     throws NoSuchElementException {
      *     if (includeInternal) {
      *         switch (key) {
      *              case "namedList":
@@ -147,12 +150,13 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * </code></pre>
      * {@inheritDoc}
      */
-    @Override public abstract void construct(
-        String key,
-        ConfigurationSource src,
-        boolean includeInternal
+    @Override
+    public abstract void construct(
+            String key,
+            ConfigurationSource src,
+            boolean includeInternal
     ) throws NoSuchElementException;
-
+    
     /**
      * Assigns default value to the corresponding leaf. Defaults are gathered from configuration schema class.
      *
@@ -160,30 +164,32 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * @throws NoSuchElementException If there's no such field or it is not a leaf value.
      */
     public abstract void constructDefault(String fieldName) throws NoSuchElementException;
-
+    
     /**
+     * Returns class of corresponding configuration schema.
+     *
      * @return Class of corresponding configuration schema.
      */
     public abstract Class<?> schemaType();
-
+    
     /** {@inheritDoc} */
-    @Override public InnerNode copy() {
+    @Override
+    public InnerNode copy() {
         try {
-            return (InnerNode)clone();
-        }
-        catch (CloneNotSupportedException e) {
+            return (InnerNode) clone();
+        } catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
     }
-
+    
     /**
-     * Returns specific {@code Node} of the value.
-     * Overridden for polymorphic configuration to get a specific polymorphic configuration instance.
+     * Returns specific {@code Node} of the value. Overridden for polymorphic configuration to get a specific polymorphic configuration
+     * instance.
      *
-     * @param <NODE> Type of the {@code Node}.
+     * @param <NODET> Type of the {@code Node}.
      * @return Specific {@code Node} of the value.
      */
-    public <NODE> NODE specificNode() {
-        return (NODE)this;
+    public <NODET> NODET specificNode() {
+        return (NODET) this;
     }
 }

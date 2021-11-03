@@ -32,17 +32,20 @@ public class GetAndRemoveInvokeClosure implements InvokeClosure<Boolean> {
     private DataRow rowToRemove;
 
     /** {@inheritDoc} */
-    @Override public void call(@Nullable DataRow row) {
+    @Override
+    public void call(@Nullable DataRow row) {
         this.rowToRemove = row;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DataRow newRow() {
+    @Override
+    public @Nullable DataRow newRow() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable OperationType operationType() {
+    @Override
+    public @Nullable OperationType operationType() {
         return rowToRemove == null ? OperationType.NOOP : OperationType.REMOVE;
     }
 
@@ -56,7 +59,8 @@ public class GetAndRemoveInvokeClosure implements InvokeClosure<Boolean> {
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public Boolean result() {
+    @Override
+    public Boolean result() {
         return operationType() == OperationType.REMOVE;
     }
 }

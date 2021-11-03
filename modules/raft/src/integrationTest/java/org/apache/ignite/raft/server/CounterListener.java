@@ -53,7 +53,8 @@ public class CounterListener implements RaftGroupListener {
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /** {@inheritDoc} */
-    @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
+    @Override
+    public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
         while (iterator.hasNext()) {
             CommandClosure<ReadCommand> clo = iterator.next();
 
@@ -64,7 +65,8 @@ public class CounterListener implements RaftGroupListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
+    @Override
+    public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
         while (iterator.hasNext()) {
             CommandClosure<WriteCommand> clo = iterator.next();
 
@@ -75,7 +77,8 @@ public class CounterListener implements RaftGroupListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
+    @Override
+    public void onSnapshotSave(Path path, Consumer<Throwable> doneClo) {
         final long currVal = this.counter.get();
 
         Utils.runInThread(executor, () -> {
@@ -85,28 +88,28 @@ public class CounterListener implements RaftGroupListener {
                 snapshot.save(currVal);
 
                 doneClo.accept(null);
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 doneClo.accept(e);
             }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onSnapshotLoad(Path path) {
+    @Override
+    public boolean onSnapshotLoad(Path path) {
         final CounterSnapshotFile snapshot = new CounterSnapshotFile(path + File.separator + "data");
         try {
             this.counter.set(snapshot.load());
             return true;
-        }
-        catch (final IOException e) {
+        } catch (final IOException e) {
             LOG.error("Fail to load snapshot from {}", snapshot.getPath());
             return false;
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void onShutdown() {
+    @Override
+    public void onShutdown() {
         ExecutorServiceHelper.shutdownAndAwaitTermination(executor);
     }
 

@@ -34,7 +34,9 @@ import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ *
+ */
 public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
     /** Returns distribution of the table. */
     IgniteDistribution distribution();
@@ -51,8 +53,9 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     ColocationGroup colocationGroup(PlanningContext ctx);
 
     /** {@inheritDoc} */
-    @Override default RelDataType apply(RelDataTypeFactory factory) {
-        return rowType((IgniteTypeFactory)factory, null);
+    @Override
+    default RelDataType apply(RelDataTypeFactory factory) {
+        return rowType((IgniteTypeFactory) factory, null);
     }
 
     /**
@@ -88,7 +91,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     /**
      * Returns row type.
      *
-     * @param factory Type factory.
+     * @param factory     Type factory.
      * @param usedColumns Participating columns numeration.
      * @return Row type.
      */
@@ -97,7 +100,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     /**
      * Checks whether is possible to update a column with a given index.
      *
-     * @param tbl Parent table.
+     * @param tbl    Parent table.
      * @param colIdx Column index.
      * @return {@code True} if update operation is allowed for a column with a given index.
      */
@@ -106,32 +109,32 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     /**
      * Converts a tuple to relational node row.
      *
-     * @param ectx Execution context.
-     * @param row Tuple to convert.
+     * @param ectx            Execution context.
+     * @param row             Tuple to convert.
      * @param requiredColumns Participating columns.
      * @return Relational node row.
      */
-    <Row> Row toRow(
-        ExecutionContext<Row> ectx,
-        Tuple row,
-        RowHandler.RowFactory<Row> factory,
-        @Nullable ImmutableBitSet requiredColumns
+    <RowT> RowT toRow(
+            ExecutionContext<RowT> ectx,
+            Tuple row,
+            RowHandler.RowFactory<RowT> factory,
+            @Nullable ImmutableBitSet requiredColumns
     );
 
     /**
      * Converts a relational node row to internal tuple;
      *
      * @param ectx Execution context.
-     * @param row Relational node row.
-     * @param op Operation.
-     * @param arg Operation specific argument.
+     * @param row  Relational node row.
+     * @param op   Operation.
+     * @param arg  Operation specific argument.
      * @return Cache key-value tuple;
      */
-    <Row> Tuple toTuple(
-        ExecutionContext<Row> ectx,
-        Row row,
-        TableModify.Operation op,
-        @Nullable Object arg
+    <RowT> Tuple toTuple(
+            ExecutionContext<RowT> ectx,
+            RowT row,
+            TableModify.Operation op,
+            @Nullable Object arg
     );
 
     /**

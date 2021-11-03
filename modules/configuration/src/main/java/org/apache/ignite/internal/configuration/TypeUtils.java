@@ -27,57 +27,57 @@ public class TypeUtils {
      * Returns the boxed version of the given class, if it is a primitive.
      *
      * @param clazz type to get the boxed version for
-     * @return {@code Class} of the boxed type or {@code null} if the given {@code clazz} does not represent a
-     * primitive type
+     * @return {@code Class} of the boxed type or {@code null} if the given {@code clazz} does not represent a primitive type
      */
     @Nullable
     public static Class<?> boxed(Class<?> clazz) {
-        if (clazz == boolean.class)
+        if (clazz == boolean.class) {
             return Boolean.class;
-        else if (clazz == byte.class)
+        } else if (clazz == byte.class) {
             return Byte.class;
-        else if (clazz == short.class)
+        } else if (clazz == short.class) {
             return Short.class;
-        else if (clazz == int.class)
+        } else if (clazz == int.class) {
             return Integer.class;
-        else if (clazz == long.class)
+        } else if (clazz == long.class) {
             return Long.class;
-        else if (clazz == char.class)
+        } else if (clazz == char.class) {
             return Character.class;
-        else if (clazz == float.class)
+        } else if (clazz == float.class) {
             return Float.class;
-        else if (clazz == double.class)
+        } else if (clazz == double.class) {
             return Double.class;
-        else
+        } else {
             return null;
+        }
     }
 
     /**
      * Returns the {@code Class} that represents the primitive type that has been wrapped by the given {@code clazz}.
      *
      * @param clazz class to get the unboxed version for
-     * @return {@code Class} of the primitive type or {@code null} if the given {@code clazz} does not represent a
-     * boxed primitive type
+     * @return {@code Class} of the primitive type or {@code null} if the given {@code clazz} does not represent a boxed primitive type
      */
     @Nullable
     public static Class<?> unboxed(Class<?> clazz) {
-        if (clazz == Boolean.class)
+        if (clazz == Boolean.class) {
             return boolean.class;
-        else if (clazz == Byte.class)
+        } else if (clazz == Byte.class) {
             return byte.class;
-        else if (clazz == Short.class)
+        } else if (clazz == Short.class) {
             return short.class;
-        else if (clazz == Integer.class)
+        } else if (clazz == Integer.class) {
             return int.class;
-        else if (clazz == Long.class)
+        } else if (clazz == Long.class) {
             return long.class;
-        else if (clazz == Character.class)
+        } else if (clazz == Character.class) {
             return char.class;
-        else if (clazz == Float.class)
+        } else if (clazz == Float.class) {
             return float.class;
-        else if (clazz == Double.class)
+        } else if (clazz == Double.class) {
             return double.class;
-        else
+        } else {
             return null;
+        }
     }
 }

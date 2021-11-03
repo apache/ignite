@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.storage.rocksdb;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.nio.file.Path;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
@@ -32,28 +36,30 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 /**
  * Storage test implementation for {@link RocksDbPartitionStorage}.
  */
 @ExtendWith(WorkDirectoryExtension.class)
 @ExtendWith(ConfigurationExtension.class)
 public class RocksDbStorageTest extends AbstractPartitionStorageTest {
-    /** */
+    /**
+     *
+     */
     private TableStorage table;
 
-    /** */
+    /**
+     *
+     */
     private DataRegion dataRegion;
 
-    /** */
+    /**
+     *
+     */
     @BeforeEach
     public void setUp(
-        @WorkDirectory Path workDir,
-        @InjectConfiguration DataRegionConfiguration dataRegionCfg,
-        @InjectConfiguration TableConfiguration tableCfg
+            @WorkDirectory Path workDir,
+            @InjectConfiguration DataRegionConfiguration dataRegionCfg,
+            @InjectConfiguration TableConfiguration tableCfg
     ) throws Exception {
         dataRegionCfg.change(cfg -> cfg.changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)).get();
 
@@ -76,13 +82,15 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
         assertThat(storage, is(instanceOf(RocksDbPartitionStorage.class)));
     }
 
-    /** */
+    /**
+     *
+     */
     @AfterEach
     public void tearDown() throws Exception {
         IgniteUtils.closeAll(
-            storage,
-            table == null ? null : table::stop,
-            dataRegion == null ? null : dataRegion::stop
+                storage,
+                table == null ? null : table::stop,
+                dataRegion == null ? null : dataRegion::stop
         );
     }
 }

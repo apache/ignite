@@ -44,5 +44,6 @@ public interface PrimaryKeyDefinitionBuilder extends SchemaObjectBuilder {
      *
      * @return Primary key.
      */
-    @Override PrimaryKeyDefinition build();
+    @Override
+    PrimaryKeyDefinition build();
 }

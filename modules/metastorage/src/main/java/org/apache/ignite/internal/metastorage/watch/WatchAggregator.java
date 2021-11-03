@@ -33,10 +33,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Needed to aggregate multiple watches to one aggregated watch.
- * This approach needed to provide the following additional guarantees to watching mechanism:
- * - watch events will be processed sequentially
- * - watch events will be resolved in the order of watch registration
+ * Needed to aggregate multiple watches to one aggregated watch. This approach needed to provide the following additional guarantees to
+ * watching mechanism: - watch events will be processed sequentially - watch events will be resolved in the order of watch registration
  */
 public class WatchAggregator {
     /**
@@ -50,26 +48,12 @@ public class WatchAggregator {
     /**
      * Adds new watch with simple exact criterion.
      *
-     * @param key Key for watching.
+     * @param key  Key for watching.
      * @param lsnr Listener which will be executed on watch event.
      * @return id of registered watch. Can be used for remove watch from later.
      */
     public long add(ByteArray key, WatchListener lsnr) {
         var watch = new Watch(new KeyCriterion.ExactCriterion(key), lsnr);
-        var id = idCntr.incrementAndGet();
-        watches.put(id, watch);
-        return id;
-    }
-
-    /**
-     * Adds new watch with filter by key prefix.
-     *
-     * @param key Prefix for key.
-     * @param lsnr Listener which will be executed on watch event.
-     * @return id of registered watch. Can be used for remove watch from later.
-     */
-    public long addPrefix(ByteArray key, WatchListener lsnr) {
-        var watch = new Watch(KeyCriterion.RangeCriterion.fromPrefixKey(key), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
         return id;
@@ -93,12 +77,26 @@ public class WatchAggregator {
      * Adds new watch with filter by collection of keys.
      *
      * @param from Start key of range to listen.
-     * @param to End key of range (exclusively)..
+     * @param to   End key of range (exclusively)..
      * @param lsnr Listener which will be executed on watch event.
      * @return id of registered watch. Can be used for remove watch from later.
      */
     public long add(ByteArray from, ByteArray to, WatchListener lsnr) {
         var watch = new Watch(new KeyCriterion.RangeCriterion(from, to), lsnr);
+        var id = idCntr.incrementAndGet();
+        watches.put(id, watch);
+        return id;
+    }
+
+    /**
+     * Adds new watch with filter by key prefix.
+     *
+     * @param key  Prefix for key.
+     * @param lsnr Listener which will be executed on watch event.
+     * @return id of registered watch. Can be used for remove watch from later.
+     */
+    public long addPrefix(ByteArray key, WatchListener lsnr) {
+        var watch = new Watch(KeyCriterion.RangeCriterion.fromPrefixKey(key), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
         return id;
@@ -125,7 +123,7 @@ public class WatchAggregator {
     /**
      * Produce watch with aggregated key criterion and general watch listener dispatcher.
      *
-     * @param revision start revision to listen event.
+     * @param revision        start revision to listen event.
      * @param saveRevisionAct action to commit keys-revision pair to persistent store for processed keys.
      * @return result aggregated watch.
      */
@@ -134,10 +132,11 @@ public class WatchAggregator {
             BiConsumer<Collection<IgniteBiTuple<ByteArray, byte[]>>, Long> saveRevisionAct
     ) {
         synchronized (watches) {
-            if (watches.isEmpty())
+            if (watches.isEmpty()) {
                 return Optional.empty();
-            else
+            } else {
                 return Optional.of(new AggregatedWatch(inferGeneralCriteria(), revision, watchListener(saveRevisionAct)));
+            }
         }
     }
 
@@ -148,10 +147,10 @@ public class WatchAggregator {
      */
     private KeyCriterion inferGeneralCriteria() {
         return
-            watches.values().stream()
-                .map(Watch::keyCriterion)
-                .reduce(KeyCriterion::union)
-                .get();
+                watches.values().stream()
+                        .map(Watch::keyCriterion)
+                        .reduce(KeyCriterion::union)
+                        .get();
     }
 
     /**
@@ -168,7 +167,8 @@ public class WatchAggregator {
 
         return new WatchListener() {
 
-            @Override public boolean onUpdate(@NotNull WatchEvent evt) {
+            @Override
+            public boolean onUpdate(@NotNull WatchEvent evt) {
                 var watchIt = cpWatches.entrySet().iterator();
                 Collection<Long> toCancel = new ArrayList<>();
 
@@ -178,8 +178,9 @@ public class WatchAggregator {
                     var filteredEvts = new ArrayList<EntryEvent>();
 
                     for (EntryEvent entryEvt : evt.entryEvents()) {
-                        if (watch.keyCriterion().contains(entryEvt.oldEntry().key()))
+                        if (watch.keyCriterion().contains(entryEvt.oldEntry().key())) {
                             filteredEvts.add(entryEvt);
+                        }
                     }
 
                     if (!filteredEvts.isEmpty()) {
@@ -193,12 +194,13 @@ public class WatchAggregator {
 
                 // Cancel finished watches from the global watch map
                 // to prevent finished watches from redeploy.
-                if (!toCancel.isEmpty())
+                if (!toCancel.isEmpty()) {
                     cancelAll(toCancel);
+                }
 
                 var revision = 0L;
                 var entries = new ArrayList<IgniteBiTuple<ByteArray, byte[]>>();
-                for (EntryEvent entryEvt: evt.entryEvents()) {
+                for (EntryEvent entryEvt : evt.entryEvents()) {
                     revision = entryEvt.newEntry().revision();
 
                     entries.add(new IgniteBiTuple<>(entryEvt.newEntry().key(), entryEvt.newEntry().value()));
@@ -209,7 +211,8 @@ public class WatchAggregator {
                 return true;
             }
 
-            @Override public void onError(@NotNull Throwable e) {
+            @Override
+            public void onError(@NotNull Throwable e) {
                 watches.values().forEach(w -> w.listener().onError(e));
             }
         };

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.rest.routes;
 
-import io.netty.handler.codec.http.DefaultHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import org.junit.jupiter.api.Test;
-
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -37,9 +37,10 @@ public class RouteTest {
      */
     @Test
     void testMatchByUri() {
-       var route = new Route("/user", GET, null, (request, response) -> {});
-       var req = new DefaultHttpRequest(HTTP_1_1, GET, "/user");
-       assertTrue(route.match(req));
+        var route = new Route("/user", GET, null, (request, response) -> {
+        });
+        var req = new DefaultHttpRequest(HTTP_1_1, GET, "/user");
+        assertTrue(route.match(req));
     }
 
     /**
@@ -47,7 +48,8 @@ public class RouteTest {
      */
     @Test
     void testNonMatchByUri() {
-        var route = new Route("/user", GET, null, (request, response) -> {});
+        var route = new Route("/user", GET, null, (request, response) -> {
+        });
         var req = new DefaultHttpRequest(HTTP_1_1, GET, "/user/1");
         assertFalse(route.match(req));
     }
@@ -57,7 +59,8 @@ public class RouteTest {
      */
     @Test
     void testMatchByContentTypeIfAcceptTypeEmpty() {
-        var route = new Route("/user", GET, null, (request, response) -> {});
+        var route = new Route("/user", GET, null, (request, response) -> {
+        });
         var req = new DefaultHttpRequest(HTTP_1_1, GET, "/user/");
         req.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
         assertTrue(route.match(req));
@@ -68,7 +71,8 @@ public class RouteTest {
      */
     @Test
     void testMatchByContentTypeIfAcceptTypeNonEmpty() {
-        var route = new Route("/user", PUT, "text/plain", (request, response) -> {});
+        var route = new Route("/user", PUT, "text/plain", (request, response) -> {
+        });
         var req = new DefaultHttpRequest(HTTP_1_1, PUT, "/user");
         req.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
         assertTrue(route.match(req));
@@ -79,7 +83,8 @@ public class RouteTest {
      */
     @Test
     void testNonMatchByContentTypeIfAcceptTypeNonEmpty() {
-        var route = new Route("/user", PUT, "text/plain", (request, response) -> {});
+        var route = new Route("/user", PUT, "text/plain", (request, response) -> {
+        });
         var req = new DefaultHttpRequest(HTTP_1_1, GET, "/user/");
         req.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         assertFalse(route.match(req));
@@ -90,7 +95,8 @@ public class RouteTest {
      */
     @Test
     void testMatchByUriWithParams() {
-        var route = new Route("/user/:user", GET, null, (request, response) -> {});
+        var route = new Route("/user/:user", GET, null, (request, response) -> {
+        });
         var req = new DefaultHttpRequest(HTTP_1_1, GET, "/user/John");
         assertTrue(route.match(req));
     }

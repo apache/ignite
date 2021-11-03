@@ -17,12 +17,12 @@
 
 package org.apache.ignite.configuration.validation;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
-
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Signifies that a {@link NamedConfigValue} can't have elements with provided names.
@@ -31,6 +31,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface ExceptKeys {
     /**
+     * Returns list of reserved names.
+     *
      * @return List of reserved names.
      */
     String[] value();

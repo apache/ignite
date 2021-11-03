@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.calcite.rel.RelCollation;
@@ -22,36 +23,49 @@ import org.apache.calcite.rel.RelCollation;
  * Ignite scannable index.
  */
 public class IgniteIndex {
-    /** */
+    /**
+     *
+     */
     private final RelCollation collation;
 
-    /** */
+    /**
+     *
+     */
     private final String idxName;
 
-    /** */
-//    private final GridIndex<H2Row> idx;
+    //    private final GridIndex<H2Row> idx;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteTable tbl;
 
-    /** */
+    /**
+     *
+     */
     public IgniteIndex(RelCollation collation, String name, IgniteTable tbl) {
         this.collation = collation;
         idxName = name;
         this.tbl = tbl;
     }
 
-    /** */
+    /**
+     *
+     */
     public RelCollation collation() {
         return collation;
     }
 
-    /** */
+    /**
+     *
+     */
     public String name() {
         return idxName;
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteTable table() {
         return tbl;
     }

@@ -53,7 +53,7 @@ public abstract class Response implements ClientMessage {
      * Constructs failed rest response.
      *
      * @param status Response status.
-     * @param err Error, {@code null} if success is {@code true}.
+     * @param err    Error, {@code null} if success is {@code true}.
      */
     protected Response(int status, String err) {
         assert status != STATUS_SUCCESS;
@@ -63,23 +63,27 @@ public abstract class Response implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packBoolean(hasResults);
         packer.packInt(status);
 
-        if (StringUtil.isNullOrEmpty(err))
+        if (StringUtil.isNullOrEmpty(err)) {
             packer.packNil();
-        else
+        } else {
             packer.packString(err);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         hasResults = unpacker.unpackBoolean();
         status = unpacker.unpackInt();
 
-        if (!unpacker.tryUnpackNil())
+        if (!unpacker.tryUnpackNil()) {
             err = unpacker.unpackString();
+        }
     }
 
     /**
@@ -128,7 +132,8 @@ public abstract class Response implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(Response.class, this);
     }
 }

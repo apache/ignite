@@ -31,7 +31,8 @@ public class MemberKey {
 
     /**
      * Constructor.
-     * @param clazz Class that contains a member.
+     *
+     * @param clazz     Class that contains a member.
      * @param fieldName Member name.
      */
     public MemberKey(Class<?> clazz, String fieldName) {
@@ -40,16 +41,21 @@ public class MemberKey {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         MemberKey key = (MemberKey) o;
-        return clazz.equals(key.clazz) &&
-                fieldName.equals(key.fieldName);
+        return clazz.equals(key.clazz) && fieldName.equals(key.fieldName);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(clazz, fieldName);
     }
 }

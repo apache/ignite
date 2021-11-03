@@ -24,13 +24,16 @@ import java.util.List;
  */
 public interface SortedIndexDefinition extends ColumnarIndexDefinition {
     /** {@inheritDoc} */
-    @Override List<SortedIndexColumnDefinition> columns();
+    @Override
+    List<SortedIndexColumnDefinition> columns();
 
     /** {@inheritDoc} */
-    @Override List<SortedIndexColumnDefinition> indexedColumns();
+    @Override
+    List<SortedIndexColumnDefinition> indexedColumns();
 
     /** {@inheritDoc} */
-    @Override default String type() {
+    @Override
+    default String type() {
         return "SORTED";
     }
 }

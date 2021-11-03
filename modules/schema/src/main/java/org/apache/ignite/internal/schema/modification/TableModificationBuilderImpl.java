@@ -41,54 +41,66 @@ public class TableModificationBuilderImpl implements TableModificationBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder addColumn(ColumnDefinition column) {
-        if (table.hasColumn(column.name()))
+    @Override
+    public TableModificationBuilder addColumn(ColumnDefinition column) {
+        if (table.hasColumn(column.name())) {
             throw new IllegalArgumentException("Duplicate column: name='" + column.name() + '\'');
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder addKeyColumn(ColumnDefinition column) {
-        if (table.hasColumn(column.name()))
+    @Override
+    public TableModificationBuilder addKeyColumn(ColumnDefinition column) {
+        if (table.hasColumn(column.name())) {
             throw new IllegalArgumentException("Duplicate column: name=" + column.name() + '\'');
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public AlterColumnBuilder alterColumn(String columnName) {
+    @Override
+    public AlterColumnBuilder alterColumn(String columnName) {
         return new AlterColumnBuilderImpl(this);
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder dropColumn(String columnName) {
-        if (table.hasKeyColumn(columnName))
+    @Override
+    public TableModificationBuilder dropColumn(String columnName) {
+        if (table.hasKeyColumn(columnName)) {
             throw new IllegalArgumentException("Can't drop key column: name=" + columnName);
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder addIndex(IndexDefinition indexDefinition) {
+    @Override
+    public TableModificationBuilder addIndex(IndexDefinition indexDefinition) {
         assert !PrimaryKeyDefinition.PRIMARY_KEY_NAME.equals(indexDefinition.name());
 
-        if (table.indices().stream().anyMatch(i -> i.name().equals(indexDefinition.name())))
+        if (table.indices().stream().anyMatch(i -> i.name().equals(indexDefinition.name()))) {
             throw new IllegalArgumentException("Index already exists: name=" + indexDefinition.name() + '\'');
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder dropIndex(String indexName) {
-        if (PrimaryKeyDefinition.PRIMARY_KEY_NAME.equals(indexName))
+    @Override
+    public TableModificationBuilder dropIndex(String indexName) {
+        if (PrimaryKeyDefinition.PRIMARY_KEY_NAME.equals(indexName)) {
             throw new IllegalArgumentException("Can't drop primary key index: name=" + indexName);
+        }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void apply() {
+    @Override
+    public void apply() {
 
     }
 }

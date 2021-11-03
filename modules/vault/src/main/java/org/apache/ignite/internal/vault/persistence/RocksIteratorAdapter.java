@@ -34,7 +34,9 @@ import org.rocksdb.Slice;
  * Adapter from a {@link RocksIterator} to a {@link Cursor}.
  */
 class RocksIteratorAdapter implements Cursor<VaultEntry> {
-    /** */
+    /**
+     *
+     */
     private final RocksIterator it;
 
     /**
@@ -48,7 +50,7 @@ class RocksIteratorAdapter implements Cursor<VaultEntry> {
     private final Slice upperBound;
 
     /**
-     * @param it RocksDB iterator
+     * @param it         RocksDB iterator
      * @param lowerBound lower iteration bound (included)
      * @param upperBound upper iteration bound (not included)
      */
@@ -59,17 +61,21 @@ class RocksIteratorAdapter implements Cursor<VaultEntry> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<VaultEntry> iterator() {
+    @NotNull
+    @Override
+    public Iterator<VaultEntry> iterator() {
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         IgniteUtils.closeAll(List.of(lowerBound, upperBound, it));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         boolean isValid = it.isValid();
 
         if (!isValid) {
@@ -77,8 +83,7 @@ class RocksIteratorAdapter implements Cursor<VaultEntry> {
             // the iteration. Otherwise we've exhausted the data range.
             try {
                 it.status();
-            }
-            catch (RocksDBException e) {
+            } catch (RocksDBException e) {
                 throw new IgniteInternalException(e);
             }
         }
@@ -87,9 +92,11 @@ class RocksIteratorAdapter implements Cursor<VaultEntry> {
     }
 
     /** {@inheritDoc} */
-    @Override public VaultEntry next() {
-        if (!hasNext())
+    @Override
+    public VaultEntry next() {
+        if (!hasNext()) {
             throw new NoSuchElementException();
+        }
 
         var result = new VaultEntry(new ByteArray(it.key()), it.value());
 

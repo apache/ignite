@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.network.processor.serialization;
 
+import com.squareup.javapoet.CodeBlock;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import com.squareup.javapoet.CodeBlock;
 import org.apache.ignite.network.serialization.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
@@ -31,10 +31,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
  * Class for resolving {@link MessageReader} "read*" methods for the corresponding message field type.
  */
 class MessageReaderMethodResolver {
-    /** */
+    /**
+     *
+     */
     private final BaseMethodNameResolver methodNameResolver;
 
-    /** */
+    /**
+     *
+     */
     private final MessageCollectionItemTypeConverter typeConverter;
 
     /**
@@ -60,11 +64,11 @@ class MessageReaderMethodResolver {
 
         switch (methodName) {
             case "ObjectArray":
-                return resolveReadObjectArray((ArrayType)parameterType, parameterName);
+                return resolveReadObjectArray((ArrayType) parameterType, parameterName);
             case "Collection":
-                return resolveReadCollection((DeclaredType)parameterType, parameterName);
+                return resolveReadCollection((DeclaredType) parameterType, parameterName);
             case "Map":
-                return resolveReadMap((DeclaredType)parameterType, parameterName);
+                return resolveReadMap((DeclaredType) parameterType, parameterName);
             default:
                 return CodeBlock.builder().add("read$L($S)", methodName, parameterName).build();
         }
@@ -77,14 +81,14 @@ class MessageReaderMethodResolver {
         TypeMirror componentType = parameterType.getComponentType();
 
         return CodeBlock.builder()
-            .add(
-                "readObjectArray($S, $T.$L, $T.class)",
-                parameterName,
-                MessageCollectionItemType.class,
-                typeConverter.fromTypeMirror(componentType),
-                componentType
-            )
-            .build();
+                .add(
+                        "readObjectArray($S, $T.$L, $T.class)",
+                        parameterName,
+                        MessageCollectionItemType.class,
+                        typeConverter.fromTypeMirror(componentType),
+                        componentType
+                )
+                .build();
     }
 
     /**
@@ -94,18 +98,17 @@ class MessageReaderMethodResolver {
         TypeMirror collectionGenericType = parameterType.getTypeArguments().get(0);
 
         return CodeBlock.builder()
-            .add(
-                "readCollection($S, $T.$L)",
-                parameterName,
-                MessageCollectionItemType.class,
-                typeConverter.fromTypeMirror(collectionGenericType)
-            )
-            .build();
+                .add(
+                        "readCollection($S, $T.$L)",
+                        parameterName,
+                        MessageCollectionItemType.class,
+                        typeConverter.fromTypeMirror(collectionGenericType)
+                )
+                .build();
     }
 
     /**
-     * Creates a {@link MessageReader#readMap(String, MessageCollectionItemType, MessageCollectionItemType, boolean)}
-     * method call.
+     * Creates a {@link MessageReader#readMap(String, MessageCollectionItemType, MessageCollectionItemType, boolean)} method call.
      */
     private CodeBlock resolveReadMap(DeclaredType parameterType, String parameterName) {
         List<? extends TypeMirror> typeArguments = parameterType.getTypeArguments();
@@ -114,14 +117,14 @@ class MessageReaderMethodResolver {
         MessageCollectionItemType mapValueType = typeConverter.fromTypeMirror(typeArguments.get(1));
 
         return CodeBlock.builder()
-            .add(
-                "readMap($S, $T.$L, $T.$L, false)",
-                parameterName,
-                MessageCollectionItemType.class,
-                mapKeyType,
-                MessageCollectionItemType.class,
-                mapValueType
-            )
-            .build();
+                .add(
+                        "readMap($S, $T.$L, $T.$L, false)",
+                        parameterName,
+                        MessageCollectionItemType.class,
+                        mapKeyType,
+                        MessageCollectionItemType.class,
+                        mapValueType
+                )
+                .build();
     }
 }

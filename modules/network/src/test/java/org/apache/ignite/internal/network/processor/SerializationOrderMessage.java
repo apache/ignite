@@ -26,15 +26,23 @@ import org.apache.ignite.network.annotations.Transferable;
  */
 @Transferable(TestMessageTypes.SERIALIZATION_ORDER_MESSAGE)
 public interface SerializationOrderMessage extends NetworkMessage {
-    /** */
-    String b();
+    /**
+     *
+     */
+    String strB();
 
-    /** */
-    String d();
+    /**
+     *
+     */
+    String strD();
 
-    /** */
-    int c();
+    /**
+     *
+     */
+    int intC();
 
-    /** */
-    int a();
+    /**
+     *
+     */
+    int intA();
 }

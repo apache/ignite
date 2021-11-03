@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -27,43 +26,54 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  * Scan node.
  */
-public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> {
-    /** */
-    private final Iterable<Row> src;
+public class ScanNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT> {
+    /**
+     *
+     */
+    private final Iterable<RowT> src;
 
-    /** */
-    private Iterator<Row> it;
+    /**
+     *
+     */
+    private Iterator<RowT> it;
 
-    /** */
+    /**
+     *
+     */
     private int requested;
 
-    /** */
+    /**
+     *
+     */
     private boolean inLoop;
 
     /**
      * @param ctx Execution context.
      * @param src Source.
      */
-    public ScanNode(ExecutionContext<Row> ctx, RelDataType rowType, Iterable<Row> src) {
+    public ScanNode(ExecutionContext<RowT> ctx, RelDataType rowType, Iterable<RowT> src) {
         super(ctx, rowType);
 
         this.src = src;
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
         checkState();
 
         requested = rowsCnt;
 
-        if (!inLoop)
+        if (!inLoop) {
             context().execute(this::push, this::onError);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void closeInternal() {
+    @Override
+    public void closeInternal() {
         super.closeInternal();
 
         Commons.closeQuiet(it);
@@ -72,32 +82,39 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         Commons.closeQuiet(it);
         it = null;
     }
 
     /** {@inheritDoc} */
-    @Override public void register(List<Node<Row>> sources) {
+    @Override
+    public void register(List<Node<RowT>> sources) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
-    /** */
+    /**
+     *
+     */
     private void push() throws Exception {
-        if (isClosed())
+        if (isClosed()) {
             return;
+        }
 
         checkState();
 
         inLoop = true;
         try {
-            if (it == null)
+            if (it == null) {
                 it = src.iterator();
+            }
 
             int processed = 0;
             while (requested > 0 && it.hasNext()) {
@@ -113,8 +130,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
                     return;
                 }
             }
-        }
-        finally {
+        } finally {
             inLoop = false;
         }
 

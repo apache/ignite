@@ -38,37 +38,37 @@ import org.jetbrains.annotations.NotNull;
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
 public class StripedThreadPoolExecutor implements ExecutorService {
-    /** */
+    /** Executors. */
     private final ExecutorService[] execs;
 
     /**
      * Create striped thread pool.
      *
-     * @param concurrentLvl Concurrency level.
-     * @param threadNamePrefix Thread name prefix.
-     * @param allowCoreThreadTimeOut Sets the policy governing whether core threads may time out and
-     * terminate if no tasks arrive within the keep-alive time.
-     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
-     * that excess idle threads will wait for new tasks before terminating.
+     * @param concurrentLvl          Concurrency level.
+     * @param threadNamePrefix       Thread name prefix.
+     * @param allowCoreThreadTimeOut Sets the policy governing whether core threads may time out and terminate if no tasks arrive within the
+     *                               keep-alive time.
+     * @param keepAliveTime          When the number of threads is greater than the core, this is the maximum time that excess idle threads
+     *                               will wait for new tasks before terminating.
      */
     public StripedThreadPoolExecutor(
-        int concurrentLvl,
-        String threadNamePrefix,
-        UncaughtExceptionHandler eHnd,
-        boolean allowCoreThreadTimeOut,
-        long keepAliveTime) {
+            int concurrentLvl,
+            String threadNamePrefix,
+            UncaughtExceptionHandler exHnd,
+            boolean allowCoreThreadTimeOut,
+            long keepAliveTime) {
         execs = new ExecutorService[concurrentLvl];
 
-        ThreadFactory factory = new NamedThreadFactory(threadNamePrefix, true, eHnd);
+        ThreadFactory factory = new NamedThreadFactory(threadNamePrefix, true, exHnd);
 
         for (int i = 0; i < concurrentLvl; i++) {
             ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                1,
-                1,
-                keepAliveTime,
-                TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                factory
+                    1,
+                    1,
+                    keepAliveTime,
+                    TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(),
+                    factory
             );
 
             executor.allowCoreThreadTimeOut(allowCoreThreadTimeOut);
@@ -78,34 +78,60 @@ public class StripedThreadPoolExecutor implements ExecutorService {
     }
 
     /**
-     * Executes the given command at some time in the future. The command with the same {@code index}
-     * will be executed in the same thread.
+     * Executes the given command at some time in the future. The command with the same {@code index} will be executed in the same thread.
      *
      * @param task the runnable task
-     * @param idx Striped index.
-     * @throws RejectedExecutionException if this task cannot be
-     * accepted for execution.
-     * @throws NullPointerException If command is null
+     * @param idx  Striped index.
+     * @throws RejectedExecutionException if this task cannot be accepted for execution.
+     * @throws NullPointerException       If command is null
      */
     public void execute(Runnable task, int idx) {
         execs[threadId(idx)].execute(task);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void execute(Runnable cmd) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
-     * Submits a {@link Runnable} task for execution and returns a {@link CompletableFuture} representing that task.
-     * The command with the same {@code index} will be executed in the same thread.
+     * Submits a {@link Runnable} task for execution and returns a {@link CompletableFuture} representing that task. The command with the
+     * same {@code index} will be executed in the same thread.
      *
      * @param task The task to submit.
      * @return a {@link Future} representing pending completion of the task.
-     * @throws RejectedExecutionException if the task cannot be
-     *         scheduled for execution.
-     * @throws NullPointerException if the task is {@code null}.
+     * @throws RejectedExecutionException if the task cannot be scheduled for execution.
+     * @throws NullPointerException       if the task is {@code null}.
      */
     public CompletableFuture<?> submit(Runnable task, int idx) {
         return CompletableFuture.runAsync(task, execs[threadId(idx)]);
     }
 
+    /** {@inheritDoc} */
+    @NotNull
+    @Override
+    public <T> Future<T> submit(Callable<T> task) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override
+    public <T> Future<T> submit(Runnable task, T res) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override
+    public Future<?> submit(Runnable task) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
+     * Sets stripped thread ID.
+     *
      * @param idx Index.
      * @return Stripped thread ID.
      */
@@ -114,100 +140,99 @@ public class StripedThreadPoolExecutor implements ExecutorService {
     }
 
     /** {@inheritDoc} */
-    @Override public void shutdown() {
-        for (ExecutorService exec : execs)
+    @Override
+    public void shutdown() {
+        for (ExecutorService exec : execs) {
             exec.shutdown();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public List<Runnable> shutdownNow() {
-        if (execs.length == 0)
+    @Override
+    public List<Runnable> shutdownNow() {
+        if (execs.length == 0) {
             return Collections.emptyList();
+        }
 
         List<Runnable> res = new ArrayList<>(execs.length);
 
         for (ExecutorService exec : execs) {
-            for (Runnable r : exec.shutdownNow())
+            for (Runnable r : exec.shutdownNow()) {
                 res.add(r);
+            }
         }
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isShutdown() {
+    @Override
+    public boolean isShutdown() {
         for (ExecutorService exec : execs) {
-            if (!exec.isShutdown())
+            if (!exec.isShutdown()) {
                 return false;
+            }
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isTerminated() {
+    @Override
+    public boolean isTerminated() {
         for (ExecutorService exec : execs) {
-            if (!exec.isTerminated())
+            if (!exec.isTerminated()) {
                 return false;
+            }
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         boolean res = true;
 
-        for (ExecutorService exec : execs)
+        for (ExecutorService exec : execs) {
             res &= exec.awaitTermination(timeout, unit);
+        }
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> Future<T> submit(Callable<T> task) {
+    @NotNull
+    @Override
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> Future<T> submit(Runnable task, T res) {
+    @NotNull
+    @Override
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
+            long timeout,
+            TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Future<?> submit(Runnable task) {
+    @NotNull
+    @Override
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
+    @Override
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
-        long timeout,
-        TimeUnit unit) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public <T> T invokeAny(Collection<? extends Callable<T>> tasks) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void execute(Runnable cmd) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(StripedThreadPoolExecutor.class, this);
     }
 }

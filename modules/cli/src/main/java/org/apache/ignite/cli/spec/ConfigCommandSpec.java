@@ -18,7 +18,7 @@
 package org.apache.ignite.cli.spec;
 
 import javax.inject.Inject;
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 import org.apache.ignite.cli.builtins.config.ConfigurationClient;
 import picocli.CommandLine;
 
@@ -26,12 +26,12 @@ import picocli.CommandLine;
  * Commands get/put Ignite node configurations.
  */
 @CommandLine.Command(
-    name = "config",
-    description = "Inspects and updates Ignite cluster configuration.",
-    subcommands = {
-        ConfigCommandSpec.GetConfigCommandSpec.class,
-        ConfigCommandSpec.SetConfigCommandSpec.class
-    }
+        name = "config",
+        description = "Inspects and updates Ignite cluster configuration.",
+        subcommands = {
+                ConfigCommandSpec.GetConfigCommandSpec.class,
+                ConfigCommandSpec.SetConfigCommandSpec.class
+        }
 )
 public class ConfigCommandSpec extends CategorySpec {
     /**
@@ -49,24 +49,25 @@ public class ConfigCommandSpec extends CategorySpec {
 
         /** Command option for setting HOCON based config selector. */
         @CommandLine.Option(
-            names = "--selector",
-            description = "Configuration selector (example: local.baseline)"
+                names = "--selector",
+                description = "Configuration selector (example: local.baseline)"
         )
         private String selector;
 
         /** Configuration type: {@code node} or {@code cluster}. */
         @CommandLine.Option(
-            names = "--type",
-            description = "Configuration type (\"node\" or \"cluster\")",
-            required = true
+                names = "--type",
+                description = "Configuration type (\"node\" or \"cluster\")",
+                required = true
         )
         //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
         private String type;
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override
+        public void run() {
             spec.commandLine().getOut().println(
-                configurationClient.get(cfgHostnameOptions.host(), cfgHostnameOptions.port(), selector, type)
+                    configurationClient.get(cfgHostnameOptions.host(), cfgHostnameOptions.port(), selector, type)
             );
         }
     }
@@ -75,8 +76,8 @@ public class ConfigCommandSpec extends CategorySpec {
      * Command for setting Ignite node configuration.
      */
     @CommandLine.Command(
-        name = "set",
-        description = "Updates Ignite cluster configuration values."
+            name = "set",
+            description = "Updates Ignite cluster configuration values."
     )
     public static class SetConfigCommandSpec extends CommandSpec {
         /** Configuration client for REST node APi. */
@@ -94,21 +95,22 @@ public class ConfigCommandSpec extends CategorySpec {
         /** Configuration type: {@code node} or {@code cluster}. */
         //TODO: Fix in https://issues.apache.org/jira/browse/IGNITE-15306
         @CommandLine.Option(
-            names = "--type",
-            description = "Configuration type (\"node\" or \"cluster\")",
-            required = true
+                names = "--type",
+                description = "Configuration type (\"node\" or \"cluster\")",
+                required = true
         )
         private String type;
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override
+        public void run() {
             configurationClient.set(
-                cfgHostnameOptions.host(),
-                cfgHostnameOptions.port(),
-                cfg,
-                spec.commandLine().getOut(),
-                spec.commandLine().getColorScheme(),
-                type
+                    cfgHostnameOptions.host(),
+                    cfgHostnameOptions.port(),
+                    cfg,
+                    spec.commandLine().getOut(),
+                    spec.commandLine().getColorScheme(),
+                    type
             );
         }
     }
@@ -119,9 +121,9 @@ public class ConfigCommandSpec extends CategorySpec {
     private static class CfgHostnameOptions {
         /** Custom node REST endpoint address. */
         @CommandLine.Option(
-            names = "--node-endpoint",
-            description = "Ignite server node's REST API address and port number",
-            paramLabel = "host:port"
+                names = "--node-endpoint",
+                description = "Ignite server node's REST API address and port number",
+                paramLabel = "host:port"
         )
         private String endpoint;
 
@@ -129,15 +131,16 @@ public class ConfigCommandSpec extends CategorySpec {
          * @return REST endpoint port.
          */
         private int port() {
-            if (endpoint == null)
+            if (endpoint == null) {
                 return 10300;
+            }
 
             var hostPort = parse();
 
             try {
                 return Integer.parseInt(hostPort[1]);
             } catch (NumberFormatException ex) {
-                throw new IgniteCLIException("Can't parse port from " + hostPort[1] + " value");
+                throw new IgniteCliException("Can't parse port from " + hostPort[1] + " value");
             }
         }
 
@@ -156,11 +159,12 @@ public class ConfigCommandSpec extends CategorySpec {
         private String[] parse() {
             var hostPort = endpoint.split(":");
 
-            if (hostPort.length != 2)
-                throw new IgniteCLIException("Incorrect host:port pair provided " +
-                    "(example of valid value 'localhost:10300')");
+            if (hostPort.length != 2) {
+                throw new IgniteCliException("Incorrect host:port pair provided "
+                        + "(example of valid value 'localhost:10300')");
+            }
 
-           return hostPort;
+            return hostPort;
         }
     }
 }

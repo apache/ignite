@@ -19,30 +19,39 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
 import java.util.function.Supplier;
-
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TransformingIterator;
 import org.jetbrains.annotations.NotNull;
 
-/** */
-public class TableFunctionScan<Row> implements Iterable<Row> {
-    /** */
+/**
+ *
+ */
+public class TableFunctionScan<RowT> implements Iterable<RowT> {
+    /**
+     *
+     */
     private final Supplier<Iterable<Object[]>> dataSupplier;
 
-    /** */
-    private final RowFactory<Row> rowFactory;
+    /**
+     *
+     */
+    private final RowFactory<RowT> rowFactory;
 
-    /** */
+    /**
+     *
+     */
     public TableFunctionScan(
-        Supplier<Iterable<Object[]>> dataSupplier,
-        RowFactory<Row> rowFactory
+            Supplier<Iterable<Object[]>> dataSupplier,
+            RowFactory<RowT> rowFactory
     ) {
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<Row> iterator() {
+    @NotNull
+    @Override
+    public Iterator<RowT> iterator() {
         return new TransformingIterator<>(dataSupplier.get().iterator(), rowFactory::create);
     }
 }

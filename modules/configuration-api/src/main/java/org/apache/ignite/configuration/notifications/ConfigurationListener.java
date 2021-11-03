@@ -23,15 +23,15 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Configuration property change listener.
  *
- * @param <VIEW> VIEW type configuration.
+ * @param <VIEWT> VIEW type configuration.
  */
 @FunctionalInterface
-public interface ConfigurationListener<VIEW> {
+public interface ConfigurationListener<VIEWT> {
     /**
      * Called on property value update.
      *
      * @param ctx Notification context.
      * @return Future that signifies the end of the listener execution.
      */
-    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEW> ctx);
+    @NotNull CompletableFuture<?> onUpdate(@NotNull ConfigurationNotificationEvent<VIEWT> ctx);
 }

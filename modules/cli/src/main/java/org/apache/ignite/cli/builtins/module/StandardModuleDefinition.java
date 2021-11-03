@@ -23,9 +23,8 @@ import org.apache.ignite.internal.tostring.IgniteToStringInclude;
 import org.apache.ignite.internal.tostring.S;
 
 /**
- * Definition of Ignite standard module.
- * Every module has two artifacts' lists - one for server modules
- * and one for CLI tool extensions, if any.
+ * Definition of Ignite standard module. Every module has two artifacts' lists - one for server modules and one for CLI tool extensions, if
+ * any.
  */
 public class StandardModuleDefinition {
     /** Module name. **/
@@ -47,9 +46,9 @@ public class StandardModuleDefinition {
     /**
      * Creates definition for standard Ignite module.
      *
-     * @param name Module name.
-     * @param desc Module description.
-     * @param artifacts Server artifacts.
+     * @param name         Module name.
+     * @param desc         Module description.
+     * @param artifacts    Server artifacts.
      * @param cliArtifacts CLI tool artifacts.
      */
     public StandardModuleDefinition(String name, String desc, List<String> artifacts, List<String> cliArtifacts) {
@@ -60,7 +59,8 @@ public class StandardModuleDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(StandardModuleDefinition.class, this);
     }
 }

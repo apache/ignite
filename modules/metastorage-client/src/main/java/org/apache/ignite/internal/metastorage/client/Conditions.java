@@ -21,8 +21,8 @@ import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This class contains fabric methods which produce conditions needed for conditional multi update functionality
- * provided by meta storage service.
+ * This class contains fabric methods which produce conditions needed for conditional multi update functionality provided by meta storage
+ * service.
  *
  * @see Condition
  */

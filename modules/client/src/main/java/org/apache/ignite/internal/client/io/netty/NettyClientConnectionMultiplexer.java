@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.io.netty;
 
-import java.net.InetSocketAddress;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -25,6 +24,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import java.net.InetSocketAddress;
 import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientConnectionException;
 import org.apache.ignite.internal.client.io.ClientConnection;
@@ -37,10 +37,14 @@ import org.apache.ignite.internal.client.proto.ClientMessageDecoder;
  * Netty-based multiplexer.
  */
 public class NettyClientConnectionMultiplexer implements ClientConnectionMultiplexer {
-    /** */
+    /**
+     *
+     */
     private final NioEventLoopGroup workerGroup;
 
-    /** */
+    /**
+     *
+     */
     private final Bootstrap bootstrap;
 
     /**
@@ -52,14 +56,16 @@ public class NettyClientConnectionMultiplexer implements ClientConnectionMultipl
     }
 
     /** {@inheritDoc} */
-    @Override public void start(IgniteClientConfiguration clientCfg) {
+    @Override
+    public void start(IgniteClientConfiguration clientCfg) {
         try {
             bootstrap.group(workerGroup);
             bootstrap.channel(NioSocketChannel.class);
             bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
             bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) clientCfg.connectTimeout());
             bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-                @Override public void initChannel(SocketChannel ch) {
+                @Override
+                public void initChannel(SocketChannel ch) {
                     ch.pipeline().addLast(
                             new ClientMessageDecoder(),
                             new NettyClientMessageHandler());
@@ -74,14 +80,16 @@ public class NettyClientConnectionMultiplexer implements ClientConnectionMultipl
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override
+    public void stop() {
         workerGroup.shutdownGracefully();
     }
 
     /** {@inheritDoc} */
-    @Override public ClientConnection open(InetSocketAddress addr,
-                                           ClientMessageHandler msgHnd,
-                                           ClientConnectionStateHandler stateHnd)
+    @Override
+    public ClientConnection open(InetSocketAddress addr,
+            ClientMessageHandler msgHnd,
+            ClientConnectionStateHandler stateHnd)
             throws IgniteClientConnectionException {
 
         // TODO: Async startup IGNITE-15357.

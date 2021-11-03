@@ -26,23 +26,30 @@ import org.junit.jupiter.api.BeforeEach;
  * Tests for the {@link LocalConfigurationStorage}.
  */
 public class LocalConfigurationStorageTest extends ConfigurationStorageTest {
-    /** */
+    /**
+     *
+     */
     private final VaultManager vaultManager = new VaultManager(new InMemoryVaultService());
 
-    /** */
+    /**
+     *
+     */
     @BeforeEach
     void startVault() {
         vaultManager.start();
     }
 
-    /** */
+    /**
+     *
+     */
     @AfterEach
     void stopVault() throws Exception {
         vaultManager.stop();
     }
 
     /** {@inheritDoc} */
-    @Override public ConfigurationStorage getStorage() {
+    @Override
+    public ConfigurationStorage getStorage() {
         return new LocalConfigurationStorage(vaultManager);
     }
 }

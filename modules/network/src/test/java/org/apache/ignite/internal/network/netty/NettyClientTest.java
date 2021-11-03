@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.network.netty;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -24,10 +33,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -36,11 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Tests for {@link NettyClient}.
  */
@@ -48,10 +48,14 @@ public class NettyClientTest {
     /** Client. */
     private NettyClient client;
 
-    /** */
+    /**
+     *
+     */
     private final SocketAddress address = InetSocketAddress.createUnresolved("", 0);
 
-    /** */
+    /**
+     *
+     */
     @AfterEach
     void tearDown() {
         client.stop().join();
@@ -92,8 +96,7 @@ public class NettyClientTest {
         assertThrows(ClosedChannelException.class, () -> {
             try {
                 tuple.sender.get(3, TimeUnit.SECONDS);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw e.getCause();
             }
         });
@@ -165,10 +168,11 @@ public class NettyClientTest {
         Mockito.doReturn(channel.newSucceededFuture()).when(bootstrap).connect(Mockito.any());
 
         client = new NettyClient(
-            address,
-            null,
-            new MockClientHandshakeManager(channel),
-            (address1, message) -> {}
+                address,
+                null,
+                new MockClientHandshakeManager(channel),
+                (address1, message) -> {
+                }
         );
 
         client.start(bootstrap);
@@ -186,10 +190,11 @@ public class NettyClientTest {
      */
     private ClientAndSender createClientAndSenderFromChannelFuture(ChannelFuture future) {
         var client = new NettyClient(
-            address,
-            null,
-            new MockClientHandshakeManager(future.channel()),
-            (address1, message) -> {}
+                address,
+                null,
+                new MockClientHandshakeManager(future.channel()),
+                (address1, message) -> {
+                }
         );
 
         Bootstrap bootstrap = mockBootstrap();
@@ -216,10 +221,14 @@ public class NettyClientTest {
      * Tuple for a NettyClient and a future of a NettySender.
      */
     private static class ClientAndSender {
-        /** */
+        /**
+         *
+         */
         private final NettyClient client;
 
-        /** */
+        /**
+         *
+         */
         private final CompletableFuture<NettySender> sender;
 
         /**
@@ -247,22 +256,26 @@ public class NettyClientTest {
         }
 
         /** {@inheritDoc} */
-        @Override public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
+        @Override
+        public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
             return HandshakeAction.REMOVE_HANDLER;
         }
 
         /** {@inheritDoc} */
-        @Override public CompletableFuture<NettySender> handshakeFuture() {
+        @Override
+        public CompletableFuture<NettySender> handshakeFuture() {
             return CompletableFuture.completedFuture(sender);
         }
 
         /** {@inheritDoc} */
-        @Override public HandshakeAction init(Channel channel) {
+        @Override
+        public HandshakeAction init(Channel channel) {
             return HandshakeAction.NOOP;
         }
 
         /** {@inheritDoc} */
-        @Override public HandshakeAction onConnectionOpen(Channel channel) {
+        @Override
+        public HandshakeAction onConnectionOpen(Channel channel) {
             return HandshakeAction.NOOP;
         }
     }

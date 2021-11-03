@@ -34,7 +34,7 @@ public class NetworkConfigurationException extends RuntimeException {
      * Constructor.
      *
      * @param message Exception message.
-     * @param cause Cause of the exception.
+     * @param cause   Cause of the exception.
      */
     public NetworkConfigurationException(String message, Throwable cause) {
         super(message, cause);

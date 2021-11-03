@@ -25,8 +25,7 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Put all command for MetaStorageCommandListener that inserts or updates entries
- * with given keys and given values.
+ * Put all command for MetaStorageCommandListener that inserts or updates entries with given keys and given values.
  */
 public final class PutAllCommand implements WriteCommand {
     /** List of keys. */

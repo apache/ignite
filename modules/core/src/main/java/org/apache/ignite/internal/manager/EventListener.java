@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The listener handles events from a producer.
+ *
  * @see Producer#listen(Event, EventListener)
  */
 public interface EventListener<P extends EventParameters> {
@@ -29,18 +30,15 @@ public interface EventListener<P extends EventParameters> {
      * Notifies the listener about an event.
      *
      * @param parameters Parameters provide a properties of the event. This attribute cannot be {@code null}.
-     * @param exception Exception which is happened during the event produced or {@code null}.
-     * @return {@code True} means that the event is handled and a listener will be removed,
-     * {@code false} is the listener will stay listen.
+     * @param exception  Exception which is happened during the event produced or {@code null}.
+     * @return {@code True} means that the event is handled and a listener will be removed, {@code false} is the listener will stay listen.
      */
     boolean notify(@NotNull P parameters, @Nullable Throwable exception);
 
     /**
-     * Removes an listener from the event producer.
-     * When the listener was removed it never receive a notification any more.
+     * Removes an listener from the event producer. When the listener was removed it never receive a notification any more.
      *
-     * @param exception An exception which was the reason that the listener was removed.
-     * It cannot be {@code null}.
+     * @param exception An exception which was the reason that the listener was removed. It cannot be {@code null}.
      */
     void remove(@NotNull Throwable exception);
 }

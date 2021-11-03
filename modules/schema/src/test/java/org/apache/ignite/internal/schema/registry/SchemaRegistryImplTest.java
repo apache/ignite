@@ -17,15 +17,6 @@
 
 package org.apache.ignite.internal.schema.registry;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.SchemaUtils;
-import org.apache.ignite.internal.schema.mapping.ColumnMapper;
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.INT64;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
@@ -37,6 +28,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaUtils;
+import org.apache.ignite.internal.schema.mapping.ColumnMapper;
+import org.junit.jupiter.api.Test;
+
 /**
  * Schema manager test.
  */
@@ -47,16 +47,16 @@ public class SchemaRegistryImplTest {
     @Test
     public void testWrongSchemaVersionRegistration() {
         final SchemaDescriptor schemaV0 = new SchemaDescriptor(INITIAL_SCHEMA_VERSION,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(0,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
 
@@ -93,22 +93,22 @@ public class SchemaRegistryImplTest {
     @Test
     public void testSchemaRegistration() {
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
 
@@ -147,22 +147,22 @@ public class SchemaRegistryImplTest {
     @Test
     public void testDuplicateSchemaRegistration() {
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor wrongSchema = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
 
@@ -209,28 +209,28 @@ public class SchemaRegistryImplTest {
     @Test
     public void testSchemaCleanup() {
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
 
@@ -323,28 +323,28 @@ public class SchemaRegistryImplTest {
     @Test
     public void testInitialSchemaWithFullHistory() {
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         Map<Integer, SchemaDescriptor> history = schemaHistory(schemaV1, schemaV2);
 
@@ -387,30 +387,30 @@ public class SchemaRegistryImplTest {
     @Test
     public void testInitialSchemaWithTailHistory() {
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valStringCol", STRING, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valStringCol", STRING, true)});
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV5 = new SchemaDescriptor(5,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valStringCol", STRING, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valStringCol", STRING, true)});
 
         Map<Integer, SchemaDescriptor> history = schemaHistory(schemaV2, schemaV3);
 
@@ -459,24 +459,24 @@ public class SchemaRegistryImplTest {
     @Test
     public void testSchemaWithHistoryCleanup() {
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valStringCol", STRING, true)
+                });
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         Map<Integer, SchemaDescriptor> history = schemaHistory(schemaV2, schemaV3, schemaV4);
 
@@ -514,41 +514,41 @@ public class SchemaRegistryImplTest {
     @Test
     public void testSchemaCacheCleanup() {
         final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{new Column("valBytesCol", BYTES, true)});
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{new Column("valBytesCol", BYTES, true)});
 
         final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         schemaV2.columnMapping(createMapper(schemaV2).add(schemaV2.column("valStringCol")));
 
         final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valStringCol", STRING, true)
+                });
 
         schemaV3.columnMapping(createMapper(schemaV3).add(
-            schemaV3.column("valStringCol").schemaIndex(),
-            schemaV2.column("valStringCol").schemaIndex())
+                schemaV3.column("valStringCol").schemaIndex(),
+                schemaV2.column("valStringCol").schemaIndex())
         );
 
         final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
-            new Column[]{new Column("keyLongCol", INT64, true)},
-            new Column[]{
-                new Column("valBytesCol", BYTES, true),
-                new Column("valStringCol", STRING, true)
-            });
+                new Column[]{new Column("keyLongCol", INT64, true)},
+                new Column[]{
+                        new Column("valBytesCol", BYTES, true),
+                        new Column("valStringCol", STRING, true)
+                });
 
         schemaV4.columnMapping(createMapper(schemaV4).add(schemaV4.column("valBytesCol")));
 
         final SchemaRegistryImpl reg = new SchemaRegistryImpl(v -> null);
 
-        Map<Long, ColumnMapper> cache = reg.mappingCache();
+        final Map<Long, ColumnMapper> cache = reg.mappingCache();
 
         reg.onSchemaRegistered(schemaV1);
         reg.onSchemaRegistered(schemaV2);

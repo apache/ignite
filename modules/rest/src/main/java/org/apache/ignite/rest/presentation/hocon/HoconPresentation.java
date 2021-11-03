@@ -17,18 +17,18 @@
 
 package org.apache.ignite.rest.presentation.hocon;
 
-import java.util.List;
+import static com.typesafe.config.ConfigFactory.parseString;
+import static com.typesafe.config.ConfigRenderOptions.concise;
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.split;
+
 import com.typesafe.config.ConfigException;
+import java.util.List;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.internal.configuration.hocon.HoconConverter;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.jetbrains.annotations.Nullable;
-
-import static com.typesafe.config.ConfigFactory.parseString;
-import static com.typesafe.config.ConfigRenderOptions.concise;
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.split;
 
 /**
  * Representing the configuration as a string using HOCON as a converter to JSON.
@@ -47,38 +47,40 @@ public class HoconPresentation implements ConfigurationPresentation<String> {
     }
 
     /** {@inheritDoc} */
-    @Override public String represent() {
+    @Override
+    public String represent() {
         return representByPath(null);
     }
 
     /** {@inheritDoc} */
-    @Override public String representByPath(@Nullable String path) {
+    @Override
+    public String representByPath(@Nullable String path) {
         return HoconConverter.represent(registry, path == null ? List.of() : split(path)).render(concise());
     }
 
     /** {@inheritDoc} */
-    @Override public void update(String cfgUpdate) {
-        if (cfgUpdate.isBlank())
+    @Override
+    public void update(String cfgUpdate) {
+        if (cfgUpdate.isBlank()) {
             throw new IllegalArgumentException("Empty configuration");
+        }
 
         try {
             registry.change(HoconConverter.hoconSource(parseString(cfgUpdate).root())).get();
-        }
-        catch (IllegalArgumentException | ConfigurationValidationException e) {
+        } catch (IllegalArgumentException | ConfigurationValidationException e) {
             throw e;
-        }
-        catch (ConfigException.Parse e) {
+        } catch (ConfigException.Parse e) {
             throw new IllegalArgumentException(e);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             RuntimeException e;
 
-            if (t.getCause() instanceof IllegalArgumentException)
-                e = (RuntimeException)t.getCause();
-            else if (t.getCause() instanceof ConfigurationValidationException)
-                e = (RuntimeException)t.getCause();
-            else
+            if (t.getCause() instanceof IllegalArgumentException) {
+                e = (RuntimeException) t.getCause();
+            } else if (t.getCause() instanceof ConfigurationValidationException) {
+                e = (RuntimeException) t.getCause();
+            } else {
                 e = new IgniteException(t);
+            }
 
             throw e;
         }

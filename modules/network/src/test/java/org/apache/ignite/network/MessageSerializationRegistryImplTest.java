@@ -17,15 +17,15 @@
 
 package org.apache.ignite.network;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 /**
  * {@link MessageSerializationRegistryImpl} tests.
@@ -43,22 +43,21 @@ public class MessageSerializationRegistryImplTest {
     }
 
     /**
-     * Tests that a serialization factory can't be registered if there is an already registered serialization factory
-     * with the same direct type.
+     * Tests that a serialization factory can't be registered if there is an already registered serialization factory with the same direct
+     * type.
      */
     @Test
     public void testRegisterFactoryWithSameType() {
         registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory());
 
         assertThrows(
-            NetworkConfigurationException.class,
-            () -> registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory())
+                NetworkConfigurationException.class,
+                () -> registry.registerFactory(Msg.GROUP_TYPE, Msg.TYPE, new MsgSerializationFactory())
         );
     }
 
     /**
-     * Tests that it is possible to register serialization factories for the same message types but for different
-     * modules.
+     * Tests that it is possible to register serialization factories for the same message types but for different modules.
      */
     @Test
     public void testRegisterFactoryWithSameTypeDifferentModule() {
@@ -73,8 +72,8 @@ public class MessageSerializationRegistryImplTest {
     }
 
     /**
-     * Tests that a {@link MessageSerializer} and a {@link MessageDeserializer} can be created if a
-     * {@link MessageSerializationFactory} was registered.
+     * Tests that a {@link MessageSerializer} and a {@link MessageDeserializer} can be created if a {@link MessageSerializationFactory} was
+     * registered.
      */
     @Test
     public void testCreateSerializers() {
@@ -85,8 +84,8 @@ public class MessageSerializationRegistryImplTest {
     }
 
     /**
-     * Tests that creation of a {@link MessageSerializer} or a {@link MessageDeserializer} fails if a
-     * {@link MessageSerializationFactory} was not registered.
+     * Tests that creation of a {@link MessageSerializer} or a {@link MessageDeserializer} fails if a {@link MessageSerializationFactory}
+     * was not registered.
      */
     @Test
     public void testCreateSerializersIfNotRegistered() {
@@ -99,43 +98,55 @@ public class MessageSerializationRegistryImplTest {
      */
     @Test
     public void testEdgeValues() {
-        registry.registerFactory((short)0, (short)0, new MsgSerializationFactory());
+        registry.registerFactory((short) 0, (short) 0, new MsgSerializationFactory());
 
-        assertNotNull(registry.createSerializer((short)0, (short)0));
+        assertNotNull(registry.createSerializer((short) 0, (short) 0));
 
         registry.registerFactory(Short.MAX_VALUE, Short.MAX_VALUE, new MsgSerializationFactory());
 
         assertNotNull(registry.createSerializer(Short.MAX_VALUE, Short.MAX_VALUE));
     }
 
-    /** */
+    /**
+     *
+     */
     private static class Msg implements NetworkMessage {
-        /** */
+        /**
+         *
+         */
         static final short GROUP_TYPE = 0;
 
-        /** */
+        /**
+         *
+         */
         static final short TYPE = 0;
 
         /** {@inheritDoc} */
-        @Override public short messageType() {
+        @Override
+        public short messageType() {
             return TYPE;
         }
 
         /** {@inheritDoc} */
-        @Override public short groupType() {
+        @Override
+        public short groupType() {
             return GROUP_TYPE;
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class MsgSerializationFactory implements MessageSerializationFactory<Msg> {
         /** {@inheritDoc} */
-        @Override public MessageDeserializer<Msg> createDeserializer() {
+        @Override
+        public MessageDeserializer<Msg> createDeserializer() {
             return mock(MessageDeserializer.class);
         }
 
         /** {@inheritDoc} */
-        @Override public MessageSerializer<Msg> createSerializer() {
+        @Override
+        public MessageSerializer<Msg> createSerializer() {
             return mock(MessageSerializer.class);
         }
     }

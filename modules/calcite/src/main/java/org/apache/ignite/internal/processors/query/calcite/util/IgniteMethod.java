@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
-
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -45,21 +44,27 @@ public enum IgniteMethod {
     /** See {@link Scalar#execute(ExecutionContext, Object, Object)} */
     SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
 
-    /** */
+    /**
+     *
+     */
     SYSTEM_RANGE2(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class),
 
-    /** */
+    /**
+     *
+     */
     SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class),
 
     /** See {@link FragmentMappingMetadata#fragmentMapping()} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
 
-    /** */
+    /**
+     *
+     */
     private final Method method;
 
     /**
-     * @param clazz Class where to lookup method.
-     * @param methodName Method name.
+     * @param clazz         Class where to lookup method.
+     * @param methodName    Method name.
      * @param argumentTypes Method parameters types.
      */
     IgniteMethod(Class<?> clazz, String methodName, Class<?>... argumentTypes) {

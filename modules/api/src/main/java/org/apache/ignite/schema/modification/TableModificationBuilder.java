@@ -50,8 +50,8 @@ public interface TableModificationBuilder {
 
     /**
      * Drops value column.
-     * <p>
-     * Note: Key column drop is not allowed.
+     *
+     * <p>Note: Key column drop is not allowed.
      *
      * @param columnName Column.
      * @return {@code this} for chaining.
@@ -68,8 +68,8 @@ public interface TableModificationBuilder {
 
     /**
      * Drops table index.
-     * <p>
-     * Note: PK can't be dropped.
+     *
+     * <p>Note: PK can't be dropped.
      *
      * @param indexName Index name.
      * @return {@code this} for chaining.

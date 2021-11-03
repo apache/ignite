@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network.scalecube;
 
 import io.scalecube.cluster.ClusterConfig;
@@ -24,13 +25,14 @@ import org.apache.ignite.configuration.schemas.network.ClusterMembershipView;
  */
 public class TestScaleCubeClusterServiceFactory extends ScaleCubeClusterServiceFactory {
     /** {@inheritDoc} */
-    @Override protected ClusterConfig clusterConfig(ClusterMembershipView unused) {
+    @Override
+    protected ClusterConfig clusterConfig(ClusterMembershipView unused) {
         return ClusterConfig.defaultLocalConfig()
-            // Theoretical suspicious timeout for 5 node cluster: 500 * 1 * log(5) = 349ms
-            // Short sync interval is required for faster convergence on node restarts.
-            .membership(opts -> opts.syncInterval(1000).suspicionMult(1))
-            // Theoretical upper bound for detection of faulty node by some other node: 500 * (e / (e - 1)) = 790ms
-            .failureDetector(opts -> opts.pingInterval(500).pingReqMembers(1))
-            .gossip(opts -> opts.gossipInterval(10));
+                // Theoretical suspicious timeout for 5 node cluster: 500 * 1 * log(5) = 349ms
+                // Short sync interval is required for faster convergence on node restarts.
+                .membership(opts -> opts.syncInterval(1000).suspicionMult(1))
+                // Theoretical upper bound for detection of faulty node by some other node: 500 * (e / (e - 1)) = 790ms
+                .failureDetector(opts -> opts.pingInterval(500).pingReqMembers(1))
+                .gossip(opts -> opts.gossipInterval(10));
     }
 }

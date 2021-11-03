@@ -35,23 +35,29 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
  *
  */
 public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilter> {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule INSTANCE = new FilterConverterRule();
 
-    /** */
+    /**
+     *
+     */
     public FilterConverterRule() {
         super(LogicalFilter.class, "FilterConverterRule");
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalFilter rel) {
+    @Override
+    protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalFilter rel) {
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
 
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getCondition());
 
-        if (!corrIds.isEmpty())
+        if (!corrIds.isEmpty()) {
             traits = traits.replace(CorrelationTrait.correlations(corrIds));
+        }
 
         return new IgniteFilter(cluster, traits, rel.getInput(), rel.getCondition());
     }

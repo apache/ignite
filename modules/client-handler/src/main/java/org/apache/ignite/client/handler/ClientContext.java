@@ -18,7 +18,6 @@
 package org.apache.ignite.client.handler;
 
 import java.util.BitSet;
-
 import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.tostring.S;
 
@@ -38,9 +37,9 @@ class ClientContext {
     /**
      * Constructor.
      *
-     * @param version Version.
+     * @param version    Version.
      * @param clientCode Client type code.
-     * @param features Feature set.
+     * @param features   Feature set.
      */
     ClientContext(ProtocolVersion version, int clientCode, BitSet features) {
         this.version = version;
@@ -76,7 +75,8 @@ class ClientContext {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(ClientContext.class, this);
     }
 }

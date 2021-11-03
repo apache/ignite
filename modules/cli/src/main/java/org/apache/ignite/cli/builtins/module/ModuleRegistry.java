@@ -17,6 +17,10 @@
 
 package org.apache.ignite.cli.builtins.module;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,19 +28,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.cli.CliPathsConfigLoader;
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 import org.apache.ignite.internal.tostring.IgniteToStringInclude;
 import org.apache.ignite.internal.tostring.S;
 
 /**
- * The registry of installed CLI or Ignite server modules.
- * Module from the the registry's point of view is a pair of (name -&gt; [artifacts, cliArtifacts]).
- * Where:
+ * The registry of installed CLI or Ignite server modules. Module from the the registry's point of view is a pair of (name -&gt; [artifacts,
+ * cliArtifacts]). Where:
  * <ul>
  *     <li>artifacts - is a list of Ignite server node artifacts, which will be used in classpath of any server node.</li>
  *     <li>cliArtifacts - is a list of Ignite CLI artifacts, which will be used to lookup CLI extensions.</li>
@@ -83,9 +82,8 @@ public class ModuleRegistry {
     }
 
     /**
-     * Removes module from the registry of installed modules.
-     * Note: artifacts' files will not be removed.
-     * This action only remove module and its dependencies from current classpaths as a result.
+     * Removes module from the registry of installed modules. Note: artifacts' files will not be removed. This action only remove module and
+     * its dependencies from current classpaths as a result.
      *
      * @param name Module name to remove.
      * @return true if module was removed, false otherwise.
@@ -109,29 +107,27 @@ public class ModuleRegistry {
      */
     public ModuleDefinitionsList listInstalled() {
         var moduleFileAvailable =
-            cliPathsCfgLdr.loadIgnitePathsConfig()
-                .map(p -> p.installedModulesFile().toFile().exists())
-                .orElse(false);
+                cliPathsCfgLdr.loadIgnitePathsConfig()
+                        .map(p -> p.installedModulesFile().toFile().exists())
+                        .orElse(false);
 
-        if (!moduleFileAvailable)
+        if (!moduleFileAvailable) {
             return new ModuleDefinitionsList(new ArrayList<>());
-        else {
+        } else {
             ObjectMapper objMapper = new ObjectMapper();
 
             try {
                 return objMapper.readValue(
-                    moduleFile().toFile(),
-                    ModuleDefinitionsList.class);
-            }
-            catch (IOException e) {
-                throw new IgniteCLIException("Can't read lsit of installed modules because of IO error", e);
+                        moduleFile().toFile(),
+                        ModuleDefinitionsList.class);
+            } catch (IOException e) {
+                throw new IgniteCliException("Can't read lsit of installed modules because of IO error", e);
             }
         }
     }
 
     /**
-     * Simple wrapper for a list of modules' definitions.
-     * Wrap it in the form suitable for JSON serialization.
+     * Simple wrapper for a list of modules' definitions. Wrap it in the form suitable for JSON serialization.
      */
     public static class ModuleDefinitionsList {
         /** Modules list. */
@@ -144,7 +140,7 @@ public class ModuleRegistry {
          */
         @JsonCreator
         public ModuleDefinitionsList(
-            @JsonProperty("modules") List<ModuleDefinition> modules) {
+                @JsonProperty("modules") List<ModuleDefinition> modules) {
             this.modules = modules;
         }
     }
@@ -170,27 +166,26 @@ public class ModuleRegistry {
         public final SourceType type;
 
         /**
-         * It can be an url, file path, or any other source identificator,
-         * depending on the source type.
+         * It can be an url, file path, or any other source identificator, depending on the source type.
          */
         public final String src;
 
         /**
          * Creates module defition.
          *
-         * @param name Module name.
-         * @param artifacts Module server artifacts' paths.
+         * @param name         Module name.
+         * @param artifacts    Module server artifacts' paths.
          * @param cliArtifacts Module CLI artifacts' paths.
-         * @param type Source type of the module.
-         * @param src Source string (file path, url, maven coordinates and etc.).
+         * @param type         Source type of the module.
+         * @param src          Source string (file path, url, maven coordinates and etc.).
          */
         @JsonCreator
         public ModuleDefinition(
-            @JsonProperty("name") String name,
-            @JsonProperty("artifacts") List<Path> artifacts,
-            @JsonProperty("cliArtifacts") List<Path> cliArtifacts,
-            @JsonProperty("type") SourceType type,
-            @JsonProperty("source") String src) {
+                @JsonProperty("name") String name,
+                @JsonProperty("artifacts") List<Path> artifacts,
+                @JsonProperty("cliArtifacts") List<Path> cliArtifacts,
+                @JsonProperty("type") SourceType type,
+                @JsonProperty("source") String src) {
             this.name = name;
             this.artifacts = artifacts;
             this.cliArtifacts = cliArtifacts;
@@ -215,7 +210,8 @@ public class ModuleRegistry {
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return S.toString(ModuleDefinition.class, this);
         }
     }

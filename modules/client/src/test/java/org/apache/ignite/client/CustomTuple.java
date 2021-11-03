@@ -32,205 +32,262 @@ import org.jetbrains.annotations.NotNull;
  * User-defined test {@link Tuple} implementation.
  */
 public class CustomTuple implements Tuple {
-    /** */
+    /**
+     *
+     */
     private final Long id;
 
-    /** */
+    /**
+     *
+     */
     private final String name;
 
-    /** */
+    /**
+     *
+     */
     public CustomTuple(Long id) {
         this(id, null);
     }
 
-    /** */
+    /**
+     *
+     */
     public CustomTuple(Long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    @Override public int columnCount() {
+    @Override
+    public int columnCount() {
         return 2;
     }
 
-    @Override public String columnName(int columnIndex) {
+    @Override
+    public String columnName(int columnIndex) {
         switch (columnIndex) {
             case 0:
                 return "id";
             case 1:
                 return "name";
+            default:
+                break;
         }
 
         return null;
     }
 
-    @Override public int columnIndex(@NotNull String columnName) {
+    @Override
+    public int columnIndex(@NotNull String columnName) {
         switch (columnName) {
             case "id":
                 return 0;
             case "name":
                 return 1;
+            default:
+                break;
         }
 
         return -1;
     }
 
-    @Override public <T> T valueOrDefault(@NotNull String columnName, T def) {
+    @Override
+    public <T> T valueOrDefault(@NotNull String columnName, T def) {
         switch (columnName) {
             case "id":
-                return (T)id;
+                return (T) id;
             case "name":
-                return (T)name;
+                return (T) name;
+            default:
+                break;
         }
 
         return def;
     }
 
-    @Override public Tuple set(@NotNull String columnName, Object value) {
+    @Override
+    public Tuple set(@NotNull String columnName, Object value) {
         throw new UnsupportedOperationException("Tuple is immutable.");
     }
 
-    @Override public <T> T value(@NotNull String columnName) {
+    @Override
+    public <T> T value(@NotNull String columnName) {
         return valueOrDefault(columnName, null);
     }
 
-    @Override public <T> T value(int columnIndex) {
+    @Override
+    public <T> T value(int columnIndex) {
         switch (columnIndex) {
             case 0:
-                return (T)id;
+                return (T) id;
             case 1:
-                return (T)name;
+                return (T) name;
+            default:
+                break;
         }
 
         return null;
     }
 
-    @Override public BinaryObject binaryObjectValue(@NotNull String columnName) {
+    @Override
+    public BinaryObject binaryObjectValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public BinaryObject binaryObjectValue(int columnIndex) {
+    @Override
+    public BinaryObject binaryObjectValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public byte byteValue(@NotNull String columnName) {
+    @Override
+    public byte byteValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public byte byteValue(int columnIndex) {
+    @Override
+    public byte byteValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public short shortValue(@NotNull String columnName) {
+    @Override
+    public short shortValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public short shortValue(int columnIndex) {
+    @Override
+    public short shortValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public int intValue(@NotNull String columnName) {
+    @Override
+    public int intValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public int intValue(int columnIndex) {
+    @Override
+    public int intValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public long longValue(@NotNull String columnName) {
+    @Override
+    public long longValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public long longValue(int columnIndex) {
+    @Override
+    public long longValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public float floatValue(@NotNull String columnName) {
+    @Override
+    public float floatValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public float floatValue(int columnIndex) {
+    @Override
+    public float floatValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public double doubleValue(@NotNull String columnName) {
+    @Override
+    public double doubleValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public double doubleValue(int columnIndex) {
+    @Override
+    public double doubleValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public String stringValue(@NotNull String columnName) {
+    @Override
+    public String stringValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public String stringValue(int columnIndex) {
+    @Override
+    public String stringValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public UUID uuidValue(@NotNull String columnName) {
+    @Override
+    public UUID uuidValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public UUID uuidValue(int columnIndex) {
+    @Override
+    public UUID uuidValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public BitSet bitmaskValue(@NotNull String columnName) {
+    @Override
+    public BitSet bitmaskValue(@NotNull String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public BitSet bitmaskValue(int columnIndex) {
+    @Override
+    public BitSet bitmaskValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LocalDate dateValue(String columnName) {
+    @Override
+    public LocalDate dateValue(String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LocalDate dateValue(int columnIndex) {
+    @Override
+    public LocalDate dateValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LocalTime timeValue(String columnName) {
+    @Override
+    public LocalTime timeValue(String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LocalTime timeValue(int columnIndex) {
+    @Override
+    public LocalTime timeValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LocalDateTime datetimeValue(String columnName) {
+    @Override
+    public LocalDateTime datetimeValue(String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LocalDateTime datetimeValue(int columnIndex) {
+    @Override
+    public LocalDateTime datetimeValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public Instant timestampValue(String columnName) {
+    @Override
+    public Instant timestampValue(String columnName) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public Instant timestampValue(int columnIndex) {
+    @Override
+    public Instant timestampValue(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
-    @NotNull @Override public Iterator<Object> iterator() {
+    @NotNull
+    @Override
+    public Iterator<Object> iterator() {
         throw new UnsupportedOperationException();
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Tuple.hashCode(this);
     }
 
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
+        }
 
-        if (obj instanceof Tuple)
-            return Tuple.equals(this, (Tuple)obj);
+        if (obj instanceof Tuple) {
+            return Tuple.equals(this, (Tuple) obj);
+        }
 
         return false;
     }

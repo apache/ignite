@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.configuration.validation;
 
 import org.apache.ignite.internal.tostring.S;
@@ -44,7 +45,8 @@ public class ValidationIssue {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(ValidationIssue.class, this);
     }
 }

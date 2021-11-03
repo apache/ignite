@@ -18,4 +18,5 @@
 /**
  * Base package for the Network module.
  */
+
 package org.apache.ignite.network;

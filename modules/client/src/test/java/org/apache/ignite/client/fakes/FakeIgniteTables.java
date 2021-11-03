@@ -39,107 +39,142 @@ import org.jetbrains.annotations.NotNull;
  * Fake tables.
  */
 public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
-    /** */
+    /**
+     *
+     */
     public static final String TABLE_EXISTS = "Table exists";
-
-    /** */
+    
+    /**
+     *
+     */
     private final ConcurrentHashMap<String, TableImpl> tables = new ConcurrentHashMap<>();
-
-    /** */
+    
+    /**
+     *
+     */
     private final ConcurrentHashMap<IgniteUuid, TableImpl> tablesById = new ConcurrentHashMap<>();
-
+    
     /** {@inheritDoc} */
-    @Override public Table createTable(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public Table createTable(String name, Consumer<TableChange> tableInitChange) {
         var newTable = getNewTable(name);
-
+        
         var oldTable = tables.putIfAbsent(name, newTable);
-
-        if (oldTable != null)
+    
+        if (oldTable != null) {
             throw new IgniteException(TABLE_EXISTS);
-
+        }
+        
         tablesById.put(newTable.tableId(), newTable);
-
+        
         return newTable;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public CompletableFuture<Table> createTableAsync(String name, Consumer<TableChange> tableInitChange) {
         return CompletableFuture.completedFuture(createTable(name, tableInitChange));
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void alterTable(String name, Consumer<TableChange> tableChange) {
+    @Override
+    public void alterTable(String name, Consumer<TableChange> tableChange) {
         throw new UnsupportedOperationException();
     }
-
-    @Override public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
+    
+    @Override
+    public CompletableFuture<Void> alterTableAsync(String name, Consumer<TableChange> tableChange) {
         throw new UnsupportedOperationException();
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public Table createTableIfNotExists(String name, Consumer<TableChange> tableInitChange) {
         var newTable = getNewTable(name);
-
+        
         var oldTable = tables.putIfAbsent(name, newTable);
-
-        if (oldTable != null)
+    
+        if (oldTable != null) {
             return oldTable;
-
+        }
+        
         tablesById.put(newTable.tableId(), newTable);
-
+        
         return newTable;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
+    @Override
+    public CompletableFuture<Table> createTableIfNotExistsAsync(String name, Consumer<TableChange> tableInitChange) {
         return CompletableFuture.completedFuture(createTableIfNotExists(name, tableInitChange));
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void dropTable(String name) {
+    @Override
+    public void dropTable(String name) {
         var table = tables.remove(name);
-
-        if (table != null)
+    
+        if (table != null) {
             tablesById.remove(table.tableId());
+        }
     }
-
+    
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> dropTableAsync(String name) {
+    @Override
+    public CompletableFuture<Void> dropTableAsync(String name) {
         dropTable(name);
-
+        
         return CompletableFuture.completedFuture(null);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public List<Table> tables() {
+    @Override
+    public List<Table> tables() {
         return new ArrayList<>(tables.values());
     }
-
+    
     /** {@inheritDoc} */
-    @Override public CompletableFuture<List<Table>> tablesAsync() {
+    @Override
+    public CompletableFuture<List<Table>> tablesAsync() {
         return CompletableFuture.completedFuture(tables());
     }
-
+    
     /** {@inheritDoc} */
-    @Override public Table table(String name) {
+    @Override
+    public Table table(String name) {
         return tables.get(name);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Table> tableAsync(String name) {
+    @Override
+    public TableImpl table(IgniteUuid id) {
+        return tablesById.get(id);
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<Table> tableAsync(String name) {
         return CompletableFuture.completedFuture(table(name));
     }
-
-    @NotNull private TableImpl getNewTable(String name) {
+    
+    /** {@inheritDoc} */
+    @Override
+    public CompletableFuture<TableImpl> tableAsync(IgniteUuid id) {
+        return CompletableFuture.completedFuture(tablesById.get(id));
+    }
+    
+    @NotNull
+    private TableImpl getNewTable(String name) {
         return new TableImpl(
-            new FakeInternalTable(name, new IgniteUuid(UUID.randomUUID(), 0)),
-            new FakeSchemaRegistry(this::getSchema),
-            null
+                new FakeInternalTable(name, new IgniteUuid(UUID.randomUUID(), 0)),
+                new FakeSchemaRegistry(this::getSchema),
+                null
         );
     }
-
+    
     /**
      * Gets the schema.
+     *
      * @param v Version.
      * @return Schema descriptor.
      */
@@ -150,7 +185,7 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
                         1,
                         new Column[]{new Column("id", NativeTypes.INT64, false)},
                         new Column[]{new Column("name", NativeTypes.STRING, true)});
-
+            
             case 2:
                 return new SchemaDescriptor(
                         2,
@@ -159,18 +194,8 @@ public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
                                 new Column("name", NativeTypes.STRING, true),
                                 new Column("xyz", NativeTypes.STRING, true)
                         });
+            default:
+                return null;
         }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public TableImpl table(IgniteUuid id) {
-        return tablesById.get(id);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CompletableFuture<TableImpl> tableAsync(IgniteUuid id) {
-        return CompletableFuture.completedFuture(tablesById.get(id));
     }
 }

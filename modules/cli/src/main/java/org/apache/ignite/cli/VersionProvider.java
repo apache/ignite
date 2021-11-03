@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cli;
 
+import io.micronaut.core.annotation.Introspected;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import io.micronaut.core.annotation.Introspected;
 import picocli.CommandLine;
 
 /**
@@ -43,7 +43,8 @@ public class VersionProvider implements CommandLine.IVersionProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public String[] getVersion() {
-        return new String[] { "Apache Ignite CLI ver. " + cliVerInfo.ver};
+    @Override
+    public String[] getVersion() {
+        return new String[]{"Apache Ignite CLI ver. " + cliVerInfo.ver};
     }
 }

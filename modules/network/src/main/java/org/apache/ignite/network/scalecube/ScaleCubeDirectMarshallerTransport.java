@@ -17,6 +17,9 @@
 
 package org.apache.ignite.network.scalecube;
 
+import io.scalecube.cluster.transport.api.Message;
+import io.scalecube.cluster.transport.api.Transport;
+import io.scalecube.net.Address;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,9 +30,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
-import io.scalecube.cluster.transport.api.Message;
-import io.scalecube.cluster.transport.api.Transport;
-import io.scalecube.net.Address;
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.message.ScaleCubeMessage;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
@@ -82,13 +82,13 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
      * Constructor.
      *
      * @param connectionManager connection manager
-     * @param topologyService topology service
-     * @param messageFactory message factory
+     * @param topologyService   topology service
+     * @param messageFactory    message factory
      */
     ScaleCubeDirectMarshallerTransport(
-        ConnectionManager connectionManager,
-        ScaleCubeTopologyService topologyService,
-        NetworkMessagesFactory messageFactory
+            ConnectionManager connectionManager,
+            ScaleCubeTopologyService topologyService,
+            NetworkMessagesFactory messageFactory
     ) {
         this.connectionManager = connectionManager;
         this.topologyService = topologyService;
@@ -97,11 +97,11 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
         this.connectionManager.addListener(this::onMessage);
         // Setup cleanup
         stop.then(doStop())
-            .doFinally(s -> onStop.onComplete())
-            .subscribe(
-                null,
-                ex -> LOG.warn("Failed to stop {}: {}", address, ex.toString())
-            );
+                .doFinally(s -> onStop.onComplete())
+                .subscribe(
+                        null,
+                        ex -> LOG.warn("Failed to stop {}: {}", address, ex.toString())
+                );
     }
 
     /**
@@ -117,10 +117,11 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
 
         int port = inetSocketAddress.getPort();
 
-        if (address.isAnyLocalAddress())
+        if (address.isAnyLocalAddress()) {
             return Address.create(Address.getLocalIpAddress().getHostAddress(), port);
-        else
+        } else {
             return Address.create(address.getHostAddress(), port);
+        }
     }
 
     /**
@@ -140,19 +141,22 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
     }
 
     /** {@inheritDoc} */
-    @Override public Address address() {
+    @Override
+    public Address address() {
         return address;
     }
 
     /** {@inheritDoc} */
-    @Override public Mono<Transport> start() {
+    @Override
+    public Mono<Transport> start() {
         address = prepareAddress(connectionManager.getLocalAddress());
 
         return Mono.just(this);
     }
 
     /** {@inheritDoc} */
-    @Override public Mono<Void> stop() {
+    @Override
+    public Mono<Void> stop() {
         return Mono.defer(() -> {
             stop.onComplete();
             return onStop;
@@ -160,12 +164,14 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isStopped() {
+    @Override
+    public boolean isStopped() {
         return onStop.isDisposed();
     }
 
     /** {@inheritDoc} */
-    @Override public Mono<Void> send(Address address, Message message) {
+    @Override
+    public Mono<Void> send(Address address, Message message) {
         var addr = InetSocketAddress.createUnresolved(address.host(), address.port());
 
         return Mono.fromFuture(() -> {
@@ -181,13 +187,14 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
      * Handles new network messages from {@link #connectionManager}.
      *
      * @param source Message source.
-     * @param msg Network message.
+     * @param msg    Network message.
      */
     private void onMessage(SocketAddress source, NetworkMessage msg) {
         Message message = fromNetworkMessage(msg);
 
-        if (message != null)
+        if (message != null) {
             sink.next(message);
+        }
     }
 
     /**
@@ -203,15 +210,14 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
 
         try (ObjectOutputStream oos = new ObjectOutputStream(stream)) {
             oos.writeObject(dataObj);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IgniteInternalException(e);
         }
 
         return messageFactory.scaleCubeMessage()
-            .array(stream.toByteArray())
-            .headers(message.headers())
-            .build();
+                .array(stream.toByteArray())
+                .headers(message.headers())
+                .build();
     }
 
     /**
@@ -232,8 +238,7 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
 
             try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg.array()))) {
                 obj = ois.readObject();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw new IgniteInternalException(e);
             }
 
@@ -243,33 +248,35 @@ class ScaleCubeDirectMarshallerTransport implements Transport {
     }
 
     /** {@inheritDoc} */
-    @Override public Mono<Message> requestResponse(Address address, Message request) {
+    @Override
+    public Mono<Message> requestResponse(Address address, Message request) {
         return Mono.create(sink -> {
             Objects.requireNonNull(request, "request must be not null");
             Objects.requireNonNull(request.correlationId(), "correlationId must be not null");
 
             Disposable receive =
-                listen()
-                    .filter(resp -> resp.correlationId() != null)
-                    .filter(resp -> resp.correlationId().equals(request.correlationId()))
-                    .take(1)
-                    .subscribe(sink::success, sink::error, sink::success);
+                    listen()
+                            .filter(resp -> resp.correlationId() != null)
+                            .filter(resp -> resp.correlationId().equals(request.correlationId()))
+                            .take(1)
+                            .subscribe(sink::success, sink::error, sink::success);
 
             Disposable send =
-                send(address, request)
-                    .subscribe(
-                        null,
-                        ex -> {
-                            receive.dispose();
-                            sink.error(ex);
-                        });
+                    send(address, request)
+                            .subscribe(
+                                    null,
+                                    ex -> {
+                                        receive.dispose();
+                                        sink.error(ex);
+                                    });
 
             sink.onDispose(Disposables.composite(send, receive));
         });
     }
 
     /** {@inheritDoc} */
-    @Override public final Flux<Message> listen() {
+    @Override
+    public final Flux<Message> listen() {
         return subject.onBackpressureBuffer();
     }
 }

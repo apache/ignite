@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.manager;
 
 /**
- * Event parameters.
- * This type passed to the event listener.
+ * Event parameters. This type passed to the event listener.
+ *
  * @see Producer#fireEvent(Event, EventParameters, Throwable)
  */
 public interface EventParameters {

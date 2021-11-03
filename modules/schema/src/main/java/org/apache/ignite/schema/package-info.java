@@ -18,4 +18,5 @@
 /**
  * Contains public schema definition helpers.
  */
+
 package org.apache.ignite.schema;

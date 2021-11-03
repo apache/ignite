@@ -21,15 +21,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/** */
-public final class RandomNode<Row> implements Destination<Row> {
-    /** */
+/**
+ *
+ */
+public final class RandomNode<RowT> implements Destination<RowT> {
+    /**
+     *
+     */
     private final Random random;
 
-    /** */
+    /**
+     *
+     */
     private final List<String> nodes;
 
-    /** */
+    /**
+     *
+     */
     public RandomNode(List<String> nodes) {
         this.nodes = nodes;
 
@@ -37,12 +45,14 @@ public final class RandomNode<Row> implements Destination<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> targets(Row row) {
+    @Override
+    public List<String> targets(RowT row) {
         return Collections.singletonList(nodes.get(random.nextInt(nodes.size())));
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> targets() {
+    @Override
+    public List<String> targets() {
         return nodes;
     }
 }

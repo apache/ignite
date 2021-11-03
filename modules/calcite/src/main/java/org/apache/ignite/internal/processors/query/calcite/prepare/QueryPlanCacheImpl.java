@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-
 /**
- * Implementation of {@link QueryPlanCache} that simply wraps
- * a {@link Caffeine} cache.
+ * Implementation of {@link QueryPlanCache} that simply wraps a {@link Caffeine} cache.
  */
 public class QueryPlanCacheImpl implements QueryPlanCache {
     private final ConcurrentMap<CacheKey, List<QueryPlan>> cache;
@@ -35,28 +34,32 @@ public class QueryPlanCacheImpl implements QueryPlanCache {
      */
     public QueryPlanCacheImpl(int cacheSize) {
         cache = Caffeine.newBuilder()
-            .maximumSize(cacheSize)
-            .<CacheKey, List<QueryPlan>>build()
-            .asMap();
+                .maximumSize(cacheSize)
+                .<CacheKey, List<QueryPlan>>build()
+                .asMap();
     }
 
     /** {@inheritDoc} */
-    @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
+    @Override
+    public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
         return cache.computeIfAbsent(key, k -> factory.create(ctx));
     }
 
     /** {@inheritDoc} */
-    @Override public void clear() {
+    @Override
+    public void clear() {
         cache.clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override
+    public void start() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override
+    public void stop() {
         clear();
     }
 }

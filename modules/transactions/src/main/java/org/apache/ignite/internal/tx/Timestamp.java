@@ -24,13 +24,19 @@ import org.jetbrains.annotations.NotNull;
  * The timestamp.
  */
 public class Timestamp implements Comparable<Timestamp> {
-    /** */
+    /**
+     *
+     */
     private static long localTime;
 
-    /** */
+    /**
+     *
+     */
     private static long cntr;
 
-    /** */
+    /**
+     *
+     */
     private final long timestamp;
 
     /**
@@ -44,24 +50,30 @@ public class Timestamp implements Comparable<Timestamp> {
      * @param other Other version.
      * @return Comparison result.
      */
-    @Override public int compareTo(@NotNull Timestamp other) {
+    @Override
+    public int compareTo(@NotNull Timestamp other) {
         int ret = Long.compare(timestamp >> 16 << 16, other.timestamp >> 16 << 16);
 
         return ret != 0 ? ret : Long.compare(timestamp << 48 >> 48, other.timestamp << 48 >> 48);
     }
 
-    @Override public boolean equals(Object o) {
-        if (!(o instanceof Timestamp)) return false;
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Timestamp)) {
+            return false;
+        }
 
         return compareTo((Timestamp) o) == 0;
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return (int) (timestamp ^ (timestamp >>> 32));
     }
 
     /**
      * TODO https://issues.apache.org/jira/browse/IGNITE-15129
+     *
      * @return Next timestamp (monotonically increasing).
      */
     public static synchronized Timestamp nextVersion() {
@@ -70,16 +82,18 @@ public class Timestamp implements Comparable<Timestamp> {
         // Truncate nanotime to 48 bits.
         localTime = Math.max(localTimeCpy, System.nanoTime() >> 16 << 16);
 
-        if (localTimeCpy == localTime)
+        if (localTimeCpy == localTime) {
             cntr++;
-        else
+        } else {
             cntr = 0;
+        }
 
         return new Timestamp(localTime | cntr);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(Timestamp.class, this);
     }
 }

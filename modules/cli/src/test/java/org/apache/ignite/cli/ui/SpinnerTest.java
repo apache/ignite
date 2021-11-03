@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cli.ui;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -24,16 +26,18 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  *
  */
 public class SpinnerTest {
-    /** */
+    /**
+     *
+     */
     private PrintWriter out;
 
-    /** */
+    /**
+     *
+     */
     private ByteArrayOutputStream outputStream;
 
     /**

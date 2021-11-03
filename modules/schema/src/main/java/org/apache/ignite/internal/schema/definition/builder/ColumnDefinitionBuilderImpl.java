@@ -41,6 +41,7 @@ public class ColumnDefinitionBuilderImpl implements ColumnDefinitionBuilder {
 
     /**
      * Constructor.
+     *
      * @param colName Column name.
      * @param colType Column type.
      */
@@ -50,35 +51,40 @@ public class ColumnDefinitionBuilderImpl implements ColumnDefinitionBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDefinitionBuilderImpl asNullable() {
+    @Override
+    public ColumnDefinitionBuilderImpl asNullable() {
         nullable = true;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDefinitionBuilderImpl asNonNull() {
+    @Override
+    public ColumnDefinitionBuilderImpl asNonNull() {
         nullable = false;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDefinitionBuilderImpl withDefaultValueExpression(Object defValExpr) {
+    @Override
+    public ColumnDefinitionBuilderImpl withDefaultValueExpression(Object defValExpr) {
         this.defValExpr = defValExpr;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDefinitionBuilderImpl withHints(Map<String, String> hints) {
+    @Override
+    public ColumnDefinitionBuilderImpl withHints(Map<String, String> hints) {
         // No op.
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDefinition build() {
+    @Override
+    public ColumnDefinition build() {
         return new ColumnDefinitionImpl(colName, colType, nullable, defValExpr);
     }
 }

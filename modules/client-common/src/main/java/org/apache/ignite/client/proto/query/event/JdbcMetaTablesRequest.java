@@ -45,8 +45,8 @@ public class JdbcMetaTablesRequest implements ClientMessage {
      * Constructor.
      *
      * @param schemaName Schema search pattern.
-     * @param tblName Table search pattern.
-     * @param tblTypes Table types.
+     * @param tblName    Table search pattern.
+     * @param tblTypes   Table types.
      */
     public JdbcMetaTablesRequest(String schemaName, String tblName, String[] tblTypes) {
         this.schemaName = schemaName;
@@ -82,7 +82,8 @@ public class JdbcMetaTablesRequest implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         ClientMessageUtils.writeStringNullable(packer, schemaName);
         ClientMessageUtils.writeStringNullable(packer, tblName);
 
@@ -94,28 +95,33 @@ public class JdbcMetaTablesRequest implements ClientMessage {
 
         packer.packArrayHeader(tblTypes.length);
 
-        for (String type : tblTypes)
+        for (String type : tblTypes) {
             packer.packString(type);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         schemaName = ClientMessageUtils.readStringNullable(unpacker);
         tblName = ClientMessageUtils.readStringNullable(unpacker);
 
-        if (unpacker.tryUnpackNil())
+        if (unpacker.tryUnpackNil()) {
             return;
+        }
 
         int size = unpacker.unpackArrayHeader();
 
         tblTypes = new String[size];
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             tblTypes[i] = unpacker.unpackString();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcMetaTablesRequest.class, this);
     }
 }

@@ -25,18 +25,21 @@ import org.jetbrains.annotations.Nullable;
 /** Invoke closure implementation for a remove operation. */
 public class SimpleRemoveInvokeClosure implements InvokeClosure<Void> {
     /** {@inheritDoc} */
-    @Override public void call(@Nullable DataRow row) {
+    @Override
+    public void call(@Nullable DataRow row) {
     }
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public DataRow newRow() {
+    @Override
+    public DataRow newRow() {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public OperationType operationType() {
+    @Override
+    public OperationType operationType() {
         return OperationType.REMOVE;
     }
 }

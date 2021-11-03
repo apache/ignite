@@ -17,6 +17,8 @@
 
 package org.apache.ignite.jdbc;
 
+import static org.apache.ignite.internal.jdbc.ConnectionPropertiesImpl.URL_PREFIX;
+
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -29,13 +31,10 @@ import org.apache.ignite.internal.client.proto.ProtocolVersion;
 import org.apache.ignite.internal.jdbc.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
 
-import static org.apache.ignite.internal.jdbc.ConnectionPropertiesImpl.URL_PREFIX;
-
 /**
  * JDBC driver thin implementation for Apache Ignite 3.x.
- * <p>
- * Driver allows to get distributed data from Ignite Data Storage using standard
- * SQL queries and standard JDBC API.
+ *
+ * <p>Driver allows to get distributed data from Ignite Data Storage using standard SQL queries and standard JDBC API.
  */
 public class IgniteJdbcDriver implements Driver {
     /** Driver instance. */
@@ -52,9 +51,11 @@ public class IgniteJdbcDriver implements Driver {
     private static final int MINOR_VER = ProtocolVersion.LATEST_VER.minor();
 
     /** {@inheritDoc} */
-    @Override public Connection connect(String url, Properties props) throws SQLException {
-        if (!acceptsURL(url))
+    @Override
+    public Connection connect(String url, Properties props) throws SQLException {
+        if (!acceptsURL(url)) {
             return null;
+        }
 
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
@@ -64,12 +65,14 @@ public class IgniteJdbcDriver implements Driver {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean acceptsURL(String url) throws SQLException {
+    @Override
+    public boolean acceptsURL(String url) throws SQLException {
         return url.startsWith(URL_PREFIX);
     }
 
     /** {@inheritDoc} */
-    @Override public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+    @Override
+    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
         connProps.init(url, info);
@@ -78,22 +81,26 @@ public class IgniteJdbcDriver implements Driver {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMajorVersion() {
+    @Override
+    public int getMajorVersion() {
         return MAJOR_VER;
     }
 
     /** {@inheritDoc} */
-    @Override public int getMinorVersion() {
+    @Override
+    public int getMinorVersion() {
         return MINOR_VER;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean jdbcCompliant() {
+    @Override
+    public boolean jdbcCompliant() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+    @Override
+    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         throw new SQLFeatureNotSupportedException("java.util.logging is not used.");
     }
 
@@ -104,15 +111,15 @@ public class IgniteJdbcDriver implements Driver {
      * @throws RuntimeException when failed to register driver.
      */
     private static synchronized void register() {
-        if (isRegistered())
+        if (isRegistered()) {
             throw new RuntimeException("Driver is already registered. It can only be registered once.");
+        }
 
         try {
             Driver registeredDriver = new IgniteJdbcDriver();
             DriverManager.registerDriver(registeredDriver);
             IgniteJdbcDriver.instance = registeredDriver;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to register Ignite JDBC driver.", e);
         }
     }

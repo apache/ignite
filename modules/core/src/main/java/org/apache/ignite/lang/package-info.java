@@ -18,4 +18,5 @@
 /**
  * Contains general purpose public classes.
  */
+
 package org.apache.ignite.lang;

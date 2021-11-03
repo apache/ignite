@@ -66,7 +66,8 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Map<String, ? extends Serializable> readAllLatest(String prefix) {
+    @Override
+    public synchronized Map<String, ? extends Serializable> readAllLatest(String prefix) {
         var rangeStart = new ByteArray(LOC_PREFIX + prefix);
 
         var rangeEnd = new ByteArray(incrementLastChar(LOC_PREFIX + prefix));
@@ -75,7 +76,8 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Data readAll() throws StorageException {
+    @Override
+    public synchronized Data readAll() throws StorageException {
         return readAll(LOC_KEYS_START_RANGE, LOC_KEYS_END_RANGE);
     }
 
@@ -94,10 +96,9 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
                 // vault iterator should not return nulls as values
                 assert value != null;
 
-                data.put(key, (Serializable)ByteUtils.fromBytes(value));
+                data.put(key, (Serializable) ByteUtils.fromBytes(value));
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new StorageException("Exception when closing a Vault cursor", e);
         }
 
@@ -107,17 +108,19 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized CompletableFuture<Boolean> write(
-        Map<String, ? extends Serializable> newValues, long sentVersion
+    @Override
+    public synchronized CompletableFuture<Boolean> write(
+            Map<String, ? extends Serializable> newValues, long sentVersion
     ) {
         assert lsnr != null : "Configuration listener must be initialized before write.";
 
-        if (sentVersion != ver.get())
+        if (sentVersion != ver.get()) {
             return CompletableFuture.completedFuture(false);
+        }
 
         Map<ByteArray, byte[]> data = new HashMap<>();
 
-        for (Map.Entry<String, ? extends Serializable> e: newValues.entrySet()) {
+        for (Map.Entry<String, ? extends Serializable> e : newValues.entrySet()) {
             ByteArray key = ByteArray.fromString(LOC_PREFIX + e.getKey());
 
             data.put(key, e.getValue() == null ? null : ByteUtils.toBytes(e.getValue()));
@@ -130,20 +133,23 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
         ConfigurationStorageListener localLsnr = lsnr;
 
         return vaultMgr.putAll(data)
-            .thenCompose(v -> localLsnr.onEntriesChanged(entries))
-            .thenApply(v -> true);
+                .thenCompose(v -> localLsnr.onEntriesChanged(entries))
+                .thenApply(v -> true);
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr) {
-        if (this.lsnr == null)
+    @Override
+    public synchronized void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr) {
+        if (this.lsnr == null) {
             this.lsnr = lsnr;
-        else
+        } else {
             LOG.warn("Configuration listener has already been set.");
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public ConfigurationType type() {
+    @Override
+    public ConfigurationType type() {
         return ConfigurationType.LOCAL;
     }
 
@@ -153,6 +159,6 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     private static String incrementLastChar(String str) {
         char lastChar = str.charAt(str.length() - 1);
 
-        return str.substring(0, str.length() - 1) + (char)(lastChar + 1);
+        return str.substring(0, str.length() - 1) + (char) (lastChar + 1);
     }
 }

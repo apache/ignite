@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.List;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
@@ -28,13 +27,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * <b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#close()},
  * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
  */
-public interface Node<Row> extends AutoCloseable {
+public interface Node<RowT> extends AutoCloseable {
     /**
      * Returns runtime context allowing access to the tables in a database.
      *
      * @return Execution context.
      */
-    ExecutionContext<Row> context();
+    ExecutionContext<RowT> context();
 
     /**
      * Returns logical node output row type.
@@ -46,28 +45,28 @@ public interface Node<Row> extends AutoCloseable {
     /**
      * @return Node downstream.
      */
-    Downstream<Row> downstream();
+    Downstream<RowT> downstream();
 
     /**
      * Registers node sources.
      *
      * @param sources Sources collection.
      */
-    void register(List<Node<Row>> sources);
+    void register(List<Node<RowT>> sources);
 
     /**
      * Returns registered node sources.
      *
      * @return Node sources.
      */
-    List<Node<Row>> sources();
+    List<Node<RowT>> sources();
 
     /**
      * Registers downstream.
      *
      * @param downstream Downstream.
      */
-    void onRegister(Downstream<Row> downstream);
+    void onRegister(Downstream<RowT> downstream);
 
     /**
      * Requests next bunch of rows.

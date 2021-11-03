@@ -18,4 +18,5 @@
 /**
  * Ignite thin client handler (server-side connector).
  */
+
 package org.apache.ignite.client.handler;

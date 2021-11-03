@@ -26,40 +26,43 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 /**
- * {@link Matcher} that awaits for the given future to complete and then forwards the result to the nested
- * {@code matcher}.
+ * {@link Matcher} that awaits for the given future to complete and then forwards the result to the nested {@code matcher}.
  */
 public class CompletableFutureMatcher<T> extends TypeSafeMatcher<CompletableFuture<T>> {
-    /** */
+    /** Timeout in seconds. */
     private static final int TIMEOUT_SECONDS = 1;
 
-    /** */
+    /** Matcher to forward the result of the completable future. */
     private final Matcher<T> matcher;
 
     /**
-     * @param matcher matcher to forward the result of the completable future.
+     * Constructor.
+     *
+     * @param matcher Matcher to forward the result of the completable future.
      */
     private CompletableFutureMatcher(Matcher<T> matcher) {
         this.matcher = matcher;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean matchesSafely(CompletableFuture<T> item) {
+    @Override
+    protected boolean matchesSafely(CompletableFuture<T> item) {
         try {
             return matcher.matches(item.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        }
-        catch (InterruptedException | ExecutionException | TimeoutException e) {
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new AssertionError(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void describeTo(Description description) {
+    @Override
+    public void describeTo(Description description) {
         description.appendText("is ").appendDescriptionOf(matcher);
     }
 
     /** {@inheritDoc} */
-    @Override protected void describeMismatchSafely(CompletableFuture<T> item, Description mismatchDescription) {
+    @Override
+    protected void describeMismatchSafely(CompletableFuture<T> item, Description mismatchDescription) {
         Object valueDescription = item.isDone() ? item.join() : item;
 
         mismatchDescription.appendText("was ").appendValue(valueDescription);

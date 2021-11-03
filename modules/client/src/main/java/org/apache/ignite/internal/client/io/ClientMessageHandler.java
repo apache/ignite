@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.client.io;
 
-import java.io.IOException;
 import io.netty.buffer.ByteBuf;
+import java.io.IOException;
 
 /**
  * Handles thin client responses and server to client notifications.

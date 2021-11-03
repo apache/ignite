@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.schema.builder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.builder.PartialIndexDefinitionBuilder;
 import org.apache.ignite.schema.definition.index.PartialIndexDefinition;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for partial index builder.

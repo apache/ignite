@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.List;
-
 import org.apache.ignite.network.annotations.Transferable;
 
 /**

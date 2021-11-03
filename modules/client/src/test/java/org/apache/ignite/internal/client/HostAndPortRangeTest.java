@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.lang.IgniteException;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.apache.ignite.lang.IgniteException;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests HostAndPortRange.
@@ -32,7 +32,7 @@ public class HostAndPortRangeTest {
      * Tests correct input address with IPv4 host and port range.
      */
     @Test
-    public void testParseIPv4WithPortRange() {
+    public void testParseIpv4WithPortRange() {
         String addrStr = "127.0.0.1:8080..8090";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -48,7 +48,7 @@ public class HostAndPortRangeTest {
      * Tests correct input address with IPv4 host and single port.
      */
     @Test
-    public void testParseIPv4WithSinglePort() {
+    public void testParseIpv4WithSinglePort() {
         String addrStr = "127.0.0.1:8080";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -64,7 +64,7 @@ public class HostAndPortRangeTest {
      * Tests correct input address with IPv4 host and no port.
      */
     @Test
-    public void testParseIPv4NoPort() {
+    public void testParseIpv4NoPort() {
         String addrStr = "127.0.0.1";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -80,7 +80,7 @@ public class HostAndPortRangeTest {
      * Tests correct input address with IPv6 host and port range.
      */
     @Test
-    public void testParseIPv6WithPortRange() {
+    public void testParseIpv6WithPortRange() {
         String addrStr = "[::1]:8080..8090";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -96,7 +96,7 @@ public class HostAndPortRangeTest {
      * Tests correct input address with IPv6 host and single port.
      */
     @Test
-    public void testParseIPv6WithSinglePort() {
+    public void testParseIpv6WithSinglePort() {
         String addrStr = "[3ffe:2a00:100:7031::]:8080";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -112,7 +112,7 @@ public class HostAndPortRangeTest {
      * Tests correct input address with IPv6 host and no port.
      */
     @Test
-    public void testParseIPv6NoPort() {
+    public void testParseIpv6NoPort() {
         String addrStr = "::FFFF:129.144.52.38";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -128,7 +128,7 @@ public class HostAndPortRangeTest {
      * Tests incorrect input address with IPv6 host (no brackets) and port.
      */
     @Test
-    public void testParseIPv6IncorrectHost() {
+    public void testParseIpv6IncorrectHost() {
         String addrStr = "3ffe:2a00:100:7031";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;

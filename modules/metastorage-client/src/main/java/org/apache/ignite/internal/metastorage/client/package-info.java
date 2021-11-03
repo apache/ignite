@@ -18,4 +18,5 @@
 /**
  * Defines client interface for access to a meta storage server.
  */
+
 package org.apache.ignite.internal.metastorage.client;

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.configuration.annotation;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * Annotation that marks underlying class as a root configuration schema. Has basically the same properties as
- * {@link Config} + adds extra properties.
+ * Annotation that marks underlying class as a root configuration schema. Has basically the same properties as {@link Config} + adds extra
+ * properties.
  *
  * @see Config
  */

@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -37,16 +41,11 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  *
  */
 public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
     /**
-     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -61,9 +60,9 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         String sql = "SELECT DISTINCT val0, val1 FROM test";
 
         IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            algo.rulesToDisable
+                sql,
+                publicSchema,
+                algo.rulesToDisable
         );
 
         IgniteAggregate mapAgg = findFirstNode(phys, byClass(algo.map));
@@ -75,52 +74,67 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         assertTrue(nullOrEmpty(rdcAgg.getAggregateCalls()), "Invalid plan\n" + RelOptUtil.toString(phys));
         assertTrue(nullOrEmpty(mapAgg.getAggCallList()), "Invalid plan\n" + RelOptUtil.toString(phys));
 
-        if (algo == AggregateAlgorithm.SORT)
+        if (algo == AggregateAlgorithm.SORT) {
             assertNotNull(findFirstNode(phys, byClass(IgniteIndexScan.class)));
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     enum AggregateAlgorithm {
-        /** */
+        /**
+         *
+         */
         SORT(
-            IgniteSingleSortAggregate.class,
-            IgniteMapSortAggregate.class,
-            IgniteReduceSortAggregate.class,
-            "HashSingleAggregateConverterRule",
-            "HashMapReduceAggregateConverterRule",
-            "SortSingleAggregateConverterRule"
+                IgniteSingleSortAggregate.class,
+                IgniteMapSortAggregate.class,
+                IgniteReduceSortAggregate.class,
+                "HashSingleAggregateConverterRule",
+                "HashMapReduceAggregateConverterRule",
+                "SortSingleAggregateConverterRule"
         ),
 
         /**
          *
          */
         HASH(
-            IgniteSingleHashAggregate.class,
-            IgniteMapHashAggregate.class,
-            IgniteReduceHashAggregate.class,
-            "SortSingleAggregateConverterRule",
-            "SortMapReduceAggregateConverterRule",
-            "HashSingleAggregateConverterRule"
+                IgniteSingleHashAggregate.class,
+                IgniteMapHashAggregate.class,
+                IgniteReduceHashAggregate.class,
+                "SortSingleAggregateConverterRule",
+                "SortMapReduceAggregateConverterRule",
+                "HashSingleAggregateConverterRule"
         );
 
-        /** */
+        /**
+         *
+         */
         public final Class<? extends IgniteSingleAggregateBase> single;
 
-        /** */
+        /**
+         *
+         */
         public final Class<? extends IgniteMapAggregateBase> map;
 
-        /** */
+        /**
+         *
+         */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
-        /** */
+        /**
+         *
+         */
         public final String[] rulesToDisable;
 
-        /** */
+        /**
+         *
+         */
         AggregateAlgorithm(
-            Class<? extends IgniteSingleAggregateBase> single,
-            Class<? extends IgniteMapAggregateBase> map,
-            Class<? extends IgniteReduceAggregateBase> reduce,
-            String... rulesToDisable) {
+                Class<? extends IgniteSingleAggregateBase> single,
+                Class<? extends IgniteMapAggregateBase> map,
+                Class<? extends IgniteReduceAggregateBase> reduce,
+                String... rulesToDisable) {
             this.single = single;
             this.map = map;
             this.reduce = reduce;

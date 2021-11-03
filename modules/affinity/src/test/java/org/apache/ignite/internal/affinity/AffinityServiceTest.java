@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.affinity;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -25,11 +27,9 @@ import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.NetworkAddress;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
- * Tests scenarios for an affinity service. Please pay attention that given test doesn't check Rendezvous or any other
- * affinity function it just checks {@link AffinityUtils} logic.
+ * Tests scenarios for an affinity service. Please pay attention that given test doesn't check Rendezvous or any other affinity function it
+ * just checks {@link AffinityUtils} logic.
  */
 public class AffinityServiceTest {
     /**
@@ -38,24 +38,25 @@ public class AffinityServiceTest {
     @Test
     public void testCalculatedAssignmentHappyPath() {
         List<List<ClusterNode>> assignments = AffinityUtils.calculateAssignments(
-            Arrays.asList(
-                new ClusterNode(
-                    UUID.randomUUID().toString(), "node0",
-                    new NetworkAddress("localhost", 8080)
+                Arrays.asList(
+                        new ClusterNode(
+                                UUID.randomUUID().toString(), "node0",
+                                new NetworkAddress("localhost", 8080)
+                        ),
+                        new ClusterNode(
+                                UUID.randomUUID().toString(), "node1",
+                                new NetworkAddress("localhost", 8081)
+                        )
                 ),
-                new ClusterNode(
-                    UUID.randomUUID().toString(), "node1",
-                    new NetworkAddress("localhost", 8081)
-                )
-            ),
-            10,
-            3
+                10,
+                3
         );
 
         assertEquals(10, assignments.size());
 
-        for (List<ClusterNode> partitionAssignment : assignments)
+        for (List<ClusterNode> partitionAssignment : assignments) {
             assertEquals(2, partitionAssignment.size());
+        }
     }
 
     /**
@@ -64,14 +65,15 @@ public class AffinityServiceTest {
     @Test
     public void testEmptyBaselineAssignmentsCalculation() {
         List<List<ClusterNode>> assignments = AffinityUtils.calculateAssignments(
-            Collections.emptyList(),
-            10,
-            3
+                Collections.emptyList(),
+                10,
+                3
         );
 
         assertEquals(10, assignments.size());
 
-        for (List<ClusterNode> partitionAssignment : assignments)
+        for (List<ClusterNode> partitionAssignment : assignments) {
             assertEquals(0, partitionAssignment.size());
+        }
     }
 }

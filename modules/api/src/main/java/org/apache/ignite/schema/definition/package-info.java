@@ -18,4 +18,5 @@
 /**
  * Contains table schema definition interfaces and classes.
  */
+
 package org.apache.ignite.schema.definition;

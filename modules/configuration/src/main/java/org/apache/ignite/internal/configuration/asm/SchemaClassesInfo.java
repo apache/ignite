@@ -82,8 +82,8 @@ class SchemaClassesInfo {
 
     /**
      * Get the prefix for inner classes.
-     * <p>
-     * Example: org.apache.ignite.NodeConfigurationSchema -> org.apache.ignite.Node
+     *
+     * <p>Example: org.apache.ignite.NodeConfigurationSchema -> org.apache.ignite.Node
      *
      * @param schemaClass Configuration schema class.
      * @return Prefix for inner classes.

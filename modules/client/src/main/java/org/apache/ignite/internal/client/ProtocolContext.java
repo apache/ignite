@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client;
 
 import java.util.EnumSet;
-
 import org.apache.ignite.client.IgniteClientFeatureNotSupportedByServerException;
 import org.apache.ignite.internal.client.proto.ProtocolVersion;
 
@@ -33,7 +32,7 @@ public class ProtocolContext {
     private final EnumSet<ProtocolBitmaskFeature> features;
 
     /**
-     * @param ver Protocol version.
+     * @param ver      Protocol version.
      * @param features Supported features.
      */
     public ProtocolContext(ProtocolVersion ver, EnumSet<ProtocolBitmaskFeature> features) {
@@ -58,8 +57,9 @@ public class ProtocolContext {
      * @throws IgniteClientFeatureNotSupportedByServerException If feature is not supported by the server.
      */
     public void checkFeatureSupported(ProtocolBitmaskFeature feature) throws IgniteClientFeatureNotSupportedByServerException {
-        if (!isFeatureSupported(feature))
+        if (!isFeatureSupported(feature)) {
             throw new IgniteClientFeatureNotSupportedByServerException(feature);
+        }
     }
 
     /**

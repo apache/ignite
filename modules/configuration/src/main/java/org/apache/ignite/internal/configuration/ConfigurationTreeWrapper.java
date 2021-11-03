@@ -25,19 +25,19 @@ import org.apache.ignite.configuration.notifications.ConfigurationListener;
 /**
  * {@link ConfigurationTree} wrapper.
  *
- * @param <VIEW> Value type of the node.
- * @param <CHANGE> Type of the object that changes this node's value.
+ * @param <VIEWT> Value type of the node.
+ * @param <CHANGET> Type of the object that changes this node's value.
  */
-public class ConfigurationTreeWrapper<VIEW, CHANGE> implements ConfigurationTree<VIEW, CHANGE> {
+public class ConfigurationTreeWrapper<VIEWT, CHANGET> implements ConfigurationTree<VIEWT, CHANGET> {
     /** Configuration tree. */
-    protected final ConfigurationTree<VIEW, CHANGE> configTree;
+    protected final ConfigurationTree<VIEWT, CHANGET> configTree;
 
     /**
      * Constructor.
      *
      * @param configTree Configuration tree.
      */
-    public ConfigurationTreeWrapper(ConfigurationTree<VIEW, CHANGE> configTree) {
+    public ConfigurationTreeWrapper(ConfigurationTree<VIEWT, CHANGET> configTree) {
         this.configTree = configTree;
     }
 
@@ -47,22 +47,22 @@ public class ConfigurationTreeWrapper<VIEW, CHANGE> implements ConfigurationTree
     }
 
     /** {@inheritDoc} */
-    @Override public VIEW value() {
+    @Override public VIEWT value() {
         return configTree.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void listen(ConfigurationListener<VIEW> listener) {
+    @Override public void listen(ConfigurationListener<VIEWT> listener) {
         configTree.listen(listener);
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListen(ConfigurationListener<VIEW> listener) {
+    @Override public void stopListen(ConfigurationListener<VIEWT> listener) {
         configTree.stopListen(listener);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> change(Consumer<CHANGE> change) {
+    @Override public CompletableFuture<Void> change(Consumer<CHANGET> change) {
         return configTree.change(change);
     }
 }

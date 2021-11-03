@@ -34,48 +34,58 @@ import org.apache.calcite.util.Pair;
  * Relational expression that receives elements from remote {@link IgniteSender}
  */
 public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
-    /** */
+    /**
+     *
+     */
     private final long exchangeId;
 
-    /** */
+    /**
+     *
+     */
     private final long sourceFragmentId;
 
-    /** */
+    /**
+     *
+     */
     private final RelCollation collation;
 
     /**
      * Creates a Receiver
      */
     public IgniteReceiver(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelDataType rowType,
-        long exchangeId,
-        long sourceFragmentId
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelDataType rowType,
+            long exchangeId,
+            long sourceFragmentId
     ) {
         this(cluster, traits, rowType, exchangeId, sourceFragmentId, traits.getCollation());
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteReceiver(RelInput input) {
         this(
-            input.getCluster(),
-            input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getRowType("rowType"),
-            ((Number)input.get("exchangeId")).longValue(),
-            ((Number)input.get("sourceFragmentId")).longValue(),
-            input.getCollation()
+                input.getCluster(),
+                input.getTraitSet().replace(IgniteConvention.INSTANCE),
+                input.getRowType("rowType"),
+                ((Number) input.get("exchangeId")).longValue(),
+                ((Number) input.get("sourceFragmentId")).longValue(),
+                input.getCollation()
         );
     }
 
-    /** */
+    /**
+     *
+     */
     private IgniteReceiver(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelDataType rowType,
-        long exchangeId,
-        long sourceFragmentId,
-        RelCollation collation
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelDataType rowType,
+            long exchangeId,
+            long sourceFragmentId,
+            RelCollation collation
     ) {
         super(cluster, traits);
 
@@ -85,61 +95,75 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
         this.collation = collation;
     }
 
-    /** */
+    /**
+     *
+     */
     public long exchangeId() {
         return exchangeId;
     }
 
-    /** */
+    /**
+     *
+     */
     public long sourceFragmentId() {
         return sourceFragmentId;
     }
 
-    /** */
-    @Override public RelCollation collation() {
+    /**
+     *
+     */
+    @Override
+    public RelCollation collation() {
         return collation;
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteReceiver(getCluster(), traitSet, rowType, exchangeId, sourceFragmentId, collation);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
-        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES)
+        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES) {
             return writer;
+        }
 
         return writer
-            .item("rowType", rowType)
-            .item("exchangeId", exchangeId)
-            .item("sourceFragmentId", sourceFragmentId)
-            .itemIf("collation", collation, collation != null && collation != RelCollations.EMPTY);
+                .item("rowType", rowType)
+                .item("exchangeId", exchangeId)
+                .item("sourceFragmentId", sourceFragmentId)
+                .itemIf("collation", collation, collation != null && collation != RelCollations.EMPTY);
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
-        RelTraitSet required) {
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(
+            RelTraitSet required) {
         throw new RuntimeException(getClass().getName()
-            + "#passThroughTraits() is not implemented.");
+                + "#passThroughTraits() is not implemented.");
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
-        RelTraitSet childTraits, int childId) {
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(
+            RelTraitSet childTraits, int childId) {
         throw new RuntimeException(getClass().getName()
-            + "#deriveTraits() is not implemented.");
+                + "#deriveTraits() is not implemented.");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReceiver(cluster, getTraitSet(), rowType, exchangeId, sourceFragmentId, collation);
     }
 }

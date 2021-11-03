@@ -20,11 +20,13 @@ package org.apache.ignite.internal.schema;
 import org.apache.ignite.internal.tostring.S;
 
 /**
- * A fixed-sized type representing a bitmask of <code>n</code> bits. The actual size of a bitmask will round up
- * to the smallest number of bytes required to store <code>n</code> bits.
+ * A fixed-sized type representing a bitmask of <code>n</code> bits. The actual size of a bitmask will round up to the smallest number of
+ * bytes required to store <code>n</code> bits.
  */
 public class BitmaskNativeType extends NativeType {
-    /** */
+    /**
+     *
+     */
     private final int bits;
 
     /**
@@ -46,39 +48,45 @@ public class BitmaskNativeType extends NativeType {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        BitmaskNativeType that = (BitmaskNativeType)o;
+        BitmaskNativeType that = (BitmaskNativeType) o;
 
         return bits == that.bits;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return bits;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(NativeType o) {
+    @Override
+    public int compareTo(NativeType o) {
         int res = super.compareTo(o);
 
         if (res == 0) {
             // The passed in object is also a bitmask, compare the number of bits.
-            BitmaskNativeType that = (BitmaskNativeType)o;
+            BitmaskNativeType that = (BitmaskNativeType) o;
 
             return Integer.compare(bits, that.bits);
-        }
-        else
+        } else {
             return res;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(BitmaskNativeType.class.getSimpleName(), "bits", bits, "typeSpec", spec(), "len", sizeInBytes());
     }
 }

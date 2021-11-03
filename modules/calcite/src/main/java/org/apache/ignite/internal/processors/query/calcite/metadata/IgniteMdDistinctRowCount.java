@@ -26,22 +26,26 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 
-/** */
+/**
+ *
+ */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdDistinctRowCount extends RelMdDistinctRowCount {
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.DISTINCT_ROW_COUNT.method, new IgniteMdDistinctRowCount());
+            ReflectiveRelMetadataProvider.reflectiveSource(
+                    BuiltInMethod.DISTINCT_ROW_COUNT.method, new IgniteMdDistinctRowCount());
 
     /** {@inheritDoc} */
-    @Override public Double getDistinctRowCount(
-        RelSubset rel,
-        RelMetadataQuery mq,
-        ImmutableBitSet groupKey,
-        RexNode predicate
+    @Override
+    public Double getDistinctRowCount(
+            RelSubset rel,
+            RelMetadataQuery mq,
+            ImmutableBitSet groupKey,
+            RexNode predicate
     ) {
-        if (groupKey.cardinality() == 0)
+        if (groupKey.cardinality() == 0) {
             return 1d;
+        }
 
         double rowCount = mq.getRowCount(rel);
 

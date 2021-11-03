@@ -27,20 +27,19 @@ public interface QueryTaskExecutor extends LifecycleAware {
     /**
      * Executes a query task in a thread, responsible for particular query fragment.
      *
-     * @param qryId Query ID.
+     * @param qryId      Query ID.
      * @param fragmentId Fragment ID.
-     * @param qryTask Query task.
+     * @param qryTask    Query task.
      */
     void execute(UUID qryId, long fragmentId, Runnable qryTask);
 
     /**
-     * Returns a new CompletableFuture that is asynchronously completed
-     * by a task running in the given executor after it runs the given
+     * Returns a new CompletableFuture that is asynchronously completed by a task running in the given executor after it runs the given
      * action.
      *
-     * @param qryId Id of the query this task created for.
+     * @param qryId      Id of the query this task created for.
      * @param fragmentId Id of the particular fragment this task created for.
-     * @param qryTask The task to submit.
+     * @param qryTask    The task to submit.
      * @return the new CompletableFuture
      */
     CompletableFuture<?> submit(UUID qryId, long fragmentId, Runnable qryTask);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -32,43 +31,52 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Physical node for MAP phase of INTERSECT operator.
  */
 public class IgniteMapIntersect extends IgniteIntersect implements IgniteMapSetOp {
-    /** */
+    /**
+     *
+     */
     public IgniteMapIntersect(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        List<RelNode> inputs,
-        boolean all
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            List<RelNode> inputs,
+            boolean all
     ) {
         super(cluster, traitSet, inputs, all);
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteMapIntersect(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMapIntersect copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+    @Override
+    public IgniteMapIntersect copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         return new IgniteMapIntersect(getCluster(), traitSet, inputs, all);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMapIntersect(cluster, getTraitSet(), Commons.cast(inputs), all);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override protected RelDataType deriveRowType() {
+    @Override
+    protected RelDataType deriveRowType() {
         return buildRowType();
     }
 
     /** {@inheritDoc} */
-    @Override public int aggregateFieldsCount() {
+    @Override
+    public int aggregateFieldsCount() {
         return getInput(0).getRowType().getFieldCount() + getInputs().size();
     }
 }

@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network.scalecube;
 
+import io.scalecube.cluster.Member;
+import io.scalecube.cluster.membership.MembershipEvent;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import io.scalecube.cluster.Member;
-import io.scalecube.cluster.membership.MembershipEvent;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.AbstractTopologyService;
 import org.apache.ignite.network.ClusterNode;
@@ -68,14 +69,14 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
             LOG.info("Node joined: " + member);
 
             fireAppearedEvent(member);
-        }
-        else if (event.isRemoved()) {
+        } else if (event.isRemoved()) {
             members.compute(member.address(), (addr, node) -> {
                 // Ignore stale remove event.
-                if (node == null || node.id().equals(member.id()))
+                if (node == null || node.id().equals(member.id())) {
                     return null;
-                else
+                } else {
                     return node;
+                }
             });
 
             LOG.info("Node left: " + member);
@@ -85,11 +86,12 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
 
         if (LOG.isInfoEnabled()) {
             StringBuilder snapshotMsg = new StringBuilder("Topology snapshot [nodes=")
-                .append(members.size())
-                .append("]\n");
+                    .append(members.size())
+                    .append("]\n");
 
-            for (ClusterNode node : members.values())
+            for (ClusterNode node : members.values()) {
                 snapshotMsg.append("  ^-- ").append(node).append('\n');
+            }
 
             LOG.info(snapshotMsg.toString().trim());
         }
@@ -101,8 +103,9 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
      * @param member Appeared cluster member.
      */
     private void fireAppearedEvent(ClusterNode member) {
-        for (TopologyEventHandler handler : getEventHandlers())
+        for (TopologyEventHandler handler : getEventHandlers()) {
             handler.onAppeared(member);
+        }
     }
 
     /**
@@ -111,24 +114,28 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
      * @param member Disappeared cluster member.
      */
     private void fireDisappearedEvent(ClusterNode member) {
-        for (TopologyEventHandler handler : getEventHandlers())
+        for (TopologyEventHandler handler : getEventHandlers()) {
             handler.onDisappeared(member);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode localMember() {
+    @Override
+    public ClusterNode localMember() {
         assert localMember != null : "Cluster has not been started";
 
         return localMember;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> allMembers() {
+    @Override
+    public Collection<ClusterNode> allMembers() {
         return Collections.unmodifiableCollection(members.values());
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getByAddress(NetworkAddress addr) {
+    @Override
+    public ClusterNode getByAddress(NetworkAddress addr) {
         return members.get(addr);
     }
 

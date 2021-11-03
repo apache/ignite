@@ -53,13 +53,19 @@ public class PersistentVaultService implements VaultService {
         RocksDB.loadLibrary();
     }
 
-    /** */
+    /**
+     *
+     */
     private final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
-    /** */
+    /**
+     *
+     */
     private final Options options = new Options();
 
-    /** */
+    /**
+     *
+     */
     private volatile RocksDB db;
 
     /** Base path for RocksDB. */
@@ -77,40 +83,40 @@ public class PersistentVaultService implements VaultService {
     /**
      * Creates and starts the RocksDB instance using the recommended options on the given {@code path}.
      */
-    @Override public void start() {
+    @Override
+    public void start() {
         // using the recommended options from https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning
         options
-            .setCreateIfMissing(true)
-            .setCompressionType(CompressionType.LZ4_COMPRESSION)
-            .setBottommostCompressionType(CompressionType.ZSTD_COMPRESSION)
-            .setLevelCompactionDynamicLevelBytes(true)
-            .setBytesPerSync(1024 * 1024)
-            .setCompactionPriority(CompactionPriority.MinOverlappingRatio)
-            .setTableFormatConfig(
-                new BlockBasedTableConfig()
-                    .setBlockSize(16 * 1024)
-                    .setCacheIndexAndFilterBlocks(true)
-                    .setPinL0FilterAndIndexBlocksInCache(true)
-                    .setFormatVersion(5)
-                    .setFilterPolicy(new BloomFilter(10, false))
-                    .setOptimizeFiltersForMemory(true)
-            );
+                .setCreateIfMissing(true)
+                .setCompressionType(CompressionType.LZ4_COMPRESSION)
+                .setBottommostCompressionType(CompressionType.ZSTD_COMPRESSION)
+                .setLevelCompactionDynamicLevelBytes(true)
+                .setBytesPerSync(1024 * 1024)
+                .setCompactionPriority(CompactionPriority.MinOverlappingRatio)
+                .setTableFormatConfig(
+                        new BlockBasedTableConfig()
+                                .setBlockSize(16 * 1024)
+                                .setCacheIndexAndFilterBlocks(true)
+                                .setPinL0FilterAndIndexBlocksInCache(true)
+                                .setFormatVersion(5)
+                                .setFilterPolicy(new BloomFilter(10, false))
+                                .setOptimizeFiltersForMemory(true)
+                );
 
         try {
             db = RocksDB.open(options, path.toString());
-        }
-        catch (RocksDBException e) {
+        } catch (RocksDBException e) {
             throw new IgniteInternalException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override
+    public void stop() {
         // TODO: IGNITE-15161 Implement component's stop.
         try {
             close();
-        }
-        catch (RocksDBException e) {
+        } catch (RocksDBException e) {
             throw new IgniteInternalException(e);
         }
     }
@@ -131,7 +137,7 @@ public class PersistentVaultService implements VaultService {
     @Override
     public @NotNull CompletableFuture<VaultEntry> get(@NotNull ByteArray key) {
         return supplyAsync(() -> db.get(key.bytes()))
-            .thenApply(v -> new VaultEntry(key, v));
+                .thenApply(v -> new VaultEntry(key, v));
     }
 
     /** {@inheritDoc} */
@@ -154,8 +160,8 @@ public class PersistentVaultService implements VaultService {
             var upperBound = new Slice(toKey.bytes());
 
             readOpts
-                .setIterateLowerBound(lowerBound)
-                .setIterateUpperBound(upperBound);
+                    .setIterateLowerBound(lowerBound)
+                    .setIterateUpperBound(upperBound);
 
             RocksIterator it = db.newIterator(readOpts);
             it.seekToFirst();
@@ -169,14 +175,15 @@ public class PersistentVaultService implements VaultService {
     public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         return runAsync(() -> {
             try (
-                var writeBatch = new WriteBatch();
-                var writeOpts = new WriteOptions()
+                    var writeBatch = new WriteBatch();
+                    var writeOpts = new WriteOptions()
             ) {
                 for (var entry : vals.entrySet()) {
-                    if (entry.getValue() == null)
+                    if (entry.getValue() == null) {
                         writeBatch.delete(entry.getKey().bytes());
-                    else
+                    } else {
                         writeBatch.put(entry.getKey().bytes(), entry.getValue());
+                    }
                 }
 
                 db.write(writeOpts, writeBatch);
@@ -189,7 +196,9 @@ public class PersistentVaultService implements VaultService {
      */
     @FunctionalInterface
     private static interface RocksSupplier<T> {
-        /** */
+        /**
+         *
+         */
         T supply() throws RocksDBException;
     }
 
@@ -211,7 +220,9 @@ public class PersistentVaultService implements VaultService {
      */
     @FunctionalInterface
     private static interface RocksRunnable {
-        /** */
+        /**
+         *
+         */
         void run() throws RocksDBException;
     }
 

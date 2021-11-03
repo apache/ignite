@@ -17,59 +17,53 @@
 
 package org.apache.ignite.internal.util;
 
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.util.IgniteIntList.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
+
 /**
- *
+ * Test class for {@link IgniteIntList}.
  */
 public class IgniteIntListSelfTest {
-    /**
-     * @throws Exception If failed.
-     */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     @Test
     public void testCopyWithout() throws Exception {
         assertCopy(
-            new IgniteIntList(new int[] {}),
-            new IgniteIntList(new int[] {}));
+                new IgniteIntList(new int[]{}),
+                new IgniteIntList(new int[]{}));
 
         assertCopy(
-            new IgniteIntList(new int[] {}),
-            new IgniteIntList(new int[] {1}));
+                new IgniteIntList(new int[]{}),
+                new IgniteIntList(new int[]{1}));
 
         assertCopy(
-            new IgniteIntList(new int[] {1}),
-            new IgniteIntList(new int[] {}));
+                new IgniteIntList(new int[]{1}),
+                new IgniteIntList(new int[]{}));
 
         assertCopy(
-            new IgniteIntList(new int[] {1, 2, 3}),
-            new IgniteIntList(new int[] {4, 5, 6}));
+                new IgniteIntList(new int[]{1, 2, 3}),
+                new IgniteIntList(new int[]{4, 5, 6}));
 
         assertCopy(
-            new IgniteIntList(new int[] {1, 2, 3}),
-            new IgniteIntList(new int[] {1, 2, 3}));
+                new IgniteIntList(new int[]{1, 2, 3}),
+                new IgniteIntList(new int[]{1, 2, 3}));
 
         assertCopy(
-            new IgniteIntList(new int[] {1, 2, 3, 4, 5, 1}),
-            new IgniteIntList(new int[] {1, 1}));
+                new IgniteIntList(new int[]{1, 2, 3, 4, 5, 1}),
+                new IgniteIntList(new int[]{1, 1}));
 
         assertCopy(
-            new IgniteIntList(new int[] {1, 1, 1, 2, 3, 4, 5, 1, 1, 1}),
-            new IgniteIntList(new int[] {1, 1}));
+                new IgniteIntList(new int[]{1, 1, 1, 2, 3, 4, 5, 1, 1, 1}),
+                new IgniteIntList(new int[]{1, 1}));
 
         assertCopy(
-            new IgniteIntList(new int[] {1, 2, 3}),
-            new IgniteIntList(new int[] {1, 1, 2, 2, 3, 3}));
+                new IgniteIntList(new int[]{1, 2, 3}),
+                new IgniteIntList(new int[]{1, 1, 2, 2, 3, 3}));
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void testTruncate() {
         IgniteIntList list = asList(1, 2, 3, 4, 5, 6, 7, 8);
@@ -102,16 +96,14 @@ public class IgniteIntListSelfTest {
         for (int i = 0; i < lst.size(); i++) {
             int v = lst.get(i);
 
-            if (rmv.contains(v))
+            if (rmv.contains(v)) {
                 assertFalse(res.contains(v));
-            else
+            } else {
                 assertTrue(res.contains(v));
+            }
         }
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void testRemove() {
         IgniteIntList list = asList(1, 2, 3, 4, 5, 6);
@@ -131,10 +123,7 @@ public class IgniteIntListSelfTest {
         assertEquals(1, list.removeIndex(0));
         assertEquals(asList(4, 5), list);
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void testSort() {
         assertEquals(new IgniteIntList(), new IgniteIntList().sort());

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.rest.netty;
 
-import java.nio.charset.StandardCharsets;
 import com.google.gson.Gson;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
@@ -25,6 +24,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Simple wrapper of HTTP response with some helper methods for filling it with headers and content.
@@ -39,7 +39,7 @@ public class RestApiHttpResponse {
     /**
      * Creates a new HTTP response with the given message body.
      *
-     * @param res Response.
+     * @param res     Response.
      * @param content Content.
      */
     public RestApiHttpResponse(HttpResponse res, byte[] content) {
@@ -68,6 +68,15 @@ public class RestApiHttpResponse {
     }
 
     /**
+     * Returns content in a form of raw bytes.
+     *
+     * @return Content.
+     */
+    public byte[] content() {
+        return content;
+    }
+
+    /**
      * Set JSON representation of input object as response body.
      *
      * @param content Content object.
@@ -78,15 +87,6 @@ public class RestApiHttpResponse {
         this.content = new Gson().toJson(content).getBytes(StandardCharsets.UTF_8);
         headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON.toString());
         return this;
-    }
-
-    /**
-     * Returns content in a form of raw bytes.
-     *
-     * @return Content.
-     */
-    public byte[] content() {
-        return content;
     }
 
     /**

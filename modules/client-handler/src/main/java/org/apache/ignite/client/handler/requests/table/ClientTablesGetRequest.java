@@ -29,7 +29,7 @@ public class ClientTablesGetRequest {
     /**
      * Processes the request.
      *
-     * @param out Packer.
+     * @param out          Packer.
      * @param igniteTables Ignite tables.
      * @return Future.
      */

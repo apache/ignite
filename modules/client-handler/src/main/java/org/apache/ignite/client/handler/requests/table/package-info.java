@@ -18,4 +18,5 @@
 /**
  * Table API requests.
  */
+
 package org.apache.ignite.client.handler.requests.table;

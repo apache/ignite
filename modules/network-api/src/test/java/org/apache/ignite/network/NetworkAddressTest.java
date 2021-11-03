@@ -17,12 +17,12 @@
 
 package org.apache.ignite.network;
 
-import java.net.InetSocketAddress;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.net.InetSocketAddress;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test suite for {@link NetworkAddress}.

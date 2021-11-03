@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.configuration.sample;
 
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.internal.configuration.ConfigurationRegistry;
-import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,120 +24,131 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 /**
  * Simple usage test of generated configuration schema.
  */
 public class UsageTest {
-    /** */
+    /**
+     *
+     */
     private ConfigurationRegistry registry;
-
-    /** */
+    
+    /**
+     *
+     */
     @AfterEach
     public void after() {
         registry.stop();
     }
-
+    
     /**
      * Test creation of configuration and calling configuration API methods.
      */
     @Test
     public void test() throws Exception {
         registry = new ConfigurationRegistry(
-            List.of(LocalConfiguration.KEY),
-            Map.of(),
-            new TestConfigurationStorage(LOCAL),
-            List.of(),
-            List.of()
+                List.of(LocalConfiguration.KEY),
+                Map.of(),
+                new TestConfigurationStorage(LOCAL),
+                List.of(),
+                List.of()
         );
-
+        
         registry.start();
-
+        
         registry.initializeDefaults();
-
+        
         LocalConfiguration root = registry.getConfiguration(LocalConfiguration.KEY);
-
+        
         root.change(local ->
-            local.changeBaseline(baseline ->
-                baseline.changeNodes(nodes ->
-                    nodes.create("node1", node ->
-                        node.changeConsistentId("test").changePort(1000)
-                    )
-                ).changeAutoAdjust(autoAdjust ->
-                    autoAdjust.changeEnabled(true).changeTimeout(100_000L)
+                local.changeBaseline(baseline ->
+                        baseline.changeNodes(nodes ->
+                                nodes.create("node1", node ->
+                                        node.changeConsistentId("test").changePort(1000)
+                                )
+                        ).changeAutoAdjust(autoAdjust ->
+                                autoAdjust.changeEnabled(true).changeTimeout(100_000L)
+                        )
                 )
-            )
         ).get(1, SECONDS);
-
+        
         assertTrue(root.baseline().autoAdjust().enabled().value());
-
+        
         root.baseline().autoAdjust().enabled().update(false).get(1, SECONDS);
-
+        
         assertFalse(root.value().baseline().autoAdjust().enabled());
         assertFalse(root.baseline().value().autoAdjust().enabled());
         assertFalse(root.baseline().autoAdjust().value().enabled());
         assertFalse(root.baseline().autoAdjust().enabled().value());
-
+        
         root.baseline().nodes().get("node1").autoAdjustEnabled().update(true).get(1, SECONDS);
-
+        
         assertTrue(root.value().baseline().nodes().get("node1").autoAdjustEnabled());
         assertTrue(root.baseline().value().nodes().get("node1").autoAdjustEnabled());
         assertTrue(root.baseline().nodes().value().get("node1").autoAdjustEnabled());
         assertTrue(root.baseline().nodes().get("node1").value().autoAdjustEnabled());
         assertTrue(root.baseline().nodes().get("node1").autoAdjustEnabled().value());
-
+        
         root.baseline().nodes().get("node1").change(node -> node.changeAutoAdjustEnabled(false)).get(1, SECONDS);
         assertFalse(root.value().baseline().nodes().get("node1").autoAdjustEnabled());
-
+        
         root.baseline().nodes().change(nodes -> nodes.delete("node1")).get(1, SECONDS);
-
+        
         assertNull(root.baseline().nodes().get("node1"));
         assertNull(root.value().baseline().nodes().get("node1"));
     }
-
+    
     /**
      * Test to show an API to work with multiroot configurations.
      */
     @Test
     public void multiRootConfiguration() throws Exception {
-        int failureDetectionTimeout = 30_000;
-        int joinTimeout = 10_000;
-
+        final int failureDetectionTimeout = 30_000;
+        final int joinTimeout = 10_000;
+        
         long autoAdjustTimeout = 30_000L;
-
+        
         registry = new ConfigurationRegistry(
-            List.of(NetworkConfiguration.KEY, LocalConfiguration.KEY),
-            Map.of(),
-            new TestConfigurationStorage(LOCAL),
-            List.of(),
-            List.of()
+                List.of(NetworkConfiguration.KEY, LocalConfiguration.KEY),
+                Map.of(),
+                new TestConfigurationStorage(LOCAL),
+                List.of(),
+                List.of()
         );
-
+        
         registry.start();
-
+        
         registry.getConfiguration(LocalConfiguration.KEY).change(local ->
-            local.changeBaseline(baseline ->
-                baseline.changeAutoAdjust(autoAdjust ->
-                    autoAdjust.changeEnabled(true).changeTimeout(autoAdjustTimeout)
+                local.changeBaseline(baseline ->
+                        baseline.changeAutoAdjust(autoAdjust ->
+                                autoAdjust.changeEnabled(true).changeTimeout(autoAdjustTimeout)
+                        )
                 )
-            )
         ).get(1, SECONDS);
-
+        
         registry.getConfiguration(NetworkConfiguration.KEY).change(network ->
-            network.changeDiscovery(discovery ->
-                discovery
-                    .changeFailureDetectionTimeout(failureDetectionTimeout)
-                    .changeJoinTimeout(joinTimeout)
-            )
+                network.changeDiscovery(discovery ->
+                        discovery
+                                .changeFailureDetectionTimeout(failureDetectionTimeout)
+                                .changeJoinTimeout(joinTimeout)
+                )
         ).get(1, SECONDS);
-
+        
         assertEquals(
-            failureDetectionTimeout,
-            registry.getConfiguration(NetworkConfiguration.KEY).discovery().failureDetectionTimeout().value()
+                failureDetectionTimeout,
+                registry.getConfiguration(NetworkConfiguration.KEY).discovery().failureDetectionTimeout().value()
         );
-
+        
         assertEquals(
-            autoAdjustTimeout,
-            registry.getConfiguration(LocalConfiguration.KEY).baseline().autoAdjust().timeout().value()
+                autoAdjustTimeout,
+                registry.getConfiguration(LocalConfiguration.KEY).baseline().autoAdjust().timeout().value()
         );
     }
 }

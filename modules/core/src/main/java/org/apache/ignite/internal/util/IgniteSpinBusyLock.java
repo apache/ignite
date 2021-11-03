@@ -21,19 +21,15 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Synchronization aid to track "busy" state of a subsystem that owns it.
- * <p>
- * This class is implemented
- * over {@link IgniteSpinReadWriteLock}.
- * <p>
- * For example, there may be a manager that have different threads for some
- * purposes and the manager must not be stopped while at least a single thread
- * is in "busy" state. In this situation each thread must enter to "busy"
- * state calling method {@link #enterBusy()} in critical pieces of code
- * which, i.e. use grid kernal functionality, notifying that the manager
- * and the whole grid kernal cannot be stopped while it's in progress. Once
- * the activity is done, the thread should leave "busy" state calling method
- * {@link #leaveBusy()}. The manager itself, when stopping, should call method
- * {@link #block} that blocks till all activities leave "busy" state.
+ *
+ * <p>This class is implemented over {@link IgniteSpinReadWriteLock}.
+ *
+ * <p>For example, there may be a manager that have different threads for some purposes and the manager must not be stopped while at least a
+ * single thread is in "busy" state. In this situation each thread must enter to "busy" state calling method {@link #enterBusy()} in
+ * critical pieces of code which, i.e. use grid kernal functionality, notifying that the manager and the whole grid kernal cannot be stopped
+ * while it's in progress. Once the activity is done, the thread should leave "busy" state calling method {@link #leaveBusy()}. The manager
+ * itself, when stopping, should call method {@link #block} that blocks till all activities leave "busy" state.
+ *
  * @see IgniteSpinReadWriteLock
  */
 public class IgniteSpinBusyLock {
@@ -66,14 +62,15 @@ public class IgniteSpinBusyLock {
     }
 
     /**
-     * Blocks current thread till all activities left "busy" state
-     * and prevents them from further entering to "busy" state.
+     * Blocks current thread till all activities left "busy" state and prevents them from further entering to "busy" state.
      */
     public void block() {
         lock.writeLock();
     }
 
     /**
+     * Tries block.
+     *
      * @param millis Timeout.
      * @return {@code True} if lock was acquired.
      * @throws InterruptedException If interrupted.

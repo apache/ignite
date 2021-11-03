@@ -18,4 +18,5 @@
 /**
  * Configuration schemas for thin client components.
  */
+
 package org.apache.ignite.configuration.schemas.clientconnector;

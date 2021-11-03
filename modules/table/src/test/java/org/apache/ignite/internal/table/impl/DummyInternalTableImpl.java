@@ -46,7 +46,8 @@ public class DummyInternalTableImpl implements InternalTable {
     private final Map<KeyWrapper, BinaryRow> store = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         // No-op.
     }
 
@@ -73,61 +74,73 @@ public class DummyInternalTableImpl implements InternalTable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            KeyWrapper wrapper = (KeyWrapper)o;
+            KeyWrapper wrapper = (KeyWrapper) o;
             return Arrays.equals(data, wrapper.data);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return hash;
         }
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull TableStorage storage() {
+    @Override
+    public @NotNull TableStorage storage() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     /** {@inheritDoc} */
-    @Override public int partitions() {
+    @Override
+    public int partitions() {
         return 1;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull IgniteUuid tableId() {
+    @Override
+    public @NotNull IgniteUuid tableId() {
         return new IgniteUuid(UUID.randomUUID(), 0);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull String tableName() {
+    @Override
+    public @NotNull String tableName() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull SchemaManagementMode schemaMode() {
+    @Override
+    public @NotNull SchemaManagementMode schemaMode() {
         return SchemaManagementMode.STRICT;
     }
 
     /** {@inheritDoc} */
-    @Override public void schema(SchemaManagementMode schemaMode) {
+    @Override
+    public void schema(SchemaManagementMode schemaMode) {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<BinaryRow> get(@NotNull BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<BinaryRow> get(@NotNull BinaryRow row, Transaction tx) {
         assert row != null;
 
         return CompletableFuture.completedFuture(store.get(extractAndWrapKey(row)));
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> upsert(@NotNull BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<Void> upsert(@NotNull BinaryRow row, Transaction tx) {
         assert row != null;
 
         store.put(extractAndWrapKey(row), row);
@@ -136,8 +149,9 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<BinaryRow> getAndUpsert(@NotNull BinaryRow row,
-        Transaction tx) {
+    @Override
+    public CompletableFuture<BinaryRow> getAndUpsert(@NotNull BinaryRow row,
+            Transaction tx) {
         assert row != null;
 
         final BinaryRow old = store.put(extractAndWrapKey(row), row);
@@ -146,7 +160,8 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Boolean> delete(BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<Boolean> delete(BinaryRow row, Transaction tx) {
         assert row != null;
 
         final KeyWrapper key = extractAndWrapKey(row);
@@ -156,116 +171,132 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows,
-        Transaction tx) {
+    @Override
+    public CompletableFuture<Collection<BinaryRow>> getAll(Collection<BinaryRow> keyRows,
+            Transaction tx) {
         assert keyRows != null && !keyRows.isEmpty();
 
         final List<BinaryRow> res = keyRows.stream()
-            .map(this::extractAndWrapKey)
-            .map(store::get)
-            .collect(Collectors.toList());
+                .map(this::extractAndWrapKey)
+                .map(store::get)
+                .collect(Collectors.toList());
 
         return CompletableFuture.completedFuture(res);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows, Transaction tx) {
+    @Override
+    public CompletableFuture<Void> upsertAll(Collection<BinaryRow> rows, Transaction tx) {
         assert rows != null && !rows.isEmpty();
 
         rows.stream()
-            .map(k -> store.put(extractAndWrapKey(k), k));
+                .map(k -> store.put(extractAndWrapKey(k), k));
 
         return CompletableFuture.completedFuture(null);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Boolean> insert(BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<Boolean> insert(BinaryRow row, Transaction tx) {
         assert row != null;
 
         return CompletableFuture.completedFuture(store.putIfAbsent(extractAndWrapKey(row), row) == null);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows, Transaction tx) {
+    @Override
+    public CompletableFuture<Collection<BinaryRow>> insertAll(Collection<BinaryRow> rows, Transaction tx) {
         assert rows != null && !rows.isEmpty();
 
         final List<BinaryRow> res = rows.stream()
-            .map(k -> store.putIfAbsent(extractAndWrapKey(k), k) == null ? null : k)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+                .map(k -> store.putIfAbsent(extractAndWrapKey(k), k) == null ? null : k)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
         return CompletableFuture.completedFuture(res);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Boolean> replace(BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<Boolean> replace(BinaryRow row, Transaction tx) {
         assert row != null;
 
         final KeyWrapper key = extractAndWrapKey(row);
         final BinaryRow oldRow = store.get(key);
 
-        if (oldRow == null || !oldRow.hasValue())
+        if (oldRow == null || !oldRow.hasValue()) {
             return CompletableFuture.completedFuture(false);
+        }
 
         return CompletableFuture.completedFuture(store.put(key, row) == oldRow);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow, Transaction tx) {
+    @Override
+    public CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow, Transaction tx) {
         assert oldRow != null;
         assert newRow != null;
 
         final KeyWrapper key = extractAndWrapKey(oldRow);
         final BinaryRow row = store.get(key);
 
-        if (row == null)
+        if (row == null) {
             return CompletableFuture.completedFuture(!oldRow.hasValue() && store.put(key, newRow) == null);
+        }
 
         return CompletableFuture.completedFuture(equalValues(row, oldRow) && store.put(key, newRow) != null);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<BinaryRow> getAndReplace(BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<BinaryRow> getAndReplace(BinaryRow row, Transaction tx) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Boolean> deleteExact(BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<Boolean> deleteExact(BinaryRow row, Transaction tx) {
         assert row != null;
         assert row.hasValue();
 
         final KeyWrapper key = extractAndWrapKey(row);
         final BinaryRow old = store.get(key);
 
-        if (old == null || !old.hasValue())
+        if (old == null || !old.hasValue()) {
             return CompletableFuture.completedFuture(false);
+        }
 
         return CompletableFuture.completedFuture(equalValues(row, old) && store.remove(key) != null);
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<BinaryRow> getAndDelete(BinaryRow row, Transaction tx) {
+    @Override
+    public CompletableFuture<BinaryRow> getAndDelete(BinaryRow row, Transaction tx) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows, Transaction tx) {
+    @Override
+    public CompletableFuture<Collection<BinaryRow>> deleteAll(Collection<BinaryRow> rows, Transaction tx) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Collection<BinaryRow>> deleteAllExact(Collection<BinaryRow> rows,
-        Transaction tx) {
+    @Override
+    public CompletableFuture<Collection<BinaryRow>> deleteAllExact(Collection<BinaryRow> rows,
+            Transaction tx) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx) {
+    @Override
+    public @NotNull Publisher<BinaryRow> scan(int p, @Nullable Transaction tx) {
         throw new IgniteInternalException(new OperationNotSupportedException());
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull List<String> assignments() {
+    @Override
+    public @NotNull List<String> assignments() {
         throw new IgniteInternalException(new OperationNotSupportedException());
     }
 
@@ -273,7 +304,8 @@ public class DummyInternalTableImpl implements InternalTable {
      * @param row Row.
      * @return Extracted key.
      */
-    @NotNull private DummyInternalTableImpl.KeyWrapper extractAndWrapKey(@NotNull BinaryRow row) {
+    @NotNull
+    private DummyInternalTableImpl.KeyWrapper extractAndWrapKey(@NotNull BinaryRow row) {
         final byte[] bytes = new byte[row.keySlice().capacity()];
         row.keySlice().get(bytes);
 
@@ -284,9 +316,11 @@ public class DummyInternalTableImpl implements InternalTable {
      * @param row Row.
      * @return Extracted key.
      */
-    @NotNull private boolean equalValues(@NotNull BinaryRow row, @NotNull BinaryRow row2) {
-        if (row.hasValue() ^ row2.hasValue())
+    @NotNull
+    private boolean equalValues(@NotNull BinaryRow row, @NotNull BinaryRow row2) {
+        if (row.hasValue() ^ row2.hasValue()) {
             return false;
+        }
 
         return row.valueSlice().compareTo(row2.valueSlice()) == 0;
     }

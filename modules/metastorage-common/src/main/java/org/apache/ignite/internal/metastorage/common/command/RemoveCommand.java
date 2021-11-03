@@ -26,7 +26,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class RemoveCommand implements WriteCommand {
     /** The key. Couldn't be {@code null}. */
-    @NotNull private final byte[] key;
+    @NotNull
+    private final byte[] key;
 
     /**
      * @param key he key. Couldn't be {@code null}.

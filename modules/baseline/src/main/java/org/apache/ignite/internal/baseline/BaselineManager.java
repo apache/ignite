@@ -29,13 +29,14 @@ import org.apache.ignite.network.ClusterService;
  */
 // TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
 // TODO: https://issues.apache.org/jira/browse/IGNITE-14716 Adapt concept of baseline topology IEP-4.
-@SuppressWarnings({"FieldCanBeLocal", "unused"}) public class BaselineManager implements IgniteComponent {
-    /** Configuration manager in order to handle and listen baseline specific configuration.*/
+@SuppressWarnings({"FieldCanBeLocal", "unused"})
+public class BaselineManager implements IgniteComponent {
+    /** Configuration manager in order to handle and listen baseline specific configuration. */
     private final ConfigurationManager configurationMgr;
 
     /**
-     * MetaStorage manager in order to watch private distributed baseline specific configuration,
-     * cause ConfigurationManger handles only public configuration.
+     * MetaStorage manager in order to watch private distributed baseline specific configuration, cause ConfigurationManger handles only
+     * public configuration.
      */
     private final MetaStorageManager metastorageMgr;
 
@@ -46,13 +47,13 @@ import org.apache.ignite.network.ClusterService;
      * The constructor.
      *
      * @param configurationMgr Configuration manager.
-     * @param metastorageMgr MetaStorage manager.
-     * @param clusterSvc Cluster network service.
+     * @param metastorageMgr   MetaStorage manager.
+     * @param clusterSvc       Cluster network service.
      */
     public BaselineManager(
-        ConfigurationManager configurationMgr,
-        MetaStorageManager metastorageMgr,
-        ClusterService clusterSvc
+            ConfigurationManager configurationMgr,
+            MetaStorageManager metastorageMgr,
+            ClusterService clusterSvc
     ) {
         this.configurationMgr = configurationMgr;
         this.metastorageMgr = metastorageMgr;
@@ -60,12 +61,14 @@ import org.apache.ignite.network.ClusterService;
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override
+    public void start() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override
+    public void stop() {
         // TODO: IGNITE-15161 Implement component's stop.
     }
 

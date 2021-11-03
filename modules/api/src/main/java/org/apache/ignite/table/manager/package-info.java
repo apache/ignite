@@ -18,4 +18,5 @@
 /**
  * Contains API classes for table management.
  */
+
 package org.apache.ignite.table.manager;

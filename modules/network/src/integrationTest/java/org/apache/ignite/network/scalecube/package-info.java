@@ -18,4 +18,5 @@
 /**
  * Integration tests for ScaleCube-related classes.
  */
+
 package org.apache.ignite.network.scalecube;

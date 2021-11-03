@@ -29,6 +29,7 @@ import org.apache.ignite.internal.table.distributed.command.InsertAllCommand;
 
 /**
  * This class represents a response object that contains a collection {@link BinaryRow} from a batch operation.
+ *
  * @see GetAllCommand
  * @see DeleteAllCommand
  * @see InsertAllCommand

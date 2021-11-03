@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import org.apache.ignite.Ignite;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,9 +30,9 @@ public interface Ignition {
     /**
      * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
-     * @param name Name of the node. Must not be {@code null}.
+     * @param name       Name of the node. Must not be {@code null}.
      * @param configPath Path to the node configuration in the HOCON format. Can be {@code null}.
-     * @param workDir Work directory for the started node. Must not be {@code null}.
+     * @param workDir    Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
     public Ignite start(@NotNull String name, @Nullable Path configPath, @NotNull Path workDir);
@@ -42,10 +41,9 @@ public interface Ignition {
      * Starts an Ignite node with an optional bootstrap configuration from an input stream with HOCON configs.
      *
      * @param name    Name of the node. Must not be {@code null}.
-     * @param config  Optional node configuration based on
-     *                {@link org.apache.ignite.configuration.schemas.runner.NodeConfigurationSchema} and
-     *                {@link org.apache.ignite.configuration.schemas.network.NetworkConfigurationSchema}.
-     *                Following rules are used for applying the configuration properties:
+     * @param config  Optional node configuration based on {@link org.apache.ignite.configuration.schemas.runner.NodeConfigurationSchema}
+     *                and {@link org.apache.ignite.configuration.schemas.network.NetworkConfigurationSchema}. Following rules are used for
+     *                applying the configuration properties:
      *                <ol>
      *                  <li>Specified property overrides existing one or just applies itself if it wasn't
      *                      previously specified.</li>
@@ -66,16 +64,15 @@ public interface Ignition {
     /**
      * Starts an Ignite node with the default configuration.
      *
-     * @param name Name of the node. Must not be {@code null}.
+     * @param name    Name of the node. Must not be {@code null}.
      * @param workDir Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
     public Ignite start(@NotNull String name, @NotNull Path workDir);
 
     /**
-     * Stops the node with given {@code name}.
-     * It's possible to stop both already started node or node that is currently starting.
-     * Has no effect if node with specified name doesn't exist.
+     * Stops the node with given {@code name}. It's possible to stop both already started node or node that is currently starting. Has no
+     * effect if node with specified name doesn't exist.
      *
      * @param name Node name to stop.
      * @throws IllegalArgumentException if null is specified instead of node name.

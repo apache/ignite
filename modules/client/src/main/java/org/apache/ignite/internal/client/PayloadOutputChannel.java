@@ -32,7 +32,7 @@ public class PayloadOutputChannel implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param ch Channel.
+     * @param ch  Channel.
      * @param out Packer.
      */
     PayloadOutputChannel(ClientChannel ch, ClientMessagePacker out) {
@@ -59,7 +59,8 @@ public class PayloadOutputChannel implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         out.close();
     }
 }

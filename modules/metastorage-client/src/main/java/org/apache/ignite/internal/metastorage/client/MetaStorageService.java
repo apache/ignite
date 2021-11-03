@@ -46,13 +46,12 @@ public interface MetaStorageService {
     /**
      * Retrieves an entry for the given key and the revision upper bound.
      *
-     * @param key The key. Couldn't be {@code null}.
+     * @param key           The key. Couldn't be {@code null}.
      * @param revUpperBound The upper bound for entry revisions. Must be positive.
-     * @return An entry for the given key and maximum revision limited by {@code revUpperBound}.
-     * Couldn't be {@code null}.
+     * @return An entry for the given key and maximum revision limited by {@code revUpperBound}. Couldn't be {@code null}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
-     * Will be thrown on getting future result.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction. Will be thrown on
+     *                                   getting future result.
      * @see ByteArray
      * @see Entry
      */
@@ -62,8 +61,7 @@ public interface MetaStorageService {
     /**
      * Retrieves entries for given keys.
      *
-     * @param keys The set of keys. Couldn't be {@code null} or empty.
-     *             Set elements couldn't be {@code null}.
+     * @param keys The set of keys. Couldn't be {@code null} or empty. Set elements couldn't be {@code null}.
      * @return A map of entries for given keys. Couldn't be {@code null}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
      * @see ByteArray
@@ -75,14 +73,12 @@ public interface MetaStorageService {
     /**
      * Retrieves entries for given keys and the revision upper bound.
      *
-     * @param keys The set of keys. Couldn't be {@code null} or empty.
-     *             Set elements couldn't be {@code null}.
+     * @param keys          The set of keys. Couldn't be {@code null} or empty. Set elements couldn't be {@code null}.
      * @param revUpperBound The upper bound for entry revisions. Must be positive.
-     * @return A map of entries for given keys and maximum revision limited by {@code revUpperBound}.
-     * Couldn't be {@code null}.
+     * @return A map of entries for given keys and maximum revision limited by {@code revUpperBound}. Couldn't be {@code null}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
-     * Will be thrown on getting future result.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction. Will be thrown on
+     *                                   getting future result.
      * @see ByteArray
      * @see Entry
      */
@@ -92,7 +88,7 @@ public interface MetaStorageService {
     /**
      * Inserts or updates an entry with the given key and the given value.
      *
-     * @param key The key. Couldn't be {@code null}.
+     * @param key   The key. Couldn't be {@code null}.
      * @param value The value. Couldn't be {@code null}.
      * @return Completed future.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
@@ -103,10 +99,9 @@ public interface MetaStorageService {
     CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] value);
 
     /**
-     * Inserts or updates an entry with the given key and the given value and
-     * retrieves a previous entry for the given key.
+     * Inserts or updates an entry with the given key and the given value and retrieves a previous entry for the given key.
      *
-     * @param key The key. Couldn't be {@code null}.
+     * @param key   The key. Couldn't be {@code null}.
      * @param value The value. Couldn't be {@code null}.
      * @return A previous entry for the given key. Couldn't be {@code null}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
@@ -129,8 +124,7 @@ public interface MetaStorageService {
     CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals);
 
     /**
-     * Inserts or updates entries with given keys and given values and
-     * retrieves a previous entries for given keys.
+     * Inserts or updates entries with given keys and given values and retrieves a previous entries for given keys.
      *
      * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
      * @return A map of entries for given keys. Couldn't be {@code null}.
@@ -181,9 +175,8 @@ public interface MetaStorageService {
      * Removes entries for given keys and retrieves previous entries.
      *
      * @param keys The keys collection. Couldn't be {@code null}.
-     * @return A map of previous entries for given keys..
-     * The order of entries in the result list corresponds to the traversal order of {@code keys} collection.
-     * Couldn't be {@code null}.
+     * @return A map of previous entries for given keys.. The order of entries in the result list corresponds to the traversal order of
+     *      {@code keys} collection. Couldn't be {@code null}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
      * @see ByteArray
      * @see Entry
@@ -197,8 +190,8 @@ public interface MetaStorageService {
      * <p>Conditional update could be treated as <i>if(condition)-then(success)-else(failure)</i> expression.</p>
      *
      * @param condition The condition.
-     * @param success The update which will be applied in case of condition evaluation yields {@code true}.
-     * @param failure The update which will be applied in case of condition evaluation yields {@code false}.
+     * @param success   The update which will be applied in case of condition evaluation yields {@code true}.
+     * @param failure   The update which will be applied in case of condition evaluation yields {@code false}.
      * @return Future result {@code true} if {@code success} update was applied, otherwise {@code false}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
      * @see ByteArray
@@ -209,7 +202,7 @@ public interface MetaStorageService {
     // TODO: https://issues.apache.org/jira/browse/IGNITE-14269: will be replaced by conditional multi update.
     @NotNull
     CompletableFuture<Boolean> invoke(@NotNull Condition condition,
-                                      @NotNull Operation success, @NotNull Operation failure);
+            @NotNull Operation success, @NotNull Operation failure);
 
     /**
      * Updates an entry for the given key conditionally.
@@ -217,8 +210,8 @@ public interface MetaStorageService {
      * <p>Conditional update could be treated as <i>if(condition)-then(success)-else(failure)</i> expression.</p>
      *
      * @param condition The condition.
-     * @param success The updates which will be applied in case of condition evaluation yields {@code true}.
-     * @param failure The updates which will be applied in case of condition evaluation yields {@code false}.
+     * @param success   The updates which will be applied in case of condition evaluation yields {@code true}.
+     * @param failure   The updates which will be applied in case of condition evaluation yields {@code false}.
      * @return Future result {@code true} if {@code success} update was applied, otherwise {@code false}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
      * @see ByteArray
@@ -229,18 +222,18 @@ public interface MetaStorageService {
     // TODO: https://issues.apache.org/jira/browse/IGNITE-14269: will be replaced by conditional multi update.
     @NotNull
     CompletableFuture<Boolean> invoke(@NotNull Condition condition,
-                                      @NotNull Collection<Operation> success, @NotNull Collection<Operation> failure);
+            @NotNull Collection<Operation> success, @NotNull Collection<Operation> failure);
 
     /**
-     * Retrieves entries for the given key range in lexicographic order. Entries will be filtered out by upper bound
-     * of given revision number.
+     * Retrieves entries for the given key range in lexicographic order. Entries will be filtered out by upper bound of given revision
+     * number.
      *
-     * @param keyFrom Start key of range (inclusive). Couldn't be {@code null}.
-     * @param keyTo End key of range (exclusive). Could be {@code null}.
-     * @param revUpperBound  The upper bound for entry revision. {@code -1} means latest revision.
+     * @param keyFrom       Start key of range (inclusive). Couldn't be {@code null}.
+     * @param keyTo         End key of range (exclusive). Could be {@code null}.
+     * @param revUpperBound The upper bound for entry revision. {@code -1} means latest revision.
      * @return Cursor built upon entries corresponding to the given range and revision.
      * @throws OperationTimeoutException If the operation is timed out.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction.
      * @see ByteArray
      * @see Entry
      */
@@ -248,14 +241,14 @@ public interface MetaStorageService {
     Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound);
 
     /**
-     * Retrieves entries for the given key range in lexicographic order. Short cut for
-     * {@link #range(ByteArray, ByteArray, long)} where {@code revUpperBound == -1}.
+     * Retrieves entries for the given key range in lexicographic order. Short cut for {@link #range(ByteArray, ByteArray, long)} where
+     * {@code revUpperBound == -1}.
      *
      * @param keyFrom Start key of range (inclusive). Couldn't be {@code null}.
-     * @param keyTo End key of range (exclusive). Could be {@code null}.
+     * @param keyTo   End key of range (exclusive). Could be {@code null}.
      * @return Cursor built upon entries corresponding to the given range and revision.
      * @throws OperationTimeoutException If the operation is timed out.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction.
      * @see ByteArray
      * @see Entry
      */
@@ -265,33 +258,33 @@ public interface MetaStorageService {
     /**
      * Subscribes on meta storage updates matching the parameters.
      *
-     * @param keyFrom Start key of range (inclusive). Could be {@code null}.
-     * @param keyTo End key of range (exclusive). Could be {@code null}.
-     * @param revision Start revision inclusive. {@code 0} - all revisions,
-     * {@code -1} - latest revision (accordingly to current meta storage state).
-     * @param lsnr Listener which will be notified for each update.
+     * @param keyFrom  Start key of range (inclusive). Could be {@code null}.
+     * @param keyTo    End key of range (exclusive). Could be {@code null}.
+     * @param revision Start revision inclusive. {@code 0} - all revisions, {@code -1} - latest revision (accordingly to current meta
+     *                 storage state).
+     * @param lsnr     Listener which will be notified for each update.
      * @return Subscription identifier. Could be used in {@link #stopWatch} method in order to cancel subscription.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
-     * Will be thrown on getting future result.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction. Will be thrown on
+     *                                   getting future result.
      * @see ByteArray
      * @see Entry
      */
     @NotNull
     CompletableFuture<IgniteUuid> watch(@Nullable ByteArray keyFrom, @Nullable ByteArray keyTo,
-                                  long revision, @NotNull WatchListener lsnr);
+            long revision, @NotNull WatchListener lsnr);
 
     /**
      * Subscribes on meta storage updates for the given key.
      *
-     * @param key The target key. Couldn't be {@code null}.
-     * @param revision Start revision inclusive. {@code 0} - all revisions,
-     * {@code -1} - latest revision (accordingly to current meta storage state).
-     * @param lsnr Listener which will be notified for each update.
+     * @param key      The target key. Couldn't be {@code null}.
+     * @param revision Start revision inclusive. {@code 0} - all revisions, {@code -1} - latest revision (accordingly to current meta
+     *                 storage state).
+     * @param lsnr     Listener which will be notified for each update.
      * @return Subscription identifier. Could be used in {@link #stopWatch} method in order to cancel subscription.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
-     * Will be thrown on getting future result.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction. Will be thrown on
+     *                                   getting future result.
      * @see ByteArray
      * @see Entry
      */
@@ -301,14 +294,14 @@ public interface MetaStorageService {
     /**
      * Subscribes on meta storage updates for given keys.
      *
-     * @param keys Set of target keys. Couldn't be {@code null} or empty.
-     * @param revision Start revision inclusive. {@code 0} - all revision,
-     * {@code -1} - latest revision (accordingly to current meta storage state).
-     * @param lsnr Listener which will be notified for each update.
+     * @param keys     Set of target keys. Couldn't be {@code null} or empty.
+     * @param revision Start revision inclusive. {@code 0} - all revision, {@code -1} - latest revision (accordingly to current meta storage
+     *                 state).
+     * @param lsnr     Listener which will be notified for each update.
      * @return Subscription identifier. Could be used in {@link #stopWatch} method in order to cancel subscription.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
-     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
-     * Will be thrown on getting future result.
+     * @throws CompactedException        If the desired revisions are removed from the storage due to a compaction. Will be thrown on
+     *                                   getting future result.
      * @see ByteArray
      * @see Entry
      */
@@ -335,8 +328,7 @@ public interface MetaStorageService {
     CompletableFuture<Void> compact();
 
     /**
-     * Closes all cursors for specific node. Common use case for a given command is to close cursors for the node
-     * that left topology.
+     * Closes all cursors for specific node. Common use case for a given command is to close cursors for the node that left topology.
      *
      * @param nodeId Node id that changes between restarts.
      * @return Completed future in case of operation success. Couldn't be {@code null}.

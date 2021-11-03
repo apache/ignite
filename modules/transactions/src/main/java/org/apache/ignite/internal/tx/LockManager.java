@@ -21,12 +21,11 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Lock manager allows to acquire locks in shared and exclusive mode and supports deadlock prevention by timestamp
- * ordering.
+ * Lock manager allows to acquire locks in shared and exclusive mode and supports deadlock prevention by timestamp ordering.
  */
 public interface LockManager {
     /**
-     * @param key The key.
+     * @param key       The key.
      * @param timestamp The timestamp.
      * @return The future.
      * @throws LockException When a lock can't be taken due to possible deadlock.
@@ -34,14 +33,14 @@ public interface LockManager {
     public CompletableFuture<Void> tryAcquire(Object key, Timestamp timestamp) throws LockException;
 
     /**
-     * @param key The key.
+     * @param key       The key.
      * @param timestamp The timestamp.
      * @throws LockException If the unlock operation is invalid.
      */
     public void tryRelease(Object key, Timestamp timestamp) throws LockException;
 
     /**
-     * @param key The key.
+     * @param key       The key.
      * @param timestamp The timestamp.
      * @return The future.
      * @throws LockException When a lock can't be taken due to possible deadlock.
@@ -49,7 +48,7 @@ public interface LockManager {
     public CompletableFuture<Void> tryAcquireShared(Object key, Timestamp timestamp) throws LockException;
 
     /**
-     * @param key The key.
+     * @param key       The key.
      * @param timestamp The timestamp.
      * @throws LockException If the unlock operation is invalid.
      */
@@ -62,7 +61,7 @@ public interface LockManager {
     public Collection<Timestamp> queue(Object key);
 
     /**
-     * @param key The key.
+     * @param key       The key.
      * @param timestamp The timestamp.
      * @return The waiter.
      */

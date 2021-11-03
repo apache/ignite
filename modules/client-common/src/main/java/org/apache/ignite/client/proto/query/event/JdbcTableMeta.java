@@ -18,7 +18,6 @@
 package org.apache.ignite.client.proto.query.event;
 
 import java.util.Objects;
-
 import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.internal.tostring.S;
@@ -46,8 +45,8 @@ public class JdbcTableMeta extends Response {
      * Constructor.
      *
      * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @param tblType Table type.
+     * @param tblName    Table name.
+     * @param tblType    Table type.
      */
     public JdbcTableMeta(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
@@ -85,11 +84,13 @@ public class JdbcTableMeta extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         packer.packString(schemaName);
         packer.packString(tblName);
@@ -97,11 +98,13 @@ public class JdbcTableMeta extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         schemaName = unpacker.unpackString();
         tblName = unpacker.unpackString();
@@ -109,22 +112,26 @@ public class JdbcTableMeta extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        JdbcTableMeta meta = (JdbcTableMeta)o;
+        JdbcTableMeta meta = (JdbcTableMeta) o;
 
         return Objects.equals(schemaName, meta.schemaName)
-            && Objects.equals(tblName, meta.tblName)
-            && Objects.equals(tblType, meta.tblType);
+                && Objects.equals(tblName, meta.tblName)
+                && Objects.equals(tblType, meta.tblType);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = schemaName.hashCode();
         result = 31 * result + tblName.hashCode();
         result = 31 * result + tblType.hashCode();
@@ -132,7 +139,8 @@ public class JdbcTableMeta extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcTableMeta.class, this);
     }
 }

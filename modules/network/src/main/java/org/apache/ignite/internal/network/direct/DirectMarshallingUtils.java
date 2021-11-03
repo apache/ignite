@@ -25,8 +25,7 @@ import org.apache.ignite.internal.network.direct.stream.DirectByteBufferStream;
  */
 public class DirectMarshallingUtils {
     /**
-     * Reads a {@code short} from a byte buffer in an order defined by the {@link DirectByteBufferStream}
-     * implementation.
+     * Reads a {@code short} from a byte buffer in an order defined by the {@link DirectByteBufferStream} implementation.
      *
      * @param buffer Byte buffer.
      * @return Direct message type.
@@ -45,7 +44,7 @@ public class DirectMarshallingUtils {
      * @param b1 The second byte.
      */
     private static short asShort(byte b0, byte b1) {
-        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
+        return (short) ((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 
 }

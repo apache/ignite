@@ -29,34 +29,36 @@ import org.apache.ignite.configuration.annotation.DirectAccess;
  * @see DirectAccess
  */
 public class DirectDynamicProperty<T extends Serializable>
-    extends DynamicProperty<T>
-    implements DirectConfigurationProperty<T> {
+        extends DynamicProperty<T>
+        implements DirectConfigurationProperty<T> {
     /**
      * Constructor.
      *
-     * @param prefix Property prefix.
-     * @param key Property name.
-     * @param rootKey Root key.
-     * @param changer Configuration changer.
+     * @param prefix     Property prefix.
+     * @param key        Property name.
+     * @param rootKey    Root key.
+     * @param changer    Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
-     * @param readOnly Value cannot be changed.
+     * @param readOnly   Value cannot be changed.
      */
     public DirectDynamicProperty(
-        List<String> prefix,
-        String key,
-        RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer,
-        boolean listenOnly,
-        boolean readOnly
+            List<String> prefix,
+            String key,
+            RootKey<?, ?> rootKey,
+            DynamicConfigurationChanger changer,
+            boolean listenOnly,
+            boolean readOnly
     ) {
         super(prefix, key, rootKey, changer, listenOnly, readOnly);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public T directValue() {
-        if (listenOnly)
+    @Override
+    public T directValue() {
+        if (listenOnly) {
             throw listenOnlyException();
-
+        }
+        
         return changer.getLatest(keys);
     }
 }

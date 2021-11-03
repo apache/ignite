@@ -39,33 +39,33 @@ public interface MarshallerCodeGenerator {
 
     /**
      * @param serializerClass Serializer type.
-     * @param obj Target object variable.
-     * @param colIdx Column index.
+     * @param obj             Target object variable.
+     * @param colIdx          Column index.
      * @return Object field value for given column.
      */
     BytecodeNode getValue(ParameterizedType serializerClass, Variable obj, int colIdx);
 
     /**
      * @param serializerClass Serializer type
-     * @param asm Row assembler.
-     * @param obj Target object variable.
+     * @param asm             Row assembler.
+     * @param obj             Target object variable.
      * @return Unmarshall object code.
      */
     BytecodeNode marshallObject(ParameterizedType serializerClass, Variable asm, Variable obj);
 
     /**
      * @param serializerClass Serializer type
-     * @param row Row.
-     * @param obj Result object variable.
+     * @param row             Row.
+     * @param obj             Result object variable.
      * @return Unmarshall object code.
      */
     BytecodeNode unmarshallObject(ParameterizedType serializerClass, Variable row, Variable obj);
 
     /**
-     * @param classDef Class definition.
-     * @param tClassField Target class field definition.
+     * @param classDef    Class definition.
+     * @param targetClassField Target class field definition.
      */
-    default void initStaticHandlers(ClassDefinition classDef, FieldDefinition tClassField) {
+    default void initStaticHandlers(ClassDefinition classDef, FieldDefinition targetClassField) {
 
     }
 }

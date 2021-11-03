@@ -81,7 +81,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
     /**
      * @param metaStorageRaftGrpSvc Meta storage raft group service.
-     * @param localNodeId Local node id.
+     * @param localNodeId           Local node id.
      */
     public MetaStorageServiceImpl(RaftGroupService metaStorageRaftGrpSvc, String localNodeId) {
         this.metaStorageRaftGrpSvc = metaStorageRaftGrpSvc;
@@ -90,73 +90,83 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key) {
+    @Override
+    public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key) {
         return metaStorageRaftGrpSvc.run(new GetCommand(key)).thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key, long revUpperBound) {
+    @Override
+    public @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key, long revUpperBound) {
         return metaStorageRaftGrpSvc.run(new GetCommand(key, revUpperBound))
                 .thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys) {
+    @Override
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys) {
         return metaStorageRaftGrpSvc.run(new GetAllCommand(keys))
                 .thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys, long revUpperBound) {
-        return metaStorageRaftGrpSvc.run(new GetAllCommand(keys, revUpperBound)).
-                thenApply(MetaStorageServiceImpl::multipleEntryResult);
+    @Override
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAll(Set<ByteArray> keys, long revUpperBound) {
+        return metaStorageRaftGrpSvc.run(new GetAllCommand(keys, revUpperBound)).thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] value) {
+    @Override
+    public @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] value) {
         return metaStorageRaftGrpSvc.run(new PutCommand(key, value));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> getAndPut(@NotNull ByteArray key, @NotNull byte[] value) {
+    @Override
+    public @NotNull CompletableFuture<Entry> getAndPut(@NotNull ByteArray key, @NotNull byte[] value) {
         return metaStorageRaftGrpSvc.run(new GetAndPutCommand(key, value))
                 .thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
+    @Override
+    public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         return metaStorageRaftGrpSvc.run(new PutAllCommand(vals));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndPutAll(@NotNull Map<ByteArray, byte[]> vals) {
-        return metaStorageRaftGrpSvc.run(new GetAndPutAllCommand(vals)).
-            thenApply(MetaStorageServiceImpl::multipleEntryResult);
+    @Override
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndPutAll(@NotNull Map<ByteArray, byte[]> vals) {
+        return metaStorageRaftGrpSvc.run(new GetAndPutAllCommand(vals)).thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> remove(@NotNull ByteArray key) {
+    @Override
+    public @NotNull CompletableFuture<Void> remove(@NotNull ByteArray key) {
         return metaStorageRaftGrpSvc.run(new RemoveCommand(key));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull ByteArray key) {
+    @Override
+    public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull ByteArray key) {
         return metaStorageRaftGrpSvc.run(new GetAndRemoveCommand(key))
                 .thenApply(MetaStorageServiceImpl::singleEntryResult);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> removeAll(@NotNull Set<ByteArray> keys) {
+    @Override
+    public @NotNull CompletableFuture<Void> removeAll(@NotNull Set<ByteArray> keys) {
         return metaStorageRaftGrpSvc.run(new RemoveAllCommand(keys));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndRemoveAll(@NotNull Set<ByteArray> keys) {
-        return metaStorageRaftGrpSvc.run(new GetAndRemoveAllCommand(keys)).
-            thenApply(MetaStorageServiceImpl::multipleEntryResult);
+    @Override
+    public @NotNull CompletableFuture<Map<ByteArray, Entry>> getAndRemoveAll(@NotNull Set<ByteArray> keys) {
+        return metaStorageRaftGrpSvc.run(new GetAndRemoveAllCommand(keys)).thenApply(MetaStorageServiceImpl::multipleEntryResult);
     }
 
-    @Override public @NotNull CompletableFuture<Boolean> invoke(
+    @Override
+    public @NotNull CompletableFuture<Boolean> invoke(
             @NotNull Condition condition,
             @NotNull Operation success,
             @NotNull Operation failure
@@ -165,7 +175,8 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> invoke(
+    @Override
+    public @NotNull CompletableFuture<Boolean> invoke(
             @NotNull Condition condition,
             @NotNull Collection<Operation> success,
             @NotNull Collection<Operation> failure
@@ -180,109 +191,120 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) {
+    @Override
+    public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) {
         return new CursorImpl<>(
                 metaStorageRaftGrpSvc,
                 metaStorageRaftGrpSvc.run(
-                    new RangeCommand(keyFrom, keyTo, revUpperBound, localNodeId, uuidGenerator.randomUuid())),
+                        new RangeCommand(keyFrom, keyTo, revUpperBound, localNodeId, uuidGenerator.randomUuid())),
                 MetaStorageServiceImpl::singleEntryResult
         );
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
+    @Override
+    public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         return new CursorImpl<>(
                 metaStorageRaftGrpSvc,
                 metaStorageRaftGrpSvc.run(
-                    new RangeCommand(keyFrom, keyTo, localNodeId, uuidGenerator.randomUuid())),
+                        new RangeCommand(keyFrom, keyTo, localNodeId, uuidGenerator.randomUuid())),
                 MetaStorageServiceImpl::singleEntryResult
         );
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<IgniteUuid> watch(
-        @Nullable ByteArray keyFrom,
-        @Nullable ByteArray keyTo,
-        long revision,
-        @NotNull WatchListener lsnr
+    @Override
+    public @NotNull CompletableFuture<IgniteUuid> watch(
+            @Nullable ByteArray keyFrom,
+            @Nullable ByteArray keyTo,
+            long revision,
+            @NotNull WatchListener lsnr
     ) {
         CompletableFuture<IgniteUuid> watchRes =
-            metaStorageRaftGrpSvc.run(new WatchRangeKeysCommand(keyFrom, keyTo, revision, localNodeId, uuidGenerator.randomUuid()));
+                metaStorageRaftGrpSvc.run(new WatchRangeKeysCommand(keyFrom, keyTo, revision, localNodeId, uuidGenerator.randomUuid()));
 
         watchRes.thenAccept(
-            watchId -> watchProcessor.addWatch(
-                watchId,
-                new CursorImpl<>(metaStorageRaftGrpSvc, watchRes, MetaStorageServiceImpl::watchResponse),
-                lsnr
-            )
+                watchId -> watchProcessor.addWatch(
+                        watchId,
+                        new CursorImpl<>(metaStorageRaftGrpSvc, watchRes, MetaStorageServiceImpl::watchResponse),
+                        lsnr
+                )
         );
 
         return watchRes;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<IgniteUuid> watch(
-        @NotNull ByteArray key,
-        long revision,
-        @NotNull WatchListener lsnr
+    @Override
+    public @NotNull CompletableFuture<IgniteUuid> watch(
+            @NotNull ByteArray key,
+            long revision,
+            @NotNull WatchListener lsnr
     ) {
         return watch(key, null, revision, lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<IgniteUuid> watch(
-        @NotNull Set<ByteArray> keys,
-        long revision,
-        @NotNull WatchListener lsnr
+    @Override
+    public @NotNull CompletableFuture<IgniteUuid> watch(
+            @NotNull Set<ByteArray> keys,
+            long revision,
+            @NotNull WatchListener lsnr
     ) {
         CompletableFuture<IgniteUuid> watchRes =
-            metaStorageRaftGrpSvc.run(new WatchExactKeysCommand(keys, revision, localNodeId, uuidGenerator.randomUuid()));
+                metaStorageRaftGrpSvc.run(new WatchExactKeysCommand(keys, revision, localNodeId, uuidGenerator.randomUuid()));
 
         watchRes.thenAccept(
-            watchId -> watchProcessor.addWatch(
-                watchId,
-                new CursorImpl<>(metaStorageRaftGrpSvc, watchRes, MetaStorageServiceImpl::watchResponse),
-                lsnr
-            )
+                watchId -> watchProcessor.addWatch(
+                        watchId,
+                        new CursorImpl<>(metaStorageRaftGrpSvc, watchRes, MetaStorageServiceImpl::watchResponse),
+                        lsnr
+                )
         );
 
         return watchRes;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> stopWatch(@NotNull IgniteUuid id) {
+    @Override
+    public @NotNull CompletableFuture<Void> stopWatch(@NotNull IgniteUuid id) {
         return CompletableFuture.runAsync(() -> watchProcessor.stopWatch(id));
     }
 
     // TODO: IGNITE-14734 Implement.
+
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> compact() {
+    @Override
+    public @NotNull CompletableFuture<Void> compact() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> closeCursors(@NotNull String nodeId) {
+    @Override
+    public @NotNull CompletableFuture<Void> closeCursors(@NotNull String nodeId) {
         return metaStorageRaftGrpSvc.run(new CursorsCloseCommand(nodeId));
     }
 
-    /** */
+    /**
+     *
+     */
     private static List<OperationInfo> toOperationInfos(Collection<Operation> ops) {
         List<OperationInfo> res = new ArrayList<>(ops.size());
 
         for (Operation op : ops) {
             OperationInfo info = null;
 
-            if (op.type() == OperationType.NO_OP)
+            if (op.type() == OperationType.NO_OP) {
                 info = new OperationInfo(null, null, OperationType.NO_OP);
-            else if (op.type() == OperationType.REMOVE)
-                info = new OperationInfo(((Operation.RemoveOp)op.inner()).key(), null, OperationType.REMOVE);
-            else if (op.type() == OperationType.PUT) {
-                Operation.PutOp inner = (Operation.PutOp)op.inner();
+            } else if (op.type() == OperationType.REMOVE) {
+                info = new OperationInfo(((Operation.RemoveOp) op.inner()).key(), null, OperationType.REMOVE);
+            } else if (op.type() == OperationType.PUT) {
+                Operation.PutOp inner = (Operation.PutOp) op.inner();
 
                 info = new OperationInfo(inner.key(), inner.value(), OperationType.PUT);
-            }
-            else
+            } else {
                 assert false : "Unknown operation type " + op.type();
+            }
 
             res.add(info);
         }
@@ -290,39 +312,40 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         return res;
     }
 
-    /** */
+    /**
+     *
+     */
     private static ConditionInfo toConditionInfo(@NotNull Condition condition) {
         ConditionInfo cnd = null;
 
         Object obj = condition.inner();
 
         if (obj instanceof Condition.ExistenceCondition) {
-            Condition.ExistenceCondition inner = (Condition.ExistenceCondition)obj;
+            Condition.ExistenceCondition inner = (Condition.ExistenceCondition) obj;
 
             cnd = new ConditionInfo(inner.key(), inner.type(), null, 0);
-        }
-        else if (obj instanceof Condition.TombstoneCondition) {
-            Condition.TombstoneCondition inner = (Condition.TombstoneCondition)obj;
+        } else if (obj instanceof Condition.TombstoneCondition) {
+            Condition.TombstoneCondition inner = (Condition.TombstoneCondition) obj;
 
             cnd = new ConditionInfo(inner.key(), inner.type(), null, 0);
-        }
-        else if (obj instanceof Condition.RevisionCondition) {
-            Condition.RevisionCondition inner = (Condition.RevisionCondition)obj;
+        } else if (obj instanceof Condition.RevisionCondition) {
+            Condition.RevisionCondition inner = (Condition.RevisionCondition) obj;
 
             cnd = new ConditionInfo(inner.key(), inner.type(), null, inner.revision());
-        }
-        else if (obj instanceof Condition.ValueCondition) {
-            Condition.ValueCondition inner = (Condition.ValueCondition)obj;
+        } else if (obj instanceof Condition.ValueCondition) {
+            Condition.ValueCondition inner = (Condition.ValueCondition) obj;
 
             cnd = new ConditionInfo(inner.key(), inner.type(), inner.value(), 0);
-        }
-        else
+        } else {
             assert false : "Unknown condition type: " + obj.getClass().getSimpleName();
+        }
 
         return cnd;
     }
 
-    /** */
+    /**
+     *
+     */
     private static Map<ByteArray, Entry> multipleEntryResult(Object obj) {
         MultipleEntryResponse resp = (MultipleEntryResponse) obj;
 
@@ -337,14 +360,18 @@ public class MetaStorageServiceImpl implements MetaStorageService {
         return res;
     }
 
-    /** */
+    /**
+     *
+     */
     private static Entry singleEntryResult(Object obj) {
         SingleEntryResponse resp = (SingleEntryResponse) obj;
 
         return new EntryImpl(new ByteArray(resp.key()), resp.value(), resp.revision(), resp.updateCounter());
     }
 
-    /** */
+    /**
+     *
+     */
     private static WatchEvent watchResponse(Object obj) {
         MultipleEntryResponse resp = (MultipleEntryResponse) obj;
 
@@ -358,9 +385,9 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
             EntryImpl e = new EntryImpl(new ByteArray(s.key()), s.value(), s.revision(), s.updateCounter());
 
-            if (i % 2 == 0)
+            if (i % 2 == 0) {
                 o = e;
-            else {
+            } else {
                 n = e;
 
                 evts.add(new EntryEvent(o, n));
@@ -371,18 +398,19 @@ public class MetaStorageServiceImpl implements MetaStorageService {
     }
 
     // TODO: IGNITE-14691 Temporally solution that should be removed after implementing reactive watches.
+
     /** Watch processor, that manages {@link Watcher} threads. */
     private final class WatchProcessor {
         /** Active Watcher threads that process notification pulling logic. */
         private final Map<IgniteUuid, Watcher> watchers = new ConcurrentHashMap<>();
 
         /**
-         * Starts exclusive thread per watch that implement watch pulling logic and
-         * calls {@link WatchListener#onUpdate(WatchEvent)}} or {@link WatchListener#onError(Throwable)}.
+         * Starts exclusive thread per watch that implement watch pulling logic and calls {@link WatchListener#onUpdate(WatchEvent)}} or
+         * {@link WatchListener#onError(Throwable)}.
          *
          * @param watchId Watch id.
-         * @param cursor Watch Cursor.
-         * @param lsnr The listener which receives and handles watch updates.
+         * @param cursor  Watch Cursor.
+         * @param lsnr    The listener which receives and handles watch updates.
          */
         private void addWatch(IgniteUuid watchId, CursorImpl<WatchEvent> cursor, WatchListener lsnr) {
             Watcher watcher = new Watcher(cursor, lsnr);
@@ -399,39 +427,39 @@ public class MetaStorageServiceImpl implements MetaStorageService {
          */
         private void stopWatch(IgniteUuid watchId) {
             watchers.computeIfPresent(
-                watchId,
-                (k, v) -> {
-                    CompletableFuture.runAsync(() -> {
-                        v.stop = true;
+                    watchId,
+                    (k, v) -> {
+                        CompletableFuture.runAsync(() -> {
+                            v.stop = true;
 
-                        v.interrupt();
-                    }).thenRun(() -> {
-                        try {
-                            Thread.sleep(100);
+                            v.interrupt();
+                        }).thenRun(() -> {
+                            try {
+                                Thread.sleep(100);
 
-                            v.cursor.close();
-                        }
-                        catch (InterruptedException e) {
-                            throw new IgniteInternalException(e);
-                        }
-                        catch (Exception e) {
-                            if (e instanceof IgniteInternalException && e.getCause().getCause() instanceof RejectedExecutionException) {
-                                LOG.warn("Cursor close command was rejected because raft executor has been already stopped.");
-                                return;
+                                v.cursor.close();
+                            } catch (InterruptedException e) {
+                                throw new IgniteInternalException(e);
+                            } catch (Exception e) {
+                                if (e instanceof IgniteInternalException && e.getCause().getCause() instanceof RejectedExecutionException) {
+                                    LOG.warn("Cursor close command was rejected because raft executor has been already stopped.");
+                                    return;
+                                }
+
+                                // TODO: IGNITE-14693 Implement Meta storage exception handling logic.
+                                LOG.error("Unexpected exception", e);
                             }
-
-                            // TODO: IGNITE-14693 Implement Meta storage exception handling logic.
-                            LOG.error("Unexpected exception", e);
-                        }
-                    });
-                    return null;
-                }
+                        });
+                        return null;
+                    }
             );
         }
 
         /** Watcher thread, uses pulling logic in order to retrieve watch notifications from server */
         private final class Watcher extends Thread {
-            /** */
+            /**
+             *
+             */
             private volatile boolean stop = false;
 
             /** Watch event cursor. */
@@ -442,7 +470,7 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
             /**
              * @param cursor Watch event cursor.
-             * @param lsnr The listener which receives and handles watch updates.
+             * @param lsnr   The listener which receives and handles watch updates.
              */
             Watcher(Cursor<WatchEvent> cursor, WatchListener lsnr) {
                 this.cursor = cursor;
@@ -450,10 +478,11 @@ public class MetaStorageServiceImpl implements MetaStorageService {
             }
 
             /**
-             * Pulls watch events from server side with the help of cursor.iterator.hasNext()/next()
-             * in the while(true) loop. Collects watch events with same revision and fires either onUpdate or onError().
+             * Pulls watch events from server side with the help of cursor.iterator.hasNext()/next() in the while(true) loop. Collects watch
+             * events with same revision and fires either onUpdate or onError().
              */
-            @Override public void run() {
+            @Override
+            public void run() {
                 Iterator<WatchEvent> watchEvtsIter = cursor.iterator();
 
                 while (!stop) {
@@ -463,22 +492,20 @@ public class MetaStorageServiceImpl implements MetaStorageService {
 
                             try {
                                 watchEvt = watchEvtsIter.next();
-                            }
-                            catch (Throwable e) {
+                            } catch (Throwable e) {
                                 lsnr.onError(e);
                             }
 
                             assert watchEvt != null;
 
                             lsnr.onUpdate(watchEvt);
-                        }
-                        else
+                        } else {
                             Thread.sleep(10);
-                    }
-                    catch (Throwable e) {
-                        if (e instanceof NodeStoppingException || e.getCause() instanceof NodeStoppingException)
+                        }
+                    } catch (Throwable e) {
+                        if (e instanceof NodeStoppingException || e.getCause() instanceof NodeStoppingException) {
                             break;
-                        else if ((e instanceof InterruptedException || e.getCause() instanceof InterruptedException) && stop) {
+                        } else if ((e instanceof InterruptedException || e.getCause() instanceof InterruptedException) && stop) {
                             LOG.debug("Watcher has been stopped during node's stop");
 
                             break;

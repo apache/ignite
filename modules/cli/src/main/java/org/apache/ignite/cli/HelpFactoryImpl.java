@@ -40,7 +40,8 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
     public static final String SECTION_KEY_PARAMETER_OPTION_TABLE = "paramsOptsTable";
 
     /** {@inheritDoc} */
-    @Override public CommandLine.Help create(CommandLine.Model.CommandSpec cmdSpec, ColorScheme cs) {
+    @Override
+    public CommandLine.Help create(CommandLine.Model.CommandSpec cmdSpec, ColorScheme cs) {
         boolean hasCommands = !cmdSpec.subcommands().isEmpty();
         boolean hasOptions = cmdSpec.options().stream().anyMatch(o -> !o.hidden());
         boolean hasParameters = cmdSpec.positionalParameters().stream().anyMatch(o -> !o.hidden());
@@ -49,53 +50,55 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
         assert !(hasCommands && (hasOptions || hasParameters));
 
         cmdSpec.usageMessage().sectionKeys(Arrays.asList(
-            SECTION_KEY_BANNER,
-            CommandLine.Model.UsageMessageSpec.SECTION_KEY_SYNOPSIS,
-            CommandLine.Model.UsageMessageSpec.SECTION_KEY_DESCRIPTION,
-            CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST,
-            SECTION_KEY_PARAMETER_OPTION_TABLE
+                SECTION_KEY_BANNER,
+                CommandLine.Model.UsageMessageSpec.SECTION_KEY_SYNOPSIS,
+                CommandLine.Model.UsageMessageSpec.SECTION_KEY_DESCRIPTION,
+                CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST,
+                SECTION_KEY_PARAMETER_OPTION_TABLE
         ));
 
         var sectionMap = new HashMap<String, CommandLine.IHelpSectionRenderer>();
 
         if (cmdSpec.commandLine().isUsageHelpRequested()) {
             sectionMap.put(SECTION_KEY_BANNER,
-                help -> {
-                    assert help.commandSpec().commandLine().getCommand() instanceof SpecAdapter;
+                    help -> {
+                        assert help.commandSpec().commandLine().getCommand() instanceof SpecAdapter;
 
-                    return ((SpecAdapter)help.commandSpec().commandLine().getCommand()).banner();
-                }
+                        return ((SpecAdapter) help.commandSpec().commandLine().getCommand()).banner();
+                    }
             );
         }
 
         if (!hasCommands) {
             sectionMap.put(CommandLine.Model.UsageMessageSpec.SECTION_KEY_SYNOPSIS,
-                help -> {
-                    StringBuilder sb = new StringBuilder();
+                    help -> {
+                        StringBuilder sb = new StringBuilder();
 
-                    List<Ansi.IStyle> boldCmdStyle = new ArrayList<>(cs.commandStyles());
+                        List<Ansi.IStyle> boldCmdStyle = new ArrayList<>(cs.commandStyles());
 
-                    boldCmdStyle.add(Ansi.Style.bold);
+                        boldCmdStyle.add(Ansi.Style.bold);
 
-                    sb.append(cs.apply(help.commandSpec().qualifiedName(), boldCmdStyle));
+                        sb.append(cs.apply(help.commandSpec().qualifiedName(), boldCmdStyle));
 
-                    if (hasOptions)
-                        sb.append(cs.optionText(" [OPTIONS]"));
+                        if (hasOptions) {
+                            sb.append(cs.optionText(" [OPTIONS]"));
+                        }
 
-                    if (hasParameters) {
-                        for (PositionalParamSpec parameter : cmdSpec.positionalParameters())
-                            sb.append(' ').append(cs.parameterText(parameter.paramLabel()));
+                        if (hasParameters) {
+                            for (PositionalParamSpec parameter : cmdSpec.positionalParameters()) {
+                                sb.append(' ').append(cs.parameterText(parameter.paramLabel()));
+                            }
+                        }
+
+                        sb.append("\n\n");
+
+                        return sb.toString();
                     }
-
-                    sb.append("\n\n");
-
-                    return sb.toString();
-                }
             );
         }
 
         sectionMap.put(CommandLine.Model.UsageMessageSpec.SECTION_KEY_DESCRIPTION,
-            help -> Ansi.AUTO.string(help.description() + '\n'));
+                help -> Ansi.AUTO.string(help.description() + '\n'));
 
         if (hasCommands) {
             sectionMap.put(CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST, help -> {
@@ -108,9 +111,9 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
 
                     CommandLine.Help cmd = entry.getValue();
 
-                    if (cmd.subcommands().isEmpty())
+                    if (cmd.subcommands().isEmpty()) {
                         tbl.addRow(cs.commandText(name), cmd.description().trim());
-                    else {
+                    } else {
                         for (Map.Entry<String, CommandLine.Help> subEntry : cmd.subcommands().entrySet()) {
                             String subName = subEntry.getKey();
 
@@ -126,8 +129,7 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
 
                 return tbl.toString() + "\n";
             });
-        }
-        else if (hasParameters || hasOptions) {
+        } else if (hasParameters || hasOptions) {
             sectionMap.put(SECTION_KEY_PARAMETER_OPTION_TABLE, help -> {
                 Table tbl = new Table(0, cs);
 
@@ -155,8 +157,8 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
                             assert option.description().length == 1;
 
                             tbl.addRow(
-                                cs.optionText(option.names()[0] + '=' + option.paramLabel()),
-                                option.description()[0]);
+                                    cs.optionText(option.names()[0] + '=' + option.paramLabel()),
+                                    option.description()[0]);
                         }
                     }
                 }

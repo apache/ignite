@@ -25,8 +25,8 @@ import java.nio.file.Path;
 
 /**
  * Annotation for injecting temporary folders into tests.
- * <p>
- * This annotation should be used on either fields or method parameters of the {@link Path} type.
+ *
+ * <p>This annotation should be used on either fields or method parameters of the {@link Path} type.
  *
  * @see WorkDirectoryExtension
  */

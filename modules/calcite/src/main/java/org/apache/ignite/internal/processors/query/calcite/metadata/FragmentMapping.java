@@ -17,130 +17,165 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import static org.apache.ignite.internal.util.ArrayUtils.asList;
+import static org.apache.ignite.internal.util.CollectionUtils.first;
+import static org.apache.ignite.internal.util.IgniteUtils.firstNotNull;
+
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.internal.util.ArrayUtils.asList;
-import static org.apache.ignite.internal.util.CollectionUtils.first;
-import static org.apache.ignite.internal.util.IgniteUtils.firstNotNull;
 
 /**
  *
  */
 public class FragmentMapping implements Serializable {
-    /** */
+    /**
+     *
+     */
     private List<ColocationGroup> colocationGroups;
 
-    /** */
+    /**
+     *
+     */
     public FragmentMapping() {
     }
 
-    /** */
+    /**
+     *
+     */
     private FragmentMapping(ColocationGroup colocationGroup) {
         this(asList(colocationGroup));
     }
 
-    /** */
+    /**
+     *
+     */
     private FragmentMapping(List<ColocationGroup> colocationGroups) {
         this.colocationGroups = colocationGroups;
     }
 
-    /** */
+    /**
+     *
+     */
     public static FragmentMapping create() {
         return new FragmentMapping(Collections.emptyList());
     }
 
-    /** */
+    /**
+     *
+     */
     public static FragmentMapping create(String nodeId) {
         return new FragmentMapping(ColocationGroup.forNodes(Collections.singletonList(nodeId)));
     }
 
-    /** */
+    /**
+     *
+     */
     public static FragmentMapping create(long sourceId) {
         return new FragmentMapping(ColocationGroup.forSourceId(sourceId));
     }
 
-    /** */
+    /**
+     *
+     */
     public static FragmentMapping create(long sourceId, ColocationGroup group) {
         try {
             return new FragmentMapping(ColocationGroup.forSourceId(sourceId).colocate(group));
-        }
-        catch (ColocationMappingException e) {
+        } catch (ColocationMappingException e) {
             throw new AssertionError(e); // Cannot happen
         }
     }
 
-    /** */
+    /**
+     *
+     */
     public boolean colocated() {
         return colocationGroups.isEmpty() || colocationGroups.size() == 1;
     }
 
-    /** */
+    /**
+     *
+     */
     public FragmentMapping prune(IgniteRel rel) {
-        if (colocationGroups.size() != 1)
+        if (colocationGroups.size() != 1) {
             return this;
+        }
 
         return new FragmentMapping(first(colocationGroups).prune(rel));
     }
 
-    /** */
+    /**
+     *
+     */
     public FragmentMapping combine(FragmentMapping other) {
         return new FragmentMapping(Commons.combine(colocationGroups, other.colocationGroups));
     }
 
-    /** */
+    /**
+     *
+     */
     public FragmentMapping colocate(FragmentMapping other) throws ColocationMappingException {
         assert colocated() && other.colocated();
 
         ColocationGroup first = first(colocationGroups);
         ColocationGroup second = first(other.colocationGroups);
 
-        if (first == null && second == null)
+        if (first == null && second == null) {
             return this;
-        else if (first == null || second == null)
+        } else if (first == null || second == null) {
             return new FragmentMapping(firstNotNull(first, second));
-        else
+        } else {
             return new FragmentMapping(first.colocate(second));
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     public List<String> nodeIds() {
         return colocationGroups.stream()
-            .flatMap(g -> g.nodeIds().stream())
-            .distinct().collect(Collectors.toList());
+                .flatMap(g -> g.nodeIds().stream())
+                .distinct().collect(Collectors.toList());
     }
 
-    /** */
+    /**
+     *
+     */
     public FragmentMapping finalize(Supplier<List<String>> nodesSource) {
-        if (colocationGroups.isEmpty())
+        if (colocationGroups.isEmpty()) {
             return this;
+        }
 
         List<ColocationGroup> colocationGroups = this.colocationGroups;
 
         colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalaze);
-        List<String> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
+
+        List<String> nodes = nodeIds();
+        List<String> nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
+
         colocationGroups = Commons.transform(colocationGroups, g -> g.mapToNodes(nodes0));
 
         return new FragmentMapping(colocationGroups);
     }
 
-    /** */
+    /**
+     *
+     */
     public @NotNull ColocationGroup findGroup(long sourceId) {
         List<ColocationGroup> groups = colocationGroups.stream()
-            .filter(c -> c.belongs(sourceId))
-            .collect(Collectors.toList());
+                .filter(c -> c.belongs(sourceId))
+                .collect(Collectors.toList());
 
-        if (groups.isEmpty())
+        if (groups.isEmpty()) {
             throw new IllegalStateException("Failed to find group with given id. [sourceId=" + sourceId + "]");
-        else if (groups.size() > 1)
+        } else if (groups.size() > 1) {
             throw new IllegalStateException("Multiple groups with the same id found. [sourceId=" + sourceId + "]");
+        }
 
         return first(groups);
     }

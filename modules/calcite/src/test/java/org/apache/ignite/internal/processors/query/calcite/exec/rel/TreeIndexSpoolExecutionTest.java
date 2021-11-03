@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Iterator;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
@@ -30,13 +33,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-/** */
+/**
+ *
+ */
 public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -52,49 +55,48 @@ public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
             TestParams[] testParams;
 
             if (size == 1) {
-                testParams = new TestParams[] {
-                    new TestParams(null, new Object[] {null, null, null}, new Object[] {null, null, null}, 1),
-                    new TestParams(null, new Object[] {0, null, null}, new Object[] {0, null, null}, 1)
+                testParams = new TestParams[]{
+                        new TestParams(null, new Object[]{null, null, null}, new Object[]{null, null, null}, 1),
+                        new TestParams(null, new Object[]{0, null, null}, new Object[]{0, null, null}, 1)
                 };
-            }
-            else {
-                testParams = new TestParams[] {
-                    new TestParams(
-                        null,
-                        new Object[] {null, null, null},
-                        new Object[] {null, null, null},
-                        size
-                    ),
-                    new TestParams(
-                        null,
-                        new Object[] {size / 2, null, null},
-                        new Object[] {size / 2, null, null},
-                        1
-                    ),
-                    new TestParams(
-                        null,
-                        new Object[] {size / 2 + 1, null, null},
-                        new Object[] {size / 2 + 1, null, null},
-                        1
-                    ),
-                    new TestParams(
-                        null,
-                        new Object[] {size / 2, null, null},
-                        new Object[] {null, null, null},
-                        size - size / 2
-                    ),
-                    new TestParams(
-                        null,
-                        new Object[] {null, null, null},
-                        new Object[] {size / 2, null, null},
-                        size / 2 + 1
-                    ),
-                    new TestParams(
-                        (r -> ((int)r[0]) < size / 2),
-                        new Object[] {null, null, null},
-                        new Object[] {size / 2, null, null},
-                        size / 2
-                    ),
+            } else {
+                testParams = new TestParams[]{
+                        new TestParams(
+                                null,
+                                new Object[]{null, null, null},
+                                new Object[]{null, null, null},
+                                size
+                        ),
+                        new TestParams(
+                                null,
+                                new Object[]{size / 2, null, null},
+                                new Object[]{size / 2, null, null},
+                                1
+                        ),
+                        new TestParams(
+                                null,
+                                new Object[]{size / 2 + 1, null, null},
+                                new Object[]{size / 2 + 1, null, null},
+                                1
+                        ),
+                        new TestParams(
+                                null,
+                                new Object[]{size / 2, null, null},
+                                new Object[]{null, null, null},
+                                size - size / 2
+                        ),
+                        new TestParams(
+                                null,
+                                new Object[]{null, null, null},
+                                new Object[]{size / 2, null, null},
+                                size / 2 + 1
+                        ),
+                        new TestParams(
+                                (r -> ((int) r[0]) < size / 2),
+                                new Object[]{null, null, null},
+                                new Object[]{size / 2, null, null},
+                                size / 2
+                        ),
                 };
             }
 
@@ -103,7 +105,8 @@ public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
             ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, new TestTable(size, rowType) {
                 boolean first = true;
 
-                @Override public @NotNull Iterator<Object[]> iterator() {
+                @Override
+                public @NotNull Iterator<Object[]> iterator() {
                     assertTrue(first, "Rewind right");
 
                     first = false;
@@ -116,13 +119,13 @@ public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
             TestPredicate testFilter = new TestPredicate();
 
             IndexSpoolNode<Object[]> spool = IndexSpoolNode.createTreeSpool(
-                ctx,
-                rowType,
-                RelCollations.of(ImmutableIntList.of(0)),
-                (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
-                testFilter,
-                () -> lower,
-                () -> upper
+                    ctx,
+                    rowType,
+                    RelCollations.of(ImmutableIntList.of(0)),
+                    (o1, o2) -> o1[0] != null ? ((Comparable) o1[0]).compareTo(o2[0]) : 0,
+                    testFilter,
+                    () -> lower,
+                    () -> upper
             );
 
             spool.register(singletonList(scan));
@@ -155,35 +158,53 @@ public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     static class TestPredicate implements Predicate<Object[]> {
-        /** */
+        /**
+         *
+         */
         Predicate<Object[]> delegate;
 
         /** {@inheritDoc} */
-        @Override public boolean test(Object[] objects) {
-            if (delegate == null)
+        @Override
+        public boolean test(Object[] objects) {
+            if (delegate == null) {
                 return true;
-            else
+            } else {
                 return delegate.test(objects);
+            }
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class TestParams {
-        /** */
+        /**
+         *
+         */
         final Predicate<Object[]> pred;
 
-        /** */
+        /**
+         *
+         */
         final Object[] lower;
 
-        /** */
+        /**
+         *
+         */
         final Object[] upper;
 
-        /** */
+        /**
+         *
+         */
         final int expectedResultSize;
 
-        /** */
+        /**
+         *
+         */
         private TestParams(Predicate<Object[]> pred, Object[] lower, Object[] upper, int expectedResultSize) {
             this.pred = pred;
             this.lower = lower;

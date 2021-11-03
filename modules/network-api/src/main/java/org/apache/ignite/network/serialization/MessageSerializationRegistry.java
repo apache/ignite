@@ -27,25 +27,24 @@ public interface MessageSerializationRegistry {
     /**
      * Registers message serialization factory by message type.
      *
-     * @param groupType Message group type.
+     * @param groupType   Message group type.
      * @param messageType Message type.
-     * @param factory Message's serialization factory.
+     * @param factory     Message's serialization factory.
      * @return This registry.
      * @throws NetworkConfigurationException If there is an already registered factory for the given type.
      */
     MessageSerializationRegistry registerFactory(
-        short groupType, short messageType, MessageSerializationFactory<?> factory
+            short groupType, short messageType, MessageSerializationFactory<?> factory
     );
 
     /**
      * Creates a {@link MessageSerializer} for the given message type.
-     * <p>
-     * {@link MessageSerializationRegistry} does not track the correspondence between the message type and its Java
-     * representation, so the actual generic specialization of the returned provider relies on the caller of this
-     * method.
      *
-     * @param <T> Type of a message.
-     * @param groupType Group type of a message.
+     * <p>{@link MessageSerializationRegistry} does not track the correspondence between the message type and its Java representation,
+     * so the actual generic specialization of the returned provider relies on the caller of this method.
+     *
+     * @param <T>         Type of a message.
+     * @param groupType   Group type of a message.
      * @param messageType Message type.
      * @return Message's serializer.
      */
@@ -53,13 +52,12 @@ public interface MessageSerializationRegistry {
 
     /**
      * Creates a {@link MessageDeserializer} for the given message type.
-     * <p>
-     * {@link MessageSerializationRegistry} does not track the correspondence between the message type and its Java
-     * representation, so the actual generic specialization of the returned provider relies on the caller of this
-     * method.
      *
-     * @param <T> Type of a message.
-     * @param groupType Group type of a message.
+     * <p>{@link MessageSerializationRegistry} does not track the correspondence between the message type and its Java representation,
+     * so the actual generic specialization of the returned provider relies on the caller of this method.
+     *
+     * @param <T>         Type of a message.
+     * @param groupType   Group type of a message.
      * @param messageType Message type.
      * @return Message's deserializer.
      */

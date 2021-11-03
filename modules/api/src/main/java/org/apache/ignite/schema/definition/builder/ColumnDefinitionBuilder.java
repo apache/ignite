@@ -47,13 +47,15 @@ public interface ColumnDefinitionBuilder extends SchemaObjectBuilder {
     ColumnDefinitionBuilder withDefaultValueExpression(Object defValExpr);
 
     /** {@inheritDoc} */
-    @Override ColumnDefinitionBuilder withHints(Map<String, String> hints);
+    @Override
+    ColumnDefinitionBuilder withHints(Map<String, String> hints);
 
     /**
      * Builds column.
      *
      * @return Built column.
      */
-    @Override ColumnDefinition build();
+    @Override
+    ColumnDefinition build();
 }
 

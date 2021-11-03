@@ -45,8 +45,8 @@ public class ProgressBar implements AutoCloseable {
     /**
      * Creates a new progress bar.
      *
-     * @param out Output which terminal render will use
-     * @param initMax Initial maximum number of steps.
+     * @param out           Output which terminal render will use
+     * @param initMax       Initial maximum number of steps.
      * @param terminalWidth Width of user terminal for scale progress bar length
      */
     public ProgressBar(PrintWriter out, int initMax, int terminalWidth) {
@@ -76,15 +76,17 @@ public class ProgressBar implements AutoCloseable {
      * Performs a single step.
      */
     public void step() {
-        if (curr < max)
+        if (curr < max) {
             curr++;
+        }
 
         out.print('\r' + render());
         out.flush();
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         while (curr < max) {
             LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
 
@@ -102,15 +104,15 @@ public class ProgressBar implements AutoCloseable {
     private String render() {
         assert curr <= max;
 
-        var completedPart = ((double)curr / (double)max);
+        var completedPart = ((double) curr / (double) max);
 
         // Space reserved for '||Done!'
         var reservedSpace = 7;
 
         if (targetBarWidth < reservedSpace) {
-           log.warn("Terminal width is so small to show the progress bar");
+            log.warn("Terminal width is so small to show the progress bar");
 
-           return "";
+            return "";
         }
 
         var numOfCompletedSymbols = (int) (completedPart * (targetBarWidth - reservedSpace));
@@ -129,9 +131,9 @@ public class ProgressBar implements AutoCloseable {
             percentageLen = percentage.length();
 
             sb.append("|").append(" ".repeat(4 - percentageLen)).append(percentage);
-        }
-        else
+        } else {
             sb.append("=|@|green,bold Done!|@");
+        }
 
         return Ansi.AUTO.string(sb.toString());
     }

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
 import org.apache.calcite.sql.SqlFunction;
@@ -37,24 +38,26 @@ public class SqlSystemRangeFunction extends SqlFunction implements SqlTableFunct
      */
     SqlSystemRangeFunction() {
         super(
-            "SYSTEM_RANGE",
-            SqlKind.OTHER_FUNCTION,
-            ReturnTypes.CURSOR,
-            null,
-            OperandTypes.or(
-                OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
-                OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC)
-            ),
-            SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION);
+                "SYSTEM_RANGE",
+                SqlKind.OTHER_FUNCTION,
+                ReturnTypes.CURSOR,
+                null,
+                OperandTypes.or(
+                        OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
+                        OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC)
+                ),
+                SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlMonotonicity getMonotonicity(SqlOperatorBinding call) {
+    @Override
+    public SqlMonotonicity getMonotonicity(SqlOperatorBinding call) {
         return SqlMonotonicity.MONOTONIC;
     }
 
     /** {@inheritDoc} */
-    @Override public SqlReturnTypeInference getRowTypeInference() {
+    @Override
+    public SqlReturnTypeInference getRowTypeInference() {
         return cb -> cb.getTypeFactory().builder().add("X", SqlTypeName.BIGINT).build();
     }
 }

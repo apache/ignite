@@ -18,4 +18,5 @@
 /**
  * Package containing implementation classes of the Network module.
  */
+
 package org.apache.ignite.network;

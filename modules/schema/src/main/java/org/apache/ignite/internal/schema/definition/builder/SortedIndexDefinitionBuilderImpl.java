@@ -45,30 +45,34 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
     }
 
     /** {@inheritDoc} */
-    @Override public SortedIndexDefinitionBuilderImpl withHints(Map<String, String> hints) {
+    @Override
+    public SortedIndexDefinitionBuilderImpl withHints(Map<String, String> hints) {
         super.withHints(hints);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public SortedIndexColumnBuilderImpl addIndexColumn(String name) {
+    @Override
+    public SortedIndexColumnBuilderImpl addIndexColumn(String name) {
         return new SortedIndexColumnBuilderImpl(this).withName(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public SortedIndexDefinitionBuilderImpl unique(boolean unique) {
-        super.unique(unique);
-
-        return this;
     }
 
     /**
      * @param idxBuilder Index builder.
      */
     protected void addIndexColumn(SortedIndexColumnBuilderImpl idxBuilder) {
-        if (cols.put(idxBuilder.name(), idxBuilder) != null)
+        if (cols.put(idxBuilder.name(), idxBuilder) != null) {
             throw new IllegalArgumentException("Index with same name already exists: " + idxBuilder.name());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public SortedIndexDefinitionBuilderImpl unique(boolean unique) {
+        super.unique(unique);
+
+        return this;
     }
 
     /**
@@ -79,7 +83,8 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
     }
 
     /** {@inheritDoc} */
-    @Override public SortedIndexDefinition build() {
+    @Override
+    public SortedIndexDefinition build() {
         assert !cols.isEmpty();
 
         return new SortedIndexDefinitionImpl(name, columns(), unique());
@@ -108,21 +113,24 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
         }
 
         /** {@inheritDoc} */
-        @Override public SortedIndexColumnBuilderImpl desc() {
+        @Override
+        public SortedIndexColumnBuilderImpl desc() {
             asc = SortOrder.DESC;
 
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public SortedIndexColumnBuilderImpl asc() {
+        @Override
+        public SortedIndexColumnBuilderImpl asc() {
             asc = SortOrder.ASC;
 
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public SortedIndexColumnBuilderImpl withName(String name) {
+        @Override
+        public SortedIndexColumnBuilderImpl withName(String name) {
             this.name = name;
 
             return this;
@@ -133,7 +141,8 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
         }
 
         /** {@inheritDoc} */
-        @Override public SortedIndexDefinitionBuilderImpl done() {
+        @Override
+        public SortedIndexDefinitionBuilderImpl done() {
             parent.addIndexColumn(this);
 
             return parent;

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
+import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -25,33 +27,31 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.ArrayUtils.nullOrEmpty;
-
 /**
- * Minimal list API to work with primitive ints. This list exists
- * to avoid boxing/unboxing when using standard list from Java.
+ * Minimal list API to work with primitive ints. This list exists to avoid boxing/unboxing when using standard list from Java.
  */
 public class IgniteIntList implements Externalizable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Array. */
     private int[] arr;
 
-    /** */
+    /** Index. */
     private int idx;
 
     /**
-     *
+     * Default constructor.
      */
     public IgniteIntList() {
         // No-op.
     }
 
     /**
+     * Constructor.
+     *
      * @param size Size.
      */
     public IgniteIntList(int size) {
@@ -60,6 +60,8 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Constructor.
+     *
      * @param arr Array.
      */
     public IgniteIntList(int[] arr) {
@@ -69,18 +71,23 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Returns list from values.
+     *
      * @param vals Values.
      * @return List from values.
      */
     public static IgniteIntList asList(int... vals) {
-        if (nullOrEmpty(vals))
+        if (nullOrEmpty(vals)) {
             return new IgniteIntList();
+        }
 
         return new IgniteIntList(vals);
     }
 
     /**
-     * @param arr Array.
+     * Constructor.
+     *
+     * @param arr  Array.
      * @param size Size.
      */
     private IgniteIntList(int[] arr, int size) {
@@ -89,41 +96,51 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Returns copy of this list.
+     *
      * @return Copy of this list.
      */
     public IgniteIntList copy() {
-        if (idx == 0)
+        if (idx == 0) {
             return new IgniteIntList();
+        }
 
         return new IgniteIntList(Arrays.copyOf(arr, idx));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (!(o instanceof IgniteIntList))
+        if (!(o instanceof IgniteIntList)) {
             return false;
+        }
 
-        IgniteIntList that = (IgniteIntList)o;
+        IgniteIntList that = (IgniteIntList) o;
 
-        if (idx != that.idx)
+        if (idx != that.idx) {
             return false;
+        }
 
-        if (idx == 0 || arr == that.arr)
+        if (idx == 0 || arr == that.arr) {
             return true;
+        }
 
         for (int i = 0; i < idx; i++) {
-            if (arr[i] != that.arr[i])
+            if (arr[i] != that.arr[i]) {
                 return false;
+            }
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int res = 1;
 
         for (int i = 0; i < idx; i++) {
@@ -135,21 +152,26 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Adds list of elements.
+     *
      * @param l List to add all elements of.
      */
     public void addAll(IgniteIntList l) {
         assert l != null;
 
-        if (l.isEmpty())
+        if (l.isEmpty()) {
             return;
+        }
 
-        if (arr == null)
+        if (arr == null) {
             arr = new int[4];
+        }
 
         int len = arr.length;
 
-        while (len < idx + l.size())
+        while (len < idx + l.size()) {
             len <<= 1;
+        }
 
         arr = Arrays.copyOf(arr, len);
 
@@ -159,14 +181,37 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Adds all elements from {@code from} to {@code to}.
+     *
+     * @param to   To list.
+     * @param from From list.
+     * @return To list (passed in or created).
+     */
+    public static IgniteIntList addAll(@Nullable IgniteIntList to, IgniteIntList from) {
+        if (to == null) {
+            IgniteIntList res = new IgniteIntList(from.size());
+
+            res.addAll(from);
+
+            return res;
+        } else {
+            to.addAll(from);
+
+            return to;
+        }
+    }
+
+    /**
      * Add element to this array.
+     *
      * @param x Value.
      */
     public void add(int x) {
-        if (arr == null)
+        if (arr == null) {
             arr = new int[4];
-        else if (arr.length == idx)
+        } else if (arr.length == idx) {
             arr = Arrays.copyOf(arr, arr.length << 1);
+        }
 
         arr[idx++] = x;
     }
@@ -194,8 +239,9 @@ public class IgniteIntList implements Externalizable {
      * @throws NoSuchElementException If the list is empty.
      */
     public int remove() throws NoSuchElementException {
-        if (idx == 0)
+        if (idx == 0) {
             throw new NoSuchElementException();
+        }
 
         return arr[--idx];
     }
@@ -209,11 +255,13 @@ public class IgniteIntList implements Externalizable {
     public IgniteIntList copyWithout(IgniteIntList l) {
         assert l != null;
 
-        if (idx == 0)
+        if (idx == 0) {
             return new IgniteIntList();
+        }
 
-        if (l.idx == 0)
+        if (l.idx == 0) {
             return new IgniteIntList(Arrays.copyOf(arr, idx));
+        }
 
         int[] newArr = Arrays.copyOf(arr, idx);
         int newIdx = idx;
@@ -224,8 +272,9 @@ public class IgniteIntList implements Externalizable {
             for (int j = 0; j < newIdx; j++) {
                 if (newArr[j] == rmVal) {
 
-                    while (newIdx > 0 && newArr[newIdx - 1] == rmVal)
+                    while (newIdx > 0 && newArr[newIdx - 1] == rmVal) {
                         newIdx--;
+                    }
 
                     if (newIdx > 0) {
                         newArr[j] = newArr[newIdx - 1];
@@ -239,6 +288,8 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Returns value by index.
+     *
      * @param i Index.
      * @return Value.
      */
@@ -249,6 +300,8 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Returns size.
+     *
      * @return Size.
      */
     public int size() {
@@ -256,6 +309,8 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Returns {@code true} if this list has no elements.
+     *
      * @return {@code True} if this list has no elements.
      */
     public boolean isEmpty() {
@@ -263,39 +318,31 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Checks if there is an element.
+     *
      * @param l Element to find.
      * @return {@code True} if found.
      */
     public boolean contains(int l) {
         for (int i = 0; i < idx; i++) {
-            if (arr[i] == l)
+            if (arr[i] == l) {
                 return true;
+            }
         }
 
         return false;
     }
 
     /**
+     * Checks if all the elements are present.
+     *
      * @param l List to check.
      * @return {@code True} if this list contains all the elements of passed in list.
      */
     public boolean containsAll(IgniteIntList l) {
         for (int i = 0; i < l.size(); i++) {
-            if (!contains(l.get(i)))
+            if (!contains(l.get(i))) {
                 return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @return {@code True} if there are no duplicates.
-     */
-    public boolean distinct() {
-        for (int i = 0; i < idx; i++) {
-            for (int j = i + 1; j < idx; j++) {
-                if (arr[i] == arr[j])
-                    return false;
             }
         }
 
@@ -303,17 +350,38 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Checks that there are no duplicates.
+     *
+     * @return {@code True} if there are no duplicates.
+     */
+    public boolean distinct() {
+        for (int i = 0; i < idx; i++) {
+            for (int j = i + 1; j < idx; j++) {
+                if (arr[i] == arr[j]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Truncate the list.
+     *
      * @param size New size.
      * @param last If {@code true} the last elements will be removed, otherwise the first.
      */
     public void truncate(int size, boolean last) {
         assert size >= 0 && size <= idx;
 
-        if (size == idx)
+        if (size == idx) {
             return;
+        }
 
-        if (!last && idx != 0 && size != 0)
+        if (!last && idx != 0 && size != 0) {
             System.arraycopy(arr, idx - size, arr, 0, size);
+        }
 
         idx = size;
     }
@@ -331,8 +399,7 @@ public class IgniteIntList implements Externalizable {
 
         if (i == idx - 1) { // Last element.
             idx = i;
-        }
-        else {
+        } else {
             System.arraycopy(arr, i + 1, arr, i, idx - i - 1);
             idx--;
         }
@@ -344,7 +411,7 @@ public class IgniteIntList implements Externalizable {
      * Removes value from this list.
      *
      * @param startIdx Index to begin search with.
-     * @param val Value.
+     * @param val      Value.
      * @return Index of removed value if the value was found and removed or {@code -1} otherwise.
      */
     public int removeValue(int startIdx, int val) {
@@ -365,8 +432,8 @@ public class IgniteIntList implements Externalizable {
      * Removes value from this list.
      *
      * @param startIdx Index to begin search with.
-     * @param oldVal Old value.
-     * @param newVal New value.
+     * @param oldVal   Old value.
+     * @param newVal   New value.
      * @return Index of replaced value if the value was found and replaced or {@code -1} otherwise.
      */
     public int replaceValue(int startIdx, int oldVal, int newVal) {
@@ -382,6 +449,8 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Returns array copy.
+     *
      * @return Array copy.
      */
     public int[] array() {
@@ -393,30 +462,36 @@ public class IgniteIntList implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(idx);
 
-        for (int i = 0; i < idx; i++)
+        for (int i = 0; i < idx; i++) {
             out.writeInt(arr[i]);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         idx = in.readInt();
 
         arr = new int[idx];
 
-        for (int i = 0; i < idx; i++)
+        for (int i = 0; i < idx; i++) {
             arr[i] = in.readInt();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         StringBuilder b = new StringBuilder("[");
 
         for (int i = 0; i < idx; i++) {
-            if (i != 0)
+            if (i != 0) {
                 b.append(',');
+            }
 
             b.append(arr[i]);
         }
@@ -427,26 +502,33 @@ public class IgniteIntList implements Externalizable {
     }
 
     /**
+     * Reads list form {@code in}.
+     *
      * @param in Input to read list from.
      * @return Grid int list.
      * @throws IOException If failed.
      */
-    @Nullable public static IgniteIntList readFrom(DataInput in) throws IOException {
+    @Nullable
+    public static IgniteIntList readFrom(DataInput in) throws IOException {
         int idx = in.readInt();
 
-        if (idx == -1)
+        if (idx == -1) {
             return null;
+        }
 
         int[] arr = new int[idx];
 
-        for (int i = 0; i < idx; i++)
+        for (int i = 0; i < idx; i++) {
             arr[i] = in.readInt();
+        }
 
         return new IgniteIntList(arr);
     }
 
     /**
-     * @param out Output to write to.
+     * Writes list to {@code out}.
+     *
+     * @param out  Output to write to.
      * @param list List.
      * @throws IOException If failed.
      */
@@ -454,72 +536,57 @@ public class IgniteIntList implements Externalizable {
         out.writeInt(list != null ? list.idx : -1);
 
         if (list != null) {
-            for (int i = 0; i < list.idx; i++)
+            for (int i = 0; i < list.idx; i++) {
                 out.writeInt(list.arr[i]);
+            }
         }
     }
 
     /**
-     * @param to To list.
-     * @param from From list.
-     * @return To list (passed in or created).
-     */
-    public static IgniteIntList addAll(@Nullable IgniteIntList to, IgniteIntList from) {
-        if (to == null) {
-            IgniteIntList res = new IgniteIntList(from.size());
-
-            res.addAll(from);
-
-            return res;
-        }
-        else {
-            to.addAll(from);
-
-            return to;
-        }
-    }
-
-    /**
-     * Sorts this list.
-     * Use {@code copy().sort()} if you need a defensive copy.
+     * Sorts this list. Use {@code copy().sort()} if you need a defensive copy.
      *
      * @return {@code this} For chaining.
      */
     public IgniteIntList sort() {
-        if (idx > 1)
+        if (idx > 1) {
             Arrays.sort(arr, 0, idx);
+        }
 
         return this;
     }
 
     /**
-     * Removes given number of elements from the end. If the given number of elements is higher than
-     * list size, then list will be cleared.
+     * Removes given number of elements from the end. If the given number of elements is higher than list size, then list will be cleared.
      *
      * @param cnt Count to pop from the end.
      */
     public void pop(int cnt) {
         assert cnt >= 0 : cnt;
 
-        if (idx < cnt)
+        if (idx < cnt) {
             idx = 0;
-        else
+        } else {
             idx -= cnt;
+        }
     }
 
     /**
+     * Returns iterator.
+     *
      * @return Iterator.
      */
     public IgniteIntIterator iterator() {
         return new IgniteIntIterator() {
-            int c = 0;
+            int cur = 0;
 
-            @Override public boolean hasNext() {
-                return c < idx;
+            @Override
+            public boolean hasNext() {
+                return cur < idx;
             }
 
-            @Override public int next() {
-                return arr[c++];
+            @Override
+            public int next() {
+                return arr[cur++];
             }
         };
     }

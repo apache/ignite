@@ -17,21 +17,18 @@
 
 package org.apache.ignite.internal.client.proto;
 
-import java.util.Arrays;
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.MAGIC_BYTES;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.CharsetUtil;
+import java.util.Arrays;
 import org.apache.ignite.lang.IgniteException;
 
-import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
-import static org.apache.ignite.internal.client.proto.ClientMessageCommon.MAGIC_BYTES;
-
 /**
- * Decodes full client messages:
- * 1. MAGIC for first message.
- * 2. Payload length (4 bytes).
- * 3. Payload (N bytes).
+ * Decodes full client messages: 1. MAGIC for first message. 2. Payload length (4 bytes). 3. Payload (N bytes).
  */
 public class ClientMessageDecoder extends LengthFieldBasedFrameDecoder {
     /** Magic decoded flag. */
@@ -48,9 +45,11 @@ public class ClientMessageDecoder extends LengthFieldBasedFrameDecoder {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-        if (!readMagic(in))
+    @Override
+    protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+        if (!readMagic(in)) {
             return null;
+        }
 
         return super.decode(ctx, in);
     }
@@ -63,26 +62,30 @@ public class ClientMessageDecoder extends LengthFieldBasedFrameDecoder {
      * @throws IgniteException When magic is invalid.
      */
     private boolean readMagic(ByteBuf byteBuf) {
-        if (magicFailed)
+        if (magicFailed) {
             return false;
+        }
 
-        if (magicDecoded)
+        if (magicDecoded) {
             return true;
+        }
 
-        if (byteBuf.readableBytes() < MAGIC_BYTES.length)
+        if (byteBuf.readableBytes() < MAGIC_BYTES.length) {
             return false;
+        }
 
         var data = new byte[MAGIC_BYTES.length];
         byteBuf.readBytes(data);
 
         magicDecoded = true;
 
-        if (Arrays.equals(data, MAGIC_BYTES))
+        if (Arrays.equals(data, MAGIC_BYTES)) {
             return true;
+        }
 
         magicFailed = true;
 
-        throw new IgniteException("Invalid magic header in thin client connection. " +
-                "Expected 'IGNI', but was '" + new String(data, CharsetUtil.US_ASCII) + "'.");
+        throw new IgniteException("Invalid magic header in thin client connection. "
+                + "Expected 'IGNI', but was '" + new String(data, CharsetUtil.US_ASCII) + "'.");
     }
 }

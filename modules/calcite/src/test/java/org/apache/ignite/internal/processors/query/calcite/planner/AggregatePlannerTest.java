@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import static org.apache.ignite.internal.util.ArrayUtils.concat;
+import static org.apache.ignite.internal.util.CollectionUtils.first;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.Aggregate;
@@ -45,14 +53,6 @@ import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.apache.ignite.internal.util.ArrayUtils.concat;
-import static org.apache.ignite.internal.util.CollectionUtils.first;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  *
  */
@@ -72,9 +72,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         String sql = "SELECT AVG(val0) FROM test GROUP BY grp0";
 
         IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            algo.rulesToDisable
+                sql,
+                publicSchema,
+                algo.rulesToDisable
         );
 
         IgniteSingleAggregateBase agg = findFirstNode(phys, byClass(algo.single));
@@ -82,12 +82,13 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull(agg, "Invalid plan\n" + RelOptUtil.toString(phys));
 
         assertThat(
-            "Invalid plan\n" + RelOptUtil.toString(phys),
-            first(agg.getAggCallList()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+                "Invalid plan\n" + RelOptUtil.toString(phys),
+                first(agg.getAggCallList()).getAggregation(),
+                IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
-        if (algo == AggregateAlgorithm.SORT)
+        if (algo == AggregateAlgorithm.SORT) {
             assertNotNull(findFirstNode(phys, byClass(IgniteSort.class)));
+        }
     }
 
     /**
@@ -105,9 +106,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         String sql = "SELECT AVG(val0) FILTER(WHERE val1 > 10) FROM test GROUP BY grp0";
 
         IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            algo.rulesToDisable
+                sql,
+                publicSchema,
+                algo.rulesToDisable
         );
 
         IgniteSingleAggregateBase agg = findFirstNode(phys, byClass(algo.single));
@@ -115,12 +116,13 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull(agg, "Invalid plan\n" + RelOptUtil.toString(phys));
 
         assertThat(
-            "Invalid plan\n" + RelOptUtil.toString(phys),
-            first(agg.getAggCallList()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+                "Invalid plan\n" + RelOptUtil.toString(phys),
+                first(agg.getAggCallList()).getAggregation(),
+                IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
-        if (algo == AggregateAlgorithm.SORT)
+        if (algo == AggregateAlgorithm.SORT) {
             assertNotNull(findFirstNode(phys, byClass(IgniteIndexScan.class)));
+        }
     }
 
     /**
@@ -138,9 +140,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         String sql = "SELECT AVG(val0) FILTER (WHERE val1 > 10) FROM test GROUP BY grp1, grp0";
 
         IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            algo.rulesToDisable
+                sql,
+                publicSchema,
+                algo.rulesToDisable
         );
 
         IgniteMapAggregateBase mapAgg = findFirstNode(phys, byClass(algo.map));
@@ -150,17 +152,18 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull(mapAgg, "Invalid plan\n" + RelOptUtil.toString(phys));
 
         assertThat(
-            "Invalid plan\n" + RelOptUtil.toString(phys),
-            first(rdcAgg.getAggregateCalls()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+                "Invalid plan\n" + RelOptUtil.toString(phys),
+                first(rdcAgg.getAggregateCalls()).getAggregation(),
+                IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
         assertThat(
-            "Invalid plan\n" + RelOptUtil.toString(phys),
-            first(mapAgg.getAggCallList()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+                "Invalid plan\n" + RelOptUtil.toString(phys),
+                first(mapAgg.getAggCallList()).getAggregation(),
+                IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
-        if (algo == AggregateAlgorithm.SORT)
+        if (algo == AggregateAlgorithm.SORT) {
             assertNotNull(findFirstNode(phys, byClass(IgniteSort.class)));
+        }
     }
 
     /**
@@ -180,10 +183,10 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         String sql = "SELECT AVG(val0), grp0 FROM TEST GROUP BY grp0 UNION ALL SELECT val0, grp0 FROM test";
 
         IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            concat(algo.rulesToDisable, "SortMapReduceAggregateConverterRule",
-                "HashMapReduceAggregateConverterRule")
+                sql,
+                publicSchema,
+                concat(algo.rulesToDisable, "SortMapReduceAggregateConverterRule",
+                        "HashMapReduceAggregateConverterRule")
         );
 
         IgniteSingleAggregateBase singleAgg = findFirstNode(phys, byClass(algo.single));
@@ -191,10 +194,10 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertEquals(IgniteDistributions.single(), TraitUtils.distribution(singleAgg));
 
         phys = physicalPlan(
-            sql,
-            publicSchema,
-            concat(algo.rulesToDisable, "SortSingleAggregateConverterRule",
-                "HashSingleAggregateConverterRule")
+                sql,
+                publicSchema,
+                concat(algo.rulesToDisable, "SortSingleAggregateConverterRule",
+                        "HashSingleAggregateConverterRule")
         );
 
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
@@ -209,93 +212,109 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     @EnumSource
     public void expandDistinctAggregates(AggregateAlgorithm algo) throws Exception {
         TestTable tbl = createAffinityTable()
-            .addIndex(RelCollations.of(ImmutableIntList.of(3, 1, 0)), "idx_val0")
-            .addIndex(RelCollations.of(ImmutableIntList.of(3, 2, 0)), "idx_val1");
+                .addIndex(RelCollations.of(ImmutableIntList.of(3, 1, 0)), "idx_val0")
+                .addIndex(RelCollations.of(ImmutableIntList.of(3, 2, 0)), "idx_val1");
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         publicSchema.addTable("TEST", tbl);
 
-        String sql = "SELECT " +
-            "/*+ EXPAND_DISTINCT_AGG */ " +
-            "SUM(DISTINCT val0), AVG(DISTINCT val1) FROM test GROUP BY grp0";
+        String sql = "SELECT "
+                + "/*+ EXPAND_DISTINCT_AGG */ "
+                + "SUM(DISTINCT val0), AVG(DISTINCT val1) FROM test GROUP BY grp0";
 
         IgniteRel phys = physicalPlan(
-            sql,
-            publicSchema,
-            algo.rulesToDisable);
+                sql,
+                publicSchema,
+                algo.rulesToDisable);
 
         // Plan must not contain distinct accumulators.
         assertFalse(
-            findNodes(phys, byClass(IgniteAggregate.class)).stream()
-                .anyMatch(n -> ((Aggregate)n).getAggCallList().stream()
-                    .anyMatch(AggregateCall::isDistinct)
-                ),
-            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
+                findNodes(phys, byClass(IgniteAggregate.class)).stream()
+                        .anyMatch(n -> ((Aggregate) n).getAggCallList().stream()
+                                .anyMatch(AggregateCall::isDistinct)
+                        ),
+                "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
         );
 
         assertNotNull(
-            findFirstNode(phys, byClass(Join.class)),
-            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
+                findFirstNode(phys, byClass(Join.class)),
+                "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
         );
 
         // Check the first aggrgation step is SELECT DISTINCT (doesn't contains any accumulators)
         assertTrue(
-            findNodes(phys, byClass(algo.reduce)).stream()
-                .allMatch(n -> ((IgniteReduceAggregateBase)n).getAggregateCalls().isEmpty()),
-            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
+                findNodes(phys, byClass(algo.reduce)).stream()
+                        .allMatch(n -> ((IgniteReduceAggregateBase) n).getAggregateCalls().isEmpty()),
+                "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
         );
 
         assertTrue(
-            findNodes(phys, byClass(algo.map)).stream()
-                .allMatch(n -> ((Aggregate)n).getAggCallList().isEmpty()),
-            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
+                findNodes(phys, byClass(algo.map)).stream()
+                        .allMatch(n -> ((Aggregate) n).getAggCallList().isEmpty()),
+                "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
         );
 
         // Check the second aggrgation step contains accumulators.
         assertTrue(
-            findNodes(phys, byClass(algo.single)).stream()
-                .noneMatch(n -> ((Aggregate)n).getAggCallList().isEmpty()),
-            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
+                findNodes(phys, byClass(algo.single)).stream()
+                        .noneMatch(n -> ((Aggregate) n).getAggCallList().isEmpty()),
+                "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES)
         );
     }
 
-    /** */
+    /**
+     *
+     */
     enum AggregateAlgorithm {
-        /** */
+        /**
+         *
+         */
         SORT(
-            IgniteSingleSortAggregate.class,
-            IgniteMapSortAggregate.class,
-            IgniteReduceSortAggregate.class,
-            "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
+                IgniteSingleSortAggregate.class,
+                IgniteMapSortAggregate.class,
+                IgniteReduceSortAggregate.class,
+                "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         ),
 
-        /** */
+        /**
+         *
+         */
         HASH(
-            IgniteSingleHashAggregate.class,
-            IgniteMapHashAggregate.class,
-            IgniteReduceHashAggregate.class,
-            "SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"
+                IgniteSingleHashAggregate.class,
+                IgniteMapHashAggregate.class,
+                IgniteReduceHashAggregate.class,
+                "SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"
         );
 
-        /** */
+        /**
+         *
+         */
         public final Class<? extends IgniteSingleAggregateBase> single;
 
-        /** */
+        /**
+         *
+         */
         public final Class<? extends IgniteMapAggregateBase> map;
 
-        /** */
+        /**
+         *
+         */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
-        /** */
+        /**
+         *
+         */
         public final String[] rulesToDisable;
 
-        /** */
+        /**
+         *
+         */
         AggregateAlgorithm(
-            Class<? extends IgniteSingleAggregateBase> single,
-            Class<? extends IgniteMapAggregateBase> map,
-            Class<? extends IgniteReduceAggregateBase> reduce,
-            String... rulesToDisable) {
+                Class<? extends IgniteSingleAggregateBase> single,
+                Class<? extends IgniteMapAggregateBase> map,
+                Class<? extends IgniteReduceAggregateBase> reduce,
+                String... rulesToDisable) {
             this.single = single;
             this.map = map;
             this.reduce = reduce;

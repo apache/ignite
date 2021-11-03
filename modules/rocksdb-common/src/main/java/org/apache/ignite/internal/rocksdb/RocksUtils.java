@@ -35,20 +35,20 @@ public class RocksUtils {
      * Creates an SST file for the column family.
      *
      * @param columnFamily Column family.
-     * @param snapshot Point-in-time snapshot.
-     * @param path Directory to put the SST file in.
+     * @param snapshot     Point-in-time snapshot.
+     * @param path         Directory to put the SST file in.
      */
     public static void createSstFile(
-        ColumnFamily columnFamily,
-        Snapshot snapshot,
-        Path path
+            ColumnFamily columnFamily,
+            Snapshot snapshot,
+            Path path
     ) {
         try (
-            EnvOptions envOptions = new EnvOptions();
-            Options options = new Options();
-            ReadOptions readOptions = new ReadOptions().setSnapshot(snapshot);
-            RocksIterator it = columnFamily.newIterator(readOptions);
-            SstFileWriter sstFileWriter = new SstFileWriter(envOptions, options)
+                EnvOptions envOptions = new EnvOptions();
+                Options options = new Options();
+                ReadOptions readOptions = new ReadOptions().setSnapshot(snapshot);
+                RocksIterator it = columnFamily.newIterator(readOptions);
+                SstFileWriter sstFileWriter = new SstFileWriter(envOptions, options)
         ) {
             Path sstFile = path.resolve(columnFamily.name());
 
@@ -59,30 +59,28 @@ public class RocksUtils {
             forEach(it, sstFileWriter::put);
 
             sstFileWriter.finish();
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             throw new IgniteInternalException("Failed to write snapshot: " + t.getMessage(), t);
         }
     }
 
     /**
-     * Iterates over the given iterator passing key-value pairs to the given consumer and
-     * checks the iterator's status afterwards.
+     * Iterates over the given iterator passing key-value pairs to the given consumer and checks the iterator's status afterwards.
      *
      * @param iterator Iterator.
      * @param consumer Consumer of key-value pairs.
      * @throws RocksDBException If failed.
      */
     public static void forEach(RocksIterator iterator, RocksBiConsumer consumer) throws RocksDBException {
-        for (; iterator.isValid(); iterator.next())
+        for (; iterator.isValid(); iterator.next()) {
             consumer.accept(iterator.key(), iterator.value());
+        }
 
         checkIterator(iterator);
     }
 
     /**
-     * Iterates over the given iterator testing key-value pairs with the given predicate and checks
-     * the iterator's status afterwards.
+     * Iterates over the given iterator testing key-value pairs with the given predicate and checks the iterator's status afterwards.
      *
      * @param iterator Iterator.
      * @param consumer Consumer of key-value pairs.
@@ -93,8 +91,9 @@ public class RocksUtils {
         for (; iterator.isValid(); iterator.next()) {
             boolean result = consumer.test(iterator.key(), iterator.value());
 
-            if (result)
+            if (result) {
                 return true;
+            }
         }
 
         checkIterator(iterator);
@@ -111,8 +110,7 @@ public class RocksUtils {
     public static void checkIterator(RocksIterator it) {
         try {
             it.status();
-        }
-        catch (RocksDBException e) {
+        } catch (RocksDBException e) {
             throw new IgniteInternalException(e);
         }
     }

@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.schema;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import org.apache.ignite.internal.schema.row.ExpandableByteBuf;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -40,8 +40,8 @@ public class ExpandableByteBufTest {
         byte[] targetBytes = {1, 2, 3, 4, 5, 6, 7};
         String targetStr = "abcdefg";
 
-        buf.put(0, (byte)1);
-        buf.putShort(1, (short)2);
+        buf.put(0, (byte) 1);
+        buf.putShort(1, (short) 2);
         buf.putInt(3, 3);
         buf.putLong(7, 4L);
         buf.putFloat(15, 5.f);
@@ -55,8 +55,8 @@ public class ExpandableByteBufTest {
         ByteBuffer b = ByteBuffer.wrap(arr);
         b.order(ByteOrder.LITTLE_ENDIAN);
 
-        assertEquals((byte)1, b.get(0));
-        assertEquals((short)2, b.getShort(1));
+        assertEquals((byte) 1, b.get(0));
+        assertEquals((short) 2, b.getShort(1));
         assertEquals(3, b.getInt(3));
         assertEquals(4L, b.getLong(7));
         assertEquals(5.f, b.getFloat(15));
@@ -90,8 +90,8 @@ public class ExpandableByteBufTest {
         buf.putFloat(15, 5.f);
         buf.putLong(7, 4L);
         buf.putInt(3, 3);
-        buf.putShort(1, (short)2);
-        buf.put(0, (byte)1);
+        buf.putShort(1, (short) 2);
+        buf.put(0, (byte) 1);
 
         byte[] arr = buf.toArray();
         assertEquals(41, arr.length);
@@ -99,8 +99,8 @@ public class ExpandableByteBufTest {
         ByteBuffer b = ByteBuffer.wrap(arr);
         b.order(ByteOrder.LITTLE_ENDIAN);
 
-        assertEquals((byte)1, b.get(0));
-        assertEquals((short)2, b.getShort(1));
+        assertEquals((byte) 1, b.get(0));
+        assertEquals((short) 2, b.getShort(1));
         assertEquals(3, b.getInt(3));
         assertEquals(4L, b.getLong(7));
         assertEquals(5.f, b.getFloat(15));
@@ -124,8 +124,8 @@ public class ExpandableByteBufTest {
     @Test
     public void exampleFromJavadoc() {
         ExpandableByteBuf b = new ExpandableByteBuf(1);
-        b.put(0, (byte)1); // Does not expand.
-        b.put(5, (byte)1); // Expands, meaningful bytes are [0..5]
+        b.put(0, (byte) 1); // Does not expand.
+        b.put(5, (byte) 1); // Expands, meaningful bytes are [0..5]
         byte[] data = b.toArray();
 
         assertEquals(6, data.length);

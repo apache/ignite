@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.schema.builder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.Collections;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.builder.HashIndexDefinitionBuilder;
 import org.apache.ignite.schema.definition.index.HashIndexDefinition;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests for hash index builder.
@@ -36,8 +36,8 @@ public class HashIndexDefinitionBuilderTest {
     @Test
     public void testBuild() {
         HashIndexDefinitionBuilder builder = SchemaBuilders.hashIndex("testHI")
-            .withColumns("A", "B", "C")
-            .withHints(Collections.singletonMap("param","value"));
+                .withColumns("A", "B", "C")
+                .withHints(Collections.singletonMap("param", "value"));
         HashIndexDefinition idx = builder.build();
 
         assertEquals("testHI", idx.name());

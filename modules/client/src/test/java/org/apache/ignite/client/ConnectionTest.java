@@ -17,12 +17,12 @@
 
 package org.apache.ignite.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.apache.ignite.lang.IgniteException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests client connection to various addresses.
@@ -60,7 +60,7 @@ public class ConnectionTest extends AbstractClientTest {
 
     @Disabled("IPv6 is not enabled by default on some systems.")
     @Test
-    public void testIPv6NodeAddresses() throws Exception {
+    public void testIpv6NodeAddresses() throws Exception {
         testConnection("[::1]:" + serverPort);
     }
 

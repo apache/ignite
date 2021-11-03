@@ -14,7 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.storage;
+
+import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -25,13 +28,11 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.jetbrains.annotations.NotNull;
 
-import static java.util.stream.Collectors.toUnmodifiableMap;
-
 /**
  * Test configuration storage.
  */
 public class TestConfigurationStorage implements ConfigurationStorage {
-    /** Configuration type.*/
+    /** Configuration type. */
     private final ConfigurationType configurationType;
 
     /** Map to store values. */
@@ -57,6 +58,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
     /**
      * Set fail flag.
+     *
      * @param fail Fail flag.
      */
     public synchronized void fail(boolean fail) {
@@ -64,38 +66,46 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Map<String, Serializable> readAllLatest(String prefix) throws StorageException {
-        if (fail)
+    @Override
+    public synchronized Map<String, Serializable> readAllLatest(String prefix) throws StorageException {
+        if (fail) {
             throw new StorageException("Failed to read data");
+        }
 
         return map.entrySet().stream()
-            .filter(e -> e.getKey().startsWith(prefix))
-            .collect(toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+                .filter(e -> e.getKey().startsWith(prefix))
+                .collect(toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Data readAll() throws StorageException {
-        if (fail)
+    @Override
+    public synchronized Data readAll() throws StorageException {
+        if (fail) {
             throw new StorageException("Failed to read data");
+        }
 
         return new Data(new HashMap<>(map), version);
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized CompletableFuture<Boolean> write(
-        Map<String, ? extends Serializable> newValues, long sentVersion
+    @Override
+    public synchronized CompletableFuture<Boolean> write(
+            Map<String, ? extends Serializable> newValues, long sentVersion
     ) {
-        if (fail)
+        if (fail) {
             return CompletableFuture.failedFuture(new StorageException("Failed to write data"));
+        }
 
-        if (sentVersion != version)
+        if (sentVersion != version) {
             return CompletableFuture.completedFuture(false);
+        }
 
         for (Map.Entry<String, ? extends Serializable> entry : newValues.entrySet()) {
-            if (entry.getValue() != null)
+            if (entry.getValue() != null) {
                 map.put(entry.getKey(), entry.getValue());
-            else
+            } else {
                 map.remove(entry.getKey());
+            }
         }
 
         version++;
@@ -108,12 +118,14 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void registerConfigurationListener(@NotNull ConfigurationStorageListener listener) {
+    @Override
+    public synchronized void registerConfigurationListener(@NotNull ConfigurationStorageListener listener) {
         listeners.add(listener);
     }
 
     /** {@inheritDoc} */
-    @Override public ConfigurationType type() {
+    @Override
+    public ConfigurationType type() {
         return configurationType;
     }
 }

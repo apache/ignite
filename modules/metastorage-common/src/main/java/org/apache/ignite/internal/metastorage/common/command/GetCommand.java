@@ -22,12 +22,12 @@ import org.apache.ignite.raft.client.ReadCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get command for MetaStorageCommandListener that retrieves an entry
- * for the given key and the revision upper bound, if latter is present.
+ * Get command for MetaStorageCommandListener that retrieves an entry for the given key and the revision upper bound, if latter is present.
  */
 public final class GetCommand implements ReadCommand {
     /** Key. */
-    @NotNull private final byte[] key;
+    @NotNull
+    private final byte[] key;
 
     /** The upper bound for entry revisions. Must be positive. */
     private long revUpperBound;
@@ -40,7 +40,7 @@ public final class GetCommand implements ReadCommand {
     }
 
     /**
-     * @param key Key. Couldn't be {@code null}.
+     * @param key           Key. Couldn't be {@code null}.
      * @param revUpperBound The upper bound for entry revisions. Must be positive.
      */
     public GetCommand(@NotNull ByteArray key, long revUpperBound) {

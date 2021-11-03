@@ -33,12 +33,18 @@ public class TestMessageTypes {
     /** Type of {@link EmptyMessage} */
     public static final short EMPTY_MESSAGE = 3;
 
-    /** */
+    /**
+     *
+     */
     public static final short ALL_TYPES = 4;
 
-    /** */
+    /**
+     *
+     */
     public static final short TEST = 5;
 
-    /** */
+    /**
+     *
+     */
     public static final short NESTED_MESSAGE = 6;
 }

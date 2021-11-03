@@ -60,11 +60,14 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull public SchemaDescriptor schema(int ver) {
+    @Override
+    @NotNull
+    public SchemaDescriptor schema(int ver) {
         SchemaDescriptor desc = schemaCache.get(ver);
 
-        if (desc != null)
+        if (desc != null) {
             return desc;
+        }
 
         desc = history.apply(ver);
 
@@ -74,24 +77,28 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             return desc;
         }
 
-        if (lastVer < ver || ver <= 0)
+        if (lastVer < ver || ver <= 0) {
             throw new SchemaRegistryException("Incorrect schema version requested: ver=" + ver);
-        else
+        } else {
             throw new SchemaRegistryException("Failed to find schema: ver=" + ver);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable SchemaDescriptor schema() {
+    @Override
+    public @Nullable SchemaDescriptor schema() {
         return schema(lastVer);
     }
 
     /** {@inheritDoc} */
-    @Override public int lastSchemaVersion() {
+    @Override
+    public int lastSchemaVersion() {
         return lastVer;
     }
 
     /** {@inheritDoc} */
-    @Override public Row resolve(BinaryRow row) {
+    @Override
+    public Row resolve(BinaryRow row) {
         return new Row(schema(row.schemaVersion()), row);
     }
 }

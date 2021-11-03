@@ -18,4 +18,5 @@
 /**
  * Contains tests for Ignite CLI.
  */
+
 package org.apache.ignite.cli;

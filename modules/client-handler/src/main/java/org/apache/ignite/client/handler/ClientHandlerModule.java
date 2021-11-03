@@ -17,8 +17,6 @@
 
 package org.apache.ignite.client.handler;
 
-import java.net.BindException;
-import java.net.SocketAddress;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -28,6 +26,8 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import java.net.BindException;
+import java.net.SocketAddress;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
 import org.apache.ignite.internal.client.proto.ClientMessageDecoder;
 import org.apache.ignite.internal.configuration.ConfigurationRegistry;
@@ -60,9 +60,9 @@ public class ClientHandlerModule implements IgniteComponent {
     /**
      * Constructor.
      *
-     * @param processor Sql query processor.
+     * @param processor    Sql query processor.
      * @param igniteTables Ignite.
-     * @param registry Configuration registry.
+     * @param registry     Configuration registry.
      */
     public ClientHandlerModule(QueryProcessor processor, IgniteTables igniteTables, ConfigurationRegistry registry) {
         assert igniteTables != null;
@@ -75,20 +75,22 @@ public class ClientHandlerModule implements IgniteComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
-        if (channel != null)
+    @Override
+    public void start() {
+        if (channel != null) {
             throw new IgniteException("ClientHandlerModule is already started.");
+        }
 
         try {
             channel = startEndpoint().channel();
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws Exception {
+    @Override
+    public void stop() throws Exception {
         if (channel != null) {
             channel.close().await();
 
@@ -101,7 +103,8 @@ public class ClientHandlerModule implements IgniteComponent {
      *
      * @return the local address of this module, or {@code null} if this module is not started.
      */
-    @Nullable public SocketAddress localAddress() {
+    @Nullable
+    public SocketAddress localAddress() {
         return channel == null ? null : channel.localAddress();
     }
 
@@ -110,7 +113,7 @@ public class ClientHandlerModule implements IgniteComponent {
      *
      * @return Channel future.
      * @throws InterruptedException If thread has been interrupted during the start.
-     * @throws IgniteException When startup has failed.
+     * @throws IgniteException      When startup has failed.
      */
     private ChannelFuture startEndpoint() throws InterruptedException {
         var configuration = registry.getConfiguration(ClientConnectorConfiguration.KEY).value();
@@ -126,18 +129,18 @@ public class ClientHandlerModule implements IgniteComponent {
         ServerBootstrap b = new ServerBootstrap();
 
         b.group(eventLoopGroup)
-            .channel(NioServerSocketChannel.class)
-            .childHandler(new ChannelInitializer<>() {
-                @Override
-                protected void initChannel(Channel ch) {
-                    ch.pipeline().addLast(
-                            new ClientMessageDecoder(),
-                            new ClientInboundMessageHandler(igniteTables, processor));
-                }
-            })
-            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout())
-            .childOption(ChannelOption.SO_KEEPALIVE, true)
-            .childOption(ChannelOption.TCP_NODELAY, true);
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(Channel ch) {
+                        ch.pipeline().addLast(
+                                new ClientMessageDecoder(),
+                                new ClientInboundMessageHandler(igniteTables, processor));
+                    }
+                })
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout())
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .childOption(ChannelOption.TCP_NODELAY, true);
 
         for (int portCandidate = desiredPort; portCandidate <= desiredPort + portRange; portCandidate++) {
             ChannelFuture bindRes = b.bind(portCandidate).await();
@@ -148,16 +151,15 @@ public class ClientHandlerModule implements IgniteComponent {
 
                 port = portCandidate;
                 break;
-            }
-            else if (!(bindRes.cause() instanceof BindException)) {
+            } else if (!(bindRes.cause() instanceof BindException)) {
                 eventLoopGroup.shutdownGracefully();
                 throw new IgniteException(bindRes.cause());
             }
         }
 
         if (ch == null) {
-            String msg = "Cannot start thin client connector endpoint. " +
-                "All ports in range [" + desiredPort + ", " + (desiredPort + portRange) + "] are in use.";
+            String msg = "Cannot start thin client connector endpoint. "
+                    + "All ports in range [" + desiredPort + ", " + (desiredPort + portRange) + "] are in use.";
 
             LOG.error(msg);
 

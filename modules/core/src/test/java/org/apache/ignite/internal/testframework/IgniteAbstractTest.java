@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.testframework;
 
+import static org.apache.ignite.internal.util.IgniteUtils.monotonicMs;
+import static org.apache.ignite.lang.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
+import static org.apache.ignite.lang.IgniteSystemProperties.getString;
+
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import org.apache.ignite.internal.tostring.S;
@@ -26,10 +30,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.apache.ignite.internal.util.IgniteUtils.monotonicMs;
-import static org.apache.ignite.lang.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
-import static org.apache.ignite.lang.IgniteSystemProperties.getString;
 
 /**
  * Ignite base test class.
@@ -45,26 +45,26 @@ public abstract class IgniteAbstractTest {
     /** Work directory. */
     protected Path workDir;
 
-    /** Init test env. */
+    /* Init test env. */
     static {
         S.setSensitiveDataLoggingPolicySupplier(() ->
-            SensitiveDataLoggingPolicy.valueOf(getString(IGNITE_SENSITIVE_DATA_LOGGING, "hash").toUpperCase()));
+                SensitiveDataLoggingPolicy.valueOf(getString(IGNITE_SENSITIVE_DATA_LOGGING, "hash").toUpperCase()));
     }
 
     /**
      * Invokes before the test will start.
      *
      * @param testInfo Test information oject.
-     * @param workDir Work directory.
+     * @param workDir  Work directory.
      * @throws Exception If failed.
      */
     @BeforeEach
     public void setup(TestInfo testInfo, @WorkDirectory Path workDir) throws Exception {
         log.info(">>> Starting test: {}#{}, displayName: {}, workDir: {}",
-            testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "<null>"),
-            testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "<null>"),
-            testInfo.getDisplayName(),
-            workDir.toAbsolutePath());
+                testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "<null>"),
+                testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "<null>"),
+                testInfo.getDisplayName(),
+                workDir.toAbsolutePath());
 
         this.workDir = workDir;
         this.testStartMs = monotonicMs();
@@ -79,9 +79,9 @@ public abstract class IgniteAbstractTest {
     @AfterEach
     public void tearDown(TestInfo testInfo) throws Exception {
         log.info(">>> Stopping test: {}#{}, displayName: {}, cost: {}ms.",
-            testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "<null>"),
-            testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "<null>"),
-            testInfo.getDisplayName(), monotonicMs() - testStartMs);
+                testInfo.getTestClass().map(Class::getSimpleName).orElseGet(() -> "<null>"),
+                testInfo.getTestMethod().map(Method::getName).orElseGet(() -> "<null>"),
+                testInfo.getDisplayName(), monotonicMs() - testStartMs);
     }
 
     /**
@@ -93,6 +93,8 @@ public abstract class IgniteAbstractTest {
     }
 
     /**
+     * Returns logger.
+     *
      * @return Logger.
      */
     protected IgniteLogger logger() {

@@ -25,7 +25,8 @@ import org.apache.ignite.internal.vault.VaultServiceTest;
  */
 class InMemoryVaultServiceTest extends VaultServiceTest {
     /** {@inheritDoc} */
-    @Override protected VaultService getVaultService() {
+    @Override
+    protected VaultService getVaultService() {
         return new InMemoryVaultService();
     }
 }

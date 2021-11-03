@@ -19,9 +19,8 @@ package org.apache.ignite.network;
 
 /**
  * Default implementation of a {@link ClusterService}.
- * <p>
- * Extending classes should use {@link #start()} and {@link #stop()} to allocate and free any network-related
- * resources.
+ *
+ * <p>Extending classes should use {@link #start()} and {@link #stop()} to allocate and free any network-related resources.
  */
 public abstract class AbstractClusterService implements ClusterService {
     /** Context. */
@@ -36,14 +35,14 @@ public abstract class AbstractClusterService implements ClusterService {
     /**
      * Constructor.
      *
-     * @param context Cluster context.
-     * @param topologyService Topology service.
+     * @param context          Cluster context.
+     * @param topologyService  Topology service.
      * @param messagingService Messaging service.
      */
     public AbstractClusterService(
-        ClusterLocalConfiguration context,
-        TopologyService topologyService,
-        MessagingService messagingService
+            ClusterLocalConfiguration context,
+            TopologyService topologyService,
+            MessagingService messagingService
     ) {
         this.context = context;
         this.topologyService = topologyService;
@@ -51,17 +50,20 @@ public abstract class AbstractClusterService implements ClusterService {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterLocalConfiguration localConfiguration() {
+    @Override
+    public final ClusterLocalConfiguration localConfiguration() {
         return context;
     }
 
     /** {@inheritDoc} */
-    @Override public final TopologyService topologyService() {
+    @Override
+    public final TopologyService topologyService() {
         return topologyService;
     }
 
     /** {@inheritDoc} */
-    @Override public final MessagingService messagingService() {
+    @Override
+    public final MessagingService messagingService() {
         return messagingService;
     }
 }

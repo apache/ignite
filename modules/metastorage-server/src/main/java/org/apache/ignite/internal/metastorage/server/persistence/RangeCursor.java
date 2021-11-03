@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 class RangeCursor implements Cursor<Entry> {
     /** Storage. */
-    private final RocksDBKeyValueStorage storage;
+    private final RocksDbKeyValueStorage storage;
 
     /** Lower iteration bound (included). */
     private final byte[] keyFrom;
@@ -62,10 +62,10 @@ class RangeCursor implements Cursor<Entry> {
      *
      * @param storage Storage.
      * @param keyFrom {@link #keyFrom}.
-     * @param keyTo {@link #keyTo}.
-     * @param rev {@link #rev}.
+     * @param keyTo   {@link #keyTo}.
+     * @param rev     {@link #rev}.
      */
-    RangeCursor(RocksDBKeyValueStorage storage, byte[] keyFrom, byte @Nullable [] keyTo, long rev) {
+    RangeCursor(RocksDbKeyValueStorage storage, byte[] keyFrom, byte @Nullable [] keyTo, long rev) {
         this.storage = storage;
         this.keyFrom = keyFrom;
         this.keyTo = keyTo;
@@ -74,23 +74,27 @@ class RangeCursor implements Cursor<Entry> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override public Entry next() {
+    @Override
+    public Entry next() {
         return it.next();
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public Iterator<Entry> iterator() {
+    @Override
+    public Iterator<Entry> iterator() {
         return it;
     }
 
@@ -103,22 +107,25 @@ class RangeCursor implements Cursor<Entry> {
     private Iterator<Entry> createIterator() {
         return new Iterator<>() {
             /** {@inheritDoc} */
-            @Override public boolean hasNext() {
+            @Override
+            public boolean hasNext() {
                 storage.lock().readLock().lock();
 
                 try {
                     while (true) {
-                        if (finished)
+                        if (finished) {
                             return false;
+                        }
 
-                        if (nextRetEntry != null)
+                        if (nextRetEntry != null) {
                             return true;
+                        }
 
                         byte[] key = lastRetKey;
 
                         while (nextRetEntry == null) {
                             Map.Entry<byte[], long[]> e =
-                                key == null ? storage.revisionCeilingEntry(keyFrom) : storage.revisionHigherEntry(key);
+                                    key == null ? storage.revisionCeilingEntry(keyFrom) : storage.revisionHigherEntry(key);
 
                             if (e == null) {
                                 finished = true;
@@ -128,7 +135,7 @@ class RangeCursor implements Cursor<Entry> {
 
                             key = e.getKey();
 
-                            if (keyTo != null && RocksDBKeyValueStorage.CMP.compare(key, keyTo) >= 0) {
+                            if (keyTo != null && RocksDbKeyValueStorage.CMP.compare(key, keyTo) >= 0) {
                                 finished = true;
 
                                 break;
@@ -137,12 +144,13 @@ class RangeCursor implements Cursor<Entry> {
                             long[] revs = e.getValue();
 
                             assert revs != null && revs.length != 0 :
-                                "Revisions should not be empty or null: [revs=" + Arrays.toString(revs) + ']';
+                                    "Revisions should not be empty or null: [revs=" + Arrays.toString(revs) + ']';
 
-                            long lastRev = RocksDBKeyValueStorage.maxRevision(revs, rev);
+                            long lastRev = RocksDbKeyValueStorage.maxRevision(revs, rev);
 
-                            if (lastRev == -1)
+                            if (lastRev == -1) {
                                 continue;
+                            }
 
                             Entry entry = storage.doGetValue(key, lastRev);
 
@@ -151,19 +159,20 @@ class RangeCursor implements Cursor<Entry> {
                             nextRetEntry = entry;
                         }
                     }
-                }
-                finally {
+                } finally {
                     storage.lock().readLock().unlock();
                 }
             }
 
             /** {@inheritDoc} */
-            @Override public Entry next() {
+            @Override
+            public Entry next() {
                 storage.lock().readLock().lock();
 
                 try {
-                    if (!hasNext())
+                    if (!hasNext()) {
                         throw new NoSuchElementException();
+                    }
 
                     Entry e = nextRetEntry;
 
@@ -174,8 +183,7 @@ class RangeCursor implements Cursor<Entry> {
                     lastRetKey = e.key();
 
                     return e;
-                }
-                finally {
+                } finally {
                     storage.lock().readLock().unlock();
                 }
             }

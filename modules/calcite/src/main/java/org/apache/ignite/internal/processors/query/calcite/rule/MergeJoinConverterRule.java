@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -31,13 +33,13 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
  * Ignite Join converter.
  */
 public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule INSTANCE = new MergeJoinConverterRule();
 
     /**
@@ -48,24 +50,26 @@ public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJ
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
+    @Override
+    public boolean matches(RelOptRuleCall call) {
         LogicalJoin logicalJoin = call.rel(0);
 
         return !nullOrEmpty(logicalJoin.analyzeCondition().pairs()) && logicalJoin.analyzeCondition().isEqui();
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
+    @Override
+    protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
 
         JoinInfo joinInfo = JoinInfo.of(rel.getLeft(), rel.getRight(), rel.getCondition());
 
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RelCollations.of(joinInfo.leftKeys));
+                .replace(RelCollations.of(joinInfo.leftKeys));
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RelCollations.of(joinInfo.leftKeys)); // preserve collation of the left input
+                .replace(RelCollations.of(joinInfo.leftKeys)); // preserve collation of the left input
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RelCollations.of(joinInfo.rightKeys));
+                .replace(RelCollations.of(joinInfo.rightKeys));
 
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);

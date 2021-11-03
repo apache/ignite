@@ -57,9 +57,8 @@ import org.junit.jupiter.api.BeforeEach;
  *      }
  *  }
  * }</pre>
- * <p>
- * Same applies to methods with the difference that annotation translates into something like {@link BeforeEach} and
- * {@link AfterEach}.
+ *
+ * <p>Same applies to methods with the difference that annotation translates into something like {@link BeforeEach} and {@link AfterEach}.
  * <br><br>
  * <pre>{@code  public class SomeTest {
  *      @Test
@@ -87,16 +86,15 @@ import org.junit.jupiter.api.BeforeEach;
  *      }
  *  }
  * }</pre>
- * For class level annotation it applies system properties for the whole class hierarchy (ignoring interfaces, there's
- * no linearization implemented). More specific classes have higher priority and set their properties last. It all
- * starts with {@link Object} which, of course, is not annotated.<br>
+ * For class level annotation it applies system properties for the whole class hierarchy (ignoring interfaces, there's no linearization
+ * implemented). More specific classes have higher priority and set their properties last. It all starts with {@link Object} which, of
+ * course, is not annotated.<br>
  * <br>
  * Test methods do not inherit their annotations from overridden methods of super class.<br>
  * <br>
- * If more than one annotation is presented on class/method then they will be applied in the same order as they
- * appear in code. It is achieved with the help of {@link Repeatable} feature of Java annotations -
- * {@link SystemPropertiesList} is automatically generated in such cases.
- * For that reason it is not recommended using {@link SystemPropertiesList} directly.
+ * If more than one annotation is presented on class/method then they will be applied in the same order as they appear in code. It is
+ * achieved with the help of {@link Repeatable} feature of Java annotations - {@link SystemPropertiesList} is automatically generated in
+ * such cases. For that reason it is not recommended using {@link SystemPropertiesList} directly.
  *
  * @see System#setProperty(String, String)
  * @see SystemPropertiesExtension

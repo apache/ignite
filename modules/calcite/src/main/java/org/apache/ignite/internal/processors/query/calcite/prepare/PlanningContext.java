@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import static org.apache.calcite.tools.Frameworks.createRootSchema;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.FRAMEWORK_CONFIG;
+
 import java.util.Properties;
 import java.util.function.Function;
-
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -38,63 +40,86 @@ import org.apache.calcite.tools.RuleSet;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.calcite.tools.Frameworks.createRootSchema;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.FRAMEWORK_CONFIG;
-
 /**
  * Planning context.
  */
 public final class PlanningContext implements Context {
-    /** */
+    /**
+     *
+     */
     private static final PlanningContext EMPTY = builder().build();
 
-    /** */
+    /**
+     *
+     */
     private final FrameworkConfig cfg;
 
-    /** */
+    /**
+     *
+     */
     private final Context parentCtx;
 
-    /** */
+    /**
+     *
+     */
     private final String locNodeId;
 
-    /** */
+    /**
+     *
+     */
     private final String originatingNodeId;
 
-    /** */
+    /**
+     *
+     */
     private final String qry;
 
-    /** */
+    /**
+     *
+     */
     private final Object[] parameters;
 
-    /** */
+    /**
+     *
+     */
     private final long topVer;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteTypeFactory typeFactory;
 
-    /** */
+    /**
+     *
+     */
     private Function<RuleSet, RuleSet> rulesFilter;
 
-    /** */
+    /**
+     *
+     */
     private IgnitePlanner planner;
 
-    /** */
+    /**
+     *
+     */
     private CalciteConnectionConfig connCfg;
 
-    /** */
+    /**
+     *
+     */
     private CalciteCatalogReader catalogReader;
 
     /**
      * Private constructor, used by a builder.
      */
     private PlanningContext(
-        FrameworkConfig cfg,
-        Context parentCtx,
-        String locNodeId,
-        String originatingNodeId,
-        String qry,
-        Object[] parameters,
-        long topVer
+            FrameworkConfig cfg,
+            Context parentCtx,
+            String locNodeId,
+            String originatingNodeId,
+            String qry,
+            Object[] parameters,
+            long topVer
     ) {
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
@@ -154,6 +179,7 @@ public final class PlanningContext implements Context {
     }
 
     // Helper methods
+
     /**
      * @return Sql operators table.
      */
@@ -172,8 +198,9 @@ public final class PlanningContext implements Context {
      * @return Planner.
      */
     public IgnitePlanner planner() {
-        if (planner == null)
+        if (planner == null) {
             planner = new IgnitePlanner(this);
+        }
 
         return planner;
     }
@@ -203,22 +230,24 @@ public final class PlanningContext implements Context {
      * @return Connection config. Defines connected user parameters like TimeZone or Locale.
      */
     public CalciteConnectionConfig connectionConfig() {
-        if (connCfg != null)
+        if (connCfg != null) {
             return connCfg;
+        }
 
         CalciteConnectionConfig connCfg = unwrap(CalciteConnectionConfig.class);
 
-        if (connCfg != null)
+        if (connCfg != null) {
             return this.connCfg = connCfg;
+        }
 
         Properties props = new Properties();
 
         props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
-            String.valueOf(cfg.getParserConfig().caseSensitive()));
+                String.valueOf(cfg.getParserConfig().caseSensitive()));
         props.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
-            String.valueOf(cfg.getParserConfig().conformance()));
+                String.valueOf(cfg.getParserConfig().conformance()));
         props.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
-            String.valueOf(true));
+                String.valueOf(true));
 
         return this.connCfg = new CalciteConnectionConfigImpl(props);
     }
@@ -227,18 +256,21 @@ public final class PlanningContext implements Context {
      * @return New catalog reader.
      */
     public CalciteCatalogReader catalogReader() {
-        if (catalogReader != null)
+        if (catalogReader != null) {
             return catalogReader;
+        }
 
-        SchemaPlus dfltSchema = schema(), rootSchema = dfltSchema;
+        SchemaPlus dfltSchema = schema();
+        SchemaPlus rootSchema = dfltSchema;
 
-        while (rootSchema.getParentSchema() != null)
+        while (rootSchema.getParentSchema() != null) {
             rootSchema = rootSchema.getParentSchema();
+        }
 
         return catalogReader = new CalciteCatalogReader(
-            CalciteSchema.from(rootSchema),
-            CalciteSchema.from(dfltSchema).path(null),
-            typeFactory(), connectionConfig());
+                CalciteSchema.from(rootSchema),
+                CalciteSchema.from(dfltSchema).path(null),
+                typeFactory(), connectionConfig());
     }
 
     /**
@@ -249,14 +281,17 @@ public final class PlanningContext implements Context {
     }
 
     /** {@inheritDoc} */
-    @Override public <C> C unwrap(Class<C> aCls) {
-        if (aCls == getClass())
-            return aCls.cast(this);
+    @Override
+    public <C> C unwrap(Class<C> clazz) {
+        if (clazz == getClass()) {
+            return clazz.cast(this);
+        }
 
-        if (aCls.isInstance(connCfg))
-            return aCls.cast(connCfg);
+        if (clazz.isInstance(connCfg)) {
+            return clazz.cast(connCfg);
+        }
 
-        return parentCtx.unwrap(aCls);
+        return parentCtx.unwrap(clazz);
     }
 
     /**
@@ -273,7 +308,9 @@ public final class PlanningContext implements Context {
         return EMPTY;
     }
 
-    /** */
+    /**
+     *
+     */
     public RuleSet rules(RuleSet set) {
         return rulesFilter != null ? rulesFilter.apply(set) : set;
     }
@@ -290,32 +327,48 @@ public final class PlanningContext implements Context {
      */
     @SuppressWarnings("PublicInnerClass")
     public static class Builder {
-        /** */
+        /**
+         *
+         */
         private static final FrameworkConfig EMPTY_CONFIG =
-            Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(createRootSchema(false))
-                .traitDefs()
-                .build();
+                Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+                        .defaultSchema(createRootSchema(false))
+                        .traitDefs()
+                        .build();
 
-        /** */
+        /**
+         *
+         */
         private FrameworkConfig frameworkCfg = EMPTY_CONFIG;
 
-        /** */
+        /**
+         *
+         */
         private Context parentCtx = Contexts.empty();
 
-        /** */
+        /**
+         *
+         */
         private String locNodeId;
 
-        /** */
+        /**
+         *
+         */
         private String originatingNodeId;
 
-        /** */
+        /**
+         *
+         */
         private String qry;
 
-        /** */
+        /**
+         *
+         */
         private Object[] parameters;
 
-        /** */
+        /**
+         *
+         */
         private long topVer;
 
         /**

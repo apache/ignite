@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.metastorage.server.persistence;
 
+import static org.apache.ignite.internal.metastorage.server.Value.TOMBSTONE;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
@@ -26,20 +28,17 @@ import org.apache.ignite.internal.metastorage.server.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.metastorage.server.Value.TOMBSTONE;
-
 /**
- * Utility class for {@link RocksDBKeyValueStorage}.
+ * Utility class for {@link RocksDbKeyValueStorage}.
  */
 class RocksStorageUtils {
     /**
-     * VarHandle that gives the access to the elements of a {@code byte[]} array viewed as if it
-     * were a {@code long[]} array. Byte order must be little endian for a correct
-     * lexicographic order comparison.
+     * VarHandle that gives the access to the elements of a {@code byte[]} array viewed as if it were a {@code long[]} array. Byte order
+     * must be little endian for a correct lexicographic order comparison.
      */
     private static final VarHandle LONG_ARRAY_HANDLE = MethodHandles.byteArrayViewVarHandle(
-        long[].class,
-        ByteOrder.LITTLE_ENDIAN
+            long[].class,
+            ByteOrder.LITTLE_ENDIAN
     );
 
     /**
@@ -72,7 +71,7 @@ class RocksStorageUtils {
      * Adds a revision to a key.
      *
      * @param revision Revision.
-     * @param key Key.
+     * @param key      Key.
      * @return Key with a revision.
      */
     static byte[] keyToRocksKey(long revision, byte[] key) {
@@ -113,19 +112,19 @@ class RocksStorageUtils {
         boolean hasValue = valueBytes[Long.BYTES] != 0;
 
         byte[] val;
-        if (hasValue)
-            // Copy the value.
+        if (hasValue) { // Copy the value.
             val = Arrays.copyOfRange(valueBytes, Long.BYTES + 1, valueBytes.length);
-        else
-            // There is no value, mark it as a tombstone.
+        } else { // There is no value, mark it as a tombstone.
             val = TOMBSTONE;
+        }
 
         return new Value(val, updateCounter);
     }
 
     /**
      * Adds an update counter and a tombstone flag to a value.
-     * @param value Value byte array.
+     *
+     * @param value         Value byte array.
      * @param updateCounter Update counter.
      * @return Value with an update counter and a tombstone.
      */
@@ -153,8 +152,8 @@ class RocksStorageUtils {
         assert (bytes.length % Long.BYTES) == 0;
 
         return IntStream.range(0, bytes.length / Long.BYTES)
-            .mapToLong(i -> (long) LONG_ARRAY_HANDLE.get(bytes, i * Long.BYTES))
-            .toArray();
+                .mapToLong(i -> (long) LONG_ARRAY_HANDLE.get(bytes, i * Long.BYTES))
+                .toArray();
     }
 
     /**
@@ -165,8 +164,9 @@ class RocksStorageUtils {
      * @return Byte array with a new value.
      */
     static byte @NotNull [] appendLong(byte @Nullable [] bytes, long value) {
-        if (bytes == null)
+        if (bytes == null) {
             return longToBytes(value);
+        }
 
         // Allocate a one long size bigger array
         var result = new byte[bytes.length + Long.BYTES];

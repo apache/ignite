@@ -42,9 +42,9 @@ public class SingleEntryResponse implements Serializable {
     /**
      * Constructs single entry response.
      *
-     * @param key Key. Couldn't be {@code null}.
-     * @param val Value. Could be {@code null} for empty and tombstone entries.
-     * @param rev Revision number.
+     * @param key     Key. Couldn't be {@code null}.
+     * @param val     Value. Could be {@code null} for empty and tombstone entries.
+     * @param rev     Revision number.
      * @param updCntr Update counter.
      */
     public SingleEntryResponse(byte[] key, byte[] val, long rev, long updCntr) {
@@ -59,7 +59,8 @@ public class SingleEntryResponse implements Serializable {
      *
      * @return Entry key. Couldn't be {@code null}.
      */
-    @NotNull public byte[] key() {
+    @NotNull
+    public byte[] key() {
         return key;
     }
 
@@ -68,7 +69,8 @@ public class SingleEntryResponse implements Serializable {
      *
      * @return Entry value. Could be {@code null} for empty and tombstone entries.
      */
-    @Nullable public byte[] value() {
+    @Nullable
+    public byte[] value() {
         return val;
     }
 

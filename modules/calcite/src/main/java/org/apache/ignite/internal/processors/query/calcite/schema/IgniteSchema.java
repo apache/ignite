@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
@@ -28,10 +27,14 @@ import org.apache.calcite.schema.impl.AbstractSchema;
  * Ignite schema.
  */
 public class IgniteSchema extends AbstractSchema {
-    /** */
+    /**
+     *
+     */
     private final String schemaName;
 
-    /** */
+    /**
+     *
+     */
     private final Map<String, IgniteTable> tblMap = new ConcurrentHashMap<>();
 
     /**
@@ -51,7 +54,8 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, Table> getTableMap() {
+    @Override
+    protected Map<String, Table> getTableMap() {
         return Collections.unmodifiableMap(tblMap);
     }
 

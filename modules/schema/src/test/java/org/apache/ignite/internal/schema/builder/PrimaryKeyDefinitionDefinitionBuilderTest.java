@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.schema.builder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.PrimaryKeyDefinition;
 import org.apache.ignite.schema.definition.builder.PrimaryKeyDefinitionBuilder;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Primary key builder test.
@@ -71,8 +71,8 @@ public class PrimaryKeyDefinitionDefinitionBuilderTest {
     @Test
     public void testPrimaryKeyWrongAffinityColumn() {
         PrimaryKeyDefinitionBuilder builder = SchemaBuilders.primaryKey()
-                                        .withColumns("A", "B")
-                                        .withAffinityColumns("C");
+                .withColumns("A", "B")
+                .withAffinityColumns("C");
 
         assertThrows(IllegalStateException.class, builder::build);
     }

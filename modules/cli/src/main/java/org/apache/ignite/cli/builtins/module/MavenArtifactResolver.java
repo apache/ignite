@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
 import org.apache.ignite.cli.ui.ProgressBar;
 import org.apache.ignite.lang.IgniteLogger;
@@ -75,7 +75,7 @@ public class MavenArtifactResolver {
      * Creates resolver
      *
      * @param pathRslvr Resolver of system paths like home directory and etc.
-     * @param terminal User system terminal.
+     * @param terminal  User system terminal.
      */
     @Inject
     public MavenArtifactResolver(SystemPathResolver pathRslvr, Terminal terminal) {
@@ -95,21 +95,20 @@ public class MavenArtifactResolver {
     /**
      * Downloads and copies artifact and its dependencies to {mavenRoot}.
      *
-     * @param mavenRoot Path where artifacts will be copied to.
-     * @param grpId Maven group id of the artifact.
-     * @param artifactId Maven artifact id of the artifact.
-     * @param ver Maven version of the artifact.
+     * @param mavenRoot          Path where artifacts will be copied to.
+     * @param grpId              Maven group id of the artifact.
+     * @param artifactId         Maven artifact id of the artifact.
+     * @param ver                Maven version of the artifact.
      * @param customRepositories Urls with custom maven repositories to resolve artifact.
      * @return Result of resolving with files' paths of resolved artifact + dependencies.
-     * @throws IOException if connection issues occurred during resolving
-     *                     or if r/w issues occurred during the retrieving of artifacts
+     * @throws IOException if connection issues occurred during resolving or if r/w issues occurred during the retrieving of artifacts
      */
     public ResolveResult resolve(
-        Path mavenRoot,
-        String grpId,
-        String artifactId,
-        String ver,
-        List<URL> customRepositories
+            Path mavenRoot,
+            String grpId,
+            String artifactId,
+            String ver,
+            List<URL> customRepositories
     ) throws IOException {
         Ivy ivy = ivyInstance(customRepositories); // needed for init right output logger before any operations
 
@@ -118,14 +117,14 @@ public class MavenArtifactResolver {
         try (ProgressBar bar = new ProgressBar(out, 100, terminal.getWidth())) {
             ivy.getEventManager().addIvyListener(event -> {
                 if (event instanceof EndResolveEvent) {
-                    int cnt = ((EndResolveEvent)event).getReport().getArtifacts().size();
+                    int cnt = ((EndResolveEvent) event).getReport().getArtifacts().size();
 
                     bar.setMax(cnt * 3);
-                }
-                else if (event instanceof EndArtifactDownloadEvent ||
-                    event instanceof EndResolveDependencyEvent ||
-                    event instanceof EndRetrieveArtifactEvent)
+                } else if (event instanceof EndArtifactDownloadEvent
+                        || event instanceof EndResolveDependencyEvent
+                        || event instanceof EndRetrieveArtifactEvent) {
                     bar.step();
+                }
             });
 
             ModuleDescriptor md = rootModuleDescriptor(grpId, artifactId, ver);
@@ -144,26 +143,26 @@ public class MavenArtifactResolver {
                 // now resolve
                 ResolveReport rr = ivy.resolve(md, ro);
 
-                if (rr.hasError())
-                    throw new IgniteCLIException(rr.getAllProblemMessages().toString());
+                if (rr.hasError()) {
+                    throw new IgniteCliException(rr.getAllProblemMessages().toString());
+                }
 
                 // Step 2: retrieve
                 ModuleDescriptor m = rr.getModuleDescriptor();
 
                 RetrieveReport retrieveReport = ivy.retrieve(
-                    m.getModuleRevisionId(),
-                    new RetrieveOptions()
-                        // this is from the envelop module
-                        .setConfs(new String[] {"default"})
-                        .setDestArtifactPattern(
-                            mavenRoot.resolve("[artifact](-[classifier]).[revision].[ext]").toFile().getAbsolutePath())
+                        m.getModuleRevisionId(),
+                        new RetrieveOptions()
+                                // this is from the envelop module
+                                .setConfs(new String[]{"default"})
+                                .setDestArtifactPattern(
+                                        mavenRoot.resolve("[artifact](-[classifier]).[revision].[ext]").toFile().getAbsolutePath())
                 );
 
                 return new ResolveResult(
-                    retrieveReport.getRetrievedFiles().stream().map(File::toPath).collect(Collectors.toList())
+                        retrieveReport.getRetrievedFiles().stream().map(File::toPath).collect(Collectors.toList())
                 );
-            }
-            catch (ParseException e) {
+            } catch (ParseException e) {
                 throw new IOException(e);
             }
         }
@@ -171,21 +170,21 @@ public class MavenArtifactResolver {
 
     /**
      * Gets artifact file name by artifactId and version
-     * <p>
-     * Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging
+     *
+     * <p>Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging
      *
      * @param artifactId Maven artifact id.
-     * @param ver Maven version
+     * @param ver        Maven version
      * @return File name
      */
     public static String fileNameByArtifactPattern(
-        String artifactId,
-        String ver) {
+            String artifactId,
+            String ver) {
         return FILE_ARTIFACT_PATTERN
-            .replace("[artifact]", artifactId)
-            .replace("(-[classifier])", "")
-            .replace("[revision]", ver)
-            .replace("[ext]", "jar");
+                .replace("[artifact]", artifactId)
+                .replace("(-[classifier])", "")
+                .replace("[revision]", ver)
+                .replace("[ext]", "jar");
     }
 
     /**
@@ -199,14 +198,13 @@ public class MavenArtifactResolver {
 
         try {
             tmpDir = Files.createTempDirectory("ignite-installer-cache").toFile();
-        }
-        catch (IOException e) {
-            throw new IgniteCLIException("Can't create temp directory for ivy");
+        } catch (IOException e) {
+            throw new IgniteCliException("Can't create temp directory for ivy");
         }
 
         tmpDir.deleteOnExit();
 
-        EventManager evtMgr = new EventManager();
+        final EventManager evtMgr = new EventManager();
 
         IvySettings ivySettings = new IvySettings();
         ivySettings.setDefaultCache(tmpDir);
@@ -264,31 +262,30 @@ public class MavenArtifactResolver {
     }
 
     /**
-     * Prepares Ivy module descriptor with target maven artifact as a dependency.
-     * Then descriptor can be used for further resolving the artifact dependencies.
-     * Existence of this descriptor is Ivy's requirement.
+     * Prepares Ivy module descriptor with target maven artifact as a dependency. Then descriptor can be used for further resolving the
+     * artifact dependencies. Existence of this descriptor is Ivy's requirement.
      *
-     * @param grpId Maven group id.
+     * @param grpId      Maven group id.
      * @param artifactId Maven artifact id.
-     * @param ver Maven artifact version.
+     * @param ver        Maven artifact version.
      * @return Prepared for resolving module descriptor.
      */
     private ModuleDescriptor rootModuleDescriptor(String grpId, String artifactId, String ver) {
         // 1st create an ivy module (this always(!) has a "default" configuration already)
         DefaultModuleDescriptor md = DefaultModuleDescriptor.newDefaultInstance(
-            // give it some related name (so it can be cached)
-            ModuleRevisionId.newInstance(
-                "org.apache.ignite",
-                "installer-envelope",
-                "working"
-            )
+                // give it some related name (so it can be cached)
+                ModuleRevisionId.newInstance(
+                        "org.apache.ignite",
+                        "installer-envelope",
+                        "working"
+                )
         );
 
         // 2. add dependencies for what we are really looking for
         ModuleRevisionId ri = ModuleRevisionId.newInstance(
-            grpId,
-            artifactId,
-            ver
+                grpId,
+                artifactId,
+                ver
         );
 
         // don't go transitive here, if you want the single artifact
@@ -314,17 +311,20 @@ public class MavenArtifactResolver {
         private final IgniteLogger log = IgniteLogger.forClass(IvyLogger.class);
 
         /** {@inheritDoc} */
-        @Override protected void doProgress() {
+        @Override
+        protected void doProgress() {
             // no-op
         }
 
         /** {@inheritDoc} */
-        @Override protected void doEndProgress(String msg) {
+        @Override
+        protected void doEndProgress(String msg) {
             // no-op
         }
 
         /** {@inheritDoc} */
-        @Override public void log(String msg, int level) {
+        @Override
+        public void log(String msg, int level) {
             switch (level) {
                 case Message.MSG_ERR:
                     log.error(msg);
@@ -345,11 +345,15 @@ public class MavenArtifactResolver {
                 case Message.MSG_DEBUG:
                     log.trace(msg);
                     break;
+
+                default:
+                    break;
             }
         }
 
         /** {@inheritDoc} */
-        @Override public void rawlog(String msg, int level) {
+        @Override
+        public void rawlog(String msg, int level) {
             log(msg, level);
         }
     }

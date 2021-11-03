@@ -39,7 +39,7 @@ public class BatchExecuteResult extends Response {
      * Constructor.
      *
      * @param status Status code.
-     * @param err Error message.
+     * @param err    Error message.
      */
     public BatchExecuteResult(int status, String err) {
         super(status, err);
@@ -68,27 +68,32 @@ public class BatchExecuteResult extends Response {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         packer.packIntArray(updateCnts);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
 
-        if (!hasResults)
+        if (!hasResults) {
             return;
+        }
 
         updateCnts = unpacker.unpackIntArray();
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(BatchExecuteResult.class, this);
     }
 }

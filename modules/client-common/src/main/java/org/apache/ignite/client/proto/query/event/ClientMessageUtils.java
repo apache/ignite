@@ -28,13 +28,14 @@ public class ClientMessageUtils {
      * Packs a string or null if string is null.
      *
      * @param packer Message packer.
-     * @param str String to serialize.
+     * @param str    String to serialize.
      */
     public static void writeStringNullable(ClientMessagePacker packer, String str) {
-        if (str == null)
+        if (str == null) {
             packer.packNil();
-        else
+        } else {
             packer.packString(str);
+        }
     }
 
     /**
@@ -44,8 +45,9 @@ public class ClientMessageUtils {
      * @return String or null.
      */
     public static String readStringNullable(ClientMessageUnpacker unpacker) {
-        if (!unpacker.tryUnpackNil())
+        if (!unpacker.tryUnpackNil()) {
             return unpacker.unpackString();
+        }
 
         return null;
     }

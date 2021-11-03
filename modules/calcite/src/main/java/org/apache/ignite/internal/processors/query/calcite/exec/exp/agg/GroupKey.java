@@ -17,42 +17,55 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
+import static org.apache.ignite.internal.util.ArrayUtils.OBJECT_EMPTY_ARRAY;
+
 import java.io.Serializable;
 import java.util.Arrays;
-
-import static org.apache.ignite.internal.util.ArrayUtils.OBJECT_EMPTY_ARRAY;
 
 /**
  *
  */
 public class GroupKey implements Serializable {
-    /** */
+    /**
+     *
+     */
     public static final GroupKey EMPTY_GRP_KEY = new GroupKey(OBJECT_EMPTY_ARRAY);
 
-    /** */
+    /**
+     *
+     */
     private final Object[] fields;
 
-    /** */
+    /**
+     *
+     */
     public GroupKey(Object[] fields) {
         this.fields = fields;
     }
 
-    /** */
+    /**
+     *
+     */
     public Object field(int idx) {
         return fields[idx];
     }
 
-    /** */
+    /**
+     *
+     */
     public int fieldsCount() {
         return fields.length;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
         GroupKey groupKey = (GroupKey) o;
 
@@ -60,44 +73,61 @@ public class GroupKey implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Arrays.hashCode(fields);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "GroupKey" + Arrays.toString(fields);
     }
 
-    /** */
+    /**
+     *
+     */
     public static Builder builder(int rowLen) {
         return new Builder(rowLen);
     }
 
-    /** */
+    /**
+     *
+     */
     public static class Builder {
-        /** */
+        /**
+         *
+         */
         private final Object[] fields;
 
-        /** */
+        /**
+         *
+         */
         private int idx;
 
-        /** */
+        /**
+         *
+         */
         private Builder(int rowLen) {
             fields = new Object[rowLen];
         }
 
-        /** */
+        /**
+         *
+         */
         public Builder add(Object val) {
-            if (idx == fields.length)
+            if (idx == fields.length) {
                 throw new IndexOutOfBoundsException();
+            }
 
             fields[idx++] = val;
 
             return this;
         }
 
-        /** */
+        /**
+         *
+         */
         public GroupKey build() {
             assert idx == fields.length;
 

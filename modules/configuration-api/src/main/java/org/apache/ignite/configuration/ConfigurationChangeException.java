@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.configuration;
 
 /**
@@ -33,7 +34,7 @@ public class ConfigurationChangeException extends RuntimeException {
      * Constructor.
      *
      * @param message Error message.
-     * @param cause Cause.
+     * @param cause   Cause.
      */
     public ConfigurationChangeException(String message, Throwable cause) {
         super(message, cause);

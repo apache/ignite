@@ -18,4 +18,5 @@
 /**
  * Contains public classes for custom user object serialization and access.
  */
+
 package org.apache.ignite.binary;

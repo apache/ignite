@@ -27,9 +27,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface providing methods to read, remove and update keys in storage.
- * Any locking is unnecessary as this storage is used within RAFT groups where all write operations are
- * serialized.
+ * Interface providing methods to read, remove and update keys in storage. Any locking is unnecessary as this storage is used within RAFT
+ * groups where all write operations are serialized.
  */
 public interface PartitionStorage extends AutoCloseable {
     /**
@@ -75,8 +74,8 @@ public interface PartitionStorage extends AutoCloseable {
     public void writeAll(List<? extends DataRow> rows) throws StorageException;
 
     /**
-     * Inserts a collection of {@link DataRow}s into the storage and returns a collection of rows that
-     * can't be inserted due to their keys being already present in the storage.
+     * Inserts a collection of {@link DataRow}s into the storage and returns a collection of rows that can't be inserted due to their keys
+     * being already present in the storage.
      *
      * @param rows Data rows.
      * @return Collection of rows that could not be inserted.

@@ -39,19 +39,22 @@ class ColumnMapperImpl implements ColumnMapper {
         mapping = new int[schema.length()];
         cols = new Column[schema.length()];
 
-        for (int i = 0; i < mapping.length; i++)
+        for (int i = 0; i < mapping.length; i++) {
             mapping[i] = i;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnMapperImpl add(@NotNull Column col) {
+    @Override
+    public ColumnMapperImpl add(@NotNull Column col) {
         add0(col.schemaIndex(), -1, col);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnMapperImpl add(int from, int to) {
+    @Override
+    public ColumnMapperImpl add(int from, int to) {
         add0(from, to, null);
 
         return this;
@@ -59,8 +62,8 @@ class ColumnMapperImpl implements ColumnMapper {
 
     /**
      * @param from Source column index.
-     * @param to Target column index.
-     * @param col Target column descriptor.
+     * @param to   Target column index.
+     * @param col  Target column descriptor.
      */
     void add0(int from, int to, @Nullable Column col) {
         mapping[from] = to;
@@ -68,12 +71,14 @@ class ColumnMapperImpl implements ColumnMapper {
     }
 
     /** {@inheritDoc} */
-    @Override public int map(int idx) {
+    @Override
+    public int map(int idx) {
         return idx < mapping.length ? mapping[idx] : -1;
     }
 
     /** {@inheritDoc} */
-    @Override public Column mappedColumn(int idx) {
+    @Override
+    public Column mappedColumn(int idx) {
         return idx < cols.length ? cols[idx] : null;
     }
 }

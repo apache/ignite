@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlNode;
 
@@ -26,20 +25,25 @@ import org.apache.calcite.sql.SqlNode;
  *
  */
 public class ValidationResult {
-    /** */
+    /**
+     *
+     */
     private final SqlNode sqlNode;
-
-    /** */
-    private final RelDataType dataType;
-
-    /** */
-    private final List<List<String>> origins;
 
     /**
      *
-     * @param sqlNode Validated SQL node.
+     */
+    private final RelDataType dataType;
+
+    /**
+     *
+     */
+    private final List<List<String>> origins;
+
+    /**
+     * @param sqlNode  Validated SQL node.
      * @param dataType Validated type.
-     * @param origins Type fields provenance.
+     * @param origins  Type fields provenance.
      */
     public ValidationResult(SqlNode sqlNode, RelDataType dataType, List<List<String>> origins) {
         this.sqlNode = sqlNode;

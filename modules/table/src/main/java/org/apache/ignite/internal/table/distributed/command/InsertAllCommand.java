@@ -38,8 +38,7 @@ public class InsertAllCommand implements WriteCommand {
     private byte[] rowsBytes;
 
     /**
-     * Creates a new instance of InsertAllCommand with the given rows to be inserted.
-     * The {@code rows} should not be {@code null} or empty.
+     * Creates a new instance of InsertAllCommand with the given rows to be inserted. The {@code rows} should not be {@code null} or empty.
      *
      * @param rows Binary rows.
      */

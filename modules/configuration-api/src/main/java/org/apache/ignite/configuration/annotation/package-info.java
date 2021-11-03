@@ -18,4 +18,5 @@
 /**
  * Annotations for configuration schemas.
  */
+
 package org.apache.ignite.configuration.annotation;

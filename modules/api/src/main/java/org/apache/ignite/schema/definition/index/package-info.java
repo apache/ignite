@@ -18,4 +18,5 @@
 /**
  * Contains index definition interfaces.
  */
+
 package org.apache.ignite.schema.definition.index;

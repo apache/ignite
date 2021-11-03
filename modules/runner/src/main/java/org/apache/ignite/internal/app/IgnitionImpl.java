@@ -40,71 +40,76 @@ public class IgnitionImpl implements Ignition {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(IgnitionImpl.class);
 
-    /** */
+    /**
+     *
+     */
     private static final String[] BANNER = {
-        "",
-        "           #              ___                         __",
-        "         ###             /   |   ____   ____ _ _____ / /_   ___",
-        "     #  #####           / /| |  / __ \\ / __ `// ___// __ \\ / _ \\",
-        "   ###  ######         / ___ | / /_/ // /_/ // /__ / / / // ___/",
-        "  #####  #######      /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/",
-        "  #######  ######            /_/",
-        "    ########  ####        ____               _  __           _____",
-        "   #  ########  ##       /  _/____ _ ____   (_)/ /_ ___     |__  /",
-        "  ####  #######  #       / / / __ `// __ \\ / // __// _ \\     /_ <",
-        "   #####  #####        _/ / / /_/ // / / // // /_ / ___/   ___/ /",
-        "     ####  ##         /___/ \\__, //_/ /_//_/ \\__/ \\___/   /____/",
-        "       ##                  /____/\n"
+            "",
+            "           #              ___                         __",
+            "         ###             /   |   ____   ____ _ _____ / /_   ___",
+            "     #  #####           / /| |  / __ \\ / __ `// ___// __ \\ / _ \\",
+            "   ###  ######         / ___ | / /_/ // /_/ // /__ / / / // ___/",
+            "  #####  #######      /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/",
+            "  #######  ######            /_/",
+            "    ########  ####        ____               _  __           _____",
+            "   #  ########  ##       /  _/____ _ ____   (_)/ /_ ___     |__  /",
+            "  ####  #######  #       / / / __ `// __ \\ / // __// _ \\     /_ <",
+            "   #####  #####        _/ / / /_/ // / / // // /_ / ___/   ___/ /",
+            "     ####  ##         /___/ \\__, //_/ /_//_/ \\__/ \\___/   /____/",
+            "       ##                  /____/\n"
     };
 
-    /** */
+    /**
+     *
+     */
     private static final String VER_KEY = "version";
 
     /**
-     * Node name to node instance mapping.
-     * Please pay attention, that nodes in given map might be in any state: STARTING, STARTED, STOPPED.
+     * Node name to node instance mapping. Please pay attention, that nodes in given map might be in any state: STARTING, STARTED, STOPPED.
      */
     private static Map<String, IgniteImpl> nodes = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public Ignite start(@NotNull String nodeName, @Nullable Path cfgPath, @NotNull Path workDir) {
+    @Override
+    public Ignite start(@NotNull String nodeName, @Nullable Path cfgPath, @NotNull Path workDir) {
         try {
             return doStart(
-                nodeName,
-                cfgPath == null ? null : Files.readString(cfgPath),
-                workDir
+                    nodeName,
+                    cfgPath == null ? null : Files.readString(cfgPath),
+                    workDir
             );
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.warn("Unable to read user specific configuration, default configuration will be used: "
-                + e.getMessage());
+                    + e.getMessage());
             return start(nodeName, workDir);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite start(@NotNull String name, @Nullable InputStream cfg, @NotNull Path workDir) {
+    @Override
+    public Ignite start(@NotNull String name, @Nullable InputStream cfg, @NotNull Path workDir) {
         try {
             return doStart(
-                name,
-                cfg == null ? null : new String(cfg.readAllBytes(), StandardCharsets.UTF_8),
-                workDir
+                    name,
+                    cfg == null ? null : new String(cfg.readAllBytes(), StandardCharsets.UTF_8),
+                    workDir
             );
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.warn("Unable to read user specific configuration, default configuration will be used: "
-                + e.getMessage());
+                    + e.getMessage());
             return start(name, workDir);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite start(@NotNull String name, @NotNull Path workDir) {
+    @Override
+    public Ignite start(@NotNull String name, @NotNull Path workDir) {
         return doStart(name, null, workDir);
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(@NotNull String name) {
+    @Override
+    public void stop(@NotNull String name) {
         nodes.computeIfPresent(name, (nodeName, node) -> {
             node.stop();
 
@@ -115,14 +120,15 @@ public class IgnitionImpl implements Ignition {
     /**
      * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
-     * @param nodeName Name of the node. Must not be {@code null}.
+     * @param nodeName   Name of the node. Must not be {@code null}.
      * @param cfgContent Node configuration in the HOCON format. Can be {@code null}.
-     * @param workDir Work directory for the started node. Must not be {@code null}.
+     * @param workDir    Work directory for the started node. Must not be {@code null}.
      * @return Started Ignite node.
      */
     private static Ignite doStart(String nodeName, @Nullable String cfgContent, Path workDir) {
-        if (nodeName.isEmpty())
+        if (nodeName.isEmpty()) {
             throw new IllegalArgumentException("Node name must not be null or empty.");
+        }
 
         IgniteImpl nodeToStart = new IgniteImpl(nodeName, workDir);
 
@@ -140,8 +146,7 @@ public class IgnitionImpl implements Ignition {
 
         try {
             nodeToStart.start(cfgContent);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             nodes.remove(nodeName);
 
             throw new IgniteException(e);
@@ -152,19 +157,23 @@ public class IgnitionImpl implements Ignition {
         return nodeToStart;
     }
 
-    /** */
+    /**
+     *
+     */
     private static void ackSuccessStart() {
         LOG.info("Apache Ignite started successfully!");
     }
 
-    /** */
+    /**
+     *
+     */
     private static void ackBanner() {
         String ver = IgniteProperties.get(VER_KEY);
 
         String banner = String.join("\n", BANNER);
 
         LOG.info(() ->
-                LoggerMessageHelper.format("{}\n" + " ".repeat(22) + "Apache Ignite ver. {}\n", banner, ver),
-            null);
+                        LoggerMessageHelper.format("{}\n" + " ".repeat(22) + "Apache Ignite ver. {}\n", banner, ver),
+                null);
     }
 }

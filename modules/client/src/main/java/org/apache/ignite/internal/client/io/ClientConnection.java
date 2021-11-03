@@ -43,5 +43,6 @@ public interface ClientConnection extends AutoCloseable {
     /**
      * Closes the connection.
      */
-    @Override void close();
+    @Override
+    void close();
 }

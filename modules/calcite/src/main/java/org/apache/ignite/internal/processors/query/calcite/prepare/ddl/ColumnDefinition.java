@@ -14,22 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 import java.util.Objects;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.jetbrains.annotations.Nullable;
 
 /** Defines a particular column within table. */
 public class ColumnDefinition {
-    /** */
+    /**
+     *
+     */
     private final String name;
 
-    /** */
+    /**
+     *
+     */
     private final RelDataType type;
 
-    /** */
+    /**
+     *
+     */
     private final Object dflt;
 
     /** Creates a column definition. */

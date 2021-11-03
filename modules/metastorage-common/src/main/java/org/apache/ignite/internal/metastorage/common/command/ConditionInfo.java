@@ -39,10 +39,10 @@ public class ConditionInfo implements Serializable {
     /**
      * Construct condition with given parameters.
      *
-     * @param key Key.
+     * @param key  Key.
      * @param type Condition type.
-     * @param val Value.
-     * @param rev Revision.
+     * @param val  Value.
+     * @param rev  Revision.
      */
     public ConditionInfo(byte[] key, ConditionType type, byte[] val, long rev) {
         this.key = key;

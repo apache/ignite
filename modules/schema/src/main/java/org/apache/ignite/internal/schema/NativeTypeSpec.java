@@ -28,12 +28,12 @@ import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.tostring.S;
 
 /**
- * Base class for storage built-in data types definition. The class contains predefined values
- * for fixed-sized types and some of the variable-sized types. Parameterized types, such as
- * bitmask of size <code>n</code> bits or number of max n bytes are created using static methods.
+ * Base class for storage built-in data types definition. The class contains predefined values for fixed-sized types and some of the
+ * variable-sized types. Parameterized types, such as bitmask of size <code>n</code> bits or number of max n bytes are created using static
+ * methods.
  *
- * An instance of native type provides necessary indirection to read any field as an instance of
- * {@code java.lang.Object} to avoid switching inside the row methods.
+ * <p>An instance of native type provides necessary indirection to read any field as an instance of {@code java.lang.Object} to avoid
+ * switching inside the row methods.
  */
 public enum NativeTypeSpec {
     /**
@@ -41,7 +41,8 @@ public enum NativeTypeSpec {
      */
     INT8("int8", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.byteValueBoxed(colIdx);
         }
     },
@@ -51,7 +52,8 @@ public enum NativeTypeSpec {
      */
     INT16("int16", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.shortValueBoxed(colIdx);
         }
     },
@@ -61,7 +63,8 @@ public enum NativeTypeSpec {
      */
     INT32("int32", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.intValueBoxed(colIdx);
         }
     },
@@ -71,7 +74,8 @@ public enum NativeTypeSpec {
      */
     INT64("int64", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.longValueBoxed(colIdx);
         }
     },
@@ -81,7 +85,8 @@ public enum NativeTypeSpec {
      */
     FLOAT("float", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.floatValueBoxed(colIdx);
         }
     },
@@ -91,7 +96,8 @@ public enum NativeTypeSpec {
      */
     DOUBLE("double", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.doubleValueBoxed(colIdx);
         }
     },
@@ -101,7 +107,8 @@ public enum NativeTypeSpec {
      */
     DECIMAL("decimal", false) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.decimalValue(colIdx);
         }
     },
@@ -111,7 +118,8 @@ public enum NativeTypeSpec {
      */
     UUID("uuid", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.uuidValue(colIdx);
         }
     },
@@ -121,7 +129,8 @@ public enum NativeTypeSpec {
      */
     STRING("string") {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.stringValue(colIdx);
         }
     },
@@ -131,7 +140,8 @@ public enum NativeTypeSpec {
      */
     BYTES("blob") {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.bytesValue(colIdx);
         }
     },
@@ -141,7 +151,8 @@ public enum NativeTypeSpec {
      */
     BITMASK("bitmask", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.bitmaskValue(colIdx);
         }
     },
@@ -151,7 +162,8 @@ public enum NativeTypeSpec {
      */
     NUMBER("number", false) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.numberValue(colIdx);
         }
     },
@@ -161,7 +173,8 @@ public enum NativeTypeSpec {
      */
     DATE("date", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.dateValue(colIdx);
         }
     },
@@ -171,7 +184,8 @@ public enum NativeTypeSpec {
      */
     TIME("time", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.timeValue(colIdx);
         }
     },
@@ -181,7 +195,8 @@ public enum NativeTypeSpec {
      */
     DATETIME("datetime", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.dateTimeValue(colIdx);
         }
     },
@@ -191,7 +206,8 @@ public enum NativeTypeSpec {
      */
     TIMESTAMP("timestamp", true) {
         /** {@inheritDoc} */
-        @Override public Object objectValue(Row tup, int colIdx) {
+        @Override
+        public Object objectValue(Row tup, int colIdx) {
             return tup.timestampValue(colIdx);
         }
     };
@@ -214,7 +230,7 @@ public enum NativeTypeSpec {
     /**
      * Constructs a type with the given description and size.
      *
-     * @param desc Type description.
+     * @param desc      Type description.
      * @param fixedSize Flag indicating whether this type specifies a fixed-length type.
      */
     NativeTypeSpec(String desc, boolean fixedSize) {
@@ -230,11 +246,10 @@ public enum NativeTypeSpec {
     }
 
     /**
-     * Indirection method for getting an Object representation of the given type from the rows. This method
-     * does no type conversions and will throw an exception if row column type differs from this
-     * type.
+     * Indirection method for getting an Object representation of the given type from the rows. This method does no type conversions and
+     * will throw an exception if row column type differs from this type.
      *
-     * @param row Row to read the value from.
+     * @param row    Row to read the value from.
      * @param colIdx Column index to read.
      * @return An Object representation of the value.
      * @throws InvalidTypeException If this native type differs from the actual type of {@code colIdx}.
@@ -251,56 +266,51 @@ public enum NativeTypeSpec {
         assert cls != null;
 
         // Primitives.
-        if (cls == byte.class)
+        if (cls == byte.class) {
             return NativeTypeSpec.INT8;
-        else if (cls == short.class)
+        } else if (cls == short.class) {
             return NativeTypeSpec.INT16;
-        else if (cls == int.class)
+        } else if (cls == int.class) {
             return NativeTypeSpec.INT32;
-        else if (cls == long.class)
+        } else if (cls == long.class) {
             return NativeTypeSpec.INT64;
-        else if (cls == float.class)
+        } else if (cls == float.class) {
             return NativeTypeSpec.FLOAT;
-        else if (cls == double.class)
+        } else if (cls == double.class) {
             return NativeTypeSpec.DOUBLE;
-
-        // Boxed primitives.
-        else if (cls == Byte.class)
+        } else if (cls == Byte.class) { // Boxed primitives.
             return NativeTypeSpec.INT8;
-        else if (cls == Short.class)
+        } else if (cls == Short.class) {
             return NativeTypeSpec.INT16;
-        else if (cls == Integer.class)
+        } else if (cls == Integer.class) {
             return NativeTypeSpec.INT32;
-        else if (cls == Long.class)
+        } else if (cls == Long.class) {
             return NativeTypeSpec.INT64;
-        else if (cls == Float.class)
+        } else if (cls == Float.class) {
             return NativeTypeSpec.FLOAT;
-        else if (cls == Double.class)
+        } else if (cls == Double.class) {
             return NativeTypeSpec.DOUBLE;
-
-        // Temporal types.
-        else if (cls == LocalDate.class)
+        } else if (cls == LocalDate.class) { // Temporal types.
             return NativeTypeSpec.DATE;
-        else if (cls == LocalTime.class)
+        } else if (cls == LocalTime.class) {
             return NativeTypeSpec.TIME;
-        else if (cls == LocalDateTime.class)
+        } else if (cls == LocalDateTime.class) {
             return NativeTypeSpec.DATETIME;
-        else if (cls == Instant.class)
+        } else if (cls == Instant.class) {
             return NativeTypeSpec.TIMESTAMP;
-
-        // Other types.
-        else if (cls == byte[].class)
+        } else if (cls == byte[].class) { // Other types.
             return NativeTypeSpec.BYTES;
-        else if (cls == String.class)
+        } else if (cls == String.class) {
             return NativeTypeSpec.STRING;
-        else if (cls == java.util.UUID.class)
+        } else if (cls == java.util.UUID.class) {
             return NativeTypeSpec.UUID;
-        else if (cls == BitSet.class)
+        } else if (cls == BitSet.class) {
             return NativeTypeSpec.BITMASK;
-        else if (cls == BigInteger.class)
+        } else if (cls == BigInteger.class) {
             return NativeTypeSpec.NUMBER;
-        else if (cls == BigDecimal.class)
+        } else if (cls == BigDecimal.class) {
             return NativeTypeSpec.DECIMAL;
+        }
 
         return null;
     }
@@ -316,9 +326,10 @@ public enum NativeTypeSpec {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(NativeTypeSpec.class.getSimpleName(),
-            "name", name(),
-            "fixed", fixedLength());
+                "name", name(),
+                "fixed", fixedLength());
     }
 }

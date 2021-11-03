@@ -44,23 +44,27 @@ public class InsertInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void call(@Nullable DataRow row) {
+    @Override
+    public void call(@Nullable DataRow row) {
         inserts = row == null;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DataRow newRow() {
+    @Override
+    public @Nullable DataRow newRow() {
         return newRow;
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable OperationType operationType() {
+    @Override
+    public @Nullable OperationType operationType() {
         return inserts ? OperationType.WRITE : OperationType.NOOP;
     }
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public Boolean result() {
+    @Override
+    public Boolean result() {
         return inserts;
     }
 }

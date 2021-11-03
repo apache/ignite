@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cli.builtins.module;
 
-import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliException;
 
 /**
  * Simple wrapper of maven artifact coordinates groupid:artifactd:version.
@@ -35,9 +35,9 @@ public class MavenCoordinates {
     /**
      * Creates maven coordinates.
      *
-     * @param grpId Maven group id.
+     * @param grpId      Maven group id.
      * @param artifactId Maven artifact id.
-     * @param ver Maven version.
+     * @param ver        Maven version.
      */
     public MavenCoordinates(String grpId, String artifactId, String ver) {
         this.grpId = grpId;
@@ -54,18 +54,18 @@ public class MavenCoordinates {
     public static MavenCoordinates of(String mvnStr) {
         String[] coords = mvnStr.split(":");
 
-        if (coords.length == 4)
+        if (coords.length == 4) {
             return new MavenCoordinates(coords[1], coords[2], coords[3]);
-        else
-            throw new IgniteCLIException("Incorrect maven coordinates " + mvnStr);
+        } else {
+            throw new IgniteCliException("Incorrect maven coordinates " + mvnStr);
+        }
     }
 
     /**
-     * Creates instance from raw string 'groupdId:artifactId'.
-     * Artifact version will be received separately.
+     * Creates instance from raw string 'groupdId:artifactId'. Artifact version will be received separately.
      *
      * @param mvnStr Raw maven artifactd string in format 'groupdId:artifactId'.
-     * @param ver Version of maven artifact.
+     * @param ver    Version of maven artifact.
      * @return Maven coordinates instance.
      */
     static MavenCoordinates of(String mvnStr, String ver) {

@@ -27,7 +27,7 @@ public class TupleMarshallerException extends IgniteInternalCheckedException {
      * Creates a new grid exception with the given throwable as a cause and
      * source of error message.
      *
-     * @param s
+     * @param s Msg.
      * @param cause Non-null throwable cause.
      */
     public TupleMarshallerException(String s, Throwable cause) {

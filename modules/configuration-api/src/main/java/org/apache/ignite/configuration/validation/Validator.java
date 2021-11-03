@@ -22,17 +22,17 @@ import java.lang.annotation.Annotation;
 /**
  * Interface for all configuration validators. Recommended to be a stateless class.
  *
- * It is mandatory that all direct implementations of the interface explicitly specify types {@code A} and {@code VIEW}.
+ * <p>It is mandatory that all direct implementations of the interface explicitly specify types {@code A} and {@code VIEW}.
  *
- * @param <A> Type of the annotation that puts current validator to the field.
- * @param <VIEW> Upper bound for field types that can be validated with this validator.
+ * @param <A>    Type of the annotation that puts current validator to the field.
+ * @param <VIEWT> Upper bound for field types that can be validated with this validator.
  */
-public interface Validator<A extends Annotation, VIEW> {
+public interface Validator<A extends Annotation, VIEWT> {
     /**
      * Perform validation. All validation issues must be put into {@link ValidationContext#addIssue(ValidationIssue)}.
      *
      * @param annotation Specific annotation from currently validated value.
-     * @param ctx Validation context.
+     * @param ctx        Validation context.
      */
-    void validate(A annotation, ValidationContext<VIEW> ctx);
+    void validate(A annotation, ValidationContext<VIEWT> ctx);
 }

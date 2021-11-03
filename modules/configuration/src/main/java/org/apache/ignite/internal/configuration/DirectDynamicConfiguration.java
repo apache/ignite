@@ -27,32 +27,34 @@ import org.apache.ignite.configuration.annotation.DirectAccess;
  *
  * @see DirectAccess
  */
-public abstract class DirectDynamicConfiguration<VIEW, CHANGE>
-    extends DynamicConfiguration<VIEW, CHANGE>
-    implements DirectConfigurationProperty<VIEW> {
+public abstract class DirectDynamicConfiguration<VIEWT, CHANGET>
+        extends DynamicConfiguration<VIEWT, CHANGET>
+        implements DirectConfigurationProperty<VIEWT> {
     /**
      * Constructor.
      *
-     * @param prefix Configuration prefix.
-     * @param key Configuration key.
-     * @param rootKey Root key.
-     * @param changer Configuration changer.
+     * @param prefix     Configuration prefix.
+     * @param key        Configuration key.
+     * @param rootKey    Root key.
+     * @param changer    Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
      */
     public DirectDynamicConfiguration(
-        List<String> prefix,
-        String key,
-        RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer,
-        boolean listenOnly
+            List<String> prefix,
+            String key,
+            RootKey<?, ?> rootKey,
+            DynamicConfigurationChanger changer,
+            boolean listenOnly
     ) {
         super(prefix, key, rootKey, changer, listenOnly);
     }
 
     /** {@inheritDoc} */
-    @Override public VIEW directValue() {
-        if (listenOnly)
+    @Override
+    public VIEWT directValue() {
+        if (listenOnly) {
             throw listenOnlyException();
+        }
 
         return changer.getLatest(keys);
     }

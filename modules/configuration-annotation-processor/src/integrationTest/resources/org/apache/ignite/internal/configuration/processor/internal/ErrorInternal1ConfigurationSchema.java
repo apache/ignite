@@ -21,8 +21,7 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 
 /**
- * If there are {@link InternalConfiguration} and {@link ConfigurationRoot},
- * the class should not have a parent (superclass).
+ * If there are {@link InternalConfiguration} and {@link ConfigurationRoot}, the class should not have a parent (superclass).
  */
 @InternalConfiguration
 @ConfigurationRoot(rootName = "errorRoot")

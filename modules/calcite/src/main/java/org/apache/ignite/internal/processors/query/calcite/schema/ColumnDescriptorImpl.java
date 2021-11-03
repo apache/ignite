@@ -14,38 +14,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.function.Supplier;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.nativeTypeToClass;
 
+import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.schema.NativeType;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.nativeTypeToClass;
-
-/** */
+/**
+ *
+ */
 public class ColumnDescriptorImpl implements ColumnDescriptor {
     private final boolean key;
 
     private final String name;
 
-    /** */
+    /**
+     *
+     */
     private final @Nullable Supplier<Object> dfltVal;
 
-    /** */
+    /**
+     *
+     */
     private final int fieldIdx;
 
-    /** */
+    /**
+     *
+     */
     private final NativeType storageType;
 
     public ColumnDescriptorImpl(
-        String name,
-        boolean key,
-        int fieldIdx,
-        NativeType storageType,
-        @Nullable Supplier<Object> dfltVal
+            String name,
+            boolean key,
+            int fieldIdx,
+            NativeType storageType,
+            @Nullable Supplier<Object> dfltVal
     ) {
         this.key = key;
         this.name = name;
@@ -55,37 +63,44 @@ public class ColumnDescriptorImpl implements ColumnDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean key() {
+    @Override
+    public boolean key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasDefaultValue() {
+    @Override
+    public boolean hasDefaultValue() {
         return dfltVal != null;
     }
 
     /** {@inheritDoc} */
-    @Override public Object defaultValue() {
+    @Override
+    public Object defaultValue() {
         return dfltVal != null ? dfltVal.get() : null;
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return name;
     }
 
     /** {@inheritDoc} */
-    @Override public int fieldIndex() {
+    @Override
+    public int fieldIndex() {
         return fieldIdx;
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType logicalType(IgniteTypeFactory f) {
+    @Override
+    public RelDataType logicalType(IgniteTypeFactory f) {
         return f.createJavaType(nativeTypeToClass(storageType));
     }
 
     /** {@inheritDoc} */
-    @Override public NativeType storageType() {
+    @Override
+    public NativeType storageType() {
         return storageType;
     }
 }

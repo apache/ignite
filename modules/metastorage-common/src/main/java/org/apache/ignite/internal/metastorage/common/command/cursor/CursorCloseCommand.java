@@ -26,7 +26,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class CursorCloseCommand implements WriteCommand {
     /** Cursor id. */
-    @NotNull private final IgniteUuid cursorId;
+    @NotNull
+    private final IgniteUuid cursorId;
 
     /**
      * @param cursorId Cursor id.

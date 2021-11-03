@@ -23,9 +23,9 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Table provides different views (key-value vs record) and approaches (mapped-object vs binary) to reach the data.
- * <p>
- * Binary table views might be useful in cases (but not limited) when user key-value classes are not in classpath
- * and/or when deserialization of whole table record is unwanted due to performance reasons.
+ *
+ * <p>Binary table views might be useful in cases (but not limited) when user key-value classes are not in classpath and/or when
+ * deserialization of whole table record is unwanted due to performance reasons.
  *
  * @see RecordView
  * @see KeyValueView
@@ -42,7 +42,7 @@ public interface Table {
      * Creates record view of table for record class mapper provided.
      *
      * @param recMapper Record class mapper.
-     * @param <R> Record type.
+     * @param <R>       Record type.
      * @return Table record view.
      */
     <R> RecordView<R> recordView(Mapper<R> recMapper);
@@ -55,12 +55,23 @@ public interface Table {
     RecordView<Tuple> recordView();
 
     /**
+     * Creates record view of table for record class provided.
+     *
+     * @param recCls Record class.
+     * @param <R>    Record type.
+     * @return Table record view.
+     */
+    default <R> RecordView<R> recordView(Class<R> recCls) {
+        return recordView(Mappers.ofRecordClass(recCls));
+    }
+
+    /**
      * Creates key-value view of table for key-value class mappers provided.
      *
      * @param keyMapper Key class mapper.
      * @param valMapper Value class mapper.
-     * @param <K> Key type.
-     * @param <V> Value type.
+     * @param <K>       Key type.
+     * @param <V>       Value type.
      * @return Table key-value view.
      */
     <K, V> KeyValueView<K, V> keyValueView(Mapper<K> keyMapper, Mapper<V> valMapper);
@@ -73,23 +84,12 @@ public interface Table {
     KeyValueView<Tuple, Tuple> keyValueView();
 
     /**
-     * Creates record view of table for record class provided.
-     *
-     * @param recCls Record class.
-     * @param <R> Record type.
-     * @return Table record view.
-     */
-    default <R> RecordView<R> recordView(Class<R> recCls) {
-        return recordView(Mappers.ofRecordClass(recCls));
-    }
-
-    /**
      * Creates key-value view of table for key and value classes provided.
      *
      * @param keyCls Key class.
      * @param valCls Value class.
-     * @param <K> Key type.
-     * @param <V> Value type.
+     * @param <K>    Key type.
+     * @param <V>    Value type.
      * @return Table key-value view.
      */
     default <K, V> KeyValueView<K, V> keyValueView(Class<K> keyCls, Class<V> valCls) {

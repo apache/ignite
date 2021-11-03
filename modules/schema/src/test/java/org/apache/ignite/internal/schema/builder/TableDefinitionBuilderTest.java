@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.schema.builder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for table schema builder.
@@ -34,14 +34,14 @@ public class TableDefinitionBuilderTest {
      */
     @Test
     public void testBuild() {
-        TableDefinitionBuilder builder = SchemaBuilders.tableBuilder("SNAME","TNAME")
-            .columns(
-                SchemaBuilders.column("COL1", ColumnType.DOUBLE).build(),
-                SchemaBuilders.column("COL2", ColumnType.DOUBLE).build())
-            .withPrimaryKey("COL1");
-
+        TableDefinitionBuilder builder = SchemaBuilders.tableBuilder("SNAME", "TNAME")
+                .columns(
+                        SchemaBuilders.column("COL1", ColumnType.DOUBLE).build(),
+                        SchemaBuilders.column("COL2", ColumnType.DOUBLE).build())
+                .withPrimaryKey("COL1");
+        
         TableDefinition tbl = builder.build();
-
+        
         assertEquals("SNAME.TNAME", tbl.canonicalName());
         assertEquals("TNAME", tbl.name());
         assertEquals(1, tbl.keyColumns().size());

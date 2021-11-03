@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.client.proto;
 
+import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
@@ -31,20 +35,16 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.UUID;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import org.apache.ignite.lang.IgniteUuid;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.buffer.OutputStreamBufferOutput;
 import org.msgpack.value.Value;
 
-import static org.apache.ignite.internal.client.proto.ClientMessageCommon.HEADER_SIZE;
-
 /**
  * Ignite-specific MsgPack extension based on Netty ByteBuf.
- * <p>
- * Releases wrapped buffer on {@link #close()} .
+ *
+ * <p>Releases wrapped buffer on {@link #close()} .
  */
 public class ClientMessagePacker extends MessagePacker {
     /** Underlying buffer. */
@@ -76,8 +76,7 @@ public class ClientMessagePacker extends MessagePacker {
     public ByteBuf getBuffer() {
         try {
             flush();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
@@ -87,7 +86,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packNil() {
+    @Override
+    public MessagePacker packNil() {
         assert !closed : "Packer is closed";
 
         try {
@@ -98,7 +98,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packBoolean(boolean b) {
+    @Override
+    public MessagePacker packBoolean(boolean b) {
         assert !closed : "Packer is closed";
 
         try {
@@ -109,7 +110,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packByte(byte b) {
+    @Override
+    public MessagePacker packByte(byte b) {
         assert !closed : "Packer is closed";
 
         try {
@@ -120,7 +122,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packShort(short v) {
+    @Override
+    public MessagePacker packShort(short v) {
         assert !closed : "Packer is closed";
 
         try {
@@ -131,7 +134,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packInt(int r) {
+    @Override
+    public MessagePacker packInt(int r) {
         assert !closed : "Packer is closed";
 
         try {
@@ -142,7 +146,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packLong(long v) {
+    @Override
+    public MessagePacker packLong(long v) {
         assert !closed : "Packer is closed";
 
         try {
@@ -153,7 +158,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packBigInteger(BigInteger bi) {
+    @Override
+    public MessagePacker packBigInteger(BigInteger bi) {
         assert !closed : "Packer is closed";
 
         try {
@@ -164,7 +170,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packFloat(float v) {
+    @Override
+    public MessagePacker packFloat(float v) {
         assert !closed : "Packer is closed";
 
         try {
@@ -175,7 +182,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packDouble(double v) {
+    @Override
+    public MessagePacker packDouble(double v) {
         assert !closed : "Packer is closed";
 
         try {
@@ -186,7 +194,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packString(String s) {
+    @Override
+    public MessagePacker packString(String s) {
         assert !closed : "Packer is closed";
 
         try {
@@ -197,7 +206,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packArrayHeader(int arraySize) {
+    @Override
+    public MessagePacker packArrayHeader(int arraySize) {
         assert !closed : "Packer is closed";
 
         try {
@@ -208,7 +218,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packMapHeader(int mapSize) {
+    @Override
+    public MessagePacker packMapHeader(int mapSize) {
         assert !closed : "Packer is closed";
 
         try {
@@ -219,7 +230,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packValue(Value v) {
+    @Override
+    public MessagePacker packValue(Value v) {
         assert !closed : "Packer is closed";
 
         try {
@@ -230,7 +242,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packExtensionTypeHeader(byte extType, int payloadLen) {
+    @Override
+    public MessagePacker packExtensionTypeHeader(byte extType, int payloadLen) {
         assert !closed : "Packer is closed";
 
         try {
@@ -241,7 +254,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packBinaryHeader(int len) {
+    @Override
+    public MessagePacker packBinaryHeader(int len) {
         assert !closed : "Packer is closed";
 
         try {
@@ -252,7 +266,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker packRawStringHeader(int len) {
+    @Override
+    public MessagePacker packRawStringHeader(int len) {
         assert !closed : "Packer is closed";
 
         try {
@@ -263,7 +278,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker writePayload(byte[] src) {
+    @Override
+    public MessagePacker writePayload(byte[] src) {
         assert !closed : "Packer is closed";
 
         try {
@@ -274,7 +290,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker writePayload(byte[] src, int off, int len) {
+    @Override
+    public MessagePacker writePayload(byte[] src, int off, int len) {
         assert !closed : "Packer is closed";
 
         try {
@@ -285,7 +302,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker addPayload(byte[] src) {
+    @Override
+    public MessagePacker addPayload(byte[] src) {
         assert !closed : "Packer is closed";
 
         try {
@@ -296,7 +314,8 @@ public class ClientMessagePacker extends MessagePacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessagePacker addPayload(byte[] src, int off, int len) {
+    @Override
+    public MessagePacker addPayload(byte[] src, int off, int len) {
         assert !closed : "Packer is closed";
 
         try {
@@ -430,8 +449,9 @@ public class ClientMessagePacker extends MessagePacker {
 
         packArrayHeader(arr.length);
 
-        for (int i : arr)
+        for (int i : arr) {
             packInt(i);
+        }
 
         return this;
     }
@@ -449,9 +469,9 @@ public class ClientMessagePacker extends MessagePacker {
 
         // TODO: Pack directly to ByteBuf without allocating IGNITE-15234.
         ByteBuffer.wrap(data)
-            .putInt(val.getYear())
-            .put((byte)val.getMonthValue())
-            .put((byte)val.getDayOfMonth());
+                .putInt(val.getYear())
+                .put((byte) val.getMonthValue())
+                .put((byte) val.getDayOfMonth());
 
         packExtensionTypeHeader(ClientMsgPackType.DATE, data.length);
 
@@ -473,10 +493,10 @@ public class ClientMessagePacker extends MessagePacker {
 
         // TODO: Pack directly to ByteBuf without allocating IGNITE-15234.
         ByteBuffer.wrap(data)
-            .put((byte)val.getHour())
-            .put((byte)val.getMinute())
-            .put((byte)val.getSecond())
-            .putInt(val.getNano());
+                .put((byte) val.getHour())
+                .put((byte) val.getMinute())
+                .put((byte) val.getSecond())
+                .putInt(val.getNano());
 
         packExtensionTypeHeader(ClientMsgPackType.TIME, data.length);
 
@@ -498,13 +518,13 @@ public class ClientMessagePacker extends MessagePacker {
 
         // TODO: Pack directly to ByteBuf without allocating IGNITE-15234.
         ByteBuffer.wrap(data)
-            .putInt(val.getYear())
-            .put((byte)val.getMonthValue())
-            .put((byte)val.getDayOfMonth())
-            .put((byte)val.getHour())
-            .put((byte)val.getMinute())
-            .put((byte)val.getSecond())
-            .putInt(val.getNano());
+                .putInt(val.getYear())
+                .put((byte) val.getMonthValue())
+                .put((byte) val.getDayOfMonth())
+                .put((byte) val.getHour())
+                .put((byte) val.getMinute())
+                .put((byte) val.getSecond())
+                .putInt(val.getNano());
 
         packExtensionTypeHeader(ClientMsgPackType.DATETIME, data.length);
 
@@ -527,8 +547,8 @@ public class ClientMessagePacker extends MessagePacker {
 
         // TODO: Pack directly to ByteBuf without allocating IGNITE-15234.
         ByteBuffer.wrap(data)
-            .putLong(val.getEpochSecond())
-            .putInt(val.getNano());
+                .putLong(val.getEpochSecond())
+                .putInt(val.getNano());
 
         packExtensionTypeHeader(ClientMsgPackType.TIMESTAMP, data.length);
 
@@ -545,61 +565,77 @@ public class ClientMessagePacker extends MessagePacker {
      * @throws UnsupportedOperationException When type is not supported.
      */
     public ClientMessagePacker packObject(Object val) {
-        if (val == null)
-            return (ClientMessagePacker)packNil();
+        if (val == null) {
+            return (ClientMessagePacker) packNil();
+        }
 
-        if (val instanceof Byte)
-            return (ClientMessagePacker)packByte((byte)val);
+        if (val instanceof Byte) {
+            return (ClientMessagePacker) packByte((byte) val);
+        }
 
-        if (val instanceof Short)
-            return (ClientMessagePacker)packShort((short)val);
+        if (val instanceof Short) {
+            return (ClientMessagePacker) packShort((short) val);
+        }
 
-        if (val instanceof Integer)
-            return (ClientMessagePacker)packInt((int)val);
+        if (val instanceof Integer) {
+            return (ClientMessagePacker) packInt((int) val);
+        }
 
-        if (val instanceof Long)
-            return (ClientMessagePacker)packLong((long)val);
+        if (val instanceof Long) {
+            return (ClientMessagePacker) packLong((long) val);
+        }
 
-        if (val instanceof Float)
-            return (ClientMessagePacker)packFloat((float)val);
+        if (val instanceof Float) {
+            return (ClientMessagePacker) packFloat((float) val);
+        }
 
-        if (val instanceof Double)
-            return (ClientMessagePacker)packDouble((double)val);
+        if (val instanceof Double) {
+            return (ClientMessagePacker) packDouble((double) val);
+        }
 
-        if (val instanceof UUID)
-            return packUuid((UUID)val);
+        if (val instanceof UUID) {
+            return packUuid((UUID) val);
+        }
 
-        if (val instanceof String)
-            return (ClientMessagePacker)packString((String)val);
+        if (val instanceof String) {
+            return (ClientMessagePacker) packString((String) val);
+        }
 
         if (val instanceof byte[]) {
-            byte[] bytes = (byte[])val;
+            byte[] bytes = (byte[]) val;
             packBinaryHeader(bytes.length);
             writePayload(bytes);
 
             return this;
         }
 
-        if (val instanceof BigDecimal)
-            return packDecimal((BigDecimal)val);
+        if (val instanceof BigDecimal) {
+            return packDecimal((BigDecimal) val);
+        }
 
-        if (val instanceof BigInteger)
-            return packNumber((BigInteger)val);
+        if (val instanceof BigInteger) {
+            return packNumber((BigInteger) val);
+        }
 
-        if (val instanceof BitSet)
-            return packBitSet((BitSet)val);
+        if (val instanceof BitSet) {
+            return packBitSet((BitSet) val);
+        }
 
-        if (val instanceof LocalDate)
-            return packDate((LocalDate)val);
+        if (val instanceof LocalDate) {
+            return packDate((LocalDate) val);
+        }
 
-        if (val instanceof LocalTime)
-            return packTime((LocalTime)val);
+        if (val instanceof LocalTime) {
+            return packTime((LocalTime) val);
+        }
 
-        if (val instanceof LocalDateTime)
-            return packDateTime((LocalDateTime)val);
+        if (val instanceof LocalDateTime) {
+            return packDateTime((LocalDateTime) val);
+        }
 
-        if (val instanceof Instant)
-            return packTimestamp((Instant)val);
+        if (val instanceof Instant) {
+            return packTimestamp((Instant) val);
+        }
 
         throw new UnsupportedOperationException("Unsupported type, can't serialize: " + val.getClass());
     }
@@ -633,97 +669,82 @@ public class ClientMessagePacker extends MessagePacker {
 
             if (cls == Boolean.class) {
                 packInt(ClientDataType.BOOLEAN);
-                packBoolean((Boolean)arg);
-            }
-            else if (cls == Byte.class) {
+                packBoolean((Boolean) arg);
+            } else if (cls == Byte.class) {
                 packInt(ClientDataType.INT8);
-                packByte((Byte)arg);
-            }
-            else if (cls == Short.class) {
+                packByte((Byte) arg);
+            } else if (cls == Short.class) {
                 packInt(ClientDataType.INT16);
-                packShort((Short)arg);
-            }
-            else if (cls == Integer.class) {
+                packShort((Short) arg);
+            } else if (cls == Integer.class) {
                 packInt(ClientDataType.INT32);
-                packInt((Integer)arg);
-            }
-            else if (cls == Long.class) {
+                packInt((Integer) arg);
+            } else if (cls == Long.class) {
                 packInt(ClientDataType.INT64);
-                packLong((Long)arg);
-            }
-            else if (cls == Float.class) {
+                packLong((Long) arg);
+            } else if (cls == Float.class) {
                 packInt(ClientDataType.FLOAT);
-                packFloat((Float)arg);
-            }
-            else if (cls == Double.class) {
+                packFloat((Float) arg);
+            } else if (cls == Double.class) {
                 packInt(ClientDataType.DOUBLE);
-                packDouble((Double)arg);
-            }
-            else if (cls == String.class) {
+                packDouble((Double) arg);
+            } else if (cls == String.class) {
                 packInt(ClientDataType.STRING);
-                packString((String)arg);
-            }
-            else if (cls == UUID.class) {
+                packString((String) arg);
+            } else if (cls == UUID.class) {
                 packInt(ClientDataType.UUID);
-                packUuid((UUID)arg);
-            }
-            else if (cls == LocalDate.class) {
+                packUuid((UUID) arg);
+            } else if (cls == LocalDate.class) {
                 packInt(ClientDataType.DATE);
-                packDate((LocalDate)arg);
-            }
-            else if (cls == LocalTime.class) {
+                packDate((LocalDate) arg);
+            } else if (cls == LocalTime.class) {
                 packInt(ClientDataType.TIME);
-                packTime((LocalTime)arg);
-            }
-            else if (cls == LocalDateTime.class) {
+                packTime((LocalTime) arg);
+            } else if (cls == LocalDateTime.class) {
                 packInt(ClientDataType.DATETIME);
-                packDateTime((LocalDateTime)arg);
-            }
-            else if (cls == Instant.class) {
+                packDateTime((LocalDateTime) arg);
+            } else if (cls == Instant.class) {
                 packInt(ClientDataType.TIMESTAMP);
-                packTimestamp((Instant)arg);
-            }
-            else if (cls == byte[].class) {
+                packTimestamp((Instant) arg);
+            } else if (cls == byte[].class) {
                 packInt(ClientDataType.BYTES);
 
-                packBinaryHeader(((byte[])arg).length);
-                writePayload((byte[])arg);
-            }
-            else if (cls == Date.class) {
+                packBinaryHeader(((byte[]) arg).length);
+                writePayload((byte[]) arg);
+            } else if (cls == Date.class) {
                 packInt(ClientDataType.DATE);
-                packDate(((Date)arg).toLocalDate());
-            }
-            else if (cls == Time.class) {
+                packDate(((Date) arg).toLocalDate());
+            } else if (cls == Time.class) {
                 packInt(ClientDataType.TIME);
-                packTime(((Time)arg).toLocalTime());
-            }
-            else if (cls == Timestamp.class) {
+                packTime(((Time) arg).toLocalTime());
+            } else if (cls == Timestamp.class) {
                 packInt(ClientDataType.TIMESTAMP);
-                packTimestamp(((java.util.Date)arg).toInstant());
-            }
-            else if (cls == BigDecimal.class) {
+                packTimestamp(((java.util.Date) arg).toInstant());
+            } else if (cls == BigDecimal.class) {
                 packInt(ClientDataType.DECIMAL);
-                packDecimal(((BigDecimal)arg));
-            }
-            else if (cls == BigInteger.class) {
+                packDecimal(((BigDecimal) arg));
+            } else if (cls == BigInteger.class) {
                 packInt(ClientDataType.BIGINTEGER);
-                packBigInteger(((BigInteger)arg));
-            }
-            else
+                packBigInteger(((BigInteger) arg));
+            } else {
                 throw new UnsupportedOperationException("Custom objects are not supported");
+            }
         }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (closed)
+    @Override
+    public void close() {
+        if (closed) {
             return;
+        }
 
         closed = true;
 
-        if (buf.refCnt() > 0)
+        if (buf.refCnt() > 0) {
             buf.release();
+        }
     }
 }

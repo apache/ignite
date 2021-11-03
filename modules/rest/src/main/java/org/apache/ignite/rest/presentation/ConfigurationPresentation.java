@@ -37,7 +37,7 @@ public interface ConfigurationPresentation<R> {
     /**
      * Converts to presentation only a fraction of system configuration defined by given path.
      *
-     * If null path is passed method should fall back to returning whole system configuration.
+     * <p>If null path is passed method should fall back to returning whole system configuration.
      *
      * @param path Path to requested configuration in configuration tree or {@code null}.
      * @return Requested configuration fraction or whole configuration if {@code null} was passed.
@@ -49,9 +49,9 @@ public interface ConfigurationPresentation<R> {
      * Converts and applies configuration update request to system configuration.
      *
      * @param cfgUpdate Configuration update request in representation form.
-     * @throws IllegalArgumentException If the configuration format is invalid.
+     * @throws IllegalArgumentException         If the configuration format is invalid.
      * @throws ConfigurationValidationException If configuration validation failed.
-     * @throws IgniteException If an error happens.
+     * @throws IgniteException                  If an error happens.
      */
     void update(R cfgUpdate);
 }

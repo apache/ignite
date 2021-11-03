@@ -23,14 +23,15 @@ import org.apache.calcite.rel.RelNode;
  *
  */
 public class NodeMappingException extends RuntimeException {
-    /** */
+    /**
+     *
+     */
     private final RelNode node;
 
     /**
-     *
      * @param message Message.
-     * @param node Node of a query plan, where the exception was thrown.
-     * @param cause Cause.
+     * @param node    Node of a query plan, where the exception was thrown.
+     * @param cause   Cause.
      */
     public NodeMappingException(String message, RelNode node, Throwable cause) {
         super(message, cause);

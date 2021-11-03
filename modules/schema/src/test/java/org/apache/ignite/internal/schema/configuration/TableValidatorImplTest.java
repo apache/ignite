@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
@@ -32,23 +40,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-/** */
+/**
+ *
+ */
 @ExtendWith(ConfigurationExtension.class)
 public class TableValidatorImplTest {
     /** Basic table configuration to mutate and then validate. */
-    @InjectConfiguration("mock.tables.table {\n" +
-        "    name = schema.table,\n" +
-        "    columns.0 {name = id, type.type = STRING, nullable = true},\n" +
-        "    primaryKey {columns = [id], affinityColumns = [id]}\n" +
-        "}")
+    @InjectConfiguration("mock.tables.table {\n"
+            + "    name = schema.table,\n"
+            + "    columns.0 {name = id, type.type = STRING, nullable = true},\n"
+            + "    primaryKey {columns = [id], affinityColumns = [id]}\n"
+            + "}")
     private TablesConfiguration tableCfg;
 
     /** Tests that validator finds no issues in a simple valid configuration. */
@@ -81,15 +83,15 @@ public class TableValidatorImplTest {
         assertEquals(1, issuesCaptor.getAllValues().size());
 
         assertEquals(
-            "Data region 'r0' configured for table 'schema.table' isn't found",
-            issuesCaptor.getValue().message()
+                "Data region 'r0' configured for table 'schema.table' isn't found",
+                issuesCaptor.getValue().message()
         );
     }
 
     /** Tests that new data region must have the same type. */
     @Test
     public void testChangeDataRegionType(
-        @InjectConfiguration("mock.regions.r0.type = foo") DataStorageConfiguration dbCfg
+            @InjectConfiguration("mock.regions.r0.type = foo") DataStorageConfiguration dbCfg
     ) throws Exception {
         NamedListView<TableView> oldValue = tableCfg.tables().value();
 
@@ -108,24 +110,24 @@ public class TableValidatorImplTest {
         assertEquals(1, issuesCaptor.getAllValues().size());
 
         assertEquals(
-            "Unable to move table 'schema.table' from region 'default' to region 'r0' because it has" +
-                " different type (old=rocksdb, new=foo)",
-            issuesCaptor.getValue().message()
+                "Unable to move table 'schema.table' from region 'default' to region 'r0' because it has"
+                        + " different type (old=rocksdb, new=foo)",
+                issuesCaptor.getValue().message()
         );
     }
 
     /**
      * Mocks validation context.
      *
-     * @param oldValue Old value of configuration.
-     * @param newValue New value of configuration.
+     * @param oldValue  Old value of configuration.
+     * @param newValue  New value of configuration.
      * @param dbCfgView Data storage configuration to register it by {@link DataStorageConfiguration#KEY}.
      * @return Mocked validation context.
      */
     private static ValidationContext<NamedListView<TableView>> mockContext(
-        @Nullable NamedListView<TableView> oldValue,
-        NamedListView<TableView> newValue,
-        DataStorageView dbCfgView
+            @Nullable NamedListView<TableView> oldValue,
+            NamedListView<TableView> newValue,
+            DataStorageView dbCfgView
     ) {
         ValidationContext<NamedListView<TableView>> ctx = mock(ValidationContext.class);
 

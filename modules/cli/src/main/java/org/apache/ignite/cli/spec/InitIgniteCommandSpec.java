@@ -36,13 +36,14 @@ public class InitIgniteCommandSpec extends CommandSpec implements IgniteCommand 
 
     /** Option for custom maven repository to download Ignite core. */
     @CommandLine.Option(
-        names = "--repo",
-        description = "Additional Maven repository URL"
+            names = "--repo",
+            description = "Additional Maven repository URL"
     )
     private URL[] urls;
 
     /** {@inheritDoc} */
-    @Override public void run() {
+    @Override
+    public void run() {
         cmd.init(urls, spec.commandLine().getOut(), spec.commandLine().getColorScheme());
     }
 }

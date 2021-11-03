@@ -17,31 +17,6 @@
 
 package org.apache.ignite.internal.client.proto;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.BitSet;
-import java.util.UUID;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-import org.apache.ignite.internal.util.ArrayUtils;
-import org.apache.ignite.lang.IgniteException;
-import org.apache.ignite.lang.IgniteUuid;
-import org.msgpack.core.ExtensionTypeHeader;
-import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessageSizeException;
-import org.msgpack.core.MessageTypeException;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.core.buffer.InputStreamBufferInput;
-import org.msgpack.value.ImmutableValue;
-
 import static org.apache.ignite.internal.client.proto.ClientDataType.BIGINTEGER;
 import static org.apache.ignite.internal.client.proto.ClientDataType.BITMASK;
 import static org.apache.ignite.internal.client.proto.ClientDataType.BOOLEAN;
@@ -60,10 +35,35 @@ import static org.apache.ignite.internal.client.proto.ClientDataType.STRING;
 import static org.apache.ignite.internal.client.proto.ClientDataType.TIME;
 import static org.apache.ignite.internal.client.proto.ClientDataType.TIMESTAMP;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.BitSet;
+import java.util.UUID;
+import org.apache.ignite.internal.util.ArrayUtils;
+import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.lang.IgniteUuid;
+import org.msgpack.core.ExtensionTypeHeader;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageSizeException;
+import org.msgpack.core.MessageTypeException;
+import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.buffer.InputStreamBufferInput;
+import org.msgpack.value.ImmutableValue;
+
 /**
  * Ignite-specific MsgPack extension based on Netty ByteBuf.
- * <p>
- * Releases wrapped buffer on {@link #close()} .
+ *
+ * <p>Releases wrapped buffer on {@link #close()} .
  */
 public class ClientMessageUnpacker extends MessageUnpacker {
     /** Underlying buffer. */
@@ -93,7 +93,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public int unpackInt() {
+    @Override
+    public int unpackInt() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -104,7 +105,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public String unpackString() {
+    @Override
+    public String unpackString() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -115,7 +117,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public void unpackNil() {
+    @Override
+    public void unpackNil() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -126,7 +129,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean unpackBoolean() {
+    @Override
+    public boolean unpackBoolean() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -137,7 +141,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public byte unpackByte() {
+    @Override
+    public byte unpackByte() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -148,7 +153,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public short unpackShort() {
+    @Override
+    public short unpackShort() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -159,7 +165,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public long unpackLong() {
+    @Override
+    public long unpackLong() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -170,7 +177,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public BigInteger unpackBigInteger() {
+    @Override
+    public BigInteger unpackBigInteger() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -181,7 +189,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public float unpackFloat() {
+    @Override
+    public float unpackFloat() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -192,7 +201,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public double unpackDouble() {
+    @Override
+    public double unpackDouble() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -203,7 +213,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public int unpackArrayHeader() {
+    @Override
+    public int unpackArrayHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -214,7 +225,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public int unpackMapHeader() {
+    @Override
+    public int unpackMapHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -225,7 +237,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public ExtensionTypeHeader unpackExtensionTypeHeader() {
+    @Override
+    public ExtensionTypeHeader unpackExtensionTypeHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -236,7 +249,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public int unpackBinaryHeader() {
+    @Override
+    public int unpackBinaryHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -247,7 +261,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tryUnpackNil() {
+    @Override
+    public boolean tryUnpackNil() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -258,7 +273,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] readPayload(int length) {
+    @Override
+    public byte[] readPayload(int length) {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -269,7 +285,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public MessageFormat getNextFormat() {
+    @Override
+    public MessageFormat getNextFormat() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -280,7 +297,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public void skipValue(int count) {
+    @Override
+    public void skipValue(int count) {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -291,7 +309,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public void skipValue() {
+    @Override
+    public void skipValue() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -302,7 +321,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -313,7 +333,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public ImmutableValue unpackValue() {
+    @Override
+    public ImmutableValue unpackValue() {
         assert refCnt > 0 : "Unpacker is closed";
 
         try {
@@ -337,11 +358,13 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.UUID)
+        if (type != ClientMsgPackType.UUID) {
             throw new MessageTypeException("Expected UUID extension (3), but got " + type);
+        }
 
-        if (len != 16)
+        if (len != 16) {
             throw new MessageSizeException("Expected 16 bytes for UUID extension, but got " + len, len);
+        }
 
         var bytes = readPayload(16);
 
@@ -364,11 +387,13 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.IGNITE_UUID)
+        if (type != ClientMsgPackType.IGNITE_UUID) {
             throw new MessageTypeException("Expected Ignite UUID extension (1), but got " + type);
+        }
 
-        if (len != 24)
+        if (len != 24) {
             throw new MessageSizeException("Expected 24 bytes for UUID extension, but got " + len, len);
+        }
 
         var bytes = readPayload(24);
 
@@ -390,8 +415,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.DECIMAL)
+        if (type != ClientMsgPackType.DECIMAL) {
             throw new MessageTypeException("Expected DECIMAL extension (2), but got " + type);
+        }
 
         var bytes = readPayload(len);
 
@@ -415,8 +441,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.BITMASK)
+        if (type != ClientMsgPackType.BITMASK) {
             throw new MessageTypeException("Expected BITSET extension (7), but got " + type);
+        }
 
         var bytes = readPayload(len);
 
@@ -436,8 +463,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.NUMBER)
+        if (type != ClientMsgPackType.NUMBER) {
             throw new MessageTypeException("Expected NUMBER extension (1), but got " + type);
+        }
 
         var bytes = readPayload(len);
 
@@ -454,13 +482,15 @@ public class ClientMessageUnpacker extends MessageUnpacker {
 
         int size = unpackArrayHeader();
 
-        if (size == 0)
+        if (size == 0) {
             return ArrayUtils.INT_EMPTY_ARRAY;
+        }
 
         int[] res = new int[size];
 
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             res[i] = unpackInt();
+        }
 
         return res;
     }
@@ -479,11 +509,13 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.DATE)
+        if (type != ClientMsgPackType.DATE) {
             throw new MessageTypeException("Expected DATE extension (4), but got " + type);
+        }
 
-        if (len != 6)
+        if (len != 6) {
             throw new MessageSizeException("Expected 6 bytes for DATE extension, but got " + len, len);
+        }
 
         var data = ByteBuffer.wrap(readPayload(len));
 
@@ -504,11 +536,13 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.TIME)
+        if (type != ClientMsgPackType.TIME) {
             throw new MessageTypeException("Expected TIME extension (5), but got " + type);
+        }
 
-        if (len != 7)
+        if (len != 7) {
             throw new MessageSizeException("Expected 7 bytes for TIME extension, but got " + len, len);
+        }
 
         var data = ByteBuffer.wrap(readPayload(len));
 
@@ -529,17 +563,19 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.DATETIME)
+        if (type != ClientMsgPackType.DATETIME) {
             throw new MessageTypeException("Expected DATETIME extension (6), but got " + type);
+        }
 
-        if (len != 13)
+        if (len != 13) {
             throw new MessageSizeException("Expected 13 bytes for DATETIME extension, but got " + len, len);
+        }
 
         var data = ByteBuffer.wrap(readPayload(len));
 
         return LocalDateTime.of(
-            LocalDate.of(data.getInt(), data.get(), data.get()),
-            LocalTime.of(data.get(), data.get(), data.get(), data.getInt())
+                LocalDate.of(data.getInt(), data.get(), data.get()),
+                LocalTime.of(data.get(), data.get(), data.get(), data.getInt())
         );
     }
 
@@ -557,11 +593,13 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         var type = hdr.getType();
         var len = hdr.getLength();
 
-        if (type != ClientMsgPackType.TIMESTAMP)
+        if (type != ClientMsgPackType.TIMESTAMP) {
             throw new MessageTypeException("Expected TIMESTAMP extension (6), but got " + type);
+        }
 
-        if (len != 12)
+        if (len != 12) {
             throw new MessageSizeException("Expected 12 bytes for TIMESTAMP extension, but got " + len, len);
+        }
 
         var data = ByteBuffer.wrap(readPayload(len));
 
@@ -572,13 +610,13 @@ public class ClientMessageUnpacker extends MessageUnpacker {
      * Unpacks an object based on the specified type.
      *
      * @param dataType Data type code.
-     *
      * @return Unpacked object.
      * @throws IgniteException when data type is not valid.
      */
     public Object unpackObject(int dataType) {
-        if (tryUnpackNil())
+        if (tryUnpackNil()) {
             return null;
+        }
 
         switch (dataType) {
             case BOOLEAN:
@@ -637,6 +675,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
 
             case TIMESTAMP:
                 return unpackTimestamp();
+
+            default:
+                break;
         }
 
         throw new IgniteException("Unknown client data type: " + dataType);
@@ -651,19 +692,22 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     public Object[] unpackObjectArray() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        if (tryUnpackNil())
+        if (tryUnpackNil()) {
             return null;
+        }
 
         int size = unpackArrayHeader();
 
-        if (size == 0)
+        if (size == 0) {
             return ArrayUtils.OBJECT_EMPTY_ARRAY;
+        }
 
         Object[] args = new Object[size];
 
         for (int i = 0; i < size; i++) {
-            if (tryUnpackNil())
+            if (tryUnpackNil()) {
                 continue;
+            }
 
             args[i] = unpackObject(unpackInt());
         }
@@ -700,13 +744,16 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (refCnt == 0)
+    @Override
+    public void close() {
+        if (refCnt == 0) {
             return;
+        }
 
         refCnt--;
 
-        if (buf.refCnt() > 0)
+        if (buf.refCnt() > 0) {
             buf.release();
+        }
     }
 }

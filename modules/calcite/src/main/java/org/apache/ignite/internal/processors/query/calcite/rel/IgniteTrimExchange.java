@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
+import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -32,23 +34,26 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
-import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
  *
  */
 public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel {
-    /** */
+    /**
+     *
+     */
     private final long sourceId;
 
-    /** */
+    /**
+     *
+     */
     public IgniteTrimExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input,
-        RelDistribution distribution) {
+            RelDistribution distribution) {
         this(-1, cluster, traits, input, distribution);
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteTrimExchange(long sourceId, RelOptCluster cluster, RelTraitSet traits, RelNode input, RelDistribution distribution) {
         super(cluster, traits, input, distribution);
 
@@ -57,63 +62,75 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
         this.sourceId = sourceId;
     }
 
-    /** */
+    /**
+     *
+     */
     public IgniteTrimExchange(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE, input.getDistribution()));
 
         Object srcIdObj = input.get("sourceId");
-        if (srcIdObj != null)
-            sourceId = ((Number)srcIdObj).longValue();
-        else
+        if (srcIdObj != null) {
+            sourceId = ((Number) srcIdObj).longValue();
+        } else {
             sourceId = -1;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long sourceId() {
+    @Override
+    public long sourceId() {
         return sourceId;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
-        return (IgniteDistribution)distribution;
+    @Override
+    public IgniteDistribution distribution() {
+        return (IgniteDistribution) distribution;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEnforcer() {
+    @Override
+    public boolean isEnforcer() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .itemIf("sourceId", sourceId, sourceId != -1);
+                .itemIf("sourceId", sourceId, sourceId != -1);
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(getInput());
 
         return planner.getCostFactory().makeCost(rowCount,
-            rowCount * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
+                rowCount * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
 
     /** {@inheritDoc} */
-    @Override public Exchange copy(RelTraitSet traits, RelNode input, RelDistribution distribution) {
+    @Override
+    public Exchange copy(RelTraitSet traits, RelNode input, RelDistribution distribution) {
         return new IgniteTrimExchange(getCluster(), traits, input, distribution);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(long sourceId) {
+    @Override
+    public IgniteRel clone(long sourceId) {
         return new IgniteTrimExchange(sourceId, getCluster(), getTraitSet(), getInput(), getDistribution());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteTrimExchange(sourceId, cluster, getTraitSet(), sole(inputs), getDistribution());
     }
 }

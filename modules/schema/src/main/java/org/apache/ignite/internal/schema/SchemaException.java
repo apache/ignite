@@ -35,7 +35,7 @@ public class SchemaException extends IgniteInternalException {
     /**
      * Constructor with error message and cause.
      *
-     * @param msg Message.
+     * @param msg   Message.
      * @param cause Cause.
      */
     public SchemaException(String msg, Throwable cause) {

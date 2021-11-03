@@ -36,17 +36,19 @@ public interface IgniteDistribution extends RelDistribution {
     /**
      * Creates a destination based on this function algorithm, given nodes mapping and distribution keys.
      *
-     * @param ectx Execution context.
+     * @param ectx            Execution context.
      * @param affinityService Affinity function source.
-     * @param targetGroup Target mapping.
+     * @param targetGroup     Target mapping.
      * @return Destination function.
      */
-    <Row> Destination<Row> destination(ExecutionContext<Row> ectx, AffinityService affinityService,
-        ColocationGroup targetGroup);
+    <RowT> Destination<RowT> destination(ExecutionContext<RowT> ectx, AffinityService affinityService,
+            ColocationGroup targetGroup);
 
     /** {@inheritDoc} */
-    @Override ImmutableIntList getKeys();
+    @Override
+    ImmutableIntList getKeys();
 
     /** {@inheritDoc} */
-    @Override IgniteDistribution apply(Mappings.TargetMapping mapping);
+    @Override
+    IgniteDistribution apply(Mappings.TargetMapping mapping);
 }

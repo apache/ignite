@@ -55,18 +55,18 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     /**
      * Constructor.
      *
-     * @param schemaName Schema name.
-     * @param tableName Table name.
-     * @param colMap Columns.
+     * @param schemaName           Schema name.
+     * @param tableName            Table name.
+     * @param colMap               Columns.
      * @param primaryKeyDefinition Primary key.
-     * @param indices Indices.
+     * @param indices              Indices.
      */
     public TableDefinitionImpl(
-        String schemaName,
-        String tableName,
-        LinkedHashMap<String, ColumnDefinition> colMap,
-        PrimaryKeyDefinition primaryKeyDefinition,
-        Map<String, IndexDefinition> indices
+            String schemaName,
+            String tableName,
+            LinkedHashMap<String, ColumnDefinition> colMap,
+            PrimaryKeyDefinition primaryKeyDefinition,
+            Map<String, IndexDefinition> indices
     ) {
         super(tableName);
 
@@ -79,32 +79,38 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     }
 
     /** {@inheritDoc} */
-    @Override public String schemaName() {
+    @Override
+    public String schemaName() {
         return schemaName;
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> keyColumns() {
+    @Override
+    public Set<String> keyColumns() {
         return keyCols;
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> affinityColumns() {
+    @Override
+    public Set<String> affinityColumns() {
         return affCols;
     }
 
     /** {@inheritDoc} */
-    @Override public List<ColumnDefinition> columns() {
+    @Override
+    public List<ColumnDefinition> columns() {
         return new ArrayList<>(colMap.values());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IndexDefinition> indices() {
+    @Override
+    public Collection<IndexDefinition> indices() {
         return Collections.unmodifiableCollection(indices.values());
     }
 
     /** {@inheritDoc} */
-    @Override public TableModificationBuilder toBuilder() {
+    @Override
+    public TableModificationBuilder toBuilder() {
         return new TableModificationBuilderImpl(this);
     }
 
@@ -125,7 +131,8 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(TableDefinitionImpl.class, this);
     }
 }

@@ -40,8 +40,8 @@ public abstract class KeyCriterion {
      * Union current key criterion with another one.
      *
      * @param keyCriterion Criterion to calculate the union with.
-     * @param swapTry Set to {@code true} if current criterion can't calculate the union
-     *                and trying to calculate it from the opposite side.
+     * @param swapTry      Set to {@code true} if current criterion can't calculate the union and trying to calculate it from the opposite
+     *                     side.
      * @return Result key criterion.
      */
     protected abstract KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry);
@@ -49,7 +49,7 @@ public abstract class KeyCriterion {
     /**
      * Union two key criteria and produce the new one.
      *
-     * Rules for the union of different types of criteria:
+     * <p>Rules for the union of different types of criteria:
      * <pre>
      * exact + exact = collection|exact
      * collection + exact = collection
@@ -71,12 +71,11 @@ public abstract class KeyCriterion {
      *
      * @param keyCriterion1 Criterion.
      * @param keyCriterion2 Criterion.
-     *
      * @return Common exception that indicates the given key criterions cannot be combined.
      */
     private static RuntimeException unsupportedUnionException(KeyCriterion keyCriterion1, KeyCriterion keyCriterion2) {
-        return new UnsupportedOperationException("Can't calculate the union between " + keyCriterion1.getClass() +
-            "and " + keyCriterion2.getClass() + " key criteria.");
+        return new UnsupportedOperationException("Can't calculate the union between " + keyCriterion1.getClass()
+                + "and " + keyCriterion2.getClass() + " key criteria.");
     }
 
     /**
@@ -93,7 +92,7 @@ public abstract class KeyCriterion {
          * Creates the instance of range criterion.
          *
          * @param from Start of the range.
-         * @param to End of the range (exclusive).
+         * @param to   End of the range (exclusive).
          */
         public RangeCriterion(ByteArray from, ByteArray to) {
             this.from = from;
@@ -101,13 +100,13 @@ public abstract class KeyCriterion {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(ByteArray key) {
+        @Override
+        public boolean contains(ByteArray key) {
             return key.compareTo(from) >= 0 && key.compareTo(to) < 0;
         }
 
         /**
-         * Calculates range representation for prefix criterion
-         * as {@code (prefixKey, nextKey(prefixKey)) }.
+         * Calculates range representation for prefix criterion as {@code (prefixKey, nextKey(prefixKey)) }.
          *
          * @param prefixKey Prefix criterion.
          * @return Calculated range
@@ -117,62 +116,63 @@ public abstract class KeyCriterion {
         }
 
         /** {@inheritDoc} */
-        @Override protected KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry) {
+        @Override
+        protected KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry) {
             ByteArray from;
             ByteArray to;
 
             if (keyCriterion instanceof ExactCriterion) {
-                from = ((ExactCriterion)keyCriterion).key;
+                from = ((ExactCriterion) keyCriterion).key;
                 to = nextKey(from);
-            }
-            else if (keyCriterion instanceof CollectionCriterion) {
-                from = Collections.min(((CollectionCriterion)keyCriterion).keys);
-                to = nextKey(Collections.max(((CollectionCriterion)keyCriterion).keys));
-            }
-            else if (keyCriterion instanceof RangeCriterion) {
-                from = ((RangeCriterion)keyCriterion).from;
-                to = ((RangeCriterion)keyCriterion).to;
-            }
-            else if (!swapTry)
+            } else if (keyCriterion instanceof CollectionCriterion) {
+                from = Collections.min(((CollectionCriterion) keyCriterion).keys);
+                to = nextKey(Collections.max(((CollectionCriterion) keyCriterion).keys));
+            } else if (keyCriterion instanceof RangeCriterion) {
+                from = ((RangeCriterion) keyCriterion).from;
+                to = ((RangeCriterion) keyCriterion).to;
+            } else if (!swapTry) {
                 return keyCriterion.union(this, true);
-            else
+            } else {
                 throw KeyCriterion.unsupportedUnionException(this, keyCriterion);
+            }
 
             return new RangeCriterion(
-                minFromNullables(this.from, from),
-                maxFromNullables(this.to, to)
+                    minFromNullables(this.from, from),
+                    maxFromNullables(this.to, to)
             );
 
         }
 
         /**
-         * Calculates the maximum of two keys in the scope of keys' range.
-         * According to the logic of range keys - null is an equivalent to +Inf in the range end position.
+         * Calculates the maximum of two keys in the scope of keys' range. According to the logic of range keys - null is an equivalent to
+         * +Inf in the range end position.
          *
          * @param key1 The first key to compare.
          * @param key2 The second key to compare.
          * @return Maximum key.
          */
         private static ByteArray maxFromNullables(ByteArray key1, ByteArray key2) {
-            if (key1 != null && key2 != null)
-               return (key1.compareTo(key2) >= 0) ? key1 : key2;
-            else
+            if (key1 != null && key2 != null) {
+                return (key1.compareTo(key2) >= 0) ? key1 : key2;
+            } else {
                 return null;
+            }
         }
 
         /**
-         * Calculates the minimum of two keys in the scope of keys' range.
-         * According to the logic of range keys - null is an equivalent to -Inf in the range start position.
+         * Calculates the minimum of two keys in the scope of keys' range. According to the logic of range keys - null is an equivalent to
+         * -Inf in the range start position.
          *
          * @param key1 The first key to compare.
          * @param key2 The second key to compare.
          * @return Minimum key.
          */
         private static ByteArray minFromNullables(ByteArray key1, ByteArray key2) {
-            if (key1 != null && key2 != null)
+            if (key1 != null && key2 != null) {
                 return (key1.compareTo(key2) < 0) ? key1 : key2;
-            else
+            } else {
                 return null;
+            }
         }
 
         /**
@@ -184,28 +184,33 @@ public abstract class KeyCriterion {
         private static ByteArray nextKey(ByteArray key) {
             var bytes = Arrays.copyOf(key.bytes(), key.bytes().length);
 
-            if (bytes[bytes.length - 1] != Byte.MAX_VALUE)
+            if (bytes[bytes.length - 1] != Byte.MAX_VALUE) {
                 bytes[bytes.length - 1]++;
-            else
+            } else {
                 bytes = Arrays.copyOf(bytes, bytes.length + 1);
+            }
 
             return new ByteArray(bytes);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            RangeCriterion criterion = (RangeCriterion)o;
+            RangeCriterion criterion = (RangeCriterion) o;
             return Objects.equals(from, criterion.from) && Objects.equals(to, criterion.to);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(from, to);
         }
 
@@ -241,43 +246,49 @@ public abstract class KeyCriterion {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(ByteArray key) {
+        @Override
+        public boolean contains(ByteArray key) {
             return keys.contains(key);
         }
 
         /** {@inheritDoc} */
-        @Override protected KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry) {
+        @Override
+        protected KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry) {
             var newKeys = new HashSet<>(keys);
 
             if (keyCriterion instanceof ExactCriterion) {
-                newKeys.add(((ExactCriterion)keyCriterion).key);
+                newKeys.add(((ExactCriterion) keyCriterion).key);
 
                 return new CollectionCriterion(newKeys);
-            }
-            else if (keyCriterion instanceof CollectionCriterion) {
-                newKeys.addAll(((CollectionCriterion)keyCriterion).keys);
+            } else if (keyCriterion instanceof CollectionCriterion) {
+                newKeys.addAll(((CollectionCriterion) keyCriterion).keys);
 
                 return new CollectionCriterion(newKeys);
-            } else if (!swapTry)
+            } else if (!swapTry) {
                 return keyCriterion.union(keyCriterion, true);
-            else
+            } else {
                 throw KeyCriterion.unsupportedUnionException(this, keyCriterion);
+            }
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            CollectionCriterion criterion = (CollectionCriterion)o;
+            CollectionCriterion criterion = (CollectionCriterion) o;
             return Objects.equals(keys, criterion.keys);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(keys);
         }
 
@@ -306,38 +317,45 @@ public abstract class KeyCriterion {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean contains(ByteArray key) {
+        @Override
+        public boolean contains(ByteArray key) {
             return this.key.equals(key);
         }
 
         /** {@inheritDoc} */
-        @Override protected KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry) {
+        @Override
+        protected KeyCriterion union(KeyCriterion keyCriterion, boolean swapTry) {
             if (keyCriterion instanceof ExactCriterion) {
-                if (equals(keyCriterion))
+                if (equals(keyCriterion)) {
                     return this;
-                else
-                    return new CollectionCriterion(Arrays.asList(key, ((ExactCriterion)keyCriterion).key));
-            }
-            else if (!swapTry)
+                } else {
+                    return new CollectionCriterion(Arrays.asList(key, ((ExactCriterion) keyCriterion).key));
+                }
+            } else if (!swapTry) {
                 return keyCriterion.union(this, true);
-            else
+            } else {
                 throw KeyCriterion.unsupportedUnionException(this, keyCriterion);
+            }
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
+            }
 
-            if (o == null || getClass() != o.getClass())
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
-            ExactCriterion criterion = (ExactCriterion)o;
+            ExactCriterion criterion = (ExactCriterion) o;
             return Objects.equals(key, criterion.key);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(key);
         }
 

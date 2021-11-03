@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Mailbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -38,16 +37,24 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class MailboxRegistryImpl implements MailboxRegistry {
-    /** */
+    /**
+     *
+     */
     private static final Predicate<Mailbox<?>> ALWAYS_TRUE = o -> true;
 
-    /** */
+    /**
+     *
+     */
     private final TopologyService topSrvc;
 
-    /** */
+    /**
+     *
+     */
     private final Map<MailboxKey, Outbox<?>> locals;
 
-    /** */
+    /**
+     *
+     */
     private final Map<MailboxKey, Inbox<?>> remotes;
 
     public MailboxRegistryImpl(TopologyService topSrvc) {
@@ -58,125 +65,157 @@ public class MailboxRegistryImpl implements MailboxRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override
+    public void start() {
         topSrvc.addEventHandler(new NodeLeaveHandler(this::onNodeLeft));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Inbox<T> register(Inbox<T> inbox) {
-        Inbox<T> old = (Inbox<T>)remotes.putIfAbsent(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
+    @Override
+    public <T> Inbox<T> register(Inbox<T> inbox) {
+        Inbox<T> old = (Inbox<T>) remotes.putIfAbsent(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
 
         return old != null ? old : inbox;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void unregister(Inbox<?> inbox) {
-        remotes.remove(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void register(Outbox<?> outbox) {
+    @Override
+    public void register(Outbox<?> outbox) {
         Outbox<?> res = locals.put(new MailboxKey(outbox.queryId(), outbox.exchangeId()), outbox);
-
+        
         assert res == null : res;
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(Outbox<?> outbox) {
+    @Override
+    public void unregister(Inbox<?> inbox) {
+        remotes.remove(new MailboxKey(inbox.queryId(), inbox.exchangeId()), inbox);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void unregister(Outbox<?> outbox) {
         locals.remove(new MailboxKey(outbox.queryId(), outbox.exchangeId()), outbox);
     }
 
     /** {@inheritDoc} */
-    @Override public Outbox<?> outbox(UUID qryId, long exchangeId) {
+    @Override
+    public Outbox<?> outbox(UUID qryId, long exchangeId) {
         return locals.get(new MailboxKey(qryId, exchangeId));
     }
 
     /** {@inheritDoc} */
-    @Override public Inbox<?> inbox(UUID qryId, long exchangeId) {
+    @Override
+    public Inbox<?> inbox(UUID qryId, long exchangeId) {
         return remotes.get(new MailboxKey(qryId, exchangeId));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Inbox<?>> inboxes(@Nullable UUID qryId, long fragmentId, long exchangeId) {
+    @Override
+    public Collection<Inbox<?>> inboxes(@Nullable UUID qryId, long fragmentId, long exchangeId) {
         return remotes.values().stream()
-            .filter(makeFilter(qryId, fragmentId, exchangeId))
-            .collect(Collectors.toList());
+                .filter(makeFilter(qryId, fragmentId, exchangeId))
+                .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Outbox<?>> outboxes(@Nullable UUID qryId, long fragmentId, long exchangeId) {
+    @Override
+    public Collection<Outbox<?>> outboxes(@Nullable UUID qryId, long fragmentId, long exchangeId) {
         return locals.values().stream()
-            .filter(makeFilter(qryId, fragmentId, exchangeId))
-            .collect(Collectors.toList());
+                .filter(makeFilter(qryId, fragmentId, exchangeId))
+                .collect(Collectors.toList());
     }
 
-    /** */
+    /**
+     *
+     */
     private void onNodeLeft(ClusterNode node) {
         locals.values().forEach(n -> n.onNodeLeft(node.id()));
         remotes.values().forEach(n -> n.onNodeLeft(node.id()));
     }
 
-    /** */
+    /**
+     *
+     */
     private static Predicate<Mailbox<?>> makeFilter(@Nullable UUID qryId, long fragmentId, long exchangeId) {
         Predicate<Mailbox<?>> filter = ALWAYS_TRUE;
-        if (qryId != null)
+        if (qryId != null) {
             filter = filter.and(mailbox -> Objects.equals(mailbox.queryId(), qryId));
-        if (fragmentId != -1)
+        }
+        if (fragmentId != -1) {
             filter = filter.and(mailbox -> mailbox.fragmentId() == fragmentId);
-        if (exchangeId != -1)
+        }
+        if (exchangeId != -1) {
             filter = filter.and(mailbox -> mailbox.exchangeId() == exchangeId);
+        }
 
         return filter;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(MailboxRegistryImpl.class, this);
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override
+    public void stop() {
         locals.clear();
         remotes.clear();
     }
 
-    /** */
+    /**
+     *
+     */
     private static class MailboxKey {
-        /** */
+        /**
+         *
+         */
         private final UUID qryId;
 
-        /** */
+        /**
+         *
+         */
         private final long exchangeId;
 
-        /** */
+        /**
+         *
+         */
         private MailboxKey(UUID qryId, long exchangeId) {
             this.qryId = qryId;
             this.exchangeId = exchangeId;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
 
             MailboxKey that = (MailboxKey) o;
 
-            if (exchangeId != that.exchangeId)
+            if (exchangeId != that.exchangeId) {
                 return false;
+            }
             return qryId.equals(that.qryId);
         }
 
         /** {@inheritDoc} */
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             int res = qryId.hashCode();
             res = 31 * res + (int) (exchangeId ^ (exchangeId >>> 32));
             return res;
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return S.toString(MailboxKey.class, this);
         }
     }

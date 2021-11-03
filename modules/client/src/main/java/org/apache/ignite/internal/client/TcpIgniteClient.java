@@ -20,7 +20,6 @@ package org.apache.ignite.internal.client;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
-
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientException;
@@ -56,7 +55,7 @@ public class TcpIgniteClient implements IgniteClient {
      * Constructor with custom channel factory.
      *
      * @param chFactory Channel factory.
-     * @param cfg Config.
+     * @param cfg       Config.
      */
     private TcpIgniteClient(
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
@@ -93,12 +92,14 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTables tables() {
+    @Override
+    public IgniteTables tables() {
         return tables;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTransactions transactions() {
+    @Override
+    public IgniteTransactions transactions() {
         return null;
     }
 
@@ -110,17 +111,20 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override
+    public void close() throws Exception {
         ch.close();
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return "thin-client";
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClientConfiguration configuration() {
+    @Override
+    public IgniteClientConfiguration configuration() {
         return cfg;
     }
 
@@ -128,8 +132,8 @@ public class TcpIgniteClient implements IgniteClient {
      * Send ClientMessage request to server size and reads ClientMessage result.
      *
      * @param opCode Operation code.
-     * @param req ClientMessage request.
-     * @param res ClientMessage result.
+     * @param req    ClientMessage request.
+     * @param res    ClientMessage result.
      */
     public void sendRequest(int opCode, ClientMessage req, ClientMessage res) {
         ch.serviceAsync(opCode, w -> req.writeBinary(w.out()), p -> {

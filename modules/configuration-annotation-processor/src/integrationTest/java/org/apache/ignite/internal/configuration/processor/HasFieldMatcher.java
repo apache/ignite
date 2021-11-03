@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.processor;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class HasFieldMatcher extends BaseMatcher<ParsedClass> {
 
     /**
      * Constructor.
+     *
      * @param fieldName Name of the expected field.
      * @param fieldType Type of the expected field.
      */
@@ -45,38 +47,45 @@ public class HasFieldMatcher extends BaseMatcher<ParsedClass> {
 
     /**
      * Create matcher for fields with types.
+     *
      * @param arguments Array of field names and field types, paired.
      * @return Matcher.
      */
     public static BaseMatcher<ParsedClass> hasFields(String... arguments) {
-        if (arguments.length % 2 != 0)
+        if (arguments.length % 2 != 0) {
             throw new RuntimeException("Number of field names should be equal to number of field types");
+        }
 
         List<HasFieldMatcher> matcherList = new ArrayList<>();
 
-        for (int i = 0; i < arguments.length; i += 2)
+        for (int i = 0; i < arguments.length; i += 2) {
             matcherList.add(new HasFieldMatcher(arguments[i], arguments[i + 1]));
+        }
 
         return new BaseMatcher<ParsedClass>() {
             /** Currently used matcher. */
             int currentMatcher = 0;
 
             /** {@inheritDoc} */
-            @Override public void describeTo(Description description) {
+            @Override
+            public void describeTo(Description description) {
                 matcherList.get(currentMatcher).describeTo(description);
             }
 
             /** {@inheritDoc} */
-            @Override public void describeMismatch(Object item, Description description) {
+            @Override
+            public void describeMismatch(Object item, Description description) {
                 matcherList.get(currentMatcher).describeMismatch(item, description);
             }
 
             /** {@inheritDoc} */
-            @Override public boolean matches(Object o) {
+            @Override
+            public boolean matches(Object o) {
                 for (int i = 0; i < matcherList.size(); i++) {
                     currentMatcher = i;
-                    if (!matcherList.get(i).matches(o))
+                    if (!matcherList.get(i).matches(o)) {
                         return false;
+                    }
                 }
 
                 return true;
@@ -85,28 +94,33 @@ public class HasFieldMatcher extends BaseMatcher<ParsedClass> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(Object o) {
-        if (!(o instanceof ParsedClass))
+    @Override
+    public boolean matches(Object o) {
+        if (!(o instanceof ParsedClass)) {
             return false;
+        }
 
         ParsedClass cls = (ParsedClass) o;
 
         final Map<String, CtFieldReference<?>> fields = cls.getFields();
         final CtFieldReference<?> field = fields.get(fieldName);
 
-        if (field == null)
+        if (field == null) {
             return false;
+        }
 
         return field.getType().getQualifiedName().equals(fieldType);
     }
 
     /** {@inheritDoc} */
-    @Override public void describeTo(Description description) {
+    @Override
+    public void describeTo(Description description) {
         description.appendText(String.format("has field \"%s\" with type \"%s\"", fieldName, fieldType));
     }
 
     /** {@inheritDoc} */
-    @Override public void describeMismatch(Object item, Description description) {
+    @Override
+    public void describeMismatch(Object item, Description description) {
         if (!(item instanceof ParsedClass)) {
             description.appendText("is not ParsedClass instance");
             return;
@@ -123,7 +137,8 @@ public class HasFieldMatcher extends BaseMatcher<ParsedClass> {
         }
 
         final String actualFieldType = field.getType().getQualifiedName();
-        if (!actualFieldType.equals(fieldType))
+        if (!actualFieldType.equals(fieldType)) {
             description.appendText(String.format("\"%s\" has incorrect type \"%s\"", fieldName, actualFieldType));
+        }
     }
 }

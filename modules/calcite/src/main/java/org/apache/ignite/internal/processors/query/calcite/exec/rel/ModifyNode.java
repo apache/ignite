@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -32,53 +33,71 @@ import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Tuple;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
  *
  */
-public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** */
+public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT> {
+    /**
+     *
+     */
     protected final TableDescriptor desc;
 
-    /** */
+    /**
+     *
+     */
     private final TableModify.Operation op;
 
-    /** */
+    /**
+     *
+     */
     private final List<String> cols;
 
-    /** */
+    /**
+     *
+     */
     private final RecordView<Tuple> tableView;
 
-    /** */
+    /**
+     *
+     */
     private List<Tuple> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
-    /** */
+    /**
+     *
+     */
     private long updatedRows;
 
-    /** */
+    /**
+     *
+     */
     private int waiting;
 
-    /** */
+    /**
+     *
+     */
     private int requested;
 
-    /** */
+    /**
+     *
+     */
     private boolean inLoop;
 
-    /** */
+    /**
+     *
+     */
     private State state = State.UPDATING;
 
     /**
-     * @param ctx Execution context.
+     * @param ctx  Execution context.
      * @param desc Table descriptor.
      * @param cols Update column list.
      */
     public ModifyNode(
-        ExecutionContext<Row> ctx,
-        RelDataType rowType,
-        TableDescriptor desc,
-        TableModify.Operation op,
-        List<String> cols
+            ExecutionContext<RowT> ctx,
+            RelDataType rowType,
+            TableDescriptor desc,
+            TableModify.Operation op,
+            List<String> cols
     ) {
         super(ctx, rowType);
 
@@ -90,7 +109,8 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert !nullOrEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0 && requested == 0;
 
@@ -98,12 +118,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         requested = rowsCnt;
 
-        if (!inLoop)
+        if (!inLoop) {
             tryEnd();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) throws Exception {
+    @Override
+    public void push(RowT row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
         assert state == State.UPDATING;
@@ -125,12 +147,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
                 throw new UnsupportedOperationException(op.name());
         }
 
-        if (waiting == 0)
+        if (waiting == 0) {
             source().request(waiting = MODIFY_BATCH_SIZE);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void end() throws Exception {
+    @Override
+    public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
 
@@ -143,24 +167,30 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
+        if (idx != 0) {
             throw new IndexOutOfBoundsException();
+        }
 
         return this;
     }
 
-    /** */
+    /**
+     *
+     */
     private void tryEnd() throws Exception {
         assert downstream() != null;
 
-        if (state == State.UPDATING && waiting == 0)
+        if (state == State.UPDATING && waiting == 0) {
             source().request(waiting = MODIFY_BATCH_SIZE);
+        }
 
         if (state == State.UPDATED && requested > 0) {
             flushTuples(true);
@@ -171,8 +201,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             try {
                 requested--;
                 downstream().push(context().rowHandler().factory(long.class).create(updatedRows));
-            }
-            finally {
+            } finally {
                 inLoop = false;
             }
         }
@@ -183,10 +212,13 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private void flushTuples(boolean force) {
-        if (nullOrEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
+        if (nullOrEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE) {
             return;
+        }
 
         List<Tuple> tuples = this.tuples;
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
@@ -197,17 +229,17 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
                 if (!duplicates.isEmpty()) {
                     IgniteTypeFactory typeFactory = context().getTypeFactory();
-                    RowHandler.RowFactory<Row> rowFactory = context().rowHandler().factory(
-                        context().getTypeFactory(),
-                        desc.insertRowType(typeFactory)
+                    RowHandler.RowFactory<RowT> rowFactory = context().rowHandler().factory(
+                            context().getTypeFactory(),
+                            desc.insertRowType(typeFactory)
                     );
 
                     throw new IgniteInternalException(
-                        "Failed to INSERT some keys because they are already in cache. " +
-                        "[tuples=" + duplicates.stream()
-                            .map(tup -> desc.toRow(context(), tup, rowFactory, null))
-                            .map(context().rowHandler()::toString)
-                            .collect(Collectors.toList()) + ']'
+                            "Failed to INSERT some keys because they are already in cache. "
+                                    + "[tuples=" + duplicates.stream()
+                                    .map(tup -> desc.toRow(context(), tup, rowFactory, null))
+                                    .map(context().rowHandler()::toString)
+                                    .collect(Collectors.toList()) + ']'
                     );
                 }
 
@@ -227,15 +259,23 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         updatedRows += tuples.size();
     }
 
-    /** */
+    /**
+     *
+     */
     private enum State {
-        /** */
+        /**
+         *
+         */
         UPDATING,
 
-        /** */
+        /**
+         *
+         */
         UPDATED,
 
-        /** */
+        /**
+         *
+         */
         END
     }
 }

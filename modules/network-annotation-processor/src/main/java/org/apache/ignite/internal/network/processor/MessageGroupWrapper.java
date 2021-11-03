@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.network.processor;
 
-import javax.lang.model.element.TypeElement;
 import com.squareup.javapoet.ClassName;
+import javax.lang.model.element.TypeElement;
 import org.apache.ignite.network.annotations.MessageGroup;
 
 /**
@@ -42,8 +42,9 @@ public class MessageGroupWrapper {
         className = ClassName.get(messageGroup);
         annotation = messageGroup.getAnnotation(MessageGroup.class);
 
-        if (annotation.groupType() < 0)
+        if (annotation.groupType() < 0) {
             throw new ProcessingException("Group type must not be negative", null, element);
+        }
     }
 
     /**

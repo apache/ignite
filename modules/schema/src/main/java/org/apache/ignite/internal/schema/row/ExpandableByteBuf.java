@@ -27,16 +27,15 @@ import java.util.Arrays;
 import org.apache.ignite.internal.util.Constants;
 
 /**
- * A simple byte array wrapper to allow dynamic byte array expansion during the row construction. Grows exponentially
- * up to 1 MB, then expands by 1 MB each time an expansion is required. Values are always written in LITTLE_ENDIAN
- * format.
- * <p>
- * Additionally, it tracks the high watermark of the values ever written to the buffer so that only written bytes are
- * returned from the {@link #toArray()} method. If the current (expanded) buffer size does not match the high watermark,
- * the {@link #toArray()} method will return a smaller copy of the array to exactly match the watermark.
- * <p>
- * All write methods have an absolute position. The buffer will automatically expand to fit the value being written. If
- * there is a gap between previously written values and the current value, it will be filled with zero bytes:
+ * A simple byte array wrapper to allow dynamic byte array expansion during the row construction. Grows exponentially up to 1 MB, then
+ * expands by 1 MB each time an expansion is required. Values are always written in LITTLE_ENDIAN format.
+ *
+ * <p>Additionally, it tracks the high watermark of the values ever written to the buffer so that only written bytes are returned from the
+ * {@link #toArray()} method. If the current (expanded) buffer size does not match the high watermark, the {@link #toArray()} method will
+ * return a smaller copy of the array to exactly match the watermark.
+ *
+ * <p>All write methods have an absolute position. The buffer will automatically expand to fit the value being written. If there is a gap
+ * between previously written values and the current value, it will be filled with zero bytes:
  * <pre>
  * ExpandableByteBuf b = new ExpandableByteBuf(1);
  * b.put(0, (byte)1); // Does not expand.
@@ -62,8 +61,9 @@ public class ExpandableByteBuf {
      * @param size Initial buffer size.
      */
     public ExpandableByteBuf(int size) {
-        if (size <= 0)
+        if (size <= 0) {
             size = 32;
+        }
 
         arr = new byte[size];
         buf = ByteBuffer.wrap(arr);
@@ -155,8 +155,7 @@ public class ExpandableByteBuf {
 
         try {
             buf.put(val);
-        }
-        finally {
+        } finally {
             buf.position(0);
         }
     }
@@ -164,15 +163,16 @@ public class ExpandableByteBuf {
     /**
      * Writes {@code String} value to the buffer.
      *
-     * @param off Buffer offset.
-     * @param val Value.
+     * @param off     Buffer offset.
+     * @param val     Value.
      * @param encoder Charset encoder.
      * @return Bytes written.
      * @throws CharacterCodingException If encoding failed.
      */
     public int putString(int off, String val, CharsetEncoder encoder) throws CharacterCodingException {
-        if (val.isEmpty())
+        if (val.isEmpty()) {
             return 0;
+        }
 
         ensureCapacity(off);
 
@@ -186,28 +186,30 @@ public class ExpandableByteBuf {
             while (true) {
                 CoderResult cr = valBuf.hasRemaining() ? encoder.encode(valBuf, buf, true) : CoderResult.UNDERFLOW;
 
-                if (cr.isUnderflow())
+                if (cr.isUnderflow()) {
                     cr = encoder.flush(buf);
+                }
 
                 len = buf.position();
 
-                if (cr.isUnderflow())
+                if (cr.isUnderflow()) {
                     break;
+                }
 
                 if (cr.isOverflow()) {
-                    expand(len + (int)encoder.maxBytesPerChar());
+                    expand(len + (int) encoder.maxBytesPerChar());
 
                     continue;
                 }
 
-                if (cr.isError())
+                if (cr.isError()) {
                     cr.throwException();
+                }
 
             }
 
             return len - off;
-        }
-        finally {
+        } finally {
             buf.position(0);
         }
     }
@@ -236,10 +238,11 @@ public class ExpandableByteBuf {
      * @return The byte array of all bytes written to this array, including gaps.
      */
     public byte[] toArray() {
-        if (arr.length == len)
+        if (arr.length == len) {
             return arr;
-        else
+        } else {
             return Arrays.copyOf(arr, len);
+        }
     }
 
     /**
@@ -248,11 +251,13 @@ public class ExpandableByteBuf {
      * @param cap Target capacity.
      */
     void ensureCapacity(int cap) {
-        if (arr.length < cap)
+        if (arr.length < cap) {
             expand(cap);
+        }
 
-        if (cap > len)
+        if (cap > len) {
             len = cap;
+        }
     }
 
     /**
@@ -262,10 +267,11 @@ public class ExpandableByteBuf {
         int l = arr.length;
 
         while (l < cap) {
-            if (l < Constants.MiB)
+            if (l < Constants.MiB) {
                 l *= 2;
-            else
+            } else {
                 l += Constants.MiB;
+            }
         }
 
         byte[] tmp = new byte[l];
@@ -291,7 +297,7 @@ public class ExpandableByteBuf {
         final int shift = srcOff - dstOff;
 
         System.arraycopy(arr, srcOff, arr, dstOff, len - srcOff);
-        Arrays.fill(arr, len - shift, len, (byte)0);
+        Arrays.fill(arr, len - shift, len, (byte) 0);
 
         len -= shift;
         buf = ByteBuffer.wrap(arr);

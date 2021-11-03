@@ -18,4 +18,5 @@
 /**
  * Configuration schemas for Cluster node.
  */
+
 package org.apache.ignite.configuration.schemas.runner;

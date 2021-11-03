@@ -30,36 +30,38 @@ import org.apache.ignite.configuration.annotation.DirectAccess;
  *
  * @see DirectAccess
  */
-public class DirectNamedListConfiguration<T extends ConfigurationProperty<VIEW>, VIEW, CHANGE extends VIEW>
-    extends NamedListConfiguration<T, VIEW, CHANGE>
-    implements DirectConfigurationProperty<NamedListView<VIEW>> {
+public class DirectNamedListConfiguration<T extends ConfigurationProperty<VIEWT>, VIEWT, CHANGET extends VIEWT>
+        extends NamedListConfiguration<T, VIEWT, CHANGET>
+        implements DirectConfigurationProperty<NamedListView<VIEWT>> {
     /**
      * Constructor.
      *
-     * @param prefix Configuration prefix.
-     * @param key Configuration key.
-     * @param rootKey Root key.
-     * @param changer Configuration changer.
+     * @param prefix     Configuration prefix.
+     * @param key        Configuration key.
+     * @param rootKey    Root key.
+     * @param changer    Configuration changer.
      * @param listenOnly Only adding listeners mode, without the ability to get or update the property value.
-     * @param creator Underlying configuration creator function.
-     * @param anyConfig Placeholder to add listeners for any configuration.
+     * @param creator    Underlying configuration creator function.
+     * @param anyConfig  Placeholder to add listeners for any configuration.
      */
     public DirectNamedListConfiguration(
-        List<String> prefix,
-        String key,
-        RootKey<?, ?> rootKey,
-        DynamicConfigurationChanger changer,
-        boolean listenOnly,
-        BiFunction<List<String>, String, T> creator,
-        T anyConfig
+            List<String> prefix,
+            String key,
+            RootKey<?, ?> rootKey,
+            DynamicConfigurationChanger changer,
+            boolean listenOnly,
+            BiFunction<List<String>, String, T> creator,
+            T anyConfig
     ) {
         super(prefix, key, rootKey, changer, listenOnly, creator, anyConfig);
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListView<VIEW> directValue() {
-        if (listenOnly)
+    @Override
+    public NamedListView<VIEWT> directValue() {
+        if (listenOnly) {
             throw listenOnlyException();
+        }
 
         return changer.getLatest(keys);
     }

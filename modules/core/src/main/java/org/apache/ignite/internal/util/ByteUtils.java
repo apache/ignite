@@ -35,7 +35,7 @@ public class ByteUtils {
      * Constructs {@code long} from byte array.
      *
      * @param bytes Array of bytes.
-     * @param off Offset in {@code bytes} array.
+     * @param off   Offset in {@code bytes} array.
      * @return Long value.
      */
     public static long bytesToLong(byte[] bytes, int off) {
@@ -43,8 +43,9 @@ public class ByteUtils {
 
         int bytesCnt = Long.SIZE >> 3;
 
-        if (off + bytesCnt > bytes.length)
+        if (off + bytesCnt > bytes.length) {
             bytesCnt = bytes.length - off;
+        }
 
         long res = 0;
 
@@ -60,9 +61,9 @@ public class ByteUtils {
     /**
      * Constructs {@code long} from byte array with offset equals 0.
      *
-     * @see #bytesToLong(byte[], int)
      * @param bytes Array of bytes.
      * @return Long value.
+     * @see #bytesToLong(byte[], int)
      */
     public static long bytesToLong(byte[] bytes) {
         return bytesToLong(bytes, 0);
@@ -79,12 +80,12 @@ public class ByteUtils {
     }
 
     /**
-     * Converts primitive {@code long} type to byte array and stores it in specified
-     * byte array. The highest byte in the value is the first byte in result array.
+     * Converts primitive {@code long} type to byte array and stores it in specified byte array. The highest byte in the value is the first
+     * byte in result array.
      *
-     * @param l Unsigned long value.
+     * @param l     Unsigned long value.
      * @param bytes Bytes array to write result to.
-     * @param off Offset in the target array to write result to.
+     * @param off   Offset in the target array to write result to.
      * @param limit Limit of bytes to write into output.
      * @return Number of bytes overwritten in {@code bytes} array.
      */
@@ -94,7 +95,7 @@ public class ByteUtils {
         assert bytes.length >= off + limit;
 
         for (int i = limit - 1; i >= 0; i--) {
-            bytes[off + i] = (byte)(l & 0xFF);
+            bytes[off + i] = (byte) (l & 0xFF);
             l >>>= 8;
         }
 
@@ -117,11 +118,10 @@ public class ByteUtils {
 
                 return bos.toByteArray();
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.warn(() ->
-                LoggerMessageHelper.format("Could not serialize a class [cls={}]", obj.getClass().getName()),
-                e);
+                            LoggerMessageHelper.format("Could not serialize a class [cls={}]", obj.getClass().getName()),
+                    e);
 
             return null;
         }
@@ -138,8 +138,7 @@ public class ByteUtils {
             try (ObjectInputStream in = new ObjectInputStream(bis)) {
                 return in.readObject();
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.warn("Could not deserialize an object", e);
 
             return null;

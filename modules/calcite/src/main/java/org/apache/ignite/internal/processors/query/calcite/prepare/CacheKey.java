@@ -23,20 +23,26 @@ import java.util.Objects;
  *
  */
 public class CacheKey {
-    /** */
+    /**
+     *
+     */
     private final String schemaName;
 
-    /** */
+    /**
+     *
+     */
     private final String query;
 
-    /** */
+    /**
+     *
+     */
     private final Object contextKey;
 
     /**
      * @param schemaName Schema name.
-     * @param query Query string.
-     * @param contextKey Optional context key to differ queries with and without/different flags, having an impact
-     *                   on result plan (like LOCAL flag)
+     * @param query      Query string.
+     * @param contextKey Optional context key to differ queries with and without/different flags, having an impact on result plan (like
+     *                   LOCAL flag)
      */
     public CacheKey(String schemaName, String query, Object contextKey) {
         this.schemaName = schemaName;
@@ -46,30 +52,36 @@ public class CacheKey {
 
     /**
      * @param schemaName Schema name.
-     * @param query Query string.
+     * @param query      Query string.
      */
     public CacheKey(String schemaName, String query) {
         this(schemaName, query, null);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
         CacheKey cacheKey = (CacheKey) o;
 
-        if (!schemaName.equals(cacheKey.schemaName))
+        if (!schemaName.equals(cacheKey.schemaName)) {
             return false;
-        if (!query.equals(cacheKey.query))
+        }
+        if (!query.equals(cacheKey.query)) {
             return false;
+        }
         return Objects.equals(contextKey, cacheKey.contextKey);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = schemaName.hashCode();
         result = 31 * result + query.hashCode();
         result = 31 * result + (contextKey != null ? contextKey.hashCode() : 0);

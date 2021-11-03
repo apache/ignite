@@ -23,25 +23,26 @@ import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Configuration container for {@link ConfigurationNotificationEvent#config} and
- * {@link ConfigurationNotificationEvent#name}.
+ * Configuration container for {@link ConfigurationNotificationEvent#config} and {@link ConfigurationNotificationEvent#name}.
  */
 class ConfigurationContainer {
     /** Key of the named list item for {@link ConfigurationNotificationEvent#name}. */
-    @Nullable final String keyNamedConfig;
+    @Nullable
+    final String keyNamedConfig;
 
     /** Configuration for {@link ConfigurationNotificationEvent#config}. */
-    @Nullable final ConfigurationProperty<InnerNode> config;
+    @Nullable
+    final ConfigurationProperty<InnerNode> config;
 
     /**
      * Constructor.
      *
      * @param keyNamedConfig Key of the named list item for {@link ConfigurationNotificationEvent#name}.
-     * @param config Configuration for {@link ConfigurationNotificationEvent#config}.
+     * @param config         Configuration for {@link ConfigurationNotificationEvent#config}.
      */
     ConfigurationContainer(
-        @Nullable String keyNamedConfig,
-        @Nullable ConfigurationProperty<InnerNode> config
+            @Nullable String keyNamedConfig,
+            @Nullable ConfigurationProperty<InnerNode> config
     ) {
         this.keyNamedConfig = keyNamedConfig;
         this.config = config;

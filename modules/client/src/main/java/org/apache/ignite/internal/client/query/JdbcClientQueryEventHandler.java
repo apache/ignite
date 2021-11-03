@@ -39,7 +39,7 @@ import org.apache.ignite.internal.client.TcpIgniteClient;
 import org.apache.ignite.internal.client.proto.ClientOp;
 
 /**
- *  Jdbc query network event handler implementation.
+ * Jdbc query network event handler implementation.
  */
 public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     /** Channel. */
@@ -53,7 +53,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryExecuteResult query(QueryExecuteRequest req) {
+    @Override
+    public QueryExecuteResult query(QueryExecuteRequest req) {
         QueryExecuteResult res = new QueryExecuteResult();
 
         client.sendRequest(ClientOp.SQL_EXEC, req, res);
@@ -62,7 +63,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryFetchResult fetch(QueryFetchRequest req) {
+    @Override
+    public QueryFetchResult fetch(QueryFetchRequest req) {
         QueryFetchResult res = new QueryFetchResult();
 
         client.sendRequest(ClientOp.SQL_NEXT, req, res);
@@ -71,7 +73,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public BatchExecuteResult batch(BatchExecuteRequest req) {
+    @Override
+    public BatchExecuteResult batch(BatchExecuteRequest req) {
         BatchExecuteResult res = new BatchExecuteResult();
 
         client.sendRequest(ClientOp.SQL_EXEC_BATCH, req, res);
@@ -80,7 +83,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCloseResult close(QueryCloseRequest req) {
+    @Override
+    public QueryCloseResult close(QueryCloseRequest req) {
         QueryCloseResult res = new QueryCloseResult();
 
         client.sendRequest(ClientOp.SQL_CURSOR_CLOSE, req, res);
@@ -89,7 +93,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req) {
+    @Override
+    public JdbcMetaTablesResult tablesMeta(JdbcMetaTablesRequest req) {
         JdbcMetaTablesResult res = new JdbcMetaTablesResult();
 
         client.sendRequest(ClientOp.SQL_TABLE_META, req, res);
@@ -98,7 +103,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req) {
+    @Override
+    public JdbcMetaColumnsResult columnsMeta(JdbcMetaColumnsRequest req) {
         JdbcMetaColumnsResult res = new JdbcMetaColumnsResult();
 
         client.sendRequest(ClientOp.SQL_COLUMN_META, req, res);
@@ -107,7 +113,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req) {
+    @Override
+    public JdbcMetaSchemasResult schemasMeta(JdbcMetaSchemasRequest req) {
         JdbcMetaSchemasResult res = new JdbcMetaSchemasResult();
 
         client.sendRequest(ClientOp.SQL_SCHEMAS_META, req, res);
@@ -116,7 +123,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req) {
+    @Override
+    public JdbcMetaPrimaryKeysResult primaryKeysMeta(JdbcMetaPrimaryKeysRequest req) {
         JdbcMetaPrimaryKeysResult res = new JdbcMetaPrimaryKeysResult();
 
         client.sendRequest(ClientOp.SQL_PK_META, req, res);
@@ -125,7 +133,8 @@ public class JdbcClientQueryEventHandler implements JdbcQueryEventHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req) {
+    @Override
+    public JdbcMetaColumnsResult queryMetadata(JdbcQueryMetadataRequest req) {
         JdbcMetaColumnsResult res = new JdbcMetaColumnsResult();
 
         client.sendRequest(ClientOp.SQL_QUERY_META, req, res);

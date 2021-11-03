@@ -39,8 +39,8 @@ public class SortedIndexDefinitionImpl extends AbstractSchemaObject implements S
     /**
      * Constructor.
      *
-     * @param name Index name.
-     * @param cols Index columns.
+     * @param name   Index name.
+     * @param cols   Index columns.
      * @param unique Unique flag.
      */
     public SortedIndexDefinitionImpl(String name, List<SortedIndexColumnDefinition> cols, boolean unique) {
@@ -51,24 +51,28 @@ public class SortedIndexDefinitionImpl extends AbstractSchemaObject implements S
     }
 
     /** {@inheritDoc} */
-    @Override public boolean unique() {
+    @Override
+    public boolean unique() {
         return unique;
     }
 
     /** {@inheritDoc} */
-    @Override public List<SortedIndexColumnDefinition> columns() {
+    @Override
+    public List<SortedIndexColumnDefinition> columns() {
         return cols;
     }
 
     /** {@inheritDoc} */
-    @Override public List<SortedIndexColumnDefinition> indexedColumns() {
+    @Override
+    public List<SortedIndexColumnDefinition> indexedColumns() {
         return cols;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(SortedIndexDefinition.class, this,
-            "type", type(),
-            "name", name());
+                "type", type(),
+                "name", name());
     }
 }

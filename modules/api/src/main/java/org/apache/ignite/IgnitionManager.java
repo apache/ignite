@@ -39,10 +39,9 @@ public class IgnitionManager {
      * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
      * @param nodeName  Name of the node. Must not be {@code null}.
-     * @param configStr Optional node configuration based on
-     *                  {@link org.apache.ignite.configuration.schemas.runner.NodeConfigurationSchema} and
-     *                  {@link org.apache.ignite.configuration.schemas.network.NetworkConfigurationSchema}.
-     *                  Following rules are used for applying the configuration properties:
+     * @param configStr Optional node configuration based on {@link org.apache.ignite.configuration.schemas.runner.NodeConfigurationSchema}
+     *                  and {@link org.apache.ignite.configuration.schemas.network.NetworkConfigurationSchema}. Following rules are used for
+     *                  applying the configuration properties:
      *                  <ol>
      *                      <li>Specified property overrides existing one or just applies itself if it wasn't
      *                          previously specified.</li>
@@ -61,9 +60,9 @@ public class IgnitionManager {
      */
     // TODO IGNITE-14580 Add exception handling logic to IgnitionProcessor.
     public static Ignite start(
-        @NotNull String nodeName,
-        @Nullable String configStr,
-        @NotNull Path workDir
+            @NotNull String nodeName,
+            @Nullable String configStr,
+            @NotNull Path workDir
     ) {
         synchronized (IgnitionManager.class) {
             if (ignition == null) {
@@ -72,13 +71,12 @@ public class IgnitionManager {
             }
         }
 
-        if (configStr == null)
+        if (configStr == null) {
             return ignition.start(nodeName, workDir);
-        else {
+        } else {
             try (InputStream inputStream = new ByteArrayInputStream(configStr.getBytes(StandardCharsets.UTF_8))) {
                 return ignition.start(nodeName, inputStream, workDir);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new IgniteException("Couldn't close the stream with node config.", e);
             }
         }
@@ -88,19 +86,18 @@ public class IgnitionManager {
      * Starts an Ignite node with an optional bootstrap configuration from a HOCON file.
      *
      * @param nodeName Name of the node. Must not be {@code null}.
-     * @param cfgPath Path to the node configuration in the HOCON format. Can be {@code null}.
-     * @param workDir Work directory for the started node. Must not be {@code null}.
-     * @param clsLdr The class loader to be used to load provider-configuration files
-     *               and provider classes, or {@code null} if the system class loader
-     *               (or, failing that, the bootstrap class loader) is to be used
+     * @param cfgPath  Path to the node configuration in the HOCON format. Can be {@code null}.
+     * @param workDir  Work directory for the started node. Must not be {@code null}.
+     * @param clsLdr   The class loader to be used to load provider-configuration files and provider classes, or {@code null} if the system
+     *                 class loader (or, failing that, the bootstrap class loader) is to be used
      * @return Started Ignite node.
      */
     // TODO IGNITE-14580 Add exception handling logic to IgnitionProcessor.
     public static Ignite start(
-        @NotNull String nodeName,
-        @Nullable Path cfgPath,
-        @NotNull Path workDir,
-        @Nullable ClassLoader clsLdr
+            @NotNull String nodeName,
+            @Nullable Path cfgPath,
+            @NotNull Path workDir,
+            @Nullable ClassLoader clsLdr
     ) {
         synchronized (IgnitionManager.class) {
             if (ignition == null) {
@@ -113,9 +110,8 @@ public class IgnitionManager {
     }
 
     /**
-     * Stops the node with given {@code name}.
-     * It's possible to stop both already started node or node that is currently starting.
-     * Has no effect if node with specified name doesn't exist.
+     * Stops the node with given {@code name}. It's possible to stop both already started node or node that is currently starting. Has no
+     * effect if node with specified name doesn't exist.
      *
      * @param name Node name to stop.
      * @throws IllegalArgumentException if null is specified instead of node name.
@@ -132,14 +128,12 @@ public class IgnitionManager {
     }
 
     /**
-     * Stops the node with given {@code name}.
-     * It's possible to stop both already started node or node that is currently starting.
-     * Has no effect if node with specified name doesn't exist.
+     * Stops the node with given {@code name}. It's possible to stop both already started node or node that is currently starting. Has no
+     * effect if node with specified name doesn't exist.
      *
-     * @param name Node name to stop.
-     * @param clsLdr The class loader to be used to load provider-configuration files
-     *               and provider classes, or {@code null} if the system class loader
-     *               (or, failing that, the bootstrap class loader) is to be used
+     * @param name   Node name to stop.
+     * @param clsLdr The class loader to be used to load provider-configuration files and provider classes, or {@code null} if the system
+     *               class loader (or, failing that, the bootstrap class loader) is to be used
      * @throws IllegalArgumentException if null is specified instead of node name.
      */
     public static void stop(@NotNull String name, @Nullable ClassLoader clsLdr) {

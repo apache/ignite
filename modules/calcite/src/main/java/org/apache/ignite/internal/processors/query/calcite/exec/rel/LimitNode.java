@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.function.Supplier;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /** Offset, fetch|limit support node. */
-public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class LimitNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT> {
     /** Offset if its present, otherwise 0. */
     private final int offset;
 
@@ -45,14 +44,14 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /**
      * Constructor.
      *
-     * @param ctx Execution context.
+     * @param ctx     Execution context.
      * @param rowType Row type.
      */
     public LimitNode(
-        ExecutionContext<Row> ctx,
-        RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+            ExecutionContext<RowT> ctx,
+            RelDataType rowType,
+            Supplier<Integer> offsetNode,
+            Supplier<Integer> fetchNode
     ) {
         super(ctx, rowType);
 
@@ -62,7 +61,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     }
 
     /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
+    @Override
+    public void request(int rowsCnt) throws Exception {
         assert !nullOrEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
@@ -72,8 +72,9 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
             return;
         }
 
-        if (offset > 0 && rowsProcessed == 0)
+        if (offset > 0 && rowsProcessed == 0) {
             rowsCnt = offset + rowsCnt;
+        }
 
         checkState();
 
@@ -81,9 +82,11 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     }
 
     /** {@inheritDoc} */
-    @Override public void push(Row row) throws Exception {
-        if (waiting == -1)
+    @Override
+    public void push(RowT row) throws Exception {
+        if (waiting == -1) {
             return;
+        }
 
         ++rowsProcessed;
 
@@ -92,18 +95,22 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         checkState();
 
         if (rowsProcessed > offset) {
-            if (fetchNode == null || rowsProcessed <= fetch + offset)
+            if (fetchNode == null || rowsProcessed <= fetch + offset) {
                 downstream().push(row);
+            }
         }
 
-        if (fetch > 0 && rowsProcessed == fetch + offset && waiting > 0)
+        if (fetch > 0 && rowsProcessed == fetch + offset && waiting > 0) {
             end();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void end() throws Exception {
-        if (waiting == -1)
+    @Override
+    public void end() throws Exception {
+        if (waiting == -1) {
             return;
+        }
 
         assert downstream() != null;
 
@@ -113,14 +120,17 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     }
 
     /** {@inheritDoc} */
-    @Override protected void rewindInternal() {
+    @Override
+    protected void rewindInternal() {
         rowsProcessed = 0;
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
+    @Override
+    protected Downstream<RowT> requestDownstream(int idx) {
+        if (idx != 0) {
             throw new IndexOutOfBoundsException();
+        }
 
         return this;
     }

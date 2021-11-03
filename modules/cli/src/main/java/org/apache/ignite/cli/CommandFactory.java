@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cli;
 
-import java.util.Optional;
 import io.micronaut.context.ApplicationContext;
+import java.util.Optional;
 import picocli.CommandLine;
 
 /**
@@ -38,7 +38,8 @@ public class CommandFactory implements CommandLine.IFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public <K> K create(Class<K> cls) throws Exception {
+    @Override
+    public <K> K create(Class<K> cls) throws Exception {
         Optional<K> bean = applicationCtx.findOrInstantiateBean(cls);
         return bean.isPresent() ? bean.get() : CommandLine.defaultFactory().create(cls);
     }

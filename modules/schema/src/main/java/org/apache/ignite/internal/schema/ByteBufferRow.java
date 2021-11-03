@@ -51,24 +51,28 @@ public class ByteBufferRow implements BinaryRow {
     }
 
     /** {@inheritDoc} */
-    @Override public int schemaVersion() {
+    @Override
+    public int schemaVersion() {
         return Short.toUnsignedInt(readShort(SCHEMA_VERSION_OFFSET));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasValue() {
+    @Override
+    public boolean hasValue() {
         short flags = readShort(FLAGS_FIELD_OFFSET);
 
         return (flags & RowFlags.NO_VALUE_FLAG) == 0;
     }
 
     /** {@inheritDoc} */
-    @Override public int hash() {
+    @Override
+    public int hash() {
         return readInteger(KEY_HASH_FIELD_OFFSET);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(OutputStream stream) throws IOException {
+    @Override
+    public void writeTo(OutputStream stream) throws IOException {
         WritableByteChannel channel = Channels.newChannel(stream);
 
         channel.write(buf);
@@ -77,37 +81,44 @@ public class ByteBufferRow implements BinaryRow {
     }
 
     /** {@inheritDoc} */
-    @Override public byte readByte(int off) {
+    @Override
+    public byte readByte(int off) {
         return buf.get(off);
     }
 
     /** {@inheritDoc} */
-    @Override public short readShort(int off) {
+    @Override
+    public short readShort(int off) {
         return buf.getShort(off);
     }
 
     /** {@inheritDoc} */
-    @Override public int readInteger(int off) {
+    @Override
+    public int readInteger(int off) {
         return buf.getInt(off);
     }
 
     /** {@inheritDoc} */
-    @Override public long readLong(int off) {
+    @Override
+    public long readLong(int off) {
         return buf.getLong(off);
     }
 
     /** {@inheritDoc} */
-    @Override public float readFloat(int off) {
+    @Override
+    public float readFloat(int off) {
         return buf.getFloat(off);
     }
 
     /** {@inheritDoc} */
-    @Override public double readDouble(int off) {
+    @Override
+    public double readDouble(int off) {
         return buf.getDouble(off);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] readBytes(int off, int len) {
+    @Override
+    public byte[] readBytes(int off, int len) {
         try {
             byte[] res = new byte[len];
 
@@ -116,47 +127,48 @@ public class ByteBufferRow implements BinaryRow {
             buf.get(res, 0, res.length);
 
             return res;
-        }
-        finally {
+        } finally {
             buf.position(0);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public String readString(int off, int len) {
+    @Override
+    public String readString(int off, int len) {
         return new String(buf.array(), off, len, StandardCharsets.UTF_8);
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer keySlice() {
+    @Override
+    public ByteBuffer keySlice() {
         final int off = KEY_CHUNK_OFFSET;
         final int len = readInteger(off);
 
         try {
             return buf.limit(off + len).position(off).slice();
-        }
-        finally {
+        } finally {
             buf.position(0); // Reset bounds.
             buf.limit(buf.capacity());
         }
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer valueSlice() {
+    @Override
+    public ByteBuffer valueSlice() {
         int off = KEY_CHUNK_OFFSET + readInteger(KEY_CHUNK_OFFSET);
         int len = hasValue() ? readInteger(off) : 0;
 
         try {
             return buf.limit(off + len).position(off).slice();
-        }
-        finally {
+        } finally {
             buf.position(0); // Reset bounds.
             buf.limit(buf.capacity());
         }
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] bytes() {
+    @Override
+    public byte[] bytes() {
         return buf.array();
     }
 }

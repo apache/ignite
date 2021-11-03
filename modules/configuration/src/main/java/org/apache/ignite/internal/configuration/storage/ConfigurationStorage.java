@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.storage;
 
 import java.io.Serializable;
@@ -28,14 +29,14 @@ import org.jetbrains.annotations.NotNull;
 public interface ConfigurationStorage {
     /**
      * Read all configuration values and current storage version.
+     *
      * @return Values and version.
      * @throws StorageException If failed to retrieve data.
      */
     Data readAll() throws StorageException;
 
     /**
-     * Retrieves the most recent values which keys start with the given prefix, regardless of the current storage
-     * version.
+     * Retrieves the most recent values which keys start with the given prefix, regardless of the current storage version.
      *
      * @param prefix Key prefix.
      * @return Storage data (keys and values).
@@ -45,20 +46,24 @@ public interface ConfigurationStorage {
 
     /**
      * Write key-value pairs into the storage with last known version.
+     *
      * @param newValues Key-value pairs.
-     * @param ver Last known version.
-     * @return Future that gives you {@code true} if successfully written, {@code false} if version of the storage is
-     *      different from the passed argument and {@link StorageException} if failed to write data.
+     * @param ver       Last known version.
+     * @return Future that gives you {@code true} if successfully written, {@code false} if version of the storage is different from the
+     *      passed argument and {@link StorageException} if failed to write data.
      */
     CompletableFuture<Boolean> write(Map<String, ? extends Serializable> newValues, long ver);
 
     /**
      * Add listener to the storage that notifies of data changes.
+     *
      * @param lsnr Listener. Cannot be null.
      */
     void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr);
 
     /**
+     * Returns type of this configuration storage.
+     *
      * @return Type of this configuration storage.
      */
     ConfigurationType type();

@@ -21,8 +21,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 
 /**
- * Ignite cost factory.
- * Creates a desired cost with regards to the weight of each particular resource.
+ * Ignite cost factory. Creates a desired cost with regards to the weight of each particular resource.
  */
 public class IgniteCostFactory implements RelOptCostFactory {
     /** Cpu weight. */
@@ -51,9 +50,10 @@ public class IgniteCostFactory implements RelOptCostFactory {
      * Cerates a factory with provided weights. Each weight should be non negative value.
      */
     public IgniteCostFactory(double cpuWeight, double memoryWeight, double ioWeight, double networkWeight) {
-        if (cpuWeight < 0 || memoryWeight < 0 || ioWeight < 0 || networkWeight < 0)
-            throw new IllegalArgumentException("Weight should be non negative: cpu=" + cpuWeight +
-                ", memory=" + memoryWeight + ", io=" + ioWeight + ", network=" + networkWeight);
+        if (cpuWeight < 0 || memoryWeight < 0 || ioWeight < 0 || networkWeight < 0) {
+            throw new IllegalArgumentException("Weight should be non negative: cpu=" + cpuWeight
+                    + ", memory=" + memoryWeight + ", io=" + ioWeight + ", network=" + networkWeight);
+        }
 
         this.cpuWeight = cpuWeight;
         this.memoryWeight = memoryWeight;
@@ -62,7 +62,8 @@ public class IgniteCostFactory implements RelOptCostFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost makeCost(double rowCount, double cpu, double io) {
+    @Override
+    public RelOptCost makeCost(double rowCount, double cpu, double io) {
         return makeCost(rowCount, cpu, io, 0, 0);
     }
 
@@ -70,11 +71,10 @@ public class IgniteCostFactory implements RelOptCostFactory {
      * Creates a cost object with regards to resources' weight.
      *
      * @param rowCount Count of processed rows.
-     * @param cpu Amount of consumed CPU.
-     * @param io Amount of consumed Io.
-     * @param memory Amount of consumed Memory.
-     * @param network Amount of consumed Network.
-     *
+     * @param cpu      Amount of consumed CPU.
+     * @param io       Amount of consumed Io.
+     * @param memory   Amount of consumed Memory.
+     * @param network  Amount of consumed Network.
      * @return Cost object.
      */
     public RelOptCost makeCost(double rowCount, double cpu, double io, double memory, double network) {
@@ -82,22 +82,26 @@ public class IgniteCostFactory implements RelOptCostFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost makeHugeCost() {
+    @Override
+    public RelOptCost makeHugeCost() {
         return IgniteCost.HUGE;
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost makeInfiniteCost() {
+    @Override
+    public RelOptCost makeInfiniteCost() {
         return IgniteCost.INFINITY;
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost makeTinyCost() {
+    @Override
+    public RelOptCost makeTinyCost() {
         return IgniteCost.TINY;
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost makeZeroCost() {
+    @Override
+    public RelOptCost makeZeroCost() {
         return IgniteCost.ZERO;
     }
 }

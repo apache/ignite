@@ -35,7 +35,7 @@ public class Value {
     /**
      * Constructs value.
      *
-     * @param bytes Value bytes or {@code #TOMBSTONE}.
+     * @param bytes   Value bytes or {@code #TOMBSTONE}.
      * @param updCntr Update cpunter.
      */
     public Value(@NotNull byte[] bytes, long updCntr) {

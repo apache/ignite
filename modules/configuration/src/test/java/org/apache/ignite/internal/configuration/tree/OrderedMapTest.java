@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.configuration.tree;
 
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 /** Test with basic {@link OrderedMap} invariants. */
 public class OrderedMapTest {

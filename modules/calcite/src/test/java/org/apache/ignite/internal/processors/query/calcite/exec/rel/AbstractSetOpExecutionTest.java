@@ -17,21 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.junit.jupiter.api.Test;
-
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.SINGLE;
@@ -41,35 +26,59 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.junit.jupiter.api.Test;
+
 /**
  * Abstract test for set operator (MINUS, INTERSECT) execution.
  */
 public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void testSingle() {
         checkSetOp(true, false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testSingleAll() {
         checkSetOp(true, true);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testMapReduce() {
         checkSetOp(false, false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testMapReduceAll() {
         checkSetOp(false, true);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testSingleWithEmptySet() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -77,8 +86,8 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
 
         List<Object[]> data = Arrays.asList(
-            row("Igor", 1),
-            row("Roman", 1)
+                row("Igor", 1),
+                row("Roman", 1)
         );
 
         // For single distribution set operations, node should not request rows from the next source if result after
@@ -87,15 +96,18 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         ScanNode<Object[]> scan2 = new ScanNode<>(ctx, rowType, data);
         ScanNode<Object[]> scan3 = new ScanNode<>(ctx, rowType, Collections.emptyList());
         Node<Object[]> node4 = new AbstractNode<>(ctx, rowType) {
-            @Override protected void rewindInternal() {
+            @Override
+            protected void rewindInternal() {
                 // No-op.
             }
 
-            @Override protected Downstream<Object[]> requestDownstream(int idx) {
+            @Override
+            protected Downstream<Object[]> requestDownstream(int idx) {
                 return null;
             }
 
-            @Override public void request(int rowsCnt) {
+            @Override
+            public void request(int rowsCnt) {
                 fail("Node should not be requested");
             }
         };
@@ -111,12 +123,14 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         assertFalse(root.hasNext());
     }
 
-    /** */
+    /**
+     *
+     */
     protected abstract void checkSetOp(boolean single, boolean all);
 
     /**
      * @param single Single.
-     * @param all All.
+     * @param all    All.
      */
     protected void checkSetOp(boolean single, boolean all, List<List<Object[]>> dataSets, List<Object[]> expectedResult) {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -124,14 +138,15 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
 
         List<Node<Object[]>> inputs = dataSets.stream().map(ds -> new ScanNode<>(ctx, rowType, ds))
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         AbstractSetOpNode<Object[]> setOpNode;
 
-        if (single)
+        if (single) {
             setOpNode = setOpNodeFactory(ctx, rowType, SINGLE, all, inputs.size());
-        else
+        } else {
             setOpNode = setOpNodeFactory(ctx, rowType, MAP, all, inputs.size());
+        }
 
         setOpNode.register(inputs);
 
@@ -152,15 +167,18 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         RootNode<Object[]> root = new RootNode<>(ctx, rowType);
         root.register(sortNode);
 
-        assertTrue( nullOrEmpty(expectedResult) || root.hasNext());
+        assertTrue(nullOrEmpty(expectedResult) || root.hasNext());
 
-        for (Object[] row : expectedResult)
+        for (Object[] row : expectedResult) {
             assertArrayEquals(row, root.next());
+        }
 
         assertFalse(root.hasNext());
     }
 
-    /** */
+    /**
+     *
+     */
     protected abstract AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx, RelDataType rowType,
-        AggregateType type, boolean all, int inputsCnt);
+            AggregateType type, boolean all, int inputsCnt);
 }

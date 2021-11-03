@@ -24,7 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * Exception used by all annotation-processor related classes to gracefully display processing errors.
  */
 public class ProcessingException extends RuntimeException {
-    /** */
+    /**
+     *
+     */
     @Nullable
     private final Element element;
 
@@ -37,7 +39,7 @@ public class ProcessingException extends RuntimeException {
 
     /**
      * @param message message
-     * @param cause cause
+     * @param cause   cause
      */
     public ProcessingException(String message, @Nullable Throwable cause) {
         this(message, cause, null);
@@ -45,7 +47,7 @@ public class ProcessingException extends RuntimeException {
 
     /**
      * @param message message
-     * @param cause cause
+     * @param cause   cause
      * @param element element which processing triggered the exception
      */
     public ProcessingException(String message, @Nullable Throwable cause, @Nullable Element element) {

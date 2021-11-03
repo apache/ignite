@@ -35,8 +35,8 @@ public class ExtendedTableConfigurationSchema extends TableConfigurationSchema {
     public String id;
 
     /**
-     * Serialized version of an affinity assignments. Currently configuration doesn't support neither collections
-     * nor array of arrays, so that serialization was chosen.
+     * Serialized version of an affinity assignments. Currently configuration doesn't support neither collections nor array of arrays, so
+     * that serialization was chosen.
      */
     @Value
     public byte[] assignments;

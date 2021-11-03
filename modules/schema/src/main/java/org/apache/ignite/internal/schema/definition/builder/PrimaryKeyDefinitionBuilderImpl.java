@@ -42,42 +42,48 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
     protected Map<String, String> hints;
 
     /** {@inheritDoc} */
-    @Override public PrimaryKeyDefinitionBuilderImpl withColumns(String... columns) {
+    @Override
+    public PrimaryKeyDefinitionBuilderImpl withColumns(String... columns) {
         this.columns = columns;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public PrimaryKeyDefinitionBuilderImpl withAffinityColumns(String... affinityColumns) {
+    @Override
+    public PrimaryKeyDefinitionBuilderImpl withAffinityColumns(String... affinityColumns) {
         this.affinityColumns = affinityColumns;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public PrimaryKeyDefinitionBuilderImpl withHints(Map<String, String> hints) {
+    @Override
+    public PrimaryKeyDefinitionBuilderImpl withHints(Map<String, String> hints) {
         this.hints = hints;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public PrimaryKeyDefinition build() {
-        if (columns == null)
+    @Override
+    public PrimaryKeyDefinition build() {
+        if (columns == null) {
             throw new IllegalStateException("Primary key column(s) must be configured.");
+        }
 
         Set<String> cols = Set.of(columns);
 
         Set<String> affCols;
 
-        if (ArrayUtils.nullOrEmpty(affinityColumns))
+        if (ArrayUtils.nullOrEmpty(affinityColumns)) {
             affCols = cols;
-        else {
+        } else {
             affCols = Set.of(affinityColumns);
 
-            if (!cols.containsAll(affCols))
+            if (!cols.containsAll(affCols)) {
                 throw new IllegalStateException("Schema definition error: All affinity columns must be part of key.");
+            }
         }
 
         return new PrimaryKeyDefinitionImpl(cols, affCols);

@@ -38,7 +38,8 @@ public abstract class AbstractCondition implements Condition {
 
     /** {@inheritDoc} */
     @NotNull
-    @Override public byte[] key() {
+    @Override
+    public byte[] key() {
         return key;
     }
 }

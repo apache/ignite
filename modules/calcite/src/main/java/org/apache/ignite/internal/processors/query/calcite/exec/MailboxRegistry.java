@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.UUID;
-
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.jetbrains.annotations.Nullable;
@@ -37,18 +36,18 @@ public interface MailboxRegistry extends LifecycleAware {
     <T> Inbox<T> register(Inbox<T> inbox);
 
     /**
-     * Unregisters an inbox.
-     *
-     * @param inbox Inbox to unregister.
-     */
-    void unregister(Inbox<?> inbox);
-
-    /**
      * Registers an outbox.
      *
      * @param outbox Outbox to register.
      */
     void register(Outbox<?> outbox);
+
+    /**
+     * Unregisters an inbox.
+     *
+     * @param inbox Inbox to unregister.
+     */
+    void unregister(Inbox<?> inbox);
 
     /**
      * Unregisters an outbox.
@@ -60,9 +59,8 @@ public interface MailboxRegistry extends LifecycleAware {
     /**
      * Returns a registered outbox by provided query ID, exchange ID pair.
      *
-     * @param qryId Query ID.
+     * @param qryId      Query ID.
      * @param exchangeId Exchange ID.
-     *
      * @return Registered outbox. May be {@code null} if execution was cancelled.
      */
     Outbox<?> outbox(UUID qryId, long exchangeId);
@@ -70,9 +68,8 @@ public interface MailboxRegistry extends LifecycleAware {
     /**
      * Returns a registered inbox by provided query ID, exchange ID pair.
      *
-     * @param qryId Query ID.
+     * @param qryId      Query ID.
      * @param exchangeId Exchange ID.
-     *
      * @return Registered inbox. May be {@code null} if execution was cancelled.
      */
     Inbox<?> inbox(UUID qryId, long exchangeId);
@@ -80,7 +77,7 @@ public interface MailboxRegistry extends LifecycleAware {
     /**
      * Returns all registered inboxes for provided query ID.
      *
-     * @param qryId Query ID. {@code null} means return inboxes with any query id.
+     * @param qryId      Query ID. {@code null} means return inboxes with any query id.
      * @param fragmentId Fragment Id. {@code -1} means return inboxes with any fragment id.
      * @param exchangeId Exchange Id. {@code -1} means return inboxes with any exchange id.
      * @return Registered inboxes.
@@ -90,7 +87,7 @@ public interface MailboxRegistry extends LifecycleAware {
     /**
      * Returns all registered outboxes for provided query ID.
      *
-     * @param qryId Query ID. {@code null} means return outboxes with any query id.
+     * @param qryId      Query ID. {@code null} means return outboxes with any query id.
      * @param fragmentId Fragment Id. {@code -1} means return outboxes with any fragment id.
      * @param exchangeId Exchange Id. {@code -1} means return outboxes with any exchange id.
      * @return Registered outboxes.

@@ -28,51 +28,51 @@ import org.apache.ignite.network.annotations.Transferable;
 
 @Transferable(TestMessageTypes.ALL_TYPES)
 public interface AllTypesMessage extends NetworkMessage {
-    byte a();
+    byte byteA();
 
-    short b();
+    short shortB();
 
-    int c();
+    int intC();
 
-    long d();
+    long longD();
 
-    float e();
+    float floatE();
 
-    double f();
+    double doubleF();
 
-    char g();
+    char charG();
 
-    boolean h();
+    boolean booleanH();
 
-    byte[] i();
+    byte[] byteArrI();
 
-    short[] j();
+    short[] shortArrJ();
 
-    int[] k();
+    int[] intArrK();
 
-    long[] l();
+    long[] longArrL();
 
-    float[] m();
+    float[] floatArrM();
 
-    double[] n();
+    double[] doubleArrN();
 
-    char[] o();
+    char[] charArrO();
 
-    boolean[] p();
+    boolean[] booleanArrP();
 
-    String q();
+    String strQ();
 
-    BitSet r();
+    BitSet bitSetR();
 
-    UUID s();
+    UUID uuidS();
 
-    IgniteUuid t();
+    IgniteUuid igniteUuidT();
 
-    NetworkMessage u();
+    NetworkMessage netMsgU();
 
-    NetworkMessage[] v();
+    NetworkMessage[] netMsgArrV();
 
-    Collection<NetworkMessage> w();
+    Collection<NetworkMessage> netMsgCollW();
 
-    Map<String, NetworkMessage> x();
+    Map<String, NetworkMessage> newMsgMapX();
 }

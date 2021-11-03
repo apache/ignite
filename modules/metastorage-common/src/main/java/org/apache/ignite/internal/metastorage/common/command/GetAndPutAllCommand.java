@@ -25,15 +25,17 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get and put all command for MetaStorageCommandListener that inserts or updates entries
- * with given keys and given values and retrieves a previous entries for given keys.
+ * Get and put all command for MetaStorageCommandListener that inserts or updates entries with given keys and given values and retrieves a
+ * previous entries for given keys.
  */
 public final class GetAndPutAllCommand implements WriteCommand {
     /** Keys. */
-    @NotNull private final List<byte[]> keys;
+    @NotNull
+    private final List<byte[]> keys;
 
     /** Values. */
-    @NotNull private final List<byte[]> vals;
+    @NotNull
+    private final List<byte[]> vals;
 
     /**
      * @param vals Values.

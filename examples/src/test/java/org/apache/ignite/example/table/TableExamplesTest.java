@@ -46,10 +46,10 @@ public class TableExamplesTest {
     @Test
     public void testRecordViewExample() throws Exception {
         ExampleTestUtils.assertConsoleOutputContains(RecordViewExample::main, EMPTY_ARGS,
-            "\nRetrieved record:\n" +
-            "    Account Number: 123456\n" +
-            "    Owner: Val Kulichenko\n" +
-            "    Balance: $100.0\n");
+                "\nRetrieved record:\n"
+                        + "    Account Number: 123456\n"
+                        + "    Owner: Val Kulichenko\n"
+                        + "    Balance: $100.0\n");
     }
 
     /**
@@ -60,18 +60,18 @@ public class TableExamplesTest {
     @Test
     public void testKeyValueViewExample() throws Exception {
         ExampleTestUtils.assertConsoleOutputContains(KeyValueViewExample::main, EMPTY_ARGS,
-            "\nRetrieved value:\n" +
-            "    Account Number: 123456\n" +
-            "    Owner: Val Kulichenko\n" +
-            "    Balance: $100.0\n");
+                "\nRetrieved value:\n"
+                        + "    Account Number: 123456\n"
+                        + "    Owner: Val Kulichenko\n"
+                        + "    Balance: $100.0\n");
     }
 
     @BeforeEach
     public void startNode(@WorkDirectory Path workDir) throws IOException {
         IgnitionManager.start(
-            "my-first-node",
-            Files.readString(Path.of("config", "ignite-config.json")),
-            workDir
+                "my-first-node",
+                Files.readString(Path.of("config", "ignite-config.json")),
+                workDir
         );
     }
 
@@ -88,7 +88,8 @@ public class TableExamplesTest {
     public void removeWorkDir() {
         Path workDir = Path.of("work");
 
-        if (Files.exists(workDir))
+        if (Files.exists(workDir)) {
             IgniteUtils.deleteIfExists(workDir);
+        }
     }
 }

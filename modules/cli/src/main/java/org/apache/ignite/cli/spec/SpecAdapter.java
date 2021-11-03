@@ -29,20 +29,20 @@ import picocli.CommandLine.Model.CommandSpec;
  */
 @CommandLine.Command(versionProvider = VersionProvider.class)
 public abstract class SpecAdapter implements Runnable {
-    private static final String[] BANNER = new String[] {
-        "",
-        "  @|red,bold          #|@              ___                         __",
-        "  @|red,bold        ###|@             /   |   ____   ____ _ _____ / /_   ___",
-        "  @|red,bold    #  #####|@           / /| |  / __ \\ / __ `// ___// __ \\ / _ \\",
-        "  @|red,bold  ###  ######|@         / ___ | / /_/ // /_/ // /__ / / / // ___/",
-        "  @|red,bold #####  #######|@      /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/",
-        "  @|red,bold #######  ######|@            /_/",
-        "  @|red,bold   ########  ####|@        ____               _  __           @|red,bold _____|@",
-        "  @|red,bold  #  ########  ##|@       /  _/____ _ ____   (_)/ /_ ___     @|red,bold |__  /|@",
-        "  @|red,bold ####  #######  #|@       / / / __ `// __ \\ / // __// _ \\     @|red,bold /_ <|@",
-        "  @|red,bold  #####  #####|@        _/ / / /_/ // / / // // /_ / ___/   @|red,bold ___/ /|@",
-        "  @|red,bold    ####  ##|@         /___/ \\__, //_/ /_//_/ \\__/ \\___/   @|red,bold /____/|@",
-        "  @|red,bold      ##|@                  /____/\n"
+    private static final String[] BANNER = new String[]{
+            "",
+            "  @|red,bold          #|@              ___                         __",
+            "  @|red,bold        ###|@             /   |   ____   ____ _ _____ / /_   ___",
+            "  @|red,bold    #  #####|@           / /| |  / __ \\ / __ `// ___// __ \\ / _ \\",
+            "  @|red,bold  ###  ######|@         / ___ | / /_/ // /_/ // /__ / / / // ___/",
+            "  @|red,bold #####  #######|@      /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/",
+            "  @|red,bold #######  ######|@            /_/",
+            "  @|red,bold   ########  ####|@        ____               _  __           @|red,bold _____|@",
+            "  @|red,bold  #  ########  ##|@       /  _/____ _ ____   (_)/ /_ ___     @|red,bold |__  /|@",
+            "  @|red,bold ####  #######  #|@       / / / __ `// __ \\ / // __// _ \\     @|red,bold /_ <|@",
+            "  @|red,bold  #####  #####|@        _/ / / /_/ // / / // // /_ / ___/   @|red,bold ___/ /|@",
+            "  @|red,bold    ####  ##|@         /___/ \\__, //_/ /_//_/ \\__/ \\___/   @|red,bold /____/|@",
+            "  @|red,bold      ##|@                  /____/\n"
     };
 
     @CommandLine.Spec
@@ -50,9 +50,9 @@ public abstract class SpecAdapter implements Runnable {
 
     public String banner() {
         String banner = Arrays
-            .stream(BANNER)
-            .map(Ansi.AUTO::string)
-            .collect(Collectors.joining("\n"));
+                .stream(BANNER)
+                .map(Ansi.AUTO::string)
+                .collect(Collectors.joining("\n"));
 
         return '\n' + banner + '\n' + " ".repeat(22) + spec.version()[0] + "\n\n";
     }

@@ -26,18 +26,20 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ScanInitCommand implements WriteCommand {
     /** Id of the node that requests scan. */
-    @NotNull private final String requesterNodeId;
+    @NotNull
+    private final String requesterNodeId;
 
     /** Id of scan that is associated with the current command. */
-    @NotNull private final IgniteUuid scanId;
+    @NotNull
+    private final IgniteUuid scanId;
 
     /**
      * @param requesterNodeId Id of the node that requests scan.
-     * @param scanId Id of scan that is associated with the current command.
+     * @param scanId          Id of scan that is associated with the current command.
      */
     public ScanInitCommand(
-        @NotNull String requesterNodeId,
-        @NotNull IgniteUuid scanId
+            @NotNull String requesterNodeId,
+            @NotNull IgniteUuid scanId
     ) {
         this.requesterNodeId = requesterNodeId;
         this.scanId = scanId;
@@ -53,7 +55,8 @@ public class ScanInitCommand implements WriteCommand {
     /**
      * @return Id of scan that is associated with the current command.
      */
-    @NotNull public IgniteUuid scanId() {
+    @NotNull
+    public IgniteUuid scanId() {
         return scanId;
     }
 }

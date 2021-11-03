@@ -17,16 +17,6 @@
 
 package org.apache.ignite.client.proto.query.event;
 
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.Date;
-import java.util.Objects;
-import org.apache.ignite.internal.client.proto.ClientMessagePacker;
-import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
-import org.apache.ignite.internal.tostring.S;
-
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
@@ -42,102 +32,112 @@ import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
 
+import java.math.BigDecimal;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.Date;
+import java.util.Objects;
+import org.apache.ignite.internal.client.proto.ClientMessagePacker;
+import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
+import org.apache.ignite.internal.tostring.S;
+
 /**
  * JDBC column metadata.
  */
 public class JdbcColumnMeta extends Response {
     /** Nullable. */
     private boolean nullable;
-
+    
     /** Column label. */
     private String label;
-
+    
     /** Schema name. */
     private String schemaName;
-
+    
     /** Table name. */
     private String tblName;
-
+    
     /** Column name. */
     private String colName;
-
+    
     /** Data type. */
     private int dataType;
-
+    
     /** Data type name. */
     private String dataTypeName;
-
+    
     /** Precision. */
     private int precision;
-
+    
     /** Scale. */
     private int scale;
-
+    
     /** Data type class. */
     private String dataTypeCls;
-
+    
     /**
      * Default constructor is used for serialization.
      */
     public JdbcColumnMeta() {
     }
-
+    
     /**
      * Constructor.
      *
      * @param label Column label.
-     * @param cls Type.
+     * @param cls   Type.
      */
     public JdbcColumnMeta(String label, Class<?> cls) {
         this(label, null, null, null, cls, -1, -1, true);
     }
-
+    
     /**
      * Constructor with nullable flag.
      *
-     * @param label Column label.
+     * @param label      Column label.
      * @param schemaName Schema.
-     * @param tblName Table.
-     * @param colName Column.
-     * @param cls Type.
-     * @param nullable Nullable flag.
-     * @param precision Column precision.
-     * @param scale Column scale.
+     * @param tblName    Table.
+     * @param colName    Column.
+     * @param cls        Type.
+     * @param nullable   Nullable flag.
+     * @param precision  Column precision.
+     * @param scale      Column scale.
      */
     public JdbcColumnMeta(String label, String schemaName, String tblName, String colName, Class<?> cls, int precision, int scale,
-        boolean nullable) {
+            boolean nullable) {
         this(label, schemaName, tblName, colName, cls.getName(), precision, scale, nullable);
     }
-
+    
     /**
      * Constructor with nullable flag.
      *
-     * @param label Column label.
-     * @param schemaName Schema.
-     * @param tblName Table.
-     * @param colName Column.
+     * @param label        Column label.
+     * @param schemaName   Schema.
+     * @param tblName      Table.
+     * @param colName      Column.
      * @param javaTypeName Java type name.
-     * @param nullable Nullable flag.
-     * @param precision Column precision.
-     * @param scale Column scale.
+     * @param nullable     Nullable flag.
+     * @param precision    Column precision.
+     * @param scale        Column scale.
      */
     public JdbcColumnMeta(String label, String schemaName, String tblName, String colName, String javaTypeName, int precision, int scale,
-        boolean nullable) {
+            boolean nullable) {
         this.label = label;
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.colName = colName;
         this.nullable = nullable;
-
+        
         this.dataType = type(javaTypeName);
         this.dataTypeName = typeName(javaTypeName);
         this.dataTypeCls = javaTypeName;
         this.precision = precision;
         this.scale = scale;
-
+        
         hasResults = true;
     }
-
+    
     /**
      * Gets column label.
      *
@@ -146,7 +146,7 @@ public class JdbcColumnMeta extends Response {
     public String columnLabel() {
         return label;
     }
-
+    
     /**
      * Gets schema name.
      *
@@ -155,7 +155,7 @@ public class JdbcColumnMeta extends Response {
     public String schemaName() {
         return schemaName;
     }
-
+    
     /**
      * Gets table name.
      *
@@ -164,7 +164,7 @@ public class JdbcColumnMeta extends Response {
     public String tableName() {
         return tblName;
     }
-
+    
     /**
      * Gets column name.
      *
@@ -173,7 +173,7 @@ public class JdbcColumnMeta extends Response {
     public String columnName() {
         return colName != null ? colName : label;
     }
-
+    
     /**
      * Gets data type id.
      *
@@ -182,7 +182,7 @@ public class JdbcColumnMeta extends Response {
     public int dataType() {
         return dataType;
     }
-
+    
     /**
      * Gets data type name.
      *
@@ -191,7 +191,7 @@ public class JdbcColumnMeta extends Response {
     public String dataTypeName() {
         return dataTypeName;
     }
-
+    
     /**
      * Gets default value.
      *
@@ -200,7 +200,7 @@ public class JdbcColumnMeta extends Response {
     public String defaultValue() {
         return null;
     }
-
+    
     /**
      * Gets column precision.
      *
@@ -209,7 +209,7 @@ public class JdbcColumnMeta extends Response {
     public int precision() {
         return precision;
     }
-
+    
     /**
      * Gets column scale.
      *
@@ -218,7 +218,7 @@ public class JdbcColumnMeta extends Response {
     public int scale() {
         return scale;
     }
-
+    
     /**
      * Gets nullable flag.
      *
@@ -227,7 +227,7 @@ public class JdbcColumnMeta extends Response {
     public boolean isNullable() {
         return nullable;
     }
-
+    
     /**
      * Gets data type class.
      *
@@ -236,19 +236,21 @@ public class JdbcColumnMeta extends Response {
     public String dataTypeClass() {
         return dataTypeCls;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         super.writeBinary(packer);
-
-        if (!hasResults)
+    
+        if (!hasResults) {
             return;
-
+        }
+        
         packer.packString(label);
         ClientMessageUtils.writeStringNullable(packer, schemaName);
         ClientMessageUtils.writeStringNullable(packer, tblName);
         ClientMessageUtils.writeStringNullable(packer, colName);
-
+        
         packer.packInt(dataType);
         packer.packString(dataTypeName);
         packer.packString(dataTypeCls);
@@ -256,19 +258,21 @@ public class JdbcColumnMeta extends Response {
         packer.packInt(precision);
         packer.packInt(scale);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         super.readBinary(unpacker);
-
-        if (!hasResults)
+    
+        if (!hasResults) {
             return;
-
+        }
+        
         label = unpacker.unpackString();
         schemaName = ClientMessageUtils.readStringNullable(unpacker);
         tblName = ClientMessageUtils.readStringNullable(unpacker);
         colName = ClientMessageUtils.readStringNullable(unpacker);
-
+        
         dataType = unpacker.unpackInt();
         dataTypeName = unpacker.unpackString();
         dataTypeCls = unpacker.unpackString();
@@ -276,29 +280,33 @@ public class JdbcColumnMeta extends Response {
         precision = unpacker.unpackInt();
         scale = unpacker.unpackInt();
     }
-
+    
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-
-        if (o == null || getClass() != o.getClass())
+        }
+    
+        if (o == null || getClass() != o.getClass()) {
             return false;
-
-        JdbcColumnMeta meta = (JdbcColumnMeta)o;
+        }
+        
+        JdbcColumnMeta meta = (JdbcColumnMeta) o;
         return nullable == meta.nullable
-            && dataType == meta.dataType
-            && precision == meta.precision
-            && scale == meta.scale
-            && Objects.equals(schemaName, meta.schemaName)
-            && Objects.equals(tblName, meta.tblName)
-            && Objects.equals(colName, meta.colName)
-            && Objects.equals(dataTypeCls, meta.dataTypeCls)
-            && Objects.equals(dataTypeName, meta.dataTypeName);
+                && dataType == meta.dataType
+                && precision == meta.precision
+                && scale == meta.scale
+                && Objects.equals(schemaName, meta.schemaName)
+                && Objects.equals(tblName, meta.tblName)
+                && Objects.equals(colName, meta.colName)
+                && Objects.equals(dataTypeCls, meta.dataTypeCls)
+                && Objects.equals(dataTypeName, meta.dataTypeName);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = (nullable ? 1 : 0);
         result = 31 * result + (schemaName != null ? schemaName.hashCode() : 0);
         result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
@@ -310,12 +318,13 @@ public class JdbcColumnMeta extends Response {
         result = 31 * result + scale;
         return result;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(JdbcColumnMeta.class, this);
     }
-
+    
     /**
      * Converts Java class name to type from {@link Types}.
      *
@@ -323,36 +332,37 @@ public class JdbcColumnMeta extends Response {
      * @return Type from {@link Types}.
      */
     private static int type(String cls) {
-        if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
+        if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls)) {
             return BOOLEAN;
-        else if (Byte.class.getName().equals(cls) || byte.class.getName().equals(cls))
+        } else if (Byte.class.getName().equals(cls) || byte.class.getName().equals(cls)) {
             return TINYINT;
-        else if (Short.class.getName().equals(cls) || short.class.getName().equals(cls))
+        } else if (Short.class.getName().equals(cls) || short.class.getName().equals(cls)) {
             return SMALLINT;
-        else if (Integer.class.getName().equals(cls) || int.class.getName().equals(cls))
+        } else if (Integer.class.getName().equals(cls) || int.class.getName().equals(cls)) {
             return INTEGER;
-        else if (Long.class.getName().equals(cls) || long.class.getName().equals(cls))
+        } else if (Long.class.getName().equals(cls) || long.class.getName().equals(cls)) {
             return BIGINT;
-        else if (Float.class.getName().equals(cls) || float.class.getName().equals(cls))
+        } else if (Float.class.getName().equals(cls) || float.class.getName().equals(cls)) {
             return FLOAT;
-        else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls))
+        } else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls)) {
             return DOUBLE;
-        else if (String.class.getName().equals(cls))
+        } else if (String.class.getName().equals(cls)) {
             return VARCHAR;
-        else if (byte[].class.getName().equals(cls))
+        } else if (byte[].class.getName().equals(cls)) {
             return BINARY;
-        else if (Time.class.getName().equals(cls))
+        } else if (Time.class.getName().equals(cls)) {
             return TIME;
-        else if (Timestamp.class.getName().equals(cls))
+        } else if (Timestamp.class.getName().equals(cls)) {
             return TIMESTAMP;
-        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
+        } else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls)) {
             return DATE;
-        else if (BigDecimal.class.getName().equals(cls))
+        } else if (BigDecimal.class.getName().equals(cls)) {
             return DECIMAL;
-        else
+        } else {
             return OTHER;
+        }
     }
-
+    
     /**
      * Converts Java class name to SQL type name.
      *
@@ -360,33 +370,34 @@ public class JdbcColumnMeta extends Response {
      * @return SQL type name.
      */
     private static String typeName(String cls) {
-        if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
+        if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls)) {
             return "BOOLEAN";
-        else if (Byte.class.getName().equals(cls) || byte.class.getName().equals(cls))
+        } else if (Byte.class.getName().equals(cls) || byte.class.getName().equals(cls)) {
             return "TINYINT";
-        else if (Short.class.getName().equals(cls) || short.class.getName().equals(cls))
+        } else if (Short.class.getName().equals(cls) || short.class.getName().equals(cls)) {
             return "SMALLINT";
-        else if (Integer.class.getName().equals(cls) || int.class.getName().equals(cls))
+        } else if (Integer.class.getName().equals(cls) || int.class.getName().equals(cls)) {
             return "INTEGER";
-        else if (Long.class.getName().equals(cls) || long.class.getName().equals(cls))
+        } else if (Long.class.getName().equals(cls) || long.class.getName().equals(cls)) {
             return "BIGINT";
-        else if (Float.class.getName().equals(cls) || float.class.getName().equals(cls))
+        } else if (Float.class.getName().equals(cls) || float.class.getName().equals(cls)) {
             return "FLOAT";
-        else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls))
+        } else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls)) {
             return "DOUBLE";
-        else if (String.class.getName().equals(cls))
+        } else if (String.class.getName().equals(cls)) {
             return "VARCHAR";
-        else if (byte[].class.getName().equals(cls))
+        } else if (byte[].class.getName().equals(cls)) {
             return "BINARY";
-        else if (Time.class.getName().equals(cls))
+        } else if (Time.class.getName().equals(cls)) {
             return "TIME";
-        else if (Timestamp.class.getName().equals(cls))
+        } else if (Timestamp.class.getName().equals(cls)) {
             return "TIMESTAMP";
-        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
+        } else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls)) {
             return "DATE";
-        else if (BigDecimal.class.getName().equals(cls))
+        } else if (BigDecimal.class.getName().equals(cls)) {
             return "DECIMAL";
-        else
+        } else {
             return "OTHER";
+        }
     }
 }

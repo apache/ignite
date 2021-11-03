@@ -20,8 +20,7 @@ package org.apache.ignite.network.serialization;
 import org.apache.ignite.network.NetworkMessage;
 
 /**
- * Creates {@link MessageDeserializer} and {@link MessageSerializer} instances for working with
- * {@link NetworkMessage} objects.
+ * Creates {@link MessageDeserializer} and {@link MessageSerializer} instances for working with {@link NetworkMessage} objects.
  *
  * @param <M> Message type.
  */

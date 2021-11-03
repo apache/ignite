@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.network.message;
 
-import java.util.Map;
 import io.scalecube.cluster.transport.api.Message;
+import java.util.Map;
 import org.apache.ignite.internal.network.NetworkMessageTypes;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
- * Wrapper for ScaleCube's {@link Message}.
- * {@link Message#data} is stored in {@link #array} and {@link Message#headers} are stored in {@link #headers}.
+ * Wrapper for ScaleCube's {@link Message}. {@link Message#data} is stored in {@link #array} and {@link Message#headers} are stored in
+ * {@link #headers}.
  */
 @Transferable(NetworkMessageTypes.SCALE_CUBE_MESSAGE)
 public interface ScaleCubeMessage extends NetworkMessage {

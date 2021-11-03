@@ -18,4 +18,5 @@
 /**
  * Configuration schemas for Rest component.
  */
+
 package org.apache.ignite.configuration.schemas.rest;

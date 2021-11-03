@@ -40,16 +40,16 @@ public interface StorageEngine {
     /**
      * Creates new table storage.
      *
-     * @param tablePath Path to store table data.
-     * @param tableCfg Table configuration.
-     * @param dataRegion Data region for the table.
+     * @param tablePath              Path to store table data.
+     * @param tableCfg               Table configuration.
+     * @param dataRegion             Data region for the table.
      * @param indexComparatorFactory Comparator factory for SQL indexes.
      * @return New table storage.
      */
     TableStorage createTable(
-        Path tablePath,
-        TableConfiguration tableCfg,
-        DataRegion dataRegion,
-        BiFunction<TableView, String, Comparator<ByteBuffer>> indexComparatorFactory
+            Path tablePath,
+            TableConfiguration tableCfg,
+            DataRegion dataRegion,
+            BiFunction<TableView, String, Comparator<ByteBuffer>> indexComparatorFactory
     );
 }

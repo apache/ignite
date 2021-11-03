@@ -68,7 +68,7 @@ public enum BinaryMode {
     /** Raw byte array. */
     BYTE_ARR(NativeTypeSpec.BYTES),
 
-    /** BitSet.*/
+    /** BitSet. */
     BITSET(NativeTypeSpec.BITMASK),
 
     /** BigInteger. */

@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJ
  * Ignite Join converter.
  */
 public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
-    /** */
+    /**
+     *
+     */
     public static final RelOptRule INSTANCE = new NestedLoopJoinConverterRule();
 
     /**
@@ -43,7 +45,8 @@ public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<Log
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
+    @Override
+    protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);

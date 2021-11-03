@@ -33,7 +33,8 @@ public interface TableDefinition extends SchemaObject {
      *
      * @return Table name.
      */
-    @Override String name();
+    @Override
+    String name();
 
     /**
      * Returns key columns.

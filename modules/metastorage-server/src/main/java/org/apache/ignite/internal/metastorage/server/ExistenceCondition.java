@@ -20,8 +20,7 @@ package org.apache.ignite.internal.metastorage.server;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Condition tests an entry on existence in meta storage.
- * Entry exists if it is not empty and not tombstone.
+ * Condition tests an entry on existence in meta storage. Entry exists if it is not empty and not tombstone.
  */
 public class ExistenceCondition extends AbstractCondition {
     /** Condition type. */
@@ -32,7 +31,7 @@ public class ExistenceCondition extends AbstractCondition {
      * Constructs existence condition with the given type and for entry identified by the given key.
      *
      * @param type Condition type. Can't be {@code null}.
-     * @param key Key of entry which condition will be applied to. Can't be {@code null}.
+     * @param key  Key of entry which condition will be applied to. Can't be {@code null}.
      */
     public ExistenceCondition(@NotNull Type type, @NotNull byte[] key) {
         super(key);
@@ -41,7 +40,8 @@ public class ExistenceCondition extends AbstractCondition {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean test(@NotNull Entry e) {
+    @Override
+    public boolean test(@NotNull Entry e) {
         boolean res = !(e.empty() || e.tombstone());
 
         return type.test(res);
@@ -51,14 +51,16 @@ public class ExistenceCondition extends AbstractCondition {
     public enum Type {
         /** Equality condition type. */
         EXISTS {
-            @Override public boolean test(boolean res) {
+            @Override
+            public boolean test(boolean res) {
                 return res;
             }
         },
 
         /** Inequality condition type. */
         NOT_EXISTS {
-            @Override public boolean test(boolean res) {
+            @Override
+            public boolean test(boolean res) {
                 return !res;
             }
         };

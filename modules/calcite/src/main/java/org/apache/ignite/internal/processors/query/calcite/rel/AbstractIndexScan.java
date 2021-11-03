@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -40,10 +39,14 @@ import org.jetbrains.annotations.Nullable;
  * Class with index conditions info.
  */
 public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
-    /** */
+    /**
+     *
+     */
     protected final String idxName;
 
-    /** */
+    /**
+     *
+     */
     protected final IndexConditions idxCond;
 
     /**
@@ -57,17 +60,19 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         idxCond = new IndexConditions(input);
     }
 
-    /** */
+    /**
+     *
+     */
     protected AbstractIndexScan(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        List<RelHint> hints,
-        RelOptTable table,
-        String idxName,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable IndexConditions idxCond,
-        @Nullable ImmutableBitSet reqColumns
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            List<RelHint> hints,
+            RelOptTable table,
+            String idxName,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable IndexConditions idxCond,
+            @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table, proj, cond, reqColumns);
 
@@ -76,7 +81,8 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /** {@inheritDoc} */
-    @Override protected RelWriter explainTerms0(RelWriter pw) {
+    @Override
+    protected RelWriter explainTerms0(RelWriter pw) {
         pw = pw.item("index", idxName);
         pw = super.explainTerms0(pw);
 
@@ -119,7 +125,8 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = table.getRowCount();
 
         double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
@@ -147,8 +154,9 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
             rows *= selectivity;
 
-            if (rows <= 0)
+            if (rows <= 0) {
                 rows = 1;
+            }
 
             cost += rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST);
         }
@@ -156,7 +164,9 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         return planner.getCostFactory().makeCost(rows, cost, 0);
     }
 
-    /** */
+    /**
+     *
+     */
     public IndexConditions indexConditions() {
         return idxCond;
     }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.configuration.validation;
 
+import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.find;
+
 import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.configuration.RootKey;
@@ -27,12 +29,10 @@ import org.apache.ignite.internal.configuration.tree.InnerNode;
 import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.internal.configuration.util.KeyNotFoundException;
 
-import static org.apache.ignite.internal.configuration.util.ConfigurationUtil.find;
-
 /**
  * Validation context implementation.
  */
-class ValidationContextImpl<VIEW> implements ValidationContext<VIEW> {
+class ValidationContextImpl<VIEWT> implements ValidationContext<VIEWT> {
     /** Cached storage roots with the current version of data. */
     private final SuperRoot oldRoots;
 
@@ -47,35 +47,42 @@ class ValidationContextImpl<VIEW> implements ValidationContext<VIEW> {
      *
      * @see #getNewValue()
      */
-    private final VIEW val;
+    private final VIEWT val;
 
-    /** */
+    /**
+     *
+     */
     private final String currentKey;
 
-    /** */
+    /**
+     *
+     */
     private final List<String> currentPath;
 
-    /** */
+    /**
+     *
+     */
     private final List<ValidationIssue> issues;
 
     /**
      * Constructor.
-     *  @param oldRoots Old roots.
-     * @param newRoots New roots.
-     * @param otherRoots Provider for arbitrary roots that might not be accociated with the same storage.
-     * @param val New value of currently validated configuration.
-     * @param currentKey Key corresponding to the value.
+     *
+     * @param oldRoots    Old roots.
+     * @param newRoots    New roots.
+     * @param otherRoots  Provider for arbitrary roots that might not be accociated with the same storage.
+     * @param val         New value of currently validated configuration.
+     * @param currentKey  Key corresponding to the value.
      * @param currentPath List representation of {@code currentKey}.
-     * @param issues List of issues, should be used as a write-only collection.
+     * @param issues      List of issues, should be used as a write-only collection.
      */
     ValidationContextImpl(
-        SuperRoot oldRoots,
-        SuperRoot newRoots,
-        Function<RootKey<?, ?>, InnerNode> otherRoots,
-        VIEW val,
-        String currentKey,
-        List<String> currentPath,
-        List<ValidationIssue> issues
+            SuperRoot oldRoots,
+            SuperRoot newRoots,
+            Function<RootKey<?, ?>, InnerNode> otherRoots,
+            VIEWT val,
+            String currentKey,
+            List<String> currentPath,
+            List<ValidationIssue> issues
     ) {
         this.oldRoots = oldRoots;
         this.newRoots = newRoots;
@@ -89,41 +96,46 @@ class ValidationContextImpl<VIEW> implements ValidationContext<VIEW> {
     }
 
     /** {@inheritDoc} */
-    @Override public String currentKey() {
+    @Override
+    public String currentKey() {
         return currentKey;
     }
 
     /** {@inheritDoc} */
-    @Override public VIEW getOldValue() {
+    @Override
+    public VIEWT getOldValue() {
         try {
             return find(currentPath, oldRoots, true);
-        }
-        catch (KeyNotFoundException ignore) {
+        } catch (KeyNotFoundException ignore) {
             return null;
         }
     }
 
     /** {@inheritDoc} */
-    @Override public VIEW getNewValue() {
+    @Override
+    public VIEWT getNewValue() {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public <ROOT> ROOT getOldRoot(RootKey<?, ROOT> rootKey) {
+    @Override
+    public <ROOT> ROOT getOldRoot(RootKey<?, ROOT> rootKey) {
         InnerNode root = oldRoots.getRoot(rootKey);
 
-        return (ROOT)(root == null ? otherRoots.apply(rootKey) : root);
+        return (ROOT) (root == null ? otherRoots.apply(rootKey) : root);
     }
 
     /** {@inheritDoc} */
-    @Override public <ROOT> ROOT getNewRoot(RootKey<?, ROOT> rootKey) {
+    @Override
+    public <ROOT> ROOT getNewRoot(RootKey<?, ROOT> rootKey) {
         TraversableTreeNode root = newRoots.getRoot(rootKey);
 
-        return (ROOT)(root == null ? otherRoots.apply(rootKey) : root);
+        return (ROOT) (root == null ? otherRoots.apply(rootKey) : root);
     }
 
     /** {@inheritDoc} */
-    @Override public void addIssue(ValidationIssue issue) {
+    @Override
+    public void addIssue(ValidationIssue issue) {
         issues.add(issue);
     }
 }

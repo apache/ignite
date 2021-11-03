@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.configuration.processor;
 
 import java.io.IOException;
@@ -46,6 +47,7 @@ public class ConfigSet {
 
     /**
      * Parse source file.
+     *
      * @param clz Class file object.
      * @return Parsed class.
      */
@@ -61,6 +63,8 @@ public class ConfigSet {
     }
 
     /**
+     * Returns {@code true} if all required classes were generated.
+     *
      * @return {@code true} if all required classes were generated.
      */
     public boolean allGenerated() {
@@ -68,20 +72,20 @@ public class ConfigSet {
     }
 
     /**
-     * Butchered version of {@link Launcher#parseClass(String)}, because {@code spoon} is such a garbage it can't even
-     * parse valid classes without issues.
+     * Butchered version of {@link Launcher#parseClass(String)}, because {@code spoon} is such a garbage it can't even parse valid classes
+     * without issues.
      *
      * @param code Code.
      * @return AST.
      */
     private static CtClass<?> parseClass(String code) {
         Launcher launcher = new Launcher();
-        launcher.addInputResource((SpoonResource)(new VirtualFile(code)));
+        launcher.addInputResource((SpoonResource) (new VirtualFile(code)));
         launcher.getEnvironment().setNoClasspath(true);
         launcher.getEnvironment().setAutoImports(true);
         Collection<CtType<?>> allTypes = launcher.buildModel().getAllTypes();
 
         // This is how we do "getLast" for streams. Pretty bad, I know.
-        return (CtClass)allTypes.stream().reduce((fst, snd) -> snd).orElseThrow(SpoonException::new);
+        return (CtClass) allTypes.stream().reduce((fst, snd) -> snd).orElseThrow(SpoonException::new);
     }
 }

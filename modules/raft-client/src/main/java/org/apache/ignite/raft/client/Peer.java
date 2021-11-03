@@ -33,8 +33,7 @@ public final class Peer implements Serializable {
     private final NetworkAddress addr;
 
     /**
-     * Peer's local priority value, if node don't support priority election,
-     * this value is {@link ElectionPriority#DISABLED}.
+     * Peer's local priority value, if node don't support priority election, this value is {@link ElectionPriority#DISABLED}.
      */
     private final int priority;
 
@@ -54,7 +53,7 @@ public final class Peer implements Serializable {
     }
 
     /**
-     * @param addr The address.
+     * @param addr     The address.
      * @param priority Election priority.
      */
     public Peer(NetworkAddress addr, int priority) {
@@ -77,22 +76,27 @@ public final class Peer implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
-        Peer peer = (Peer)o;
+        }
+        Peer peer = (Peer) o;
         return priority == peer.priority && addr.equals(peer.addr);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(addr, priority);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(Peer.class, this);
     }
 }

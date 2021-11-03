@@ -18,4 +18,5 @@
 /**
  * Contains tests for Ignite CLI UI elements.
  */
+
 package org.apache.ignite.cli.ui;

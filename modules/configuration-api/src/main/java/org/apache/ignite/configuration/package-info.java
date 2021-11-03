@@ -18,4 +18,5 @@
 /**
  * Basic classes and interfaces for describing and handling configuration trees.
  */
+
 package org.apache.ignite.configuration;

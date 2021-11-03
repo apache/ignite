@@ -34,11 +34,14 @@ public class FakeIgnite implements Ignite {
         super();
     }
 
-    /** */
+    /**
+     *
+     */
     private final IgniteTables tables = new FakeIgniteTables();
 
     /** {@inheritDoc} */
-    @Override public IgniteTables tables() {
+    @Override
+    public IgniteTables tables() {
         return tables;
     }
 
@@ -47,7 +50,8 @@ public class FakeIgnite implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTransactions transactions() {
+    @Override
+    public IgniteTransactions transactions() {
         return null;
     }
 
@@ -59,12 +63,14 @@ public class FakeIgnite implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return null;
     }
 }

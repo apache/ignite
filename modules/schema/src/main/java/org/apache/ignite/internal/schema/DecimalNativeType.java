@@ -34,7 +34,7 @@ public class DecimalNativeType extends NativeType {
      * The constructor.
      *
      * @param precision Precision.
-     * @param scale Scale.
+     * @param scale     Scale.
      */
     DecimalNativeType(int precision, int scale) {
         super(NativeTypeSpec.DECIMAL);
@@ -58,29 +58,34 @@ public class DecimalNativeType extends NativeType {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        if (!super.equals(o))
+        if (!super.equals(o)) {
             return false;
+        }
 
-        DecimalNativeType type = (DecimalNativeType)o;
+        DecimalNativeType type = (DecimalNativeType) o;
 
-        return precision == type.precision &&
-            scale == type.scale;
+        return precision == type.precision && scale == type.scale;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return Objects.hash(super.hashCode(), precision, scale);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(DecimalNativeType.class.getSimpleName(), "name", spec(), "precision", precision, "scale", scale);
     }
 }

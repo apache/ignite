@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.internal.tostring.S;
 
 /**
- * This class adds some necessary plumbing on top of the {@link Thread} class.
- * Specifically, it adds:
+ * This class adds some necessary plumbing on top of the {@link Thread} class. Specifically, it adds:
  * <ul>
  *      <li>Consistent naming of threads</li>;
  *      <li>Name of the grid this thread belongs to</li>.
@@ -40,7 +38,7 @@ public class IgniteThread extends Thread {
     /**
      * Creates grid thread with given name for a given Ignite instance.
      *
-     * @param nodeName Name of the Ignite instance this thread is created for.
+     * @param nodeName   Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      */
     public IgniteThread(String nodeName, String threadName) {
@@ -50,9 +48,9 @@ public class IgniteThread extends Thread {
     /**
      * Creates grid thread with given name for a given Ignite instance.
      *
-     * @param nodeName Name of the Ignite instance this thread is created for.
+     * @param nodeName   Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
-     * @param r Runnable to execute.
+     * @param r          Runnable to execute.
      */
     public IgniteThread(String nodeName, String threadName, Runnable r) {
         super(r, createName(cntr.incrementAndGet(), threadName, nodeName));
@@ -70,13 +68,15 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * Returns IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
+     *
      * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
      */
     public static IgniteThread current() {
         Thread thread = Thread.currentThread();
 
-        return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ?
-            ((IgniteThread)thread) : null;
+        return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread
+            ? ((IgniteThread) thread) : null;
     }
 
     /**
@@ -89,9 +89,9 @@ public class IgniteThread extends Thread {
     /**
      * Creates new thread name.
      *
-     * @param num Thread number.
+     * @param num        Thread number.
      * @param threadName Thread name.
-     * @param nodeName Ignite instance name.
+     * @param nodeName   Ignite instance name.
      * @return New thread name.
      */
     protected static String createName(long num, String threadName, String nodeName) {
@@ -99,7 +99,8 @@ public class IgniteThread extends Thread {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(IgniteThread.class, this, "name", getName());
     }
 }

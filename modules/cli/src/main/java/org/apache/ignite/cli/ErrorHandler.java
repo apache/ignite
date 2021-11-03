@@ -31,29 +31,32 @@ public class ErrorHandler implements CommandLine.IExecutionExceptionHandler, Com
     private final IgniteLogger log = IgniteLogger.forClass(ErrorHandler.class);
 
     /** {@inheritDoc} */
-    @Override public int handleExecutionException(
-        Exception ex,
-        CommandLine cmd,
-        CommandLine.ParseResult parseRes) {
-        if (ex instanceof IgniteCLIException)
+    @Override
+    public int handleExecutionException(
+            Exception ex,
+            CommandLine cmd,
+            CommandLine.ParseResult parseRes) {
+        if (ex instanceof IgniteCliException) {
             cmd.getErr().println(cmd.getColorScheme().errorText(ex.getMessage()));
-        else
+        } else {
             log.error("", ex);
+        }
 
         return cmd.getExitCodeExceptionMapper() != null
-            ? cmd.getExitCodeExceptionMapper().getExitCode(ex)
-            : cmd.getCommandSpec().exitCodeOnExecutionException();
+                ? cmd.getExitCodeExceptionMapper().getExitCode(ex)
+                : cmd.getCommandSpec().exitCodeOnExecutionException();
     }
 
     /** {@inheritDoc} */
-    @Override public int handleParseException(CommandLine.ParameterException ex, String[] args) {
+    @Override
+    public int handleParseException(CommandLine.ParameterException ex, String[] args) {
         CommandLine cli = ex.getCommandLine();
 
-        if (cli.getCommand() instanceof CategorySpec)
-            ((Runnable)cli.getCommand()).run();
-        else {
-            cli.getErr().println(cli.getColorScheme().errorText("[ERROR] ") + ex.getMessage() +
-                ". See usage information below.\n");
+        if (cli.getCommand() instanceof CategorySpec) {
+            ((Runnable) cli.getCommand()).run();
+        } else {
+            cli.getErr().println(cli.getColorScheme().errorText("[ERROR] ") + ex.getMessage()
+                    + ". See usage information below.\n");
 
             cli.usage(cli.getOut());
         }

@@ -22,7 +22,8 @@ package org.apache.ignite.schema.definition.index;
  */
 public interface HashIndexDefinition extends ColumnarIndexDefinition {
     /** {@inheritDoc} */
-    @Override default String type() {
+    @Override
+    default String type() {
         return "HASH";
     }
 }

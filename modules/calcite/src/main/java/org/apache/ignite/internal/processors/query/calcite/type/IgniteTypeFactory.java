@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.type;
 
+import static org.apache.ignite.internal.util.CollectionUtils.first;
+
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -26,7 +28,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
@@ -35,13 +36,13 @@ import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
 
-import static org.apache.ignite.internal.util.CollectionUtils.first;
-
 /**
  * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /** */
+    /**
+     *
+     */
     public IgniteTypeFactory() {
         super(IgniteTypeSystem.INSTANCE);
     }
@@ -54,10 +55,11 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public Type getJavaClass(RelDataType type) {
-        if (type instanceof JavaType)
-            return ((JavaType)type).getJavaClass();
-        else if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
+    @Override
+    public Type getJavaClass(RelDataType type) {
+        if (type instanceof JavaType) {
+            return ((JavaType) type).getJavaClass();
+        } else if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
             switch (type.getSqlTypeName()) {
                 case VARCHAR:
                 case CHAR:
@@ -131,9 +133,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
      * @return Result type.
      */
     public Type getResultClass(RelDataType type) {
-        if (type instanceof JavaType)
-            return ((JavaType)type).getJavaClass();
-        else if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
+        if (type instanceof JavaType) {
+            return ((JavaType) type).getJavaClass();
+        } else if (type instanceof BasicSqlType || type instanceof IntervalSqlType) {
             switch (type.getSqlTypeName()) {
                 case VARCHAR:
                 case CHAR:
@@ -208,30 +210,36 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType leastRestrictive(List<RelDataType> types) {
+    @Override
+    public RelDataType leastRestrictive(List<RelDataType> types) {
         assert types != null;
         assert types.size() >= 1;
 
-        if (types.size() == 1 || allEquals(types))
+        if (types.size() == 1 || allEquals(types)) {
             return first(types);
+        }
 
         return super.leastRestrictive(types);
     }
 
     /** {@inheritDoc} */
-    @Override public Charset getDefaultCharset() {
+    @Override
+    public Charset getDefaultCharset() {
         // Use JVM default charset rather then Calcite default charset (ISO-8859-1).
         return Charset.defaultCharset();
     }
 
-    /** */
+    /**
+     *
+     */
     private boolean allEquals(List<RelDataType> types) {
         assert types.size() > 1;
 
         RelDataType first = first(types);
         for (int i = 1; i < types.size(); i++) {
-            if (!Objects.equals(first, types.get(i)))
+            if (!Objects.equals(first, types.get(i))) {
                 return false;
+            }
         }
 
         return true;

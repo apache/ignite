@@ -57,8 +57,9 @@ public class InteractiveWrapper {
      */
     public void run(CommandLine cmd) {
         PicocliCommands picocliCommands = new PicocliCommands(workDir(), cmd) {
-            @Override public Object invoke(CommandSession ses, String cmd, Object... args) throws Exception {
-                return execute(ses, cmd, (String[])args);
+            @Override
+            public Object invoke(CommandSession ses, String cmd, Object... args) throws Exception {
+                return execute(ses, cmd, (String[]) args);
             }
         };
 
@@ -68,11 +69,11 @@ public class InteractiveWrapper {
         sysRegistry.setCommandRegistries(picocliCommands);
 
         LineReader reader = LineReaderBuilder.builder()
-            .terminal(terminal)
-            .completer(sysRegistry.completer())
-            .parser(parser)
-            .variable(LineReader.LIST_MAX, 50)   // max tab completion candidates
-            .build();
+                .terminal(terminal)
+                .completer(sysRegistry.completer())
+                .parser(parser)
+                .variable(LineReader.LIST_MAX, 50)   // max tab completion candidates
+                .build();
 
         TailTipWidgets widgets = new TailTipWidgets(reader, sysRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
         widgets.enable();
@@ -101,7 +102,9 @@ public class InteractiveWrapper {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static Path workDir() {
         return Paths.get(System.getProperty("user.dir"));
     }

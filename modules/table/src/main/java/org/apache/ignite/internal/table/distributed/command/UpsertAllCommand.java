@@ -38,8 +38,7 @@ public class UpsertAllCommand implements WriteCommand {
     private byte[] rowsBytes;
 
     /**
-     * Creates a new instance of UpsertAllCommand with the given rows to be upserted.
-     * The {@code rows} should not be {@code null} or empty.
+     * Creates a new instance of UpsertAllCommand with the given rows to be upserted. The {@code rows} should not be {@code null} or empty.
      *
      * @param rows Binary rows.
      */

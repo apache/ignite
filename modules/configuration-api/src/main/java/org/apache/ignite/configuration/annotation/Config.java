@@ -17,16 +17,16 @@
 
 package org.apache.ignite.configuration.annotation;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * This annotation, if applied to a class, marks it as a configuration schema.
- * Annotation processor generates several classes for each configuration schema:
+ * This annotation, if applied to a class, marks it as a configuration schema. Annotation processor generates several classes for each
+ * configuration schema:
  * <ul>
  * <li>Config - Represents configuration itself, provides API to init, change and view it. Extends {@code DynamicConfiguration}</li>
  * <li>Change - changes config tree</li>
@@ -50,7 +50,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * }
  * </code></pre>
  */
-@Target({ TYPE })
+@Target({TYPE})
 @Retention(RUNTIME)
 @Documented
 public @interface Config {

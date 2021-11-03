@@ -36,7 +36,7 @@ public class IgniteClientAuthenticationException extends IgniteClientException {
     /**
      * Constructs a new exception with the specified detail message and cause.
      *
-     * @param msg the detail message.
+     * @param msg   the detail message.
      * @param cause the cause.
      */
     public IgniteClientAuthenticationException(String msg, Throwable cause) {

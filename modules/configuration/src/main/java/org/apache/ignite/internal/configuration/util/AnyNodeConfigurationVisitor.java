@@ -25,24 +25,27 @@ import org.apache.ignite.internal.configuration.tree.NamedListNode;
 /** Visitor with just a single method to override. */
 public abstract class AnyNodeConfigurationVisitor<T> implements ConfigurationVisitor<T> {
     /** {@inheritDoc} */
-    @Override public final T visitLeafNode(String key, Serializable val) {
+    @Override
+    public final T visitLeafNode(String key, Serializable val) {
         return visitNode(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public final T visitInnerNode(String key, InnerNode node) {
+    @Override
+    public final T visitInnerNode(String key, InnerNode node) {
         return visitNode(key, node);
     }
 
     /** {@inheritDoc} */
-    @Override public final T visitNamedListNode(String key, NamedListNode<?> node) {
+    @Override
+    public final T visitNamedListNode(String key, NamedListNode<?> node) {
         return visitNode(key, node);
     }
 
     /**
      * Visit tree node.
      *
-     * @param key Name of the node.
+     * @param key  Name of the node.
      * @param node {@link InnerNode}, {@link NamedListNode} or {@link Serializable} leaf.
      * @return Anything that implementation decides to return.
      */

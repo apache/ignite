@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -43,14 +42,13 @@ public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase impleme
     /** Collation. */
     private final RelCollation collation;
 
-    /** {@inheritDoc} */
     public IgniteSingleSortAggregate(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        RelNode input,
-        ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
+            RelOptCluster cluster,
+            RelTraitSet traitSet,
+            RelNode input,
+            ImmutableBitSet groupSet,
+            List<ImmutableBitSet> groupSets,
+            List<AggregateCall> aggCalls
     ) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
 
@@ -60,7 +58,6 @@ public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase impleme
         collation = TraitUtils.collation(traitSet);
     }
 
-    /** {@inheritDoc} */
     public IgniteSingleSortAggregate(RelInput input) {
         super(input);
 
@@ -71,36 +68,42 @@ public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    @Override
+    public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
+            List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteSingleSortAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+    @Override
+    public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteSingleSortAggregate(cluster, getTraitSet().replace(collation), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList());
+                getGroupSet(), getGroupSets(), getAggCallList());
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+    @Override
+    public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
     /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw).item("collation", collation);
     }
 
     /** {@inheritDoc} */
-    @Override public RelCollation collation() {
+    @Override
+    public RelCollation collation() {
         assert collation.equals(super.collation());
 
         return collation;
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return computeSelfCostSort(planner, mq);
     }
 }

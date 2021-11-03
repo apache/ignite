@@ -21,8 +21,7 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.InternalConfiguration;
 
 /**
- * If {@link InternalConfiguration} is present and {@link ConfigurationRoot} is absent,
- * the class must have a parent (superclass).
+ * If {@link InternalConfiguration} is present and {@link ConfigurationRoot} is absent, the class must have a parent (superclass).
  */
 @InternalConfiguration
 public class ErrorInternal2ConfigurationSchema {

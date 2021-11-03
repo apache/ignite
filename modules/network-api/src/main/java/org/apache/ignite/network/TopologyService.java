@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.network;
 
 import java.util.Collection;
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Entry point for obtaining information about a cluster's topology.
  *
- * TODO: allow removing event handlers, see https://issues.apache.org/jira/browse/IGNITE-14519
+ * <p>TODO: allow removing event handlers, see https://issues.apache.org/jira/browse/IGNITE-14519
  */
 public interface TopologyService {
     /**

@@ -20,8 +20,7 @@ package org.apache.ignite.internal.schema.registry;
 import org.apache.ignite.lang.IgniteInternalException;
 
 /**
- * Schema registration conflict exception is thown if
- * registering schema's number was alredy registered earlier.
+ * Schema registration conflict exception is thown if registering schema's number was alredy registered earlier.
  */
 public class SchemaRegistrationConflictException extends IgniteInternalException {
     /**

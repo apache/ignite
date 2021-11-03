@@ -32,51 +32,58 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
-/** */
+/**
+ *
+ */
 public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTableScan> extends AbstractIgniteConverterRule<T> {
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalIndexScanConverterRule") {
-            /** {@inheritDoc} */
-            @Override protected PhysicalNode convert(
-                RelOptPlanner planner,
-                RelMetadataQuery mq,
-                IgniteLogicalIndexScan rel
-            ) {
-                return new IgniteIndexScan(
-                    rel.getCluster(),
-                    rel.getTraitSet().replace(IgniteConvention.INSTANCE),
-                    rel.getTable(),
-                    rel.indexName(),
-                    rel.projects(),
-                    rel.condition(),
-                    rel.indexConditions(),
-                    rel.requiredColumns()
-                );
-            }
-        };
+            new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalIndexScanConverterRule") {
+                /** {@inheritDoc} */
+                @Override
+                protected PhysicalNode convert(
+                        RelOptPlanner planner,
+                        RelMetadataQuery mq,
+                        IgniteLogicalIndexScan rel
+                ) {
+                    return new IgniteIndexScan(
+                            rel.getCluster(),
+                            rel.getTraitSet().replace(IgniteConvention.INSTANCE),
+                            rel.getTable(),
+                            rel.indexName(),
+                            rel.projects(),
+                            rel.condition(),
+                            rel.indexConditions(),
+                            rel.requiredColumns()
+                    );
+                }
+            };
 
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalTableScanConverterRule") {
-            /** {@inheritDoc} */
-            @Override protected PhysicalNode convert(
-                RelOptPlanner planner,
-                RelMetadataQuery mq,
-                IgniteLogicalTableScan rel
-            ) {
-                RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
+            new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalTableScanConverterRule") {
+                /** {@inheritDoc} */
+                @Override
+                protected PhysicalNode convert(
+                        RelOptPlanner planner,
+                        RelMetadataQuery mq,
+                        IgniteLogicalTableScan rel
+                ) {
+                    RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
 
-                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
-                if (!corrIds.isEmpty())
-                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+                    Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+                    if (!corrIds.isEmpty()) {
+                        traits = traits.replace(CorrelationTrait.correlations(corrIds));
+                    }
 
-                return new IgniteTableScan(rel.getCluster(), traits,
-                    rel.getTable(), rel.projects(), rel.condition(), rel.requiredColumns());
-            }
-        };
+                    return new IgniteTableScan(rel.getCluster(), traits,
+                            rel.getTable(), rel.projects(), rel.condition(), rel.requiredColumns());
+                }
+            };
 
-    /** */
+    /**
+     *
+     */
     private LogicalScanConverterRule(Class<T> clazz, String descPrefix) {
         super(clazz, descPrefix);
     }

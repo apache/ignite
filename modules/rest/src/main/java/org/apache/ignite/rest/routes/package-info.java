@@ -18,4 +18,5 @@
 /**
  * This package contains classes that represent URI routers and their dispatching.
  */
+
 package org.apache.ignite.rest.routes;

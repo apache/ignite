@@ -19,61 +19,74 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
-
 import org.apache.ignite.internal.util.ArrayUtils;
 
 /**
  * Handler for rows that implemented as a simple objects array.
  */
 public class ArrayRowHandler implements RowHandler<Object[]> {
-    /** */
+    /**
+     *
+     */
     public static final RowHandler<Object[]> INSTANCE = new ArrayRowHandler();
 
-    /** */
-    private ArrayRowHandler() {}
+    /**
+     *
+     */
+    private ArrayRowHandler() {
+    }
 
     /** {@inheritDoc} */
-    @Override public Object get(int field, Object[] row) {
+    @Override
+    public Object get(int field, Object[] row) {
         return row[field];
     }
 
     /** {@inheritDoc} */
-    @Override public void set(int field, Object[] row, Object val) {
+    @Override
+    public void set(int field, Object[] row, Object val) {
         row[field] = val;
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] concat(Object[] left, Object[] right) {
+    @Override
+    public Object[] concat(Object[] left, Object[] right) {
         return ArrayUtils.concat(left, right);
     }
 
     /** {@inheritDoc} */
-    @Override public int columnCount(Object[] row) {
+    @Override
+    public int columnCount(Object[] row) {
         return row.length;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString(Object[] objects) {
+    @Override
+    public String toString(Object[] objects) {
         return "Row" + Arrays.toString(objects);
     }
 
     /** {@inheritDoc} */
-    @Override public RowFactory<Object[]> factory(Type... types) {
+    @Override
+    public RowFactory<Object[]> factory(Type... types) {
         int rowLen = types.length;
 
         return new RowFactory<>() {
             /** {@inheritDoc} */
-            @Override public RowHandler<Object[]> handler() {
+            @Override
+            public RowHandler<Object[]> handler() {
                 return ArrayRowHandler.this;
             }
 
             /** {@inheritDoc} */
-            @Override public Object[] create() {
+            @Override
+            public Object[] create() {
                 return new Object[rowLen];
             }
 
             /** {@inheritDoc} */
-            @Override public Object[] create(Object... fields) {
+            @Override
+            public Object[] create(Object... fields) {
                 assert fields.length == rowLen;
 
                 return fields;

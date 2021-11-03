@@ -18,4 +18,5 @@
 /**
  * This package contains classes that represent inbound requests, outbound responses and main REST handler.
  */
+
 package org.apache.ignite.rest.netty;

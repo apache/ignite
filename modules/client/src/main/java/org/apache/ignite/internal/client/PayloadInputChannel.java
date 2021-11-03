@@ -59,7 +59,8 @@ public class PayloadInputChannel implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         in.close();
     }
 }

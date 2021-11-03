@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Iterator;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -29,15 +32,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  *
  */
 public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -54,37 +55,37 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                 TestParams[] params;
 
                 if (size == 1) {
-                    params = new TestParams[] {
-                        new TestParams(null, new Object[] {0, null, null}, eqCnt)
+                    params = new TestParams[]{
+                            new TestParams(null, new Object[]{0, null, null}, eqCnt)
                     };
-                }
-                else {
-                    params = new TestParams[] {
-                        new TestParams(
-                            null,
-                            new Object[] {size / 2, null, null},
-                            eqCnt
-                        ),
-                        new TestParams(
-                            null,
-                            new Object[] {size / 2 + 1, null, null},
-                            eqCnt
-                        )
+                } else {
+                    params = new TestParams[]{
+                            new TestParams(
+                                    null,
+                                    new Object[]{size / 2, null, null},
+                                    eqCnt
+                            ),
+                            new TestParams(
+                                    null,
+                                    new Object[]{size / 2 + 1, null, null},
+                                    eqCnt
+                            )
                     };
                 }
 
                 log.info("Check: size=" + size);
 
                 ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, new TestTable(
-                    size * eqCnt,
-                    rowType,
-                    (rowId) -> rowId / eqCnt,
-                    (rowId) -> "val_" + (rowId % eqCnt),
-                    (rowId) -> rowId % eqCnt
+                        size * eqCnt,
+                        rowType,
+                        (rowId) -> rowId / eqCnt,
+                        (rowId) -> "val_" + (rowId % eqCnt),
+                        (rowId) -> rowId % eqCnt
                 ) {
                     boolean first = true;
 
-                    @Override public @NotNull Iterator<Object[]> iterator() {
+                    @Override
+                    public @NotNull Iterator<Object[]> iterator() {
                         assertTrue(first, "Rewind right");
 
                         first = false;
@@ -96,10 +97,10 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                 TestPredicate testFilter = new TestPredicate();
 
                 IndexSpoolNode<Object[]> spool = IndexSpoolNode.createHashSpool(
-                    ctx,
-                    rowType,
-                    ImmutableBitSet.of(0),
-                    () -> searchRow
+                        ctx,
+                        rowType,
+                        ImmutableBitSet.of(0),
+                        () -> searchRow
                 );
 
                 spool.register(singletonList(scan));
@@ -132,32 +133,48 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     static class TestPredicate implements Predicate<Object[]> {
-        /** */
+        /**
+         *
+         */
         Predicate<Object[]> delegate;
 
         /** {@inheritDoc} */
-        @Override public boolean test(Object[] objects) {
-            if (delegate == null)
+        @Override
+        public boolean test(Object[] objects) {
+            if (delegate == null) {
                 return true;
-            else
+            } else {
                 return delegate.test(objects);
+            }
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class TestParams {
-        /** */
+        /**
+         *
+         */
         final Predicate<Object[]> pred;
 
-        /** */
+        /**
+         *
+         */
         final Object[] bounds;
 
-        /** */
+        /**
+         *
+         */
         final int expectedResultSize;
 
-        /** */
+        /**
+         *
+         */
         private TestParams(Predicate<Object[]> pred, Object[] bounds, int expectedResultSize) {
             this.pred = pred;
             this.bounds = bounds;

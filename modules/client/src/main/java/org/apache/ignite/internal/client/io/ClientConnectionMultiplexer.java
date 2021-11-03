@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.client.io;
 
 import java.net.InetSocketAddress;
-
 import org.apache.ignite.client.IgniteClientConfiguration;
 import org.apache.ignite.client.IgniteClientConnectionException;
 
 /**
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
  */
- public interface ClientConnectionMultiplexer {
+public interface ClientConnectionMultiplexer {
     /**
      * Initializes this instance.
      *
@@ -41,8 +40,8 @@ import org.apache.ignite.client.IgniteClientConnectionException;
     /**
      * Opens a new connection.
      *
-     * @param addr Address.
-     * @param msgHnd Incoming message handler.
+     * @param addr     Address.
+     * @param msgHnd   Incoming message handler.
      * @param stateHnd Connection state handler.
      * @return Created connection.
      * @throws IgniteClientConnectionException when connection can't be established.

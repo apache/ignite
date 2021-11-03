@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.configuration.tree;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -36,17 +46,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-/** */
+/**
+ *
+ */
 public class TraversableTreeNodeTest {
     private static ConfigurationAsmGenerator cgen;
 
@@ -63,47 +65,65 @@ public class TraversableTreeNodeTest {
     }
 
     public static <P extends InnerNode & ParentChange> P newParentInstance() {
-        return (P)cgen.instantiateNode(ParentConfigurationSchema.class);
+        return (P) cgen.instantiateNode(ParentConfigurationSchema.class);
     }
 
     public static <C extends InnerNode & ChildChange> C newChildInstance() {
-        return (C)cgen.instantiateNode(ChildConfigurationSchema.class);
+        return (C) cgen.instantiateNode(ChildConfigurationSchema.class);
     }
 
-    /** */
+    /**
+     *
+     */
     @Config
     public static class ParentConfigurationSchema {
-        /** */
+        /**
+         *
+         */
         @ConfigValue
         public ChildConfigurationSchema child;
 
-        /** */
+        /**
+         *
+         */
         @NamedConfigValue
         public NamedElementConfigurationSchema elements;
     }
 
-    /** */
+    /**
+     *
+     */
     @Config
     public static class ChildConfigurationSchema {
-        /** */
+        /**
+         *
+         */
         @Value(hasDefault = true)
         @Immutable
         public int intCfg = 99;
 
-        /** */
+        /**
+         *
+         */
         @Value
         public String strCfg;
     }
 
-    /** */
+    /**
+     *
+     */
     @Config
     public static class NamedElementConfigurationSchema {
-        /** */
+        /**
+         *
+         */
         @Value
         public String strCfg;
     }
 
-    /** */
+    /**
+     *
+     */
     private static class VisitException extends RuntimeException {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -155,7 +175,8 @@ public class TraversableTreeNodeTest {
 
         assertNull(parentNode.child());
 
-        parentNode.changeChild(child -> {});
+        parentNode.changeChild(child -> {
+        });
 
         ChildView childNode = parentNode.child();
 
@@ -182,7 +203,8 @@ public class TraversableTreeNodeTest {
         // Named list node must always be instantiated.
         assertNotNull(elementsNode);
 
-        parentNode.changeElements(elements -> elements.createOrUpdate("key", element -> {}));
+        parentNode.changeElements(elements -> elements.createOrUpdate("key", element -> {
+        }));
 
         assertNotSame(elementsNode, parentNode.elements());
     }
@@ -192,13 +214,15 @@ public class TraversableTreeNodeTest {
      */
     @Test
     public void putRemoveNamedConfiguration() {
-        var elementsNode = (NamedListChange<NamedElementView, NamedElementChange>)newParentInstance().elements();
+        var elementsNode = (NamedListChange<NamedElementView, NamedElementChange>) newParentInstance().elements();
 
         assertEquals(List.of(), elementsNode.namedListKeys());
 
-        elementsNode.createOrUpdate("keyPut", element -> {});
+        elementsNode.createOrUpdate("keyPut", element -> {
+        });
 
-        assertThrows(IllegalArgumentException.class, () -> elementsNode.create("keyPut", element -> {}));
+        assertThrows(IllegalArgumentException.class, () -> elementsNode.create("keyPut", element -> {
+        }));
 
         assertThat(elementsNode.namedListKeys(), hasItem("keyPut"));
 
@@ -237,7 +261,8 @@ public class TraversableTreeNodeTest {
         assertNull(elementsNode.get("keyPut"));
 
         // Assert that once you remove something from list, you can't put it back again with different set of fields.
-        assertThrows(IllegalArgumentException.class, () -> elementsNode.createOrUpdate("keyPut", element -> {}));
+        assertThrows(IllegalArgumentException.class, () -> elementsNode.createOrUpdate("keyPut", element -> {
+        }));
     }
 
     /**
@@ -248,11 +273,12 @@ public class TraversableTreeNodeTest {
         var parentNode = newParentInstance();
 
         assertThrows(VisitException.class, () ->
-            parentNode.accept("root", new ConfigurationVisitor<Void>() {
-                @Override public Void visitInnerNode(String key, InnerNode node) {
-                    throw new VisitException();
-                }
-            })
+                parentNode.accept("root", new ConfigurationVisitor<Void>() {
+                    @Override
+                    public Void visitInnerNode(String key, InnerNode node) {
+                        throw new VisitException();
+                    }
+                })
         );
     }
 
@@ -261,14 +287,15 @@ public class TraversableTreeNodeTest {
      */
     @Test
     public void namedListNodeAcceptVisitor() {
-        var elementsNode = (TraversableTreeNode)newParentInstance().elements();
+        var elementsNode = (TraversableTreeNode) newParentInstance().elements();
 
         assertThrows(VisitException.class, () ->
-            elementsNode.accept("root", new ConfigurationVisitor<Void>() {
-                @Override public Void visitNamedListNode(String key, NamedListNode<?> node) {
-                    throw new VisitException();
-                }
-            })
+                elementsNode.accept("root", new ConfigurationVisitor<Void>() {
+                    @Override
+                    public Void visitNamedListNode(String key, NamedListNode<?> node) {
+                        throw new VisitException();
+                    }
+                })
         );
     }
 
@@ -282,7 +309,8 @@ public class TraversableTreeNodeTest {
         Collection<String> keys = new TreeSet<>();
 
         parentNode.traverseChildren(new ConfigurationVisitor<Object>() {
-            @Override public Object visitInnerNode(String key, InnerNode node) {
+            @Override
+            public Object visitInnerNode(String key, InnerNode node) {
                 assertNull(node);
 
                 assertEquals("child", key);
@@ -290,7 +318,8 @@ public class TraversableTreeNodeTest {
                 return keys.add(key);
             }
 
-            @Override public Object visitNamedListNode(String key, NamedListNode<?> node) {
+            @Override
+            public Object visitNamedListNode(String key, NamedListNode<?> node) {
                 assertEquals("elements", key);
 
                 return keys.add(key);
@@ -305,7 +334,8 @@ public class TraversableTreeNodeTest {
         var childNode = newChildInstance();
 
         childNode.traverseChildren(new ConfigurationVisitor<Object>() {
-            @Override public Object visitLeafNode(String key, Serializable val) {
+            @Override
+            public Object visitLeafNode(String key, Serializable val) {
                 return keys.add(key);
             }
         }, true);
@@ -323,43 +353,46 @@ public class TraversableTreeNodeTest {
 
         // Assert that proper method has been invoked.
         assertThrows(VisitException.class, () ->
-            parentNode.traverseChild("child", new ConfigurationVisitor<Void>() {
-                @Override public Void visitInnerNode(String key, InnerNode node) {
-                    assertEquals("child", key);
+                parentNode.traverseChild("child", new ConfigurationVisitor<Void>() {
+                    @Override
+                    public Void visitInnerNode(String key, InnerNode node) {
+                        assertEquals("child", key);
 
-                    throw new VisitException();
-                }
-            }, true)
+                        throw new VisitException();
+                    }
+                }, true)
         );
 
         // Assert that proper method has been invoked.
         assertThrows(VisitException.class, () ->
-            parentNode.traverseChild("elements", new ConfigurationVisitor<Void>() {
-                @Override
-                public Void visitNamedListNode(String key, NamedListNode<?> node) {
-                    assertEquals("elements", key);
+                parentNode.traverseChild("elements", new ConfigurationVisitor<Void>() {
+                    @Override
+                    public Void visitNamedListNode(String key, NamedListNode<?> node) {
+                        assertEquals("elements", key);
 
-                    throw new VisitException();
-                }
-            }, true)
+                        throw new VisitException();
+                    }
+                }, true)
         );
 
         var childNode = newChildInstance();
 
         // Assert that proper method has been invoked.
         assertThrows(VisitException.class, () ->
-            childNode.traverseChild("intCfg", new ConfigurationVisitor<Void>() {
-                @Override public Void visitLeafNode(String key, Serializable val) {
-                    assertEquals("intCfg", key);
+                childNode.traverseChild("intCfg", new ConfigurationVisitor<Void>() {
+                    @Override
+                    public Void visitLeafNode(String key, Serializable val) {
+                        assertEquals("intCfg", key);
 
-                    throw new VisitException();
-                }
-            }, true)
+                        throw new VisitException();
+                    }
+                }, true)
         );
 
         // Assert that traversing inexistent field leads to exception.
         assertThrows(NoSuchElementException.class, () ->
-            childNode.traverseChild("foo", new ConfigurationVisitor<>() {}, true)
+                childNode.traverseChild("foo", new ConfigurationVisitor<>() {
+                }, true)
         );
     }
 }

@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents a response object message that contains a single {@link BinaryRow}.
+ *
  * @see GetCommand
  * @see GetAndDeleteCommand
  * @see GetAndUpsertCommand
@@ -40,8 +41,7 @@ public class SingleRowResponse implements Serializable {
     private transient BinaryRow row;
 
     /**
-     * Row bytes.
-     * It is a temporary solution, before network have not implement correct serialization BinaryRow.
+     * Row bytes. It is a temporary solution, before network have not implement correct serialization BinaryRow.
      * TODO: Remove the field after (IGNITE-14793).
      */
     private byte[] rowBytes;
@@ -62,8 +62,9 @@ public class SingleRowResponse implements Serializable {
      */
     @Nullable
     public BinaryRow getValue() {
-        if (row == null && rowBytes != null)
+        if (row == null && rowBytes != null) {
             row = new ByteBufferRow(rowBytes);
+        }
 
         return row;
     }

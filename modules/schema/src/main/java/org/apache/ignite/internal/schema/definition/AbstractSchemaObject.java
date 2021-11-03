@@ -37,14 +37,16 @@ public abstract class AbstractSchemaObject implements SchemaObject {
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override
+    public String name() {
         return name;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString("SchemaObject",
-            "name", name,
-            "class", getClass().getName());
+                "name", name,
+                "class", getClass().getName());
     }
 }

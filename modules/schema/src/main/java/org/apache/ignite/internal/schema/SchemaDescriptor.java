@@ -55,7 +55,7 @@ public class SchemaDescriptor implements Serializable {
     private ColumnMapper colMapper = ColumnMapping.identityMapping();
 
     /**
-     * @param ver Schema version.
+     * @param ver     Schema version.
      * @param keyCols Key columns.
      * @param valCols Value columns.
      */
@@ -64,7 +64,7 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
-     * @param ver Schema version.
+     * @param ver     Schema version.
      * @param keyCols Key columns.
      * @param affCols Affinity column names.
      * @param valCols Value columns.
@@ -80,13 +80,13 @@ public class SchemaDescriptor implements Serializable {
         colMap = new LinkedHashMap<>(keyCols.length + valCols.length);
 
         Stream.concat(Arrays.stream(this.keyCols.columns()), Arrays.stream(this.valCols.columns()))
-            .sorted(Comparator.comparingInt(Column::columnOrder))
-            .forEach(c -> colMap.put(c.name(), c));
+                .sorted(Comparator.comparingInt(Column::columnOrder))
+                .forEach(c -> colMap.put(c.name(), c));
 
         // Preserving key chunk column order is not actually required.
         // It is sufficient to has same column order for all nodes.
         this.affCols = (ArrayUtils.nullOrEmpty(affCols)) ? keyCols :
-            Arrays.stream(affCols).map(colMap::get).toArray(Column[]::new);
+                Arrays.stream(affCols).map(colMap::get).toArray(Column[]::new);
     }
 
     /**
@@ -114,6 +114,14 @@ public class SchemaDescriptor implements Serializable {
         validateColumnIndex(colIdx);
 
         return colIdx < keyCols.length() ? keyCols.column(colIdx) : valCols.column(colIdx - keyCols.length());
+    }
+
+    /**
+     * @param name Column name.
+     * @return Column.
+     */
+    public @Nullable Column column(@NotNull String name) {
+        return colMap.get(name);
     }
 
     /**
@@ -163,14 +171,6 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
-     * @param name Column name.
-     * @return Column.
-     */
-    public @Nullable Column column(@NotNull String name) {
-        return colMap.get(name);
-    }
-
-    /**
      * Sets column mapper for previous schema version.
      *
      * @param colMapper Column mapper.
@@ -187,7 +187,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(SchemaDescriptor.class, this);
     }
 }

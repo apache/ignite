@@ -17,6 +17,11 @@
 
 package org.apache.ignite.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,18 +40,13 @@ import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * Tests client tuple builder implementation.
- * <p>
- * Should be in sync with org.apache.ignite.internal.table.TupleBuilderImplTest.
+ *
+ * <p>Should be in sync with org.apache.ignite.internal.table.TupleBuilderImplTest.
  */
 public class ClientTupleTest {
-    private static final ClientSchema SCHEMA = new ClientSchema(1, new ClientColumn[] {
+    private static final ClientSchema SCHEMA = new ClientSchema(1, new ClientColumn[]{
             new ClientColumn("id", ClientDataType.INT64, false, true, 0),
             new ClientColumn("name", ClientDataType.STRING, false, false, 1)
     });
@@ -136,7 +136,7 @@ public class ClientTupleTest {
 
     @Test
     public void testTypedGetters() {
-        var schema = new ClientSchema(100, new ClientColumn[] {
+        var schema = new ClientSchema(100, new ClientColumn[]{
                 new ClientColumn("i8", ClientDataType.INT8, false, false, 0),
                 new ClientColumn("i16", ClientDataType.INT16, false, false, 1),
                 new ClientColumn("i32", ClientDataType.INT32, false, false, 2),
@@ -160,12 +160,12 @@ public class ClientTupleTest {
         var timestamp = Instant.now();
 
         var tuple = new ClientTuple(schema)
-                .set("i8", (byte)1)
-                .set("i16", (short)2)
-                .set("i32", (int)3)
-                .set("i64", (long)4)
-                .set("float", (float)5.5)
-                .set("double", (double)6.6)
+                .set("i8", (byte) 1)
+                .set("i16", (short) 2)
+                .set("i32", (int) 3)
+                .set("i64", (long) 4)
+                .set("float", (float) 5.5)
+                .set("double", (double) 6.6)
                 .set("uuid", uuid)
                 .set("str", "8")
                 .set("bits", new BitSet(3))
@@ -217,7 +217,7 @@ public class ClientTupleTest {
         assertEquals(tuple.hashCode(), tuple2.hashCode());
 
         assertNotEquals(new ClientTuple(SCHEMA), new ClientTuple(new ClientSchema(1, new ClientColumn[]{
-            new ClientColumn("id", ClientDataType.INT64, false, true, 0)})));
+                new ClientColumn("id", ClientDataType.INT64, false, true, 0)})));
 
         assertEquals(new ClientTuple(SCHEMA).set("name", null), new ClientTuple(SCHEMA).set("name", null));
         assertEquals(new ClientTuple(SCHEMA).set("name", null).hashCode(), new ClientTuple(SCHEMA).set("name", null).hashCode());
@@ -251,19 +251,19 @@ public class ClientTupleTest {
     @Test
     public void testTupleEquality() {
         var schema = new ClientSchema(100, new ClientColumn[]{
-            new ClientColumn("i8", ClientDataType.INT8, false, false, 0),
-            new ClientColumn("i16", ClientDataType.INT16, false, false, 1),
-            new ClientColumn("i32", ClientDataType.INT32, false, false, 2),
-            new ClientColumn("i64", ClientDataType.INT64, false, false, 3),
-            new ClientColumn("float", ClientDataType.FLOAT, false, false, 4),
-            new ClientColumn("double", ClientDataType.DOUBLE, false, false, 5),
-            new ClientColumn("uuid", ClientDataType.UUID, false, false, 6),
-            new ClientColumn("str", ClientDataType.STRING, false, false, 7),
-            new ClientColumn("bits", ClientDataType.BITMASK, false, false, 8),
-            new ClientColumn("time", ClientDataType.TIME, false, false, 9),
-            new ClientColumn("date", ClientDataType.DATE, false, false, 10),
-            new ClientColumn("datetime", ClientDataType.DATETIME, false, false, 11),
-            new ClientColumn("timestamp", ClientDataType.TIMESTAMP, false, false, 12)
+                new ClientColumn("i8", ClientDataType.INT8, false, false, 0),
+                new ClientColumn("i16", ClientDataType.INT16, false, false, 1),
+                new ClientColumn("i32", ClientDataType.INT32, false, false, 2),
+                new ClientColumn("i64", ClientDataType.INT64, false, false, 3),
+                new ClientColumn("float", ClientDataType.FLOAT, false, false, 4),
+                new ClientColumn("double", ClientDataType.DOUBLE, false, false, 5),
+                new ClientColumn("uuid", ClientDataType.UUID, false, false, 6),
+                new ClientColumn("str", ClientDataType.STRING, false, false, 7),
+                new ClientColumn("bits", ClientDataType.BITMASK, false, false, 8),
+                new ClientColumn("time", ClientDataType.TIME, false, false, 9),
+                new ClientColumn("date", ClientDataType.DATE, false, false, 10),
+                new ClientColumn("datetime", ClientDataType.DATETIME, false, false, 11),
+                new ClientColumn("timestamp", ClientDataType.TIMESTAMP, false, false, 12)
         });
 
         var uuid = UUID.randomUUID();
@@ -274,27 +274,28 @@ public class ClientTupleTest {
         var timestamp = Instant.now();
 
         var tuple = new ClientTuple(schema)
-                        .set("i8", (byte)1)
-                        .set("i16", (short)2)
-                        .set("i32", (int)3)
-                        .set("i64", (long)4)
-                        .set("float", (float)5.5)
-                        .set("double", (double)6.6)
-                        .set("uuid", uuid)
-                        .set("str", "8")
-                        .set("bits", new BitSet(3))
-                        .set("date", date)
-                        .set("time", time)
-                        .set("datetime", datetime)
-                        .set("timestamp", timestamp);
+                .set("i8", (byte) 1)
+                .set("i16", (short) 2)
+                .set("i32", (int) 3)
+                .set("i64", (long) 4)
+                .set("float", (float) 5.5)
+                .set("double", (double) 6.6)
+                .set("uuid", uuid)
+                .set("str", "8")
+                .set("bits", new BitSet(3))
+                .set("date", date)
+                .set("time", time)
+                .set("datetime", datetime)
+                .set("timestamp", timestamp);
         var randomIdx = IntStream.range(0, tuple.columnCount()).boxed().collect(Collectors.toList());
 
         Collections.shuffle(randomIdx);
 
         var shuffledTuple = new ClientTuple(schema);
 
-        for (Integer i : randomIdx)
+        for (Integer i : randomIdx) {
             shuffledTuple.set(tuple.columnName(i), tuple.value(i));
+        }
 
         assertEquals(tuple, shuffledTuple);
         assertEquals(tuple.hashCode(), shuffledTuple.hashCode());
@@ -303,19 +304,19 @@ public class ClientTupleTest {
     @Test
     public void testTupleEqualityCompatibility() {
         var schema = new ClientSchema(100, new ClientColumn[]{
-            new ClientColumn("i8", ClientDataType.INT8, false, false, 0),
-            new ClientColumn("i16", ClientDataType.INT16, false, false, 1),
-            new ClientColumn("i32", ClientDataType.INT32, false, false, 2),
-            new ClientColumn("i64", ClientDataType.INT64, false, false, 3),
-            new ClientColumn("float", ClientDataType.FLOAT, false, false, 4),
-            new ClientColumn("double", ClientDataType.DOUBLE, false, false, 5),
-            new ClientColumn("uuid", ClientDataType.UUID, false, false, 6),
-            new ClientColumn("str", ClientDataType.STRING, false, false, 7),
-            new ClientColumn("bits", ClientDataType.BITMASK, false, false, 8),
-            new ClientColumn("time", ClientDataType.TIME, false, false, 9),
-            new ClientColumn("date", ClientDataType.DATE, false, false, 10),
-            new ClientColumn("datetime", ClientDataType.DATETIME, false, false, 11),
-            new ClientColumn("timestamp", ClientDataType.TIMESTAMP, false, false, 12)
+                new ClientColumn("i8", ClientDataType.INT8, false, false, 0),
+                new ClientColumn("i16", ClientDataType.INT16, false, false, 1),
+                new ClientColumn("i32", ClientDataType.INT32, false, false, 2),
+                new ClientColumn("i64", ClientDataType.INT64, false, false, 3),
+                new ClientColumn("float", ClientDataType.FLOAT, false, false, 4),
+                new ClientColumn("double", ClientDataType.DOUBLE, false, false, 5),
+                new ClientColumn("uuid", ClientDataType.UUID, false, false, 6),
+                new ClientColumn("str", ClientDataType.STRING, false, false, 7),
+                new ClientColumn("bits", ClientDataType.BITMASK, false, false, 8),
+                new ClientColumn("time", ClientDataType.TIME, false, false, 9),
+                new ClientColumn("date", ClientDataType.DATE, false, false, 10),
+                new ClientColumn("datetime", ClientDataType.DATETIME, false, false, 11),
+                new ClientColumn("timestamp", ClientDataType.TIMESTAMP, false, false, 12)
         });
 
         var uuid = UUID.randomUUID();
@@ -326,24 +327,25 @@ public class ClientTupleTest {
         var timestamp = Instant.now();
 
         var clientTuple = new ClientTuple(schema)
-                              .set("i8", (byte)1)
-                              .set("i16", (short)2)
-                              .set("i32", (int)3)
-                              .set("i64", (long)4)
-                              .set("float", (float)5.5)
-                              .set("double", (double)6.6)
-                              .set("uuid", uuid)
-                              .set("str", "8")
-                              .set("bits", new BitSet(3))
-                              .set("date", date)
-                              .set("time", time)
-                              .set("datetime", datetime)
-                              .set("timestamp", timestamp);
+                .set("i8", (byte) 1)
+                .set("i16", (short) 2)
+                .set("i32", (int) 3)
+                .set("i64", (long) 4)
+                .set("float", (float) 5.5)
+                .set("double", (double) 6.6)
+                .set("uuid", uuid)
+                .set("str", "8")
+                .set("bits", new BitSet(3))
+                .set("date", date)
+                .set("time", time)
+                .set("datetime", datetime)
+                .set("timestamp", timestamp);
 
         var tuple = Tuple.create();
 
-        for (int i = 0; i < clientTuple.columnCount(); i++)
+        for (int i = 0; i < clientTuple.columnCount(); i++) {
             tuple.set(clientTuple.columnName(i), clientTuple.value(i));
+        }
 
         assertEquals(clientTuple, tuple);
         assertEquals(clientTuple.hashCode(), tuple.hashCode());

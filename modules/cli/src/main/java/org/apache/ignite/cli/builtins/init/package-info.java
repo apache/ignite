@@ -18,4 +18,5 @@
 /**
  * Contains classes for Ignite init process.
  */
+
 package org.apache.ignite.cli.builtins.init;

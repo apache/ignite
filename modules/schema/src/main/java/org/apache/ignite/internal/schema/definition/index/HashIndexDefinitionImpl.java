@@ -37,7 +37,7 @@ public class HashIndexDefinitionImpl extends AbstractSchemaObject implements Has
     /**
      * Constructor.
      *
-     * @param name Index name.
+     * @param name    Index name.
      * @param columns Index columns.
      */
     public HashIndexDefinitionImpl(String name, String[] columns) {
@@ -49,15 +49,17 @@ public class HashIndexDefinitionImpl extends AbstractSchemaObject implements Has
 
     /** {@inheritDoc} */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Override public List<IndexColumnDefinition> columns() {
+    @Override
+    public List<IndexColumnDefinition> columns() {
         return columns;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(HashIndexDefinitionImpl.class, this,
-            "type", type(),
-            "name", name());
+                "type", type(),
+                "name", name());
     }
 
 }

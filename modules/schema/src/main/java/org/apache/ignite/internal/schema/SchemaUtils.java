@@ -35,95 +35,99 @@ public class SchemaUtils {
      * Creates schema descriptor for the table with specified configuration.
      *
      * @param schemaVer Schema version.
-     * @param tblCfg Table configuration.
+     * @param tblCfg    Table configuration.
      * @return Schema descriptor.
      */
     public static SchemaDescriptor prepareSchemaDescriptor(int schemaVer, TableView tblCfg) {
         TableDefinition tableDef = SchemaConfigurationConverter.convert(tblCfg);
-
+        
         return SchemaDescriptorConverter.convert(schemaVer, tableDef);
     }
-
+    
     /**
      * Prepares column mapper.
      *
      * @param oldDesc Old schema descriptor.
-     * @param oldTbl Old table configuration.
+     * @param oldTbl  Old table configuration.
      * @param newDesc New schema descriptor.
-     * @param newTbl New table configuration.
+     * @param newTbl  New table configuration.
      * @return Column mapper.
      */
     public static ColumnMapper columnMapper(
-        SchemaDescriptor oldDesc,
-        TableView oldTbl,
-        SchemaDescriptor newDesc,
-        TableView newTbl
+            SchemaDescriptor oldDesc,
+            TableView oldTbl,
+            SchemaDescriptor newDesc,
+            TableView newTbl
     ) {
         ColumnMapper mapper = null;
-
+        
         for (String s : newTbl.columns().namedListKeys()) {
             final ColumnView newColView = newTbl.columns().get(s);
             final ColumnView oldColView = oldTbl.columns().get(s);
-
+            
             if (oldColView == null && newColView != null) {
                 final Column newCol = newDesc.column(newColView.name());
-
+                
                 assert !newDesc.isKeyColumn(newCol.schemaIndex());
-
-                if (mapper == null)
+    
+                if (mapper == null) {
                     mapper = ColumnMapping.createMapper(newDesc);
-
+                }
+                
                 mapper.add(newCol); // New column added.
-            }
-            else if (newColView != null) {
+            } else if (newColView != null) {
                 final Column newCol = newDesc.column(newColView.name());
                 final Column oldCol = oldDesc.column(oldColView.name());
-
-                if (newCol.schemaIndex() == oldCol.schemaIndex())
+    
+                if (newCol.schemaIndex() == oldCol.schemaIndex()) {
                     continue;
-
-                if (mapper == null)
+                }
+    
+                if (mapper == null) {
                     mapper = ColumnMapping.createMapper(newDesc);
-
+                }
+                
                 mapper.add(newCol.schemaIndex(), oldCol.schemaIndex());
             }
         }
-
+        
         final Optional<Column> droppedKeyCol = oldTbl.columns().namedListKeys().stream()
-            .filter(k -> newTbl.columns().get(k) == null)
-            .map(k -> oldDesc.column(oldTbl.columns().get(k).name()))
-            .filter(c -> oldDesc.isKeyColumn(c.schemaIndex()))
-            .findAny();
-
+                .filter(k -> newTbl.columns().get(k) == null)
+                .map(k -> oldDesc.column(oldTbl.columns().get(k).name()))
+                .filter(c -> oldDesc.isKeyColumn(c.schemaIndex()))
+                .findAny();
+        
         // TODO: IGNITE-15774 Assertion just in case, proper validation should be implemented with the help of
         // TODO: configuration validators.
         assert !droppedKeyCol.isPresent() :
-            LoggerMessageHelper.format(
-                "Dropping of key column is forbidden: [schemaVer={}, col={}]",
-                newDesc.version(),
-                droppedKeyCol.get()
-            );
-
+                LoggerMessageHelper.format(
+                        "Dropping of key column is forbidden: [schemaVer={}, col={}]",
+                        newDesc.version(),
+                        droppedKeyCol.get()
+                );
+        
         return mapper == null ? ColumnMapping.identityMapping() : mapper;
     }
-
+    
     /**
      * Compares schemas.
      *
-     * @param exp Expected schema.
+     * @param exp    Expected schema.
      * @param actual Actual schema.
      * @return {@code True} if schemas are equal, {@code false} otherwise.
      */
     public static boolean equalSchemas(SchemaDescriptor exp, SchemaDescriptor actual) {
-        if (exp.keyColumns().length() != actual.keyColumns().length() ||
-            exp.valueColumns().length() != actual.valueColumns().length())
+        if (exp.keyColumns().length() != actual.keyColumns().length()
+                || exp.valueColumns().length() != actual.valueColumns().length()) {
             return false;
-
-        for (int i = 0; i < exp.length(); i++) {
-            if (!exp.column(i).equals(actual.column(i)))
-                return false;
         }
-
+        
+        for (int i = 0; i < exp.length(); i++) {
+            if (!exp.column(i).equals(actual.column(i))) {
+                return false;
+            }
+        }
+        
         return true;
     }
 }

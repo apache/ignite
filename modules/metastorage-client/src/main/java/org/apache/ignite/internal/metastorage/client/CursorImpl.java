@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Meta storage service side implementation of cursor.
+ *
  * @param <T> Cursor parameter.
  */
 public class CursorImpl<T> implements Cursor<T> {
@@ -47,15 +48,19 @@ public class CursorImpl<T> implements Cursor<T> {
     /** Meta storage raft group service. */
     private final RaftGroupService metaStorageRaftGrpSvc;
 
-    /** */
+    /**
+     *
+     */
     private final Iterator<T> it;
 
-    /** */
+    /**
+     *
+     */
     private final Function<Object, T> fn;
 
     /**
      * @param metaStorageRaftGrpSvc Meta storage raft group service.
-     * @param initOp Future that runs meta storage service operation that provides cursor.
+     * @param initOp                Future that runs meta storage service operation that provides cursor.
      */
     CursorImpl(RaftGroupService metaStorageRaftGrpSvc, CompletableFuture<IgniteUuid> initOp, Function<Object, T> fn) {
         this.metaStorageRaftGrpSvc = metaStorageRaftGrpSvc;
@@ -65,19 +70,22 @@ public class CursorImpl<T> implements Cursor<T> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
+    @NotNull
+    @Override
+    public Iterator<T> iterator() {
         return it;
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         try {
             initOp.thenCompose(
-                cursorId -> metaStorageRaftGrpSvc.run(new CursorCloseCommand(cursorId))).get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class))
+                    cursorId -> metaStorageRaftGrpSvc.run(new CursorCloseCommand(cursorId))).get();
+        } catch (InterruptedException | ExecutionException e) {
+            if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class)) {
                 return;
+            }
 
             LOG.debug("Unable to evaluate cursor close command", e);
 
@@ -86,26 +94,31 @@ public class CursorImpl<T> implements Cursor<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override public T next() {
+    @Override
+    public T next() {
         return it.next();
     }
 
-    /** */
+    /**
+     *
+     */
     private class InnerIterator implements Iterator<T> {
         /** {@inheritDoc} */
-        @Override public boolean hasNext() {
+        @Override
+        public boolean hasNext() {
             try {
                 return initOp.thenCompose(
                         cursorId -> metaStorageRaftGrpSvc.<Boolean>run(new CursorHasNextCommand(cursorId))).get();
-            }
-            catch (InterruptedException | ExecutionException e) {
-                if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class))
+            } catch (InterruptedException | ExecutionException e) {
+                if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class)) {
                     return false;
+                }
 
                 LOG.debug("Unable to evaluate cursor hasNext command", e);
 
@@ -114,19 +127,21 @@ public class CursorImpl<T> implements Cursor<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public T next() {
+        @Override
+        public T next() {
             try {
                 Object res = initOp.thenCompose(
-                    cursorId -> metaStorageRaftGrpSvc.run(new CursorNextCommand(cursorId))).get();
+                        cursorId -> metaStorageRaftGrpSvc.run(new CursorNextCommand(cursorId))).get();
 
-                if (res instanceof NoSuchElementException)
-                    throw (NoSuchElementException)res;
-                else
+                if (res instanceof NoSuchElementException) {
+                    throw (NoSuchElementException) res;
+                } else {
                     return fn.apply(res);
-            }
-            catch (InterruptedException | ExecutionException e) {
-                if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class))
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                if (e.getCause() != null && e.getCause().getClass().equals(NodeStoppingException.class)) {
                     throw new NoSuchElementException();
+                }
 
                 LOG.debug("Unable to evaluate cursor hasNext command", e);
 

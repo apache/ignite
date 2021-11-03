@@ -35,43 +35,49 @@ import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
 
 /**
- * Helper class for non-Java platform tests (.NET, C++, Python, ...).
- * Starts nodes, populates tables and data for tests.
+ * Helper class for non-Java platform tests (.NET, C++, Python, ...). Starts nodes, populates tables and data for tests.
  */
 public class PlatformTestNodeRunner {
     /** Test node name. */
     private static final String NODE_NAME = PlatformTestNodeRunner.class.getCanonicalName();
 
-    /** */
+    /**
+     *
+     */
     private static final String SCHEMA_NAME = "PUB";
 
-    /** */
+    /**
+     *
+     */
     private static final String TABLE_NAME = "tbl1";
 
     /** Time to keep the node alive. */
     private static final int RUN_TIME_MINUTES = 30;
 
     /** Nodes bootstrap configuration. */
-    private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
-        put(NODE_NAME, "{\n" +
-                "  \"node\": {\n" +
-                "    \"metastorageNodes\":[ \"" + NODE_NAME + "\" ]\n" +
-                "  },\n" +
-                "  \"clientConnector\":{\"port\": 10942,\"portRange\":10}," +
-                "  \"network\": {\n" +
-                "    \"port\":3344,\n" +
-                "    \"nodeFinder\": {\n" +
-                "      \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\" ]\n" +
-                "    }\n" +
-                "  }\n" +
-                "}");
-    }};
+    private static final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {
+        {
+            put(NODE_NAME, "{\n"
+                    + "  \"node\": {\n"
+                    + "    \"metastorageNodes\":[ \"" + NODE_NAME + "\" ]\n"
+                    + "  },\n"
+                    + "  \"clientConnector\":{\"port\": 10942,\"portRange\":10},"
+                    + "  \"network\": {\n"
+                    + "    \"port\":3344,\n"
+                    + "    \"nodeFinder\": {\n"
+                    + "      \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\" ]\n"
+                    + "    }\n"
+                    + "  }\n"
+                    + "}");
+        }
+    };
 
     /** Base path for all temporary folders. */
     private static final Path BASE_PATH = Path.of("target", "work", "PlatformTestNodeRunner");
 
     /**
      * Entry point.
+     *
      * @param args Args.
      */
     public static void main(String[] args) throws Exception {
@@ -81,8 +87,7 @@ public class PlatformTestNodeRunner {
             System.out.println("Arg " + i + ": " + args[i]);
         }
 
-        if (args.length > 0 && "dry-run".equals(args[0]))
-        {
+        if (args.length > 0 && "dry-run".equals(args[0])) {
             System.out.println("Dry run succeeded.");
             return;
         }
@@ -111,7 +116,7 @@ public class PlatformTestNodeRunner {
         );
 
         String ports = startedNodes.stream()
-                .map(n -> String.valueOf(getPort((IgniteImpl)n)))
+                .map(n -> String.valueOf(getPort((IgniteImpl) n)))
                 .collect(Collectors.joining(","));
 
         System.out.println("THIN_CLIENT_PORTS=" + ports);
@@ -123,10 +128,11 @@ public class PlatformTestNodeRunner {
 
     /**
      * Gets the thin client port.
+     *
      * @param node Node.
      * @return Port number.
      */
     private static int getPort(IgniteImpl node) {
-        return ((InetSocketAddress)node.clientHandlerModule().localAddress()).getPort();
+        return ((InetSocketAddress) node.clientHandlerModule().localAddress()).getPort();
     }
 }

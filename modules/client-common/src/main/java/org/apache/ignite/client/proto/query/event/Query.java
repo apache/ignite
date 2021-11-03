@@ -42,7 +42,7 @@ public class Query implements ClientMessage {
     /**
      * Constructor.
      *
-     * @param sql Query SQL.
+     * @param sql  Query SQL.
      * @param args Arguments.
      */
     public Query(String sql, Object[] args) {
@@ -69,19 +69,22 @@ public class Query implements ClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(ClientMessagePacker packer) {
+    @Override
+    public void writeBinary(ClientMessagePacker packer) {
         packer.packString(sql);
         packer.packObjectArray(args);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(ClientMessageUnpacker unpacker) {
+    @Override
+    public void readBinary(ClientMessageUnpacker unpacker) {
         sql = unpacker.unpackString();
         args = unpacker.unpackObjectArray();
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(Query.class, this);
     }
 }

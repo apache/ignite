@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema.marshaller.reflection;
 
+import static org.apache.ignite.internal.schema.marshaller.MarshallerUtil.getValueSize;
+
 import java.util.Objects;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
@@ -29,28 +31,26 @@ import org.apache.ignite.internal.schema.row.RowAssembler;
 import org.apache.ignite.internal.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.schema.marshaller.MarshallerUtil.getValueSize;
-
 /**
  * Reflection based (de)serializer.
  */
 public class JavaSerializer extends AbstractSerializer {
     /** Key class. */
     private final Class<?> keyClass;
-
+    
     /** Value class. */
     private final Class<?> valClass;
-
+    
     /** Key marshaller. */
     private final Marshaller keyMarsh;
-
+    
     /** Value marshaller. */
     private final Marshaller valMarsh;
-
+    
     /**
      * Constructor.
      *
-     * @param schema Schema.
+     * @param schema   Schema.
      * @param keyClass Key type.
      * @param valClass Value type.
      */
@@ -58,52 +58,58 @@ public class JavaSerializer extends AbstractSerializer {
         super(schema);
         this.keyClass = keyClass;
         this.valClass = valClass;
-
+        
         keyMarsh = Marshaller.createMarshaller(schema.keyColumns(), keyClass);
         valMarsh = Marshaller.createMarshaller(schema.valueColumns(), valClass);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public BinaryRow serialize(Object key, @Nullable Object val) throws SerializationException {
+    @Override
+    public BinaryRow serialize(Object key, @Nullable Object val) throws SerializationException {
         assert keyClass.isInstance(key);
         assert val == null || valClass.isInstance(val);
-
+        
         final RowAssembler asm = createAssembler(Objects.requireNonNull(key), val);
-
+        
         keyMarsh.writeObject(key, asm);
-
-        if (val != null)
+    
+        if (val != null) {
             valMarsh.writeObject(val, asm);
-
+        }
+        
         return new ByteBufferRow(asm.toBytes());
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <K> K deserializeKey(Row row) throws SerializationException {
+    @Override
+    public <K> K deserializeKey(Row row) throws SerializationException {
         final Object o = keyMarsh.readObject(row);
-
+        
         assert keyClass.isInstance(o);
-
-        return (K)o;
+        
+        return (K) o;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <V> V deserializeValue(Row row) throws SerializationException {
-        if (!row.hasValue())
+    @Override
+    public <V> V deserializeValue(Row row) throws SerializationException {
+        if (!row.hasValue()) {
             return null;
-
+        }
+        
         final Object o = valMarsh.readObject(row);
-
+        
         assert o == null || valClass.isInstance(o);
-
-        return (V)o;
+        
+        return (V) o;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public <K, V> Pair<K, V> deserialize(Row row) throws SerializationException {
+    @Override
+    public <K, V> Pair<K, V> deserialize(Row row) throws SerializationException {
         return new Pair<>(deserializeKey(row), deserializeValue(row));
     }
-
+    
     /**
      * Creates {@link RowAssembler} for key-value pair.
      *
@@ -114,51 +120,53 @@ public class JavaSerializer extends AbstractSerializer {
     private RowAssembler createAssembler(Object key, Object val) {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
-
+        
         return new RowAssembler(schema, keyStat.nonNullColsSize, keyStat.nonNullCols, valStat.nonNullColsSize, valStat.nonNullCols);
     }
-
+    
     /**
      * Reads object fields and gather statistic.
      *
-     * @param cols Schema columns.
+     * @param cols  Schema columns.
      * @param marsh Marshaller.
-     * @param obj Object.
+     * @param obj   Object.
      * @return Object statistic.
      */
     private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) {
-        if (obj == null || !cols.hasVarlengthColumns())
+        if (obj == null || !cols.hasVarlengthColumns()) {
             return ObjectStatistic.ZERO_VARLEN_STATISTICS;
-
+        }
+        
         int cnt = 0;
         int size = 0;
-
+        
         for (int i = cols.firstVarlengthColumn(); i < cols.length(); i++) {
             final Object val = marsh.value(obj, i);
-
-            if (val == null || cols.column(i).type().spec().fixedLength())
+    
+            if (val == null || cols.column(i).type().spec().fixedLength()) {
                 continue;
-
+            }
+            
             size += getValueSize(val, cols.column(i).type());
             cnt++;
         }
-
+        
         return new ObjectStatistic(cnt, size);
     }
-
+    
     /**
      * Object statistic.
      */
     private static class ObjectStatistic {
         /** Cached zero statistics. */
         static final ObjectStatistic ZERO_VARLEN_STATISTICS = new ObjectStatistic(0, 0);
-
+        
         /** Non-null columns of varlen type. */
         int nonNullCols;
-
+        
         /** Length of all non-null columns of varlen types. */
         int nonNullColsSize;
-
+        
         /** Constructor. */
         ObjectStatistic(int nonNullCols, int nonNullColsSize) {
             this.nonNullCols = nonNullCols;

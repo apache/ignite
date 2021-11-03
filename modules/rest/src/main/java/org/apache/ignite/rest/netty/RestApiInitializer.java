@@ -42,7 +42,8 @@ public class RestApiInitializer extends ChannelInitializer<SocketChannel> {
     }
 
     /** {@inheritDoc} */
-    @Override public void initChannel(SocketChannel ch) {
+    @Override
+    public void initChannel(SocketChannel ch) {
         ChannelPipeline p = ch.pipeline();
         p.addLast(new HttpServerCodec());
         p.addLast(new HttpServerExpectContinueHandler());

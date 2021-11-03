@@ -17,11 +17,11 @@
 
 package org.apache.ignite.example;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 /**
  * Example test utilities.
@@ -37,8 +37,9 @@ public class ExampleTestUtils {
 
     /**
      * Capture console output of the example.
+     *
      * @param consumer Method which output should be captured. Ordinary main of the example.
-     * @param args Arguments.
+     * @param args     Arguments.
      * @return Captured output as a string.
      */
     public static String captureConsole(ExampleConsumer consumer, String[] args) throws Exception {
@@ -53,8 +54,7 @@ public class ExampleTestUtils {
             consumer.accept(args);
 
             System.out.flush();
-        }
-        finally {
+        } finally {
             System.setOut(old);
         }
 
@@ -63,8 +63,9 @@ public class ExampleTestUtils {
 
     /**
      * Assert that console output of the example equals expected.
+     *
      * @param consumer Method which output should be captured. Ordinary main of the example.
-     * @param args Arguments.
+     * @param args     Arguments.
      * @param expected Expected console output.
      */
     public static void assertConsoleOutput(ExampleConsumer consumer, String[] args, String expected) throws Exception {
@@ -77,8 +78,9 @@ public class ExampleTestUtils {
 
     /**
      * Assert that console output of the example equals expected.
+     *
      * @param consumer Method which output should be captured. Ordinary main of the example.
-     * @param args Arguments.
+     * @param args     Arguments.
      * @param expected Expected console output.
      */
     public static void assertConsoleOutputContains(ExampleConsumer consumer, String[] args,
@@ -87,7 +89,8 @@ public class ExampleTestUtils {
 
         captured = captured.replaceAll("\r", "");
 
-        for (String single : expected)
+        for (String single : expected) {
             assertTrue(captured.contains(single));
+        }
     }
 }

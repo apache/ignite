@@ -23,19 +23,25 @@ import java.util.UUID;
  *
  */
 public class RemoteException extends RuntimeException {
-    /** */
+    /**
+     *
+     */
     private final String nodeId;
 
-    /** */
+    /**
+     *
+     */
     private final UUID queryId;
 
-    /** */
+    /**
+     *
+     */
     private final long fragmentId;
 
     /**
-     * @param cause Cause.
-     * @param nodeId Node ID.
-     * @param queryId Query ID.
+     * @param cause      Cause.
+     * @param nodeId     Node ID.
+     * @param queryId    Query ID.
      * @param fragmentId Fragment ID.
      */
     public RemoteException(String nodeId, UUID queryId, long fragmentId, Throwable cause) {

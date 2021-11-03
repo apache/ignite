@@ -23,7 +23,9 @@ import org.apache.ignite.internal.tostring.S;
  * A number native type representing a BigInteger with <code>precision</code> precision.
  */
 public class NumberNativeType extends NativeType {
-    /** */
+    /**
+     *
+     */
     private final int precision;
 
     /**
@@ -45,44 +47,51 @@ public class NumberNativeType extends NativeType {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
+        }
 
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
-        NumberNativeType that = (NumberNativeType)o;
+        NumberNativeType that = (NumberNativeType) o;
 
         return precision == that.precision;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mismatch(NativeType type) {
+    @Override
+    public boolean mismatch(NativeType type) {
         return super.mismatch(type)
-            || precision < ((NumberNativeType)type).precision;
+                || precision < ((NumberNativeType) type).precision;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return precision;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(NativeType o) {
+    @Override
+    public int compareTo(NativeType o) {
         int res = super.compareTo(o);
 
         if (res == 0) {
-            NumberNativeType that = (NumberNativeType)o;
+            NumberNativeType that = (NumberNativeType) o;
 
             return Integer.compare(precision, that.precision);
-        }
-        else
+        } else {
             return res;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return S.toString(NumberNativeType.class.getSimpleName(), "typeSpec", spec(), "precision", precision());
     }
 }

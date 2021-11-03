@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.List;
+import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -36,83 +38,91 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
-import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-
 /**
  * Rule that pushes filter into the spool.
  */
 public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolMergeToSortedIndexSpoolRule.Config> {
     /** Instance. */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
-
-    /** */
+    
+    /**
+     *
+     */
     private FilterSpoolMergeToSortedIndexSpoolRule(Config cfg) {
         super(cfg);
     }
-
+    
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
+    @Override
+    public void onMatch(RelOptRuleCall call) {
         final IgniteFilter filter = call.rel(0);
         final IgniteTableSpool spool = call.rel(1);
-
+        
         RelOptCluster cluster = spool.getCluster();
-
+        
         RelTraitSet trait = spool.getTraitSet();
         CorrelationTrait filterCorr = TraitUtils.correlation(filter);
-
-        if (filterCorr.correlated())
+    
+        if (filterCorr.correlated()) {
             trait = trait.replace(filterCorr);
-
+        }
+        
         RelNode input = spool.getInput();
-
+        
         IndexConditions idxCond = RexUtils.buildSortedIndexConditions(
-            cluster,
-            TraitUtils.collation(input),
-            filter.getCondition(),
-            spool.getRowType(),
-            null
+                cluster,
+                TraitUtils.collation(input),
+                filter.getCondition(),
+                spool.getRowType(),
+                null
         );
-
-        if (nullOrEmpty(idxCond.lowerCondition()) && nullOrEmpty(idxCond.upperCondition()))
+    
+        if (nullOrEmpty(idxCond.lowerCondition()) && nullOrEmpty(idxCond.upperCondition())) {
             return;
-
+        }
+        
         RelCollation collation = TraitUtils.createCollation(List.copyOf(idxCond.keys()));
         
         RelNode res = new IgniteSortedIndexSpool(
-            cluster,
-            trait.replace(collation),
-            convert(input, input.getTraitSet().replace(collation)),
-            collation,
-            filter.getCondition(),
-            idxCond
+                cluster,
+                trait.replace(collation),
+                convert(input, input.getTraitSet().replace(collation)),
+                collation,
+                filter.getCondition(),
+                idxCond
         );
-
+        
         call.transformTo(res);
     }
-
-    /** */
+    
+    /**
+     *
+     */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends RelRule.Config {
-        /** */
+        /**
+         *
+         */
         Config DEFAULT = RelRule.Config.EMPTY
-            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-            .withDescription("FilterSpoolMergeToSortedIndexSpoolRule")
-            .as(FilterSpoolMergeToSortedIndexSpoolRule.Config.class)
-            .withOperandFor(IgniteFilter.class, IgniteTableSpool.class);
-
+                .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+                .withDescription("FilterSpoolMergeToSortedIndexSpoolRule")
+                .as(FilterSpoolMergeToSortedIndexSpoolRule.Config.class)
+                .withOperandFor(IgniteFilter.class, IgniteTableSpool.class);
+        
         /** Defines an operand tree for the given classes. */
         default Config withOperandFor(Class<? extends Filter> filterClass, Class<? extends Spool> spoolClass) {
             return withOperandSupplier(
-                o0 -> o0.operand(filterClass)
-                    .oneInput(o1 -> o1.operand(spoolClass)
-                        .anyInputs()
-                    )
+                    o0 -> o0.operand(filterClass)
+                            .oneInput(o1 -> o1.operand(spoolClass)
+                                    .anyInputs()
+                            )
             )
-                .as(Config.class);
+                    .as(Config.class);
         }
-
+        
         /** {@inheritDoc} */
-        @Override default FilterSpoolMergeToSortedIndexSpoolRule toRule() {
+        @Override
+        default FilterSpoolMergeToSortedIndexSpoolRule toRule() {
             return new FilterSpoolMergeToSortedIndexSpoolRule(this);
         }
     }

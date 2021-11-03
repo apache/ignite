@@ -18,4 +18,5 @@
 /**
  * This package contains an implementation of Ignite component related to REST interface.
  */
+
 package org.apache.ignite.rest;

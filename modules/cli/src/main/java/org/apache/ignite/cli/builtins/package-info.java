@@ -18,4 +18,5 @@
 /**
  * Contains classes and packages for builtin commands of Ignite CLI.
  */
+
 package org.apache.ignite.cli.builtins;

@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.metastorage.client;
 
 /**
- * Thrown when an operation is not executed within a specified time period. Usually in such cases the operation
- * should be retried.
+ * Thrown when an operation is not executed within a specified time period. Usually in such cases the operation should be retried.
  */
 public class OperationTimeoutException extends RuntimeException {
     /**
@@ -42,7 +41,7 @@ public class OperationTimeoutException extends RuntimeException {
      * Constructs an exception with a given message and a cause.
      *
      * @param message Detail message.
-     * @param cause Cause.
+     * @param cause   Cause.
      */
     public OperationTimeoutException(String message, Throwable cause) {
         super(message, cause);

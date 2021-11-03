@@ -29,7 +29,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class RemoveAllCommand implements WriteCommand {
     /** The keys list. Couldn't be {@code null}. */
-    @NotNull private final List<byte[]> keys;
+    @NotNull
+    private final List<byte[]> keys;
 
     /**
      * @param keys The keys collection. Couldn't be {@code null}.
@@ -37,8 +38,9 @@ public final class RemoveAllCommand implements WriteCommand {
     public RemoveAllCommand(@NotNull Set<ByteArray> keys) {
         this.keys = new ArrayList<>(keys.size());
 
-        for (ByteArray key : keys)
+        for (ByteArray key : keys) {
             this.keys.add(key.bytes());
+        }
     }
 
     /**

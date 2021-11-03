@@ -23,24 +23,25 @@ import org.apache.ignite.configuration.DirectConfigurationProperty;
 /**
  * {@link ConfigurationTree} wrapper with {@link DirectConfigurationProperty}.
  *
- * @param <VIEW> Value type of the node.
- * @param <CHANGE> Type of the object that changes this node's value.
+ * @param <VIEWT>   Value type of the node.
+ * @param <CHANGET> Type of the object that changes this node's value.
  */
-public class DirectConfigurationTreeWrapper<VIEW, CHANGE> extends ConfigurationTreeWrapper<VIEW, CHANGE>
-    implements DirectConfigurationProperty<VIEW> {
+public class DirectConfigurationTreeWrapper<VIEWT, CHANGET> extends ConfigurationTreeWrapper<VIEWT, CHANGET>
+        implements DirectConfigurationProperty<VIEWT> {
     /**
      * Constructor.
      *
      * @param configTree Configuration tree.
      */
-    public DirectConfigurationTreeWrapper(ConfigurationTree<VIEW, CHANGE> configTree) {
+    public DirectConfigurationTreeWrapper(ConfigurationTree<VIEWT, CHANGET> configTree) {
         super(configTree);
-
+        
         assert configTree instanceof DirectConfigurationProperty : configTree;
     }
-
+    
     /** {@inheritDoc} */
-    @Override public VIEW directValue() {
-        return ((DirectConfigurationProperty<VIEW>)configTree).directValue();
+    @Override
+    public VIEWT directValue() {
+        return ((DirectConfigurationProperty<VIEWT>) configTree).directValue();
     }
 }

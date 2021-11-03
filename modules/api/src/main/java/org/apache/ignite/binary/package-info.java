@@ -18,4 +18,5 @@
 /**
  * User binary objects API.
  */
+
 package org.apache.ignite.binary;

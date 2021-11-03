@@ -29,8 +29,8 @@ import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This is an utility class for serialization cache tuples. It will be removed after another way for serialization is
- * implemented into the network layer.
+ * This is an utility class for serialization cache tuples. It will be removed after another way for serialization is implemented into the
+ * network layer.
  * TODO: Remove it after (IGNITE-14793)
  */
 public class CommandUtils {
@@ -40,12 +40,13 @@ public class CommandUtils {
     /**
      * Writes a list of rows to byte array.
      *
-     * @param rows Collection of rows.
+     * @param rows     Collection of rows.
      * @param consumer Byte array consumer.
      */
     public static void rowsToBytes(Collection<BinaryRow> rows, Consumer<byte[]> consumer) {
-        if (rows == null || rows.isEmpty())
+        if (rows == null || rows.isEmpty()) {
             return;
+        }
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             for (BinaryRow row : rows) {
@@ -54,8 +55,7 @@ public class CommandUtils {
                         baos.write(intToBytes(bytes.length));
 
                         baos.write(bytes);
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                         LOG.error("Could not write row to stream [row=" + row + ']', e);
                     }
 
@@ -65,8 +65,7 @@ public class CommandUtils {
             baos.flush();
 
             consumer.accept(baos.toByteArray());
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.error("Could not write rows to stream [rows=" + rows.size() + ']', e);
 
             consumer.accept(null);
@@ -76,12 +75,13 @@ public class CommandUtils {
     /**
      * Writes a row to byte array.
      *
-     * @param row Row.
+     * @param row      Row.
      * @param consumer Byte array consumer.
      */
     public static void rowToBytes(@Nullable BinaryRow row, Consumer<byte[]> consumer) {
-        if (row == null)
+        if (row == null) {
             return;
+        }
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             row.writeTo(baos);
@@ -89,8 +89,7 @@ public class CommandUtils {
             baos.flush();
 
             consumer.accept(baos.toByteArray());
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.error("Could not write row to stream [row=" + row + ']', e);
 
             consumer.accept(null);
@@ -100,12 +99,13 @@ public class CommandUtils {
     /**
      * Reads the keys from a byte array.
      *
-     * @param bytes Byte array.
+     * @param bytes    Byte array.
      * @param consumer Consumer for binary row.
      */
     public static void readRows(byte[] bytes, Consumer<BinaryRow> consumer) {
-        if (bytes == null || bytes.length == 0)
+        if (bytes == null || bytes.length == 0) {
             return;
+        }
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
             byte[] lenBytes = new byte[4];
@@ -129,8 +129,7 @@ public class CommandUtils {
 
                 consumer.accept(new ByteBufferRow(rowBytes));
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.error("Could not read rows from stream.", e);
         }
     }

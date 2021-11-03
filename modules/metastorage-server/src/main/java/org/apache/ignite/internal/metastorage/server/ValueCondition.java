@@ -36,8 +36,8 @@ public class ValueCondition extends AbstractCondition {
      * Constructs value condition with the given type, key and value.
      *
      * @param type Condition type. Can't be {@code null}.
-     * @param key Key identifies an entry which condition will be applied to. Can't be {@code null}.
-     * @param val Value which will be tested against an entry value. Can't be {@code null}.
+     * @param key  Key identifies an entry which condition will be applied to. Can't be {@code null}.
+     * @param val  Value which will be tested against an entry value. Can't be {@code null}.
      */
     public ValueCondition(@NotNull Type type, @NotNull byte[] key, @NotNull byte[] val) {
         super(key);
@@ -47,7 +47,8 @@ public class ValueCondition extends AbstractCondition {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean test(@NotNull Entry e) {
+    @Override
+    public boolean test(@NotNull Entry e) {
         int res = Arrays.compare(e.value(), val);
 
         return type.test(res);
@@ -59,14 +60,16 @@ public class ValueCondition extends AbstractCondition {
     public enum Type {
         /** Equality condition type. */
         EQUAL {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res == 0;
             }
         },
 
         /** Inequality condition type. */
         NOT_EQUAL {
-            @Override public boolean test(long res) {
+            @Override
+            public boolean test(long res) {
                 return res != 0;
             }
         };

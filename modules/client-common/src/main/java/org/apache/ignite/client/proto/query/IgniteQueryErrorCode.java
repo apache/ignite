@@ -41,7 +41,7 @@ public final class IgniteQueryErrorCode {
 
     /**
      * Constructor.
-     * */
+     */
     private IgniteQueryErrorCode() {
         // No-op.
     }
@@ -49,7 +49,7 @@ public final class IgniteQueryErrorCode {
     /**
      * Create a {@link SQLException} for given code and message with detected state.
      *
-     * @param msg Message.
+     * @param msg  Message.
      * @param code Ignite status code.
      * @return {@link SQLException} with given details.
      */

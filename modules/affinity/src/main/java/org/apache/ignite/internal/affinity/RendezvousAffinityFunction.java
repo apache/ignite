@@ -34,8 +34,7 @@ import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterNode;
 
 /**
- * Affinity function for partitioned table based on Highest Random Weight algorithm. This function supports the
- * following configuration:
+ * Affinity function for partitioned table based on Highest Random Weight algorithm. This function supports the following configuration:
  * <ul>
  * <li>
  *      {@code partitions} - Number of partitions to spread across nodes.
@@ -79,27 +78,28 @@ public class RendezvousAffinityFunction {
     /**
      * Returns collection of nodes for specified partition.
      *
-     * @param part Partition.
-     * @param nodes Nodes.
-     * @param replicas Number partition replicas.
+     * @param part              Partition.
+     * @param nodes             Nodes.
+     * @param replicas          Number partition replicas.
      * @param neighborhoodCache Neighborhood.
-     * @param exclNeighbors If true neighbors are excluded, false otherwise.
-     * @param nodeFilter Filter for nodes.
+     * @param exclNeighbors     If true neighbors are excluded, false otherwise.
+     * @param nodeFilter        Filter for nodes.
      * @return Assignment.
      */
     public static List<ClusterNode> assignPartition(
-        int part,
-        List<ClusterNode> nodes,
-        int replicas,
-        Map<String, Collection<ClusterNode>> neighborhoodCache,
-        boolean exclNeighbors,
-        BiPredicate<ClusterNode, List<ClusterNode>> nodeFilter
+            int part,
+            List<ClusterNode> nodes,
+            int replicas,
+            Map<String, Collection<ClusterNode>> neighborhoodCache,
+            boolean exclNeighbors,
+            BiPredicate<ClusterNode, List<ClusterNode>> nodeFilter
     ) {
-        if (nodes.size() <= 1)
+        if (nodes.size() <= 1) {
             return nodes;
+        }
 
         IgniteBiTuple<Long, ClusterNode>[] hashArr =
-            (IgniteBiTuple<Long, ClusterNode>[])new IgniteBiTuple[nodes.size()];
+                (IgniteBiTuple<Long, ClusterNode>[]) new IgniteBiTuple[nodes.size()];
 
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
@@ -116,8 +116,9 @@ public class RendezvousAffinityFunction {
         Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, effectiveReplicas);
 
         // REPLICATED cache case
-        if (replicas == Integer.MAX_VALUE)
+        if (replicas == Integer.MAX_VALUE) {
             return replicatedAssign(nodes, sortedNodes);
+        }
 
         Iterator<ClusterNode> it = sortedNodes.iterator();
 
@@ -129,8 +130,9 @@ public class RendezvousAffinityFunction {
 
         res.add(first);
 
-        if (exclNeighbors)
+        if (exclNeighbors) {
             allNeighbors.addAll(neighborhoodCache.get(first.id()));
+        }
 
         // Select another replicas.
         if (replicas > 1) {
@@ -143,12 +145,12 @@ public class RendezvousAffinityFunction {
 
                         allNeighbors.addAll(neighborhoodCache.get(node.id()));
                     }
-                }
-                else if (nodeFilter == null || nodeFilter.test(node, res)) {
+                } else if (nodeFilter == null || nodeFilter.test(node, res)) {
                     res.add(node);
 
-                    if (exclNeighbors)
+                    if (exclNeighbors) {
                         allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                    }
                 }
             }
         }
@@ -162,13 +164,14 @@ public class RendezvousAffinityFunction {
             while (it.hasNext() && res.size() < effectiveReplicas) {
                 ClusterNode node = it.next();
 
-                if (!res.contains(node))
+                if (!res.contains(node)) {
                     res.add(node);
+                }
             }
 
             if (!exclNeighborsWarn) {
-                LOG.warn("Affinity function excludeNeighbors property is ignored " +
-                    "because topology has no enough nodes to assign all replicas.");
+                LOG.warn("Affinity function excludeNeighbors property is ignored "
+                        + "because topology has no enough nodes to assign all replicas.");
 
                 exclNeighborsWarn = true;
             }
@@ -182,21 +185,23 @@ public class RendezvousAffinityFunction {
     /**
      * Creates assignment for REPLICATED table
      *
-     * @param nodes Topology.
+     * @param nodes       Topology.
      * @param sortedNodes Sorted for specified partitions nodes.
      * @return Assignment.
      */
     private static List<ClusterNode> replicatedAssign(List<ClusterNode> nodes,
-        Iterable<ClusterNode> sortedNodes) {
+            Iterable<ClusterNode> sortedNodes) {
         ClusterNode first = sortedNodes.iterator().next();
 
         List<ClusterNode> res = new ArrayList<>(nodes.size());
 
         res.add(first);
 
-        for (ClusterNode n : nodes)
-            if (!n.equals(first))
+        for (ClusterNode n : nodes) {
+            if (!n.equals(first)) {
                 res.add(n);
+            }
+        }
 
         assert res.size() == nodes.size() : "Not enough replicas: " + res.size();
 
@@ -204,8 +209,7 @@ public class RendezvousAffinityFunction {
     }
 
     /**
-     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins
-     * hash.
+     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins hash.
      *
      * @param key0 Hash key.
      * @param key1 Hash key.
@@ -214,7 +218,7 @@ public class RendezvousAffinityFunction {
      */
     private static long hash(int key0, int key1) {
         long key = (key0 & 0xFFFFFFFFL)
-            | ((key1 & 0xFFFFFFFFL) << 32);
+                | ((key1 & 0xFFFFFFFFL) << 32);
 
         key = (~key) + (key << 21); // key = (key << 21) - key - 1;
         key ^= (key >>> 24);
@@ -231,18 +235,18 @@ public class RendezvousAffinityFunction {
      * Generates an assignment by the given parameters.
      *
      * @param currentTopologySnapshot List of topology nodes.
-     * @param partitions Number of table partitions.
-     * @param replicas Number partition replicas.
-     * @param exclNeighbors If true neighbors are excluded fro the one partition assignment, false otherwise.
-     * @param nodeFilter Filter for nodes.
+     * @param partitions              Number of table partitions.
+     * @param replicas                Number partition replicas.
+     * @param exclNeighbors           If true neighbors are excluded fro the one partition assignment, false otherwise.
+     * @param nodeFilter              Filter for nodes.
      * @return List nodes by partition.
      */
     public static List<List<ClusterNode>> assignPartitions(
-        Collection<ClusterNode> currentTopologySnapshot,
-        int partitions,
-        int replicas,
-        boolean exclNeighbors,
-        BiPredicate<ClusterNode, List<ClusterNode>> nodeFilter
+            Collection<ClusterNode> currentTopologySnapshot,
+            int partitions,
+            int replicas,
+            boolean exclNeighbors,
+            BiPredicate<ClusterNode, List<ClusterNode>> nodeFilter
     ) {
         assert partitions <= MAX_PARTITIONS_COUNT : "partitions <= " + MAX_PARTITIONS_COUNT;
         assert partitions > 0 : "parts > 0";
@@ -250,8 +254,7 @@ public class RendezvousAffinityFunction {
 
         List<List<ClusterNode>> assignments = new ArrayList<>(partitions);
 
-        Map<String, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
-            neighbors(currentTopologySnapshot) : null;
+        Map<String, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ? neighbors(currentTopologySnapshot) : null;
 
         List<ClusterNode> nodes = new ArrayList<>(currentTopologySnapshot);
 
@@ -280,17 +283,20 @@ public class RendezvousAffinityFunction {
 
             Collection<ClusterNode> nodes = macMap.get(macs);
 
-            if (nodes == null)
+            if (nodes == null) {
                 macMap.put(macs, nodes = new HashSet<>());
+            }
 
             nodes.add(node);
         }
 
         Map<String, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
-        for (Collection<ClusterNode> group : macMap.values())
-            for (ClusterNode node : group)
+        for (Collection<ClusterNode> group : macMap.values()) {
+            for (ClusterNode node : group) {
                 neighbors.put(node.id(), group);
+            }
+        }
 
         return neighbors;
     }
@@ -299,15 +305,14 @@ public class RendezvousAffinityFunction {
      *
      */
     private static class HashComparator implements Comparator<IgniteBiTuple<Long, ClusterNode>>, Serializable {
-        /**
-         *
-         */
+        /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
+        @Override
+        public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
-                o1.get2().name().compareTo(o2.get2().name());
+                    o1.get2().name().compareTo(o2.get2().name());
         }
     }
 
@@ -322,13 +327,13 @@ public class RendezvousAffinityFunction {
         private int sorted;
 
         /**
-         * @param arr Node / partition hash list.
+         * @param arr                Node / partition hash list.
          * @param needFirstSortedCnt Estimate count of elements to return by iterator.
          */
         LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int needFirstSortedCnt) {
             this.arr = arr;
 
-            if (needFirstSortedCnt > (int)Math.log(arr.length)) {
+            if (needFirstSortedCnt > (int) Math.log(arr.length)) {
                 Arrays.sort(arr, COMPARATOR);
 
                 sorted = arr.length;
@@ -336,7 +341,8 @@ public class RendezvousAffinityFunction {
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<ClusterNode> iterator() {
+        @Override
+        public Iterator<ClusterNode> iterator() {
             return new SortIterator();
         }
 
@@ -348,17 +354,21 @@ public class RendezvousAffinityFunction {
             private int cur;
 
             /** {@inheritDoc} */
-            @Override public boolean hasNext() {
+            @Override
+            public boolean hasNext() {
                 return cur < arr.length;
             }
 
             /** {@inheritDoc} */
-            @Override public ClusterNode next() {
-                if (!hasNext())
+            @Override
+            public ClusterNode next() {
+                if (!hasNext()) {
                     throw new NoSuchElementException();
+                }
 
-                if (cur < sorted)
+                if (cur < sorted) {
                     return arr[cur++].get2();
+                }
 
                 IgniteBiTuple<Long, ClusterNode> min = arr[cur];
 
@@ -384,14 +394,16 @@ public class RendezvousAffinityFunction {
             }
 
             /** {@inheritDoc} */
-            @Override public void remove() {
+            @Override
+            public void remove() {
                 throw new UnsupportedOperationException("Remove doesn't supported");
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "U.toString(RendezvousAffinityFunction.class, this)";
     }
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.testframework;
 
+import static org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,33 +31,33 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import static org.junit.jupiter.api.extension.ExtensionContext.Namespace;
-
 /**
- * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br>
- * Should be used in {@link ExtendWith}.
+ * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br> Should be used in {@link ExtendWith}.
  *
  * @see WithSystemProperty
  * @see ExtendWith
  */
 public class SystemPropertiesExtension implements
-    BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
+        BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
     /** JUnit namespace for the extension. */
     private static final Namespace NAMESPACE = Namespace.create(SystemPropertiesExtension.class);
 
     /** {@inheritDoc} */
-    @Override public void beforeAll(ExtensionContext ctx) {
+    @Override
+    public void beforeAll(ExtensionContext ctx) {
         List<WithSystemProperty> newProps = new ArrayList<>();
 
         for (Class<?> cls = ctx.getRequiredTestClass(); cls != null; cls = cls.getSuperclass()) {
             WithSystemProperty[] props = cls.getAnnotationsByType(WithSystemProperty.class);
 
-            if (props.length > 0)
+            if (props.length > 0) {
                 newProps.addAll(Arrays.asList(props));
+            }
         }
 
-        if (newProps.isEmpty())
+        if (newProps.isEmpty()) {
             return;
+        }
 
         // Reverse the collected properties to set properties from the superclass first. This may be important
         // if the same property gets overridden in a subclass.
@@ -67,16 +69,19 @@ public class SystemPropertiesExtension implements
     }
 
     /** {@inheritDoc} */
-    @Override public void afterAll(ExtensionContext ctx) {
+    @Override
+    public void afterAll(ExtensionContext ctx) {
         resetProperties(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeEach(ExtensionContext ctx) {
+    @Override
+    public void beforeEach(ExtensionContext ctx) {
         WithSystemProperty[] newProps = ctx.getRequiredTestMethod().getAnnotationsByType(WithSystemProperty.class);
 
-        if (newProps.length == 0)
+        if (newProps.length == 0) {
             return;
+        }
 
         List<Property> oldProps = replaceProperties(Arrays.asList(newProps));
 
@@ -84,7 +89,8 @@ public class SystemPropertiesExtension implements
     }
 
     /** {@inheritDoc} */
-    @Override public void afterEach(ExtensionContext ctx) {
+    @Override
+    public void afterEach(ExtensionContext ctx) {
         resetProperties(ctx);
     }
 
@@ -112,17 +118,19 @@ public class SystemPropertiesExtension implements
     private static void resetProperties(ExtensionContext ctx) {
         List<Property> oldProps = ctx.getStore(NAMESPACE).remove(ctx.getUniqueId(), List.class);
 
-        if (oldProps == null)
+        if (oldProps == null) {
             return; // Nothing to do.
+        }
 
         // Bring back the old properties in the reverse order
         Collections.reverse(oldProps);
 
         for (Property prop : oldProps) {
-            if (prop.val == null)
+            if (prop.val == null) {
                 System.clearProperty(prop.key);
-            else
+            } else {
                 System.setProperty(prop.key, prop.val);
+            }
         }
     }
 
@@ -135,7 +143,12 @@ public class SystemPropertiesExtension implements
         @Nullable
         final String val;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param key Property key.
+         * @param val Property value.
+         */
         Property(String key, @Nullable String val) {
             this.key = key;
             this.val = val;

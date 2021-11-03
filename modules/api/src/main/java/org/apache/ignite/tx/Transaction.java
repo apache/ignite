@@ -24,28 +24,24 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Transaction {
     /**
-     * Synchronously commits a transaction.
-     * Does nothing if it's already finished by commiting or rolling back.
+     * Synchronously commits a transaction. Does nothing if it's already finished by commiting or rolling back.
      */
     void commit();
 
     /**
-     * Asynchronously commits a transaction.
-     * Does nothing if it's already finished by commiting or rolling back.
+     * Asynchronously commits a transaction. Does nothing if it's already finished by commiting or rolling back.
      *
      * @return The future.
      */
     CompletableFuture<Void> commitAsync();
 
     /**
-     * Synchronously rolls back a transaction.
-     * Does nothing if it's already finished by commiting or rolling back.
+     * Synchronously rolls back a transaction. Does nothing if it's already finished by commiting or rolling back.
      */
     void rollback();
 
     /**
-     * Asynchronously rolls back a transaction.
-     * Does nothing if it's already finished by commiting or rolling back.
+     * Asynchronously rolls back a transaction. Does nothing if it's already finished by commiting or rolling back.
      *
      * @return The future.
      */

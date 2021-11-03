@@ -36,7 +36,7 @@ public class InvokeCommand implements WriteCommand {
     /**
      * Constructs invoke command instance.
      *
-     * @param cond Condition.
+     * @param cond    Condition.
      * @param success Success operations.
      * @param failure Failure operations.
      */

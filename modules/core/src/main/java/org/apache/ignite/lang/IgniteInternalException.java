@@ -43,8 +43,7 @@ public class IgniteInternalException extends RuntimeException {
     }
 
     /**
-     * Creates a new grid exception with the given throwable as a cause and
-     * source of error message.
+     * Creates a new grid exception with the given throwable as a cause and source of error message.
      *
      * @param cause Non-null throwable cause.
      */
@@ -55,7 +54,7 @@ public class IgniteInternalException extends RuntimeException {
     /**
      * Creates a new exception with the given error message and optional nested exception.
      *
-     * @param msg Error message.
+     * @param msg   Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
     public IgniteInternalException(String msg, @Nullable Throwable cause) {
@@ -63,7 +62,8 @@ public class IgniteInternalException extends RuntimeException {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return getClass() + ": " + getMessage();
     }
 }
