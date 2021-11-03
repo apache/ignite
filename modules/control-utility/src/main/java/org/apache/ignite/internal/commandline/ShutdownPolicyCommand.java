@@ -80,7 +80,7 @@ public class ShutdownPolicyCommand extends AbstractCommand<ShutdownPolicyArgumen
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Set or display shutdown policy:", SHUTDOWN_POLICY,
+        usage(logger, "Set or display shutdown policy:", SHUTDOWN_POLICY,
             CommandLogger.optional(CommandLogger.join("|", ShutdownPolicy.values())));
     }
 

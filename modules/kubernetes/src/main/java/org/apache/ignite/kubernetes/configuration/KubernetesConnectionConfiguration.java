@@ -38,6 +38,9 @@ public class KubernetesConnectionConfiguration {
     /** Whether addresses of pods in not-ready state should be included. */
     private boolean includeNotReadyAddresses = false;
 
+    /** Port to use for discovery **/
+    private int discoveryPort = 0;
+    
     /**
      * Sets the name of Kubernetes service for Ignite pods' IP addresses lookup. The name of the service must be equal
      * to the name set in service's Kubernetes configuration. If this parameter is not changed then the name of the
@@ -53,7 +56,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes service name.
+     * @return Kubernetes service name.
      */
     public String getServiceName() {
         return srvcName;
@@ -73,7 +76,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes namespace.
+     * @return Kubernetes namespace.
      */
     public String getNamespace() {
         return namespace;
@@ -93,7 +96,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes master url.
+     * @return Kubernetes master url.
      */
     public String getMaster() {
         return master;
@@ -113,7 +116,7 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get Kubernetes account token.
+     * @return Kubernetes account token.
      */
     public String getAccountToken() {
         return accountToken;
@@ -132,10 +135,29 @@ public class KubernetesConnectionConfiguration {
     }
 
     /**
-     * Get flag include not ready addresses.
+     * @return Flag include not ready addresses.
      */
     public boolean getIncludeNotReadyAddresses() {
         return includeNotReadyAddresses;
+    }
+
+    /**
+     * Specifies the port which is returned to the caller to use for service discovery.
+     * Defaults to 0.
+     * @param discoveryPort Port to use for Kubernetes IP Finder
+     * @return {@code this} for chaining.
+     */
+    public KubernetesConnectionConfiguration setDiscoveryPort(int discoveryPort) {
+        this.discoveryPort = discoveryPort;
+        
+        return this;
+    }
+
+    /**
+     * @return Kubernetes IP Finder port.
+     */
+    public int getDiscoveryPort() {
+        return discoveryPort;
     }
 
     /**

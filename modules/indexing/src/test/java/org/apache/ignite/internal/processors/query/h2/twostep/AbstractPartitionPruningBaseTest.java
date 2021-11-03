@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,10 +28,18 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,11 +54,15 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * Base class for partition pruning tests.
  */
-@SuppressWarnings("deprecation")
+@RunWith(Parameterized.class)
 public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstractTest {
     /** Number of intercepted requests. */
     private static final AtomicInteger INTERCEPTED_REQS = new AtomicInteger();
@@ -72,6 +85,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     /** Client node name. */
     private static final String CLI_NAME = "cli";
 
+    /** Whether the test table is created with SQL or QueryEntity API. */
+    @Parameterized.Parameter
+    public boolean createTableWithSql;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -84,7 +101,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
 
         startClientGrid(getConfiguration(CLI_NAME));
 
-        client().cluster().active(true);
+        client().cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -138,7 +155,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createPartitionedTable(boolean mvcc, String name, Object... cols) {
-        createTable0(name, false, mvcc, cols);
+        if (createTableWithSql)
+            createTable0(name, false, mvcc, cols);
+        else
+            createCacheTable(name, false, mvcc, cols);
     }
 
     /**
@@ -159,7 +179,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createReplicatedTable(boolean mvcc, String name, Object... cols) {
-        createTable0(name, true, mvcc, cols);
+        if (createTableWithSql)
+            createTable0(name, true, mvcc, cols);
+        else
+            createCacheTable(name, true, mvcc, cols);
     }
 
     /**
@@ -178,7 +201,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
 
         StringBuilder sql = new StringBuilder("CREATE TABLE ").append(name).append("(");
         for (Object col : cols) {
-            Column col0 = col instanceof Column ? (Column)col : new Column((String)col, false, false);
+            Column col0 = col instanceof Column ? (Column)col : new Column((String)col);
 
             sql.append(col0.name()).append(" VARCHAR, ");
 
@@ -225,6 +248,68 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         sql.append("\"");
 
         executeSql(sql.toString());
+    }
+
+    /**
+     * Create table with the QueryEntity API.
+     *
+     * @param name Name.
+     * @param replicated Replicated table flag.
+     * @param mvcc MVCC flag.
+     * @param cols Columns.
+     */
+    private void createCacheTable(String name, boolean replicated, boolean mvcc, Object... cols) {
+        QueryEntity e = new QueryEntity()
+            .setValueType(name)
+            .setTableName(name);
+
+        List<String> pkCols = new ArrayList<>();
+
+        String affCol = null;
+
+        for (Object col : cols) {
+            Column col0 = col instanceof Column ? (Column)col : new Column((String)col);
+
+            e.addQueryField(col0.name, String.class.getName(), col0.alias);
+
+            if (col0.pk())
+                pkCols.add(col0.name());
+
+            if (col0.affinity()) {
+                if (affCol != null)
+                    throw new IllegalStateException("Only one affinity column is allowed: " + col0.name());
+
+                affCol = col0.name();
+
+                pkCols.add(affCol);
+            }
+        }
+
+        if (pkCols.isEmpty())
+            throw new IllegalStateException("No PKs!");
+
+        e.setKeyFields(new HashSet<>(pkCols));
+
+        if (pkCols.size() == 1)
+            e.setKeyFieldName(pkCols.get(0));
+
+        String keyTypeName = pkCols.size() == 1 ? String.class.getName() : name + "_key";
+
+        e.setKeyType(keyTypeName);
+
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
+            .setName(name)
+            .setSqlSchema(DFLT_SCHEMA)
+            .setAtomicityMode(mvcc ? CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT : CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(replicated ? CacheMode.REPLICATED : CacheMode.PARTITIONED)
+            .setQueryEntities(Collections.singletonList(e));
+
+        if (affCol != null)
+            ccfg.setKeyConfiguration(new CacheKeyConfiguration()
+                .setTypeName(keyTypeName)
+                .setAffinityKeyFieldName(affCol));
+
+        client().createCache(ccfg);
     }
 
     /**
@@ -460,6 +545,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * TCP communication SPI which will track outgoing query requests.
      */
     private static class TrackingTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
@@ -497,11 +583,39 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     }
 
     /**
+     * @param table Table name.
+     * @param cols Number of columns for this table.
+     * @param until Inclusive upper boundary for inserting data.
+     */
+    protected void fillTable(String table, int cols, int until) {
+        String sql = "INSERT INTO " + table + " VALUES ("
+            + IntStream.range(0, cols).mapToObj(i -> "?").collect(Collectors.joining(","))
+            + ")";
+
+        for (int i = 1; i <= until; i++) {
+            int v = i;
+
+            Object[] arr = IntStream.range(0, cols).mapToObj(c -> v).toArray();
+
+            executeSql(sql, arr);
+        }
+    }
+
+    /**
      * @param name Name.
      * @return PK column.
      */
     public Column pkColumn(String name) {
-        return new Column(name, true, false);
+        return new Column(name, null, true, false);
+    }
+
+    /**
+     * @param name Name.
+     * @param alias Alias.
+     * @return PK column.
+     */
+    public Column pkColumn(String name, String alias) {
+        return new Column(name, alias, true, false);
     }
 
     /**
@@ -509,7 +623,16 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @return Affintiy column.
      */
     public Column affinityColumn(String name) {
-        return new Column(name, true, true);
+        return new Column(name, null, true, true);
+    }
+
+    /**
+     * @param name Name.
+     * @param alias Alias.
+     * @return Affintiy column.
+     */
+    public Column affinityColumn(String name, String alias) {
+        return new Column(name, alias, true, true);
     }
 
     /**
@@ -518,6 +641,9 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     private static class Column {
         /** Name. */
         private final String name;
+
+        /** Alias. */
+        private final String alias;
 
         /** PK. */
         private final boolean pk;
@@ -532,10 +658,23 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
          * @param pk PK flag.
          * @param aff Affinity flag.
          */
-        public Column(String name, boolean pk, boolean aff) {
+        public Column(String name, String alias, boolean pk, boolean aff) {
             this.name = name;
+            this.alias = alias;
             this.pk = pk;
             this.aff = aff;
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         */
+        public Column(String name) {
+            this.name = name;
+            alias = null;
+            pk = false;
+            aff = false;
         }
 
         /**
@@ -543,6 +682,13 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
          */
         public String name() {
             return name;
+        }
+
+        /**
+         * @return Alias.
+         */
+        public String alias() {
+            return alias;
         }
 
         /**

@@ -473,7 +473,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         recordIgniteEvt,
                         fut);
 
-                    ctx.asyncCallbackPool().execute(clsr, evt.partitionId());
+                    ctx.pools().asyncCallbackPool().execute(clsr, evt.partitionId());
                 }
                 else {
                     final boolean notify = filter(evt);
@@ -582,7 +582,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     if (!evts.isEmpty()) {
                         if (asyncCb) {
-                            ctx.asyncCallbackPool().execute(new Runnable() {
+                            ctx.pools().asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
                                     try {
                                         notifyLocalListener(evts, getTransformer());
@@ -902,7 +902,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (asyncCb) {
             final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
 
-            IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
+            IgniteStripedThreadPoolExecutor asyncPool = ctx.pools().asyncCallbackPool();
 
             int threadId = asyncPool.threadId(entries.get(0).partition());
 
@@ -1543,7 +1543,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             if (f.error() != null)
                                 evt.entry().markFiltered();
 
-                            ctx.asyncCallbackPool().execute(new Runnable() {
+                            ctx.pools().asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
                                     onEntryUpdate(evt, notify, nodeId.equals(ctx.localNodeId()), recordIgniteEvt);
                                 }

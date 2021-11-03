@@ -132,8 +132,6 @@ import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SE
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
@@ -162,6 +160,8 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
@@ -1695,11 +1695,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     @Test
     public void testStripedExecutors() throws Exception {
         try (IgniteEx g = startGrid(0)) {
-            checkStripeExecutorView(g.context().getStripedExecutorService(),
+            checkStripeExecutorView(g.context().pools().getStripedExecutorService(),
                 g.context().systemView().view(SYS_POOL_QUEUE_VIEW),
                 "sys");
 
-            checkStripeExecutorView(g.context().getDataStreamerExecutorService(),
+            checkStripeExecutorView(g.context().pools().getDataStreamerExecutorService(),
                 g.context().systemView().view(STREAM_POOL_QUEUE_VIEW),
                 "data-streamer");
         }

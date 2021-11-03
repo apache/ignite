@@ -29,7 +29,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion, V_2_8_0
 
 
-# pylint: disable=W0223
 class BaselineTests(IgniteTest):
     """
     Tests baseline command

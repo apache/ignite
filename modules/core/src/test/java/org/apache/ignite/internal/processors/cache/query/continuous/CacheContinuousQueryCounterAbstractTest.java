@@ -562,6 +562,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore();
         }

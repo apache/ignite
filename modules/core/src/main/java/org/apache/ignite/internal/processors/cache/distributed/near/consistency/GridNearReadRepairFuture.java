@@ -17,23 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.CacheConsistencyViolationEvent;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-
-import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import org.apache.ignite.transactions.TransactionState;
 
 /**
  * Checks data consistency. Checks that each affinity node's value equals other's. Prepares recovery data. Records
@@ -72,107 +69,76 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             recovery,
             expiryPlc,
             tx);
+
+        assert ctx.transactional() : "Atomic cache should not be recovered using this future";
     }
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>();
-        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>();
+        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>(keys.size()); // Newest entries (by version).
+        Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>(); // Newest entries required to be re-committed.
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
+            for (KeyCacheObject key : fut.keys()) {
+                EntryGetResult candidateRes = fut.result().get(key);
 
-                EntryGetResult candidate = entry.getValue();
+                if (!newestMap.containsKey(key)) {
+                    newestMap.put(key, candidateRes);
 
-                newestMap.putIfAbsent(key, candidate);
-
-                EntryGetResult newest = newestMap.get(key);
-
-                if (newest.version().compareTo(candidate.version()) < 0) {
-                    newestMap.put(key, candidate);
-                    fixedMap.put(key, candidate);
+                    continue;
                 }
 
-                if (newest.version().compareTo(candidate.version()) > 0)
-                    fixedMap.put(key, newest);
+                EntryGetResult newestRes = newestMap.get(key);
+
+                if (candidateRes != null) {
+                    if (newestRes == null) { // Existing data wins.
+                        newestMap.put(key, candidateRes);
+                        fixedMap.put(key, candidateRes);
+                    }
+                    else {
+                        int compareRes = candidateRes.version().compareTo(newestRes.version());
+
+                        if (compareRes > 0) { // Newest data wins.
+                            newestMap.put(key, candidateRes);
+                            fixedMap.put(key, candidateRes);
+                        }
+                        else if (compareRes < 0)
+                            fixedMap.put(key, newestRes);
+                        else if (compareRes == 0) {
+                            CacheObjectAdapter candidateVal = candidateRes.value();
+                            CacheObjectAdapter newestVal = newestRes.value();
+
+                            try {
+                                byte[] candidateBytes = candidateVal.valueBytes(ctx.cacheObjectContext());
+                                byte[] newestBytes = newestVal.valueBytes(ctx.cacheObjectContext());
+
+                                if (!Arrays.equals(candidateBytes, newestBytes))
+                                    fixedMap.put(key, newestRes); // Same version, fixing values inconsistency.
+                            }
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
+
+                                return;
+                            }
+                        }
+                    }
+                }
+                else if (newestRes != null)
+                    fixedMap.put(key, newestRes); // Existing data wins.
             }
         }
 
-        recordConsistencyViolation(fixedMap);
+        assert !fixedMap.containsValue(null) : "null should never be considered as a fix";
+
+        if (!fixedMap.isEmpty()) {
+            tx.finishFuture().listen(future -> {
+                TransactionState state = tx.state();
+
+                if (state == TransactionState.COMMITTED) // Explicit tx may fix the values but become rolled back later.
+                    recordConsistencyViolation(fixedMap.keySet(), fixedMap);
+            });
+        }
 
         onDone(fixedMap);
-    }
-
-    /**
-     * @param fixedRaw Fixed map.
-     */
-    private void recordConsistencyViolation(Map<KeyCacheObject, EntryGetResult> fixedRaw) {
-        GridEventStorageManager evtMgr = ctx.gridEvents();
-
-        if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
-            return;
-
-        if (fixedRaw.isEmpty())
-            return;
-
-        Map<Object, Object> fixedMap = new HashMap<>();
-
-        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedRaw.entrySet()) {
-            KeyCacheObject key = entry.getKey();
-            CacheObject val = entry.getValue().value();
-
-            ctx.addResult(
-                fixedMap,
-                key,
-                val,
-                false,
-                false,
-                deserializeBinary,
-                false,
-                null,
-                0,
-                0,
-                null);
-        }
-
-        Map<UUID, Map<Object, Object>> originalMap = new HashMap<>();
-
-        for (Map.Entry<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> pair : futs.entrySet()) {
-            ClusterNode node = pair.getKey();
-
-            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = pair.getValue();
-
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
-
-                if (fixedRaw.containsKey(key)) {
-                    CacheObject val = entry.getValue().value();
-
-                    originalMap.computeIfAbsent(node.id(), id -> new HashMap<>());
-
-                    Map<Object, Object> map = originalMap.get(node.id());
-
-                    ctx.addResult(
-                        map,
-                        key,
-                        val,
-                        false,
-                        false,
-                        deserializeBinary,
-                        false,
-                        null,
-                        0,
-                        0,
-                        null);
-                }
-            }
-        }
-
-        evtMgr.record(new CacheConsistencyViolationEvent<>(
-            ctx.discovery().localNode(),
-            "Consistency violation fixed.",
-            originalMap,
-            fixedMap));
     }
 }

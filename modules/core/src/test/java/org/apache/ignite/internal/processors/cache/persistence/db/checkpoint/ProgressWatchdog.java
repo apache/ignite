@@ -53,6 +53,7 @@ import org.jetbrains.annotations.NotNull;
  * processed at client size. Long absence of this calls will cause thread dumps to be generated.
  */
 class ProgressWatchdog {
+    /** */
     public static final int CHECK_PERIOD_MSEC = 1000;
 
     /** Progress counter, Overall records processed. */
@@ -482,6 +483,7 @@ class ProgressWatchdog {
         stopPool(pool);
     }
 
+    /** */
     public static void stopPool(ExecutorService pool) {
         pool.shutdown();
         try {

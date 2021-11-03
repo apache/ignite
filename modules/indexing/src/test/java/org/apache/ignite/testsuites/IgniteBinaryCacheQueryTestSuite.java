@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistryTest;
 import org.apache.ignite.internal.cdc.SqlCdcTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
+import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
 import org.apache.ignite.internal.processors.cache.BinaryMetadataConcurrentUpdateWithIndexesTest;
@@ -47,7 +48,10 @@ import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientPersistentTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryFailoverTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryLimitTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryPagesTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -268,6 +272,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.BetweenOperationEx
 import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.JoinPartitionPruningSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.JoinQueryEntityPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.MvccDmlPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.SqlDataTypeConversionTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
@@ -288,6 +293,7 @@ import org.apache.ignite.internal.sql.SqlParserSetStreamingSelfTest;
 import org.apache.ignite.internal.sql.SqlParserTransactionalKeywordsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
+import org.apache.ignite.sqltests.CheckWarnJoinPartitionedTables;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
@@ -301,6 +307,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    AffinityAliasKeyTest.class,
     AffinityKeyNameAndValueFieldNameConflictTest.class,
     DmlInsideTransactionTest.class,
     ComplexPrimaryKeyUnwrapSelfTest.class,
@@ -312,6 +319,7 @@ import org.junit.runners.Suite;
     PartitionedSqlTest.class,
     ReplicatedSqlTest.class,
     ReplicatedSqlCustomPartitionsTest.class,
+    CheckWarnJoinPartitionedTables.class,
 
     SqlParserCreateIndexSelfTest.class,
     SqlParserDropIndexSelfTest.class,
@@ -490,8 +498,11 @@ import org.junit.runners.Suite;
     CacheQueryEvictDataLostTest.class,
 
     // Full text queries.
+    GridCacheFullTextQueryFailoverTest.class,
     GridCacheFullTextQuerySelfTest.class,
     GridCacheFullTextQueryMultithreadedSelfTest.class,
+    GridCacheFullTextQueryPagesTest.class,
+    GridCacheFullTextQueryLimitTest.class,
     IgniteCacheFullTextQueryNodeJoiningSelfTest.class,
 
     // Ignite cache and H2 comparison.
@@ -623,6 +634,7 @@ import org.junit.runners.Suite;
     AndOperationExtractPartitionSelfTest.class,
     BetweenOperationExtractPartitionSelfTest.class,
     JoinPartitionPruningSelfTest.class,
+    JoinQueryEntityPartitionPruningSelfTest.class,
     DmlSelectPartitionPruningSelfTest.class,
     MvccDmlPartitionPruningSelfTest.class,
 

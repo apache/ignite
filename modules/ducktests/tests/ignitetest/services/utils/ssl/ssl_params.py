@@ -44,7 +44,6 @@ class SslParams:
     Params for Ignite SslContextFactory.
     """
 
-    # pylint: disable=R0913
     def __init__(self, root_dir: str, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
                  key_store_path: str = None, trust_store_path: str = None, cipher_suites: str = None,

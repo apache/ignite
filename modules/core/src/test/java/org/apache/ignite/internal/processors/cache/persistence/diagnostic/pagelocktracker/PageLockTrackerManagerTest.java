@@ -216,6 +216,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void printOverhead(PageLockTrackerManager mgr) {
         System.out.println(
             "Head:" + mgr.getHeapOverhead()

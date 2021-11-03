@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.collection.IntMap;
 
 /**
- * Statistics store interface.
+ * Statistics store interface. Wrap physical storage (in memory or local metastore) to give easy access to statistics.
  */
 public interface IgniteStatisticsStore {
     /**
@@ -97,11 +97,20 @@ public interface IgniteStatisticsStore {
 
     /**
      *
-     * @param obsolescence
+     * @param obsolescence Statistics key to partId to obsolescence info map to save.
      */
     public void saveObsolescenceInfo(
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> obsolescence
     );
+
+    /**
+     * Save obsolescence info.
+     *
+     * @param key Statistics key which it is belongs to.
+     * @param partId Partition id.
+     * @param partObs Info to save.
+     */
+    public void saveObsolescenceInfo(StatisticsKey key, int partId, ObjectPartitionStatisticsObsolescence partObs);
 
     /**
      * Remove obsolescence info for the given key and partitions (if specified).
@@ -117,4 +126,12 @@ public interface IgniteStatisticsStore {
      * @return StatisticsKey to partitionId to obsolescence info map.
      */
     public Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> loadAllObsolescence();
+
+    /**
+     * Load partitions map by key.
+     *
+     * @param key Staistics key to load map by.
+     * @return Collection of all partition ids for which there are local partitions statistics.
+     */
+    public Collection<Integer> loadLocalPartitionMap(StatisticsKey key);
 }

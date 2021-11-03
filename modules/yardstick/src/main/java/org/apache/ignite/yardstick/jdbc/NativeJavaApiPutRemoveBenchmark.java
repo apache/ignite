@@ -30,12 +30,14 @@ public class NativeJavaApiPutRemoveBenchmark extends AbstractNativeBenchmark {
     /** Cache for created table. */
     private IgniteCache<Object, Object> tabCache;
 
+    /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         tabCache = ignite().cache("SQL_PUBLIC_TEST_LONG");
     }
 
+    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         long insertKey = ThreadLocalRandom.current().nextLong(args.range()) + 1 + args.range();
         long insertVal = insertKey + 1;

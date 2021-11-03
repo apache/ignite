@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -44,7 +49,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     private final boolean needVer;
 
     /** Keep cache objects. */
-    private boolean keepCacheObjects;
+    private final boolean keepCacheObjects;
 
     /**
      * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
@@ -90,28 +95,64 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> map = new HashMap<>();
+        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>(keys.size());
+        Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject key = entry.getKey();
-                EntryGetResult candidate = entry.getValue();
-                EntryGetResult old = map.get(key);
+            for (KeyCacheObject key : fut.keys()) {
+                EntryGetResult curRes = fut.result().get(key);
 
-                if (old != null && old.version().compareTo(candidate.version()) != 0) {
-                    if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT)
-                        onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
-                    else
-                        map(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
+                if (!resMap.containsKey(key)) {
+                    resMap.put(key, curRes);
 
-                    return;
+                    continue;
                 }
 
-                map.put(key, candidate);
+                EntryGetResult prevRes = resMap.get(key);
+
+                if (curRes != null) {
+                    if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
+                        inconsistentKeys.add(key);
+                    else {
+                        CacheObjectAdapter curVal = curRes.value();
+                        CacheObjectAdapter prevVal = prevRes.value();
+
+                        try {
+                            byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
+                            byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());
+
+                            if (!Arrays.equals(curBytes, prevBytes))
+                                inconsistentKeys.add(key);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+
+                            return;
+                        }
+                    }
+                }
+                else if (prevRes != null)
+                    inconsistentKeys.add(key);
             }
         }
 
-        onDone(map);
+        if (!inconsistentKeys.isEmpty()) {
+            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+                if (!ctx.transactional()) // Will not be fixed, should be recorded as is.
+                    recordConsistencyViolation(inconsistentKeys, /*nothing fixed*/ null);
+
+                onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+            }
+            else
+                remap(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
+
+            return;
+        }
+
+        // Misses recorded to detect partial misses, but should not be propagated when the key is null at each node.
+        resMap.values().removeIf(Objects::isNull);
+
+        onDone(resMap);
     }
 
     /**

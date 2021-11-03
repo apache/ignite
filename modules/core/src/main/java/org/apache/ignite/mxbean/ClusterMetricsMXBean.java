@@ -302,14 +302,14 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public long getTopologyVersion();
 
     /**
-     * Get distinct attribute names for given nodes projection.
+     * @return Distinct attribute names for given nodes projection.
      */
     @MXBeanDescription("Distinct attribute names for given nodes projection.")
     public Set<String> attributeNames();
 
 
     /**
-     * Get distinct attribute values for given nodes projection.
+     * @return Distinct attribute values for given nodes projection.
      *
      * @param attrName Attribute name.
      */
@@ -319,12 +319,11 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     );
 
      /**
-      * Get node IDs with the given attribute value.
-      *
       * @param attrName Attribute name.
       * @param attrVal Attribute value.
       * @param includeSrvs Include server nodes.
       * @param includeClients Include client nodes.
+      * @return Node IDs with the given attribute value.
       */
      @MXBeanDescription("Get node IDs with the given attribute value.")
      public Set<UUID> nodeIdsForAttribute(

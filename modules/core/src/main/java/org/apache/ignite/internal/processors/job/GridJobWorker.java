@@ -539,7 +539,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         SqlFieldsQuery.setThreadedQueryInitiatorId("task:" + ses.getTaskName() + ":" + getJobId());
 
-        try {
+        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
             if (partsReservation != null) {
                 try {
                     if (!partsReservation.reserve()) {
@@ -744,8 +744,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     public void cancel(boolean sys) {
         try {
-            super.cancel();
-
             final ComputeJob job0 = job;
 
             if (sys)
@@ -763,6 +761,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     }
                 });
             }
+
+            // Interrupting only when all 'cancelled' flags are set.
+            // This allows the 'job' to determine it's a cancellation.
+            super.cancel();
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
                 recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
@@ -802,7 +804,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
         evt.taskNode(taskNode);
-        evt.taskSubjectId(ses.subjectId());
+        evt.taskSubjectId(secCtx != null ? secCtx.subject().id() : null);
 
         ctx.event().record(evt);
     }

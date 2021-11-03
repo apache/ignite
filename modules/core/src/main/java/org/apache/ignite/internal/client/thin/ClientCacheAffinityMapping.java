@@ -104,6 +104,22 @@ public class ClientCacheAffinityMapping {
     }
 
     /**
+     * Calculates affinity node for given cache and partition.
+     *
+     * @param cacheId Cache ID.
+     * @param part Partition.
+     * @return Affinity node id or {@code null} if affinity node can't be determined for given cache and partition.
+     */
+    public UUID affinityNode(int cacheId, int part) {
+        CacheAffinityInfo affInfo = cacheAffinity.get(cacheId);
+
+        if (affInfo == null || affInfo == NOT_APPLICABLE_CACHE_AFFINITY_INFO)
+            return null;
+
+        return affInfo.nodeForPartition(part);
+    }
+
+    /**
      * Merge specified mappings into one instance.
      */
     public static ClientCacheAffinityMapping merge(ClientCacheAffinityMapping... mappings) {
@@ -264,6 +280,17 @@ public class ClientCacheAffinityMapping {
             int part = RendezvousAffinityFunction.calculatePartition(key, affinityMask, partMapping.length);
 
             return partMapping[part];
+        }
+
+        /**
+         * Calculates node for given partition.
+         *
+         * @param part Partition.
+         */
+        private UUID nodeForPartition(int part) {
+            assert partMapping != null;
+
+            return part >= 0 && part < partMapping.length ? partMapping[part] : null;
         }
     }
 }

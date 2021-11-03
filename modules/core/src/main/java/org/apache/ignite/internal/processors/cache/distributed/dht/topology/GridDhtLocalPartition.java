@@ -39,6 +39,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
@@ -78,6 +78,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
@@ -231,15 +232,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (grp.walEnabled() && !recovery)
                 ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
 
-            // Inject row cache cleaner on store creation
-            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
-            if (ctx.kernalContext().query().moduleEnabled()) {
-                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().indexProcessor()
-                    .rowCacheCleaner(grp.groupId());
-
-                if (store != null && cleaner != null)
-                    store.setRowCacheCleaner(cleaner);
-            }
+            // Inject row cache cleaner on store creation.
+            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group.
+            if (ctx.kernalContext().query().moduleEnabled())
+                store.setRowCacheCleaner(ctx.kernalContext().indexProcessor().rowCacheCleaner(grp.groupId()));
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db
@@ -649,11 +645,27 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             if (casState(state, MOVING)) {
                 // The state is switched under global topology lock, safe to record version here.
-                clearVer = ctx.versions().localOrder();
+                updateClearVersion();
 
                 return true;
             }
         }
+    }
+
+    /**
+     * Records a version for row clearing. Must be called when a partition is marked for full rebalancing.
+     * @see #clearAll(EvictionContext)
+     */
+    public void updateClearVersion() {
+        clearVer = ctx.versions().localOrder();
+    }
+
+    /**
+     * Used to set a version from {@link PartitionClearingStartRecord} when need to repeat a clearing after node restart.
+     * @param clearVer Clear version.
+     */
+    public void updateClearVersion(long clearVer) {
+        this.clearVer = clearVer;
     }
 
     /**
@@ -981,7 +993,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
+        boolean recoveryMode = ctx.kernalContext().recoveryMode();
+
         try {
+            // If a partition was not checkpointed after clearing on a rebalance and a node was stopped,
+            // then it's need to repeat clearing on node start. So need to write a partition clearing start record
+            // and repeat clearing on applying updates from WAL if the record was read.
+            // It's need for atomic cache only. Transactional cache start a rebalance due to outdated counter in this case,
+            // because atomic and transactional caches use different partition counters implementation.
+            if (state() == MOVING && !recoveryMode && grp.walEnabled() &&
+                grp.config().getAtomicityMode() == ATOMIC)
+                ctx.wal().log(new PartitionClearingStartRecord(id, grp.groupId(), order));
+
             GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
             while (it0.hasNext()) {
@@ -1000,7 +1023,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     // Partition state can be switched from RENTING to MOVING and vice versa during clearing.
                     long order0 = row.version().order();
 
-                    if (state() == MOVING && (order0 == 0 /** Inserted by isolated updater. */ || order0 > order))
+                    if ((state() == MOVING || recoveryMode) && (order0 == 0 /** Inserted by isolated updater. */ || order0 > order))
                         continue;
 
                     if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
@@ -1038,7 +1061,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                                 cached.hasValue(),
                                 null,
                                 null,
-                                null,
                                 false);
                         }
 
@@ -1066,7 +1088,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
 
             // Attempt to destroy.
-            ((GridDhtPreloader)grp.preloader()).tryFinishEviction(this);
+            if (!recoveryMode)
+                ((GridDhtPreloader)grp.preloader()).tryFinishEviction(this);
         }
         catch (NodeStoppingException e) {
             if (log.isDebugEnabled())
@@ -1079,65 +1102,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         return cleared;
-    }
-
-    /**
-     * Removes all cache entries from specified {@code map}.
-     *
-     * @param map Map to clear.
-     * @param extras Obsolete extras.
-     * @param evt Unload event flag.
-     * @throws NodeStoppingException If current node is stopping.
-     */
-    private void clear(ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map,
-        GridCacheObsoleteEntryExtras extras,
-        boolean evt) throws NodeStoppingException {
-        Iterator<GridCacheMapEntry> it = map.values().iterator();
-
-        while (it.hasNext()) {
-            GridCacheMapEntry cached = null;
-
-            ctx.database().checkpointReadLock();
-
-            try {
-                cached = it.next();
-
-                if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(extras.obsoleteVersion(), extras)) {
-                    removeEntry(cached);
-
-                    if (!cached.isInternal()) {
-                        if (evt) {
-                            grp.addCacheEvent(cached.partition(),
-                                cached.key(),
-                                ctx.localNodeId(),
-                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                null,
-                                false,
-                                cached.rawGet(),
-                                cached.hasValue(),
-                                false);
-                        }
-                    }
-                }
-            }
-            catch (GridDhtInvalidPartitionException e) {
-                assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
-
-                break; // Partition is already concurrently cleared and evicted.
-            }
-            catch (NodeStoppingException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
-
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
     }
 
     /**

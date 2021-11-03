@@ -1035,11 +1035,13 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
     }
 
+    /** */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /** */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
@@ -1063,21 +1065,27 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     public static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public Date date = new Date(System.currentTimeMillis());
 
+        /** */
         @QuerySqlField(index = true)
         public String name = "Ivan";
 
+        /** */
         @QuerySqlField(index = true)
         public String parentName;
 
+        /** */
         @QuerySqlField(index = true)
         public int addrId;
 
+        /** */
         @QuerySqlField
         public Integer[] addrIds;
 
+        /** */
         @QuerySqlField(index = true)
         public int old;
     }
@@ -1086,12 +1094,15 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     public static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public int id;
 
+        /** */
         @QuerySqlField(index = true)
         public int streetNumber;
 
+        /** */
         @QuerySqlField(index = true)
         public String street = "Nevskiy";
     }

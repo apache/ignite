@@ -37,8 +37,12 @@ import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurat
  * </p>
  */
 public class ClientKubernetesPutGetExample {
-    /** Entry point. */
-    public static void main(String[] args) throws Exception {
+    /**
+     * Entry point.
+     *
+     * @param args Command line arguments.
+     */
+    public static void main(String[] args) {
         KubernetesConnectionConfiguration kcfg = new KubernetesConnectionConfiguration();
         kcfg.setNamespace("ignite");
 

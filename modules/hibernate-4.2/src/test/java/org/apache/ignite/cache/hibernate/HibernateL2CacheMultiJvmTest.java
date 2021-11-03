@@ -70,6 +70,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration cfg = new CacheConfiguration();
         cfg.setName(cacheName);

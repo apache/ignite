@@ -27,11 +27,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class Person {
     /** Id. */
     @QuerySqlField(index = true)
-    private final Integer id;
+    private Integer id;
 
     /** Name. */
     @QuerySqlField
-    private final String name;
+    private String name;
 
     /** Constructor. */
     public Person(Integer id, String name) {
@@ -47,6 +47,16 @@ public class Person {
     /** @return name. */
     public String getName() {
         return name;
+    }
+
+    /** */
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    /** */
+    public void setName(String name) {
+        this.name = name;
     }
 
     /** {@inheritDoc} */

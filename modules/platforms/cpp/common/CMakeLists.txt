@@ -54,8 +54,8 @@ if (WIN32)
     add_library(${TARGET}-objlib OBJECT ${SOURCES})
 
     add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
-	
-	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.common")
+
+    set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.common")
 
     list(APPEND _target_libs ${TARGET}-objlib)
 else()
@@ -79,5 +79,9 @@ foreach(_target_lib IN LISTS _target_libs)
 endforeach()
 unset(_target_libs)
 
-install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
+install(TARGETS ${TARGET}
+    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
 install(DIRECTORY include/ ${OS_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
