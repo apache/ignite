@@ -72,6 +72,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAP
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest.BYTE_ZERO;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest.NEED_VER_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest.READ_THROUGH_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest.RECOVERY_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest.SKIP_VALS_FLAG_MASK;
 
 /**
  *
@@ -81,29 +86,17 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
-    /** Read through bit. */
-    private static final byte READ_THROUGH = 0b1;
-
-    /** Skip values bit. */
-    private static final byte SKIP_VALS = 0b10;
-
     /** Force primary bit. */
-    private static final byte FORCE_PRIMARY = 0b100;
-
-    /** Need version bit. */
-    private static final byte NEED_VER = 0b1000;
+    private static final byte FORCE_PRIMARY = 0b10000;
 
     /** Deserialize binary bit. */
-    private static final byte DESERIALIZE_BINARY = 0b10000;
-
-    /** */
-    public static final int RECOVERY = 0b100000;
+    private static final byte DESERIALIZE_BINARY = 0b100000;
 
     /** Keep cache objects bit. */
     private static final byte KEEP_CACHE_OBJECTS = 0b1000000;
 
     /** Can remap bit. */
-    private static final byte CAN_REMAP = 0b10000000;
+    private static final byte CAN_REMAP = (byte)0b10000000;
 
     /** Flags byte */
     private final byte flags;
@@ -126,9 +119,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** Key. */
     private final KeyCacheObject key;
-
-    /** Force primary flag. */
-    private final boolean forcePrimary;
 
     /** Future ID. */
     private final IgniteUuid futId;
@@ -203,18 +193,17 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (lockedTopVer != null)
             topVer = lockedTopVer;
 
-        flags = (byte)((readThrough ? READ_THROUGH : 0 ) |
-            (forcePrimary ? FORCE_PRIMARY : 0 ) |
-            (deserializeBinary ? DESERIALIZE_BINARY : 0 ) |
-            (skipVals ? SKIP_VALS : 0 ) |
-            (needVer ? NEED_VER : 0 ) |
-            (recovery ? RECOVERY : 0 ) |
-            (keepCacheObjects ? KEEP_CACHE_OBJECTS : 0) |
-            (lockedTopVer == null ? CAN_REMAP : 0));
+        flags = (byte)((readThrough ? READ_THROUGH_FLAG_MASK : BYTE_ZERO ) |
+            (skipVals ? SKIP_VALS_FLAG_MASK : BYTE_ZERO ) |
+            (needVer ? NEED_VER_FLAG_MASK : BYTE_ZERO ) |
+            (recovery ? RECOVERY_FLAG_MASK : BYTE_ZERO ) |
+            (forcePrimary ? FORCE_PRIMARY : BYTE_ZERO ) |
+            (deserializeBinary ? DESERIALIZE_BINARY : BYTE_ZERO ) |
+            (keepCacheObjects ? KEEP_CACHE_OBJECTS : BYTE_ZERO) |
+            (lockedTopVer == null ? CAN_REMAP : BYTE_ZERO));
 
         this.cctx = cctx;
         this.key = key;
-        this.forcePrimary = forcePrimary;
         this.taskName = taskName;
         this.expiryPlc = expiryPlc;
         this.topVer = topVer;
@@ -343,14 +332,15 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             registrateFutureInMvccManager(this);
 
-            boolean needVer = needVer();
-
             BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
                 cctx, key, expiryPlc, readThrough() && cctx.readThroughConfigured(), skipVals());
 
+            byte flags = this.flags;
+
             if (postClos != null) {
                 // Need version to correctly store value.
-                needVer = true;
+
+                flags |= NEED_VER_FLAG_MASK;
 
                 postProcessingClos = postClos;
             }
@@ -360,16 +350,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 cctx.cacheId(),
                 futId.localId(),
                 key,
-                readThrough(),
                 topVer,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                skipVals(),
-                /*add reader*/false,
-                needVer,
                 cctx.deploymentEnabled(),
-                recovery(),
+                flags,
                 txLbl,
                 mvccSnapshot
             );
@@ -407,7 +393,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return null;
 
         ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap(),
-            forcePrimary);
+            forcePrimary());
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -434,7 +420,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     ) {
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
+            (!forcePrimary() || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
@@ -952,37 +938,42 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** Read through flag. */
     private boolean readThrough() {
-        return (flags & READ_THROUGH) != 0;
+        return (flags & READ_THROUGH_FLAG_MASK) != BYTE_ZERO;
     }
 
     /** Whether to deserialize binary objects. */
     private boolean deserializeBinary() {
-        return (flags & DESERIALIZE_BINARY) != 0;
+        return (flags & DESERIALIZE_BINARY) != BYTE_ZERO;
     }
 
     /** Skip values flag. */
     private boolean skipVals() {
-        return (flags & SKIP_VALS) != 0;
+        return (flags & SKIP_VALS_FLAG_MASK) != BYTE_ZERO;
     }
 
     /** Flag indicating that get should be done on a locked topology version. */
     private boolean canRemap() {
-        return (flags & CAN_REMAP) != 0;
+        return (flags & CAN_REMAP) != BYTE_ZERO;
     }
 
     /** */
     private boolean needVer() {
-        return (flags & NEED_VER) != 0;
+        return (flags & NEED_VER_FLAG_MASK) != BYTE_ZERO;
     }
 
     /** */
     private boolean recovery() {
-        return (flags & RECOVERY) != 0;
+        return (flags & RECOVERY_FLAG_MASK) != BYTE_ZERO;
+    }
+
+    /** */
+    private boolean forcePrimary() {
+        return (flags & FORCE_PRIMARY) != BYTE_ZERO;
     }
 
     /** */
     private boolean keepCacheObjects() {
-        return (flags & KEEP_CACHE_OBJECTS) != 0;
+        return (flags & KEEP_CACHE_OBJECTS) != BYTE_ZERO;
     }
 
     /** {@inheritDoc} */

@@ -40,23 +40,20 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final int READ_THROUGH_FLAG_MASK = 0x01;
+    /** Byte: zero. */
+    public static final byte BYTE_ZERO = 0;
 
     /** */
-    private static final int SKIP_VALS_FLAG_MASK = 0b10;
+    public static final byte READ_THROUGH_FLAG_MASK = 0x01;
 
     /** */
-    private static final int ADD_READER_FLAG_MASK = 0b100;
+    public static final byte SKIP_VALS_FLAG_MASK = 0b10;
 
     /** */
-    private static final int NEED_VER_FLAG_MASK = 0b1000;
+    public static final byte NEED_VER_FLAG_MASK = 0b100;
 
     /** */
-    private static final int NEED_ENTRY_INFO_FLAG_MASK = 0b10000;
-
-    /** */
-    public static final int RECOVERY_FLAG_MASK = 0b100000;
+    public static final byte RECOVERY_FLAG_MASK = 0b1000;
 
     /** Future ID. */
     private long futId;
@@ -96,15 +93,10 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param key Key.
-     * @param readThrough Read through flag.
-     * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
-     *      cache entry has a value.
      * @param topVer Topology version.
      * @param taskNameHash Task name hash.
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
-     * @param addReader Add reader flag.
-     * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
      * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
@@ -113,16 +105,12 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         int cacheId,
         long futId,
         KeyCacheObject key,
-        boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         long createTtl,
         long accessTtl,
-        boolean skipVals,
-        boolean addReader,
-        boolean needVer,
         boolean addDepInfo,
-        boolean recovery,
+        byte flags,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -139,20 +127,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
-        if (readThrough)
-            flags |= READ_THROUGH_FLAG_MASK;
-
-        if (skipVals)
-            flags |= SKIP_VALS_FLAG_MASK;
-
-        if (addReader)
-            flags |= ADD_READER_FLAG_MASK;
-
-        if (needVer)
-            flags |= NEED_VER_FLAG_MASK;
-
-        if (recovery)
-            flags |= RECOVERY_FLAG_MASK;
+        this.flags = flags;
     }
 
     /**
@@ -226,42 +201,42 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @return Read through flag.
      */
     public boolean readThrough() {
-        return (flags & READ_THROUGH_FLAG_MASK) != 0;
+        return (flags & READ_THROUGH_FLAG_MASK) != BYTE_ZERO;
     }
 
     /**
      * @return Read through flag.
      */
     public boolean skipValues() {
-        return (flags & SKIP_VALS_FLAG_MASK) != 0;
+        return (flags & SKIP_VALS_FLAG_MASK) != BYTE_ZERO;
     }
 
     /**
      * @return Add reader flag.
      */
     public boolean addReader() {
-        return (flags & ADD_READER_FLAG_MASK) != 0;
+        return false;
     }
 
     /**
      * @return {@code True} if entry version is needed.
      */
     public boolean needVersion() {
-        return (flags & NEED_VER_FLAG_MASK) != 0;
+        return (flags & NEED_VER_FLAG_MASK) != BYTE_ZERO;
     }
 
     /**
      * @return {@code True} if full entry information is needed.
      */
     public boolean needEntryInfo() {
-        return (flags & NEED_ENTRY_INFO_FLAG_MASK) != 0;
+        return false;
     }
 
     /**
      * @return {@code True} if recovery flag is set.
      */
     public boolean recovery() {
-        return (flags & RECOVERY_FLAG_MASK) != 0;
+        return (flags & RECOVERY_FLAG_MASK) != BYTE_ZERO;
     }
 
     /** {@inheritDoc} */
