@@ -107,6 +107,10 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(2, c.get(key2));
         assertEquals(3, c.get(key3));
 
+        assertTrue(c.replace(key1, 1, 2));
+        assertTrue(c.replace(key2, 2, 3));
+        assertTrue(c.replace(key3, 3, 4));
+
         assertTrue(c.remove(key1));
         assertTrue(c.remove(key2));
         assertTrue(c.remove(key3));
@@ -125,6 +129,10 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(1, c.get(key1));
         assertEquals(2, c.get(key2));
         assertEquals(3, c.get(key3));
+
+        assertTrue(c.replace(key1, 1, 2));
+        assertTrue(c.replace(key2, 2, 3));
+        assertTrue(c.replace(key3, 3, 4));
 
         assertTrue(c.remove(key1));
         assertTrue(c.remove(key2));
@@ -145,6 +153,12 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, val2.getClass());
         assertEquals(useTypedArrays ? TestClass1[].class : Object[].class, val3.getClass());
 
+        if (useTypedArrays) {
+            assertTrue(c.replace(1, val1, val2));
+            assertTrue(c.replace(2, val2, val3));
+            assertTrue(c.replace(3, val3, val1));
+        }
+
         assertTrue(c.remove(1));
         assertTrue(c.remove(2));
         assertTrue(c.remove(3));
@@ -163,6 +177,12 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(2, val1.getArr().length);
         assertEquals(0, val2.getArr().length);
         assertEquals(1, val3.getArr().length);
+
+        if (useTypedArrays) {
+            assertTrue(c.replace(1, val1, val2));
+            assertTrue(c.replace(2, val2, val3));
+            assertTrue(c.replace(3, val3, val1));
+        }
 
         assertTrue(c.remove(1));
         assertTrue(c.remove(2));
@@ -201,6 +221,11 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
             Object item0 = c.get(1);
 
             if (useTypedArrays)
+                assertTrue(c.replace(1, item, item));
+
+            assertTrue(c.remove(1));
+
+            if (useTypedArrays)
                 assertEquals(item.getClass(), item0.getClass());
 
             assertTrue(Arrays.equals((Object[])item, (Object[])item0));
@@ -208,6 +233,11 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
             c.put(item, 1);
 
             assertEquals(1, c.get(item));
+
+            if (useTypedArrays)
+                assertTrue(c.replace(item, 1, 2));
+
+            assertTrue(c.remove(item));
         }
     }
 
