@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
@@ -39,7 +38,7 @@ public class BusyExecutor {
     private final String name;
 
     /** Active flag (used to skip commands in inactive cluster.) */
-    private final AtomicBoolean active = new AtomicBoolean(false);
+    private volatile boolean active;
 
     /** Lock protection of started gathering during deactivation. */
     private volatile GridBusyLock busyLock = new GridBusyLock();
@@ -79,7 +78,7 @@ public class BusyExecutor {
     public synchronized void activate() {
 
         busyLock = new GridBusyLock();
-        active.set(true);
+        active = true;
 
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " activated.");
@@ -89,8 +88,10 @@ public class BusyExecutor {
      * Stop all running tasks. Block new task scheduling, execute cancell runnable and wait till each task stops.
      */
     public synchronized void deactivate() {
-        if (!active.compareAndSet(true, false))
+        if (!active)
             return;
+
+        active = false;
 
         if (log.isDebugEnabled())
             log.debug("Busy executor " + name + " deactivating.");
@@ -125,7 +126,7 @@ public class BusyExecutor {
             return false;
 
         try {
-            if (!active.get())
+            if (!active)
                 return false;
 
             r.run();

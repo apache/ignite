@@ -23,11 +23,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -183,7 +181,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      * @throws InterruptedException In case of errrors.
      */
     @Test
-    public void testReactivationWontStart() throws InterruptedException, IgniteInterruptedCheckedException {
+    public void testReactivationWontStart() throws InterruptedException, IgniteCheckedException {
         BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         be.activate();
 
@@ -200,23 +198,20 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         assertEquals(0, t1.started.getCount());
         assertEquals(1, t3.started.getCount());
 
-        CountDownLatch cdl1 = new CountDownLatch(1);
-
-        GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture reactivate = GridTestUtils.runAsync(() -> {
             be.deactivate();
             be.activate();
-            cdl1.countDown();
         });
 
         assertEquals(1, t3.started.getCount());
 
-        AtomicBoolean beActive = GridTestUtils.getFieldValue(be, "active");
-        assertTrue(GridTestUtils.waitForCondition(() -> !beActive.get(), TIME_TO_START_THREAD));
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> !((boolean)GridTestUtils.getFieldValue(be, "active")), TIME_TO_START_THREAD));
 
         t1.finished.countDown();
         t2.finished.countDown();
 
-        cdl1.await();
+        reactivate.get(TIME_TO_START_THREAD);
 
         Thread.sleep(TIME_TO_START_THREAD);
 
@@ -260,8 +255,8 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
 
         assertEquals(1, t3.started.getCount());
 
-        AtomicBoolean beActive = GridTestUtils.getFieldValue(be, "active");
-        assertTrue(GridTestUtils.waitForCondition(() -> !beActive.get(), TIME_TO_START_THREAD));
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> !((boolean)GridTestUtils.getFieldValue(be, "active")), TIME_TO_START_THREAD));
 
         t1.finished.countDown();
         t2.finished.countDown();
