@@ -172,18 +172,14 @@ public class BusyExecutor {
         GridBusyLock lock = busyLock;
 
         CompletableFuture<Boolean> res = new CompletableFuture<>();
-        
-        if (busyRun(() -> cancellableTasks.put(ct, ct), lock)) {
 
-            pool.execute(() -> {
-                res.complete(busyRun(ct, lock));
+        cancellableTasks.put(ct, ct);
 
-                cancellableTasks.remove(ct);
-            });
+        pool.execute(() -> {
+            res.complete(busyRun(ct, lock));
 
-        }
-        else
-            res.complete(false);
+            cancellableTasks.remove(ct);
+        });
 
         return res;
     }
@@ -207,12 +203,12 @@ public class BusyExecutor {
     public void execute(CancellableTask ct) {
         GridBusyLock lock = busyLock;
 
-        if (busyRun(() -> cancellableTasks.put(ct, ct), lock)) {
-            pool.execute(() -> {
-                busyRun(ct, lock);
+        cancellableTasks.put(ct, ct);
 
-                cancellableTasks.remove(ct);
-            });
-        }
+        pool.execute(() -> {
+            busyRun(ct, lock);
+
+            cancellableTasks.remove(ct);
+        });
     }
 }

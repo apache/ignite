@@ -24,7 +24,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -132,13 +134,16 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         assertEquals(0, taskExec.started.getCount());
         // Pool can await first task, so second one can be still in quieue here
 
-        GridTestUtils.runAsync(() -> be.deactivate());
+        IgniteInternalFuture deactivate = GridTestUtils.runAsync(() -> be.deactivate());
 
         taskExec.finished.countDown();
         taskSubmit.finished.countDown();
 
         assertTrue(GridTestUtils.waitForCondition(() -> 0 == taskExec.finished.getCount(), TIME_TO_START_THREAD));
         assertTrue(GridTestUtils.waitForCondition(() -> 0 == taskSubmit.finished.getCount(), TIME_TO_START_THREAD));
+
+        deactivate.get(TIME_TO_START_THREAD);
+
         checkNoCancellableTask(be);
     }
 
@@ -226,7 +231,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
      * @throws InterruptedException In case of errrors.
      */
     @Test
-    public void testReactivationCancellableWontStart() throws InterruptedException, IgniteInterruptedCheckedException {
+    public void testReactivationCancellableWontStart() throws InterruptedException, IgniteCheckedException {
         BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         be.activate();
 
@@ -241,22 +246,16 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         Thread.sleep(TIME_TO_START_THREAD);
 
         t1.started.await();
-
-        assertEquals(0, t1.started.getCount());
         assertEquals(1, t3.started.getCount());
-
-        CountDownLatch cdlEndDeactivation = new CountDownLatch(1);
 
         ConcurrentMap<CancellableTask, Object> cancellableTasks =
             GridTestUtils.getFieldValue(be, "cancellableTasks");
 
         assertEquals(3, cancellableTasks.size());
 
-        GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture reactivte = GridTestUtils.runAsync(() -> {
             be.deactivate();
             be.activate();
-
-            cdlEndDeactivation.countDown();
         });
 
         assertEquals(1, t3.started.getCount());
@@ -267,7 +266,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         t1.finished.countDown();
         t2.finished.countDown();
 
-        cdlEndDeactivation.await();
+        reactivte.get(TIME_TO_START_THREAD);
 
         Thread.sleep(TIME_TO_START_THREAD);
 
