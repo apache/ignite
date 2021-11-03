@@ -83,6 +83,7 @@
         <jctools.version>3.3.0</jctools.version>
         <msgpack.version>0.8.21</msgpack.version>
         <caffeine.version>3.0.4</caffeine.version>
+        <fastutil.version>8.5.6</fastutil.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -635,6 +636,12 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-jdk14</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>it.unimi.dsi</groupId>
+                <artifactId>fastutil-core</artifactId>
+                <version>${fastutil.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

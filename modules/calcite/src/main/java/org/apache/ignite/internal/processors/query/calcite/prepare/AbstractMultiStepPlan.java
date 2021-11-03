@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
-import static org.apache.ignite.internal.util.IgniteUtils.newHashMap;
+import static org.apache.ignite.internal.util.IgniteUtils.capacity;
 
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -99,14 +98,14 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     
     /** {@inheritDoc} */
     @Override
-    public Map<Long, List<String>> remotes(Fragment fragment) {
+    public Long2ObjectOpenHashMap<List<String>> remotes(Fragment fragment) {
         List<IgniteReceiver> remotes = fragment.remotes();
     
         if (nullOrEmpty(remotes)) {
             return null;
         }
         
-        HashMap<Long, List<String>> res = newHashMap(remotes.size());
+        Long2ObjectOpenHashMap<List<String>> res = new Long2ObjectOpenHashMap<>(capacity(remotes.size()));
     
         for (IgniteReceiver remote : remotes) {
             res.put(remote.exchangeId(), mapping(remote.sourceFragmentId()).nodeIds());

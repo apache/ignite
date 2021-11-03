@@ -24,14 +24,14 @@ import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
@@ -192,7 +192,7 @@ public class RexUtils {
         
         condition = RexUtil.toCnf(builder(cluster), condition);
         
-        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
+        Int2ObjectOpenHashMap<List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
         
         if (nullOrEmpty(fieldsToPredicates)) {
             return new IndexConditions();
@@ -203,7 +203,7 @@ public class RexUtils {
         
         // Force collation for all fields of the condition.
         if (collation == null || collation.isDefault()) {
-            collation = RelCollations.of(ImmutableIntList.copyOf(fieldsToPredicates.keySet()));
+            collation = RelCollations.of(ImmutableIntList.of(fieldsToPredicates.keySet().toIntArray()));
         }
         
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
@@ -324,7 +324,7 @@ public class RexUtils {
     ) {
         condition = RexUtil.toCnf(builder(cluster), condition);
         
-        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
+        Int2ObjectOpenHashMap<List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
         
         if (nullOrEmpty(fieldsToPredicates)) {
             return null;
@@ -332,8 +332,9 @@ public class RexUtils {
         
         List<RexNode> searchPreds = null;
         
-        for (int fldIdx : fieldsToPredicates.keySet()) {
-            List<RexCall> collFldPreds = fieldsToPredicates.get(fldIdx);
+        ObjectIterator<List<RexCall>> iterator = fieldsToPredicates.values().iterator();
+        while (iterator.hasNext()) {
+            List<RexCall> collFldPreds = iterator.next();
             
             if (nullOrEmpty(collFldPreds)) {
                 break;
@@ -368,10 +369,10 @@ public class RexUtils {
     /**
      *
      */
-    private static Map<Integer, List<RexCall>> mapPredicatesToFields(RexNode condition, RelOptCluster cluster) {
+    private static Int2ObjectOpenHashMap<List<RexCall>> mapPredicatesToFields(RexNode condition, RelOptCluster cluster) {
         List<RexNode> conjunctions = RelOptUtil.conjunctions(condition);
         
-        Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
+        Int2ObjectOpenHashMap<List<RexCall>> res = new Int2ObjectOpenHashMap<>(conjunctions.size());
         
         for (RexNode rexNode : conjunctions) {
             if (!isBinaryComparison(rexNode)) {

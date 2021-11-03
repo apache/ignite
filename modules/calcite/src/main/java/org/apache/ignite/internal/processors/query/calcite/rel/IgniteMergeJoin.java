@@ -21,10 +21,10 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
@@ -33,6 +33,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -42,6 +43,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
@@ -177,17 +179,21 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             List<RelTraitSet> inputTraits
     ) {
         RelCollation collation = TraitUtils.collation(nodeTraits);
-        RelTraitSet left = inputTraits.get(0);
-        RelTraitSet right = inputTraits.get(1);
         
         int rightOff = this.left.getRowType().getFieldCount();
         
-        Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
-                .collect(Collectors.toMap(p -> p.target, p -> p.source));
+        List<IntPair> pairs = joinInfo.pairs();
+        
+        Int2IntOpenHashMap rightToLeft = new Int2IntOpenHashMap(pairs.size());
+        
+        for (IntPair pair : pairs) {
+            rightToLeft.put(pair.target, pair.source);
+        }
         
         List<Integer> collationLeftPrj = new ArrayList<>();
         
-        for (Integer c : collation.getKeys()) {
+        for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
+            int c = fieldCollation.getFieldIndex();
             collationLeftPrj.add(
                     c >= rightOff ? rightToLeft.get(c - rightOff) : c
             );
@@ -197,16 +203,21 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         
         List<Integer> newLeftCollation;
         List<Integer> newRightCollation;
-        
-        Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
-                .collect(Collectors.toMap(p -> p.source, p -> p.target));
-        
+
+        Int2IntOpenHashMap leftToRight = new Int2IntOpenHashMap(pairs.size());
+
+        for (IntPair pair : pairs) {
+            leftToRight.put(pair.source, pair.target);
+        }
+
         if (isPrefix(collationLeftPrj, joinInfo.leftKeys)) { // preserve collation
             newLeftCollation = new ArrayList<>();
             newRightCollation = new ArrayList<>();
             
             int ind = 0;
-            for (Integer c : collation.getKeys()) {
+            for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
+                int c = fieldCollation.getFieldIndex();
+
                 if (c < rightOff) {
                     newLeftCollation.add(c);
     
@@ -240,6 +251,9 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         
         RelCollation leftCollation = createCollation(newLeftCollation);
         RelCollation rightCollation = createCollation(newRightCollation);
+        
+        RelTraitSet left = inputTraits.get(0);
+        RelTraitSet right = inputTraits.get(1);
         
         return Pair.of(
                 nodeTraits.replace(preserveNodeCollation ? collation : leftCollation),

@@ -22,10 +22,9 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
@@ -143,7 +142,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
             return Pair.of(nodeTraits, List.of(in.replace(RelCollations.EMPTY)));
         }
         
-        Map<Integer, Integer> targets = new HashMap<>();
+        Int2IntOpenHashMap targets = new Int2IntOpenHashMap();
         for (Ord<RexNode> project : Ord.zip(getProjects())) {
             if (project.e instanceof RexInputRef) {
                 targets.putIfAbsent(project.i, ((RexSlot) project.e).getIndex());
@@ -152,8 +151,8 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         
         List<RelFieldCollation> inFieldCollations = new ArrayList<>();
         for (RelFieldCollation inFieldCollation : fieldCollations) {
-            Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-            if (newIndex == null) {
+            int newIndex = targets.getOrDefault(inFieldCollation.getFieldIndex(), Integer.MIN_VALUE);
+            if (newIndex == Integer.MIN_VALUE) {
                 break;
             } else {
                 inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));

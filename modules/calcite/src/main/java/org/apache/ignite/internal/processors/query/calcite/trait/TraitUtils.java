@@ -28,12 +28,11 @@ import static org.apache.ignite.internal.util.CollectionUtils.first;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import com.google.common.collect.ImmutableList;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
@@ -557,7 +556,7 @@ public class TraitUtils {
      * @param projects        Projections.
      */
     private static Mappings.TargetMapping createProjectionMapping(int inputFieldCount, List<? extends RexNode> projects) {
-        Map<Integer, Integer> src2target = new HashMap<>();
+        Int2IntOpenHashMap src2target = new Int2IntOpenHashMap();
         
         for (Ord<RexNode> exp : Ord.<RexNode>zip(projects)) {
             if (exp.e instanceof RexInputRef) {

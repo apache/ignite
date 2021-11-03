@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 
@@ -50,7 +50,7 @@ public interface MultiStepPlan extends QueryPlan {
     /**
      *
      */
-    Map<Long, List<String>> remotes(Fragment fragment);
+    Long2ObjectOpenHashMap<List<String>> remotes(Fragment fragment);
 
     /**
      * Inits query fragments.

@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import com.google.common.collect.ImmutableList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -300,9 +301,9 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
         if (inputCollations == null || inputCollations.isEmpty()) {
             return List.of();
         }
-        final Map<Integer, List<Integer>> targets = new HashMap<>();
-        final Map<Integer, SqlMonotonicity> targetsWithMonotonicity =
-                new HashMap<>();
+        final Int2ObjectOpenHashMap<List<Integer>> targets = new Int2ObjectOpenHashMap<>();
+        final Int2ObjectOpenHashMap<SqlMonotonicity> targetsWithMonotonicity =
+                new Int2ObjectOpenHashMap<>();
         for (Ord<RexNode> project : Ord.<RexNode>zip(projects)) {
             if (project.e instanceof RexInputRef) {
                 targets.compute(((RexSlot) project.e).getIndex(), (k, v) -> {
@@ -349,10 +350,8 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
             collations.add(RelCollations.of(fieldCollations));
         }
 
-        final List<RelFieldCollation> fieldCollationsForRexCalls =
-                new ArrayList<>();
-        for (Map.Entry<Integer, SqlMonotonicity> entry
-                : targetsWithMonotonicity.entrySet()) {
+        final List<RelFieldCollation> fieldCollationsForRexCalls = new ArrayList<>();
+        for (Int2ObjectMap.Entry<SqlMonotonicity> entry : targetsWithMonotonicity.int2ObjectEntrySet()) {
             final SqlMonotonicity value = entry.getValue();
             switch (value) {
                 case NOT_MONOTONIC:
@@ -360,8 +359,8 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
                     break;
                 default:
                     fieldCollationsForRexCalls.add(
-                            new RelFieldCollation(entry.getKey(),
-                                    RelFieldCollation.Direction.of(value)));
+                        new RelFieldCollation(entry.getIntKey(),
+                            RelFieldCollation.Direction.of(value)));
                     break;
             }
         }

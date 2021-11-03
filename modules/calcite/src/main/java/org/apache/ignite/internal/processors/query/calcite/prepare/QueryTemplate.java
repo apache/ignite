@@ -20,10 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import static org.apache.ignite.internal.util.CollectionUtils.first;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -124,7 +123,7 @@ public class QueryTemplate {
     private List<Fragment> replace(List<Fragment> fragments, Fragment fragment, List<Fragment> replacement) {
         assert !nullOrEmpty(replacement);
 
-        Map<Long, Long> newTargets = new HashMap<>();
+        Long2LongOpenHashMap newTargets = new Long2LongOpenHashMap();
         for (Fragment fragment0 : replacement) {
             for (IgniteReceiver remote : fragment0.remotes()) {
                 newTargets.put(remote.exchangeId(), fragment0.fragmentId());
@@ -137,9 +136,10 @@ public class QueryTemplate {
                 fragment0 = first(replacement);
             } else if (!fragment0.rootFragment()) {
                 IgniteSender sender = (IgniteSender) fragment0.root();
-                Long newTargetId = newTargets.get(sender.exchangeId());
 
-                if (newTargetId != null) {
+                long newTargetId = newTargets.getOrDefault(sender.exchangeId(), Long.MIN_VALUE);
+
+                if (newTargetId != Long.MIN_VALUE) {
                     sender = new IgniteSender(sender.getCluster(), sender.getTraitSet(),
                             sender.getInput(), sender.exchangeId(), newTargetId, sender.distribution());
 
