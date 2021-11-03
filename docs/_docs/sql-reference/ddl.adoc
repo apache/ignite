@@ -546,7 +546,7 @@ ANALYZE public.statistics_test, statistics_test2, statistics_test3(col3) WITH 'M
 
 Possible parameters:
 
-* MAX_CHANGED_PARTITION_ROWS_PERCENT - Maximum percentage of outdated rows in the table (the default value is 15%). See the link:https://www.gridgain.com/docs/latest/administrators-guide/sql-statistics#statistics-obsolescence[SQL Statistics,window=_blank] page for more details.
+* MAX_CHANGED_PARTITION_ROWS_PERCENT - Maximum percentage of outdated rows in the table (the default value is 15%). See the link:SQL/sql-statistics#statistics-obsolescence[SQL Statistics,window=_blank] page for more details.
 * NULLS - Number of null values in column.
 * TOTAL - Total number of column values.
 * SIZE - Average size of column values (in bytes).
