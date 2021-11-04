@@ -594,8 +594,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     private GridByteArrayList sendClassRequest(String name, String path) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
-        long endTime = computeEndTime(p2pTimeout);
-
         Collection<UUID> nodeListCp;
         Map<UUID, IgniteUuid> nodeLdrMapCp;
 
@@ -632,7 +630,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
 
             try {
-                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, p2pTimeout);
 
                 if (res.success())
                     return res.byteSource();
@@ -771,8 +769,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     @Nullable private InputStream sendResourceRequest(String name) throws TimeoutException {
         assert !Thread.holdsLock(mux);
 
-        long endTime = computeEndTime(p2pTimeout);
-
         Collection<UUID> nodeListCp;
         Map<UUID, IgniteUuid> nodeLdrMapCp;
 
@@ -805,7 +801,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
-                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, p2pTimeout);
 
                 if (res.success()) {
                     return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
