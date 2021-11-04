@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -89,6 +90,27 @@ public class ReliableChannelTest {
         assertEquals(ClientConnectorConfiguration.DFLT_PORT_RANGE + 1, rc.getChannelHolders().size());
 
         assertEquals(ClientConnectorConfiguration.DFLT_PORT, rc.getChannelHolders().iterator().next().getAddress().getPort());
+    }
+
+    /**
+     * Checks that ReliableChannel provides channels in the same order as in ClientConfiguration.
+     * */
+    @Test
+    public void testAddressesOrder() {
+        String[] addrs = new String[] {"127.0.0.1:10803", "127.0.0.1:10802", "127.0.0.1:10801", "127.0.0.1:10800"};
+
+        ClientConfiguration ccfg = new ClientConfiguration().setAddresses(addrs);
+
+        ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
+        rc.channelsInit();
+
+        List<ReliableChannel.ClientChannelHolder> holders = rc.getChannelHolders();
+
+        assertEquals(addrs.length, holders.size());
+
+        for (int i = 0; i < addrs.length; i++)
+            assertEquals(addrs[i], holders.get(i).getAddress().toString());
     }
 
     /**
