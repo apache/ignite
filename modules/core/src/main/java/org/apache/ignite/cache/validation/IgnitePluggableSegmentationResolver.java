@@ -118,23 +118,23 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         if (ctx.clientNode())
             return;
 
-        state = toResolverState(ctx.state().clusterState().state());
+        onGlobalClusterStateChanged(ctx.state().clusterState().state());
 
         ctx.event().addDiscoveryEventListener(new TopologyChangedEventListener(), TOP_CHANGED_EVTS);
 
         ctx.discovery().setCustomEventListener(
             ChangeGlobalStateFinishMessage.class,
-            (topVer, snd, msg) -> state = toResolverState(msg.state())
+            (topVer, snd, msg) -> onGlobalClusterStateChanged(msg.state())
         );
 
         ctx.state().baselineConfiguration().listenAutoAdjustTimeout((name, oldVal, newVal) -> {
-            if (newVal != null && !isDisabled())
-                checkBaselineConfiguration();
+            if (newVal != null)
+                checkBaselineAutoAdjustConfiguration(ctx.state().isBaselineAutoAdjustEnabled(), newVal);
         });
 
         ctx.state().baselineConfiguration().listenAutoAdjustEnabled((name, oldVal, newVal) -> {
-           if (newVal != null && !isDisabled())
-                checkBaselineConfiguration();
+           if (newVal != null)
+               checkBaselineAutoAdjustConfiguration(newVal, ctx.state().baselineAutoAdjustTimeout());
         });
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -208,22 +208,24 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
     }
 
     /** */
-    private State toResolverState(ClusterState state) {
-        return state == ACTIVE ? State.VALID : State.CLUSTER_WRITE_BLOCKED;
+    private void onGlobalClusterStateChanged(ClusterState clusterState) {
+        state = clusterState == ACTIVE ? State.VALID : State.CLUSTER_WRITE_BLOCKED;
     }
 
     /** */
-    private boolean checkBaselineConfiguration() {
-        boolean zeroTimeoutAdjustment =
-            ctx.state().isBaselineAutoAdjustEnabled() && ctx.state().baselineAutoAdjustTimeout() == 0L;
+    private boolean checkBaselineAutoAdjustConfiguration(boolean enabled, long timeout) {
+        if (isDisabled())
+            return false;
 
-        if (zeroTimeoutAdjustment) {
+        if (enabled && timeout == 0L) {
             U.warn(log, "Segmentation Resolver is currently skipping validation of topology changes because" +
                 " Baseline Auto Adjustment with zero timeout is configured for the cluster. Configure" +
                 " Baseline Nodes explicitly or set Baseline Auto Adjustment Timeout to greater than zero.");
+
+            return false;
         }
 
-        return !zeroTimeoutAdjustment;
+        return true;
     }
 
     /** */
@@ -232,7 +234,12 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             lastCheckedTopVer = evt.topologyVersion();
 
-            if (isDisabled() || !checkBaselineConfiguration() || state != State.VALID)
+            boolean skipTopChangeCheck = !checkBaselineAutoAdjustConfiguration(
+                ctx.state().isBaselineAutoAdjustEnabled(),
+                ctx.state().baselineAutoAdjustTimeout()
+            );
+
+            if (skipTopChangeCheck || state != State.VALID)
                 return;
 
             if (evt.type() == EVT_NODE_FAILED) {
@@ -248,11 +255,11 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
                         catch (Throwable e) {
                             U.error(
                                 log,
-                                "Failed to automatically switch state of the segmented cluster to the READ-ONLY mode" +
-                                    " [segmentedNodes=" + formatTopologyNodes(discoCache.allNodes()) + "]. Cache writes" +
-                                    " were already restricted for all configured caches, but this step is still required" +
-                                    " in order to be able to unlock cache writes in the future. Retry this operation" +
-                                    " manually, if possible.",
+                                "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
+                                    " mode. Cache writes were already restricted for all configured caches, but this" +
+                                    " step is still required in order to be able to unlock cache writes in the future." +
+                                    " Retry this operation manually, if possible [segmentedNodes=" +
+                                    formatTopologyNodes(discoCache.allNodes()) + "]",
                                 e
                             );
                         }
