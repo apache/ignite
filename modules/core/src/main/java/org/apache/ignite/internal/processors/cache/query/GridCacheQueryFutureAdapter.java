@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -150,7 +149,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             R next = null;
 
             if (reducer.hasNextX()) {
-                next = unmaskNull(reducer.nextX());
+                next = unmaskNull(unwrapIfNeeded(reducer.nextX()));
 
                 if (!limitDisabled) {
                     cnt++;
@@ -215,7 +214,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     public void onPage(
         @Nullable UUID nodeId,
-        @Nullable Externalizable metadata,
+        @Nullable Object metadata,
         @Nullable Collection<?> data,
         @Nullable Throwable err,
         boolean lastPage
@@ -295,8 +294,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** Handles new data page from query node. */
     protected abstract void onPage(UUID nodeId, Collection<R> data, boolean lastPage);
 
-    /** Handles new data page from query node. */
-    protected void onMeta(Externalizable meta) {
+    /** Handles query meta data from query node. */
+    protected void onMeta(Object meta) {
         // No-op.
     }
 
@@ -343,6 +342,14 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     private R unmaskNull(R obj) {
         return obj != NULL ? obj : null;
+    }
+
+    /** */
+    private R unwrapIfNeeded(R obj) {
+        if (qry.query().type() == GridCacheQueryType.INDEX)
+            return (R)cctx.unwrapBinaryIfNeeded(obj, qry.query().keepBinary(), false, null);
+
+        return obj;
     }
 
     /**

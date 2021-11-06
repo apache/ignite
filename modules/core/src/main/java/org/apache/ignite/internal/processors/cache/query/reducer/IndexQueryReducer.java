@@ -26,8 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
@@ -55,32 +53,27 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     /** */
     private final String valType;
 
+    /** Cache context. */
+    private final GridCacheContext<?, ?> cctx;
+
     /** */
     public IndexQueryReducer(
         final String valType,
         final Map<UUID, NodePageStream<R>> pageStreams,
         final GridCacheContext<?, ?> cctx,
-        final CompletableFuture<IndexQueryResultMeta> meta,
-        boolean keepBinary
+        final CompletableFuture<IndexQueryResultMeta> meta
     ) {
         super(pageStreams);
 
-        needUnwrap(cctx, keepBinary);
-
         this.valType = valType;
         this.meta = meta;
+        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Comparator<NodePage<R>>> pageComparator() {
         return meta.thenApply(m -> {
-            IndexProcessor proc = cctx.kernalContext().indexProcessor();
-
-            String fullIdxName = m.fullIdxName();
-
-            Index idx = proc.index(cctx.name(), fullIdxName);
-
-            LinkedHashMap<String, IndexKeyDefinition> keyDefs = proc.indexDefinition(idx.id()).indexKeyDefinitions();
+            LinkedHashMap<String, IndexKeyDefinition> keyDefs = m.keyDefinitions();
 
             GridQueryTypeDescriptor typeDesc = cctx.kernalContext().query().typeDescriptor(cctx.name(), QueryUtils.typeName(valType));
 
@@ -124,11 +117,11 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
             Iterator<Map.Entry<String, IndexKeyDefinition>> defs = keyDefs.entrySet().iterator();
 
             try {
-                for (int i = 0; i < meta.critSize(); i++) {
+                while (defs.hasNext()) {
                     Map.Entry<String, IndexKeyDefinition> d = defs.next();
 
-                    IndexKey k1 = key(d.getKey(), d.getValue(), e1);
-                    IndexKey k2 = key(d.getKey(), d.getValue(), e2);
+                    IndexKey k1 = key(d.getKey(), d.getValue().idxType(), e1);
+                    IndexKey k2 = key(d.getKey(), d.getValue().idxType(), e2);
 
                     int cmp = idxRowComp.compareKey(k1, k2);
 
@@ -144,21 +137,11 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         }
 
         /** */
-        private IndexKey key(String key, IndexKeyDefinition def, IgniteBiTuple<?, ?> entry) throws IgniteCheckedException {
+        private IndexKey key(String key, int type, IgniteBiTuple<?, ?> entry) throws IgniteCheckedException {
             GridQueryProperty prop = typeDesc.property(key);
 
-            Object o;
-            int type;
-
             // PrimaryKey field.
-            if (prop == null) {
-                o = entry.getKey();
-                type = meta.pkType();
-            }
-            else {
-                o = prop.value(entry.getKey(), entry.getValue());
-                type = def.idxType();
-            }
+            Object o = prop == null ? entry.getKey() : prop.value(entry.getKey(), entry.getValue());
 
             return IndexKeyFactory.wrap(o, type, cctx.cacheObjectContext(), meta.keyTypeSettings());
         }

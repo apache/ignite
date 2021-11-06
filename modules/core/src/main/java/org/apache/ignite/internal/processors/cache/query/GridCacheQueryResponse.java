@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -77,7 +78,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** */
     @GridDirectTransient
-    private Externalizable idxQryMetadata;
+    private IndexQueryResultMeta idxQryMetadata;
 
     /** */
     private byte[] idxQryMetadataBytes;
@@ -233,7 +234,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /**
      * @return IndexQuery metadata.
      */
-    public Externalizable idxQryMetadata() {
+    public IndexQueryResultMeta idxQryMetadata() {
         return idxQryMetadata;
     }
 
@@ -247,7 +248,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /**
      * @param idxQryMetadata IndexQuery metadata.
      */
-    public void idxQryMetadata(Externalizable idxQryMetadata) {
+    public void idxQryMetadata(IndexQueryResultMeta idxQryMetadata) {
         this.idxQryMetadata = idxQryMetadata;
     }
 

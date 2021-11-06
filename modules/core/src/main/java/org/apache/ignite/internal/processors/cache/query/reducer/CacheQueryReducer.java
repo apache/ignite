@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 
 /**
@@ -37,12 +36,6 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
     /** Page streams collection. */
     protected final Map<UUID, NodePageStream<T>> pageStreams;
 
-    /** Cache context. */
-    protected GridCacheContext<?, ?> cctx;
-
-    /** Whether to keep items in binary form. */
-    private boolean keepBinary;
-
     /** */
     protected CacheQueryReducer(final Map<UUID, NodePageStream<T>> pageStreams) {
         this.pageStreams = pageStreams;
@@ -51,30 +44,6 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
     /** {@inheritDoc} */
     @Override public void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException("CacheQueryReducer doesn't support removing items.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public T nextX() throws IgniteCheckedException {
-        return unwrapIfNeeded(getNext());
-    }
-
-    /**
-     * @return Next unwrapped item.
-     */
-    public abstract T getNext() throws IgniteCheckedException;
-
-    /** @return Unwrapped or plain entry. */
-    private T unwrapIfNeeded(T e) {
-        if (cctx == null)
-            return e;
-
-        return (T)cctx.unwrapBinaryIfNeeded(e, keepBinary, false, null);
-    }
-
-    /** Invoke this method of reducer should unwrap result entries. */
-    public void needUnwrap(GridCacheContext<?, ?> cctx, boolean keepBinary) {
-        this.cctx = cctx;
-        this.keepBinary = keepBinary;
     }
 
     /**

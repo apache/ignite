@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -1196,7 +1195,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Query is cancelled.
                     if (row0 == null) {
-                        onPageReady(loc, qryInfo, res.metadata(), null, true, null);
+                        onPageReady(loc, qryInfo, null, null, true, null);
 
                         break;
                     }
@@ -1300,7 +1299,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                             // Reduce.
                             if (!rdc.collect(entry) || !iter.hasNext()) {
-                                onPageReady(loc, qryInfo, res.metadata(), Collections.singletonList(rdc.reduce()), true, null);
+                                onPageReady(loc, qryInfo, null, Collections.singletonList(rdc.reduce()), true, null);
 
                                 pageSent = true;
 
@@ -1720,7 +1719,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param e Exception in case of error.
      * @return {@code true} if page was processed right.
      */
-    protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo, @Nullable Externalizable metaData,
+    protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo, @Nullable Object metaData,
         @Nullable Collection<?> data, boolean finished, @Nullable Throwable e);
 
     /**
@@ -2403,8 +2402,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final GridCacheQueryType type;
 
-        /** Query result metadata. */
-        private final CompletableFuture<Externalizable> metadata;
+        /** Future of query result metadata. Completed when query actually started. */
+        private final CompletableFuture<Object> metadata;
 
         /**
          * @param type Query type.
@@ -2415,10 +2414,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             this.type = type;
 
-            if (type == INDEX)
-                metadata = new CompletableFuture<>();
-            else
-                metadata = null;
+            metadata = type == INDEX ? new CompletableFuture<>() : null;
         }
 
         /**
@@ -2429,17 +2425,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** */
-        public Externalizable metadata() {
+        public Object metadata() {
             if (metadata == null)
                 return null;
 
-            assert metadata.isDone() : "QueryResult metadata isn't done yet.";
+            assert metadata.isDone() : "QueryResult metadata isn't completed yet.";
 
             return metadata.getNow(null);
         }
 
         /** */
-        public void metadata(Externalizable metadata) {
+        public void metadata(Object metadata) {
             if (this.metadata != null)
                 this.metadata.complete(metadata);
         }

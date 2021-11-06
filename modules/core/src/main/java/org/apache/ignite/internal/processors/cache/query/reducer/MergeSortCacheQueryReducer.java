@@ -84,7 +84,7 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R getNext() throws IgniteCheckedException {
+    @Override public R nextX() throws IgniteCheckedException {
         if (nodePages.isEmpty())
             throw new NoSuchElementException("No next element. Please, be sure to invoke hasNext() before next().");
 

@@ -22,9 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -291,13 +288,10 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         assertEquals(right - left, all.size());
 
-        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
-
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, BinaryObject> entry = all.get(i);
 
-            assertTrue(expKeys.remove(entry.getKey()));
-
+            assertEquals(right - 1 - i, entry.getKey().intValue());
             assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("id"));
             assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("descId"));
         }

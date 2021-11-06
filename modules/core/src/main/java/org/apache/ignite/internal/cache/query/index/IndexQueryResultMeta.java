@@ -21,25 +21,27 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** Meta data for IndexQuery response. */
+/**
+ * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
+ * Thick client nodes may have irrelevant information about index structure, {@see MetaPageInfo}.
+ */
 public class IndexQueryResultMeta implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Full index name. */
-    private String fullIdxName;
-
     /** Index key settings. */
     private IndexKeyTypeSettings keyTypeSettings;
 
-    /** Amount of qury criteria. */
-    private int critSize;
-
-    /** Index key type of PrimaryKey. */
-    private int pkType;
+    /** Index key definitions. */
+    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -47,16 +49,18 @@ public class IndexQueryResultMeta implements Externalizable {
     }
 
     /** */
-    public IndexQueryResultMeta(String fullIdxName, IndexKeyTypeSettings keyTypeSettings, int critSize, int pkType) {
-        this.fullIdxName = fullIdxName;
-        this.keyTypeSettings = keyTypeSettings;
-        this.critSize = critSize;
-        this.pkType = pkType;
-    }
+    public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
+        keyTypeSettings = def.keyTypeSettings();
 
-    /** */
-    public String fullIdxName() {
-        return fullIdxName;
+        keyDefs = new LinkedHashMap<>();
+
+        Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
+
+        for (int i = 0; i < critSize; i++) {
+            Map.Entry<String, IndexKeyDefinition> key = keys.next();
+
+            keyDefs.put(key.getKey(), key.getValue());
+        }
     }
 
     /** */
@@ -65,28 +69,21 @@ public class IndexQueryResultMeta implements Externalizable {
     }
 
     /** */
-    public int critSize() {
-        return critSize;
-    }
-
-    /** */
-    public int pkType() {
-        return pkType;
+    public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
+        return keyDefs;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, fullIdxName);
         out.writeObject(keyTypeSettings);
-        out.writeInt(critSize);
-        out.writeInt(pkType);
+
+        U.writeMap(out, keyDefs);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        fullIdxName = U.readString(in);
         keyTypeSettings = (IndexKeyTypeSettings)in.readObject();
-        critSize = in.readInt();
-        pkType = in.readInt();
+
+        keyDefs = U.readLinkedMap(in);
     }
 }

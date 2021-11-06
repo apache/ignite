@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,6 +32,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -59,6 +59,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 
 /**
@@ -415,7 +416,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override protected boolean onPageReady(
         boolean loc,
         GridCacheQueryInfo qryInfo,
-        Externalizable idxQryMetadata,
+        Object idxQryMetadata,
         Collection<?> data,
         boolean finished,
         Throwable e
@@ -442,7 +443,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
                 finished, /*fields*/false, cctx.deploymentEnabled());
 
-            res.idxQryMetadata(idxQryMetadata);
+            if (qryInfo.query().type() == INDEX)
+                res.idxQryMetadata((IndexQueryResultMeta)idxQryMetadata);
+
             res.data(data);
 
             if (!sendQueryResponse(qryInfo.senderId(), res, qryInfo.query().timeout()))

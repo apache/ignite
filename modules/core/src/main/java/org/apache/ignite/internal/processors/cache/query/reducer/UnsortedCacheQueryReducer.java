@@ -77,7 +77,7 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R getNext() throws IgniteCheckedException {
+    @Override public R nextX() throws IgniteCheckedException {
         return page.next();
     }
 }

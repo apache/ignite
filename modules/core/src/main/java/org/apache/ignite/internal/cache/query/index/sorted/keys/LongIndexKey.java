@@ -31,7 +31,7 @@ public class LongIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public Object key() {
-        return Long.valueOf(key);
+        return key;
     }
 
     /** {@inheritDoc} */

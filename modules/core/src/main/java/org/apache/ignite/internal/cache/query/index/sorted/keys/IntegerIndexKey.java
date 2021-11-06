@@ -31,7 +31,7 @@ public class IntegerIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public Object key() {
-        return Integer.valueOf(key);
+        return key;
     }
 
     /** {@inheritDoc} */

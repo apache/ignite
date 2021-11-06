@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -100,7 +99,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         if (qry.query().type() == INDEX) {
             idxQryMeta = new CompletableFuture<>();
 
-            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMeta, qry.query().keepBinary());
+            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMeta);
         }
         else {
             idxQryMeta = null;
@@ -165,8 +164,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void onMeta(Externalizable metaData) {
-        if (metaData != null && idxQryMeta != null && !idxQryMeta.isDone())
+    @Override protected void onMeta(Object metaData) {
+        if (metaData instanceof IndexQueryResultMeta)
             idxQryMeta.complete((IndexQueryResultMeta)metaData);
     }
 
