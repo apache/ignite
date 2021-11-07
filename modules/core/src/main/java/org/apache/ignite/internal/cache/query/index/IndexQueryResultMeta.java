@@ -26,12 +26,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
- * Thick client nodes may have irrelevant information about index structure, {@see MetaPageInfo}.
+ * Thick client nodes may have irrelevant information about index structure, {@link MetaPageInfo}.
  */
 public class IndexQueryResultMeta implements Externalizable {
     /** */
