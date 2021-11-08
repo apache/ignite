@@ -26,11 +26,36 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
 /**
- * Annotates a field or a setter method for injecting a service context into a service instance.
+ * Annotates a field or a setter method for injecting a {@link ServiceContext service context} into a {@link Service
+ * service} instance.
+ * <p>
  * It is guaranteed that context will be injected before calling the {@link Service#init()} method.
+ * <p>
+ * Here is how injection would typically happen:
+ * <pre name="code" class="java">
+ * public class MyServiceImpl implements MyService {
+ *      ...
+ *      &#64;ServiceContextResource
+ *      private ServiceContext ctx;
+ *      ...
+ *  }
+ *  </pre>
+ * or attach the same annotation to the method:
+ * <pre name="code" class="java">
+ * public class MyServiceImpl implements MyService {
+ *     ...
+ *     private ServiceContext ctx;
+ *     ...
+ *     &#64;ServiceContextResource
+ *     public void setServiceContext(ServiceContext ctx) {
+ *          this.ctx = ctx;
+ *     }
+ *     ...
+ * }
+ * </pre>
  *
+ * @see Service
  * @see ServiceContext
- * @see Service#init()
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
