@@ -97,7 +97,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testUnicodeStrings() {
-        grid().getOrCreateCache(new CacheConfiguration<Integer, String>()
+        client.getOrCreateCache(new CacheConfiguration<Integer, String>()
             .setName("string_cache")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, String.class).setTableName("string_table")))
