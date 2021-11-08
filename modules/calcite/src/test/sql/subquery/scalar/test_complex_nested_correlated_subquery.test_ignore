@@ -2,7 +2,6 @@
 # description: Test nested correlated subqueries with multiple columns
 # group: [scalar]
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15594
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15596
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15584
 
 statement ok
