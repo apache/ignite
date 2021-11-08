@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -106,17 +107,20 @@ public class Query<RowT> implements RunningQuery {
 
     /** */
     protected void tryClose() {
-        List<CompletableFuture<?>> futs = new ArrayList<>();
-        
+        List<RunningFragment<RowT>> fragments = new ArrayList<>(this.fragments);
+
+        AtomicInteger cntDown = new AtomicInteger(fragments.size());
+
         for (RunningFragment<RowT> frag : fragments) {
-            CompletableFuture<?> f = frag.context().submit(frag.root()::close, frag.root()::onError);
+            frag.context().execute(() -> {
+                frag.root().close();
+                frag.context().cancel();
 
-            CompletableFuture<?> fCancel = f.thenApply((u) -> frag.context().submit(frag.context()::cancel, frag.root()::onError));
-            futs.add(fCancel);
+                if (cntDown.decrementAndGet() == 0)
+                    unregister.accept(this);
+
+            }, frag.root()::onError);
         }
-
-        CompletableFuture.allOf(futs.toArray(COMPLETABLE_FUTURES_EMPTY_ARRAY))
-            .thenAccept((u) -> unregister.accept(this));
     }
 
     /** {@inheritDoc} */
@@ -150,18 +154,16 @@ public class Query<RowT> implements RunningQuery {
 
     /** */
     public void addFragment(RunningFragment<RowT> f) {
-        if (state == QueryState.INITED) {
-            synchronized (mux) {
-                if (state == QueryState.INITED)
-                    state = QueryState.EXECUTING;
+        synchronized (mux) {
+            if (state == QueryState.INITED)
+                state = QueryState.EXECUTING;
 
-                if (state == QueryState.CLOSING || state == QueryState.CLOSED) {
-                    throw new IgniteSQLException(
-                        "The query was cancelled",
-                        IgniteQueryErrorCode.QUERY_CANCELED,
-                        new ExecutionCancelledException()
-                    );
-                }
+            if (state == QueryState.CLOSING || state == QueryState.CLOSED) {
+                throw new IgniteSQLException(
+                    "The query was cancelled",
+                    IgniteQueryErrorCode.QUERY_CANCELED,
+                    new ExecutionCancelledException()
+                );
             }
         }
 

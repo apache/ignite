@@ -294,7 +294,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
-                task.run();
+                if (!isCancelled())
+                    task.run();
             }
             catch (Throwable e) {
                 onError.accept(e);

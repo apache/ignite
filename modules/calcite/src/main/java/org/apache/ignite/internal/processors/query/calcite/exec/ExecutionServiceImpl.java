@@ -672,6 +672,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                 e.addSuppressed(ex);
 
+                Query<Row> qry = (Query<Row>)qryReg.query(msg.queryId());
+
+                qry.cancel();
+
                 throw wrpEx;
             }
 

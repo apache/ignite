@@ -256,10 +256,17 @@ public class RootQuery<RowT> extends Query<RowT> {
     /** */
     public PlanningContext planningContext() {
         synchronized (mux) {
-            if (state == QueryState.CLOSED) {
+            if (state == QueryState.CLOSED || state == QueryState.CLOSING) {
                 throw new IgniteSQLException(
                     "The query was cancelled while executing.",
                     IgniteQueryErrorCode.QUERY_CANCELED
+                );
+            }
+
+            if (state == QueryState.EXECUTING || state == QueryState.MAPPING) {
+                throw new IgniteSQLException(
+                    "Invalid query flow",
+                    IgniteQueryErrorCode.UNKNOWN
                 );
             }
 
