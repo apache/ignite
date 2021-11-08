@@ -165,9 +165,9 @@ public class Query<RowT> implements RunningQuery {
                     new ExecutionCancelledException()
                 );
             }
-        }
 
-        fragments.add(f);
+            fragments.add(f);
+        }
     }
 
     /** */
