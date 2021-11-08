@@ -37,7 +37,7 @@ public class OutboundConfigurationSchema {
     @Value(hasDefault = true)
     public final int soLinger = 0;
 
-    /** TCP no delay flag */
+    /** TCP no delay flag. */
     @Value(hasDefault = true)
     public final boolean tcpNoDelay = true;
 }

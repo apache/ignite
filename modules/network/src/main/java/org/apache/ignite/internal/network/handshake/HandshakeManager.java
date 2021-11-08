@@ -53,6 +53,8 @@ public interface HandshakeManager {
     HandshakeAction onMessage(Channel channel, NetworkMessage message);
 
     /**
+     * Returns future that represents the handshake operation.
+     *
      * @return Future that represents the handshake operation.
      */
     CompletableFuture<NettySender> handshakeFuture();

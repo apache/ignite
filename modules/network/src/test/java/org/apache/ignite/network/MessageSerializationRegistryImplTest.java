@@ -106,19 +106,13 @@ public class MessageSerializationRegistryImplTest {
 
         assertNotNull(registry.createSerializer(Short.MAX_VALUE, Short.MAX_VALUE));
     }
-
+    
     /**
-     *
+     * {@link NetworkMessage} implementation.
      */
     private static class Msg implements NetworkMessage {
-        /**
-         *
-         */
         static final short GROUP_TYPE = 0;
-
-        /**
-         *
-         */
+        
         static final short TYPE = 0;
 
         /** {@inheritDoc} */
@@ -133,9 +127,9 @@ public class MessageSerializationRegistryImplTest {
             return GROUP_TYPE;
         }
     }
-
+    
     /**
-     *
+     * {@link MessageSerializationFactory} implementation.
      */
     private static class MsgSerializationFactory implements MessageSerializationFactory<Msg> {
         /** {@inheritDoc} */

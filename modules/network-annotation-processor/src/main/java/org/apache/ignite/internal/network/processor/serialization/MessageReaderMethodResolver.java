@@ -31,18 +31,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
  * Class for resolving {@link MessageReader} "read*" methods for the corresponding message field type.
  */
 class MessageReaderMethodResolver {
-    /**
-     *
-     */
+    /** Method name resolver. */
     private final BaseMethodNameResolver methodNameResolver;
 
-    /**
-     *
-     */
+    /** Type converter. */
     private final MessageCollectionItemTypeConverter typeConverter;
 
     /**
-     * @param processingEnvironment processing environment
+     * Constructor.
+     *
+     * @param processingEnvironment Processing environment.
      */
     MessageReaderMethodResolver(ProcessingEnvironment processingEnvironment) {
         methodNameResolver = new BaseMethodNameResolver(processingEnvironment);

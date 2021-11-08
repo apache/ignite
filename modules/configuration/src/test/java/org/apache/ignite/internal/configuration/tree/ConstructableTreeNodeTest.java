@@ -32,18 +32,24 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Class for testing configuration construction.
  */
 public class ConstructableTreeNodeTest {
     private static ConfigurationAsmGenerator cgen;
-
+    
+    /**
+     * Before all.
+     */
     @BeforeAll
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
 
         cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class, Map.of(), Map.of());
     }
-
+    
+    /**
+     * After all.
+     */
     @AfterAll
     public static void afterAll() {
         cgen = null;
@@ -56,20 +62,14 @@ public class ConstructableTreeNodeTest {
     public static <C extends InnerNode & ChildChange> C newChildInstance() {
         return (C) cgen.instantiateNode(TraversableTreeNodeTest.ChildConfigurationSchema.class);
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void noKey() {
         var childNode = newChildInstance();
 
         assertThrows(NoSuchElementException.class, () -> childNode.construct("foo", null, true));
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void nullSource() {
         var parentNode = newParentInstance();
@@ -105,15 +105,14 @@ public class ConstructableTreeNodeTest {
     }
 
     /**
-     *
+     * Constant configuration source.
      */
     private static class ConstantConfigurationSource implements ConfigurationSource {
-        /**
-         *
-         */
         private final Object constant;
 
         /**
+         * Constructor.
+         *
          * @param constant Constant.
          */
         private ConstantConfigurationSource(Object constant) {
@@ -126,10 +125,7 @@ public class ConstructableTreeNodeTest {
             return clazz.cast(constant);
         }
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void unwrap() {
         var childNode = newChildInstance();
@@ -146,10 +142,7 @@ public class ConstructableTreeNodeTest {
                 childNode.construct("intCfg", new ConstantConfigurationSource(new Object()), true)
         );
     }
-
-    /**
-     *
-     */
+    
     @Test
     public void descend() {
         // Inner node.
@@ -187,9 +180,7 @@ public class ConstructableTreeNodeTest {
         assertEquals("value", elementsNode.get("name").strCfg());
     }
 
-    /**
-     *
-     */
+
     @Test
     public void constructDefault() {
         // Inner node with no leaves.

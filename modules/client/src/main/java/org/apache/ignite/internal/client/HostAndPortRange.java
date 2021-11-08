@@ -229,6 +229,8 @@ public class HostAndPortRange implements Serializable {
     }
 
     /**
+     * Returns host.
+     *
      * @return Host.
      */
     public String host() {
@@ -236,6 +238,8 @@ public class HostAndPortRange implements Serializable {
     }
 
     /**
+     * Returns port from.
+     *
      * @return Port from.
      */
     public int portFrom() {
@@ -243,6 +247,8 @@ public class HostAndPortRange implements Serializable {
     }
 
     /**
+     * Returns port to.
+     *
      * @return Port to.
      */
     public int portTo() {

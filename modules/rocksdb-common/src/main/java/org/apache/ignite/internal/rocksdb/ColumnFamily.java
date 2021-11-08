@@ -174,6 +174,8 @@ public class ColumnFamily implements AutoCloseable {
     }
 
     /**
+     * Returns column family handle.
+     *
      * @return Column family handle.
      */
     public ColumnFamilyHandle handle() {
@@ -181,6 +183,8 @@ public class ColumnFamily implements AutoCloseable {
     }
 
     /**
+     * Returns name of the column family.
+     *
      * @return Name of the column family.
      */
     public String name() {

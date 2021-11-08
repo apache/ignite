@@ -38,9 +38,7 @@ import org.apache.ignite.network.serialization.MessageReader;
  * Class for generating {@link MessageDeserializer} classes.
  */
 public class MessageDeserializerGenerator {
-    /**
-     *
-     */
+    /** Processing environment. */
     private final ProcessingEnvironment processingEnv;
 
     /**
@@ -49,8 +47,10 @@ public class MessageDeserializerGenerator {
     private final MessageGroupWrapper messageGroup;
 
     /**
-     * @param processingEnv processing environment
-     * @param messageGroup  message group
+     * Constructor.
+     *
+     * @param processingEnv Processing environment.
+     * @param messageGroup  Message group.
      */
     public MessageDeserializerGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;

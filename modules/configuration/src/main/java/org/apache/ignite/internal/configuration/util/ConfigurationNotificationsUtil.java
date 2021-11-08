@@ -46,7 +46,7 @@ import org.apache.ignite.internal.configuration.tree.NamedListNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Utility class for notifying a configuration update.
  */
 public class ConfigurationNotificationsUtil {
     /**

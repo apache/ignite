@@ -45,6 +45,8 @@ interface ClientChannel extends AutoCloseable {
     );
 
     /**
+     * Returns {@code true} channel is closed.
+     *
      * @return {@code True} channel is closed.
      */
     public boolean closed();

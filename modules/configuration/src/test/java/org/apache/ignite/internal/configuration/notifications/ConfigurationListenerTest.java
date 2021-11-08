@@ -55,51 +55,36 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Test class for configuration listener.
  */
 public class ConfigurationListenerTest {
     /**
-     *
+     * Parent root configuration schema.
      */
     @ConfigurationRoot(rootName = "parent", type = LOCAL)
     public static class ParentConfigurationSchema {
-        /**
-         *
-         */
         @ConfigValue
         public ChildConfigurationSchema child;
         
-        /**
-         *
-         */
         @NamedConfigValue
         public ChildConfigurationSchema elements;
     }
     
     /**
-     *
+     * Child configuration schema.
      */
     @Config
     public static class ChildConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String str = "default";
     }
     
-    /**
-     *
-     */
     private ConfigurationRegistry registry;
     
-    /**
-     *
-     */
     private ParentConfiguration configuration;
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     public void before() {
@@ -120,17 +105,11 @@ public class ConfigurationListenerTest {
         configuration = registry.getConfiguration(ParentConfiguration.KEY);
     }
     
-    /**
-     *
-     */
     @AfterEach
     public void after() {
         registry.stop();
     }
     
-    /**
-     *
-     */
     @Test
     public void childNode() throws Exception {
         List<String> log = new ArrayList<>();
@@ -702,9 +681,6 @@ public class ConfigurationListenerTest {
         assertEquals(List.of("deleted"), log);
     }
     
-    /**
-     *
-     */
     @Test
     void testStopListen() throws Exception {
         List<String> events = new ArrayList<>();
@@ -751,9 +727,6 @@ public class ConfigurationListenerTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testGetConfigFromNotificationEvent() throws Exception {
         String newVal = UUID.randomUUID().toString();
@@ -792,9 +765,6 @@ public class ConfigurationListenerTest {
         configuration.change(c0 -> c0.changeChild(c1 -> c1.changeStr(newVal))).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testGetConfigFromNotificationEventOnCreate() throws Exception {
         String newVal = UUID.randomUUID().toString();
@@ -827,9 +797,6 @@ public class ConfigurationListenerTest {
         configuration.elements().change(c -> c.create(key, c1 -> c1.changeStr(newVal))).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testGetConfigFromNotificationEventOnRename() throws Exception {
         String val = "default";
@@ -866,9 +833,6 @@ public class ConfigurationListenerTest {
         configuration.elements().change(c -> c.rename(oldKey, newKey));
     }
     
-    /**
-     *
-     */
     @Test
     void testGetConfigFromNotificationEventOnDelete() throws Exception {
         String key = UUID.randomUUID().toString();
@@ -906,9 +870,6 @@ public class ConfigurationListenerTest {
         configuration.elements().change(c -> c.delete(key)).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testGetConfigFromNotificationEventOnUpdate() throws Exception {
         String newVal = UUID.randomUUID().toString();

@@ -34,6 +34,8 @@ public interface InvokeClosure<T> {
     void call(@Nullable DataRow row);
 
     /**
+     * Returns result of the invocation. Can be {@code null}.
+     *
      * @return Result of the invocation. Can be {@code null}.
      */
     @Nullable
@@ -42,11 +44,16 @@ public interface InvokeClosure<T> {
     }
 
     /**
+     * Returns new row for the {@link OperationType#WRITE} operation.
+     *
      * @return New row for the {@link OperationType#WRITE} operation.
      */
     @Nullable DataRow newRow();
 
     /**
+     * Returns operation type for this closure or {@code null} if it is unknown. After method {@link #call(DataRow)} has been called,
+     *      operation type must be computed and this method cannot return {@code null}.
+     *
      * @return Operation type for this closure or {@code null} if it is unknown. After method {@link #call(DataRow)} has been called,
      *      operation type must be computed and this method cannot return {@code null}.
      */

@@ -251,10 +251,7 @@ public class ItTransferableObjectProcessorTest {
                 .map(JavaFileObjects::forResource)
                 .collect(Collectors.toList());
     }
-
-    /**
-     *
-     */
+    
     private static String fileName(String className) {
         return RESOURCE_PACKAGE_NAME + className;
     }

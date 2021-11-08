@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.network.processor;
 
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
- *
+ * {@link NetworkMessage} implementation.
  */
 @Transferable(TestMessageTypes.INHERITED_MESSAGE)
 public interface InheritedMessage extends NetworkMessage2 {
-    /**
-     *
-     */
     int intZ();
 }

@@ -64,25 +64,16 @@ public class ConfigurationAsmGeneratorTest {
     /** Configuration changer. */
     private ConfigurationChanger changer;
     
-    /**
-     *
-     */
     @BeforeAll
     public static void beforeAll() {
         generator = new ConfigurationAsmGenerator();
     }
     
-    /**
-     *
-     */
     @AfterAll
     public static void afterAll() {
         generator = null;
     }
     
-    /**
-     *
-     */
     @BeforeEach
     void beforeEach() {
         Collection<Class<?>> internalExtensions = List.of(
@@ -112,17 +103,11 @@ public class ConfigurationAsmGeneratorTest {
         changer.initializeDefaults();
     }
     
-    /**
-     *
-     */
     @AfterEach
     void afterEach() {
         changer.stop();
     }
     
-    /**
-     *
-     */
     @Test
     void testInternalRootConfiguration() throws Exception {
         DynamicConfiguration<?, ?> config = generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -166,9 +151,6 @@ public class ConfigurationAsmGeneratorTest {
         }).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testInternalSubConfiguration() throws Exception {
         DynamicConfiguration<?, ?> config = generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -209,9 +191,6 @@ public class ConfigurationAsmGeneratorTest {
         }).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testInternalNamedConfiguration() throws Exception {
         DynamicConfiguration<?, ?> config = generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -243,9 +222,6 @@ public class ConfigurationAsmGeneratorTest {
         }).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testConstructInternalConfig() {
         InnerNode innerNode = generator.instantiateNode(TestRootConfiguration.KEY.schemaClass());
@@ -271,9 +247,6 @@ public class ConfigurationAsmGeneratorTest {
         subInnerNode.construct("i1", null, true);
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicSubConfiguration() throws Exception {
         TestRootConfiguration rootConfig = (TestRootConfiguration) generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -342,9 +315,6 @@ public class ConfigurationAsmGeneratorTest {
         assertEquals(0, firstCfg.intVal().value());
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicErrors() throws Exception {
         TestRootConfiguration rootConfig = (TestRootConfiguration) generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -380,9 +350,6 @@ public class ConfigurationAsmGeneratorTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicNamedConfigurationAdd() throws Exception {
         TestRootConfiguration rootConfig = (TestRootConfiguration) generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -446,9 +413,6 @@ public class ConfigurationAsmGeneratorTest {
         assertEquals(1L, secondVal.longVal());
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicNamedConfigurationChange() throws Exception {
         TestRootConfiguration rootConfig = (TestRootConfiguration) generator.instantiateCfg(TestRootConfiguration.KEY, changer);
@@ -487,9 +451,6 @@ public class ConfigurationAsmGeneratorTest {
         assertEquals("strVal3", secondCfg.strVal().value());
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicNamedConfigurationRemove() throws Exception {
         TestRootConfiguration rootConfig = (TestRootConfiguration) generator.instantiateCfg(TestRootConfiguration.KEY, changer);

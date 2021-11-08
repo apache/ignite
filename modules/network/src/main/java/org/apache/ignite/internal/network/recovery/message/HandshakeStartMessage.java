@@ -28,12 +28,16 @@ import org.apache.ignite.network.annotations.Transferable;
 @Transferable(NetworkMessageTypes.HANDSHAKE_START)
 public interface HandshakeStartMessage extends NetworkMessage {
     /**
-     * @return launch id
+     * Returns launch id.
+     *
+     * @return Launch id.
      */
     UUID launchId();
 
     /**
-     * @return consistent id
+     * Returns consistent id.
+     *
+     * @return Consistent id.
      */
     String consistentId();
 }

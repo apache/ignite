@@ -62,7 +62,12 @@ public class SqlExamplesTest {
                         + "    Richard, Miles, St. Petersburg\n"
         );
     }
-
+    
+    /**
+     * Start node.
+     *
+     * @param workDir Work directory for the started node. Must not be {@code null}.
+     */
     @BeforeEach
     public void startNode(@WorkDirectory Path workDir) throws IOException {
         IgnitionManager.start(
@@ -71,7 +76,10 @@ public class SqlExamplesTest {
                 workDir
         );
     }
-
+    
+    /**
+     * Stop node.
+     */
     @AfterEach
     public void stopNode() {
         IgnitionManager.stop("my-first-node");

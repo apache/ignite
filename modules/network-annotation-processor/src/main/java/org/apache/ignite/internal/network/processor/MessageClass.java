@@ -51,7 +51,10 @@ public class MessageClass {
     private final List<ExecutableElement> getters;
 
     /**
-     * @param messageElement element marked with the {@link Transferable} annotation.
+     * Constructor.
+     *
+     * @param processingEnv Processing environment.
+     * @param messageElement Element marked with the {@link Transferable} annotation.
      */
     MessageClass(ProcessingEnvironment processingEnv, TypeElement messageElement) {
         element = messageElement;
@@ -94,55 +97,71 @@ public class MessageClass {
     }
 
     /**
-     * @return annotated element
+     * Returns annotated element.
+     *
+     * @return Annotated element.
      */
     public TypeElement element() {
         return element;
     }
 
     /**
-     * @return class name of the {@link #element()}
+     * Returns class name of the {@link #element()}.
+     *
+     * @return Class name of the {@link #element()}.
      */
     public ClassName className() {
         return className;
     }
 
     /**
-     * @return package name of the {@link #element()}
+     * Returns package name of the {@link #element()}.
+     *
+     * @return Package name of the {@link #element()}.
      */
     public String packageName() {
         return className.packageName();
     }
 
     /**
-     * @return simple name of the {@link #element()}
+     * Returns simple name of the {@link #element()}.
+     *
+     * @return Simple name of the {@link #element()}.
      */
     public String simpleName() {
         return className.simpleName();
     }
 
     /**
-     * @return getter methods declared in the annotated interface
+     * Returns getter methods declared in the annotated interface.
+     *
+     * @return Getter methods declared in the annotated interface.
      */
     public List<ExecutableElement> getters() {
         return getters;
     }
 
     /**
-     * @return class name that the generated Network Message implementation should have
+     * Returns class name that the generated Network Message implementation should have.
+     *
+     * @return Class name that the generated Network Message implementation should have.
      */
     public ClassName implClassName() {
         return ClassName.get(packageName(), simpleName() + "Impl");
     }
 
     /**
-     * @return class name that the generated Builder interface should have
+     * Returns class name that the generated Builder interface should have.
+     *
+     * @return Class name that the generated Builder interface should have.
      */
     public ClassName builderClassName() {
         return ClassName.get(packageName(), simpleName() + "Builder");
     }
 
     /**
+     * Returns name of the factory method that should be used by the message factories.
+     *
      * @return name of the factory method that should be used by the message factories
      */
     public String asMethodName() {
@@ -150,21 +169,27 @@ public class MessageClass {
     }
 
     /**
-     * @return {@link Transferable#value()}
+     * Returns {@link Transferable#value()}.
+     *
+     * @return {@link Transferable#value()}.
      */
     public short messageType() {
         return annotation.value();
     }
 
     /**
-     * @return {@link Transferable#autoSerializable()}
+     * Returns {@link Transferable#autoSerializable()}.
+     *
+     * @return {@link Transferable#autoSerializable()}.
      */
     public boolean isAutoSerializable() {
         return annotation.autoSerializable();
     }
 
     /**
-     * @return a copy of the given string with the first character converted to lower case
+     * Returns a copy of the given string with the first character converted to lower case.
+     *
+     * @return A copy of the given string with the first character converted to lower case.
      */
     private static String decapitalize(String str) {
         return Character.toLowerCase(str.charAt(0)) + str.substring(1);

@@ -250,6 +250,9 @@ public final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * Returns host:port_range address lines parsed as {@link InetSocketAddress} as a key. Value is the amount of appearences of an address
+     *      in {@code addrs} parameter.
+     *
      * @return host:port_range address lines parsed as {@link InetSocketAddress} as a key. Value is the amount of appearences of an address
      *      in {@code addrs} parameter.
      */
@@ -332,6 +335,8 @@ public final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * Adds listener for the channel fail (disconnect).
+     *
      * @param chFailLsnr Listener for the channel fail (disconnect).
      */
     public void addChannelFailListener(Runnable chFailLsnr) {
@@ -470,10 +475,7 @@ public final class ReliableChannel implements AutoCloseable {
         // TODO: Async startup IGNITE-15357.
         return CompletableFuture.completedFuture(null);
     }
-
-    /**
-     *
-     */
+    
     private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function) {
         return applyOnDefaultChannel(function, getRetryLimit(), DO_NOTHING);
     }
@@ -558,6 +560,8 @@ public final class ReliableChannel implements AutoCloseable {
         private final long[] reconnectRetries;
 
         /**
+         * Constructor.
+         *
          * @param chCfg Channel config.
          */
         private ClientChannelHolder(ClientChannelConfiguration chCfg) {
@@ -570,6 +574,8 @@ public final class ReliableChannel implements AutoCloseable {
         }
 
         /**
+         * Returns whether reconnect throttling should be applied.
+         *
          * @return Whether reconnect throttling should be applied.
          */
         private boolean applyReconnectionThrottling() {

@@ -71,7 +71,7 @@ public class NettyServerTest {
     private NetworkConfiguration serverCfg;
     
     /**
-     *
+     * After each.
      */
     @AfterEach
     final void tearDown() {
@@ -262,7 +262,9 @@ public class NettyServerTest {
     }
     
     /**
-     * @return Verification mode for a one call with a 3 second timeout.
+     * Returns verification mode for a one call with a 3-second timeout.
+     *
+     * @return Verification mode for a one call with a 3-second timeout.
      */
     private static VerificationMode timeout() {
         return Mockito.timeout(TimeUnit.SECONDS.toMillis(3));

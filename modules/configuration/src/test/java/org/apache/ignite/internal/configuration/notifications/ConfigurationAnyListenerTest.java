@@ -107,7 +107,7 @@ public class ConfigurationAnyListenerTest {
     private final List<String> events = new ArrayList<>();
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     public void before() throws Exception {
@@ -188,17 +188,11 @@ public class ConfigurationAnyListenerTest {
         childCfg.elements2().any().intVal().listen(configListener(ctx -> events.add("root.elements.0.elements2.any.i")));
     }
     
-    /**
-     *
-     */
     @AfterEach
     public void after() {
         registry.stop();
     }
     
-    /**
-     *
-     */
     @Test
     void testNoGetOrUpdateConfigValueForAny() throws Exception {
         FirstSubConfiguration any0 = rootConfig.elements().any();
@@ -238,9 +232,6 @@ public class ConfigurationAnyListenerTest {
         assertThrows(ConfigurationListenOnlyException.class, () -> any2.intVal().update(300));
     }
     
-    /**
-     *
-     */
     @Test
     void testNoAnyListenerNotification() throws Exception {
         checkEqualsListeners(
@@ -255,10 +246,7 @@ public class ConfigurationAnyListenerTest {
                 events
         );
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testAnyListenerNotificationOnCreate() throws Exception {
         checkEqualsListeners(
@@ -324,9 +312,6 @@ public class ConfigurationAnyListenerTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyListenerNotificationOnRename() throws Exception {
         checkEqualsListeners(
@@ -367,9 +352,6 @@ public class ConfigurationAnyListenerTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyListenerNotificationOnDelete() throws Exception {
         checkEqualsListeners(
@@ -414,9 +396,6 @@ public class ConfigurationAnyListenerTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyListenerNotificationForLeaf() throws Exception {
         checkEqualsListeners(
@@ -482,9 +461,6 @@ public class ConfigurationAnyListenerTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyStopListen() throws Exception {
         ConfigurationListener<FirstSubView> listener0 = configListener(ctx -> events.add("root.elements.any2"));
@@ -518,9 +494,6 @@ public class ConfigurationAnyListenerTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyGetConfigFromNotificationEventOnCreate() throws Exception {
         String key0 = UUID.randomUUID().toString();
@@ -552,9 +525,6 @@ public class ConfigurationAnyListenerTest {
         rootConfig.elements().get(key0).elements2().change(c -> c.create(key1, doNothingConsumer())).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyGetConfigFromNotificationEventOnRename() throws Exception {
         String key0 = UUID.randomUUID().toString();
@@ -589,9 +559,6 @@ public class ConfigurationAnyListenerTest {
         rootConfig.elements().get(key0).elements2().change(c -> c.rename(oldKey1, newKey1)).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyGetConfigFromNotificationEventOnDelete() throws Exception {
         String key0 = UUID.randomUUID().toString();
@@ -641,9 +608,6 @@ public class ConfigurationAnyListenerTest {
         rootConfig.elements().get(key0).elements2().change(c -> c.delete(key1)).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     void testAnyGetConfigFromNotificationEventOnUpdate() throws Exception {
         String key0 = UUID.randomUUID().toString();

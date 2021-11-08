@@ -81,11 +81,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Test class for {@link ConfigurationUtil}.
  */
 public class ConfigurationUtilTest {
     private static ConfigurationAsmGenerator cgen;
     
+    /**
+     * Before all.
+     */
     @BeforeAll
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
@@ -102,6 +105,9 @@ public class ConfigurationUtilTest {
         );
     }
     
+    /**
+     * After all.
+     */
     @AfterAll
     public static void afterAll() {
         cgen = null;
@@ -118,9 +124,6 @@ public class ConfigurationUtilTest {
         return (P) cgen.instantiateNode(schemaClass);
     }
     
-    /**
-     *
-     */
     @Test
     public void escape() {
         assertEquals("foo", ConfigurationUtil.escape("foo"));
@@ -132,9 +135,6 @@ public class ConfigurationUtilTest {
         assertEquals("\\\\a\\.b\\\\c\\.", ConfigurationUtil.escape("\\a.b\\c."));
     }
     
-    /**
-     *
-     */
     @Test
     public void unescape() {
         assertEquals("foo", ConfigurationUtil.unescape("foo"));
@@ -146,54 +146,39 @@ public class ConfigurationUtilTest {
         assertEquals("\\a.b\\c.", ConfigurationUtil.unescape("\\\\a\\.b\\\\c\\."));
     }
     
-    /**
-     *
-     */
     @Test
     public void split() {
         assertEquals(List.of("a", "b.b", "c\\c", ""), ConfigurationUtil.split("a.b\\.b.c\\\\c."));
     }
     
-    /**
-     *
-     */
     @Test
     public void join() {
         assertEquals("a.b\\.b.c\\\\c", ConfigurationUtil.join(List.of("a", "b.b", "c\\c")));
     }
     
     /**
-     *
+     * Parent root configuration schema.
      */
     @ConfigurationRoot(rootName = "root", type = LOCAL)
     public static class ParentConfigurationSchema {
-        /**
-         *
-         */
         @NamedConfigValue
         public NamedElementConfigurationSchema elements;
     }
     
     /**
-     *
+     * Child named configuration schema.
      */
     @Config
     public static class NamedElementConfigurationSchema {
-        /**
-         *
-         */
         @ConfigValue
         public ChildConfigurationSchema child;
     }
     
     /**
-     *
+     * Child configuration schema.
      */
     @Config
     public static class ChildConfigurationSchema {
-        /**
-         *
-         */
         @Value
         public String str;
     }
@@ -291,7 +276,7 @@ public class ConfigurationUtilTest {
     }
     
     /**
-     * Tests convertion of flat map to a prefix map.
+     * Tests conversion of flat map to a prefix map.
      */
     @Test
     public void toPrefixMap() {
@@ -416,9 +401,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testCheckConfigurationTypeMixedTypes() {
         List<RootKey<?, ?>> rootKeys = List.of(LocalFirstConfiguration.KEY, DistributedFirstConfiguration.KEY);
@@ -434,9 +416,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testCheckConfigurationTypeOppositeTypes() {
         assertThrows(
@@ -456,9 +435,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testCheckConfigurationTypeNoError() {
         checkConfigurationType(
@@ -472,9 +448,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testInternalSchemaExtensions() {
         assertTrue(internalSchemaExtensions(List.of()).isEmpty());
@@ -517,9 +490,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testSchemaFields() {
         assertTrue(extensionsFields(List.of(), true).isEmpty());
@@ -553,9 +523,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testFindInternalConfigs() {
         Map<Class<?>, Set<Class<?>>> internalExtensions = internalSchemaExtensions(List.of(
@@ -591,9 +558,6 @@ public class ConfigurationUtilTest {
         assertEquals("foo", find(List.of("subCfg", "str02"), innerNode, true));
     }
     
-    /**
-     *
-     */
     @Test
     void testGetInternalConfigs() {
         Map<Class<?>, Set<Class<?>>> internalExtensions = internalSchemaExtensions(List.of(
@@ -653,9 +617,6 @@ public class ConfigurationUtilTest {
         assertEquals("foo", subConfig.get("str02"));
     }
     
-    /**
-     *
-     */
     @Test
     void testSuperRootWithInternalConfig() {
         ConfigurationAsmGenerator generator = new ConfigurationAsmGenerator();
@@ -690,9 +651,6 @@ public class ConfigurationUtilTest {
         assertNotNull(config.get(schemaKey.key()));
     }
     
-    /**
-     *
-     */
     @Test
     void testCollectSchemas() {
         assertTrue(collectSchemas(List.of()).isEmpty());
@@ -718,9 +676,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicSchemaExtensions() {
         assertTrue(polymorphicSchemaExtensions(List.of()).isEmpty());
@@ -743,9 +698,6 @@ public class ConfigurationUtilTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testCompressDeletedEntries() {
         Map<String, String> containsNullLeaf = new HashMap<>();
@@ -780,9 +732,6 @@ public class ConfigurationUtilTest {
         assertEquals(exp, prefixMap);
     }
     
-    /**
-     *
-     */
     @Test
     void testFlattenedMapPolymorphicConfig() {
         InnerNode polymorphicRootInnerNode = newNodeInstance(PolymorphicRootConfigurationSchema.class);
@@ -810,9 +759,6 @@ public class ConfigurationUtilTest {
         assertEquals(exp, act);
     }
     
-    /**
-     *
-     */
     @Test
     void testFlattenedMapPolymorphicNamedConfig() {
         InnerNode polymorphicRootInnerNode = newNodeInstance(PolymorphicRootConfigurationSchema.class);

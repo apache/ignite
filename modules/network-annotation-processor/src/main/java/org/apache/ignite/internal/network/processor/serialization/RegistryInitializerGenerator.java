@@ -37,17 +37,17 @@ import org.apache.ignite.network.serialization.MessageSerializationRegistry;
  * <p>It is expected that only a single class will be generated for each module that declares any type of network messages.
  */
 public class RegistryInitializerGenerator {
-    /**
-     *
-     */
+    /** Processing environment. */
     private final ProcessingEnvironment processingEnv;
 
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
     /**
-     * @param processingEnv processing environment
-     * @param messageGroup  message group
+     * Constructor.
+     *
+     * @param processingEnv Processing environment.
+     * @param messageGroup  Message group.
      */
     public RegistryInitializerGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;

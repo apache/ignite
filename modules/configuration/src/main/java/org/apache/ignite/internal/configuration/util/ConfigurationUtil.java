@@ -65,7 +65,7 @@ import org.apache.ignite.internal.configuration.tree.TraversableTreeNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Utility class for configuration.
  */
 public class ConfigurationUtil {
     /** Configuration source that copies values without modifying tham. */
@@ -364,6 +364,8 @@ public class ConfigurationUtil {
     }
     
     /**
+     * Returns visitor that returns leaf value or {@code null} if node is not a leaf.
+     *
      * @return Visitor that returns leaf value or {@code null} if node is not a leaf.
      */
     public static ConfigurationVisitor<Serializable> leafNodeVisitor() {
@@ -376,6 +378,8 @@ public class ConfigurationUtil {
     }
     
     /**
+     * Returns visitor that returns inner node or {@code null} if node is not an inner node.
+     *
      * @return Visitor that returns inner node or {@code null} if node is not an inner node.
      */
     public static ConfigurationVisitor<InnerNode> innerNodeVisitor() {
@@ -388,6 +392,8 @@ public class ConfigurationUtil {
     }
     
     /**
+     * Returns visitor that returns named list node or {@code null} if node is not a named list node.
+     *
      * @return Visitor that returns named list node or {@code null} if node is not a named list node.
      */
     public static ConfigurationVisitor<NamedListNode<?>> namedListNodeVisitor() {

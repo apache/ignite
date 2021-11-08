@@ -21,6 +21,9 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.network.annotations.Transferable;
 
+/**
+ * {@link NetworkMessage} implementation.
+ */
 @Transferable(TestMessageTypes.TEST)
 public interface TestMessage extends NetworkMessage, Serializable {
     String msg();

@@ -36,14 +36,8 @@ import org.mockito.InOrder;
  * Test class for checking that writing and reading fields in the generated (de-)serializers is ordered alphanumerically.
  */
 public class SerializationOrderTest {
-    /**
-     *
-     */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
-
-    /**
-     *
-     */
+    
     private final SerializationOrderMessageSerializationFactory serializationFactory =
             new SerializationOrderMessageSerializationFactory(messageFactory);
 

@@ -38,14 +38,8 @@ import org.mockito.InOrder;
  * @see InheritedMessage
  */
 public class InheritedMessageTest {
-    /**
-     *
-     */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
-
-    /**
-     *
-     */
+    
     private final InheritedMessageSerializationFactory serializationFactory =
             new InheritedMessageSerializationFactory(messageFactory);
 

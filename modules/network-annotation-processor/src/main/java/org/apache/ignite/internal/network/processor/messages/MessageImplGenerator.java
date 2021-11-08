@@ -43,17 +43,17 @@ import org.apache.ignite.network.NetworkMessage;
  * MessageBuilderGenerator}.
  */
 public class MessageImplGenerator {
-    /**
-     *
-     */
+    /** Processing environment. */
     private final ProcessingEnvironment processingEnv;
 
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
     /**
-     * @param processingEnv processing environment
-     * @param messageGroup  message group
+     * Constructor.
+     *
+     * @param processingEnv Processing environment.
+     * @param messageGroup  Message group.
      */
     public MessageImplGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;

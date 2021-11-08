@@ -73,7 +73,7 @@ public class ItConnectionManagerTest {
     private NetworkConfiguration networkConfiguration;
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     final void tearDown() {

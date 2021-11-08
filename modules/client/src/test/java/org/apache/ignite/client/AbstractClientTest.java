@@ -54,6 +54,9 @@ public abstract class AbstractClientTest {
     
     protected static int serverPort;
     
+    /**
+     * Before all.
+     */
     @BeforeAll
     public static void beforeAll() {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
@@ -70,6 +73,9 @@ public abstract class AbstractClientTest {
         client = startClient();
     }
     
+    /**
+     * After all.
+     */
     @AfterAll
     public static void afterAll() throws Exception {
         client.close();
@@ -77,6 +83,9 @@ public abstract class AbstractClientTest {
         configurationRegistry.stop();
     }
     
+    /**
+     * After each.
+     */
     @BeforeEach
     public void beforeEach() {
         for (var t : server.tables().tables()) {
@@ -84,6 +93,12 @@ public abstract class AbstractClientTest {
         }
     }
     
+    /**
+     * Returns client.
+     *
+     * @param addrs Addresses.
+     * @return Client.
+     */
     public static Ignite startClient(String... addrs) {
         if (addrs == null || addrs.length == 0) {
             addrs = new String[]{"127.0.0.1:" + serverPort};
@@ -94,6 +109,14 @@ public abstract class AbstractClientTest {
         return builder.build();
     }
     
+    /**
+     * Returns server.
+     *
+     * @param port Port.
+     * @param portRange Port range.
+     * @param ignite Ignite.
+     * @return Server.
+     */
     public static IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> startServer(
             int port,
             int portRange,
@@ -119,6 +142,12 @@ public abstract class AbstractClientTest {
         return new IgniteBiTuple<>(module, cfg);
     }
     
+    /**
+     * Assertion of {@link Tuple} equality.
+     *
+     * @param x Tuple.
+     * @param y Tuple.
+     */
     public static void assertTupleEquals(Tuple x, Tuple y) {
         if (x == null) {
             assertNull(y);

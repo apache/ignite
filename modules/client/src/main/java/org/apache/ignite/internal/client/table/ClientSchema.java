@@ -66,6 +66,8 @@ public class ClientSchema {
     }
 
     /**
+     * Returns version.
+     *
      * @return Version.
      */
     public int version() {
@@ -73,6 +75,8 @@ public class ClientSchema {
     }
 
     /**
+     * Returns columns.
+     *
      * @return Columns.
      */
     public @NotNull ClientColumn[] columns() {
@@ -107,6 +111,8 @@ public class ClientSchema {
     }
 
     /**
+     * Returns key column count.
+     *
      * @return Key column count.
      */
     public int keyColumnCount() {

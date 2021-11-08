@@ -44,6 +44,8 @@ class ConfigurationListenerTestUtils {
     }
 
     /**
+     * Returns consumer who does nothing.
+     *
      * @return Consumer who does nothing.
      */
     static <T> Consumer<T> doNothingConsumer() {
@@ -52,6 +54,8 @@ class ConfigurationListenerTestUtils {
     }
 
     /**
+     * Returns config value change listener.
+     *
      * @param consumer Consumer of the notification context.
      * @return Config value change listener.
      */
@@ -116,6 +120,8 @@ class ConfigurationListenerTestUtils {
     }
 
     /**
+     * Returns named config value change listener.
+     *
      * @param consumer Consumer of the notification context.
      * @return Named config value change listener.
      */
@@ -138,6 +144,8 @@ class ConfigurationListenerTestUtils {
     }
 
     /**
+     * Returns named config value change listener.
+     *
      * @param consumer Consumer of the notification context.
      * @return Named config value change listener.
      */
@@ -164,6 +172,8 @@ class ConfigurationListenerTestUtils {
     }
 
     /**
+     * Returns named config value change listener.
+     *
      * @param consumer Consumer of the notification context.
      * @return Named config value change listener.
      */
@@ -186,6 +196,8 @@ class ConfigurationListenerTestUtils {
     }
 
     /**
+     * Returns named config value change listener.
+     *
      * @param consumer Consumer of the notification context.
      * @return Named config value change listener.
      */

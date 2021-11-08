@@ -32,6 +32,8 @@ public class ProtocolContext {
     private final EnumSet<ProtocolBitmaskFeature> features;
 
     /**
+     * Constructor.
+     *
      * @param ver      Protocol version.
      * @param features Supported features.
      */
@@ -63,6 +65,8 @@ public class ProtocolContext {
     }
 
     /**
+     * Returns supported features.
+     *
      * @return Supported features.
      */
     public EnumSet<ProtocolBitmaskFeature> features() {
@@ -70,6 +74,8 @@ public class ProtocolContext {
     }
 
     /**
+     * Returns protocol version.
+     *
      * @return Protocol version.
      */
     public ProtocolVersion version() {

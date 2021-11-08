@@ -31,17 +31,17 @@ import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
  * Class for generating factories for Network Messages inside the given module.
  */
 public class MessageFactoryGenerator {
-    /**
-     *
-     */
+    /** Processing environment. */
     private final ProcessingEnvironment processingEnvironment;
 
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
     /**
-     * @param processingEnvironment processing environment
-     * @param messageGroup          message group
+     * Constructor.
+     *
+     * @param processingEnvironment Processing environment.
+     * @param messageGroup          Message group.
      */
     public MessageFactoryGenerator(
             ProcessingEnvironment processingEnvironment,

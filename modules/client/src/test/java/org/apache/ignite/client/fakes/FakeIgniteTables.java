@@ -39,19 +39,10 @@ import org.jetbrains.annotations.NotNull;
  * Fake tables.
  */
 public class FakeIgniteTables implements IgniteTables, IgniteTablesInternal {
-    /**
-     *
-     */
     public static final String TABLE_EXISTS = "Table exists";
     
-    /**
-     *
-     */
     private final ConcurrentHashMap<String, TableImpl> tables = new ConcurrentHashMap<>();
     
-    /**
-     *
-     */
     private final ConcurrentHashMap<IgniteUuid, TableImpl> tablesById = new ConcurrentHashMap<>();
     
     /** {@inheritDoc} */

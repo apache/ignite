@@ -42,6 +42,8 @@ final class ClientChannelConfiguration {
     }
 
     /**
+     * Returns address.
+     *
      * @return Address.
      */
     public InetSocketAddress getAddress() {
@@ -49,6 +51,8 @@ final class ClientChannelConfiguration {
     }
 
     /**
+     * Returns config.
+     *
      * @return Config.
      */
     public IgniteClientConfiguration clientConfiguration() {

@@ -33,17 +33,17 @@ import org.apache.ignite.internal.network.processor.MessageGroupWrapper;
  * Class for generating Builder interfaces for Network Messages.
  */
 public class MessageBuilderGenerator {
-    /**
-     *
-     */
+    /** Processing environment. */
     private final ProcessingEnvironment processingEnvironment;
 
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
     /**
-     * @param processingEnvironment processing environment
-     * @param messageGroup          message group
+     * Constructor.
+     *
+     * @param processingEnvironment Processing environment.
+     * @param messageGroup          Message group.
      */
     public MessageBuilderGenerator(ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup) {
         this.processingEnvironment = processingEnvironment;

@@ -26,6 +26,9 @@ import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.annotations.Transferable;
 
+/**
+ * {@link NetworkMessage} implementation.
+ */
 @Transferable(TestMessageTypes.ALL_TYPES)
 public interface AllTypesMessage extends NetworkMessage {
     byte byteA();

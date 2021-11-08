@@ -23,6 +23,9 @@ import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
 
+/**
+ * Implementing a validator for {@link Immutable}.
+ */
 public class ImmutableValidator implements Validator<Immutable, Object> {
     /** {@inheritDoc} */
     @Override

@@ -31,7 +31,7 @@ import org.apache.ignite.lang.IgniteException;
  * Netty client connection.
  */
 public class NettyClientConnection implements ClientConnection {
-    /** Connection attribute */
+    /** Connection attribute. */
     public static final AttributeKey<NettyClientConnection> ATTR_CONN = AttributeKey.newInstance("CONN");
 
     /** Channel. */

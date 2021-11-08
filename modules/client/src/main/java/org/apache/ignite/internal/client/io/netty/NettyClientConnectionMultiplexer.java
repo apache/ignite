@@ -37,14 +37,8 @@ import org.apache.ignite.internal.client.proto.ClientMessageDecoder;
  * Netty-based multiplexer.
  */
 public class NettyClientConnectionMultiplexer implements ClientConnectionMultiplexer {
-    /**
-     *
-     */
     private final NioEventLoopGroup workerGroup;
-
-    /**
-     *
-     */
+    
     private final Bootstrap bootstrap;
 
     /**

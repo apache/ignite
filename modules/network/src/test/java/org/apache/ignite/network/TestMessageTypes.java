@@ -22,29 +22,23 @@ import org.apache.ignite.internal.network.processor.InheritedMessage;
 import org.apache.ignite.internal.network.processor.SerializationOrderMessage;
 import org.apache.ignite.network.annotations.MessageGroup;
 
+/**
+ * Test message types.
+ */
 @MessageGroup(groupName = "TestMessages", groupType = 2)
 public class TestMessageTypes {
-    /** Type of {@link SerializationOrderMessage} */
+    /** Type of {@link SerializationOrderMessage}. */
     public static final short SERIALIZATION_ORDER_MESSAGE = 1;
 
-    /** Type of {@link InheritedMessage} */
+    /** Type of {@link InheritedMessage}. */
     public static final short INHERITED_MESSAGE = 2;
 
-    /** Type of {@link EmptyMessage} */
+    /** Type of {@link EmptyMessage}. */
     public static final short EMPTY_MESSAGE = 3;
-
-    /**
-     *
-     */
+    
     public static final short ALL_TYPES = 4;
-
-    /**
-     *
-     */
+    
     public static final short TEST = 5;
-
-    /**
-     *
-     */
+    
     public static final short NESTED_MESSAGE = 6;
 }

@@ -37,6 +37,8 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
     private int pos;
 
     /**
+     * Constructor.
+     *
      * @param cls     State item type.
      * @param factory Item factory.
      */
@@ -49,6 +51,8 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
     }
 
     /**
+     * Returns current item.
+     *
      * @return Current item.
      */
     public T item() {

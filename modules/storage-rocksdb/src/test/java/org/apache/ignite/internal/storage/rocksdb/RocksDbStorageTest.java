@@ -42,18 +42,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirectoryExtension.class)
 @ExtendWith(ConfigurationExtension.class)
 public class RocksDbStorageTest extends AbstractPartitionStorageTest {
-    /**
-     *
-     */
     private TableStorage table;
-
-    /**
-     *
-     */
+    
     private DataRegion dataRegion;
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     public void setUp(
@@ -83,7 +77,7 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     public void tearDown() throws Exception {

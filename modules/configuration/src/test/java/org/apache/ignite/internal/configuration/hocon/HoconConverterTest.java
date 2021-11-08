@@ -57,19 +57,13 @@ import org.junit.jupiter.api.function.Executable;
  */
 public class HoconConverterTest {
     /**
-     *
+     * Hocon root configuration schema.
      */
     @ConfigurationRoot(rootName = "root", type = LOCAL)
     public static class HoconRootConfigurationSchema {
-        /**
-         *
-         */
         @NamedConfigValue(syntheticKeyName = "a")
         public HoconArraysConfigurationSchema arraysList;
         
-        /**
-         *
-         */
         @NamedConfigValue(syntheticKeyName = "p")
         public HoconPrimitivesConfigurationSchema primitivesList;
         
@@ -83,57 +77,30 @@ public class HoconConverterTest {
      */
     @Config
     public static class HoconArraysConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public boolean[] booleans = {false};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public byte[] bytes = {0};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public short[] shorts = {0};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public int[] ints = {0};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public long[] longs = {0L};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public char[] chars = {0};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public float[] floats = {0};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public double[] doubles = {0};
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String[] strings = {""};
     }
@@ -143,57 +110,30 @@ public class HoconConverterTest {
      */
     @Config
     public static class HoconPrimitivesConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public boolean booleanVal = false;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public byte byteVal = 0;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public short shortVal = 0;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public int intVal = 0;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public long longVal = 0L;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public char charVal = 0;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public float floatVal = 0;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public double doubleVal = 0;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String stringVal = "";
     }
@@ -228,18 +168,12 @@ public class HoconConverterTest {
         public int intVal = 0;
     }
     
-    /**
-     *
-     */
     private static ConfigurationRegistry registry;
     
-    /**
-     *
-     */
     private static HoconRootConfiguration configuration;
     
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     public static void beforeAll() {
@@ -260,7 +194,7 @@ public class HoconConverterTest {
     }
     
     /**
-     *
+     * After all.
      */
     @AfterAll
     public static void after() {
@@ -272,7 +206,7 @@ public class HoconConverterTest {
     }
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     public void before() throws Exception {
@@ -284,9 +218,6 @@ public class HoconConverterTest {
         ).get(1, SECONDS);
     }
     
-    /**
-     *
-     */
     @Test
     public void toHoconBasic() {
         assertEquals("root{arraysList=[],polymorphicCfg{longVal=0,typeId=first},primitivesList=[]}", asHoconStr(List.of()));
@@ -379,9 +310,6 @@ public class HoconConverterTest {
         return hoconCfg.render(ConfigRenderOptions.concise().setJson(false));
     }
     
-    /**
-     *
-     */
     @Test
     public void fromHoconBasic() {
         // Wrong names:
@@ -651,9 +579,6 @@ public class HoconConverterTest {
         );
     }
     
-    /**
-     *
-     */
     @Test
     void testPolymorphicConfig() throws Throwable {
         // Check defaults.
@@ -693,9 +618,6 @@ public class HoconConverterTest {
         }
     }
     
-    /**
-     *
-     */
     private static void assertThrowsIllegalArgException(Executable executable, String msg) {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, executable);
         

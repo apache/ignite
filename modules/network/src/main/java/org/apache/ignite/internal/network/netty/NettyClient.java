@@ -146,6 +146,8 @@ public class NettyClient {
     }
 
     /**
+     * Returns client start future.
+     *
      * @return Client start future.
      */
     @Nullable
@@ -179,6 +181,8 @@ public class NettyClient {
     }
 
     /**
+     * Returns {@code true} if the client has failed to connect to the remote server, {@code false} otherwise.
+     *
      * @return {@code true} if the client has failed to connect to the remote server, {@code false} otherwise.
      */
     public boolean failedToConnect() {
@@ -186,6 +190,8 @@ public class NettyClient {
     }
 
     /**
+     * Returns {@code true} if the client has lost the connection or has been stopped, {@code false} otherwise.
+     *
      * @return {@code true} if the client has lost the connection or has been stopped, {@code false} otherwise.
      */
     public boolean isDisconnected() {

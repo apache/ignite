@@ -301,6 +301,8 @@ public class NettyServer {
     }
     
     /**
+     * Returns gets the local address of the server.
+     *
      * @return Gets the local address of the server.
      */
     public SocketAddress address() {
@@ -344,6 +346,8 @@ public class NettyServer {
     }
     
     /**
+     * Returns {@code true} if the server is running, {@code false} otherwise.
+     *
      * @return {@code true} if the server is running, {@code false} otherwise.
      */
     @TestOnly
@@ -352,7 +356,9 @@ public class NettyServer {
     }
     
     /**
-     * @return Accepter event loop group.
+     * Returns acceptor event loop group.
+     *
+     * @return Acceptor event loop group.
      */
     @TestOnly
     public NioEventLoopGroup getBossGroup() {
@@ -360,6 +366,8 @@ public class NettyServer {
     }
     
     /**
+     * Returns worker event loop group.
+     *
      * @return Worker event loop group.
      */
     @TestOnly

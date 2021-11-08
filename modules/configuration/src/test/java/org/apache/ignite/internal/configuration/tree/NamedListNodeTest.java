@@ -48,9 +48,6 @@ public class NamedListNodeTest {
     /** Root that has a single named list. */
     @ConfigurationRoot(rootName = "a")
     public static class FirstConfigurationSchema {
-        /**
-         *
-         */
         @NamedConfigValue
         public SecondConfigurationSchema second;
     }
@@ -62,9 +59,6 @@ public class NamedListNodeTest {
         @Value(hasDefault = true)
         public String str = "foo";
         
-        /**
-         *
-         */
         @NamedConfigValue
         public ThirdConfigurationSchema third;
     }
@@ -99,7 +93,7 @@ public class NamedListNodeTest {
     }
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     public void before() {
@@ -118,7 +112,7 @@ public class NamedListNodeTest {
     }
     
     /**
-     *
+     * After each.
      */
     @AfterEach
     public void after() {

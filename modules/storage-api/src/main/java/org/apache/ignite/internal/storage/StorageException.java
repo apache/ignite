@@ -22,6 +22,8 @@ package org.apache.ignite.internal.storage;
  */
 public class StorageException extends RuntimeException {
     /**
+     * Constructor.
+     *
      * @param message Error message.
      */
     public StorageException(String message) {
@@ -29,6 +31,8 @@ public class StorageException extends RuntimeException {
     }
 
     /**
+     * Constructor.
+     *
      * @param message Error message.
      * @param cause   The cause.
      */
@@ -37,6 +41,8 @@ public class StorageException extends RuntimeException {
     }
 
     /**
+     * Constructor.
+     *
      * @param cause The cause.
      */
     public StorageException(Throwable cause) {

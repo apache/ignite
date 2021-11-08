@@ -38,17 +38,17 @@ import org.apache.ignite.network.serialization.MessageWriter;
  * Class for generating {@link MessageSerializer} classes.
  */
 public class MessageSerializerGenerator {
-    /**
-     *
-     */
+    /** Processing environment. */
     private final ProcessingEnvironment processingEnvironment;
 
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
     /**
-     * @param processingEnvironment processing environment
-     * @param messageGroup          message group
+     * Constructor.
+     *
+     * @param processingEnvironment Processing environment.
+     * @param messageGroup          Message group.
      */
     public MessageSerializerGenerator(ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup) {
         this.processingEnvironment = processingEnvironment;

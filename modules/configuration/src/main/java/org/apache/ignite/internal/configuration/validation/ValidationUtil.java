@@ -39,7 +39,7 @@ import org.apache.ignite.internal.configuration.util.AnyNodeConfigurationVisitor
 import org.apache.ignite.internal.configuration.util.KeysTrackingConfigurationVisitor;
 
 /**
- *
+ * Utility class for configuration validation.
  */
 public class ValidationUtil {
     /**
@@ -143,10 +143,7 @@ public class ValidationUtil {
 
         return issues;
     }
-
-    /**
-     *
-     */
+    
     private static boolean assertValidatorTypesCoherence(
             Class<?> validatorClass,
             Class<? extends Annotation> annotationType,

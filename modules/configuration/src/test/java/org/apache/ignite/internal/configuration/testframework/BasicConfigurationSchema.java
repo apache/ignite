@@ -25,9 +25,6 @@ import org.apache.ignite.configuration.annotation.Value;
  */
 @Config
 public class BasicConfigurationSchema {
-    /**
-     *
-     */
     @Value(hasDefault = true)
     public int visible = 1;
 }

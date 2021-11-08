@@ -28,6 +28,8 @@ public class SimpleWriteInvokeClosure implements InvokeClosure<Void> {
     private final DataRow newRow;
 
     /**
+     * Constructor.
+     *
      * @param newRow Data row to write into the storage.
      */
     public SimpleWriteInvokeClosure(DataRow newRow) {

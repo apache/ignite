@@ -35,7 +35,9 @@ public interface MessagingService {
     void weakSend(ClusterNode recipient, NetworkMessage msg);
 
     /**
-     * Tries to send the given message asynchronously to the specific cluster member with the following guarantees:
+     * Tries to send the given message asynchronously to the specific cluster member.
+     *
+     * <p>Guarantees:
      * <ul>
      *     <li>Messages will be delivered in the same order as they were sent;</li>
      *     <li>If a message N has been successfully delivered to a member implies that all messages preceding N

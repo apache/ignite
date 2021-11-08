@@ -32,18 +32,14 @@ import org.jetbrains.annotations.Nullable;
  * Various shortcuts over the {@link Types} utilities.
  */
 public class TypeUtils {
-    /**
-     *
-     */
     private final Types types;
-
-    /**
-     *
-     */
+    
     private final Elements elements;
 
     /**
-     * @param processingEnvironment processing environment
+     * Constructor.
+     *
+     * @param processingEnvironment Processing environment.
      */
     public TypeUtils(ProcessingEnvironment processingEnvironment) {
         this.types = processingEnvironment.getTypeUtils();

@@ -61,6 +61,8 @@ public class NettySender {
     }
 
     /**
+     * Returns launch id of the remote node.
+     *
      * @return Launch id of the remote node.
      */
     public String launchId() {
@@ -68,6 +70,8 @@ public class NettySender {
     }
 
     /**
+     * Returns consistent id of the remote node.
+     *
      * @return Consistent id of the remote node.
      */
     public String consistentId() {
@@ -82,6 +86,8 @@ public class NettySender {
     }
 
     /**
+     * Returns {@code true} if the channel is open, {@code false} otherwise.
+     *
      * @return {@code true} if the channel is open, {@code false} otherwise.
      */
     public boolean isOpen() {
@@ -89,6 +95,8 @@ public class NettySender {
     }
 
     /**
+     * Returns channel.
+     *
      * @return Channel.
      */
     @TestOnly

@@ -24,13 +24,13 @@ import org.jetbrains.annotations.Nullable;
  * Exception used by all annotation-processor related classes to gracefully display processing errors.
  */
 public class ProcessingException extends RuntimeException {
-    /**
-     *
-     */
+    /** Element which processing triggered the exception. */
     @Nullable
     private final Element element;
 
     /**
+     * Constructor.
+     *
      * @param message message
      */
     public ProcessingException(String message) {
@@ -38,6 +38,8 @@ public class ProcessingException extends RuntimeException {
     }
 
     /**
+     * Constructor.
+     *
      * @param message message
      * @param cause   cause
      */
@@ -46,6 +48,8 @@ public class ProcessingException extends RuntimeException {
     }
 
     /**
+     * Constructor.
+     *
      * @param message message
      * @param cause   cause
      * @param element element which processing triggered the exception
@@ -57,7 +61,9 @@ public class ProcessingException extends RuntimeException {
     }
 
     /**
-     * @return element which processing triggered the exception
+     * Returns element which processing triggered the exception.
+     *
+     * @return Element which processing triggered the exception.
      */
     @Nullable
     public Element getElement() {

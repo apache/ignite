@@ -49,19 +49,13 @@ class ValidationContextImpl<VIEWT> implements ValidationContext<VIEWT> {
      */
     private final VIEWT val;
 
-    /**
-     *
-     */
+    /** Key corresponding to the value. */
     private final String currentKey;
 
-    /**
-     *
-     */
+    /** List representation of {@link #currentKey}. */
     private final List<String> currentPath;
 
-    /**
-     *
-     */
+    /** List of issues, should be used as a write-only collection. */
     private final List<ValidationIssue> issues;
 
     /**

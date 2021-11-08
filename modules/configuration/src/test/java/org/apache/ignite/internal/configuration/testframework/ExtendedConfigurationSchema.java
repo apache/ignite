@@ -25,9 +25,6 @@ import org.apache.ignite.configuration.annotation.Value;
  */
 @InternalConfiguration
 public class ExtendedConfigurationSchema extends BasicConfigurationSchema {
-    /**
-     *
-     */
     @Value(hasDefault = true)
     public int invisible = 2;
 }

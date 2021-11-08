@@ -33,10 +33,7 @@ public class FakeIgnite implements Ignite {
     public FakeIgnite() {
         super();
     }
-
-    /**
-     *
-     */
+    
     private final IgniteTables tables = new FakeIgniteTables();
 
     /** {@inheritDoc} */

@@ -94,7 +94,7 @@ public class TransferableObjectProcessor extends AbstractProcessor {
     }
 
     /**
-     * Generates the following classes for the current compilation unit:
+     * Generates the following classes for the current compilation unit.
      *
      * <ol>
      *     <li>Builder interfaces;</li>
@@ -130,7 +130,7 @@ public class TransferableObjectProcessor extends AbstractProcessor {
     }
 
     /**
-     * Generates the following classes for the current compilation unit:
+     * Generates the following classes for the current compilation unit.
      *
      * <ol>
      *     <li>{@link MessageSerializer};</li>
@@ -185,7 +185,7 @@ public class TransferableObjectProcessor extends AbstractProcessor {
     }
 
     /**
-     * Validates the annotated messages:
+     * Validates the annotated messages.
      *
      * <ol>
      *     <li>{@link Transferable} annotation is present on a valid element;</li>

@@ -32,11 +32,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 /**
- *
+ * Test class for {@link OneOf}.
  */
 public class OneOfValidatorTest {
     /**
-     *
+     * Test.
      */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})

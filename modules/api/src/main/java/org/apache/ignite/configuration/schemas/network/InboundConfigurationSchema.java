@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.validation.Min;
  */
 @Config
 public class InboundConfigurationSchema {
-    /** Backlog value */
+    /** Backlog value. */
     @Min(0)
     @Value(hasDefault = true)
     public final int soBacklog = 128;

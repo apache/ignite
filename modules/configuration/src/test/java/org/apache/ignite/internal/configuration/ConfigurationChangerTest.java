@@ -71,66 +71,44 @@ public class ConfigurationChangerTest {
     }
     
     /**
-     *
+     * First configuration schema.
      */
     @ConfigurationRoot(rootName = "key", type = LOCAL)
     public static class FirstConfigurationSchema {
-        /**
-         *
-         */
         @ConfigValue
         @MaybeInvalid
         public SecondConfigurationSchema child;
         
-        /**
-         *
-         */
         @NamedConfigValue
         public ThirdConfigurationSchema elements;
     }
     
     /**
-     *
+     * Second configuration schema.
      */
     @Config
     public static class SecondConfigurationSchema {
-        /**
-         *
-         */
         @Value
         @Immutable
         public int intCfg;
         
-        /**
-         *
-         */
         @Value
         public String strCfg;
     }
     
     /**
-     *
+     * Third configuration schema.
      */
     @Config
     public static class ThirdConfigurationSchema {
-        /**
-         *
-         */
         @Value
         public String strCfg;
     }
     
-    /**
-     *
-     */
     private static ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
     
-    /** Test storage. */
     private final TestConfigurationStorage storage = new TestConfigurationStorage(LOCAL);
     
-    /**
-     *
-     */
     @AfterAll
     public static void afterAll() {
         cgen = null;
@@ -276,43 +254,28 @@ public class ConfigurationChangerTest {
     }
     
     /**
-     *
+     * Configuration schema with default values for children.
      */
     @ConfigurationRoot(rootName = "def", type = LOCAL)
     public static class DefaultsConfigurationSchema {
-        /**
-         *
-         */
         @ConfigValue
         public DefaultsChildConfigurationSchema child;
         
-        /**
-         *
-         */
         @NamedConfigValue
         public DefaultsChildConfigurationSchema childrenList;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String defStr = "foo";
     }
     
     /**
-     *
+     * Configuration schema with default values for children.
      */
     @Config
     public static class DefaultsChildConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String defStr = "bar";
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String[] arr = {"xyz"};
     }
@@ -503,9 +466,6 @@ public class ConfigurationChangerTest {
         assertThat(e.getMessage(), containsString("def.childrenList.name.defStr"));
     }
     
-    /**
-     *
-     */
     private static <CHANGET> ConfigurationSource source(RootKey<?, ? super CHANGET> rootKey, Consumer<CHANGET> changer) {
         return new ConfigurationSource() {
             @Override
@@ -522,9 +482,6 @@ public class ConfigurationChangerTest {
         };
     }
     
-    /**
-     *
-     */
     private ConfigurationChanger createChanger(RootKey<?, ?> rootKey) {
         return new TestConfigurationChanger(cgen, List.of(rootKey), Map.of(), storage, List.of(), List.of());
     }

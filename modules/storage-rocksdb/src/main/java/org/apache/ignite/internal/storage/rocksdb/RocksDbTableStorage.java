@@ -101,10 +101,7 @@ public class RocksDbTableStorage implements TableStorage {
 
     /** Column families for indexes by their names. */
     private final Map<String, ColumnFamilyHandle> indicesCfHandles = new ConcurrentHashMap<>();
-
-    /**
-     *
-     */
+    
     private boolean stopped = false;
 
     /** Utility enum to describe a type of the column family - meta, partition or index. */

@@ -50,6 +50,8 @@ public class GetAndRemoveInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /**
+     * Returns row that is removed.
+     *
      * @return Row that is removed.
      */
     @Nullable

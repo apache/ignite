@@ -72,7 +72,7 @@ public class ItRecoveryHandshakeTest {
     private NetworkConfiguration networkConfiguration;
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     final void tearDown() {
@@ -195,6 +195,8 @@ public class ItRecoveryHandshakeTest {
     }
 
     /**
+     * Returns generates handshake scenarios.
+     *
      * @return Generates handshake scenarios.
      */
     private static List<HandshakeScenario> handshakeScenarios() {
@@ -298,7 +300,7 @@ public class ItRecoveryHandshakeTest {
             /** Fail on init. */
             SERVER_INIT,
 
-            /** Fail on connection open */
+            /** Fail on connection open. */
             SERVER_CONNECTION_OPENED,
 
             /** Fail on client response. */

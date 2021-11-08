@@ -150,6 +150,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /**
+     * Constructor.
+     *
      * @param opCode        Operation code.
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
      * @return Request future.
@@ -330,6 +332,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /**
+     * Returns protocol context for a version.
+     *
      * @param ver Protocol version.
      * @return Protocol context for a version.
      */
@@ -385,7 +389,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /**
-     *
+     * Client request future.
      */
     private static class ClientRequestFuture extends CompletableFuture<ClientMessageUnpacker> {
     }

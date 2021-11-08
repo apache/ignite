@@ -73,6 +73,8 @@ public class GetAndReplaceInvokeClosure implements InvokeClosure<Boolean> {
     }
 
     /**
+     * Returns previous data row.
+     *
      * @return Previous data row.
      */
     @Nullable

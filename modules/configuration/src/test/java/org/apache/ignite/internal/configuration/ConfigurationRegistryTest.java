@@ -36,9 +36,6 @@ import org.junit.jupiter.api.Test;
  * Class for testing the {@link ConfigurationRegistry}.
  */
 public class ConfigurationRegistryTest {
-    /**
-     *
-     */
     @Test
     void testValidationInternalConfigurationExtensions() {
         assertThrows(
@@ -64,9 +61,6 @@ public class ConfigurationRegistryTest {
         configRegistry.stop();
     }
     
-    /**
-     *
-     */
     @Test
     void testValidationPolymorphicConfigurationExtensions() {
         // There is a polymorphic extension that is missing from the schema.
@@ -146,7 +140,7 @@ public class ConfigurationRegistryTest {
      */
     @ConfigurationRoot(rootName = "third")
     public static class ThirdRootConfigurationSchema {
-        /** First polymorphic configuration scheme */
+        /** First polymorphic configuration scheme. */
         @ConfigValue
         public FirstPolymorphicConfigurationSchema polymorphicConfig;
     }
@@ -156,7 +150,7 @@ public class ConfigurationRegistryTest {
      */
     @ConfigurationRoot(rootName = "fourth")
     public static class FourthRootConfigurationSchema {
-        /** Second polymorphic configuration scheme */
+        /** Second polymorphic configuration scheme. */
         @ConfigValue
         public SecondPolymorphicConfigurationSchema polymorphicConfig;
     }
@@ -166,7 +160,7 @@ public class ConfigurationRegistryTest {
      */
     @ConfigurationRoot(rootName = "fifth")
     public static class FifthRootConfigurationSchema {
-        /** Third polymorphic configuration scheme */
+        /** Third polymorphic configuration scheme. */
         @ConfigValue
         public ThirdPolymorphicConfigurationSchema polymorphicConfig;
     }

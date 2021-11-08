@@ -45,6 +45,12 @@ import org.apache.ignite.schema.definition.TableDefinition;
  * </ol>
  */
 public class SqlJdbcExample {
+    /**
+     * Main method of the example.
+     *
+     * @param args The command line arguments.
+     * @throws Exception If failed.
+     */
     public static void main(String[] args) throws Exception {
         //--------------------------------------------------------------------------------------
         //

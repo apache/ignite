@@ -33,156 +33,214 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
  */
 public interface DirectByteBufferStream {
     /**
+     * Sets buffer.
+     *
      * @param buf Buffer.
      */
-    public void setBuffer(ByteBuffer buf);
+    void setBuffer(ByteBuffer buf);
 
     /**
+     * Returns number of remaining bytes.
+     *
      * @return Number of remaining bytes.
      */
-    public int remaining();
+    int remaining();
 
     /**
+     * Returns whether last object was fully written or read.
+     *
      * @return Whether last object was fully written or read.
      */
-    public boolean lastFinished();
+    boolean lastFinished();
 
     /**
+     * Writes {@code byte}.
+     *
      * @param val Value.
      */
-    public void writeByte(byte val);
+    void writeByte(byte val);
 
     /**
+     * Writes {@code short}.
+     *
      * @param val Value.
      */
-    public void writeShort(short val);
+    void writeShort(short val);
 
     /**
+     * Writes {@code int}.
+     *
      * @param val Value.
      */
-    public void writeInt(int val);
+    void writeInt(int val);
 
     /**
+     * Writes {@code long}.
+     *
      * @param val Value.
      */
-    public void writeLong(long val);
+    void writeLong(long val);
 
     /**
+     * Writes {@code float}.
+     *
      * @param val Value.
      */
-    public void writeFloat(float val);
+    void writeFloat(float val);
 
     /**
+     * Writes {@code double}.
+     *
      * @param val Value.
      */
-    public void writeDouble(double val);
+    void writeDouble(double val);
 
     /**
+     * Writes {@code char}.
+     *
      * @param val Value.
      */
-    public void writeChar(char val);
+    void writeChar(char val);
 
     /**
+     * Writes {@code boolean}.
+     *
      * @param val Value.
      */
-    public void writeBoolean(boolean val);
+    void writeBoolean(boolean val);
 
     /**
+     * Writes {@code byte} array.
+     *
      * @param val Value.
      */
-    public void writeByteArray(byte[] val);
+    void writeByteArray(byte[] val);
 
     /**
+     * Writes {@code byte} array.
+     *
      * @param val Value.
      * @param off Offset.
      * @param len Length.
      */
-    public void writeByteArray(byte[] val, long off, int len);
+    void writeByteArray(byte[] val, long off, int len);
 
     /**
+     * Writes {@code short} array.
+     *
      * @param val Value.
      */
-    public void writeShortArray(short[] val);
+    void writeShortArray(short[] val);
 
     /**
+     * Writes {@code int} array.
+     *
      * @param val Value.
      */
-    public void writeIntArray(int[] val);
+    void writeIntArray(int[] val);
 
     /**
+     * Writes {@code long} array.
+     *
      * @param val Value.
      */
-    public void writeLongArray(long[] val);
+    void writeLongArray(long[] val);
 
     /**
+     * Writes {@code long} array.
+     *
      * @param val Value.
      * @param len Length.
      */
-    public void writeLongArray(long[] val, int len);
+    void writeLongArray(long[] val, int len);
 
     /**
+     * Writes {@code float} array.
+     *
      * @param val Value.
      */
-    public void writeFloatArray(float[] val);
+    void writeFloatArray(float[] val);
 
     /**
+     * Writes {@code double} array.
+     *
      * @param val Value.
      */
-    public void writeDoubleArray(double[] val);
+    void writeDoubleArray(double[] val);
 
     /**
+     * Writes {@code char} array.
+     *
      * @param val Value.
      */
-    public void writeCharArray(char[] val);
+    void writeCharArray(char[] val);
 
     /**
+     * Writes {@code boolean} array.
+     *
      * @param val Value.
      */
-    public void writeBooleanArray(boolean[] val);
+    void writeBooleanArray(boolean[] val);
 
     /**
+     * Writes {@link String}.
+     *
      * @param val Value.
      */
-    public void writeString(String val);
+    void writeString(String val);
 
     /**
+     * Writes {@link BitSet}.
+     *
      * @param val Value.
      */
-    public void writeBitSet(BitSet val);
+    void writeBitSet(BitSet val);
 
     /**
+     * Writes {@link UUID}.
+     *
      * @param val Value.
      */
-    public void writeUuid(UUID val);
+    void writeUuid(UUID val);
 
     /**
+     * Writes {@link IgniteUuid}.
+     *
      * @param val Value.
      */
-    public void writeIgniteUuid(IgniteUuid val);
+    void writeIgniteUuid(IgniteUuid val);
 
     /**
+     * Writes {@link NetworkMessage}.
+     *
      * @param msg    Message.
      * @param writer Writer.
      */
-    public void writeMessage(NetworkMessage msg, MessageWriter writer);
+    void writeMessage(NetworkMessage msg, MessageWriter writer);
 
     /**
+     * Writes {@link Object} array.
+     *
      * @param <T>      Type of the array.
      * @param arr      Array.
      * @param itemType Component type.
      * @param writer   Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer);
+    <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer);
 
     /**
+     * Writes {@link Collection}.
+     *
      * @param <T>      Type of the collection.
      * @param col      Collection.
      * @param itemType Component type.
      * @param writer   Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer);
+    <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer);
 
     /**
+     * Writes {@link Map}.
+     *
      * @param <K>     Type of the map's keys.
      * @param <V>     Type of the map's values.
      * @param map     Map.
@@ -190,141 +248,189 @@ public interface DirectByteBufferStream {
      * @param valType Value type.
      * @param writer  Writer.
      */
-    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType,
+    <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType,
             MessageWriter writer);
 
     /**
+     * Reads {@code byte}.
+     *
      * @return Value.
      */
-    public byte readByte();
+    byte readByte();
 
     /**
+     * Reads {@code short}.
+     *
      * @return Value.
      */
-    public short readShort();
+    short readShort();
 
     /**
+     * Reads {@code int}.
+     *
      * @return Value.
      */
-    public int readInt();
+    int readInt();
 
     /**
+     * Reads {@code long}.
+     *
      * @return Value.
      */
-    public long readLong();
+    long readLong();
 
     /**
+     * Reads {@code float}.
+     *
      * @return Value.
      */
-    public float readFloat();
+    float readFloat();
 
     /**
+     * Reads {@code double}.
+     *
      * @return Value.
      */
-    public double readDouble();
+    double readDouble();
 
     /**
+     * Reads {@code char}.
+     *
      * @return Value.
      */
-    public char readChar();
+    char readChar();
 
     /**
+     * Reads {@code boolean}.
+     *
      * @return Value.
      */
-    public boolean readBoolean();
+    boolean readBoolean();
 
     /**
+     * Reads {@code byte} array.
+     *
      * @return Value.
      */
-    public byte[] readByteArray();
+    byte[] readByteArray();
 
     /**
+     * Reads {@code short} array.
+     *
      * @return Value.
      */
-    public short[] readShortArray();
+    short[] readShortArray();
 
     /**
+     * Reads {@code int} array.
+     *
      * @return Value.
      */
-    public int[] readIntArray();
+    int[] readIntArray();
 
     /**
+     * Reads {@code long} array.
+     *
      * @return Value.
      */
-    public long[] readLongArray();
+    long[] readLongArray();
 
     /**
+     * Reads {@code float} array.
+     *
      * @return Value.
      */
-    public float[] readFloatArray();
+    float[] readFloatArray();
 
     /**
+     * Reads {@code double} array.
+     *
      * @return Value.
      */
-    public double[] readDoubleArray();
+    double[] readDoubleArray();
 
     /**
+     * Reads {@code char} array.
+     *
      * @return Value.
      */
-    public char[] readCharArray();
+    char[] readCharArray();
 
     /**
+     * Reads {@code boolean} array.
+     *
      * @return Value.
      */
-    public boolean[] readBooleanArray();
+    boolean[] readBooleanArray();
 
     /**
+     * Reads {@link String}.
+     *
      * @return Value.
      */
-    public String readString();
+    String readString();
 
     /**
+     * Reads {@link BitSet}.
+     *
      * @return Value.
      */
-    public BitSet readBitSet();
+    BitSet readBitSet();
 
     /**
+     * Reads {@link UUID}.
+     *
      * @return Value.
      */
-    public UUID readUuid();
+    UUID readUuid();
 
     /**
+     * Reads {@link IgniteUuid}.
+     *
      * @return Value.
      */
-    public IgniteUuid readIgniteUuid();
+    IgniteUuid readIgniteUuid();
 
     /**
-     * @param <T>    Type of a message.
+     * Reads {@link NetworkMessage}.
+     *
+     * @param <T>    Type of message.
      * @param reader Reader.
      * @return Message.
      */
-    public <T extends NetworkMessage> T readMessage(MessageReader reader);
+    <T extends NetworkMessage> T readMessage(MessageReader reader);
 
     /**
-     * @param <T>      Type of an array.
+     * Reads {@link Object} array.
+     *
+     * @param <T>      Type of array.
      * @param itemType Item type.
      * @param itemCls  Item class.
      * @param reader   Reader.
      * @return Array.
      */
-    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader);
+    <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader);
 
     /**
-     * @param <C>      Type of a collection.
+     * Reads {@link Collection}.
+     *
+     * @param <C>      Type of collection.
      * @param itemType Item type.
      * @param reader   Reader.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader);
+    <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader);
 
     /**
-     * @param <M>     Type of a map.
+     * Reads {@link Map}.
+     *
+     * @param <M>     Type of map.
      * @param keyType Key type.
      * @param valType Value type.
      * @param linked  Whether linked map should be created.
      * @param reader  Reader.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
+    <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
             boolean linked, MessageReader reader);
 }

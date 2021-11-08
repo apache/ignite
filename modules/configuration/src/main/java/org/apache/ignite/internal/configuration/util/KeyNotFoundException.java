@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.configuration.util;
 
 /**
- *
+ * Thrown when the configuration key is unknown.
  */
 public class KeyNotFoundException extends RuntimeException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /**
+     * Constructor.
+     *
      * @param msg Message.
      */
     public KeyNotFoundException(String msg) {

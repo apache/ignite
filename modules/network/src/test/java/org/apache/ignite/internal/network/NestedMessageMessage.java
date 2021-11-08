@@ -21,6 +21,9 @@ import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageTypes;
 import org.apache.ignite.network.annotations.Transferable;
 
+/**
+ * Nested {@link NetworkMessage} implementation.
+ */
 @Transferable(TestMessageTypes.NESTED_MESSAGE)
 public interface NestedMessageMessage extends NetworkMessage {
     NetworkMessage nestedMessage();

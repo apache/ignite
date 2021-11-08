@@ -26,8 +26,10 @@ import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
 
+/**
+ * Fake {@link SqlCursor}.
+ */
 public class FakeCursor implements SqlCursor<List<?>> {
-    
     private final Random random;
     
     FakeCursor() {

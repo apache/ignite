@@ -53,86 +53,56 @@ import org.junit.jupiter.api.Test;
  */
 public class DirectPropertiesTest {
     /**
-     *
+     * Direct root configuration schema.
      */
     @ConfigurationRoot(rootName = "root")
     @DirectAccess
     public static class DirectConfigurationSchema {
-        /**
-         *
-         */
         @ConfigValue
         public DirectNestedConfigurationSchema child;
         
-        /**
-         *
-         */
         @NamedConfigValue
         public DirectNestedConfigurationSchema childrenList;
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         @DirectAccess
         public String directStr = "foo";
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String nonDirectStr = "bar";
     }
     
     /**
-     *
+     * Direct nested configuration schema.
      */
     @Config
     @DirectAccess
     public static class DirectNestedConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         @DirectAccess
         public String str = "bar";
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String nonDirectStr = "bar";
         
-        /**
-         *
-         */
         @NamedConfigValue
         public DirectNested2ConfigurationSchema childrenList2;
     }
     
     /**
-     *
+     * Direct nested 2 configuration schema.
      */
     @Config
     @DirectAccess
     public static class DirectNested2ConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         @DirectAccess
         public String str = "bar";
         
-        /**
-         *
-         */
         @Value(hasDefault = true)
         public String nonDirectStr = "bar";
     }
     
-    /**
-     *
-     */
     private final ConfigurationRegistry registry = new ConfigurationRegistry(
             List.of(DirectConfiguration.KEY),
             Map.of(),
@@ -141,9 +111,6 @@ public class DirectPropertiesTest {
             List.of()
     );
     
-    /**
-     *
-     */
     @BeforeEach
     void setUp() {
         registry.start();
@@ -151,9 +118,6 @@ public class DirectPropertiesTest {
         registry.initializeDefaults();
     }
     
-    /**
-     *
-     */
     @AfterEach
     void tearDown() {
         registry.stop();
@@ -207,7 +171,9 @@ public class DirectPropertiesTest {
     }
     
     /**
-     * Tests the following scenario:
+     * Test for named list configuration.
+     *
+     * <p>Tests the following scenario:
      * <ol>
      *     <li>A Named List element is created. Both "direct" and regular properties must be the same.</li>
      *     <li>The element is removed. Both "direct" and regular properties must not return any values
@@ -247,9 +213,6 @@ public class DirectPropertiesTest {
         assertThat(directValue(childCfg.str()), is("bar"));
     }
     
-    /**
-     *
-     */
     @Test
     void testDirectAccessForAny() {
         NamedConfigurationTree<DirectNestedConfiguration, DirectNestedView, DirectNestedChange> childrenList =

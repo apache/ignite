@@ -32,9 +32,6 @@ import org.apache.ignite.table.manager.IgniteTables;
  * Client tables API implementation.
  */
 public class ClientTables implements IgniteTables {
-    /**
-     *
-     */
     private final ReliableChannel ch;
 
     /**

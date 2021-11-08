@@ -30,14 +30,8 @@ import org.junit.jupiter.api.Test;
  * Test class for the {@link IoExceptionSuppressingHandler}.
  */
 public class IoExceptionSuppressingHandlerTest {
-    /**
-     *
-     */
     private final ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-
-    /**
-     *
-     */
+    
     private final IoExceptionSuppressingHandler handler = new IoExceptionSuppressingHandler();
 
     /**

@@ -24,12 +24,9 @@ import org.apache.ignite.network.TestMessagesFactory;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Test class for {@link EmptyMessage}.
  */
 public class EmptyMessageTest {
-    /**
-     *
-     */
     private final TestMessagesFactory factory = new TestMessagesFactory();
 
     /**

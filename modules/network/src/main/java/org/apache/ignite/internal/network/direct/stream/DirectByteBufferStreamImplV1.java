@@ -57,51 +57,30 @@ import org.apache.ignite.network.serialization.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * {@link DirectByteBufferStream} implementation.
+ */
 public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** Poison object. */
     private static final Object NULL = new Object();
-
-    /**
-     *
-     */
+    
     private final MessageSerializationRegistry serializationRegistry;
-
-    /**
-     *
-     */
+    
     private ByteBuffer buf;
-
-    /**
-     *
-     */
+    
     private byte[] heapArr;
-
-    /**
-     *
-     */
+    
     private long baseOff;
-
-    /**
-     *
-     */
+    
     private int arrOff = -1;
-
-    /**
-     *
-     */
+    
     private Object tmpArr;
-
-    /**
-     *
-     */
+    
     private int tmpArrOff;
 
     /** Number of bytes of the boundary value, read from previous message. */
     private int valReadBytes;
-
-    /**
-     *
-     */
+    
     private int tmpArrBytes;
 
     /**
@@ -117,112 +96,54 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
      * message type.
      */
     private short msgGroupType;
-
-    /**
-     *
-     */
+    
     @Nullable
     private MessageDeserializer<NetworkMessage> msgDeserializer;
-
-    /**
-     *
-     */
+    
     private Iterator<?> mapIt;
-
-    /**
-     *
-     */
+    
     private Iterator<?> it;
-
-    /**
-     *
-     */
+    
     private int arrPos = -1;
-
-    /**
-     *
-     */
+    
     private Object arrCur = NULL;
-
-    /**
-     *
-     */
+    
     private Object mapCur = NULL;
-
-    /**
-     *
-     */
+    
     private Object cur = NULL;
-
-    /**
-     *
-     */
+    
     private boolean keyDone;
-
-    /**
-     *
-     */
+    
     private int readSize = -1;
-
-    /**
-     *
-     */
+    
     private int readItems;
-
-    /**
-     *
-     */
+    
     private Object[] objArr;
-
-    /**
-     *
-     */
+    
     private Collection<Object> col;
-
-    /**
-     *
-     */
+    
     private Map<Object, Object> map;
-
-    /**
-     *
-     */
+    
     private long prim;
-
-    /**
-     *
-     */
+    
     private int primShift;
-
-    /**
-     *
-     */
+    
     private int uuidState;
-
-    /**
-     *
-     */
+    
     private long uuidMost;
-
-    /**
-     *
-     */
+    
     private long uuidLeast;
-
-    /**
-     *
-     */
+    
     private long uuidLocId;
-
-    /**
-     *
-     */
+    
     protected boolean lastFinished;
 
-    /** byte-array representation of string */
+    /** byte-array representation of string. */
     private byte[] curStrBackingArr;
 
     /**
+     * Constructor.
+     *
      * @param serializationRegistry Message mappers.
      */
     public DirectByteBufferStreamImplV1(MessageSerializationRegistry serializationRegistry) {
@@ -762,6 +683,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * Writes {@link List}.
+     *
      * @param list     List.
      * @param itemType Component type.
      * @param writer   Writer.
@@ -1421,6 +1344,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * Writes array.
+     *
      * @param arr   Array.
      * @param off   Offset.
      * @param len   Length.
@@ -1467,6 +1392,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * Writes array.
+     *
      * @param arr      Array.
      * @param off      Offset.
      * @param len      Length.
@@ -1507,6 +1434,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * Writes array.
+     *
      * @param arr      Array.
      * @param off      Offset.
      * @param len      Length.
@@ -1528,6 +1457,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * Writes array length.
+     *
      * @param len Length.
      */
     private boolean writeArrayLength(int len) {
@@ -1544,7 +1475,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
-     * @param <T>      Type of an array.
+     * Reads array.
+     *
+     * @param <T>      Type of array.
      * @param creator  Array creator.
      * @param lenShift Array length shift size.
      * @param off      Base offset.
@@ -1607,7 +1540,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
-     * @param <T>      Type of an array.
+     * Reads array.
+     *
+     * @param <T>      Type of array.
      * @param creator  Array creator.
      * @param typeSize Primitive type size in bytes.
      * @param lenShift Array length shift size.
@@ -1678,6 +1613,13 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         }
     }
 
+    /**
+     * Writes value.
+     *
+     * @param type Type.
+     * @param val Value.
+     * @param writer Writer.
+     */
     protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
@@ -1801,6 +1743,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * Reads value.
+     *
      * @param type   Type.
      * @param reader Reader.
      * @return Value.

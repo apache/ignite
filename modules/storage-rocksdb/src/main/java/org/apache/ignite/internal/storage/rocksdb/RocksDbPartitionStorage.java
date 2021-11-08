@@ -60,7 +60,7 @@ import org.rocksdb.WriteOptions;
  * Storage implementation based on a single RocksDB instance.
  */
 public class RocksDbPartitionStorage implements PartitionStorage {
-    /** Suffix for the temporary snapshot folder */
+    /** Suffix for the temporary snapshot folder. */
     private static final String TMP_SUFFIX = ".tmp";
     
     /** Partition id. */
@@ -403,6 +403,8 @@ public class RocksDbPartitionStorage implements PartitionStorage {
         private final Predicate<SearchRow> filter;
         
         /**
+         * Constructor.
+         *
          * @param iter   Iterator.
          * @param filter Filter.
          */

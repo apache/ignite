@@ -33,6 +33,8 @@ public class SimpleDataRow implements DataRow {
     private final byte[] value;
 
     /**
+     * Constructor.
+     *
      * @param key   Key.
      * @param value Value.
      */

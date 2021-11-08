@@ -135,6 +135,8 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     }
     
     /**
+     * Returns current key, with a dot at the end if it's not a leaf.
+     *
      * @return Current key, with a dot at the end if it's not a leaf.
      */
     protected final String currentKey() {
@@ -142,6 +144,8 @@ public abstract class KeysTrackingConfigurationVisitor<T> implements Configurati
     }
     
     /**
+     * Returns list representation of the current key.
+     *
      * @return List representation of the current key.
      */
     protected final List<String> currentPath() {

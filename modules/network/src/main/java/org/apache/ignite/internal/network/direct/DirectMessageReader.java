@@ -44,6 +44,8 @@ public class DirectMessageReader implements MessageReader {
     private boolean lastRead;
 
     /**
+     * Constructor.
+     *
      * @param serializationRegistry Message serializers.
      * @param protoVer              Protocol version.
      */
@@ -416,7 +418,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /**
-     *
+     * State item.
      */
     private static class StateItem implements DirectMessageStateItem {
         /** Stream. */
@@ -426,6 +428,8 @@ public class DirectMessageReader implements MessageReader {
         private int state;
 
         /**
+         * Constructor.
+         *
          * @param serializationRegistry Serialization registry.
          * @param protoVer              Protocol version.
          */

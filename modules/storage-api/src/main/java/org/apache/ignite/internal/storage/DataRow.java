@@ -24,11 +24,15 @@ import java.nio.ByteBuffer;
  */
 public interface DataRow extends SearchRow {
     /**
+     * Returns value bytes.
+     *
      * @return Value bytes.
      */
     byte[] valueBytes();
 
     /**
+     * Returns value object as a byte buffer. Allows more effective memory management in certain cases.
+     *
      * @return Value object as a byte buffer. Allows more effective memory management in certain cases.
      */
     ByteBuffer value();

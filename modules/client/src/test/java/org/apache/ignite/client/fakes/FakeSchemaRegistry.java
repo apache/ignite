@@ -51,7 +51,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     }
 
     /**
-     * Sets the last schema version
+     * Sets the last schema version.
      *
      * @param lastVer Last schema version.
      */

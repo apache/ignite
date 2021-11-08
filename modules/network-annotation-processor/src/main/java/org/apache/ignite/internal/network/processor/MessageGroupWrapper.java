@@ -25,7 +25,7 @@ import org.apache.ignite.network.annotations.MessageGroup;
  * Wrapper around an element annotated with {@link MessageGroup}.
  */
 public class MessageGroupWrapper {
-    /** Message group element */
+    /** Message group element. */
     private final TypeElement element;
 
     /** Class name of the {@code element}. */
@@ -35,6 +35,8 @@ public class MessageGroupWrapper {
     private final MessageGroup annotation;
 
     /**
+     * Constructor.
+     *
      * @param messageGroup element annotated with {@link MessageGroup}
      */
     public MessageGroupWrapper(TypeElement messageGroup) {
@@ -48,35 +50,45 @@ public class MessageGroupWrapper {
     }
 
     /**
-     * @return element that this class wraps
+     * Returns element that this class wraps.
+     *
+     * @return Element that this class wraps.
      */
     public TypeElement element() {
         return element;
     }
 
     /**
-     * @return package name of the annotated element.
+     * Returns package name of the annotated element.
+     *
+     * @return Package name of the annotated element.
      */
     public String packageName() {
         return className.packageName();
     }
 
     /**
-     * @return {@link MessageGroup#groupName()}
+     * Returns {@link MessageGroup#groupName()}.
+     *
+     * @return {@link MessageGroup#groupName()}.
      */
     public String groupName() {
         return capitalize(annotation.groupName());
     }
 
     /**
-     * @return {@link MessageGroup#groupType()}
+     * Returns {@link MessageGroup#groupType()}.
+     *
+     * @return {@link MessageGroup#groupType()}.
      */
     public short groupType() {
         return annotation.groupType();
     }
 
     /**
-     * @return class name of the message factory that should be generated for the current module.
+     * Returns class name of the message factory that should be generated for the current module.
+     *
+     * @return Class name of the message factory that should be generated for the current module.
      */
     public ClassName messageFactoryClassName() {
         return ClassName.get(packageName(), groupName() + "Factory");

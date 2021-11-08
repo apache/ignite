@@ -47,11 +47,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Class for testing configuration traversal.
  */
 public class TraversableTreeNodeTest {
     private static ConfigurationAsmGenerator cgen;
 
+    /**
+     * Before all.
+     */
     @BeforeAll
     public static void beforeAll() {
         cgen = new ConfigurationAsmGenerator();
@@ -59,6 +62,9 @@ public class TraversableTreeNodeTest {
         cgen.compileRootSchema(ParentConfigurationSchema.class, Map.of(), Map.of());
     }
 
+    /**
+     * After all.
+     */
     @AfterAll
     public static void afterAll() {
         cgen = null;
@@ -73,56 +79,41 @@ public class TraversableTreeNodeTest {
     }
 
     /**
-     *
+     * Parent root configuration schema.
      */
     @Config
     public static class ParentConfigurationSchema {
-        /**
-         *
-         */
         @ConfigValue
         public ChildConfigurationSchema child;
-
-        /**
-         *
-         */
+        
         @NamedConfigValue
         public NamedElementConfigurationSchema elements;
     }
-
+    
     /**
-     *
+     * Child configuration schema.
      */
     @Config
     public static class ChildConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         @Immutable
         public int intCfg = 99;
-
-        /**
-         *
-         */
+        
         @Value
         public String strCfg;
     }
-
+    
     /**
-     *
+     * Child named configuration schema.
      */
     @Config
     public static class NamedElementConfigurationSchema {
-        /**
-         *
-         */
         @Value
         public String strCfg;
     }
 
     /**
-     *
+     * Visit exception.
      */
     private static class VisitException extends RuntimeException {
         /** Serial version uid. */

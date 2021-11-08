@@ -33,11 +33,16 @@ import org.apache.ignite.network.serialization.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Message writer implementation.
+ */
 public class DirectMessageWriter implements MessageWriter {
     /** State. */
     private final DirectMessageState<StateItem> state;
 
     /**
+     * Constructor.
+     *
      * @param serializationRegistry Serialization registry.
      * @param protoVer              Protocol version.
      */
@@ -383,17 +388,11 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /**
-     *
+     * State item.
      */
     private static class StateItem implements DirectMessageStateItem {
-        /**
-         *
-         */
         private final DirectByteBufferStream stream;
-
-        /**
-         *
-         */
+        
         private int state;
 
         /**
@@ -407,6 +406,8 @@ public class DirectMessageWriter implements MessageWriter {
         private boolean hdrWritten;
 
         /**
+         * Constructor.
+         *
          * @param registry Serialization registry.
          * @param protoVer Protocol version.
          */

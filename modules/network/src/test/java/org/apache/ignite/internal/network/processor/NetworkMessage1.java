@@ -21,11 +21,8 @@ package org.apache.ignite.internal.network.processor;
 import org.apache.ignite.network.NetworkMessage;
 
 /**
- *
+ * {@link NetworkMessage} implementation.
  */
 interface NetworkMessage1 extends NetworkMessage {
-    /**
-     *
-     */
     int intY();
 }

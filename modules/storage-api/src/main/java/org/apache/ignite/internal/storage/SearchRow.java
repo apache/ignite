@@ -25,11 +25,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface SearchRow {
     /**
+     * Returns key bytes.
+     *
      * @return Key bytes.
      */
     byte @NotNull [] keyBytes();
 
     /**
+     * Returns key object as a byte buffer. Allows more effective memory management in certain cases.
+     *
      * @return Key object as a byte buffer. Allows more effective memory management in certain cases.
      */
     @NotNull ByteBuffer key();

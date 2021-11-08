@@ -153,6 +153,8 @@ public class ConnectionManager {
     }
     
     /**
+     * Returns server local address.
+     *
      * @return Server local address.
      */
     public SocketAddress getLocalAddress() {
@@ -275,6 +277,8 @@ public class ConnectionManager {
     }
     
     /**
+     * Returns connection manager's {@link #server}.
+     *
      * @return Connection manager's {@link #server}.
      */
     @TestOnly
@@ -283,6 +287,8 @@ public class ConnectionManager {
     }
     
     /**
+     * Returns this node's consistent id.
+     *
      * @return This node's consistent id.
      */
     @TestOnly
@@ -291,6 +297,8 @@ public class ConnectionManager {
     }
     
     /**
+     * Returns collection of all the clients started by this connection manager.
+     *
      * @return Collection of all the clients started by this connection manager.
      */
     @TestOnly
@@ -300,6 +308,8 @@ public class ConnectionManager {
     
     
     /**
+     * Returns map of the channels.
+     *
      * @return Map of the channels.
      */
     @TestOnly

@@ -35,14 +35,8 @@ import org.junit.jupiter.api.Test;
  * Simple usage test of generated configuration schema.
  */
 public class UsageTest {
-    /**
-     *
-     */
     private ConfigurationRegistry registry;
     
-    /**
-     *
-     */
     @AfterEach
     public void after() {
         registry.stop();
