@@ -53,7 +53,10 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         srv = grid(0);
     }
 
-    /** */
+    /**
+     * Execute query with a lot of JOINs to produce very long planning phase.
+     * Cancel query on planning phase and check query registry is empty on the all nodes of the cluster.
+     */
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
         QueryEngine engine = queryProcessor(client);
@@ -76,6 +79,8 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         RunningQuery qry = F.first(running);
 
+        assertSame(qry, engine.runningQuery(qry.id()));
+
         // Waits for planning.
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> qry.state() == QueryState.PLANNING, TIMEOUT_IN_MS));
@@ -88,7 +93,10 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(0), IgniteSQLException.class, "The query was cancelled while planning");
     }
 
-    /** */
+    /**
+     * Execute query with a lot of JOINs to produce very long excution phase.
+     * Cancel query on execution phase and check query registry is empty on the all nodes of the cluster.
+     */
     @Test
     public void testCancelAtExecutionPhase() throws IgniteCheckedException {
         QueryEngine cliEngine = queryProcessor(client);
@@ -130,6 +138,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         assertEquals(1, running.size());
 
         RunningQuery qry = F.first(running);
+
+        assertSame(qry, cliEngine.runningQuery(qry.id()));
+
         qry.cancel();
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
@@ -141,7 +152,11 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
     }
 
-    /** */
+    /**
+     * Execute query with a lot of JOINs to produce very long excution phase.
+     * Cancel query on execution phase on remote node (no query originator node)
+     * and check query registry is empty on the all nodes of the cluster.
+     */
     @Test
     public void testCancelByRemoteFragment() throws IgniteCheckedException {
         QueryEngine clientEngine = queryProcessor(client);
@@ -172,6 +187,8 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         Collection<? extends RunningQuery> running = serverEngine.runningQueries();
         RunningQuery qry = F.first(running);
+
+        assertSame(qry, serverEngine.runningQuery(qry.id()));
 
         qry.cancel();
 
