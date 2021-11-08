@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
@@ -214,7 +215,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     public void onPage(
         @Nullable UUID nodeId,
-        @Nullable Object metadata,
+        @Nullable IndexQueryResultMeta metadata,
         @Nullable Collection<?> data,
         @Nullable Throwable err,
         boolean lastPage
@@ -272,7 +273,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
                 }
 
-                onMeta(metadata);
+                if (query().query().type() == GridCacheQueryType.INDEX)
+                    onMeta(metadata);
 
                 onPage(nodeId, (Collection<R>) data, lastPage);
 
@@ -295,7 +297,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected abstract void onPage(UUID nodeId, Collection<R> data, boolean lastPage);
 
     /** Handles query meta data from query node. */
-    protected void onMeta(Object meta) {
+    protected void onMeta(IndexQueryResultMeta meta) {
         // No-op.
     }
 

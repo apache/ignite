@@ -25,6 +25,7 @@ import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Defines a signle index key.
@@ -88,12 +89,12 @@ public class IndexKeyDefinition implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // Send only required info for using in MergeSort algorithm.
         out.writeInt(idxType);
-        out.writeInt(order.sortOrder().ordinal());
+        U.writeEnum(out, order.sortOrder());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         idxType = in.readInt();
-        order = new Order(SortOrder.values()[in.readInt()], null);
+        order = new Order(U.readEnum(in, SortOrder.class), null);
     }
 }

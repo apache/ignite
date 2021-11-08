@@ -48,7 +48,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     private static final long serialVersionUID = 0L;
 
     /** Future that will be completed with first page response. */
-    private final CompletableFuture<IndexQueryResultMeta> meta;
+    private final CompletableFuture<IndexQueryResultMeta> metaFut;
 
     /** */
     private final String valType;
@@ -66,13 +66,13 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         super(pageStreams);
 
         this.valType = valType;
-        this.meta = meta;
+        this.metaFut = meta;
         this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Comparator<NodePage<R>>> pageComparator() {
-        return meta.thenApply(m -> {
+        return metaFut.thenApply(m -> {
             LinkedHashMap<String, IndexKeyDefinition> keyDefs = m.keyDefinitions();
 
             GridQueryTypeDescriptor typeDesc = cctx.kernalContext().query().typeDescriptor(cctx.name(), QueryUtils.typeName(valType));

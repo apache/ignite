@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
+import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
@@ -1724,7 +1725,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param e Exception in case of error.
      * @return {@code true} if page was processed right.
      */
-    protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo, @Nullable Object metaData,
+    protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo, @Nullable IndexQueryResultMeta metaData,
         @Nullable Collection<?> data, boolean finished, @Nullable Throwable e);
 
     /**
@@ -2408,7 +2409,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final GridCacheQueryType type;
 
         /** Future of query result metadata. Completed when query actually started. */
-        private final CompletableFuture<Object> metadata;
+        private final CompletableFuture<IndexQueryResultMeta> metadata;
 
         /** Flag shows whether first result page was delivered to user. */
         private volatile boolean sentFirst;
@@ -2433,7 +2434,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** */
-        public Object metadata() {
+        public IndexQueryResultMeta metadata() {
             if (sentFirst || metadata == null)
                 return null;
 
@@ -2443,7 +2444,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** */
-        public void metadata(Object metadata) {
+        public void metadata(IndexQueryResultMeta metadata) {
             if (this.metadata != null)
                 this.metadata.complete(metadata);
         }

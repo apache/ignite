@@ -66,7 +66,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     private Set<UUID> rcvdFirstPage = ConcurrentHashMap.newKeySet();
 
     /** Metadata for IndexQuery. */
-    private final CompletableFuture<IndexQueryResultMeta> idxQryMeta;
+    private final CompletableFuture<IndexQueryResultMeta> idxQryMetaFut;
 
     /**
      * @param ctx Cache context.
@@ -97,12 +97,12 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
         if (qry.query().type() == INDEX) {
-            idxQryMeta = new CompletableFuture<>();
+            idxQryMetaFut = new CompletableFuture<>();
 
-            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMeta);
+            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMetaFut);
         }
         else {
-            idxQryMeta = null;
+            idxQryMetaFut = null;
 
             reducer = qry.query().type() == TEXT ? new TextQueryReducer<>(streamsMap) : new UnsortedCacheQueryReducer<>(streamsMap);
         }
@@ -164,9 +164,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void onMeta(Object metaData) {
-        if (metaData instanceof IndexQueryResultMeta)
-            idxQryMeta.complete((IndexQueryResultMeta)metaData);
+    @Override protected void onMeta(IndexQueryResultMeta metaData) {
+        idxQryMetaFut.complete(metaData);
     }
 
     /** {@inheritDoc} */
@@ -290,8 +289,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         if (onDone(err)) {
             streams.values().forEach(s -> s.cancel(err));
 
-            if (idxQryMeta != null && !idxQryMeta.isDone())
-                idxQryMeta.completeExceptionally(err);
+            if (idxQryMetaFut != null && !idxQryMetaFut.isDone())
+                idxQryMetaFut.completeExceptionally(err);
 
             firstPageLatch.countDown();
         }

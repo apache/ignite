@@ -416,7 +416,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override protected boolean onPageReady(
         boolean loc,
         GridCacheQueryInfo qryInfo,
-        Object idxQryMetadata,
+        IndexQueryResultMeta idxQryMetadata,
         Collection<?> data,
         boolean finished,
         Throwable e
