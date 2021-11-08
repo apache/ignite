@@ -354,6 +354,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             ctx.ports().deregisterPorts(getClass());
 
+            execSvc = null;
+
             if (!U.IGNITE_MBEANS_DISABLED)
                 unregisterMBean();
 

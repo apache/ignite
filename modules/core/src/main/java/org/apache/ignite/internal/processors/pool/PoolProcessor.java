@@ -512,7 +512,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                 0,
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UNDEFINED,
-                new OomExceptionHandler(ctx));
+                oomeHnd);
         }
 
         rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
