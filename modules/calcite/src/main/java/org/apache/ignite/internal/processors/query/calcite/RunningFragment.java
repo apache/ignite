@@ -51,11 +51,6 @@ public class RunningFragment<Row> {
     }
 
     /** */
-    public IgniteRel rootRel() {
-        return rootRel;
-    }
-
-    /** */
     public AbstractNode<Row> root() {
         return root;
     }
