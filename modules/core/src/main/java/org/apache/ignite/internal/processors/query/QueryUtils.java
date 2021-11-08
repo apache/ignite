@@ -102,6 +102,9 @@ public class QueryUtils {
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
 
+    /** Name of Primary Key index for every table. */
+    public static final String PRIMARY_KEY_INDEX = "_key_PK";
+
     /** Schema for system view. */
     public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE) ? "IGNITE" : "SYS";
 
@@ -555,7 +558,7 @@ public class QueryUtils {
                         String affField0 = field.name();
 
                         if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField0)) {
-                            affField = affField0;
+                            affField = desc.aliases().getOrDefault(affField0, affField0);
 
                             if (!escape)
                                 affField = normalizeObjectName(affField, false);
@@ -578,6 +581,8 @@ public class QueryUtils {
                     ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                 if (affField != null) {
+                    affField = desc.aliases().getOrDefault(affField, affField);
+
                     if (!escape)
                         affField = normalizeObjectName(affField, false);
 

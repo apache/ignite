@@ -256,9 +256,15 @@ public class ZookeeperDiscoveryRandomStopOrFailConcurrentTest extends ZookeeperD
         return res;
     }
 
+    /** */
     enum StopMode {
+        /** */
         STOP_ONLY,
+
+        /** */
         FAIL_ONLY,
+
+        /** */
         RANDOM
     }
 }

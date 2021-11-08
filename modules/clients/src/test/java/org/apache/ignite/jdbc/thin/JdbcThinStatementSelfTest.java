@@ -1115,6 +1115,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     @SuppressWarnings("unused")
     public static class Test {
+        /** */
         @QuerySqlField
         private int val;
 

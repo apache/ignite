@@ -452,8 +452,10 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return Class for given name.
      */
     @SuppressWarnings({"StringEquality"})
-    @Nullable public Class<?> deployedClass(String clsName, String... alias) {
+    @Nullable public IgniteBiTuple<Class<?>, Throwable> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
+
+        Throwable err = null;
 
         if (cls == null) {
             try {
@@ -469,13 +471,15 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                     onDeployed(cls);
                 }
             }
-            catch (ClassNotFoundException ignored) {
+            catch (ClassNotFoundException | LinkageError e) {
+                err = e;
+
                 // Check aliases.
                 for (String a : alias) {
                     cls = clss.get(a);
 
                     if (cls != null)
-                        return cls;
+                        return F.t(cls, null);
                     else if (!a.equals(clsName)) {
                         try {
                             cls = U.forName(a, clsLdr);
@@ -497,7 +501,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                             onDeployed(cls);
                         }
 
-                        return cls;
+                        return F.t(cls, null);
                     }
                 }
             }
@@ -507,7 +511,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
             }
         }
 
-        return cls;
+        return F.t(cls, err);
     }
 
     /**

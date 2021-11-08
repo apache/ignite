@@ -61,6 +61,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
@@ -544,7 +545,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (query instanceof TextQuery) {
             TextQuery q = (TextQuery)query;
 
-            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), isKeepBinary);
+            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), q.getPageSize(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -566,6 +567,24 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 ctx, new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute(((SpiQuery)query).getArgs());
+                    }
+                }, false);
+        }
+        else if (query instanceof IndexQuery) {
+            IndexQuery q = (IndexQuery) query;
+
+            qry = ctx.queries().createIndexQuery(q, isKeepBinary);
+
+            if (q.getPageSize() > 0)
+                qry.pageSize(q.getPageSize());
+
+            if (grp != null)
+                qry.projection(grp);
+
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX, q.getValueType(), ctx,
+                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
+                        return qry.execute();
                     }
                 }, false);
         }
@@ -914,7 +933,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (!QueryUtils.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
             !(qry instanceof ContinuousQuery) && !(qry instanceof ContinuousQueryWithTransformer) &&
-            !(qry instanceof SpiQuery) && !(qry instanceof SqlQuery) && !(qry instanceof SqlFieldsQuery))
+            !(qry instanceof SpiQuery) && !(qry instanceof SqlQuery) && !(qry instanceof SqlFieldsQuery) &&
+            !(qry instanceof IndexQuery))
             throw new CacheException("Indexing is disabled for cache: " + cacheName +
                     ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 

@@ -32,13 +32,16 @@ public class DiscreteNaiveBayesSumsHolder implements AutoCloseable, Serializable
     /** Rows count for each label */
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
 
+    /** */
     public DiscreteNaiveBayesSumsHolder() {
     }
 
+    /** */
     public Map<Double, long[][]> getValuesInBucketPerLbl() {
         return valuesInBucketPerLbl;
     }
 
+    /** */
     public Map<Double, Integer> getFeatureCountersPerLbl() {
         return featureCountersPerLbl;
     }

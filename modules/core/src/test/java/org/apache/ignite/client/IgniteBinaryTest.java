@@ -387,6 +387,7 @@ public class IgniteBinaryTest {
      * Enumeration for tests.
      */
     private enum Enum {
-        /** Default. */DEFAULT
+        /** Default. */
+        DEFAULT
     }
 }

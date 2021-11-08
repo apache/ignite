@@ -110,6 +110,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 

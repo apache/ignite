@@ -30,13 +30,15 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "getEntry={0}, async={1}")
+    @Parameterized.Parameters(name = "getEntry={0}, async={1}, misses={2}, nulls={3}")
     public static Collection parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (boolean raw : new boolean[] {false, true}) {
             for (boolean async : new boolean[] {false, true})
-                res.add(new Object[] {raw, async});
+                for (boolean misses : new boolean[] {false, true})
+                    for (boolean nulls : new boolean[] {false, true})
+                        res.add(new Object[] {raw, async, misses, nulls});
         }
 
         return res;
@@ -50,6 +52,14 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     @Parameterized.Parameter(1)
     public boolean async;
 
+    /** Misses. */
+    @Parameterized.Parameter(2)
+    public boolean misses;
+
+    /** Nulls. */
+    @Parameterized.Parameter(3)
+    public boolean nulls;
+
     /** {@inheritDoc} */
     @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
@@ -57,6 +67,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             cnt,
             raw,
             async,
+            misses,
+            nulls,
             (ReadRepairData data) -> {
                 if (all)
                     GETALL_CHECK_AND_FIX.accept(data);
@@ -74,6 +86,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             1,
             raw,
             async,
+            misses,
+            nulls,
             (ReadRepairData data) -> {
                 GET_NULL.accept(data); // first attempt.
 
@@ -92,6 +106,8 @@ public class ImplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
             cnt,
             raw,
             async,
+            misses,
+            nulls,
             (ReadRepairData data) -> {
                 if (all)
                     CONTAINS_ALL_CHECK_AND_FIX.accept(data);

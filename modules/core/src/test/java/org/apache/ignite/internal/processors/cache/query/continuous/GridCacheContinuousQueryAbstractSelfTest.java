@@ -1375,6 +1375,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore();
         }
