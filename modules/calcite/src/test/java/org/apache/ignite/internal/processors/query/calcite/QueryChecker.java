@@ -407,7 +407,7 @@ public abstract class QueryChecker {
             Object item2 = it2.next();
 
             if (!F.eq(item1, item2))
-            fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
+                fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
         }

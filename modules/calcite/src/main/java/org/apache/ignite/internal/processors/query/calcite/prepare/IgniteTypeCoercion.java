@@ -44,6 +44,15 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 return fromType.getSqlTypeName().getFamily() != toType.getSqlTypeName().getFamily();
             }
         }
+        else if (SqlTypeUtil.isIntType(toType)) {
+            RelDataType fromType = validator.deriveType(scope, node);
+
+            if (fromType == null)
+                return false;
+
+            if (SqlTypeUtil.isIntType(fromType) && fromType.getSqlTypeName() != toType.getSqlTypeName())
+                return true;
+        }
 
         return super.needToCast(scope, node, toType);
     }
