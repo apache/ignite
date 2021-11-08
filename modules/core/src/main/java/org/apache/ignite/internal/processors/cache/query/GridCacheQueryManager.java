@@ -1326,6 +1326,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                             pageSent = true;
 
+                            res.onPageSend();
+
                             if (!finished)
                                 rmvIter = false;
 
@@ -1345,6 +1347,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         onPageReady(loc, qryInfo, res.metadata(), data, true, null);
                     else
                         onPageReady(loc, qryInfo, res.metadata(), Collections.singletonList(rdc.reduce()), true, null);
+
+                    res.onPageSend();
                 }
             }
             catch (Throwable e) {
@@ -2406,6 +2410,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** Future of query result metadata. Completed when query actually started. */
         private final CompletableFuture<Object> metadata;
 
+        /** Flag shows whether first result page was delivered to user. */
+        private volatile boolean sentFirst;
+
         /**
          * @param type Query type.
          * @param rcpt ID of the recipient.
@@ -2427,7 +2434,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** */
         public Object metadata() {
-            if (metadata == null)
+            if (sentFirst || metadata == null)
                 return null;
 
             assert metadata.isDone() : "QueryResult metadata isn't completed yet.";
@@ -2439,6 +2446,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public void metadata(Object metadata) {
             if (this.metadata != null)
                 this.metadata.complete(metadata);
+        }
+
+        /** Callback to invoke, when next data page was delivered to user. */
+        public void onPageSend() {
+            sentFirst = true;
         }
 
         /** {@inheritDoc} */
