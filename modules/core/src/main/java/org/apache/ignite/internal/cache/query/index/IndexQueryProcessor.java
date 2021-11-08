@@ -197,44 +197,23 @@ public class IndexQueryProcessor {
         IndexQueryDesc idxQryDesc,
         final Map<String, String> criteriaFlds
     ) throws IgniteCheckedException {
-        SortedSegmentedIndex idx = findSortedIndexByName(idxName, idxQryDesc, false);
+        SortedSegmentedIndex idx = assertSortedIndex(idxProc.index(idxName), idxQryDesc);
 
-        if (idx != null) {
-            if (!checkIndex(idx, idxName.tableName(), criteriaFlds))
-                throw failIndexQuery("Index doesn't match criteria", null, idxQryDesc);
+        if (idx == null && !QueryUtils.PRIMARY_KEY_INDEX.equals(idxName.idxName())) {
+            String normIdxName = QueryUtils.normalizeObjectName(idxName.idxName(), false);
 
-            return idx;
+            idxName = new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), normIdxName);
+
+            idx = assertSortedIndex(idxProc.index(idxName), idxQryDesc);
         }
 
-        String normIdxName = idxName.idxName();
-
-        if (!QueryUtils.PRIMARY_KEY_INDEX.equals(normIdxName))
-            normIdxName = QueryUtils.normalizeObjectName(idxName.idxName(), false);
-
-        idxName = new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), normIdxName);
-
-        idx = findSortedIndexByName(idxName, idxQryDesc, true);
+        if (idx == null)
+            throw failIndexQuery("No index found for name: " + idxName.idxName(), null, idxQryDesc);
 
         if (!checkIndex(idx, idxName.tableName(), criteriaFlds))
             throw failIndexQuery("Index doesn't match criteria", null, idxQryDesc);
 
         return idx;
-    }
-
-    /** Finds sorted index by specified name. */
-    private @Nullable SortedSegmentedIndex findSortedIndexByName(
-        IndexName name,
-        IndexQueryDesc idxQryDesc,
-        boolean failOnNotFound
-    ) throws IgniteCheckedException {
-        Index idx = idxProc.index(name);
-
-        SortedSegmentedIndex sortedIdx = assertSortedIndex(idx, idxQryDesc);
-
-        if (idx == null && failOnNotFound)
-            throw failIndexQuery("No index found for name: " + name.idxName(), null, idxQryDesc);
-
-        return sortedIdx;
     }
 
     /**
