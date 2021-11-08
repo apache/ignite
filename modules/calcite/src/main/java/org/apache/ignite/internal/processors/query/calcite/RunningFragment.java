@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 public class RunningFragment<Row> {
-    /** */
+    /** Relation tree of the fragment is used to generate fragment human-readable description. */
     private final IgniteRel rootRel;
 
     /** */

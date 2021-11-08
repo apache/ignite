@@ -478,6 +478,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             && ((CreateTableCommand)plan.command()).insertStatement() != null) {
             RootQuery<Row> insQry = qry.childQuery(schemaHolder.schema(qry.context().schemaName()));
 
+            qryReg.register(insQry);
+
             SqlInsert insertStmt = ((CreateTableCommand)plan.command()).insertStatement();
 
             QueryPlan dmlPlan = prepareSvc.prepareSingle(insertStmt, insQry.planningContext());
