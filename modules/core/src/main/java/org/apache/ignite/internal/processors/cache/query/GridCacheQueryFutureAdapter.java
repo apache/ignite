@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
@@ -149,7 +150,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             R next = null;
 
             if (reducer.hasNextX()) {
-                next = unmaskNull(reducer.nextX());
+                next = unmaskNull(unwrapIfNeeded(reducer.nextX()));
 
                 if (!limitDisabled) {
                     cnt++;
@@ -207,11 +208,18 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * Entrypoint for handling query result page from remote node.
      *
      * @param nodeId Sender node.
+     * @param metadata Query response metadata.
      * @param data Page data.
      * @param err Error (if was).
      * @param lastPage Whether it is the last page for sender node.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean lastPage) {
+    public void onPage(
+        @Nullable UUID nodeId,
+        @Nullable IndexQueryResultMeta metadata,
+        @Nullable Collection<?> data,
+        @Nullable Throwable err,
+        boolean lastPage
+    ) {
         if (isCancelled())
             return;
 
@@ -260,8 +268,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                     data = unwrapped;
 
-                } else
+                } else if (qry.query().type() != GridCacheQueryType.INDEX) {
+                    // For IndexQuery BinaryObjects are used for sorting algorithm.
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
+                }
+
+                if (query().query().type() == GridCacheQueryType.INDEX)
+                    onMeta(metadata);
 
                 onPage(nodeId, (Collection<R>) data, lastPage);
 
@@ -282,6 +295,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** Handles new data page from query node. */
     protected abstract void onPage(UUID nodeId, Collection<R> data, boolean lastPage);
+
+    /** Handles query meta data from query node. */
+    protected void onMeta(IndexQueryResultMeta meta) {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {
@@ -326,6 +344,14 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     private R unmaskNull(R obj) {
         return obj != NULL ? obj : null;
+    }
+
+    /** */
+    private R unwrapIfNeeded(R obj) {
+        if (qry.query().type() == GridCacheQueryType.INDEX)
+            return (R)cctx.unwrapBinaryIfNeeded(obj, qry.query().keepBinary(), false, null);
+
+        return obj;
     }
 
     /**
