@@ -48,6 +48,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
@@ -259,7 +260,7 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
     /** Also checks duplicate indexed values. */
     @Test
     public void testBoolField() {
-        Function<Integer, Boolean> valGen = i -> i <= CNT / 2;
+        Function<Integer, Boolean> valGen = i -> i > CNT / 2;
 
         Function<Boolean, Person> persGen = i -> person("boolId", i);
 
@@ -272,29 +273,17 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         // All.
         check(cache.query(qry), 0, CNT, valGen, persGen);
 
-        // Lt.
+        // Eq true.
         qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
-            .setCriteria(lt("boolId", true));
+            .setCriteria(eq("boolId", true));
 
         check(cache.query(qry), CNT / 2 + 1, CNT, valGen, persGen);
 
-        // Lte.
+        // Eq false.
         qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
-            .setCriteria(lte("boolId", true));
-
-        check(cache.query(qry), 0, CNT, valGen, persGen);
-
-        // Gt.
-        qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
-            .setCriteria(gt("boolId", false));
+            .setCriteria(eq("boolId", false));
 
         check(cache.query(qry), 0, CNT / 2 + 1, valGen, persGen);
-
-        // Gte.
-        qry = new IndexQuery<Long, Person>(Person.class, boolIdx)
-            .setCriteria(gte("boolId", false));
-
-        check(cache.query(qry), 0, CNT, valGen, persGen);
     }
 
     /** */
@@ -368,7 +357,7 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
 
             assertTrue(expKeys.remove(entry.getKey()));
 
-            assertEquals(persGen.apply(valGen.apply(entry.getKey().intValue())), all.get(i).getValue());
+            assertEquals(persGen.apply(valGen.apply(left + i)), all.get(i).getValue());
         }
 
         assertTrue(expKeys.isEmpty());
