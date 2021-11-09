@@ -113,6 +113,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
             log.info("Consistency check started [grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]");
 
+            VisorConsistencyStatusTask.MAP.put(arg, "0/" + part.fullSize());
+
             long cnt = 0;
             long statusTs = 0;
 
