@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,10 +71,10 @@ class SnapshotStatusTask extends ComputeTaskAdapter<Void, Map<Object, String>> {
             private transient IgniteEx ignite;
 
             @Override public String execute() throws IgniteException {
-                String status = ignite.context().cache().context().snapshotMgr().localSnapshotStatus();
+                Serializable status = ignite.context().cache().context().snapshotMgr().localSnapshotStatus();
 
                 if (status != null)
-                    return status;
+                    return status.toString();
 
                 return "No snapshot operation.";
             }

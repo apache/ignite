@@ -878,7 +878,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return Status of the current snapshot operation, if it is in progress, or {@code null}.
      */
-    protected @Nullable String localSnapshotStatus() {
+    protected @Nullable Serializable localSnapshotStatus() {
         String name = null;
 
         SnapshotOperationRequest req = clusterSnpReq;
