@@ -206,7 +206,6 @@ public class IgniteImpl implements Ignite {
                 raftMgr,
                 baselineMgr,
                 clusterSvc.topologyService(),
-                metaStorageMgr,
                 getPartitionsStorePath(workDir)
         );
         
