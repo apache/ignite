@@ -22,6 +22,8 @@ package org.apache.ignite.internal.schema;
  */
 public class InvalidTypeException extends SchemaMismatchException {
     /**
+     * Constructor.
+     *
      * @param msg Error message.
      */
     public InvalidTypeException(String msg) {

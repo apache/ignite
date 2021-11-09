@@ -43,6 +43,8 @@ public interface Node<RowT> extends AutoCloseable {
     RelDataType rowType();
 
     /**
+     * Returns node downstream.
+     *
      * @return Node downstream.
      */
     Downstream<RowT> downstream();

@@ -32,7 +32,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 
 /**
- *
+ * IgniteMapAggregateBase.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public abstract class IgniteMapAggregateBase extends IgniteAggregate implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */

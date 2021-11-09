@@ -81,6 +81,8 @@ public enum BinaryMode {
     private final NativeTypeSpec typeSpec;
 
     /**
+     * Constructor.
+     *
      * @param typeSpec Native type spec.
      */
     BinaryMode(NativeTypeSpec typeSpec) {
@@ -88,7 +90,7 @@ public enum BinaryMode {
     }
 
     /**
-     * @return Native type spec.
+     * Get native type spec.
      */
     public NativeTypeSpec typeSpec() {
         return typeSpec;

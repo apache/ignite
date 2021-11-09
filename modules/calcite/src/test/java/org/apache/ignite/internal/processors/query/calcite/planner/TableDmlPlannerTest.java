@@ -41,6 +41,9 @@ import org.junit.jupiter.api.Test;
  */
 public class TableDmlPlannerTest extends AbstractPlannerTest {
     /**
+     * InsertCachesTableScan.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -69,6 +72,9 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * InsertCachesIndexScan.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -99,6 +105,9 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * UpdateNotCachesTableScan.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -120,6 +129,9 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * UpdateNotCachesNonDependentIndexScan.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -143,6 +155,9 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * UpdateCachesDependentIndexScan.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test

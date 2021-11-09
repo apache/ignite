@@ -26,36 +26,26 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
 /**
- *
+ * FilterNode.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class FilterNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT> {
-    /**
-     *
-     */
     private final Predicate<RowT> pred;
 
-    /**
-     *
-     */
     private final Deque<RowT> inBuf = new ArrayDeque<>(inBufSize);
 
-    /**
-     *
-     */
     private int requested;
 
-    /**
-     *
-     */
     private int waiting;
 
-    /**
-     *
-     */
     private boolean inLoop;
 
     /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param ctx  Execution context.
+     * @param rowType Rel data type.
      * @param pred Predicate.
      */
     public FilterNode(ExecutionContext<RowT> ctx, RelDataType rowType, Predicate<RowT> pred) {
@@ -127,18 +117,12 @@ public class FilterNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
         inBuf.clear();
     }
 
-    /**
-     *
-     */
     private void doFilter() throws Exception {
         checkState();
 
         filter();
     }
 
-    /**
-     *
-     */
     private void filter() throws Exception {
         inLoop = true;
         try {

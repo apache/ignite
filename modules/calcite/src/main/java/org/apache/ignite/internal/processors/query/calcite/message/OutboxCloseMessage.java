@@ -23,22 +23,23 @@ import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
- *
+ * OutboxCloseMessage interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @Transferable(value = SqlQueryMessageGroup.OUTBOX_CLOSE_MESSAGE)
 public interface OutboxCloseMessage extends NetworkMessage, Serializable {
     /**
-     * @return Query ID.
+     * Get query ID.
      */
     UUID queryId();
 
     /**
-     * @return Fragment ID.
+     * Get fragment ID.
      */
     long fragmentId();
 
     /**
-     * @return Exchange ID.
+     * Get exchange ID.
      */
     long exchangeId();
 }

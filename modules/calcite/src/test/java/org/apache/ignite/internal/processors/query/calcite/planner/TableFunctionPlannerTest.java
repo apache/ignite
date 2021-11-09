@@ -39,9 +39,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
     /** Public schema. */
     private IgniteSchema publicSchema;
 
-
     /**
-     *
+     * Setup.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @BeforeAll
     public void setup() {
@@ -60,6 +60,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestTableFunctionScan.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -70,6 +73,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestBroadcastTableAndTableFunctionJoin.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -84,6 +90,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestRandomTableAndTableFunctionJoin.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -98,6 +107,9 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestCorrelatedTableFunctionJoin.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test

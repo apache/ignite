@@ -24,9 +24,6 @@ import org.apache.ignite.internal.tostring.S;
  * bytes required to store <code>n</code> bits.
  */
 public class BitmaskNativeType extends NativeType {
-    /**
-     *
-     */
     private final int bits;
 
     /**
@@ -41,7 +38,7 @@ public class BitmaskNativeType extends NativeType {
     }
 
     /**
-     * @return Maximum number of bits to be stored in the bitmask.
+     * Get maximum number of bits to be stored in the bitmask.
      */
     public int bits() {
         return bits;

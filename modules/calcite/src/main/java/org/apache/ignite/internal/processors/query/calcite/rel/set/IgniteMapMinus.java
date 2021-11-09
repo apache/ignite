@@ -32,7 +32,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  */
 public class IgniteMapMinus extends IgniteMinus implements IgniteMapSetOp {
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteMapMinus(
             RelOptCluster cluster,
@@ -44,7 +45,8 @@ public class IgniteMapMinus extends IgniteMinus implements IgniteMapSetOp {
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteMapMinus(RelInput input) {
         super(input);

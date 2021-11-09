@@ -34,7 +34,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
  */
 public class IgniteTableSpool extends AbstractIgniteSpool implements IgniteRel {
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteTableSpool(
             RelOptCluster cluster,
@@ -65,9 +66,6 @@ public class IgniteTableSpool extends AbstractIgniteSpool implements IgniteRel {
         return visitor.visit(this);
     }
 
-    /**
-     *
-     */
     @Override
     public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteTableSpool(cluster, getTraitSet(), readType, inputs.get(0));

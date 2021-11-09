@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 /**
- *
+ * AggregateType.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public enum AggregateType {
     /** Map phase. */

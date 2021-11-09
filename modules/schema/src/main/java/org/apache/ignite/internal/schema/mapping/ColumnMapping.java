@@ -30,6 +30,9 @@ public class ColumnMapping {
     private static final IdentityMapper IDENTITY_MAPPER = new IdentityMapper();
 
     /**
+     * IdentityMapping.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @return Identity mapper instance.
      */
     public static ColumnMapper identityMapping() {
@@ -37,6 +40,9 @@ public class ColumnMapping {
     }
 
     /**
+     * CreateMapper.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param schema Schema descriptor.
      * @return Column mapper builder.
      */

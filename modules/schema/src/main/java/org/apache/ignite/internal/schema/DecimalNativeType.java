@@ -44,14 +44,14 @@ public class DecimalNativeType extends NativeType {
     }
 
     /**
-     * @return Precision.
+     * Get precision.
      */
     public int precision() {
         return precision;
     }
 
     /**
-     * @return Scale.
+     * Get scale.
      */
     public int scale() {
         return scale;

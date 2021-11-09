@@ -39,57 +39,29 @@ import org.jetbrains.annotations.Nullable;
  * A part of exchange.
  */
 public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, SingleNode<RowT> {
-    /**
-     *
-     */
     private final ExchangeService exchange;
 
-    /**
-     *
-     */
     private final MailboxRegistry registry;
 
-    /**
-     *
-     */
     private final long exchangeId;
 
-    /**
-     *
-     */
     private final long srcFragmentId;
 
-    /**
-     *
-     */
     private final Map<String, Buffer> perNodeBuffers;
 
-    /**
-     *
-     */
     private volatile Collection<String> srcNodeIds;
 
-    /**
-     *
-     */
     private Comparator<RowT> comp;
 
-    /**
-     *
-     */
     private List<Buffer> buffers;
 
-    /**
-     *
-     */
     private int requested;
 
-    /**
-     *
-     */
     private boolean inLoop;
 
     /**
+     * Constructor.
+     *
      * @param ctx           Execution context.
      * @param exchange      Exchange service.
      * @param registry      Mailbox registry.
@@ -121,8 +93,10 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
 
     /**
      * Inits this Inbox.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      *
      * @param ctx        Execution context.
+     * @param rowType    Rel data type.
      * @param srcNodeIds Source node IDs.
      * @param comp       Optional comparator for merge exchange.
      */
@@ -204,18 +178,12 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private void doPush() throws Exception {
         checkState();
 
         push();
     }
 
-    /**
-     *
-     */
     private void push() throws Exception {
         if (buffers == null) {
             for (String node : srcNodeIds) {
@@ -236,9 +204,6 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private void pushOrdered() throws Exception {
         PriorityQueue<Pair<RowT, Buffer>> heap =
                 new PriorityQueue<>(Math.max(buffers.size(), 1), Map.Entry.comparingByKey(comp));
@@ -303,9 +268,6 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private void pushUnordered() throws Exception {
         int idx = 0;
         int noProgress = 0;
@@ -352,29 +314,21 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private void acknowledge(String nodeId, int batchId) throws IgniteInternalCheckedException {
         exchange.acknowledge(nodeId, queryId(), srcFragmentId, exchangeId, batchId);
     }
 
-    /**
-     *
-     */
     private Buffer getOrCreateBuffer(String nodeId) {
         return perNodeBuffers.computeIfAbsent(nodeId, this::createBuffer);
     }
 
-    /**
-     *
-     */
     private Buffer createBuffer(String nodeId) {
         return new Buffer(nodeId);
     }
 
     /**
-     *
+     * OnNodeLeft.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public void onNodeLeft(String nodeId) {
         if (context().originatingNodeId().equals(nodeId) && srcNodeIds == null) {
@@ -384,9 +338,6 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private void onNodeLeft0(String nodeId) throws Exception {
         checkState();
 
@@ -395,42 +346,21 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private void checkNode(String nodeId) throws IgniteInternalCheckedException {
         if (!exchange.alive(nodeId)) {
             throw new IgniteInternalCheckedException("Failed to execute query, node left [nodeId=" + nodeId + ']');
         }
     }
 
-    /**
-     *
-     */
     private static final class Batch<RowT> implements Comparable<Batch<RowT>> {
-        /**
-         *
-         */
         private final int batchId;
 
-        /**
-         *
-         */
         private final boolean last;
 
-        /**
-         *
-         */
         private final List<RowT> rows;
 
-        /**
-         *
-         */
         private int idx;
 
-        /**
-         *
-         */
         private Batch(int batchId, boolean last, List<RowT> rows) {
             this.batchId = batchId;
             this.last = last;
@@ -465,77 +395,35 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
         }
     }
 
-    /**
-     *
-     */
     private enum State {
-        /**
-         *
-         */
         END,
 
-        /**
-         *
-         */
         READY,
 
-        /**
-         *
-         */
         WAITING
     }
 
-    /**
-     *
-     */
     private static final Batch<?> WAITING = new Batch<>(0, false, null);
 
-    /**
-     *
-     */
     private static final Batch<?> END = new Batch<>(0, false, null);
 
-    /**
-     *
-     */
     private final class Buffer {
-        /**
-         *
-         */
         private final String nodeId;
 
-        /**
-         *
-         */
         private int lastEnqueued = -1;
 
-        /**
-         *
-         */
         private final PriorityQueue<Batch<RowT>> batches = new PriorityQueue<>(IO_BATCH_CNT);
 
-        /**
-         *
-         */
         private Batch<RowT> curr = waitingMark();
 
-        /**
-         *
-         */
         private Buffer(String nodeId) {
             this.nodeId = nodeId;
         }
 
-        /**
-         *
-         */
         private void offer(int id, boolean last, List<RowT> rows) {
             batches.offer(new Batch<>(id, last, rows));
         }
 
-        /**
-         *
-         */
         private Batch<RowT> pollBatch() {
             if (batches.isEmpty() || batches.peek().batchId != lastEnqueued + 1) {
                 return waitingMark();
@@ -550,9 +438,6 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
             return batch;
         }
 
-        /**
-         *
-         */
         private State check() {
             if (finished()) {
                 return State.END;
@@ -571,9 +456,6 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
             return State.READY;
         }
 
-        /**
-         *
-         */
         private RowT peek() {
             assert curr != null;
             assert curr != WAITING;
@@ -583,9 +465,6 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
             return curr.rows.get(curr.idx);
         }
 
-        /**
-         *
-         */
         private RowT remove() throws IgniteInternalCheckedException {
             assert curr != null;
             assert curr != WAITING;
@@ -605,37 +484,22 @@ public class Inbox<RowT> extends AbstractNode<RowT> implements Mailbox<RowT>, Si
             return row;
         }
 
-        /**
-         *
-         */
         private boolean finished() {
             return curr == END;
         }
 
-        /**
-         *
-         */
         private boolean waiting() {
             return curr == WAITING && (curr = pollBatch()) == WAITING;
         }
 
-        /**
-         *
-         */
         private boolean isEnd() {
             return curr.last && curr.idx == curr.rows.size();
         }
 
-        /**
-         *
-         */
         private Batch<RowT> finishedMark() {
             return (Batch<RowT>) END;
         }
 
-        /**
-         *
-         */
         private Batch<RowT> waitingMark() {
             return (Batch<RowT>) WAITING;
         }

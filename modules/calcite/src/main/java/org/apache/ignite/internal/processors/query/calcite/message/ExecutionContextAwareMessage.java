@@ -26,12 +26,12 @@ import org.apache.ignite.network.NetworkMessage;
  */
 public interface ExecutionContextAwareMessage extends NetworkMessage, Serializable {
     /**
-     * @return Query ID.
+     * Get query ID.
      */
     UUID queryId();
 
     /**
-     * @return Fragment ID.
+     * Get fragment ID.
      */
     long fragmentId();
 }

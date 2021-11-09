@@ -22,7 +22,8 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.network.NetworkMessage;
 
 /**
- *
+ * MessageService interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface MessageService extends LifecycleAware {
     /**

@@ -24,7 +24,7 @@ import java.util.List;
  */
 public interface ResultSetMetadata {
     /**
-     * @return Fields metadata.
+     * Get fields metadata.
      */
     List<ResultFieldMetadata> fields();
 }

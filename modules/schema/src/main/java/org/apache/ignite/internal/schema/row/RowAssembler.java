@@ -65,54 +65,57 @@ import org.apache.ignite.internal.schema.TemporalNativeType;
 public class RowAssembler {
     /** Schema. */
     private final SchemaDescriptor schema;
-    
+
     /** The number of non-null varlen columns in values chunk. */
     private final int valVartblLen;
-    
+
     /** Target byte buffer to write to. */
     private final ExpandableByteBuf buf;
-    
+
     /** Current columns chunk. */
     private Columns curCols;
-    
+
     /** Current field index (the field is unset). */
     private int curCol;
-    
+
     /** Current offset for the next column to be appended. */
     private int curOff;
-    
+
     /** Index of the current varlen table entry. Incremented each time non-null varlen column is appended. */
     private int curVartblEntry;
-    
-    /** Base offset of the current chunk */
+
+    /** Base offset of the current chunk. */
     private int baseOff;
-    
+
     /** Offset of the null-map for current chunk. */
     private int nullMapOff;
-    
+
     /** Offset of the varlen table for current chunk. */
     private int varTblOff;
-    
+
     /** Offset of data for current chunk. */
     private int dataOff;
-    
+
     /** Row hashcode. */
     private int keyHash;
-    
+
     /** Flags. */
     private short flags;
-    
+
     /** Charset encoder for strings. Initialized lazily. */
     private CharsetEncoder strEncoder;
-    
+
     /**
+     * Get total size of the varlen table.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param entries Number of non-null varlen columns.
      * @return Total size of the varlen table.
      */
     private static int varTableChunkLength(int entries, int entrySize) {
         return entries <= 1 ? 0 : Short.BYTES + (entries - 1) * entrySize;
     }
-    
+
     /**
      * Calculates encoded string length.
      *
@@ -122,10 +125,10 @@ public class RowAssembler {
      */
     public static int utf8EncodedLength(CharSequence seq) {
         int cnt = 0;
-        
+
         for (int i = 0, len = seq.length(); i < len; i++) {
             char ch = seq.charAt(i);
-    
+
             if (ch <= 0x7F) {
                 cnt++;
             } else if (ch <= 0x7FF) {
@@ -137,10 +140,10 @@ public class RowAssembler {
                 cnt += 3;
             }
         }
-        
+
         return cnt;
     }
-    
+
     /**
      * Helper method.
      *
@@ -152,110 +155,110 @@ public class RowAssembler {
     public static void writeValue(RowAssembler rowAsm, Column col, Object val) throws SchemaMismatchException {
         if (val == null) {
             rowAsm.appendNull();
-            
+
             return;
         }
-        
+
         switch (col.type().spec()) {
             case INT8: {
                 rowAsm.appendByte((byte) val);
-                
+
                 break;
             }
             case INT16: {
                 rowAsm.appendShort((short) val);
-                
+
                 break;
             }
             case INT32: {
                 rowAsm.appendInt((int) val);
-                
+
                 break;
             }
             case INT64: {
                 rowAsm.appendLong((long) val);
-                
+
                 break;
             }
             case FLOAT: {
                 rowAsm.appendFloat((float) val);
-                
+
                 break;
             }
             case DOUBLE: {
                 rowAsm.appendDouble((double) val);
-                
+
                 break;
             }
             case UUID: {
                 rowAsm.appendUuid((UUID) val);
-                
+
                 break;
             }
             case TIME: {
                 rowAsm.appendTime((LocalTime) val);
-                
+
                 break;
             }
             case DATE: {
                 rowAsm.appendDate((LocalDate) val);
-                
+
                 break;
             }
             case DATETIME: {
                 rowAsm.appendDateTime((LocalDateTime) val);
-                
+
                 break;
             }
             case TIMESTAMP: {
                 rowAsm.appendTimestamp((Instant) val);
-                
+
                 break;
             }
             case STRING: {
                 rowAsm.appendString((String) val);
-                
+
                 break;
             }
             case BYTES: {
                 rowAsm.appendBytes((byte[]) val);
-                
+
                 break;
             }
             case BITMASK: {
                 rowAsm.appendBitmask((BitSet) val);
-                
+
                 break;
             }
             case NUMBER: {
                 rowAsm.appendNumber((BigInteger) val);
-                
+
                 break;
             }
             case DECIMAL: {
                 rowAsm.appendDecimal((BigDecimal) val);
-                
+
                 break;
             }
             default:
                 throw new InvalidTypeException("Unexpected value: " + col.type());
         }
     }
-    
+
     /**
      * Calculates byte size for BigInteger value.
      */
     public static int sizeInBytes(BigInteger val) {
         return val.bitLength() / 8 + 1;
     }
-    
+
     /**
      * Calculates byte size for BigDecimal value.
      */
     public static int sizeInBytes(BigDecimal val) {
         return sizeInBytes(val.unscaledValue());
     }
-    
+
     /**
      * Creates RowAssembler for chunks of unknown size.
      *
@@ -276,7 +279,7 @@ public class RowAssembler {
                 0,
                 nonNullVarlenValCols);
     }
-    
+
     /**
      * Creates RowAssembler for chunks with estimated sizes.
      *
@@ -296,29 +299,29 @@ public class RowAssembler {
             int valVarlenCols
     ) {
         this.schema = schema;
-        
+
         curCols = schema.keyColumns();
         curCol = 0;
         keyHash = 0;
         strEncoder = null;
-        
+
         int keyVartblLen = varTableChunkLength(keyVarlenCols, Integer.BYTES);
         valVartblLen = varTableChunkLength(valVarlenCols, Integer.BYTES);
-        
+
         initChunk(BinaryRow.KEY_CHUNK_OFFSET, curCols.nullMapSize(), keyVartblLen);
-        
+
         final Columns valCols = schema.valueColumns();
-        
+
         int size = BinaryRow.HEADER_SIZE + 2 * BinaryRow.CHUNK_LEN_FLD_SIZE
                 + keyVarlenSize + valVarlenSize
                 + keyVartblLen + valVartblLen
                 + curCols.fixsizeMaxLen() + valCols.fixsizeMaxLen()
                 + curCols.nullMapSize() + valCols.nullMapSize();
-        
+
         buf = new ExpandableByteBuf(size);
         buf.putShort(0, (short) schema.version());
     }
-    
+
     /**
      * Appends {@code null} value for the current column to the chunk.
      *
@@ -330,18 +333,18 @@ public class RowAssembler {
             throw new SchemaMismatchException(
                     "Failed to set column (null was passed, but column is not nullable): " + curCols.column(curCol));
         }
-        
+
         setNull(curCol);
-    
+
         if (isKeyChunk()) {
             keyHash *= 31;
         }
-        
+
         shiftColumn(0);
-        
+
         return this;
     }
-    
+
     /**
      * Appends byte value for the current column to the chunk.
      *
@@ -351,18 +354,18 @@ public class RowAssembler {
      */
     public RowAssembler appendByte(byte val) throws SchemaMismatchException {
         checkType(NativeTypes.INT8);
-        
+
         buf.put(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Byte.hashCode(val);
         }
-        
+
         shiftColumn(NativeTypes.INT8.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends short value for the current column to the chunk.
      *
@@ -372,18 +375,18 @@ public class RowAssembler {
      */
     public RowAssembler appendShort(short val) throws SchemaMismatchException {
         checkType(NativeTypes.INT16);
-        
+
         buf.putShort(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Short.hashCode(val);
         }
-        
+
         shiftColumn(NativeTypes.INT16.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends int value for the current column to the chunk.
      *
@@ -393,18 +396,18 @@ public class RowAssembler {
      */
     public RowAssembler appendInt(int val) throws SchemaMismatchException {
         checkType(NativeTypes.INT32);
-        
+
         buf.putInt(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Integer.hashCode(val);
         }
-        
+
         shiftColumn(NativeTypes.INT32.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends long value for the current column to the chunk.
      *
@@ -414,18 +417,18 @@ public class RowAssembler {
      */
     public RowAssembler appendLong(long val) throws SchemaMismatchException {
         checkType(NativeTypes.INT64);
-        
+
         buf.putLong(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Long.hashCode(val);
         }
-        
+
         shiftColumn(NativeTypes.INT64.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends float value for the current column to the chunk.
      *
@@ -435,18 +438,18 @@ public class RowAssembler {
      */
     public RowAssembler appendFloat(float val) throws SchemaMismatchException {
         checkType(NativeTypes.FLOAT);
-        
+
         buf.putFloat(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Float.hashCode(val);
         }
-        
+
         shiftColumn(NativeTypes.FLOAT.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends double value for the current column to the chunk.
      *
@@ -456,18 +459,18 @@ public class RowAssembler {
      */
     public RowAssembler appendDouble(double val) throws SchemaMismatchException {
         checkType(NativeTypes.DOUBLE);
-        
+
         buf.putDouble(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Double.hashCode(val);
         }
-        
+
         shiftColumn(NativeTypes.DOUBLE.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends BigInteger value for the current column to the chunk.
      *
@@ -477,35 +480,35 @@ public class RowAssembler {
      */
     public RowAssembler appendNumber(BigInteger val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.NUMBER);
-        
+
         Column col = curCols.column(curCol);
-        
+
         NumberNativeType type = (NumberNativeType) col.type();
-        
+
         //0 is a magic number for "unlimited precision"
         if (type.precision() > 0 && new BigDecimal(val).precision() > type.precision()) {
             throw new SchemaMismatchException("Failed to set number value for column '" + col.name() + "' "
                     + "(max precision exceeds allocated precision) "
                     + "[number=" + val + ", max precision=" + type.precision() + "]");
         }
-        
+
         byte[] bytes = val.toByteArray();
-        
+
         buf.putBytes(curOff, bytes);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Arrays.hashCode(bytes);
         }
-        
+
         writeVarlenOffset(curVartblEntry, curOff - dataOff);
-        
+
         curVartblEntry++;
-        
+
         shiftColumn(bytes.length);
-        
+
         return this;
     }
-    
+
     /**
      * Appends BigDecimal value for the current column to the chunk.
      *
@@ -515,36 +518,36 @@ public class RowAssembler {
      */
     public RowAssembler appendDecimal(BigDecimal val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.DECIMAL);
-        
+
         Column col = curCols.column(curCol);
-        
+
         DecimalNativeType type = (DecimalNativeType) col.type();
-        
+
         val = val.setScale(type.scale(), RoundingMode.HALF_UP);
-    
+
         if (val.precision() > type.precision()) {
             throw new SchemaMismatchException("Failed to set decimal value for column '" + col.name() + "' "
                     + "(max precision exceeds allocated precision)"
                     + " [decimal=" + val + ", max precision=" + type.precision() + "]");
         }
-        
+
         byte[] bytes = val.unscaledValue().toByteArray();
-        
+
         buf.putBytes(curOff, bytes);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Arrays.hashCode(bytes);
         }
-        
+
         writeVarlenOffset(curVartblEntry, curOff - dataOff);
-        
+
         curVartblEntry++;
-        
+
         shiftColumn(bytes.length);
-        
+
         return this;
     }
-    
+
     /**
      * Appends UUID value for the current column to the chunk.
      *
@@ -554,19 +557,19 @@ public class RowAssembler {
      */
     public RowAssembler appendUuid(UUID uuid) throws SchemaMismatchException {
         checkType(NativeTypes.UUID);
-        
+
         buf.putLong(curOff, uuid.getLeastSignificantBits());
         buf.putLong(curOff + 8, uuid.getMostSignificantBits());
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + uuid.hashCode();
         }
-        
+
         shiftColumn(NativeTypes.UUID.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends String value for the current column to the chunk.
      *
@@ -576,26 +579,26 @@ public class RowAssembler {
      */
     public RowAssembler appendString(String val) throws SchemaMismatchException {
         checkType(NativeTypes.STRING);
-        
+
         try {
             final int written = buf.putString(curOff, val, encoder());
-            
+
             writeVarlenOffset(curVartblEntry, curOff - dataOff);
-            
+
             curVartblEntry++;
-    
+
             if (isKeyChunk()) {
                 keyHash = 31 * keyHash + val.hashCode();
             }
-            
+
             shiftColumn(written);
-            
+
             return this;
         } catch (CharacterCodingException e) {
             throw new AssemblyException("Failed to encode string", e);
         }
     }
-    
+
     /**
      * Appends byte[] value for the current column to the chunk.
      *
@@ -605,22 +608,22 @@ public class RowAssembler {
      */
     public RowAssembler appendBytes(byte[] val) throws SchemaMismatchException {
         checkType(NativeTypes.BYTES);
-        
+
         buf.putBytes(curOff, val);
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + Arrays.hashCode(val);
         }
-        
+
         writeVarlenOffset(curVartblEntry, curOff - dataOff);
-        
+
         curVartblEntry++;
-        
+
         shiftColumn(val.length);
-        
+
         return this;
     }
-    
+
     /**
      * Appends BitSet value for the current column to the chunk.
      *
@@ -630,33 +633,33 @@ public class RowAssembler {
      */
     public RowAssembler appendBitmask(BitSet bitSet) throws SchemaMismatchException {
         Column col = curCols.column(curCol);
-        
+
         checkType(NativeTypeSpec.BITMASK);
-        
+
         BitmaskNativeType maskType = (BitmaskNativeType) col.type();
-    
+
         if (bitSet.length() > maskType.bits()) {
             throw new IllegalArgumentException("Failed to set bitmask for column '" + col.name() + "' "
                     + "(mask size exceeds allocated size) [mask=" + bitSet + ", maxSize=" + maskType.bits() + "]");
         }
-        
+
         byte[] arr = bitSet.toByteArray();
-        
+
         buf.putBytes(curOff, arr);
-    
+
         for (int i = 0; i < maskType.sizeInBytes() - arr.length; i++) {
             buf.put(curOff + arr.length + i, (byte) 0);
         }
-    
+
         if (isKeyChunk()) {
             keyHash = 31 * keyHash + bitSet.hashCode();
         }
-        
+
         shiftColumn(maskType.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends LocalDate value for the current column to the chunk.
      *
@@ -666,20 +669,20 @@ public class RowAssembler {
      */
     public RowAssembler appendDate(LocalDate val) throws SchemaMismatchException {
         checkType(NativeTypes.DATE);
-        
+
         int date = TemporalTypesHelper.encodeDate(val);
-        
+
         writeDate(curOff, date);
-    
+
         if (isKeyChunk()) {
             keyHash += 31 * keyHash + val.hashCode();
         }
-        
+
         shiftColumn(NativeTypes.DATE.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends LocalTime value for the current column to the chunk.
      *
@@ -689,20 +692,20 @@ public class RowAssembler {
      */
     public RowAssembler appendTime(LocalTime val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.TIME);
-        
+
         TemporalNativeType type = (TemporalNativeType) curCols.column(curCol).type();
-        
+
         writeTime(buf, curOff, val, type);
-    
+
         if (isKeyChunk()) {
             keyHash += 31 * keyHash + val.hashCode();
         }
-        
+
         shiftColumn(type.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends LocalDateTime value for the current column to the chunk.
      *
@@ -712,23 +715,23 @@ public class RowAssembler {
      */
     public RowAssembler appendDateTime(LocalDateTime val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.DATETIME);
-        
+
         TemporalNativeType type = (TemporalNativeType) curCols.column(curCol).type();
-        
+
         int date = TemporalTypesHelper.encodeDate(val.toLocalDate());
-        
+
         writeDate(curOff, date);
         writeTime(buf, curOff + 3, val.toLocalTime(), type);
-    
+
         if (isKeyChunk()) {
             keyHash += 31 * keyHash + val.hashCode();
         }
-        
+
         shiftColumn(type.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
      * Appends Instant value for the current column to the chunk.
      *
@@ -738,47 +741,49 @@ public class RowAssembler {
      */
     public RowAssembler appendTimestamp(Instant val) throws SchemaMismatchException {
         checkType(NativeTypeSpec.TIMESTAMP);
-        
+
         TemporalNativeType type = (TemporalNativeType) curCols.column(curCol).type();
-        
+
         long seconds = val.getEpochSecond();
         int nanos = TemporalTypesHelper.normalizeNanos(val.getNano(), type.precision());
-        
+
         buf.putLong(curOff, seconds);
-    
+
         if (type.precision() != 0) {
             // Write only meaningful bytes.
             buf.putInt(curOff + 8, nanos);
         }
-        
+
         if (isKeyChunk()) {
             keyHash += 31 * keyHash + Long.hashCode(seconds);
             keyHash += 31 * keyHash + Integer.hashCode(nanos);
         }
-        
+
         shiftColumn(type.sizeInBytes());
-        
+
         return this;
     }
-    
+
     /**
-     * @return Serialized row.
+     * Build serialized row.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public BinaryRow build() {
         flush();
-        
+
         return new ByteBufferRow(buf.unwrap());
     }
-    
+
     /**
-     * @return Row bytes.
+     * Get row bytes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public byte[] toBytes() {
         flush();
-        
+
         return buf.toArray();
     }
-    
+
     /**
      * Finish building row.
      */
@@ -793,22 +798,22 @@ public class RowAssembler {
                 throw new AssemblyException("Value column missed: colIdx=" + curCol);
             }
         }
-        
+
         buf.putShort(BinaryRow.FLAGS_FIELD_OFFSET, flags);
         buf.putInt(BinaryRow.KEY_HASH_FIELD_OFFSET, keyHash);
     }
-    
+
     /**
-     * @return UTF-8 string encoder.
+     * Get UTF-8 string encoder.
      */
     private CharsetEncoder encoder() {
         if (strEncoder == null) {
             strEncoder = StandardCharsets.UTF_8.newEncoder();
         }
-        
+
         return strEncoder;
     }
-    
+
     /**
      * Writes the given offset to the varlen table entry with the given index.
      *
@@ -819,10 +824,10 @@ public class RowAssembler {
         if (entryIdx == 0) {
             return; // Omit offset for very first varlen.
         }
-        
+
         buf.putInt(varTblOff + Short.BYTES + (entryIdx - 1) * Integer.BYTES, off);
     }
-    
+
     /**
      * Writes date.
      *
@@ -833,7 +838,7 @@ public class RowAssembler {
         buf.putShort(off, (short) (date >>> 8));
         buf.put(off + 2, (byte) (date & 0xFF));
     }
-    
+
     /**
      * Writes time.
      *
@@ -844,19 +849,19 @@ public class RowAssembler {
      */
     static void writeTime(ExpandableByteBuf buf, int off, LocalTime val, TemporalNativeType type) {
         long time = TemporalTypesHelper.encodeTime(type, val);
-        
+
         if (type.precision() > 3) {
             time = ((time >>> 32) << TemporalTypesHelper.NANOSECOND_PART_LEN) | (time & TemporalTypesHelper.NANOSECOND_PART_MASK);
-            
+
             buf.putInt(off, (int) (time >>> 16));
             buf.putShort(off + 4, (short) (time & 0xFFFF_FFFFL));
         } else {
             time = ((time >>> 32) << TemporalTypesHelper.MILLISECOND_PART_LEN) | (time & TemporalTypesHelper.MILLISECOND_PART_MASK);
-            
+
             buf.putInt(off, (int) time);
         }
     }
-    
+
     /**
      * Checks that the type being appended matches the column type.
      *
@@ -865,13 +870,13 @@ public class RowAssembler {
      */
     private void checkType(NativeTypeSpec type) {
         Column col = curCols.column(curCol);
-    
+
         if (col.type().spec() != type) {
             throw new SchemaMismatchException("Failed to set column (int was passed, but column is of different "
                     + "type): " + col);
         }
     }
-    
+
     /**
      * Checks that the type being appended matches the column type.
      *
@@ -880,7 +885,7 @@ public class RowAssembler {
     private void checkType(NativeType type) {
         checkType(type.spec());
     }
-    
+
     /**
      * Sets null flag in the null-map for the given column.
      *
@@ -888,27 +893,27 @@ public class RowAssembler {
      */
     private void setNull(int colIdx) {
         assert nullMapOff < varTblOff : "Null-map is omitted.";
-        
+
         int byteInMap = colIdx >> 3; // Equivalent expression for: colIidx / 8
         int bitInByte = colIdx & 7; // Equivalent expression for: colIdx % 8
-        
+
         buf.ensureCapacity(nullMapOff + byteInMap + 1);
-        
+
         buf.put(nullMapOff + byteInMap, (byte) ((Byte.toUnsignedInt(buf.get(nullMapOff + byteInMap))) | (1 << bitInByte)));
     }
-    
+
     /**
      * Shifts current column indexes as necessary, also switch to value chunk writer when moving from key to value columns.
      */
     private void shiftColumn(int size) {
         curCol++;
         curOff += size;
-    
+
         if (curCol == curCols.length()) {
             finishChunk();
         }
     }
-    
+
     /**
      * Write chunk meta.
      */
@@ -916,36 +921,39 @@ public class RowAssembler {
         if (curVartblEntry > 1) {
             assert varTblOff < dataOff : "Illegal writing of varlen when 'omit vartable' flag is set for a chunk.";
             assert varTblOff + varTableChunkLength(curVartblEntry, Integer.BYTES) == dataOff : "Vartable overlow: size=" + curVartblEntry;
-            
+
             final VarTableFormat format = VarTableFormat.format(curOff - dataOff, valVartblLen);
-            
+
             curOff -= format.compactVarTable(buf, varTblOff, curVartblEntry - 1);
-            
+
             flags |= format.formatId() << (isKeyChunk() ? KEY_FLAGS_OFFSET : VAL_FLAGS_OFFSET);
         }
-        
+
         // Write sizes.
         final int chunkLen = curOff - baseOff;
-        
+
         buf.putInt(baseOff, chunkLen);
-    
+
         if (schema.keyColumns() == curCols) {
             switchToValuChunk(BinaryRow.HEADER_SIZE + chunkLen);
         }
     }
-    
+
     /**
+     * SwitchToValueChunk.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param baseOff Chunk base offset.
      */
     private void switchToValuChunk(int baseOff) {
         // Switch key->value columns.
         curCols = schema.valueColumns();
         curCol = 0;
-        
+
         // Create value chunk writer.
         initChunk(baseOff, curCols.nullMapSize(), valVartblLen);
     }
-    
+
     /**
      * Init chunk offsets and flags.
      *
@@ -955,27 +963,30 @@ public class RowAssembler {
      */
     private void initChunk(int baseOff, int nullMapLen, int vartblLen) {
         this.baseOff = baseOff;
-        
+
         nullMapOff = baseOff + BinaryRow.CHUNK_LEN_FLD_SIZE;
         varTblOff = nullMapOff + nullMapLen;
         dataOff = varTblOff + vartblLen;
         curOff = dataOff;
         curVartblEntry = 0;
-        
+
         int flags = 0;
-    
+
         if (nullMapLen == 0) {
             flags |= VarTableFormat.OMIT_NULL_MAP_FLAG;
         }
-    
+
         if (vartblLen == 0) {
             flags |= VarTableFormat.OMIT_VARTBL_FLAG;
         }
-        
+
         this.flags |= flags << (isKeyChunk() ? KEY_FLAGS_OFFSET : VAL_FLAGS_OFFSET);
     }
-    
+
     /**
+     * IsKeyChunk.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @return {@code true} if current chunk is a key chunk, {@code false} otherwise.
      */
     private boolean isKeyChunk() {

@@ -70,7 +70,8 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteCorrelatedNestedLoopJoin(RelInput input) {
         this(input.getCluster(),
@@ -245,7 +246,8 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     }
 
     /**
-     *
+     * ExplainTerms.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Override
     public RelWriter explainTerms(RelWriter pw) {

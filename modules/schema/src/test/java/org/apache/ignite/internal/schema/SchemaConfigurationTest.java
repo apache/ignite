@@ -26,11 +26,13 @@ import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * SchemaConfigurationTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class SchemaConfigurationTest {
     /**
-     *
+     * TestInitialSchema.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void testInitialSchema() {
@@ -83,7 +85,8 @@ public class SchemaConfigurationTest {
     }
 
     /**
-     *
+     * TestSchemaModification.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void testSchemaModification() {

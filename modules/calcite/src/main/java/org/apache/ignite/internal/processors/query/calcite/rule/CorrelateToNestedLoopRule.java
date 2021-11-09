@@ -45,13 +45,11 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
  * this rule is required to support such cases.
  */
 public class CorrelateToNestedLoopRule extends ConverterRule {
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public CorrelateToNestedLoopRule(Config cfg) {
         super(cfg);
@@ -96,13 +94,11 @@ public class CorrelateToNestedLoopRule extends ConverterRule {
     }
 
     /**
-     *
+     * Config interface.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends ConverterRule.Config {
-        /**
-         *
-         */
         Config DEFAULT = ConverterRule.Config.INSTANCE
                 .withDescription("CorrelateToNestedLoopRule")
                 .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
@@ -110,7 +106,8 @@ public class CorrelateToNestedLoopRule extends ConverterRule {
                 .withConversion(LogicalCorrelate.class, Convention.NONE, IgniteConvention.INSTANCE);
 
         /**
-         *
+         * WithConversion.
+         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
          */
         default Config withConversion(Class<? extends Correlate> clazz, RelTrait in, RelTrait out) {
             return withInTrait(in)
@@ -127,9 +124,6 @@ public class CorrelateToNestedLoopRule extends ConverterRule {
         }
     }
 
-    /**
-     *
-     */
     private static boolean preMatch(Correlate corr) {
         // Only these join types are currently supported by IgniteCorrelatedNestedLoopJoin
         // and only these types are used to rewrite sub-query.

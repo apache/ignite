@@ -26,11 +26,13 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * SchemaDescriptorTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class SchemaDescriptorTest {
     /**
-     *
+     * ColumnIndexedAccess.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void columnIndexedAccess() {

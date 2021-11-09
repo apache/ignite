@@ -26,28 +26,24 @@ import org.apache.ignite.internal.schema.NativeType;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * ColumnDescriptorImpl.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ColumnDescriptorImpl implements ColumnDescriptor {
     private final boolean key;
 
     private final String name;
 
-    /**
-     *
-     */
     private final @Nullable Supplier<Object> dfltVal;
 
-    /**
-     *
-     */
     private final int fieldIdx;
 
-    /**
-     *
-     */
     private final NativeType storageType;
 
+    /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public ColumnDescriptorImpl(
             String name,
             boolean key,

@@ -41,18 +41,24 @@ public class TableSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
     private final List<RowT> rows;
 
     /**
-     * If {@code true} this spool should emit rows as soon as it stored. If {@code false} the spool have to collect all rows from underlying
-     * input.
+     * If {@code true} this spool should emit rows as soon as it stored. If {@code false} the spool have to collect all
+     * rows from underlying input.
      */
     private final boolean lazyRead;
 
     /**
-     * Flag indicates that spool pushes row to downstream. Need to check a case when a downstream produces requests on push.
+     * Flag indicates that spool pushes row to downstream. Need to check a case when a downstream produces requests on
+     * push.
      */
     private boolean inLoop;
 
     /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param ctx Execution context.
+     * @param rowType Rel data type.
+     * @param lazyRead Lazy read flag.
      */
     public TableSpoolNode(ExecutionContext<RowT> ctx, RelDataType rowType, boolean lazyRead) {
         super(ctx, rowType);
@@ -102,9 +108,6 @@ public class TableSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
         }
     }
 
-    /**
-     *
-     */
     private void doPush() throws Exception {
         if (isClosed()) {
             return;

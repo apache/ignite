@@ -235,6 +235,9 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * To array.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @return The byte array of all bytes written to this array, including gaps.
      */
     public byte[] toArray() {
@@ -261,6 +264,9 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Expand.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param cap Capacity to expand.
      */
     private void expand(int cap) {
@@ -305,7 +311,7 @@ public class ExpandableByteBuf {
     }
 
     /**
-     * @return Underlying buffer.
+     * GEt underlying buffer.
      */
     public ByteBuffer unwrap() {
         return buf.duplicate().limit(len).order(ByteOrder.LITTLE_ENDIAN);

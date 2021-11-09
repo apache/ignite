@@ -25,9 +25,6 @@ import org.jetbrains.annotations.NotNull;
  * A thin wrapper over {@link NativeTypeSpec} to instantiate parameterized constrained types.
  */
 public class NativeType implements Comparable<NativeType>, Serializable {
-    /**
-     *
-     */
     private final NativeTypeSpec typeSpec;
 
     /** Type size in bytes. */
@@ -68,8 +65,9 @@ public class NativeType implements Comparable<NativeType>, Serializable {
     }
 
     /**
-     * @return Size in bytes of the type if it is a fixlen type. For varlen types the return value is undefined, so the user should
-     *      explicitly check {@code spec().fixedLength()} before using this method.
+     * Get size in bytes of the type if it is a fixlen type. For varlen types the return value is undefined, so the user
+     * should explicitly check {@code spec().fixedLength()} before using this method.
+     *
      * @see NativeTypeSpec#fixedLength()
      */
     public int sizeInBytes() {
@@ -77,7 +75,7 @@ public class NativeType implements Comparable<NativeType>, Serializable {
     }
 
     /**
-     * @return Type specification enum.
+     * Get type specification enum.
      */
     public NativeTypeSpec spec() {
         return typeSpec;

@@ -52,11 +52,14 @@ public interface SchemaRegistry {
     @NotNull SchemaDescriptor schema(int ver) throws SchemaRegistryException;
 
     /**
-     * @return Last registereg schema version.
+     * Get last registereg schema version.
      */
     public int lastSchemaVersion();
 
     /**
+     * Resolve row.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param row Binary row.
      * @return Schema-aware row.
      */

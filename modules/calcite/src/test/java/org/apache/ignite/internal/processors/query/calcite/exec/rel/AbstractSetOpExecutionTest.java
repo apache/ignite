@@ -44,41 +44,26 @@ import org.junit.jupiter.api.Test;
  * Abstract test for set operator (MINUS, INTERSECT) execution.
  */
 public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
-    /**
-     *
-     */
     @Test
     public void testSingle() {
         checkSetOp(true, false);
     }
 
-    /**
-     *
-     */
     @Test
     public void testSingleAll() {
         checkSetOp(true, true);
     }
 
-    /**
-     *
-     */
     @Test
     public void testMapReduce() {
         checkSetOp(false, false);
     }
 
-    /**
-     *
-     */
     @Test
     public void testMapReduceAll() {
         checkSetOp(false, true);
     }
 
-    /**
-     *
-     */
     @Test
     public void testSingleWithEmptySet() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -123,12 +108,12 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         assertFalse(root.hasNext());
     }
 
-    /**
-     *
-     */
     protected abstract void checkSetOp(boolean single, boolean all);
 
     /**
+     * CheckSetOp.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param single Single.
      * @param all    All.
      */
@@ -176,9 +161,6 @@ public abstract class AbstractSetOpExecutionTest extends AbstractExecutionTest {
         assertFalse(root.hasNext());
     }
 
-    /**
-     *
-     */
     protected abstract AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx, RelDataType rowType,
             AggregateType type, boolean all, int inputsCnt);
 }

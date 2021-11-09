@@ -31,42 +31,42 @@ public class DropTableCommand implements DdlCommand {
     private boolean ifExists;
 
     /**
-     * @return Schema name.
+     * Get schema name.
      */
     public String schemaName() {
         return schemaName;
     }
 
     /**
-     * @param schemaName Schema name.
+     * Set schema name.
      */
     public void schemaName(String schemaName) {
         this.schemaName = schemaName;
     }
 
     /**
-     * @return Table name.
+     * Get table name.
      */
     public String tableName() {
         return tblName;
     }
 
     /**
-     * @param tblName Table name.
+     * Set table name.
      */
     public void tableName(String tblName) {
         this.tblName = tblName;
     }
 
     /**
-     * @return Quietly ignore this command if table does not exist.
+     * Get quietly ignore this command if table does not exist.
      */
     public boolean ifExists() {
         return ifExists;
     }
 
     /**
-     * @param ifExists Quietly ignore this command if table does not exist.
+     * Set quietly ignore this command if table does not exist.
      */
     public void ifExists(boolean ifExists) {
         this.ifExists = ifExists;

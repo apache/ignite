@@ -96,6 +96,9 @@ public class SchemaConfigurationConverter {
     }
 
     /**
+     * Put type.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param type Column type.
      */
     private static void putType(ColumnType type) {

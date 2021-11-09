@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
  */
 public interface IgniteDistribution extends RelDistribution {
     /**
-     * @return Distribution function.
+     * Get distribution function.
      */
     DistributionFunction function();
 

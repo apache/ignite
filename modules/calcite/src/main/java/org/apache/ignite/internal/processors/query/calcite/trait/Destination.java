@@ -24,13 +24,15 @@ import java.util.List;
  */
 public interface Destination<RowT> {
     /**
+     * Get target nodes list by row.
+     *
      * @param row Row.
      * @return Target nodes list for specific row.
      */
     List<String> targets(RowT row);
 
     /**
-     * @return All target nodes.
+     * Get all target nodes.
      */
     List<String> targets();
 }

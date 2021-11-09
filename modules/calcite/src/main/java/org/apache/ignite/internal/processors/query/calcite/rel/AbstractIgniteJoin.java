@@ -59,12 +59,10 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgni
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * AbstractIgniteJoin.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgniteRel {
-    /**
-     *
-     */
     protected AbstractIgniteJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
             RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
@@ -308,9 +306,6 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         return Util.first(joinRowCount(mq, this), 1D);
     }
 
-    /**
-     *
-     */
     protected boolean projectsLeft(RelCollation collation) {
         int leftFieldCount = getLeft().getRowType().getFieldCount();
         for (int field : RelCollations.ordinals(collation)) {

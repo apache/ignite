@@ -63,14 +63,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** Decimal of Integer.MAX_VALUE for fetch/offset bounding. */
     private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
 
-    /**
-     *
-     **/
     private static final int MAX_LENGTH_OF_ALIASES = 256;
 
-    /**
-     *
-     **/
     private static final Set<SqlKind> HUMAN_READABLE_ALIASES_FOR;
 
     static {
@@ -196,6 +190,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
+     * Check integer limit.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param n        Node to check limit.
      * @param nodeName Node name.
      */
@@ -251,9 +248,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         super.validateAggregateParams(aggCall, filter, null, orderList, scope);
     }
 
-    /**
-     *
-     */
     private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
         if (!SqlKind.AGGREGATE.contains(aggFunction.kind)) {
             throw newValidationError(call,
@@ -274,9 +268,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
     }
 
-    /**
-     *
-     */
     private SqlNodeList inferColumnList(SqlInsert call) {
         final SqlValidatorTable table = table(validatedNamespace(call, unknownType));
 
@@ -299,9 +290,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return columnList;
     }
 
-    /**
-     *
-     */
     private void validateUpdateFields(SqlUpdate call) {
         if (call.getTargetColumnList() == null) {
             return;
@@ -342,9 +330,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
     }
 
-    /**
-     *
-     */
     private SqlValidatorTable table(SqlValidatorNamespace ns) {
         RelOptTable relOptTable = relOptTable(ns);
 
@@ -355,26 +340,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return ns.getTable();
     }
 
-    /**
-     *
-     */
     private RelOptTable relOptTable(SqlValidatorNamespace ns) {
         return SqlValidatorUtil.getRelOptTable(
                 ns, getCatalogReader().unwrap(Prepare.CatalogReader.class), null, null);
     }
 
-    /**
-     *
-     */
     private SqlValidatorNamespace validatedNamespace(SqlNode node, RelDataType targetType) {
         SqlValidatorNamespace ns = getNamespace(node);
         validateNamespace(ns, targetType);
         return ns;
     }
 
-    /**
-     *
-     */
     private IgniteTypeFactory typeFactory() {
         return (IgniteTypeFactory) typeFactory;
     }

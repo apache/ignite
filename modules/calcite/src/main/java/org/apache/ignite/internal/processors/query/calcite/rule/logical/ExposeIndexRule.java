@@ -31,24 +31,16 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 
 /**
- *
+ * ExposeIndexRule.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ExposeIndexRule extends RelOptRule {
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE = new ExposeIndexRule();
 
-    /**
-     *
-     */
     public ExposeIndexRule() {
         super(operandJ(IgniteLogicalTableScan.class, null, ExposeIndexRule::preMatch, any()));
     }
 
-    /**
-     *
-     */
     private static boolean preMatch(IgniteLogicalTableScan scan) {
         return scan.simple() // was not modified by ProjectScanMergeRule or FilterScanMergeRule
                 && !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes to expose

@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 /**
- *
+ * QueryPlan interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface QueryPlan {
-    /** Query type */
+    /** Query type. */
     enum Type {
         QUERY, FRAGMENT, DML, DDL, EXPLAIN
     }
 
     /**
-     * @return Query type.
+     * Get query type.
      */
     Type type();
 

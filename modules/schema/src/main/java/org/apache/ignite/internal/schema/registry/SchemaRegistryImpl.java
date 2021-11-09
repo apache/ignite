@@ -128,6 +128,9 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     }
 
     /**
+     * ResolveMapping.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param curSchema Target schema.
      * @param rowSchema Row schema.
      * @return Column mapper for target schema.

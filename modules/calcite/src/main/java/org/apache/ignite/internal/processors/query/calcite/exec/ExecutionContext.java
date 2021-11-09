@@ -44,63 +44,35 @@ import org.jetbrains.annotations.NotNull;
  * Runtime context allowing access to the tables in a database.
  */
 public class ExecutionContext<RowT> implements DataContext {
-    /**
-     *
-     */
     private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
 
-    /**
-     *
-     */
     private final UUID qryId;
 
-    /**
-     *
-     */
     private final PlanningContext ctx;
 
-    /**
-     *
-     */
     private final FragmentDescription fragmentDesc;
 
-    /**
-     *
-     */
     private final Map<String, Object> params;
 
-    /**
-     *
-     */
     private final QueryTaskExecutor executor;
 
-    /**
-     *
-     */
     private final RowHandler<RowT> handler;
 
-    /**
-     *
-     */
     private final ExpressionFactory<RowT> expressionFactory;
 
-    /**
-     *
-     */
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     /**
-     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the
-     * query.
+     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value
+     * throughout the query.
      */
     private final long startTs;
 
-    /**
-     *
-     */
     private Object[] correlations = new Object[16];
 
     /**
+     * Constructor.
+     *
      * @param executor     Task executor.
      * @param ctx          Parent context.
      * @param qryId        Query ID.
@@ -131,34 +103,36 @@ public class ExecutionContext<RowT> implements DataContext {
     }
 
     /**
-     * @return Parent context.
+     * Get parent context.
      */
     public PlanningContext planningContext() {
         return ctx;
     }
 
     /**
-     * @return Query ID.
+     * Get query ID.
      */
     public UUID queryId() {
         return qryId;
     }
 
     /**
-     * @return Fragment ID.
+     * Get fragment ID.
      */
     public long fragmentId() {
         return fragmentDesc.fragmentId();
     }
 
     /**
-     * @return Target mapping.
+     * Get target mapping.
      */
     public ColocationGroup target() {
         return fragmentDesc.target();
     }
 
     /**
+     * Get remote nodes for the given exchange id.
+     *
      * @param exchangeId ExchangeId to find remote nodes for.
      * @return Remote nodes for given exchangeId.
      */
@@ -167,6 +141,8 @@ public class ExecutionContext<RowT> implements DataContext {
     }
 
     /**
+     * Get colocation group for the given source id.
+     *
      * @param sourceId SourceId to find colocation group for.
      * @return Colocation group for given sourceId.
      */
@@ -175,28 +151,28 @@ public class ExecutionContext<RowT> implements DataContext {
     }
 
     /**
-     * @return Keep binary flag.
+     * Get keep binary flag.
      */
     public boolean keepBinary() {
         return true; // TODO
     }
 
     /**
-     * @return Handler to access row fields.
+     * Get handler to access row fields.
      */
     public RowHandler<RowT> rowHandler() {
         return handler;
     }
 
     /**
-     * @return Expression factory.
+     * Get expression factory.
      */
     public ExpressionFactory<RowT> expressionFactory() {
         return expressionFactory;
     }
 
     /**
-     * @return Originating node ID.
+     * Get originating node ID.
      */
     public String originatingNodeId() {
         return planningContext().originatingNodeId();
@@ -309,13 +285,10 @@ public class ExecutionContext<RowT> implements DataContext {
     }
 
     /**
-     *
+     * RunnableX interface.
      */
     @FunctionalInterface
     public interface RunnableX {
-        /**
-         *
-         */
         void run() throws Throwable;
     }
 
@@ -328,9 +301,6 @@ public class ExecutionContext<RowT> implements DataContext {
         return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
     }
 
-    /**
-     *
-     */
     public boolean isCancelled() {
         return cancelFlag.get();
     }

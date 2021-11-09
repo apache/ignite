@@ -33,6 +33,8 @@ class ColumnMapperImpl implements ColumnMapper {
     private final Column[] cols;
 
     /**
+     * Constructor.
+     *
      * @param schema Schema descriptor.
      */
     ColumnMapperImpl(SchemaDescriptor schema) {
@@ -61,6 +63,9 @@ class ColumnMapperImpl implements ColumnMapper {
     }
 
     /**
+     * Add0.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param from Source column index.
      * @param to   Target column index.
      * @param col  Target column descriptor.

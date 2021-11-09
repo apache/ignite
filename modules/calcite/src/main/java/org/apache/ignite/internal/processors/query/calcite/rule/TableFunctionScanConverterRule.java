@@ -38,9 +38,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
  * Rule to convert a {@link LogicalTableFunctionScan} to an {@link IgniteTableFunctionScan}.
  */
 public class TableFunctionScanConverterRule extends AbstractIgniteConverterRule<LogicalTableFunctionScan> {
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE = new TableFunctionScanConverterRule();
 
     /** Default constructor. */

@@ -29,40 +29,33 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
  * Contains methods used in metadata definitions.
  */
 public enum IgniteMethod {
-    /** See {@link RowHandler#set(int, Object, Object)} */
+    /** See {@link RowHandler#set(int, Object, Object)}. */
     ROW_HANDLER_SET(RowHandler.class, "set", int.class, Object.class, Object.class),
 
-    /** See {@link RowHandler#get(int, Object)} */
+    /** See {@link RowHandler#get(int, Object)}. */
     ROW_HANDLER_GET(RowHandler.class, "get", int.class, Object.class),
 
-    /** See {@link ExecutionContext#rowHandler()} */
+    /** See {@link ExecutionContext#rowHandler()}. */
     CONTEXT_ROW_HANDLER(ExecutionContext.class, "rowHandler"),
 
-    /** See {@link ExecutionContext#getCorrelated(int)} */
+    /** See {@link ExecutionContext#getCorrelated(int)}. */
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
 
-    /** See {@link Scalar#execute(ExecutionContext, Object, Object)} */
+    /** See {@link Scalar#execute(ExecutionContext, Object, Object)}. */
     SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
 
-    /**
-     *
-     */
     SYSTEM_RANGE2(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class),
 
-    /**
-     *
-     */
     SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class),
 
-    /** See {@link FragmentMappingMetadata#fragmentMapping()} */
+    /** See {@link FragmentMappingMetadata#fragmentMapping()}. */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
 
-    /**
-     *
-     */
     private final Method method;
 
     /**
+     * Constructor.
+     *
      * @param clazz         Class where to lookup method.
      * @param methodName    Method name.
      * @param argumentTypes Method parameters types.
@@ -72,7 +65,7 @@ public enum IgniteMethod {
     }
 
     /**
-     * @return Method.
+     * Get method.
      */
     public Method method() {
         return method;

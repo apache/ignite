@@ -41,26 +41,19 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgni
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * IgniteReduceAggregateBase.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public abstract class IgniteReduceAggregateBase extends SingleRel implements TraitsAwareIgniteRel {
-    /**
-     *
-     */
     protected final ImmutableBitSet groupSet;
 
-    /**
-     *
-     */
     protected final List<ImmutableBitSet> groupSets;
 
-    /**
-     *
-     */
     protected final List<AggregateCall> aggCalls;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     protected IgniteReduceAggregateBase(
             RelOptCluster cluster,
@@ -84,7 +77,8 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     protected IgniteReduceAggregateBase(RelInput input) {
         this(
@@ -122,21 +116,24 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
     }
 
     /**
-     *
+     * Get group set.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ImmutableBitSet getGroupSet() {
         return groupSet;
     }
 
     /**
-     *
+     * Set group sets.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public List<ImmutableBitSet> getGroupSets() {
         return groupSets;
     }
 
     /**
-     *
+     * Get aggregate calls.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public List<AggregateCall> getAggregateCalls() {
         return aggCalls;

@@ -32,7 +32,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  */
 public class IgniteMapIntersect extends IgniteIntersect implements IgniteMapSetOp {
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteMapIntersect(
             RelOptCluster cluster,
@@ -44,7 +45,8 @@ public class IgniteMapIntersect extends IgniteIntersect implements IgniteMapSetO
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteMapIntersect(RelInput input) {
         super(input);

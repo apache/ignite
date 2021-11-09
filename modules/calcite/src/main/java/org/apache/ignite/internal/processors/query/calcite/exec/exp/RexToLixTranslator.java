@@ -76,49 +76,25 @@ import org.apache.calcite.util.Pair;
  * Translates {@link RexNode REX expressions} to {@link Expression linq4j expressions}.
  */
 public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result> {
-    /**
-     *
-     */
     final JavaTypeFactory typeFactory;
 
-    /**
-     *
-     */
     final RexBuilder builder;
 
-    /**
-     *
-     */
     private final RexProgram program;
 
-    /**
-     *
-     */
     final SqlConformance conformance;
 
-    /**
-     *
-     */
     private final Expression root;
 
-    /**
-     *
-     */
     final RexToLixTranslator.InputGetter inputGetter;
 
-    /**
-     *
-     */
     private final BlockBuilder list;
 
-    /**
-     *
-     */
     private final Function1<String, InputGetter> correlates;
 
     /**
-     * Map from RexLiteral's variable name to its literal, which is often a ({@link ConstantExpression})) It is used in the some {@code
-     * RexCall}'s implementors, such as {@code ExtractImplementor}.
+     * Map from RexLiteral's variable name to its literal, which is often a ({@link ConstantExpression})).
+     * It is used in the some {@code RexCall}'s implementors, such as {@code ExtractImplementor}.
      *
      * @see #getLiteral
      * @see #getLiteralValue
@@ -126,13 +102,14 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     private final Map<Expression, Expression> literalMap = new HashMap<>();
 
     /**
-     * For {@code RexCall}, keep the list of its operand's {@code Result}. It is useful when creating a {@code CallImplementor}.
+     * For {@code RexCall}, keep the list of its operand's {@code Result}. It is useful when creating a
+     * {@code CallImplementor}.
      */
     private final Map<RexCall, List<Result>> callOperandResultMap = new HashMap<>();
 
     /**
-     * Map from RexNode under specific storage type to its Result, to avoid generating duplicate code. For {@code RexInputRef}, {@code
-     * RexDynamicParam} and {@code RexFieldAccess}.
+     * Map from RexNode under specific storage type to its Result, to avoid generating duplicate code. For
+     * {@code RexInputRef}, {@code RexDynamicParam} and {@code RexFieldAccess}.
      */
     private final Map<Pair<RexNode, Type>, Result> rexWithStorageTypeResultMap = new HashMap<>();
 
@@ -141,13 +118,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      */
     private final Map<RexNode, Result> rexResultMap = new HashMap<>();
 
-    /**
-     *
-     */
     private Type currentStorageType;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     private RexToLixTranslator(RexProgram program,
             JavaTypeFactory typeFactory,
@@ -198,34 +173,22 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 .translateList(program.getProjectList(), storageTypes);
     }
 
-    /**
-     *
-     */
     Expression translate(RexNode expr) {
         final RexImpTable.NullAs nullAs =
                 RexImpTable.NullAs.of(isNullable(expr));
         return translate(expr, nullAs);
     }
 
-    /**
-     *
-     */
     Expression translate(RexNode expr, RexImpTable.NullAs nullAs) {
         return translate(expr, nullAs, null);
     }
 
-    /**
-     *
-     */
     Expression translate(RexNode expr, Type storageType) {
         final RexImpTable.NullAs nullAs =
                 RexImpTable.NullAs.of(isNullable(expr));
         return translate(expr, nullAs, storageType);
     }
 
-    /**
-     *
-     */
     Expression translate(RexNode expr, RexImpTable.NullAs nullAs,
             Type storageType) {
         currentStorageType = storageType;
@@ -242,9 +205,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return nullAs.handle(translated);
     }
 
-    /**
-     *
-     */
     Expression translateCast(
             RelDataType sourceType,
             RelDataType targetType,
@@ -761,9 +721,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return Expressions.constant(value2, javaClass);
     }
 
-    /**
-     *
-     */
     public List<Expression> translateList(
             List<RexNode> operandList,
             RexImpTable.NullAs nullAs) {
@@ -772,7 +729,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     *
+     * TranslateList.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public List<Expression> translateList(
             List<RexNode> operandList,
@@ -787,24 +745,26 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * Translates the list of {@code RexNode}, using the default output types. This might be suboptimal in terms of additional box-unbox
-     * when you use the translation later. If you know the java class that will be used to store the results, use {@link
-     * RexToLixTranslator#translateList(List, List)} version.
+     * Translates the list of {@code RexNode}, using the default output types. This might be suboptimal in terms of
+     * additional box-unbox when you use the translation later. If you know the java class that will be used to store
+     * the results, use {@link RexToLixTranslator#translateList(List, List)} version.
      *
-     * @param operandList list of RexNodes to translate
-     * @return translated expressions
+     * @param operandList List of RexNodes to translate.
+     * @return Translated expressions.
      */
     public List<Expression> translateList(List<? extends RexNode> operandList) {
         return translateList(operandList, ConverterUtils.internalTypes(operandList));
     }
 
     /**
-     * Translates the list of {@code RexNode}, while optimizing for output storage. For instance, if the result of translation is going to
-     * be stored in {@code Object[]}, and the input is {@code Object[]} as well, then translator will avoid casting, boxing, etc.
+     * Translates the list of {@code RexNode}, while optimizing for output storage. For instance, if the result of
+     * translation is going to be stored in {@code Object[]}, and the input is {@code Object[]} as well, then translator
+     * will avoid casting, boxing, etc.
      *
-     * @param operandList  list of RexNodes to translate
-     * @param storageTypes hints of the java classes that will be used to store translation results. Use null to use default storage type
-     * @return translated expressions
+     * @param operandList  list of RexNodes to translate.
+     * @param storageTypes hints of the java classes that will be used to store translation results. Use null to use
+     *                     default storage type.
+     * @return translated expressions.
      */
     public List<Expression> translateList(List<? extends RexNode> operandList,
             List<? extends Type> storageTypes) {
@@ -834,15 +794,16 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     /**
      * Returns whether an expression is nullable.
      *
-     * @param e Expression
-     * @return Whether expression is nullable
+     * @param e Expression.
+     * @return Whether expression is nullable.
      */
     public boolean isNullable(RexNode e) {
         return e.getType().isNullable();
     }
 
     /**
-     *
+     * Set block.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public RexToLixTranslator setBlock(BlockBuilder block) {
         if (block == list) {
@@ -854,7 +815,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     *
+     * Set correlates.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public RexToLixTranslator setCorrelates(
             Function1<String, InputGetter> correlates) {
@@ -866,16 +828,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 builder, conformance, correlates);
     }
 
-    /**
-     *
-     */
     public Expression getRoot() {
         return root;
     }
 
-    /**
-     *
-     */
     private static Expression scaleIntervalToNumber(
             RelDataType sourceType,
             RelDataType targetType,
@@ -912,10 +868,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * Visit {@code RexInputRef}. If it has never been visited under current storage type before, {@code RexToLixTranslator} generally
-     * produces three lines of code. For example, when visiting a column (named commission) in table Employee, the generated code snippet
-     * is: {@code final Employee current =(Employee) inputEnumerator.current(); final Integer input_value = current.commission; final
-     * boolean input_isNull = input_value == null; }
+     * Visit {@code RexInputRef}. If it has never been visited under current storage type before,
+     * {@code RexToLixTranslator} generally produces three lines of code. For example, when visiting a column (named
+     * commission) in table Employee, the generated code snippet is: {@code final Employee current =(Employee)
+     * inputEnumerator.current(); final Integer input_value = current.commission; final boolean
+     * input_isNull = input_value == null; }.
      */
     @Override
     public Result visitInputRef(RexInputRef inputRef) {
@@ -961,9 +918,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * Visit {@code RexLiteral}. If it has never been visited before, {@code RexToLixTranslator} will generate two lines of code. For
-     * example, when visiting a primitive int (10), the generated code snippet is: {@code final int literal_value = 10; final boolean
-     * literal_isNull = false; }
+     * Visit {@code RexLiteral}. If it has never been visited before, {@code RexToLixTranslator} will generate two lines
+     * of code. For example, when visiting a primitive int (10), the generated code snippet is:
+     * {@code final int literal_value = 10; final boolean literal_isNull = false; }
      */
     @Override
     public Result visitLiteral(RexLiteral literal) {
@@ -1038,8 +995,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * Visit {@code RexCall}. For most {@code SqlOperator}s, we can get the implementor from {@code RexImpTable}. Several operators (e.g.,
-     * CaseWhen) with special semantics need to be implemented separately.
+     * Visit {@code RexCall}. For most {@code SqlOperator}s, we can get the implementor from {@code RexImpTable}.
+     * Several operators (e.g., CaseWhen) with special semantics need to be implemented separately.
      */
     @Override
     public Result visitCall(RexCall call) {
@@ -1076,9 +1033,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return result;
     }
 
-    /**
-     *
-     */
     private static Result implementCallOperand(final RexNode operand,
             final Type storageType, final RexToLixTranslator translator) {
         final Type originalStorageType = translator.currentStorageType;
@@ -1091,9 +1045,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return operandResult;
     }
 
-    /**
-     *
-     */
     private static Expression implementCallOperand2(final RexNode operand,
             final Type storageType, final RexToLixTranslator translator) {
         final Type originalStorageType = translator.currentStorageType;
@@ -1104,8 +1055,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * The CASE operator is SQL’s way of handling if/then logic. Different with other {@code RexCall}s, it is not safe to implement its
-     * operands first. For example: {@code select case when s=0 then false else 100/s > 0 end from (values (1),(0)) ax(s); }
+     * The CASE operator is SQL’s way of handling if/then logic. Different with other {@code RexCall}s, it is not safe
+     * to implement its operands first. For example: {@code select case when s=0 then false else 100/s > 0 end from
+     * (values (1),(0)) ax(s); }.
      */
     private Result implementCaseWhen(RexCall call) {
         final Type returnType = typeFactory.getJavaClass(call.getType());
@@ -1126,7 +1078,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * Case statements of the form: {@code CASE WHEN a THEN b [WHEN c THEN d]* [ELSE e] END}. When {@code a = true}, returns {@code b}; when
+     * Case statements of the form: {@code CASE WHEN a THEN b [WHEN c THEN d]* [ELSE e] END}. When {@code a = true},
+     * returns {@code b}; when
      * {@code c = true}, returns {@code d}; else returns {@code e}.
      *
      * <p>We generate code that looks like:
@@ -1201,9 +1154,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 Expressions.ifThenElse(tester, ifTrue, ifFalse));
     }
 
-    /**
-     *
-     */
     private Result toInnerStorageType(final Result result, final Type storageType) {
         final Expression valueExpression =
                 ConverterUtils.toInternal(result.valueVariable, storageType);
@@ -1331,9 +1281,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return visitInputRef(fieldRef);
     }
 
-    /**
-     *
-     */
     Expression checkNull(Expression expr) {
         if (Primitive.flavor(expr.getType()) == Primitive.Flavor.PRIMITIVE) {
             return RexImpTable.FALSE_EXPR;
@@ -1342,9 +1289,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return Expressions.equal(expr, RexImpTable.NULL_EXPR);
     }
 
-    /**
-     *
-     */
     Expression checkNotNull(Expression expr) {
         if (Primitive.flavor(expr.getType()) == Primitive.Flavor.PRIMITIVE) {
             return RexImpTable.TRUE_EXPR;
@@ -1353,16 +1297,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return Expressions.notEqual(expr, RexImpTable.NULL_EXPR);
     }
 
-    /**
-     *
-     */
     BlockBuilder getBlockBuilder() {
         return list;
     }
 
-    /**
-     *
-     */
     Expression getLiteral(Expression literalVariable) {
         return literalMap.get(literalVariable);
     }
@@ -1380,36 +1318,21 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return null;
     }
 
-    /**
-     *
-     */
     List<Result> getCallOperandResult(RexCall call) {
         return callOperandResultMap.get(call);
     }
 
     /** Translates a field of an input to an expression. */
     public interface InputGetter {
-        /**
-         *
-         */
         Expression field(BlockBuilder list, int index, Type storageType);
     }
 
     /** Result of translating a {@code RexNode}. */
     public static class Result {
-        /**
-         *
-         */
         final ParameterExpression isNullVariable;
 
-        /**
-         *
-         */
         final ParameterExpression valueVariable;
 
-        /**
-         *
-         */
         public Result(ParameterExpression isNullVariable,
                 ParameterExpression valueVariable) {
             this.isNullVariable = isNullVariable;
@@ -1418,8 +1341,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
 
     /**
-     * Handle checked Exceptions declared in Method. In such case, method call should be wrapped in a try...catch block. " final Type
-     * method_call; try { method_call = callExpr } catch (Exception e) { throw new RuntimeException(e); } "
+     * Handle checked Exceptions declared in Method. In such case, method call should be wrapped in a try...catch block.
+     * " final Type method_call; try { method_call = callExpr } catch (Exception e) { throw new RuntimeException(e); } "
      */
     Expression handleMethodCheckedExceptions(Expression callExpr) {
         // Try statement

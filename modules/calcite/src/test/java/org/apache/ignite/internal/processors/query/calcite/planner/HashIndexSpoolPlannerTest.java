@@ -39,11 +39,13 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * HashIndexSpoolPlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
-     * Check equi-join on not colocated fields. CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
+     * Check equi-join on not colocated fields. CorrelatedNestedLoopJoinTest is applicable for this case only with
+     * IndexSpool.
      */
     @Test
     public void testSingleKey() throws Exception {
@@ -108,9 +110,6 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertTrue(searchRow.get(1) instanceof RexFieldAccess);
     }
 
-    /**
-     *
-     */
     @Test
     public void testMultipleKeys() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");

@@ -35,26 +35,19 @@ import org.apache.ignite.lang.IgniteException;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * QueryTemplate.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class QueryTemplate {
-    /**
-     *
-     */
     private final MappingService mappingService;
 
-    /**
-     *
-     */
     private final List<Fragment> fragments;
 
-    /**
-     *
-     */
     private final AtomicReference<ExecutionPlan> executionPlan = new AtomicReference<>();
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public QueryTemplate(MappingService mappingService, List<Fragment> fragments) {
         this.mappingService = mappingService;
@@ -68,7 +61,8 @@ public class QueryTemplate {
     }
 
     /**
-     *
+     * Map.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ExecutionPlan map(PlanningContext ctx) {
         ExecutionPlan executionPlan = this.executionPlan.get();
@@ -103,9 +97,6 @@ public class QueryTemplate {
         throw new IgniteException("Failed to map query.", ex);
     }
 
-    /**
-     *
-     */
     @NotNull
     private List<Fragment> map(List<Fragment> fragments, PlanningContext ctx, RelMetadataQuery mq) {
         List<Fragment> frgs = new ArrayList<>();
@@ -117,9 +108,6 @@ public class QueryTemplate {
         return List.copyOf(frgs);
     }
 
-    /**
-     *
-     */
     private List<Fragment> replace(List<Fragment> fragments, Fragment fragment, List<Fragment> replacement) {
         assert !nullOrEmpty(replacement);
 

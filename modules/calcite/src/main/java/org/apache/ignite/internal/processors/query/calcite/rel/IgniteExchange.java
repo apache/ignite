@@ -41,17 +41,18 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /**
      * Creates an Exchange.
      *
-     * @param cluster      Cluster this relational expression belongs to
-     * @param traitSet     Trait set
-     * @param input        Input relational expression
-     * @param distribution Distribution specification
+     * @param cluster      Cluster this relational expression belongs to.
+     * @param traitSet     Trait set.
+     * @param input        Input relational expression.
+     * @param distribution Distribution specification.
      */
     public IgniteExchange(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RelDistribution distribution) {
         super(cluster, traitSet, input, distribution);
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteExchange(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));

@@ -244,6 +244,8 @@ public class SchemaDescriptorConverter {
         private final Serializable val;
 
         /**
+         * Constructor.
+         *
          * @param val Value.
          */
         ConstantSupplier(Serializable val) {

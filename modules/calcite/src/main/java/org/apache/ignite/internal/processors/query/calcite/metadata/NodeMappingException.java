@@ -20,15 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import org.apache.calcite.rel.RelNode;
 
 /**
- *
+ * NodeMappingException.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class NodeMappingException extends RuntimeException {
-    /**
-     *
-     */
     private final RelNode node;
 
     /**
+     * Constructor.
+     *
      * @param message Message.
      * @param node    Node of a query plan, where the exception was thrown.
      * @param cause   Cause.
@@ -39,7 +39,7 @@ public class NodeMappingException extends RuntimeException {
     }
 
     /**
-     * @return Node of a query plan, where the exception was thrown.
+     * Get node of a query plan, where the exception was thrown.
      */
     public RelNode node() {
         return node;

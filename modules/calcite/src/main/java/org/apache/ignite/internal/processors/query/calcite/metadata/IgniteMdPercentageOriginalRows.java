@@ -30,13 +30,10 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 
 /**
- * See {@link org.apache.calcite.rel.metadata.RelMdPercentageOriginalRows}
+ * See {@link org.apache.calcite.rel.metadata.RelMdPercentageOriginalRows}.
  */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMetadata.PercentageOriginalRows> {
-    /**
-     *
-     */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.PERCENTAGE_ORIGINAL_ROWS.method, new IgniteMdPercentageOriginalRows());
 
@@ -47,7 +44,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
     }
 
     /**
-     *
+     * GetPercentageOriginalRows.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public Double getPercentageOriginalRows(Aggregate rel, RelMetadataQuery mq) {
         // REVIEW jvs 28-Mar-2006: The assumption here seems to be that
@@ -57,7 +55,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
     }
 
     /**
-     *
+     * GetPercentageOriginalRows.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public Double getPercentageOriginalRows(Union rel, RelMetadataQuery mq) {
         double numerator = 0.0;
@@ -92,7 +91,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
     }
 
     /**
-     *
+     * GetPercentageOriginalRows.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public Double getPercentageOriginalRows(Join rel, RelMetadataQuery mq) {
         // Assume any single-table filter conditions have already
@@ -115,7 +115,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
     }
 
     /**
-     *
+     * GetPercentageOriginalRows.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public Double getPercentageOriginalRows(RelNode rel, RelMetadataQuery mq) {
         if (rel.getInputs().size() > 1) {
@@ -154,7 +155,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
     }
 
     /**
-     *
+     * GetPercentageOriginalRows.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     private static Double quotientForPercentage(
             Double numerator,

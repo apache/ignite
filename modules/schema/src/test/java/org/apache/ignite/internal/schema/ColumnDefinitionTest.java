@@ -27,11 +27,13 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * ColumnDefinitionTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ColumnDefinitionTest {
     /**
-     *
+     * Compare columns test.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void compareColumns() {

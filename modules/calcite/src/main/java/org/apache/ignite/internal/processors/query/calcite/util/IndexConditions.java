@@ -32,35 +32,25 @@ import org.jetbrains.annotations.Nullable;
  * Index conditions and bounds holder. Conditions are not printed to terms (serialized). They are used only to calculate selectivity.
  */
 public class IndexConditions {
-    /**
-     *
-     */
     private final List<RexNode> lowerCond;
 
-    /**
-     *
-     */
     private final List<RexNode> upperCond;
 
-    /**
-     *
-     */
     private final List<RexNode> lowerBound;
 
-    /**
-     *
-     */
     private final List<RexNode> upperBound;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IndexConditions() {
         this(null, null, null, null);
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IndexConditions(
             @Nullable List<RexNode> lowerCond,
@@ -75,7 +65,8 @@ public class IndexConditions {
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IndexConditions(RelInput input) {
         lowerCond = null;
@@ -85,35 +76,36 @@ public class IndexConditions {
     }
 
     /**
-     * @return Lower index condition.
+     * Get lower index condition.
      */
     public List<RexNode> lowerCondition() {
         return lowerCond;
     }
 
     /**
-     * @return Upper index condition.
+     * Get upper index condition.
      */
     public List<RexNode> upperCondition() {
         return upperCond;
     }
 
     /**
-     * @return Lower index bounds (a row with values at the index columns).
+     * Get lower index bounds (a row with values at the index columns).
      */
     public List<RexNode> lowerBound() {
         return lowerBound;
     }
 
     /**
-     * @return Upper index bounds (a row with values at the index columns).
+     * Get upper index bounds (a row with values at the index columns).
      */
     public List<RexNode> upperBound() {
         return upperBound;
     }
 
     /**
-     *
+     * Keys.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public Set<Integer> keys() {
         if (upperBound == null && lowerBound == null) {
@@ -137,8 +129,8 @@ public class IndexConditions {
     /**
      * Describes index bounds.
      *
-     * @param pw Plan writer
-     * @return Plan writer for fluent-explain pattern
+     * @param pw Plan writer.
+     * @return Plan writer for fluent-explain pattern.
      */
     public RelWriter explainTerms(RelWriter pw) {
         return pw

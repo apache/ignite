@@ -65,35 +65,35 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     }
 
     /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}.
      */
     public IgniteDistribution distribution(IgniteRel rel, RelMetadataQuery mq) {
         return rel.distribution();
     }
 
     /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}.
      */
     public IgniteDistribution distribution(TableScan rel, RelMetadataQuery mq) {
         return rel.getTable().unwrap(IgniteTable.class).distribution();
     }
 
     /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}.
      */
     public IgniteDistribution distribution(Values rel, RelMetadataQuery mq) {
         return IgniteDistributions.broadcast();
     }
 
     /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}.
      */
     public IgniteDistribution distribution(Exchange rel, RelMetadataQuery mq) {
         return (IgniteDistribution) rel.distribution;
     }
 
     /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}.
      */
     public IgniteDistribution distribution(HepRelVertex rel, RelMetadataQuery mq) {
         return distributionForRelMetadataQuery(rel.getCurrentRel(), mq);

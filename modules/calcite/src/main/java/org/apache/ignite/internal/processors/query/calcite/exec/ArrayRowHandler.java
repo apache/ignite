@@ -25,14 +25,8 @@ import org.apache.ignite.internal.util.ArrayUtils;
  * Handler for rows that implemented as a simple objects array.
  */
 public class ArrayRowHandler implements RowHandler<Object[]> {
-    /**
-     *
-     */
     public static final RowHandler<Object[]> INSTANCE = new ArrayRowHandler();
 
-    /**
-     *
-     */
     private ArrayRowHandler() {
     }
 

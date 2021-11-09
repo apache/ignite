@@ -34,12 +34,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * TreeIndexSpoolExecutionTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
-    /**
-     *
-     */
     @Test
     public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -158,13 +156,7 @@ public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /**
-     *
-     */
     static class TestPredicate implements Predicate<Object[]> {
-        /**
-         *
-         */
         Predicate<Object[]> delegate;
 
         /** {@inheritDoc} */
@@ -178,33 +170,15 @@ public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /**
-     *
-     */
     private static class TestParams {
-        /**
-         *
-         */
         final Predicate<Object[]> pred;
 
-        /**
-         *
-         */
         final Object[] lower;
 
-        /**
-         *
-         */
         final Object[] upper;
 
-        /**
-         *
-         */
         final int expectedResultSize;
 
-        /**
-         *
-         */
         private TestParams(Predicate<Object[]> pred, Object[] lower, Object[] upper, int expectedResultSize) {
             this.pred = pred;
             this.lower = lower;

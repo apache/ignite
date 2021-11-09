@@ -637,6 +637,8 @@ public class RowAssemblerSimpleSchemaTest {
     }
 
     /**
+     * Assert row bytes equals.
+     *
      * @param expected Expected row bytes.
      * @param actual   Actual row bytes.
      */

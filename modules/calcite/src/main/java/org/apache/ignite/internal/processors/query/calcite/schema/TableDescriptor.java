@@ -35,7 +35,8 @@ import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * TableDescriptor interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface TableDescriptor extends RelProtoDataType, InitializerExpressionFactory {
     /** Returns distribution of the table. */
@@ -122,7 +123,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     );
 
     /**
-     * Converts a relational node row to internal tuple;
+     * Converts a relational node row to internal tuple.
      *
      * @param ectx Execution context.
      * @param row  Relational node row.

@@ -29,16 +29,15 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 
 /**
- *
+ * ProjectConverterRule.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalProject> {
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE = new ProjectConverterRule();
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ProjectConverterRule() {
         super(LogicalProject.class, "ProjectConverterRule");

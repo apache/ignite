@@ -33,6 +33,8 @@ public interface SchemaSerializer {
     void writeTo(SchemaDescriptor desc, ByteBuffer byteBuf);
 
     /**
+     * Reads SchemaDescriptor object from byte buffer.
+     *
      * @param byteBuf Byte buffer with byte array.
      * @return SchemaDescriptor object.
      */

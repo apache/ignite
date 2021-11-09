@@ -75,70 +75,70 @@ public class CreateTableCommand implements DdlCommand {
     private boolean encrypted;
 
     /**
-     * @return Cache name upon which new cache configuration for this table must be based.
+     * Get cache name upon which new cache configuration for this table must be based.
      */
     public String templateName() {
         return templateName;
     }
 
     /**
-     * @param templateName Cache name upon which new cache configuration for this table must be based.
+     * Set cache name upon which new cache configuration for this table must be based.
      */
     public void templateName(String templateName) {
         this.templateName = templateName;
     }
 
     /**
-     * @return Name of new cache associated with this table.
+     * Get name of new cache associated with this table.
      */
     public String cacheName() {
         return cacheName;
     }
 
     /**
-     * @param cacheName Name of new cache associated with this table.
+     * Set name of new cache associated with this table.
      */
     public void cacheName(String cacheName) {
         this.cacheName = cacheName;
     }
 
     /**
-     * @return Name of cache key type.
+     * Get name of cache key type.
      */
     public String keyTypeName() {
         return keyTypeName;
     }
 
     /**
-     * @param keyTypeName Name of cache key type.
+     * Set name of cache key type.
      */
     public void keyTypeName(String keyTypeName) {
         this.keyTypeName = keyTypeName;
     }
 
     /**
-     * @return Name of cache value type.
+     * Get name of cache value type.
      */
     public String valueTypeName() {
         return valTypeName;
     }
 
     /**
-     * @param valTypeName Name of cache value type.
+     * Set name of cache value type.
      */
     public void valueTypeName(String valTypeName) {
         this.valTypeName = valTypeName;
     }
 
     /**
-     * @return Group to put new cache into.
+     * Get group to put new cache into.
      */
     public String cacheGroup() {
         return cacheGrp;
     }
 
     /**
-     * @param cacheGrp Group to put new cache into.
+     * Set group to put new cache into.
      */
     public void cacheGroup(String cacheGrp) {
         this.cacheGrp = cacheGrp;
@@ -173,7 +173,7 @@ public class CreateTableCommand implements DdlCommand {
     //    }
 
     /**
-     * @return Backups number for new cache.
+     * Get backups number for new cache.
      */
     @Nullable
     public Integer backups() {
@@ -181,119 +181,119 @@ public class CreateTableCommand implements DdlCommand {
     }
 
     /**
-     * @param backups Backups number for new cache.
+     * Set backups number for new cache.
      */
     public void backups(Integer backups) {
         this.backups = backups;
     }
 
     /**
-     * @return Columns.
+     * Get columns.
      */
     public List<ColumnDefinition> columns() {
         return cols;
     }
 
     /**
-     * @param cols Columns.
+     * Set columns.
      */
     public void columns(List<ColumnDefinition> cols) {
         this.cols = cols;
     }
 
     /**
-     * @return Primary key columns.
+     * Get primary key columns.
      */
     public List<String> primaryKeyColumns() {
         return pkCols;
     }
 
     /**
-     * @param pkCols Primary key columns.
+     * Set primary key columns.
      */
     public void primaryKeyColumns(List<String> pkCols) {
         this.pkCols = pkCols;
     }
 
     /**
-     * @return Name of the column that represents affinity key.
+     * Get name of the column that represents affinity key.
      */
     public String affinityKey() {
         return affinityKey;
     }
 
     /**
-     * @param affinityKey Name of the column that represents affinity key.
+     * Set name of the column that represents affinity key.
      */
     public void affinityKey(String affinityKey) {
         this.affinityKey = affinityKey;
     }
 
     /**
-     * @return Schema name upon which this statement has been issued.
+     * Get schema name upon which this statement has been issued.
      */
     public String schemaName() {
         return schemaName;
     }
 
     /**
-     * @param schemaName Schema name upon which this statement has been issued.
+     * Set schema name upon which this statement has been issued.
      */
     public void schemaName(String schemaName) {
         this.schemaName = schemaName;
     }
 
     /**
-     * @return Table name.
+     * Get table name.
      */
     public String tableName() {
         return tblName;
     }
 
     /**
-     * @param tblName Table name.
+     * Set table name.
      */
     public void tableName(String tblName) {
         this.tblName = tblName;
     }
 
     /**
-     * @return Quietly ignore this command if table already exists.
+     * Get quietly ignore flag of this command (ignore if table already exists).
      */
     public boolean ifNotExists() {
         return ifNotExists;
     }
 
     /**
-     * @param ifNotExists Quietly ignore this command if table already exists.
+     * Set quietly ignore flag to ignore this command if table already exists.
      */
     public void ifNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
     }
 
     /**
-     * @return Data region name.
+     * Get data region name.
      */
     public String dataRegionName() {
         return dataRegionName;
     }
 
     /**
-     * @param dataRegionName Data region name.
+     * Set data region name.
      */
     public void dataRegionName(String dataRegionName) {
         this.dataRegionName = dataRegionName;
     }
 
     /**
-     * @return Encrypted flag.
+     * Get encrypted flag.
      */
     public boolean encrypted() {
         return encrypted;
     }
 
     /**
-     * @param encrypted Encrypted flag.
+     * Set encrypted flag.
      */
     public void encrypted(boolean encrypted) {
         this.encrypted = encrypted;

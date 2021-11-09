@@ -70,6 +70,9 @@ public class TemporalTypesTest {
     }
 
     /**
+     * CheckDate.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param date Date.
      */
     private void checkDate(LocalDate date) {
@@ -77,6 +80,9 @@ public class TemporalTypesTest {
     }
 
     /**
+     * CheckTime.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param type Type to validate against.
      * @param time Time value.
      */

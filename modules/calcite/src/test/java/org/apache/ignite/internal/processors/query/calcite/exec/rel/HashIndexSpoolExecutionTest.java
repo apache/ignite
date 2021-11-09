@@ -33,12 +33,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * HashIndexSpoolExecutionTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
-    /**
-     *
-     */
     @Test
     public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -133,13 +131,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /**
-     *
-     */
     static class TestPredicate implements Predicate<Object[]> {
-        /**
-         *
-         */
         Predicate<Object[]> delegate;
 
         /** {@inheritDoc} */
@@ -153,28 +145,13 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
     }
 
-    /**
-     *
-     */
     private static class TestParams {
-        /**
-         *
-         */
         final Predicate<Object[]> pred;
 
-        /**
-         *
-         */
         final Object[] bounds;
 
-        /**
-         *
-         */
         final int expectedResultSize;
 
-        /**
-         *
-         */
         private TestParams(Predicate<Object[]> pred, Object[] bounds, int expectedResultSize) {
             this.pred = pred;
             this.bounds = bounds;

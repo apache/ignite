@@ -30,18 +30,17 @@ import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilter
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
- *
+ * IgniteMdPredicates.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdPredicates extends RelMdPredicates {
-    /**
-     *
-     */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider
             .reflectiveSource(BuiltInMethod.PREDICATES.method, new IgniteMdPredicates());
 
     /**
-     * See {@link RelMdPredicates#getPredicates(org.apache.calcite.rel.RelNode, org.apache.calcite.rel.metadata.RelMetadataQuery)}
+     * See {@link
+     * RelMdPredicates#getPredicates(org.apache.calcite.rel.RelNode, org.apache.calcite.rel.metadata.RelMetadataQuery)}.
      */
     public RelOptPredicateList getPredicates(ProjectableFilterableTableScan rel, RelMetadataQuery mq) {
         RexNode predicate = rel.pushUpPredicate();

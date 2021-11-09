@@ -37,21 +37,16 @@ public class IndexSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
     /** Scan. */
     private final ScanNode<RowT> scan;
 
-    /** Runtime index */
+    /** Runtime index. */
     private final RuntimeIndex<RowT> idx;
 
-    /**
-     *
-     */
     private int requested;
 
-    /**
-     *
-     */
     private int waiting;
 
     /**
-     * @param ctx Execution context.
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     private IndexSpoolNode(
             ExecutionContext<RowT> ctx,
@@ -65,17 +60,11 @@ public class IndexSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
         this.scan = scan;
     }
 
-    /**
-     *
-     */
     @Override
     public void onRegister(Downstream<RowT> downstream) {
         scan.onRegister(downstream);
     }
 
-    /**
-     *
-     */
     @Override
     public Downstream<RowT> downstream() {
         return scan.downstream();
@@ -120,9 +109,6 @@ public class IndexSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
         }
     }
 
-    /**
-     *
-     */
     private void requestSource() throws Exception {
         waiting = inBufSize;
 
@@ -171,15 +157,13 @@ public class IndexSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
         super.closeInternal();
     }
 
-    /**
-     *
-     */
     private boolean indexReady() {
         return waiting == -1;
     }
 
     /**
-     *
+     * CreateTreeSpool.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <RowT> IndexSpoolNode<RowT> createTreeSpool(
             ExecutionContext<RowT> ctx,
@@ -208,7 +192,8 @@ public class IndexSpoolNode<RowT> extends AbstractNode<RowT> implements SingleNo
     }
 
     /**
-     *
+     * CreateHashSpool.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <RowT> IndexSpoolNode<RowT> createHashSpool(
             ExecutionContext<RowT> ctx,

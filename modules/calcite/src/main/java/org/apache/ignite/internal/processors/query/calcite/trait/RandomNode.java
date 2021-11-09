@@ -22,21 +22,17 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * RandomNode.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public final class RandomNode<RowT> implements Destination<RowT> {
-    /**
-     *
-     */
     private final Random random;
 
-    /**
-     *
-     */
     private final List<String> nodes;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public RandomNode(List<String> nodes) {
         this.nodes = nodes;

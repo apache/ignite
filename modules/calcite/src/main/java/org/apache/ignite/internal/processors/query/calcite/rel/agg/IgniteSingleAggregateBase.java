@@ -33,7 +33,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgni
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * IgniteSingleAggregateBase.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public abstract class IgniteSingleAggregateBase extends IgniteAggregate implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */

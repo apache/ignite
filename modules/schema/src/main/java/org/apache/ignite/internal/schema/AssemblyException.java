@@ -25,6 +25,8 @@ import org.apache.ignite.lang.IgniteInternalException;
  */
 public class AssemblyException extends IgniteInternalException {
     /**
+     * Constructor.
+     *
      * @param errMsg Error message
      */
     public AssemblyException(String errMsg) {
@@ -32,6 +34,8 @@ public class AssemblyException extends IgniteInternalException {
     }
 
     /**
+     * Constructor.
+     *
      * @param errMsg Error message
      * @param cause  Cause for this error.
      */

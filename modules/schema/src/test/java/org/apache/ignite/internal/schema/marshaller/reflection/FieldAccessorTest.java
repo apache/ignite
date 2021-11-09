@@ -61,7 +61,7 @@ public class FieldAccessorTest {
     private Random rnd;
 
     /**
-     *
+     * Init random and print seed before each test.
      */
     @BeforeEach
     public void initRandom() {
@@ -73,6 +73,9 @@ public class FieldAccessorTest {
     }
 
     /**
+     * FieldAccessor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -144,6 +147,9 @@ public class FieldAccessorTest {
     }
 
     /**
+     * NullableFieldsAccessor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -187,6 +193,9 @@ public class FieldAccessorTest {
     }
 
     /**
+     * IdentityAccessor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -205,7 +214,8 @@ public class FieldAccessorTest {
     }
 
     /**
-     *
+     * WrongIdentityAccessor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void wrongIdentityAccessor() {
@@ -302,7 +312,7 @@ public class FieldAccessorTest {
     @SuppressWarnings("InstanceVariableMayNotBeInitialized")
     private static class TestObject {
         /**
-         * @return Random TestObject.
+         * Get random TestObject.
          */
         public static TestObject randomObject(Random rnd) {
             final TestObject obj = new TestObject();

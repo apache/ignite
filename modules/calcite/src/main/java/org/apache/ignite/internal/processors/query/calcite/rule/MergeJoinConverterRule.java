@@ -37,9 +37,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
  * Ignite Join converter.
  */
 public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE = new MergeJoinConverterRule();
 
     /**

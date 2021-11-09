@@ -41,7 +41,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
- *
+ * ProjectScanMergeRule.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableScan> extends RelOptRule {
     /** Instance. */
@@ -100,9 +101,6 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                 }
             };
 
-    /**
-     *
-     */
     protected abstract T createNode(
             RelOptCluster cluster,
             T scan,

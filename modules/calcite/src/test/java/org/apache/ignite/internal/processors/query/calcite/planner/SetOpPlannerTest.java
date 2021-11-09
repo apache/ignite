@@ -47,7 +47,8 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
     /**
-     *
+     * Setup.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @BeforeAll
     public void setup() {
@@ -76,6 +77,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpRandom.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -94,6 +98,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpAllRandom.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -112,6 +119,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpBroadcast.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -128,6 +138,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpSingle.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -143,6 +156,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpSingleAndRandom.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -158,6 +174,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpSingleAndAffinity.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -173,6 +192,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpSingleAndBroadcast.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -189,6 +211,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpAffinity.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -207,6 +232,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpBroadcastAndRandom.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -223,6 +251,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpRandomNested.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -258,6 +289,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpBroadcastAndRandomNested.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -294,6 +328,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpMerge.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -318,6 +355,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpAllMerge.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -342,6 +382,9 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TestSetOpAllWithExceptMerge.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -362,60 +405,33 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
         );
     }
 
-    /**
-     *
-     */
     private String setOp(SetOp setOp) {
         return setOp.name() + ' ';
     }
 
-    /**
-     *
-     */
     private String setOpAll(SetOp setOp) {
         return setOp.name() + " ALL ";
     }
 
-    /**
-     *
-     */
     enum SetOp {
-        /**
-         *
-         */
         EXCEPT(
                 IgniteSingleMinus.class,
                 IgniteMapMinus.class,
                 IgniteReduceMinus.class
         ),
 
-        /**
-         *
-         */
         INTERSECT(
                 IgniteSingleIntersect.class,
                 IgniteMapIntersect.class,
                 IgniteReduceIntersect.class
         );
 
-        /**
-         *
-         */
         public final Class<? extends IgniteSingleSetOp> single;
 
-        /**
-         *
-         */
         public final Class<? extends IgniteMapSetOp> map;
 
-        /**
-         *
-         */
         public final Class<? extends IgniteReduceSetOp> reduce;
 
-        /**
-         *
-         */
         SetOp(
                 Class<? extends IgniteSingleSetOp> single,
                 Class<? extends IgniteMapSetOp> map,

@@ -23,36 +23,22 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- *
+ * GroupKey.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class GroupKey implements Serializable {
-    /**
-     *
-     */
     public static final GroupKey EMPTY_GRP_KEY = new GroupKey(OBJECT_EMPTY_ARRAY);
 
-    /**
-     *
-     */
     private final Object[] fields;
 
-    /**
-     *
-     */
     public GroupKey(Object[] fields) {
         this.fields = fields;
     }
 
-    /**
-     *
-     */
     public Object field(int idx) {
         return fields[idx];
     }
 
-    /**
-     *
-     */
     public int fieldsCount() {
         return fields.length;
     }
@@ -84,36 +70,26 @@ public class GroupKey implements Serializable {
         return "GroupKey" + Arrays.toString(fields);
     }
 
-    /**
-     *
-     */
     public static Builder builder(int rowLen) {
         return new Builder(rowLen);
     }
 
     /**
-     *
+     * Builder.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static class Builder {
-        /**
-         *
-         */
         private final Object[] fields;
 
-        /**
-         *
-         */
         private int idx;
 
-        /**
-         *
-         */
         private Builder(int rowLen) {
             fields = new Object[rowLen];
         }
 
         /**
-         *
+         * Add.
+         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
          */
         public Builder add(Object val) {
             if (idx == fields.length) {
@@ -126,7 +102,8 @@ public class GroupKey implements Serializable {
         }
 
         /**
-         *
+         * Build.
+         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
          */
         public GroupKey build() {
             assert idx == fields.length;

@@ -33,9 +33,6 @@ public class IgniteSqlOperatorTable extends ReflectiveSqlOperatorTable {
      */
     private static IgniteSqlOperatorTable instance;
 
-    /**
-     *
-     */
     public static final SqlFunction LENGTH =
             new SqlFunction(
                     "LENGTH",
@@ -45,9 +42,6 @@ public class IgniteSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     OperandTypes.CHARACTER,
                     SqlFunctionCategory.NUMERIC);
 
-    /**
-     *
-     */
     public static final SqlFunction SYSTEM_RANGE = new SqlSystemRangeFunction();
 
     /**

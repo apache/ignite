@@ -30,11 +30,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * ColumnsTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ColumnsTest {
     /**
-     *
+     * FixSizedColumnsIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void fixSizedColumnsIndex() {
@@ -57,7 +59,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * VarlenColumnsIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void varlenColumnsIndex() {
@@ -80,7 +83,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * MixedColumnsIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void mixedColumnsIndex() {
@@ -108,7 +112,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * NullMapSize.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void nullMapSize() {
@@ -128,7 +133,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * ColumnSchemaIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void columnSchemaIndex() {
@@ -166,7 +172,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeNoVarlenIncomplete1Byte.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeNoVarlenIncomplete1Byte() {
@@ -184,7 +191,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeNoVarlenFull1Byte.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeNoVarlenFull1Byte() {
@@ -203,7 +211,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeNoVarlenIncomplete2Bytes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeNoVarlenIncomplete2Bytes() {
@@ -224,7 +233,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeNoVarlenFull2Bytes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeNoVarlenFull2Bytes() {
@@ -251,7 +261,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeVarlenIncomplete1Byte.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeVarlenIncomplete1Byte() {
@@ -269,7 +280,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeVarlenFull1Byte.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeVarlenFull1Byte() {
@@ -288,7 +300,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeVarlenIncomplete2Bytes1.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeVarlenIncomplete2Bytes1() {
@@ -308,7 +321,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeVarlenIncomplete2Bytes2.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeVarlenIncomplete2Bytes2() {
@@ -330,7 +344,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeVarlenIncomplete2Bytes3.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeVarlenIncomplete2Bytes3() {
@@ -352,7 +367,8 @@ public class ColumnsTest {
     }
 
     /**
-     *
+     * FoldSizeVarlenFull2Bytes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void foldSizeVarlenFull2Bytes() {
@@ -378,9 +394,6 @@ public class ColumnsTest {
         checkColumnFolding(colDef);
     }
 
-    /**
-     *
-     */
     private void checkColumnFolding(Column[] colDef) {
         Columns cols = new Columns(0, colDef);
 
@@ -393,9 +406,6 @@ public class ColumnsTest {
         }
     }
 
-    /**
-     *
-     */
     private void incrementMask(boolean[] mask) {
         boolean add = true;
 
@@ -405,9 +415,6 @@ public class ColumnsTest {
         }
     }
 
-    /**
-     *
-     */
     private void checkSize(Columns cols, Column[] colDef, boolean[] nullMasks) {
         // Iterate over bytes first
         for (int b = 0; b < (cols.numberOfFixsizeColumns() + 7) / 8; b++) {
@@ -435,9 +442,6 @@ public class ColumnsTest {
         }
     }
 
-    /**
-     *
-     */
     private static Column[] columns(int size) {
         Column[] ret = new Column[size];
 

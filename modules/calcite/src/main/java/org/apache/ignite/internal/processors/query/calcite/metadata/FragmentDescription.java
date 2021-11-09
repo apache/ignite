@@ -22,37 +22,28 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- *
+ * FragmentDescription.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class FragmentDescription implements Serializable {
-    /**
-     *
-     */
     private long fragmentId;
 
-    /**
-     *
-     */
     private FragmentMapping mapping;
 
-    /**
-     *
-     */
     private ColocationGroup target;
 
-    /**
-     *
-     */
     private Long2ObjectOpenHashMap<List<String>> remoteSources;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public FragmentDescription() {
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
             Long2ObjectOpenHashMap<List<String>> remoteSources) {
@@ -63,35 +54,35 @@ public class FragmentDescription implements Serializable {
     }
 
     /**
-     *
+     * Get fragment id.
      */
     public long fragmentId() {
         return fragmentId;
     }
 
     /**
-     *
+     * Get node ids.
      */
     public List<String> nodeIds() {
         return mapping.nodeIds();
     }
 
     /**
-     *
+     * Get target.
      */
     public ColocationGroup target() {
         return target;
     }
 
     /**
-     *
+     * Get remotes.
      */
     public Long2ObjectOpenHashMap<List<String>> remotes() {
         return remoteSources;
     }
 
     /**
-     *
+     * Get mappring.
      */
     public FragmentMapping mapping() {
         return mapping;

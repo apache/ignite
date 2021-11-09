@@ -41,7 +41,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 /**
- *
+ * TableValidatorImplTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @ExtendWith(ConfigurationExtension.class)
 public class TableValidatorImplTest {

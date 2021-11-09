@@ -58,7 +58,8 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTa
 import org.apache.ignite.lang.IgniteException;
 
 /**
- *
+ * DdlSqlToCommandConverter.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class DdlSqlToCommandConverter {
     /** Processor that validates a value is a Sql Identifier. */
@@ -263,9 +264,6 @@ public class DdlSqlToCommandConverter {
         return objId.getSimple();
     }
 
-    /**
-     *
-     */
     private void ensureSchemaExists(PlanningContext ctx, String schemaName) {
         if (ctx.catalogReader().getRootSchema().getSubSchema(schemaName, true) == null) {
             throw new IgniteException("Schema with name " + schemaName + " not found"/*,
@@ -327,29 +325,19 @@ public class DdlSqlToCommandConverter {
                 + "querySql=\"" + qry + "\"]"/*, IgniteQueryErrorCode.PARSING*/);
     }
 
-    /**
-     *
-     */
     private static class TableOptionProcessor<T> {
-        /**
-         *
-         */
         private final IgniteSqlCreateTableOptionEnum key;
 
-        /**
-         *
-         */
         private final BiFunction<IgniteSqlCreateTableOption, PlanningContext, T> validator;
 
-        /**
-         *
-         */
         private final BiConsumer<CreateTableCommand, T> valSetter;
 
         /**
+         * Constructor.
+         *
          * @param key       Option key this processor is supopsed to handle.
-         * @param validator Validator that derives a value from a {@link SqlNode}, validates it and then returns if validation passed,
-         *                  throws an exeption otherwise.
+         * @param validator Validator that derives a value from a {@link SqlNode}, validates it and then returns
+         *                  if validation passed, throws an exeption otherwise.
          * @param valSetter Setter sets the value recived from the validator to the given {@link CreateTableCommand}.
          */
         private TableOptionProcessor(
@@ -363,21 +351,22 @@ public class DdlSqlToCommandConverter {
         }
 
         /**
-         * Processes the given option, validates it's value and then sets the appropriate field in a given command, throws an exception if
-         * the validation failed.
+         * Processes the given option, validates it's value and then sets the appropriate field in a given command,
+         * throws an exception if the validation failed.
          *
          * @param opt Option to validate.
          * @param ctx Planning context.
          * @param cmd Command instance to set a validation result.
          */
         private void process(IgniteSqlCreateTableOption opt, PlanningContext ctx, CreateTableCommand cmd) {
-            assert key == null || key == opt.key() : "Unexpected create table option [expected=" + key + ", actual=" + opt.key() + "]";
+            assert key == null || key == opt.key() : "Unexpected create table option [expected=" + key + ", actual="
+                    + opt.key() + "]";
 
             valSetter.accept(cmd, validator.apply(opt, ctx));
         }
 
         /**
-         * @return Key this processor is supposed to handle.
+         * Get key this processor is supposed to handle.
          */
         private IgniteSqlCreateTableOptionEnum key() {
             return key;

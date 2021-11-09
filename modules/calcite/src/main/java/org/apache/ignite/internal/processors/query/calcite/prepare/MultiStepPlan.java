@@ -23,33 +23,30 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 
 /**
- * Regular query or DML
+ * Regular query or DML.
  */
 public interface MultiStepPlan extends QueryPlan {
     /**
-     * @return Query fragments.
+     * Get query fragments.
      */
     List<Fragment> fragments();
 
     /**
-     * @return Fields metadata.
+     * Get fields metadata.
      */
     ResultSetMetadataInternal metadata();
 
     /**
+     * Mapping.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param fragment Fragment.
      * @return Mapping for a given fragment.
      */
     FragmentMapping mapping(Fragment fragment);
 
-    /**
-     *
-     */
     ColocationGroup target(Fragment fragment);
 
-    /**
-     *
-     */
     Long2ObjectOpenHashMap<List<String>> remotes(Fragment fragment);
 
     /**

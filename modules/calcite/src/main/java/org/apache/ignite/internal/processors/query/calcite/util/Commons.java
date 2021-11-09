@@ -101,14 +101,8 @@ import org.jetbrains.annotations.Nullable;
  * Utility methods.
  */
 public final class Commons {
-    /**
-     *
-     */
     public static final int IN_BUFFER_SIZE = 512;
-    
-    /**
-     *
-     */
+
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .executor(EXECUTOR)
             .sqlToRelConverterConfig(SqlToRelConverter.config()
@@ -148,51 +142,56 @@ public final class Commons {
             .costFactory(new IgniteCostFactory())
             .typeSystem(IgniteTypeSystem.INSTANCE)
             .build();
-    
-    /**
-     *
-     */
+
     private Commons() {
     }
-    
+
+    /**
+     * Create cursor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static <T> SqlCursor<T> createCursor(Iterable<T> iterable, QueryPlan plan) {
         return createCursor(iterable.iterator(), plan);
     }
-    
+
+    /**
+     * Create cursor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static <T> SqlCursor<T> createCursor(Iterator<T> iter, QueryPlan plan) {
         return new SqlCursor<>() {
             @Override
             public SqlQueryType queryType() {
                 return SqlQueryType.mapPlanTypeToSqlType(plan.type());
             }
-            
+
             @Override
             public ResultSetMetadata metadata() {
                 return plan instanceof AbstractMultiStepPlan ? ((MultiStepPlan) plan).metadata()
                         : ((ExplainPlan) plan).metadata();
             }
-            
+
             @Override
             public void remove() {
                 iter.remove();
             }
-            
+
             @Override
             public boolean hasNext() {
                 return iter.hasNext();
             }
-            
+
             @Override
             public T next() {
                 return iter.next();
             }
-            
+
             @NotNull
             @Override
             public Iterator<T> iterator() {
                 return iter;
             }
-            
+
             @Override
             public void close() throws Exception {
                 if (iter instanceof AutoCloseable) {
@@ -201,19 +200,19 @@ public final class Commons {
             }
         };
     }
-    
+
     /**
      * Combines two lists.
      */
     public static <T> List<T> combine(List<T> left, List<T> right) {
         Set<T> set = new HashSet<>(left.size() + right.size());
-        
+
         set.addAll(left);
         set.addAll(right);
-        
+
         return new ArrayList<>(set);
     }
-    
+
     /**
      * Intersects two lists.
      */
@@ -221,12 +220,12 @@ public final class Commons {
         if (nullOrEmpty(left) || nullOrEmpty(right)) {
             return Collections.emptyList();
         }
-        
+
         return left.size() > right.size()
                 ? intersect(new HashSet<>(right), left)
                 : intersect(new HashSet<>(left), right);
     }
-    
+
     /**
      * Intersects a set and a list.
      *
@@ -236,12 +235,12 @@ public final class Commons {
         if (nullOrEmpty(set) || nullOrEmpty(list)) {
             return Collections.emptyList();
         }
-        
+
         return list.stream()
                 .filter(set::contains)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Returns a given list as a typed list.
      */
@@ -249,7 +248,7 @@ public final class Commons {
     public static <T> List<T> cast(List<?> src) {
         return (List) src;
     }
-    
+
     /**
      * Transforms a given list using map function.
      */
@@ -257,61 +256,64 @@ public final class Commons {
         if (nullOrEmpty(src)) {
             return Collections.emptyList();
         }
-        
+
         List<R> list = new ArrayList<>(src.size());
-    
+
         for (T t : src) {
             list.add(mapFun.apply(t));
         }
-        
+
         return list;
     }
-    
+
     /**
      * Extracts type factory.
      */
     public static IgniteTypeFactory typeFactory(RelNode rel) {
         return typeFactory(rel.getCluster());
     }
-    
+
     /**
      * Extracts type factory.
      */
     public static IgniteTypeFactory typeFactory(RelOptCluster cluster) {
         return (IgniteTypeFactory) cluster.getTypeFactory();
     }
-    
+
     /**
      * Extracts planner context.
      */
     public static PlanningContext context(RelNode rel) {
         return context(rel.getCluster());
     }
-    
+
     /**
      * Extracts planner context.
      */
     public static PlanningContext context(RelOptCluster cluster) {
         return context(cluster.getPlanner().getContext());
     }
-    
+
     /**
      * Extracts planner context.
      */
     public static PlanningContext context(Context ctx) {
         return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
     }
-    
+
     /**
+     * ParametersMap.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param params Parameters.
      * @return Parameters map.
      */
     public static Map<String, Object> parametersMap(@Nullable Object[] params) {
         HashMap<String, Object> res = new HashMap<>();
-        
+
         return params != null ? populateParameters(res, params) : res;
     }
-    
+
     /**
      * Populates a provided map with given parameters.
      *
@@ -327,8 +329,11 @@ public final class Commons {
         }
         return dst;
     }
-    
+
     /**
+     * Close.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param o Object to close.
      */
     public static void close(Object o) throws Exception {
@@ -336,7 +341,7 @@ public final class Commons {
             ((AutoCloseable) o).close();
         }
     }
-    
+
     /**
      * Closes given resource logging possible checked exception.
      *
@@ -360,106 +365,112 @@ public final class Commons {
     //        if (o instanceof AutoCloseable)
     //            U.closeQuiet((AutoCloseable) o);
     //    }
-    
+
     /**
-     *
+     * Flat.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <T> List<T> flat(List<List<? extends T>> src) {
         return src.stream().flatMap(List::stream).collect(Collectors.toList());
     }
-    
+
     /**
-     *
+     * Max.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static int max(ImmutableIntList list) {
         if (list.isEmpty()) {
             throw new UnsupportedOperationException();
         }
-        
+
         int res = list.getInt(0);
-    
+
         for (int i = 1; i < list.size(); i++) {
             res = Math.max(res, list.getInt(i));
         }
-        
+
         return res;
     }
-    
+
     /**
-     *
+     * Min.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static int min(ImmutableIntList list) {
         if (list.isEmpty()) {
             throw new UnsupportedOperationException();
         }
-        
+
         int res = list.getInt(0);
-    
+
         for (int i = 1; i < list.size(); i++) {
             res = Math.min(res, list.getInt(i));
         }
-        
+
         return res;
     }
-    
+
     /**
-     *
+     * Compile.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <T> T compile(Class<T> interfaceType, String body) {
         final boolean debug = CalciteSystemProperty.DEBUG.value();
-    
+
         if (debug) {
             Util.debugCode(System.out, body);
         }
-        
+
         try {
             final ICompilerFactory compilerFactory;
-            
+
             try {
                 compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
             } catch (Exception e) {
                 throw new IllegalStateException(
                         "Unable to instantiate java compiler", e);
             }
-            
+
             IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
-            
+
             cbe.setImplementedInterfaces(new Class[]{interfaceType});
             cbe.setParentClassLoader(ExpressionFactoryImpl.class.getClassLoader());
-    
+
             if (debug) {
                 // Add line numbers to the generated janino class
                 cbe.setDebuggingInformation(true, true, true);
             }
-            
+
             return (T) cbe.createInstance(new StringReader(body));
         } catch (Exception e) {
             throw new IgniteException(e);
         }
     }
-    
+
     /**
-     *
+     * CheckRange.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static void checkRange(@NotNull Object[] array, int idx) {
         if (idx < 0 || idx >= array.length) {
             throw new ArrayIndexOutOfBoundsException(idx);
         }
     }
-    
+
     /**
-     *
+     * EnsureCapacity.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <T> T[] ensureCapacity(T[] array, int required) {
         if (required < 0) {
             throw new IllegalArgumentException("Capacity must not be negative");
         }
-        
+
         return array.length <= required ? Arrays.copyOf(array, nextPowerOf2(required)) : array;
     }
-    
+
     /**
-     * Round up the argument to the next highest power of 2;
+     * Round up the argument to the next highest power of 2.
      *
      * @param v Value to round up.
      * @return Next closest power of 2.
@@ -468,23 +479,25 @@ public final class Commons {
         if (v < 0) {
             throw new IllegalArgumentException("v must not be negative");
         }
-    
+
         if (v == 0) {
             return 1;
         }
-        
+
         return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
     }
-    
+
     /**
-     *
+     * Negate.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <T> Predicate<T> negate(Predicate<T> p) {
         return p.negate();
     }
-    
+
     /**
-     *
+     * Mapping.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static Mappings.TargetMapping mapping(ImmutableBitSet bitSet, int sourceSize) {
         Mapping mapping = Mappings.create(MappingType.PARTIAL_FUNCTION, sourceSize, bitSet.cardinality());
@@ -493,9 +506,10 @@ public final class Commons {
         }
         return mapping;
     }
-    
+
     /**
-     *
+     * InverseMapping.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static Mappings.TargetMapping inverseMapping(ImmutableBitSet bitSet, int sourceSize) {
         Mapping mapping = Mappings.create(MappingType.INVERSE_FUNCTION, sourceSize, bitSet.cardinality());
@@ -504,7 +518,7 @@ public final class Commons {
         }
         return mapping;
     }
-    
+
     /**
      * Checks if there is a such permutation of all {@code elems} that is prefix of provided {@code seq}.
      *
@@ -514,24 +528,24 @@ public final class Commons {
      */
     public static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
         Set<T> elems0 = new HashSet<>(elems);
-    
+
         if (seq.size() < elems0.size()) {
             return false;
         }
-        
+
         for (T e : seq) {
             if (!elems0.remove(e)) {
                 return false;
             }
-    
+
             if (elems0.isEmpty()) {
                 break;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
      *
@@ -541,20 +555,20 @@ public final class Commons {
      */
     public static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
         List<T> res = new ArrayList<>();
-        
+
         Set<T> elems0 = new HashSet<>(elems);
-        
+
         for (T e : seq) {
             if (!elems0.remove(e)) {
                 break;
             }
-            
+
             res.add(e);
         }
-        
+
         return res;
     }
-    
+
     /**
      * Quietly closes given object ignoring possible checked exception.
      *
@@ -569,111 +583,123 @@ public final class Commons {
             }
         }
     }
-    
+
+    /**
+     * NativeTypeToClass.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static Class<?> nativeTypeToClass(NativeType type) {
         assert type != null;
-        
+
         switch (type.spec()) {
             case INT8:
                 return Byte.class;
-            
+
             case INT16:
                 return Short.class;
-            
+
             case INT32:
                 return Integer.class;
-            
+
             case INT64:
                 return Long.class;
-            
+
             case FLOAT:
                 return Float.class;
-            
+
             case DOUBLE:
                 return Double.class;
-            
+
             case NUMBER:
                 return BigInteger.class;
-            
+
             case DECIMAL:
                 return BigDecimal.class;
-            
+
             case UUID:
                 return UUID.class;
-            
+
             case STRING:
                 return String.class;
-            
+
             case BYTES:
                 return byte[].class;
-            
+
             case BITMASK:
                 return BitSet.class;
-            
+
             case DATE:
                 return LocalDate.class;
-            
+
             case TIME:
                 return LocalTime.class;
-            
+
             case DATETIME:
                 return LocalDateTime.class;
-            
+
             case TIMESTAMP:
                 return Instant.class;
-            
+
             default:
                 throw new IllegalArgumentException("Unsupported type " + type.spec());
         }
     }
-    
+
+    /**
+     * NativeTypePrecision.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static int nativeTypePrecision(NativeType type) {
         assert type != null;
-        
+
         switch (type.spec()) {
             case INT8:
                 return 3;
-            
+
             case INT16:
                 return 5;
-            
+
             case INT32:
                 return 10;
-            
+
             case INT64:
                 return 19;
-            
+
             case FLOAT:
             case DOUBLE:
                 return 15;
-            
+
             case NUMBER:
                 return ((NumberNativeType) type).precision();
-            
+
             case DECIMAL:
                 return ((DecimalNativeType) type).precision();
-            
+
             case UUID:
             case DATE:
                 return -1;
-            
+
             case TIME:
             case DATETIME:
             case TIMESTAMP:
                 return ((TemporalNativeType) type).precision();
-            
+
             case BYTES:
             case STRING:
                 return ((VarlenNativeType) type).length();
-            
+
             case BITMASK:
                 return ((BitmaskNativeType) type).bits();
-            
+
             default:
                 throw new IllegalArgumentException("Unsupported type " + type.spec());
         }
     }
-    
+
+    /**
+     * NativeTypeScale.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static int nativeTypeScale(NativeType type) {
         switch (type.spec()) {
             case INT8:
@@ -682,7 +708,7 @@ public final class Commons {
             case INT64:
             case NUMBER:
                 return 0;
-            
+
             case FLOAT:
             case DOUBLE:
             case UUID:
@@ -694,28 +720,29 @@ public final class Commons {
             case STRING:
             case BITMASK:
                 return Integer.MIN_VALUE;
-            
+
             case DECIMAL:
                 return ((DecimalNativeType) type).scale();
-            
+
             default:
                 throw new IllegalArgumentException("Unsupported type " + type.spec());
         }
     }
-    
+
     /**
-     *
+     * CompoundComparator.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <T> Comparator<T> compoundComparator(Iterable<Comparator<T>> cmps) {
         return (r1, r2) -> {
             for (Comparator<T> cmp : cmps) {
                 int result = cmp.compare(r1, r2);
-                
+
                 if (result != 0) {
                     return result;
                 }
             }
-            
+
             return 0;
         };
     }

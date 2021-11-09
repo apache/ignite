@@ -573,6 +573,9 @@ public class SchemaRegistryImplTest {
     }
 
     /**
+     * SchemaHistory.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param history Table schema history.
      * @return Schema history map.
      */

@@ -27,7 +27,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 
 /**
- *
+ * IgniteMdDistinctRowCount.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdDistinctRowCount extends RelMdDistinctRowCount {

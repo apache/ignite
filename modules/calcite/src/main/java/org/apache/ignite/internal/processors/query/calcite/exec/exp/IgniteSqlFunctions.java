@@ -54,9 +54,6 @@ public class IgniteSqlFunctions {
         return new RangeTable(rangeStart, rangeEnd, increment);
     }
 
-    /**
-     *
-     */
     private static class RangeTable implements ScannableTable {
         /** Start of the range. */
         private final Object rangeStart;
@@ -68,10 +65,11 @@ public class IgniteSqlFunctions {
         private final Object increment;
 
         /**
-         * Note: {@code Object} arguments required here due to: 1. {@code NULL} arguments need to be supported, so we can't use {@code long}
-         * arguments type. 2. {@code Integer} and other numeric classes can be converted to {@code long} type by java, but can't be
-         * converted to {@code Long} type, so we can't use {@code Long} arguments type either. Instead, we accept {@code Object} arguments
-         * type and try to convert valid types to {@code long}.
+         * Note: {@code Object} arguments required here due to: 1. {@code NULL} arguments need to be supported, so we
+         * can't use {@code long} arguments type. 2. {@code Integer} and other numeric classes can be converted to
+         * {@code long} type by java, but can't be converted to {@code Long} type, so we can't use {@code Long}
+         * arguments type either. Instead, we accept {@code Object} arguments type and try to convert valid types to
+         * {@code long}.
          */
         RangeTable(Object rangeStart, Object rangeEnd, Object increment) {
             this.rangeStart = rangeStart;
@@ -132,9 +130,6 @@ public class IgniteSqlFunctions {
             };
         }
 
-        /**
-         *
-         */
         private long convertToLongArg(Object val, String name) {
             if (val instanceof Byte || val instanceof Short || val instanceof Integer || val instanceof Long) {
                 return ((Number) val).longValue();

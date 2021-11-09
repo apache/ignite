@@ -30,137 +30,137 @@ import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
  */
 public interface IgniteRelVisitor<T> {
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteSender rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteFilter rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteTrimExchange rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteProject rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteNestedLoopJoin rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteCorrelatedNestedLoopJoin rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteMergeJoin rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteIndexScan rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteTableScan rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteReceiver rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteExchange rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteSingleHashAggregate rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteMapHashAggregate rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteReduceHashAggregate rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteSingleSortAggregate rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteMapSortAggregate rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteReduceSortAggregate rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteTableModify rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteValues rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteUnionAll rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteSort rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteTableSpool rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteSortedIndexSpool rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteLimit rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteHashIndexSpool rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteSetOp rel);
 
     /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
      */
     T visit(IgniteTableFunctionScan rel);
 

@@ -33,21 +33,16 @@ import org.jetbrains.annotations.NotNull;
  * Runtime hash index based on on-heap hash map.
  */
 public class RuntimeHashIndex<RowT> implements RuntimeIndex<RowT> {
-    /**
-     *
-     */
     protected final ExecutionContext<RowT> ectx;
 
-    /**
-     *
-     */
     private final ImmutableBitSet keys;
 
     /** Rows. */
     private HashMap<GroupKey, List<RowT>> rows;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public RuntimeHashIndex(
             ExecutionContext<RowT> ectx,
@@ -69,24 +64,15 @@ public class RuntimeHashIndex<RowT> implements RuntimeIndex<RowT> {
         eqRows.add(r);
     }
 
-    /**
-     *
-     */
     @Override
     public void close() {
         rows.clear();
     }
 
-    /**
-     *
-     */
     public Iterable<RowT> scan(Supplier<RowT> searchRow) {
         return new IndexScan(searchRow);
     }
 
-    /**
-     *
-     */
     private GroupKey key(RowT r) {
         GroupKey.Builder b = GroupKey.builder(keys.cardinality());
 
@@ -97,14 +83,14 @@ public class RuntimeHashIndex<RowT> implements RuntimeIndex<RowT> {
         return b.build();
     }
 
-    /**
-     *
-     */
     private class IndexScan implements Iterable<RowT>, AutoCloseable {
         /** Search row. */
         private final Supplier<RowT> searchRow;
 
         /**
+         * Constructor.
+         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+         *
          * @param searchRow Search row.
          */
         IndexScan(Supplier<RowT> searchRow) {

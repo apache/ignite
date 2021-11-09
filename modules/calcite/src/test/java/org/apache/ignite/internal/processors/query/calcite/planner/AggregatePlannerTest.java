@@ -54,10 +54,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- *
+ * AggregatePlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     /**
+     * SingleWithoutIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -92,6 +96,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
+     * SingleWithIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -126,6 +133,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
+     * MapReduceGroupBy.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -206,6 +216,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
+     * ExpandDistinctAggregates.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -263,13 +276,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         );
     }
 
-    /**
-     *
-     */
     enum AggregateAlgorithm {
-        /**
-         *
-         */
         SORT(
                 IgniteSingleSortAggregate.class,
                 IgniteMapSortAggregate.class,
@@ -277,9 +284,6 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
                 "HashSingleAggregateConverterRule", "HashMapReduceAggregateConverterRule"
         ),
 
-        /**
-         *
-         */
         HASH(
                 IgniteSingleHashAggregate.class,
                 IgniteMapHashAggregate.class,
@@ -287,29 +291,14 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
                 "SortSingleAggregateConverterRule", "SortMapReduceAggregateConverterRule"
         );
 
-        /**
-         *
-         */
         public final Class<? extends IgniteSingleAggregateBase> single;
 
-        /**
-         *
-         */
         public final Class<? extends IgniteMapAggregateBase> map;
 
-        /**
-         *
-         */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
-        /**
-         *
-         */
         public final String[] rulesToDisable;
 
-        /**
-         *
-         */
         AggregateAlgorithm(
                 Class<? extends IgniteSingleAggregateBase> single,
                 Class<? extends IgniteMapAggregateBase> map,

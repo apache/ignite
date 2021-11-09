@@ -39,14 +39,8 @@ import org.jetbrains.annotations.Nullable;
  * Class with index conditions info.
  */
 public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
-    /**
-     *
-     */
     protected final String idxName;
 
-    /**
-     *
-     */
     protected final IndexConditions idxCond;
 
     /**
@@ -61,7 +55,8 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     protected AbstractIndexScan(
             RelOptCluster cluster,
@@ -90,35 +85,38 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /**
-     *
+     * Get index name.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public String indexName() {
         return idxName;
     }
 
     /**
-     * @return Lower index condition.
+     * Get lower index condition.
      */
     public List<RexNode> lowerCondition() {
         return idxCond == null ? null : idxCond.lowerCondition();
     }
 
     /**
-     * @return Lower index condition.
+     * Get lower index condition.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public List<RexNode> lowerBound() {
         return idxCond == null ? null : idxCond.lowerBound();
     }
 
     /**
-     * @return Upper index condition.
+     * Get upper index condition.
      */
     public List<RexNode> upperCondition() {
         return idxCond == null ? null : idxCond.upperCondition();
     }
 
     /**
-     * @return Upper index condition.
+     * Get upper index condition.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public List<RexNode> upperBound() {
         return idxCond == null ? null : idxCond.upperBound();
@@ -165,7 +163,8 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /**
-     *
+     * Get index conditions.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IndexConditions indexConditions() {
         return idxCond;

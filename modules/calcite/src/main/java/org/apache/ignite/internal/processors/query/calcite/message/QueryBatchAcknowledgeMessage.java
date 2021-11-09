@@ -20,17 +20,18 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
- *
+ * QueryBatchAcknowledgeMessage interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @Transferable(value = SqlQueryMessageGroup.QUERY_BATCH_ACK)
 public interface QueryBatchAcknowledgeMessage extends ExecutionContextAwareMessage {
     /**
-     * @return Exchange ID.
+     * Get exchange ID.
      */
     long exchangeId();
 
     /**
-     * @return Batch ID.
+     * Get batch ID.
      */
     int batchId();
 }

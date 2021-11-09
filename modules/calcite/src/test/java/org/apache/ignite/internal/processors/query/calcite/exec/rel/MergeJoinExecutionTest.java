@@ -38,17 +38,12 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * MergeJoinExecutionTest;
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class MergeJoinExecutionTest extends AbstractExecutionTest {
-    /**
-     *
-     */
     public static final Object[][] EMPTY = new Object[0][];
 
-    /**
-     *
-     */
     @Test
     public void joinEmptyTables() {
         verifyJoin(EMPTY, EMPTY, INNER, EMPTY);
@@ -59,9 +54,6 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         verifyJoin(EMPTY, EMPTY, ANTI, EMPTY);
     }
 
-    /**
-     *
-     */
     @Test
     public void joinEmptyLeftTable() {
         Object[][] right = {
@@ -86,9 +78,6 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         verifyJoin(EMPTY, right, ANTI, EMPTY);
     }
 
-    /**
-     *
-     */
     @Test
     public void joinEmptyRightTable() {
         Object[][] left = {
@@ -117,9 +106,6 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         });
     }
 
-    /**
-     *
-     */
     @Test
     public void joinOneToMany() {
         Object[][] left = {
@@ -168,9 +154,6 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         });
     }
 
-    /**
-     *
-     */
     @Test
     public void joinOneToMany2() {
         Object[][] left = {
@@ -234,9 +217,6 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         });
     }
 
-    /**
-     *
-     */
     @Test
     public void joinManyToMany() {
         Object[][] left = {

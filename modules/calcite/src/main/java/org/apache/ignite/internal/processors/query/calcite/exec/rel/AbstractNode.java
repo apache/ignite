@@ -34,62 +34,42 @@ import org.apache.ignite.lang.IgniteLogger;
  * Abstract node of execution tree.
  */
 public abstract class AbstractNode<RowT> implements Node<RowT> {
-    /**
-     *
-     */
     protected static final int MODIFY_BATCH_SIZE = 100; //IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_BATCH_SIZE", 100);
 
-    /**
-     *
-     */
     protected static final int IO_BATCH_SIZE = 256; //IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_SIZE", 256);
 
-    /**
-     *
-     */
     protected static final int IO_BATCH_CNT = 4; //IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 4);
 
-    /**
-     *
-     */
     protected final int inBufSize = Commons.IN_BUFFER_SIZE; //IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE", 2);
 
-    /**
-     *
-     */
     protected final IgniteLogger log = IgniteLogger.forClass(getClass());
 
-    /** for debug purpose */
+    /** For debug purpose. */
     private volatile Thread thread;
 
     /**
+     * Execution context.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * {@link Inbox} node may not have proper context at creation time in case it creates on first message received from a remote source.
      * This case the context sets in scope of {@link Inbox#init(ExecutionContext, RelDataType, Collection, Comparator)} method call.
      */
     private ExecutionContext<RowT> ctx;
 
-    /**
-     *
-     */
     private RelDataType rowType;
 
-    /**
-     *
-     */
     private Downstream<RowT> downstream;
 
-    /**
-     *
-     */
     private boolean closed;
 
-    /**
-     *
-     */
     private List<Node<RowT>> sources;
 
     /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param ctx Execution context.
+     * @param rowType Rel data type.
      */
     protected AbstractNode(ExecutionContext<RowT> ctx, RelDataType rowType) {
         this.ctx = ctx;
@@ -102,9 +82,6 @@ public abstract class AbstractNode<RowT> implements Node<RowT> {
         return ctx;
     }
 
-    /**
-     *
-     */
     protected void context(ExecutionContext<RowT> ctx) {
         this.ctx = ctx;
     }
@@ -115,9 +92,6 @@ public abstract class AbstractNode<RowT> implements Node<RowT> {
         return rowType;
     }
 
-    /**
-     *
-     */
     protected void rowType(RelDataType rowType) {
         this.rowType = rowType;
     }
@@ -181,21 +155,12 @@ public abstract class AbstractNode<RowT> implements Node<RowT> {
         }
     }
 
-    /**
-     *
-     */
     protected void closeInternal() {
         closed = true;
     }
 
-    /**
-     *
-     */
     protected abstract void rewindInternal();
 
-    /**
-     *
-     */
     protected void onErrorInternal(Throwable e) {
         Downstream<RowT> downstream = downstream();
 
@@ -209,15 +174,12 @@ public abstract class AbstractNode<RowT> implements Node<RowT> {
     }
 
     /**
-     * @return {@code true} if the subtree is canceled.
+     * Get closed flag: {@code true} if the subtree is canceled.
      */
     protected boolean isClosed() {
         return closed;
     }
 
-    /**
-     *
-     */
     protected void checkState() throws Exception {
         if (context().isCancelled()) {
             throw new ExecutionCancelledException();
@@ -235,14 +197,8 @@ public abstract class AbstractNode<RowT> implements Node<RowT> {
         }
     }
 
-    /**
-     *
-     */
     protected abstract Downstream<RowT> requestDownstream(int idx);
 
-    /**
-     *
-     */
     @Override
     public Downstream<RowT> downstream() {
         return downstream;

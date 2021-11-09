@@ -31,6 +31,8 @@ public abstract class AbstractSchemaSerializer implements SchemaSerializer {
     protected final AbstractSchemaSerializer previous;
 
     /**
+     * Constructor.
+     *
      * @param ver      Serializer version.
      * @param previous Previous version serializer.
      */
@@ -40,6 +42,8 @@ public abstract class AbstractSchemaSerializer implements SchemaSerializer {
     }
 
     /**
+     * Constructor.
+     *
      * @param ver Serializer version.
      */
     protected AbstractSchemaSerializer(short ver) {
@@ -47,7 +51,9 @@ public abstract class AbstractSchemaSerializer implements SchemaSerializer {
     }
 
     /**
-     * @return Serializer version;
+     * Get serializer version.
+     *
+     * @return Serializer version.
      */
     public short getVersion() {
         return version;

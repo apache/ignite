@@ -39,7 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * CorrelatedNestedLoopJoinPlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
     /**
@@ -119,7 +120,8 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Check join with not equi condition. Current implementation of the CorrelatedNestedLoopJoinTest is not applicable for such case.
+     * Check join with not equi condition. Current implementation of the CorrelatedNestedLoopJoinTest is not applicable
+     * for such case.
      */
     @Test
     public void testInvalidIndexExpressions() throws Exception {

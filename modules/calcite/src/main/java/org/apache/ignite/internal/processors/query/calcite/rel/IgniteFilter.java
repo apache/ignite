@@ -57,26 +57,27 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     public IgniteFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition) {
         super(cluster, traits, input, condition);
     }
-    
+
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteFilter(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Filter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
         return new IgniteFilter(getCluster(), traitSet, input, condition);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
@@ -84,11 +85,11 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition())) {
             return List.of();
         }
-        
+
         return List.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
                 inTraits));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
@@ -96,7 +97,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         return List.of(Pair.of(nodeTraits.replace(TraitUtils.distribution(inTraits.get(0))),
                 inTraits));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
@@ -104,46 +105,48 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         return List.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
                 inTraits));
     }
-    
+
     /**
-     *
+     * PassThroughCorrelation.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Override
     public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
             List<RelTraitSet> inTraits) {
         Set<CorrelationId> corrSet = RexUtils.extractCorrelationIds(getCondition());
-        
+
         CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
-    
+
         if (corrSet.isEmpty() || correlation.correlationIds().containsAll(corrSet)) {
             return Pair.of(nodeTraits, List.of(inTraits.get(0).replace(correlation)));
         }
-        
+
         return null;
     }
-    
+
     /**
-     *
+     * DeriveCorrelation.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Override
     public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
             List<RelTraitSet> inTraits) {
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getCondition());
-        
+
         corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
-        
+
         return List.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(getInput());
-        
+
         return planner.getCostFactory().makeCost(rowCount,
                 rowCount * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {

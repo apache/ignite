@@ -40,14 +40,18 @@ import org.apache.calcite.sql.type.IntervalSqlType;
  * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteTypeFactory() {
         super(IgniteTypeSystem.INSTANCE);
     }
 
     /**
+     * Constructor.
+     *
      * @param typeSystem Type system.
      */
     public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
@@ -129,6 +133,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /**
+     * Get result type by field data type.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param type Field logical type.
      * @return Result type.
      */
@@ -229,9 +236,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         return Charset.defaultCharset();
     }
 
-    /**
-     *
-     */
     private boolean allEquals(List<RelDataType> types) {
         assert types.size() > 1;
 

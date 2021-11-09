@@ -21,20 +21,17 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 
 /**
- *
+ * FragmentMappingException.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class FragmentMappingException extends RuntimeException {
-    /**
-     *
-     */
     private final Fragment fragment;
 
-    /**
-     *
-     */
     private final RelNode node;
 
     /**
+     * Constructor.
+     *
      * @param message Message.
      * @param node    Node of a query plan, where the exception was thrown.
      * @param cause   Cause.
@@ -46,14 +43,14 @@ public class FragmentMappingException extends RuntimeException {
     }
 
     /**
-     * @return Fragment of a query plan, where the exception was thrown.
+     * Get fragment of a query plan, where the exception was thrown.
      */
     public Fragment fragment() {
         return fragment;
     }
 
     /**
-     * @return Node of a query plan, where the exception was thrown.
+     * Get node of a query plan, where the exception was thrown.
      */
     public RelNode node() {
         return node;

@@ -20,17 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import java.util.List;
 
 /**
- *
+ * AllNodes.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public final class AllNodes<RowT> implements Destination<RowT> {
-    /**
-     *
-     */
     private final List<String> nodes;
 
-    /**
-     *
-     */
     public AllNodes(List<String> nodes) {
         this.nodes = nodes;
     }

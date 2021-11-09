@@ -46,6 +46,8 @@ class UpgradingRowAdapter extends Row {
     private final SchemaDescriptor schema;
 
     /**
+     * Constructor.
+     *
      * @param schema    Row adapter schema descriptor.
      * @param rowSchema Row schema descriptor.
      * @param row       Row.

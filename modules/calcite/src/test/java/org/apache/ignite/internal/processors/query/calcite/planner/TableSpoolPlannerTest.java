@@ -36,6 +36,9 @@ import org.junit.jupiter.api.Test;
  */
 public class TableSpoolPlannerTest extends AbstractPlannerTest {
     /**
+     * TableSpoolDistributed.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -88,6 +91,9 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * TableSpoolBroadcastNotRewindable.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test

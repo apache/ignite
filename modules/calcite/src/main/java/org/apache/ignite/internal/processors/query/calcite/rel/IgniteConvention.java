@@ -27,14 +27,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
  * Ignite convention trait.
  */
 public class IgniteConvention extends Convention.Impl {
-    /**
-     *
-     */
     public static final IgniteConvention INSTANCE = new IgniteConvention();
 
-    /**
-     *
-     */
     private IgniteConvention() {
         super("IGNITE", IgniteRel.class);
     }

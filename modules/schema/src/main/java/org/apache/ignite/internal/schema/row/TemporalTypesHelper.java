@@ -91,6 +91,9 @@ public class TemporalTypesHelper {
     public static final long NANOSECOND_PART_MASK = (1L << NANOSECOND_PART_LEN) - 1;
 
     /**
+     * Mask.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param len Mask length in bits.
      * @return Mask.
      */

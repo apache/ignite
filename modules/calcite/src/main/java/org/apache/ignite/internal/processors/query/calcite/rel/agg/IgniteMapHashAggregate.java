@@ -38,11 +38,13 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * IgniteMapHashAggregate.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements IgniteHashAggregateBase {
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteMapHashAggregate(
             RelOptCluster cluster,
@@ -56,7 +58,8 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteMapHashAggregate(RelInput input) {
         super(input);
@@ -89,7 +92,8 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
     }
 
     /**
-     *
+     * RowType.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static RelDataType rowType(RelDataTypeFactory typeFactory, boolean addData) {
         assert typeFactory instanceof IgniteTypeFactory;

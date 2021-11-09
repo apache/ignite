@@ -21,32 +21,32 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDesc
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
- *
+ * QueryStartRequest interface.
  */
 @Transferable(value = SqlQueryMessageGroup.QUERY_START_REQUEST, autoSerializable = false)
 public interface QueryStartRequest extends ExecutionContextAwareMessage {
     /**
-     * @return Schema name.
+     * Get schema name.
      */
     String schema();
 
     /**
-     * @return Fragment description.
+     * Get fragment description.
      */
     FragmentDescription fragmentDescription();
 
     /**
-     * @return Topology version.
+     * Get topology version.
      */
     long topologyVersion();
 
     /**
-     * @return Fragment plan.
+     * Get fragment plan.
      */
     String root();
 
     /**
-     * @return Query parameters.
+     * Get query parameters.
      */
     Object[] parameters();
 }

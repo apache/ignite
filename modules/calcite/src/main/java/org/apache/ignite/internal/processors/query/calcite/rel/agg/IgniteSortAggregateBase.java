@@ -30,7 +30,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 
 /**
- *
+ * IgniteSortAggregateBase interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 interface IgniteSortAggregateBase extends TraitsAwareIgniteRel {
     /**

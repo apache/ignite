@@ -26,13 +26,14 @@ public class ExplainPlan implements QueryPlan {
     /** Column name. */
     public static final String PLAN_COL_NAME = "PLAN";
 
-    /** */
     private final ResultSetMetadata meta;
 
-    /** */
     private final String plan;
 
-    /** */
+    /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public ExplainPlan(String plan, ResultSetMetadata meta) {
         this.meta = meta;
         this.plan = plan;
@@ -48,12 +49,10 @@ public class ExplainPlan implements QueryPlan {
         return this;
     }
 
-    /** */
     public ResultSetMetadata metadata() {
         return meta;
     }
 
-    /** */
     public String plan() {
         return plan;
     }

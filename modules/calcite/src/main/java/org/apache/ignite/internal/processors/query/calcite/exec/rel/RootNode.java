@@ -39,53 +39,30 @@ import org.apache.ignite.lang.IgniteInternalException;
  * Client iterator.
  */
 public class RootNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT>, Iterator<RowT> {
-    /**
-     *
-     */
     private final ReentrantLock lock = new ReentrantLock();
 
-    /**
-     *
-     */
     private final Condition cond = lock.newCondition();
 
-    /**
-     *
-     */
     private final Runnable onClose;
 
-    /**
-     *
-     */
     private final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-    /**
-     *
-     */
     private final Function<RowT, RowT> converter;
 
-    /**
-     *
-     */
     private int waiting;
 
-    /**
-     *
-     */
     private Deque<RowT> inBuff = new ArrayDeque<>(inBufSize);
 
-    /**
-     *
-     */
     private Deque<RowT> outBuff = new ArrayDeque<>(inBufSize);
 
-    /**
-     *
-     */
     private volatile boolean closed;
 
     /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param ctx Execution context.
+     * @param rowType Rel data type.
      */
     public RootNode(ExecutionContext<RowT> ctx, RelDataType rowType) {
         super(ctx, rowType);
@@ -95,7 +72,12 @@ public class RootNode<RowT> extends AbstractNode<RowT> implements SingleNode<Row
     }
 
     /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param ctx Execution context.
+     * @param rowType Rel data type.
+     * @param onClose Runnable.
      */
     public RootNode(ExecutionContext<RowT> ctx, RelDataType rowType, Runnable onClose) {
         super(ctx, rowType);
@@ -104,9 +86,6 @@ public class RootNode<RowT> extends AbstractNode<RowT> implements SingleNode<Row
         converter = TypeUtils.resultTypeConverter(ctx, rowType);
     }
 
-    /**
-     *
-     */
     public UUID queryId() {
         return context().queryId();
     }
@@ -250,9 +229,6 @@ public class RootNode<RowT> extends AbstractNode<RowT> implements SingleNode<Row
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     */
     private void exchangeBuffers() {
         assert !nullOrEmpty(sources()) && sources().size() == 1;
 
@@ -289,9 +265,6 @@ public class RootNode<RowT> extends AbstractNode<RowT> implements SingleNode<Row
         checkException();
     }
 
-    /**
-     *
-     */
     private void checkException() {
         Throwable e = ex.get();
 

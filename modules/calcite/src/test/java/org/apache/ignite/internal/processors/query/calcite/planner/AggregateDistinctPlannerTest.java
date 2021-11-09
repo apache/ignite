@@ -42,10 +42,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- *
+ * AggregateDistinctPlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
     /**
+     * MapReduceDistinctWithIndex.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @ParameterizedTest
@@ -79,13 +83,7 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         }
     }
 
-    /**
-     *
-     */
     enum AggregateAlgorithm {
-        /**
-         *
-         */
         SORT(
                 IgniteSingleSortAggregate.class,
                 IgniteMapSortAggregate.class,
@@ -95,9 +93,6 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
                 "SortSingleAggregateConverterRule"
         ),
 
-        /**
-         *
-         */
         HASH(
                 IgniteSingleHashAggregate.class,
                 IgniteMapHashAggregate.class,
@@ -107,29 +102,14 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
                 "HashSingleAggregateConverterRule"
         );
 
-        /**
-         *
-         */
         public final Class<? extends IgniteSingleAggregateBase> single;
 
-        /**
-         *
-         */
         public final Class<? extends IgniteMapAggregateBase> map;
 
-        /**
-         *
-         */
         public final Class<? extends IgniteReduceAggregateBase> reduce;
 
-        /**
-         *
-         */
         public final String[] rulesToDisable;
 
-        /**
-         *
-         */
         AggregateAlgorithm(
                 Class<? extends IgniteSingleAggregateBase> single,
                 Class<? extends IgniteMapAggregateBase> map,

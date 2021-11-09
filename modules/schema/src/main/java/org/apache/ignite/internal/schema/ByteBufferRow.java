@@ -33,6 +33,8 @@ public class ByteBufferRow implements BinaryRow {
     private final ByteBuffer buf;
 
     /**
+     * Constructor.
+     *
      * @param data Array representation of the row.
      */
     public ByteBufferRow(byte[] data) {

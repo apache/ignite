@@ -37,18 +37,16 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 
 /**
- *
+ * ConverterUtils.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ConverterUtils {
-    /**
-     *
-     */
     private ConverterUtils() {
     }
 
     /**
-     * In Calcite, {@code java.sql.Date} and {@code java.sql.Time} are stored as {@code Integer} type, {@code java.sql.Timestamp} is stored
-     * as {@code Long} type.
+     * In Calcite, {@code java.sql.Date} and {@code java.sql.Time} are stored as {@code Integer} type,
+     * {@code java.sql.Timestamp} is stored as {@code Long} type.
      *
      * @param operand    Operand that should be converted.
      * @param targetType Required type.
@@ -58,16 +56,10 @@ public class ConverterUtils {
         return toInternal(operand, operand.getType(), targetType);
     }
 
-    /**
-     *
-     */
     private static Type toInternal(RelDataType type) {
         return toInternal(type, false);
     }
 
-    /**
-     *
-     */
     private static Expression toInternal(Expression operand,
             Type fromType, Type targetType) {
         if (fromType == java.sql.Date.class) {
@@ -92,9 +84,6 @@ public class ConverterUtils {
         return operand;
     }
 
-    /**
-     *
-     */
     static Type toInternal(RelDataType type, boolean forceNotNull) {
         switch (type.getSqlTypeName()) {
             case DATE:
@@ -108,16 +97,13 @@ public class ConverterUtils {
     }
 
     /**
-     * Converts from internal representation to JDBC representation used by arguments of user-defined functions. For example, converts date
-     * values from {@code int} to {@link java.sql.Date}.
+     * Converts from internal representation to JDBC representation used by arguments of user-defined functions.
+     * For example, converts date values from {@code int} to {@link java.sql.Date}.
      */
     private static Expression fromInternal(Expression operand, Type targetType) {
         return fromInternal(operand, operand.getType(), targetType);
     }
 
-    /**
-     *
-     */
     private static Expression fromInternal(Expression operand,
             Type fromType, Type targetType) {
         if (operand == ConstantUntypedNull.INSTANCE) {
@@ -157,9 +143,6 @@ public class ConverterUtils {
         return operand;
     }
 
-    /**
-     *
-     */
     static List<Expression> fromInternal(Class<?>[] targetTypes,
             List<Expression> expressions) {
         final List<Expression> list = new ArrayList<>();
@@ -184,9 +167,6 @@ public class ConverterUtils {
         return list;
     }
 
-    /**
-     *
-     */
     static List<Type> internalTypes(List<? extends RexNode> operandList) {
         return Util.transform(operandList, node -> toInternal(node.getType()));
     }
@@ -194,9 +174,9 @@ public class ConverterUtils {
     /**
      * Convert {@code operand} to target type {@code toType}.
      *
-     * @param operand The expression to convert
-     * @param toType  Target type
-     * @return A new expression with type {@code toType} or original if there is no need to convert
+     * @param operand The expression to convert.
+     * @param toType  Target type.
+     * @return A new expression with type {@code toType} or original if there is no need to convert.
      */
     public static Expression convert(Expression operand, Type toType) {
         final Type fromType = operand.getType();
@@ -206,10 +186,10 @@ public class ConverterUtils {
     /**
      * Convert {@code operand} to target type {@code toType}.
      *
-     * @param operand  The expression to convert
-     * @param fromType Field type
-     * @param toType   Target type
-     * @return A new expression with type {@code toType} or original if there is no need to convert
+     * @param operand  The expression to convert.
+     * @param fromType Field type.
+     * @param toType   Target type.
+     * @return A new expression with type {@code toType} or original if there is no need to convert.
      */
     public static Expression convert(Expression operand, Type fromType, Type toType) {
         if (!Types.needTypeCast(fromType, toType)) {
@@ -418,17 +398,11 @@ public class ConverterUtils {
         return Expressions.convert_(operand, toType);
     }
 
-    /**
-     *
-     */
     private static boolean isA(Type fromType, Primitive primitive) {
         return Primitive.of(fromType) == primitive
                 || Primitive.ofBox(fromType) == primitive;
     }
 
-    /**
-     *
-     */
     private static boolean representAsInternalType(Type type) {
         return type == java.sql.Date.class
                 || type == java.sql.Time.class
@@ -436,19 +410,20 @@ public class ConverterUtils {
     }
 
     /**
-     * In {@link org.apache.calcite.sql.type.SqlTypeAssignmentRule}, some rules decide whether one type can be assignable to another type.
+     * In {@link org.apache.calcite.sql.type.SqlTypeAssignmentRule}, some rules decide whether one type can be
+     * assignable to another type.
      * Based on these rules, a function can accept arguments with assignable types.
      *
      * <p>For example, a function with Long type operand can accept Integer as input.
      * See {@code org.apache.calcite.sql.SqlUtil#filterRoutinesByParameterType()} for details.
      *
      * <p>During query execution, some of the assignable types need explicit conversion
-     * to the target types. i.e., Decimal expression should be converted to Integer before it is assigned to the Integer type Lvalue(In
-     * Java, Decimal can not be assigned to Integer directly).
+     * to the target types. i.e., Decimal expression should be converted to Integer before it is assigned to the Integer
+     * type Lvalue(In Java, Decimal can not be assigned to Integer directly).
      *
-     * @param targetTypes Formal operand types declared for the function arguments
-     * @param arguments   Input expressions to the function
-     * @return Input expressions with probable type conversion
+     * @param targetTypes Formal operand types declared for the function arguments.
+     * @param arguments   Input expressions to the function.
+     * @return Input expressions with probable type conversion.
      */
     static List<Expression> convertAssignableTypes(Class<?>[] targetTypes,
             List<Expression> arguments) {

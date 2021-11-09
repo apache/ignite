@@ -33,9 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
  * Base class for physical INTERSECT set op.
  */
 public abstract class IgniteIntersect extends Intersect implements IgniteSetOp {
-    /**
-     *
-     */
     IgniteIntersect(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all) {
         super(cluster, traits, inputs, all);
     }

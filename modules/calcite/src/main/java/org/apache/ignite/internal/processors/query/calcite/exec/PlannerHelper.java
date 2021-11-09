@@ -50,7 +50,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 import org.apache.ignite.lang.IgniteLogger;
 
 /**
- *
+ * PlannerHelper.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class PlannerHelper {
     /**
@@ -61,6 +62,9 @@ public class PlannerHelper {
     }
 
     /**
+     * Optimize.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param sqlNode Sql node.
      * @param planner Planner.
      * @param log     Logger.
@@ -112,16 +116,17 @@ public class PlannerHelper {
     }
 
     /**
-     * This shuttle analyzes a relational tree and inserts an eager spool node just under the TableModify node in case latter depends upon a
-     * table used to query the data for modify node to avoid the double processing of the retrieved rows.
+     * This shuttle analyzes a relational tree and inserts an eager spool node just under the TableModify node in case
+     * latter depends upon a table used to query the data for modify node to avoid the double processing of the
+     * retrieved rows.
      * <p/>
      * It considers two cases: <ol>
      * <li>
      * Modify node produces rows to insert, then a spool is required.
      * </li>
      * <li>
-     * Modify node updates rows only, then a spool is required if 1) we are scaning an index and 2) any of the indexed column is updated by
-     * modify node.
+     * Modify node updates rows only, then a spool is required if 1) we are scaning an index and 2) any of the indexed
+     * column is updated by modify node.
      * </li>
      * </ol>
      */
@@ -226,7 +231,7 @@ public class PlannerHelper {
         }
 
         /**
-         * @return {@code true} in case {@link #modifyNode} produces any insert.
+         * Get modifyNodeInsertsData flag: {@code true} in case {@link #modifyNode} produces any insert.
          */
         private boolean modifyNodeInsertsData() {
             return modifyNode.isInsert(); // MERGE should be analyzed too

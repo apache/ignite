@@ -185,8 +185,5 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         call.transformTo(res);
     }
 
-    /**
-     *
-     */
     protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, RexNode cond);
 }

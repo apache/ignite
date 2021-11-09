@@ -21,16 +21,17 @@ import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 
 /**
- *
+ * FieldsMetadata interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface FieldsMetadata {
     /**
-     * @return Result row type.
+     * Get result row type.
      */
     RelDataType rowType();
 
     /**
-     * @return Result row origins (or where a field value comes from).
+     * Get result row origins (or where a field value comes from).
      */
     List<List<String>> origins();
 }

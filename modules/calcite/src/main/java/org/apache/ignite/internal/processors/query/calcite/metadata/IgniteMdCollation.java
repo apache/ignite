@@ -96,7 +96,6 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
                     BuiltInMethod.COLLATIONS.method, new IgniteMdCollation());
 
     //~ Constructors -----------------------------------------------------------
-
     private IgniteMdCollation() {
     }
 
@@ -126,8 +125,11 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
         return ImmutableList.of();
     }
 
-    public ImmutableList<RelCollation> collations(IgniteRel rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(IgniteRel rel, RelMetadataQuery mq) {
         RelCollation collation = rel.collation();
         if (collation == null || nullOrEmpty(collation.getFieldCollations())) {
             return ImmutableList.of();
@@ -136,13 +138,19 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
         return ImmutableList.of(collation);
     }
 
-    public ImmutableList<RelCollation> collations(Window rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Window rel, RelMetadataQuery mq) {
         return ImmutableList.copyOf(window(mq, rel.getInput(), rel.groups));
     }
 
-    public ImmutableList<RelCollation> collations(Match rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Match rel, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 match(mq, rel.getInput(), rel.getRowType(), rel.getPattern(),
                         rel.isStrictStart(), rel.isStrictEnd(),
@@ -151,23 +159,35 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
                         rel.getOrderKeys(), rel.getInterval()));
     }
 
-    public ImmutableList<RelCollation> collations(Filter rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Filter rel, RelMetadataQuery mq) {
         return mq.collations(rel.getInput());
     }
 
-    public ImmutableList<RelCollation> collations(TableModify rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(TableModify rel, RelMetadataQuery mq) {
         return mq.collations(rel.getInput());
     }
 
-    public ImmutableList<RelCollation> collations(TableScan scan,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(TableScan scan, RelMetadataQuery mq) {
         return ImmutableList.copyOf(table(scan.getTable()));
     }
 
-    public ImmutableList<RelCollation> collations(EnumerableMergeJoin join,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(EnumerableMergeJoin join, RelMetadataQuery mq) {
         // In general a join is not sorted. But a merge join preserves the sort
         // order of the left and right sides.
         return ImmutableList.copyOf(
@@ -176,67 +196,100 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
                         join.getJoinType()));
     }
 
-    public ImmutableList<RelCollation> collations(EnumerableHashJoin join,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(EnumerableHashJoin join, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 RelMdCollation.enumerableHashJoin(mq, join.getLeft(), join.getRight(), join.getJoinType()));
     }
 
-    public ImmutableList<RelCollation> collations(EnumerableNestedLoopJoin join,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(EnumerableNestedLoopJoin join, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 RelMdCollation.enumerableNestedLoopJoin(mq, join.getLeft(), join.getRight(),
                         join.getJoinType()));
     }
 
-    public ImmutableList<RelCollation> collations(EnumerableCorrelate join,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(EnumerableCorrelate join, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 RelMdCollation.enumerableCorrelate(mq, join.getLeft(), join.getRight(),
                         join.getJoinType()));
     }
 
-    public ImmutableList<RelCollation> collations(Sort sort,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Sort sort, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 RelMdCollation.sort(sort.getCollation()));
     }
 
-    public ImmutableList<RelCollation> collations(SortExchange sort,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(SortExchange sort, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 RelMdCollation.sort(sort.getCollation()));
     }
 
-    public ImmutableList<RelCollation> collations(Project project,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Project project, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 project(mq, project.getInput(), project.getProjects()));
     }
 
-    public ImmutableList<RelCollation> collations(Calc calc,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Calc calc, RelMetadataQuery mq) {
         return ImmutableList.copyOf(calc(mq, calc.getInput(), calc.getProgram()));
     }
 
-    public ImmutableList<RelCollation> collations(Values values,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(Values values, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 values(mq, values.getRowType(), values.getTuples()));
     }
 
-    public ImmutableList<RelCollation> collations(JdbcToEnumerableConverter rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(JdbcToEnumerableConverter rel, RelMetadataQuery mq) {
         return mq.collations(rel.getInput());
     }
 
-    public ImmutableList<RelCollation> collations(HepRelVertex rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(HepRelVertex rel, RelMetadataQuery mq) {
         return mq.collations(rel.getCurrentRel());
     }
 
-    public ImmutableList<RelCollation> collations(RelSubset rel,
-            RelMetadataQuery mq) {
+    /**
+     * Collations.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
+    public ImmutableList<RelCollation> collations(RelSubset rel, RelMetadataQuery mq) {
         return ImmutableList.copyOf(
                 Objects.requireNonNull(
                         rel.getTraitSet().getTraits(RelCollationTraitDef.INSTANCE)));
@@ -379,8 +432,7 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
      * from each of its windows. Assuming (quite reasonably) that the implementation does not re-order its input rows, then any collations
      * of its input are preserved.
      */
-    public static List<RelCollation> window(RelMetadataQuery mq, RelNode input,
-            List<Window.Group> groups) {
+    public static List<RelCollation> window(RelMetadataQuery mq, RelNode input, List<Window.Group> groups) {
         return mq.collations(input);
     }
 
@@ -461,9 +513,6 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
         return list;
     }
 
-    /**
-     *
-     */
     private static Comparator<List<RexLiteral>> comparator(
             RelFieldCollation fieldCollation) {
         final int nullComparison = fieldCollation.nullDirection.nullComparison;
@@ -490,7 +539,8 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
     }
 
     /**
-     *
+     * IsOrdered.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static <T> boolean isOrdered(Iterable<? extends T> iterable, Comparator<T> cmp) {
         Iterator<? extends T> it = iterable.iterator();
@@ -518,7 +568,8 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
      * <p>If the inputs are sorted on other keys <em>in addition to</em> the join
      * key, the result preserves those collations too.
      *
-     * @deprecated Use {@link #mergeJoin(RelMetadataQuery, RelNode, RelNode, ImmutableIntList, ImmutableIntList, JoinRelType)}
+     * @deprecated Use {@link
+     * #mergeJoin(RelMetadataQuery, RelNode, RelNode, ImmutableIntList, ImmutableIntList, JoinRelType)}.
      */
     @Deprecated // to be removed before 2.0
     public static List<RelCollation> mergeJoin(RelMetadataQuery mq,
@@ -579,18 +630,30 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
         return enumerableJoin0(mq, left, right, joinType);
     }
 
+    /**
+     * EnumerableCorrelate.
+     *TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static List<RelCollation> enumerableCorrelate(RelMetadataQuery mq,
             RelNode left, RelNode right, JoinRelType joinType) {
         // The current implementation always preserve the sort order of the left input
         return mq.collations(left);
     }
 
+    /**
+     * EnumerableCorrelate.
+     *TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static List<RelCollation> enumerableSemiJoin(RelMetadataQuery mq,
             RelNode left, RelNode right) {
         // The current implementation always preserve the sort order of the left input
         return mq.collations(left);
     }
 
+    /**
+     * EnumerableCorrelate.
+     *TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public static List<RelCollation> enumerableBatchNestedLoopJoin(RelMetadataQuery mq,
             RelNode left, RelNode right, JoinRelType joinType) {
         // The current implementation always preserve the sort order of the left input
@@ -620,7 +683,7 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
                     }
                 }
                 return leftCollations;
-                
+
             default:
                 return List.of();
         }

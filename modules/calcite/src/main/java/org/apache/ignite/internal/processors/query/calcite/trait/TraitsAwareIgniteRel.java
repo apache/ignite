@@ -29,7 +29,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * TraitsAwareIgniteRel interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface TraitsAwareIgniteRel extends IgniteRel {
     /** {@inheritDoc} */

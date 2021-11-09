@@ -35,53 +35,46 @@ import org.apache.ignite.internal.util.IgniteIntList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * ColocationGroup.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ColocationGroup implements Serializable {
-    /**
-     *
-     */
     private static final int SYNTHETIC_PARTITIONS_COUNT = 512;
     // TODO: IgniteSystemProperties.getInteger("IGNITE_CALCITE_SYNTHETIC_PARTITIONS_COUNT", 512);
 
-    /**
-     *
-     */
     private List<Long> sourceIds;
 
-    /**
-     *
-     */
     private List<String> nodeIds;
 
-    /**
-     *
-     */
     private List<List<String>> assignments;
 
     /**
-     *
+     * ForNodes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static ColocationGroup forNodes(List<String> nodeIds) {
         return new ColocationGroup(null, nodeIds, null);
     }
 
     /**
-     *
+     * ForAssignments.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static ColocationGroup forAssignments(List<List<String>> assignments) {
         return new ColocationGroup(null, null, assignments);
     }
 
     /**
-     *
+     * ForSourceId.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static ColocationGroup forSourceId(long sourceId) {
         return new ColocationGroup(Collections.singletonList(sourceId), null, null);
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     private ColocationGroup(List<Long> sourceIds, List<String> nodeIds, List<List<String>> assignments) {
         this.sourceIds = sourceIds;
@@ -90,30 +83,30 @@ public class ColocationGroup implements Serializable {
     }
 
     /**
-     * @return Lists of colocation group sources.
+     * Get lists of colocation group sources.
      */
     public List<Long> sourceIds() {
         return sourceIds == null ? Collections.emptyList() : sourceIds;
     }
 
     /**
-     * @return Lists of nodes capable to execute a query fragment for what the mapping is calculated.
+     * Get lists of nodes capable to execute a query fragment for what the mapping is calculated.
      */
     public List<String> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
     }
 
     /**
-     * @return List of partitions (index) and nodes (items) having an appropriate partition in OWNING state, calculated for distributed
-     *      tables, involved in query execution.
+     * Get list of partitions (index) and nodes (items) having an appropriate partition in OWNING state, calculated for
+     * distributed tables, involved in query execution.
      */
     public List<List<String>> assignments() {
         return assignments == null ? Collections.emptyList() : assignments;
     }
 
     /**
-     * Prunes involved partitions (hence nodes, involved in query execution) on the basis of filter, its distribution, query parameters and
-     * original nodes mapping.
+     * Prunes involved partitions (hence nodes, involved in query execution) on the basis of filter, its distribution,
+     * query parameters and original nodes mapping.
      *
      * @param rel Filter.
      * @return Resulting nodes mapping.
@@ -123,7 +116,8 @@ public class ColocationGroup implements Serializable {
     }
 
     /**
-     *
+     * Belongs.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public boolean belongs(long sourceId) {
         return sourceIds != null && sourceIds.contains(sourceId);
@@ -134,8 +128,8 @@ public class ColocationGroup implements Serializable {
      *
      * @param other Mapping to merge with.
      * @return Merged nodes mapping.
-     * @throws ColocationMappingException If involved nodes intersection is empty, hence there is no nodes capable to execute being
-     *                                    calculated fragment.
+     * @throws ColocationMappingException If involved nodes intersection is empty, hence there is no nodes capable to
+     *     execute being calculated fragment.
      */
     public ColocationGroup colocate(ColocationGroup other) throws ColocationMappingException {
         List<Long> sourceIds;
@@ -201,7 +195,8 @@ public class ColocationGroup implements Serializable {
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ColocationGroup finalaze() {
         if (assignments == null && nodeIds == null) {
@@ -226,15 +221,13 @@ public class ColocationGroup implements Serializable {
     }
 
     /**
-     *
+     * MapToNodes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ColocationGroup mapToNodes(List<String> nodeIds) {
         return !nullOrEmpty(this.nodeIds) ? this : forNodes0(nodeIds);
     }
 
-    /**
-     *
-     */
     @NotNull
     private ColocationGroup forNodes0(List<String> nodeIds) {
         List<List<String>> assignments = new ArrayList<>(SYNTHETIC_PARTITIONS_COUNT);

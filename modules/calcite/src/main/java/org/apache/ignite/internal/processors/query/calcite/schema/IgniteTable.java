@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public interface IgniteTable extends TranslatableTable {
     /**
-     * @return Table description.
+     * Get table description.
      */
     TableDescriptor descriptor();
 
@@ -88,6 +88,8 @@ public interface IgniteTable extends TranslatableTable {
     ColocationGroup colocationGroup(PlanningContext ctx);
 
     /**
+     * Returns table distribution.
+     *
      * @return Table distribution.
      */
     IgniteDistribution distribution();
@@ -115,6 +117,8 @@ public interface IgniteTable extends TranslatableTable {
     IgniteIndex getIndex(String idxName);
 
     /**
+     * Returns index name.
+     *
      * @param idxName Index name.
      */
     void removeIndex(String idxName);

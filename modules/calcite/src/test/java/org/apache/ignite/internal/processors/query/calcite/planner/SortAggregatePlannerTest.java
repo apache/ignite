@@ -40,11 +40,13 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * SortAggregatePlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /**
-     *
+     * NotApplicableForSortAggregate.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void notApplicableForSortAggregate() {
@@ -69,6 +71,9 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
+     * CollationPermuteSingle.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -114,6 +119,9 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
+     * CollationPermuteMapReduce.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test

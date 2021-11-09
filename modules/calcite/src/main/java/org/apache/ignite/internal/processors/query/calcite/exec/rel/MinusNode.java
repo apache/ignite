@@ -27,21 +27,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
  * Execution node for MINUS (EXCEPT) operator.
  */
 public class MinusNode<RowT> extends AbstractSetOpNode<RowT> {
-    /**
-     *
-     */
     public MinusNode(ExecutionContext<RowT> ctx, RelDataType rowType, AggregateType type, boolean all,
             RowFactory<RowT> rowFactory) {
         super(ctx, rowType, type, all, rowFactory, new MinusGrouping<>(ctx, rowFactory, type, all));
     }
 
-    /**
-     *
-     */
     private static class MinusGrouping<RowT> extends Grouping<RowT> {
-        /**
-         *
-         */
         private MinusGrouping(ExecutionContext<RowT> ctx, RowFactory<RowT> rowFactory, AggregateType type, boolean all) {
             super(ctx, rowFactory, type, all);
         }

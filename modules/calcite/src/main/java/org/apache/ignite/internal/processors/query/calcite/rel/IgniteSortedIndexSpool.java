@@ -38,9 +38,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
  * Relational operator that returns the sorted contents of a table and allow to lookup rows by specified bounds.
  */
 public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements IgniteRel {
-    /**
-     *
-     */
     private final RelCollation collation;
 
     /** Index condition. */
@@ -50,7 +47,8 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     protected final RexNode condition;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteSortedIndexSpool(
             RelOptCluster cluster,
@@ -92,7 +90,8 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     }
 
     /**
-     *
+     * Clone.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Override
     public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
@@ -112,7 +111,8 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     }
 
     /**
-     *
+     * ExplainTerms.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Override
     public RelWriter explainTerms(RelWriter pw) {
@@ -131,14 +131,14 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     }
 
     /**
-     *
+     * Get index condition.
      */
     public IndexConditions indexCondition() {
         return idxCond;
     }
 
     /**
-     *
+     * Get collation.
      */
     @Override
     public RelCollation collation() {
@@ -146,7 +146,7 @@ public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements Ignit
     }
 
     /**
-     *
+     * Get condition.
      */
     public RexNode condition() {
         return condition;

@@ -28,7 +28,8 @@ import org.apache.calcite.tools.RuleSet;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * IgnitePrograms.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class IgnitePrograms {
     /**

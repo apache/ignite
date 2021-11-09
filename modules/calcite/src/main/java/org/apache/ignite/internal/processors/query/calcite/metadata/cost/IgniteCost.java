@@ -43,24 +43,15 @@ public class IgniteCost implements RelOptCost {
     public static final double HASH_LOOKUP_COST = 10;
 
     /**
-     * With broadcast distribution each row will be sent to the each distination node, thus the total bytes amount will be multiplies of the
-     * destination nodes count. Right now it's just a const.
+     * With broadcast distribution each row will be sent to the each distination node, thus the total bytes amount will
+     * be multiplies of the destination nodes count. Right now it's just a const.
      */
     public static final double BROADCAST_DISTRIBUTION_PENALTY = 5;
 
-    /**
-     *
-     */
     static final IgniteCost ZERO = new IgniteCost(0, 0, 0, 0, 0);
 
-    /**
-     *
-     */
     static final IgniteCost TINY = new IgniteCost(1, 1, 1, 1, 1);
 
-    /**
-     *
-     */
     static final IgniteCost HUGE = new IgniteCost(
             Double.MAX_VALUE,
             Double.MAX_VALUE,
@@ -69,9 +60,6 @@ public class IgniteCost implements RelOptCost {
             Double.MAX_VALUE
     );
 
-    /**
-     *
-     */
     static final IgniteCost INFINITY = new IgniteCost(
             Double.POSITIVE_INFINITY,
             Double.POSITIVE_INFINITY,
@@ -96,6 +84,8 @@ public class IgniteCost implements RelOptCost {
     private final double network;
 
     /**
+     * Constructor.
+     *
      * @param rowCount Row count.
      * @param cpu      Cpu.
      * @param memory   Memory.
@@ -129,14 +119,14 @@ public class IgniteCost implements RelOptCost {
     }
 
     /**
-     * @return Usage of Memory resources.
+     * Get usage of Memory resources.
      */
     public double getMemory() {
         return memory;
     }
 
     /**
-     * @return Usage of Network resources.
+     * Get usage of Network resources.
      */
     public double getNetwork() {
         return network;

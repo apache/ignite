@@ -36,6 +36,8 @@ public enum SqlQueryType {
     EXPLAIN;
 
     /**
+     * Map query plan type to sql type.
+     *
      * @param type QueryPlan.Type.
      * @return Associated SqlQueryType.
      */

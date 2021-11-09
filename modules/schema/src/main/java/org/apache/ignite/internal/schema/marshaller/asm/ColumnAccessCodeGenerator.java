@@ -29,6 +29,9 @@ import org.apache.ignite.lang.IgniteInternalException;
  */
 public class ColumnAccessCodeGenerator {
     /**
+     * CreateAccessor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param mode   Binary mode.
      * @param colIdx Column index in schema.
      * @return Row column access code generator.
@@ -124,7 +127,7 @@ public class ColumnAccessCodeGenerator {
     }
 
     /**
-     * @return Column index in schema.
+     * Get column index in schema.
      */
     public int columnIdx() {
         return colIdx;

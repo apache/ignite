@@ -59,6 +59,9 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
     }
 
     /**
+     * Add index column.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param idxBuilder Index builder.
      */
     protected void addIndexColumn(SortedIndexColumnBuilderImpl idxBuilder) {
@@ -76,7 +79,7 @@ public class SortedIndexDefinitionBuilderImpl extends AbstractIndexBuilder imple
     }
 
     /**
-     * @return Index columns.
+     * Get index columns.
      */
     public List<SortedIndexColumnDefinition> columns() {
         return cols.values().stream().map(c -> new SortedIndexColumnDefinitionImpl(c.name, c.asc)).collect(Collectors.toList());

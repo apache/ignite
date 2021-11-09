@@ -24,34 +24,20 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * RewindabilityTrait.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class RewindabilityTrait implements RelMultipleTrait {
-    /**
-     *
-     */
     public static final RewindabilityTrait ONE_WAY = canonize(new RewindabilityTrait(false));
 
-    /**
-     *
-     */
     public static final RewindabilityTrait REWINDABLE = canonize(new RewindabilityTrait(true));
 
-    /**
-     *
-     */
     private final boolean rewindable;
 
-    /**
-     *
-     */
     private RewindabilityTrait(boolean rewindable) {
         this.rewindable = rewindable;
     }
 
-    /**
-     *
-     */
     public boolean rewindable() {
         return rewindable;
     }
@@ -118,9 +104,6 @@ public class RewindabilityTrait implements RelMultipleTrait {
         // no-op
     }
 
-    /**
-     *
-     */
     private static RewindabilityTrait canonize(RewindabilityTrait trait) {
         return RewindabilityTraitDef.INSTANCE.canonize(trait);
     }

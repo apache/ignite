@@ -25,10 +25,13 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * AbstractAggregatePlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class AbstractAggregatePlannerTest extends AbstractPlannerTest {
     /**
+     * CreateBroadcastTable.
+     *
      * @return REPLICATED test table (ID, VAL0, VAL1, GRP0, GRP1)
      */
     @NotNull
@@ -53,6 +56,9 @@ public class AbstractAggregatePlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * CreateAffinityTable.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @return PARTITIONED test table (ID, VAL0, VAL1, GRP0, GRP1)
      */
     @NotNull

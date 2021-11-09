@@ -58,6 +58,8 @@ public class Column implements Serializable {
     private final Supplier<Object> defValSup;
 
     /**
+     * Constructor.
+     *
      * @param name     Column name.
      * @param type     An instance of column data type.
      * @param nullable If {@code false}, null values will not be allowed for this column.
@@ -71,6 +73,8 @@ public class Column implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
      * @param name      Column name.
      * @param type      An instance of column data type.
      * @param nullable  If {@code false}, null values will not be allowed for this column.
@@ -86,6 +90,8 @@ public class Column implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
      * @param columnOrder Column order in table definition.
      * @param name        Column name.
      * @param type        An instance of column data type.
@@ -103,6 +109,8 @@ public class Column implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
      * @param schemaIndex Absolute index of this column in its schema descriptor.
      * @param columnOrder Column order defined in table definition.
      * @param name        Column name.
@@ -127,35 +135,35 @@ public class Column implements Serializable {
     }
 
     /**
-     * @return Absolute index of this column in its schema descriptor.
+     * Get absolute index of this column in its schema descriptor.
      */
     public int schemaIndex() {
         return schemaIndex;
     }
 
     /**
-     * @return User column order as defined in table definition.
+     * Get user column order as defined in table definition.
      */
     public int columnOrder() {
         return columnOrder;
     }
 
     /**
-     * @return Column name.
+     * Get column name.
      */
     public String name() {
         return name;
     }
 
     /**
-     * @return An instance of column data type.
+     * Get an instance of column data type.
      */
     public NativeType type() {
         return type;
     }
 
     /**
-     * @return {@code false} if null values will not be allowed for this column.
+     * Get nullable flag: {@code false} if null values will not be allowed for this column.
      */
     public boolean nullable() {
         return nullable;

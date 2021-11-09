@@ -107,37 +107,22 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>> {
-    /**
-     *
-     */
-    public static final String CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG = "only INNER and LEFT join supported by IgniteCorrelatedNestedLoop";
+    public static final String CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG =
+            "only INNER and LEFT join supported by IgniteCorrelatedNestedLoop";
 
-    /**
-     *
-     */
     private final ExecutionContext<RowT> ctx;
 
-    /**
-     *
-     */
     private final AffinityService affSrvc;
 
-    /**
-     *
-     */
     private final ExchangeService exchangeSvc;
 
-    /**
-     *
-     */
     private final MailboxRegistry mailboxRegistry;
 
-    /**
-     *
-     */
     private final ExpressionFactory<RowT> expressionFactory;
 
     /**
+     * Constructor.
+     *
      * @param ctx             Root context.
      * @param affSrvc         Affinity service.
      * @param mailboxRegistry Mailbox registry.
@@ -708,16 +693,10 @@ public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>>
         throw new AssertionError();
     }
 
-    /**
-     *
-     */
     private Node<RowT> visit(RelNode rel) {
         return visit((IgniteRel) rel);
     }
 
-    /**
-     *
-     */
     public <T extends Node<RowT>> T go(IgniteRel rel) {
         return (T) visit(rel);
     }

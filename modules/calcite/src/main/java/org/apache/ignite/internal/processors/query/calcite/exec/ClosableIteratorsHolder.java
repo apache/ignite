@@ -29,42 +29,26 @@ import org.apache.ignite.internal.thread.IgniteThread;
 import org.apache.ignite.lang.IgniteLogger;
 
 /**
- *
+ * ClosableIteratorsHolder.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClosableIteratorsHolder implements LifecycleAware {
-    /**
-     *
-     */
     private final String nodeName;
 
-    /**
-     *
-     */
     private final ReferenceQueue refQueue;
 
-    /**
-     *
-     */
     private final Map<Reference, Object> refMap;
 
-    /**
-     *
-     */
     private final IgniteLogger log;
 
-    /**
-     *
-     */
     private volatile boolean stopped;
 
-    /**
-     *
-     */
     private volatile IgniteThread cleanWorker;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ClosableIteratorsHolder(String nodeName, IgniteLogger log) {
         this.nodeName = nodeName;
@@ -83,6 +67,9 @@ public class ClosableIteratorsHolder implements LifecycleAware {
     }
 
     /**
+     * Iterator.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param src Closeable iterator.
      * @return Weak closable iterator wrapper.
      */
@@ -92,18 +79,12 @@ public class ClosableIteratorsHolder implements LifecycleAware {
         return new DelegatingIterator<>(src);
     }
 
-    /**
-     *
-     */
     private void cleanUp(boolean blocking) {
         for (Reference<?> ref = nextRef(blocking); !stopped && ref != null; ref = nextRef(blocking)) {
             Commons.close(refMap.remove(ref), log);
         }
     }
 
-    /**
-     *
-     */
     private Reference nextRef(boolean blocking) {
         try {
             return !blocking ? refQueue.poll() : refQueue.remove();
@@ -112,9 +93,6 @@ public class ClosableIteratorsHolder implements LifecycleAware {
         }
     }
 
-    /**
-     *
-     */
     private AutoCloseable closeable(Object referent, Object resource) {
         if (!(resource instanceof AutoCloseable)) {
             return null;
@@ -139,23 +117,11 @@ public class ClosableIteratorsHolder implements LifecycleAware {
         }
     }
 
-    /**
-     *
-     */
     private final class DelegatingIterator<T> implements Iterator<T>, AutoCloseable {
-        /**
-         *
-         */
         private final Iterator<T> delegate;
 
-        /**
-         *
-         */
         private final AutoCloseable closeable;
 
-        /**
-         *
-         */
         private DelegatingIterator(Iterator<T> delegate) {
             closeable = closeable(this, this.delegate = delegate);
         }
@@ -191,13 +157,7 @@ public class ClosableIteratorsHolder implements LifecycleAware {
         }
     }
 
-    /**
-     *
-     */
     private final class CloseableReference extends WeakReference implements AutoCloseable {
-        /**
-         *
-         */
         private CloseableReference(Object referent, Object resource) {
             super(referent, refQueue);
 

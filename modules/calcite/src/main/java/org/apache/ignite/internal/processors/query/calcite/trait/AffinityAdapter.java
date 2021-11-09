@@ -22,26 +22,19 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
- *
+ * AffinityAdapter.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 final class AffinityAdapter<RowT> implements ToIntFunction<RowT> {
-    /**
-     *
-     */
     private final ToIntFunction<Object> affinity;
 
-    /**
-     *
-     */
     private final int[] keys;
 
-    /**
-     *
-     */
     private final RowHandler<RowT> hndlr;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     AffinityAdapter(ToIntFunction<Object> affinity, int[] keys, RowHandler<RowT> hndlr) {
         this.affinity = affinity;

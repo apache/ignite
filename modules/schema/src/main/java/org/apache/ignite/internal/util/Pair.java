@@ -42,14 +42,14 @@ public class Pair<T, V> {
     }
 
     /**
-     * @return First object.
+     * Get the first object.
      */
     public T getFirst() {
         return first;
     }
 
     /**
-     * @return Second object.
+     * Get the second object.
      */
     public V getSecond() {
         return second;

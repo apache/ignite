@@ -40,22 +40,14 @@ import org.apache.ignite.internal.util.Cursor;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * RuntimeTreeIndexTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class RuntimeTreeIndexTest extends IgniteAbstractTest {
-    /**
-     *
-     */
     private static final int UNIQUE_GROUPS = 10_000;
 
-    /**
-     *
-     */
     private static final int[] NOT_UNIQUE_ROWS_IN_GROUP = new int[]{1, 10};
 
-    /**
-     *
-     */
     private static final Pair<Class<?>[], ImmutableIntList>[] ROW_TYPES = new Pair[]{
             new Pair(new Class<?>[]{int.class, int.class, int.class}, ImmutableIntList.of(1)),
             new Pair(new Class<?>[]{int.class, long.class, int.class}, ImmutableIntList.of(1)),
@@ -70,9 +62,6 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
     /** Search count. */
     private static final int SEARCH_CNT = UNIQUE_GROUPS / 100;
 
-    /**
-     *
-     */
     @Test
     public void test() throws Exception {
         IgniteTypeFactory tf = new IgniteTypeFactory();
@@ -112,9 +101,6 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
         }
     }
 
-    /**
-     *
-     */
     private RuntimeTreeIndex<Object[]> generate(RelDataType rowType, final List<Integer> idxCols, int notUnique) {
         RuntimeTreeIndex<Object[]> idx = new RuntimeTreeIndex<>(
                 new ExecutionContext<>(
@@ -159,9 +145,6 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
         return idx;
     }
 
-    /**
-     *
-     */
     private Object[] generateRow(int rowId, RelDataType rowType, int notUnique) {
         Object[] row = new Object[rowType.getFieldCount()];
 
@@ -172,9 +155,6 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
         return row;
     }
 
-    /**
-     *
-     */
     private Object[] generateFindRow(int rowId, RelDataType rowType, int notUnique, final List<Integer> idxCols) {
         Object[] row = generateRow(rowId, rowType, notUnique);
 
@@ -187,9 +167,6 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
         return row;
     }
 
-    /**
-     *
-     */
     private Object generateValue(int rowId, RelDataTypeField field, int notUnique) {
         long mod = rowId / notUnique;
         long baseDate = 1_000_000L;

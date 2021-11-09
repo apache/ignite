@@ -39,7 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * IgniteMdRowCount.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdRowCount extends RelMdRowCount {
@@ -54,8 +55,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /**
-     * RowCount of Spool equals to estimated row count of its child by default, but IndexSpool has internal filter that could filter out
-     * some rows, hence we need to estimate it differently.
+     * RowCount of Spool equals to estimated row count of its child by default, but IndexSpool has internal filter that
+     * could filter out some rows, hence we need to estimate it differently.
      */
     public double getRowCount(IgniteSortedIndexSpool rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
@@ -76,7 +77,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /**
-     *
+     * JoinRowCount.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Nullable
     public static Double joinRowCount(RelMetadataQuery mq, Join rel) {

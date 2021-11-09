@@ -35,26 +35,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Parse tree for {@code CREATE TABLE} statement with Ignite specific features.
  */
 public class IgniteSqlCreateTable extends SqlCreate {
-    /**
-     *
-     */
     private final SqlIdentifier name;
 
-    /**
-     *
-     */
     private final @Nullable SqlNodeList columnList;
 
-    /**
-     *
-     */
     private final @Nullable SqlNodeList createOptionList;
 
-    /**
-     *
-     */
-    private static final SqlOperator OPERATOR =
-            new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
     /** Creates a SqlCreateTable. */
     public IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists,
@@ -99,28 +86,28 @@ public class IgniteSqlCreateTable extends SqlCreate {
     }
 
     /**
-     * @return Name of the table.
+     * Get name of the table.
      */
     public SqlIdentifier name() {
         return name;
     }
 
     /**
-     * @return List of the specified columns and constraints.
+     * GEt list of the specified columns and constraints.
      */
     public SqlNodeList columnList() {
         return columnList;
     }
 
     /**
-     * @return List of the specified options to create table with.
+     * GEt list of the specified options to create table with.
      */
     public SqlNodeList createOptionList() {
         return createOptionList;
     }
 
     /**
-     * @return Whether the IF NOT EXISTS is specified.
+     * Get whether the IF NOT EXISTS is specified.
      */
     public boolean ifNotExists() {
         return ifNotExists;

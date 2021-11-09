@@ -21,16 +21,15 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
 /**
- *
+ * FragmentPlan.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class FragmentPlan implements QueryPlan {
-    /**
-     *
-     */
     private final IgniteRel root;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public FragmentPlan(IgniteRel root) {
         RelOptCluster cluster = PlanningContext.empty().cluster();
@@ -38,9 +37,6 @@ public class FragmentPlan implements QueryPlan {
         this.root = new Cloner(cluster).visit(root);
     }
 
-    /**
-     *
-     */
     public IgniteRel root() {
         return root;
     }

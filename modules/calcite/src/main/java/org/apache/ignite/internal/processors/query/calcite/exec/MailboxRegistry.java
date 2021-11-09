@@ -24,7 +24,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * MailboxRegistry interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface MailboxRegistry extends LifecycleAware {
     /**

@@ -48,38 +48,25 @@ import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * TableDescriptorImpl.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class TableDescriptorImpl extends NullInitializerExpressionFactory implements TableDescriptor {
-    /**
-     *
-     */
     private static final ColumnDescriptor[] DUMMY = new ColumnDescriptor[0];
 
     private final TableImpl table;
 
-    /**
-     *
-     */
     private final ColumnDescriptor[] descriptors;
 
-    /**
-     *
-     */
     private final Map<String, ColumnDescriptor> descriptorsMap;
 
-    /**
-     *
-     */
     private final ImmutableBitSet insertFields;
 
-    /**
-     *
-     */
     private final ImmutableBitSet keyFields;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public TableDescriptorImpl(
             TableImpl table,
@@ -244,9 +231,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         return partitionedGroup();
     }
 
-    /**
-     *
-     */
     private ColocationGroup partitionedGroup() {
         List<List<String>> assignments = table.internalTable().assignments().stream()
                 .map(Collections::singletonList)
@@ -255,9 +239,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         return ColocationGroup.forAssignments(assignments);
     }
 
-    /**
-     *
-     */
     private <RowT> Tuple insertTuple(RowT row, ExecutionContext<RowT> ectx) {
         Tuple tuple = Tuple.create(descriptors.length);
 
@@ -270,9 +251,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         return tuple;
     }
 
-    /**
-     *
-     */
     private <RowT> Tuple updateTuple(RowT row, List<String> updateColList, ExecutionContext<RowT> ectx) {
         RowHandler<RowT> hnd = ectx.rowHandler();
         int offset = descriptorsMap.size();
@@ -300,9 +278,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         return tuple;
     }
 
-    /**
-     *
-     */
     private <RowT> Tuple deleteTuple(RowT row, ExecutionContext<RowT> ectx) {
         RowHandler<RowT> hnd = ectx.rowHandler();
         Tuple tuple = Tuple.create(keyFields.cardinality());

@@ -18,26 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 /**
- *
+ * AccumulatorWrapper interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface AccumulatorWrapper<RowT> {
-    /**
-     *
-     */
     void add(RowT row);
 
-    /**
-     *
-     */
     Object end();
 
-    /**
-     *
-     */
     void apply(Accumulator accumulator);
 
-    /**
-     *
-     */
     Accumulator accumulator();
 }

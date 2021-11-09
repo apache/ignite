@@ -21,7 +21,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- *
+ * QueryTaskExecutor interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface QueryTaskExecutor extends LifecycleAware {
     /**

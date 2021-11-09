@@ -34,21 +34,15 @@ import org.apache.ignite.internal.tostring.S;
  * @see #COLUMN_COMPARATOR
  */
 public class Columns implements Serializable {
-    /**
-     *
-     */
     public static final int[][] EMPTY_FOLDING_TABLE = new int[0][];
 
-    /**
-     *
-     */
     public static final int[] EMPTY_FOLDING_MASK = new int[0];
 
     /**
-     * Lookup table to speed-up calculation of the number of null/non-null columns based on the null map. For a given byte {@code b}, {@code
-     * NULL_COLUMNS_LOOKUP[b]} will contain the number of {@code null} columns corresponding to the byte in nullability map. For example, if
-     * nullability map is {@code 0b00100001}, then the map encodes nulls for columns 0 and 5 and {@code NULL_COLUMNS_LOOKUP[0b00100001] ==
-     * 2}.
+     * Lookup table to speed-up calculation of the number of null/non-null columns based on the null map.
+     * For a given byte {@code b}, {@code NULL_COLUMNS_LOOKUP[b]} will contain the number of {@code null} columns
+     * corresponding to the byte in nullability map. For example, if nullability map is {@code 0b00100001}, then the map
+     * encodes nulls for columns 0 and 5 and {@code NULL_COLUMNS_LOOKUP[0b00100001] == 2}.
      */
     private static final int[] NULL_COLUMNS_LOOKUP;
 
@@ -139,13 +133,15 @@ public class Columns implements Serializable {
     }
 
     /**
-     * @return Number of bytes required to store the nullability map for these columns.
+     * Get number of bytes required to store the nullability map for these columns.
      */
     public int nullMapSize() {
         return nullMapSize;
     }
 
     /**
+     * Get column type's fixed size flag by column index.
+     *
      * @param idx Column index to check.
      * @return {@code true} if the column with the given index is fixed-size.
      */
@@ -154,6 +150,8 @@ public class Columns implements Serializable {
     }
 
     /**
+     * Get column by it's index.
+     *
      * @param idx Column index.
      * @return Column instance.
      */
@@ -162,55 +160,58 @@ public class Columns implements Serializable {
     }
 
     /**
-     * @return Sorted columns.
+     * Get sorted columns array.
      */
     public Column[] columns() {
         return cols;
     }
 
     /**
-     * @return Number of columns in this chunk.
+     * Get number of columns in this chunk.
      */
     public int length() {
         return cols.length;
     }
 
     /**
-     * @return The number of varlength columns in this chunk.
+     * Get number of varlength columns in this chunk.
      */
     public int numberOfVarlengthColumns() {
         return cols.length - numberOfFixsizeColumns();
     }
 
     /**
-     * @return The number of fixsize columns in this chunk.
+     * Get number of fixsize columns in this chunk.
      */
     public int numberOfFixsizeColumns() {
         return firstVarlenColIdx == -1 ? cols.length : firstVarlenColIdx;
     }
 
     /**
-     * @return The index of the first varlength column in the sorted order of columns.
+     * Get index of the first varlength column in the sorted order of columns.
      */
     public int firstVarlengthColumn() {
         return firstVarlenColIdx;
     }
 
     /**
-     * @return {@code True} if there is at least one varlength column.
+     * Get has varlength columns flag: {@code True} if there is at least one varlength column.
      */
     public boolean hasVarlengthColumns() {
         return firstVarlenColIdx != -1;
     }
 
     /**
-     * @return Fixsize columns size upper bound.
+     * Get fixsize columns size upper bound.
      */
     public int fixsizeMaxLen() {
         return fixedSizeMaxLen;
     }
 
     /**
+     * SortedCopy.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param schemaBaseIdx Base index of this columns object in its schema.
      * @param cols          User columns.
      * @return A copy of user columns array sorted in column order.
@@ -230,7 +231,7 @@ public class Columns implements Serializable {
     }
 
     /**
-     * @return Index of the first varlength column or {@code -1} if there are none.
+     * Get index of the first varlength column or {@code -1} if there are none.
      */
     private int findFirstVarlenColumn() {
         for (int i = 0; i < cols.length; i++) {
@@ -243,7 +244,7 @@ public class Columns implements Serializable {
     }
 
     /**
-     * @return {@code True} if there is one or more nullable columns, {@code false} otherwise.
+     * Get has nullable column flag: {@code True} if there is one or more nullable columns, {@code false} otherwise.
      */
     private boolean hasNullableColumn() {
         for (int i = 0; i < cols.length; i++) {
@@ -255,9 +256,6 @@ public class Columns implements Serializable {
         return false;
     }
 
-    /**
-     *
-     */
     private void buildFoldingTable() {
         int numFixsize = numberOfFixsizeColumns();
 

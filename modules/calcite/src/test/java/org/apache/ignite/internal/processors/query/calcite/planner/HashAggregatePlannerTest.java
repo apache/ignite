@@ -39,10 +39,14 @@ import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * HashAggregatePlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /**
+     * SubqueryWithAggregate.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -93,7 +97,8 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
-     *
+     * NoGroupByAggregate.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void noGroupByAggregate() throws Exception {

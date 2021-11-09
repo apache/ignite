@@ -47,26 +47,19 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 
 /**
- *
+ * CorrelatedNestedLoopJoinRule.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class CorrelatedNestedLoopJoinRule extends ConverterRule {
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
-    /**
-     *
-     */
     public static final RelOptRule INSTANCE_BATCHED = Config.DEFAULT.withBatchSize(100).toRule();
 
-    /**
-     *
-     */
     private final int batchSize;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public CorrelatedNestedLoopJoinRule(Config cfg) {
         super(cfg);
@@ -167,13 +160,11 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
     }
 
     /**
-     *
+     * Config interface.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @SuppressWarnings("ClassNameSameAsAncestorName")
     public interface Config extends ConverterRule.Config {
-        /**
-         *
-         */
         Config DEFAULT = ConverterRule.Config.INSTANCE
                 .withDescription("CorrelatedNestedLoopJoin")
                 .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
@@ -189,7 +180,8 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         Config withBatchSize(int batchSize);
 
         /**
-         *
+         * WithConversion.
+         * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
          */
         default Config withConversion(Class<? extends Join> clazz, RelTrait in, RelTrait out) {
             return withInTrait(in)
@@ -206,9 +198,6 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         }
     }
 
-    /**
-     *
-     */
     private static boolean preMatch(Join join) {
         return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT; // TODO SEMI, ANTI
     }

@@ -49,28 +49,28 @@ public interface IgniteRel extends PhysicalNode {
     IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs);
 
     /**
-     * @return Node distribution.
+     * Get node distribution.
      */
     default IgniteDistribution distribution() {
         return TraitUtils.distribution(getTraitSet());
     }
 
     /**
-     * @return Node collations.
+     * Get node collations.
      */
     default RelCollation collation() {
         return TraitUtils.collation(getTraitSet());
     }
 
     /**
-     * @return Node rewindability.
+     * Get node rewindability.
      */
     default RewindabilityTrait rewindability() {
         return TraitUtils.rewindability(getTraitSet());
     }
 
     /**
-     * @return Node correlation.
+     * Get node correlation.
      */
     default CorrelationTrait correlation() {
         return TraitUtils.correlation(getTraitSet());

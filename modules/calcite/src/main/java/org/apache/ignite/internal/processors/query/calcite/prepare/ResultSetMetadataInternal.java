@@ -25,7 +25,8 @@ import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
  */
 public interface ResultSetMetadataInternal extends ResultSetMetadata {
     /**
-     * @return Fields metadata.
+     * Get fields metadata.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     RelDataType rowType();
 }

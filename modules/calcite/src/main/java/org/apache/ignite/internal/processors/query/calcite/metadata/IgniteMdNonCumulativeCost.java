@@ -28,18 +28,17 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 
 /**
- *
+ * IgniteMdNonCumulativeCost.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdNonCumulativeCost implements MetadataHandler<BuiltInMetadata.NonCumulativeCost> {
-    /**
-     *
-     */
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.NON_CUMULATIVE_COST.method, new IgniteMdNonCumulativeCost());
 
     /**
-     *
+     * GetDef.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Override
     public MetadataDef<BuiltInMetadata.NonCumulativeCost> getDef() {
@@ -47,7 +46,8 @@ public class IgniteMdNonCumulativeCost implements MetadataHandler<BuiltInMetadat
     }
 
     /**
-     *
+     * GetNonCumulativeCost.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public RelOptCost getNonCumulativeCost(RelNode rel, RelMetadataQuery mq) {
         return rel.computeSelfCost(rel.getCluster().getPlanner(), mq);

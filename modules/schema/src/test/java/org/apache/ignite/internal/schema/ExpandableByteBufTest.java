@@ -27,11 +27,13 @@ import org.apache.ignite.internal.schema.row.ExpandableByteBuf;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * ExpandableByteBufTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ExpandableByteBufTest {
     /**
-     *
+     * AllTypesDirectOrder.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void allTypesDirectOrder() throws Exception {
@@ -75,7 +77,8 @@ public class ExpandableByteBufTest {
     }
 
     /**
-     *
+     * AllTypesReverseOrder.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void allTypesReverseOrder() throws Exception {
@@ -119,7 +122,8 @@ public class ExpandableByteBufTest {
     }
 
     /**
-     *
+     * ExampleFromJavadoc.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void exampleFromJavadoc() {
@@ -132,7 +136,8 @@ public class ExpandableByteBufTest {
     }
 
     /**
-     *
+     * StringExpandMultipleTimes.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void stringExpandMultipleTimes() throws Exception {
@@ -151,7 +156,8 @@ public class ExpandableByteBufTest {
     }
 
     /**
-     *
+     * StringWithnMultiByteChars.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     @Test
     public void stringWithnMultiByteChars() throws Exception {

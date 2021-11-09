@@ -35,9 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
  * Expression factory.
  */
 public interface ExpressionFactory<RowT> {
-    /**
-     *
-     */
     Supplier<List<AccumulatorWrapper<RowT>>> accumulatorsFactory(
             AggregateType type,
             List<AggregateCall> calls,

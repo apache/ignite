@@ -70,7 +70,7 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
-     * @return Row schema.
+     * Get row schema.
      */
     @Override
     @NotNull
@@ -79,7 +79,7 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
-     * @return {@code True} if row has non-null value, {@code false} otherwise.
+     * Get has value flag: {@code True} if row has non-null value, {@code false} otherwise.
      */
     @Override
     public boolean hasValue() {
@@ -684,6 +684,9 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Get chunk length.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param baseOff Chunk base offset.
      * @return Chunk length.
      */
@@ -692,6 +695,9 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Get vartable offset.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param baseOff    Chunk base offset.
      * @param nullMapLen Null-map length.
      * @return Vartable offset.
@@ -717,6 +723,9 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Get key flags.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @return Key flags.
      */
     private int keyFlags() {
@@ -726,6 +735,9 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Get value flags.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @return Value flags.
      */
     private int valueFlags() {
@@ -735,6 +747,9 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Get null map offset.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param baseOff Chunk base offset.
      * @return Null-map offset.
      */
@@ -743,6 +758,8 @@ public class Row implements BinaryRow, SchemaAware {
     }
 
     /**
+     * Get column length by its index.
+     *
      * @param colIdx Column index.
      * @return Column length.
      */

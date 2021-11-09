@@ -35,12 +35,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * TableSpoolExecutionTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class TableSpoolExecutionTest extends AbstractExecutionTest {
-    /**
-     *
-     */
     @Test
     public void testLazyTableSpool() {
         checkTableSpool(
@@ -48,9 +46,6 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
         );
     }
 
-    /**
-     *
-     */
     @Test
     public void testEagerTableSpool() {
         checkTableSpool(
@@ -106,7 +101,8 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
     }
 
     /**
-     *
+     * CheckTableSpool.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public void checkTableSpool(
             BiFunction<ExecutionContext<Object[]>, RelDataType, TableSpoolNode<Object[]>> spoolFactory) {

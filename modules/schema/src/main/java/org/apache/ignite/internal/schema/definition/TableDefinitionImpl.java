@@ -115,6 +115,8 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     }
 
     /**
+     * Check if specified column already exists.
+     *
      * @param name Column name.
      * @return {@code True} if column with given name already exists, {@code false} otherwise.
      */
@@ -123,6 +125,8 @@ public class TableDefinitionImpl extends AbstractSchemaObject implements TableDe
     }
 
     /**
+     * Check if specified key column already exists.
+     *
      * @param name Column name.
      * @return {@code True} if key column with given name already exists, {@code false} otherwise.
      */

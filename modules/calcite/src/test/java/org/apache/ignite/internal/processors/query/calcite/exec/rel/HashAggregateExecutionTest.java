@@ -36,7 +36,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
 /**
- *
+ * HashAggregateExecutionTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class HashAggregateExecutionTest extends BaseAggregateTest {
     /** {@inheritDoc} */
@@ -51,7 +52,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
             ScanNode<Object[]> scan
     ) {
         assert grpSets.size() == 1 : "Test checks only simple GROUP BY";
-        
+
         HashAggregateNode<Object[]> agg = new HashAggregateNode<>(
                 ctx,
                 aggRowType,
@@ -60,9 +61,9 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
                 accFactory(ctx, call, SINGLE, inRowType),
                 rowFactory
         );
-        
+
         agg.register(scan);
-        
+
         // Collation of the first fields emulates planner behavior:
         // The group's keys placed on the begin of the output row.
         RelCollation collation = RelCollations.of(
@@ -70,17 +71,17 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
                         IntStream.range(0, first(grpSets).cardinality()).boxed().collect(Collectors.toList())
                 )
         );
-        
+
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
-        
+
         // Create sort node on the top to check sorted results
         SortNode<Object[]> sort = new SortNode<>(ctx, inRowType, cmp);
-        
+
         sort.register(agg);
-        
+
         return sort;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     protected SingleNode<Object[]> createMapReduceAggregateNodesChain(
@@ -93,7 +94,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
             ScanNode<Object[]> scan
     ) {
         assert grpSets.size() == 1 : "Test checks only simple GROUP BY";
-        
+
         HashAggregateNode<Object[]> aggMap = new HashAggregateNode<>(
                 ctx,
                 aggRowType,
@@ -102,9 +103,9 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
                 accFactory(ctx, call, MAP, inRowType),
                 rowFactory
         );
-        
+
         aggMap.register(scan);
-        
+
         HashAggregateNode<Object[]> aggRdc = new HashAggregateNode<>(
                 ctx,
                 aggRowType,
@@ -113,9 +114,9 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
                 accFactory(ctx, call, REDUCE, aggRowType),
                 rowFactory
         );
-        
+
         aggRdc.register(aggMap);
-        
+
         // Collation of the first fields emulates planner behavior:
         // The group's keys placed on the begin of the output row.
         RelCollation collation = RelCollations.of(
@@ -123,14 +124,14 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
                         IntStream.range(0, first(grpSets).cardinality()).boxed().collect(Collectors.toList())
                 )
         );
-        
+
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
-        
+
         // Create sort node on the top to check sorted results
         SortNode<Object[]> sort = new SortNode<>(ctx, aggRowType, cmp);
-        
+
         sort.register(aggRdc);
-        
+
         return sort;
     }
 }

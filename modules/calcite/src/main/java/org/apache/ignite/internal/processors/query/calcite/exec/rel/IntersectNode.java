@@ -27,24 +27,15 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
  * Execution node for INTERSECT operator.
  */
 public class IntersectNode<RowT> extends AbstractSetOpNode<RowT> {
-    /**
-     *
-     */
     public IntersectNode(ExecutionContext<RowT> ctx, RelDataType rowType, AggregateType type, boolean all,
             RowFactory<RowT> rowFactory, int inputsCnt) {
         super(ctx, rowType, type, all, rowFactory, new IntersectGrouping<>(ctx, rowFactory, type, all, inputsCnt));
     }
 
-    /**
-     *
-     */
     private static class IntersectGrouping<RowT> extends Grouping<RowT> {
         /** Inputs count. */
         private final int inputsCnt;
 
-        /**
-         *
-         */
         private IntersectGrouping(ExecutionContext<RowT> ctx, RowFactory<RowT> rowFactory, AggregateType type,
                 boolean all, int inputsCnt) {
             super(ctx, rowFactory, type, all);

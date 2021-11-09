@@ -43,12 +43,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * HashAggregateSingleGroupExecutionTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest {
-    /**
-     *
-     */
     @Test
     public void mapReduceAvg() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -60,7 +58,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.AVG,
                 false,
@@ -71,9 +69,9 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(double.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(
                 ctx,
@@ -83,9 +81,9 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 accFactory(ctx, call, MAP, rowType),
                 rowFactory()
         );
-        
+
         map.register(scan);
-        
+
         RelDataType reduceType = TypeUtils.createRowType(tf, double.class);
         HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(
                 ctx,
@@ -95,20 +93,17 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 accFactory(ctx, call, REDUCE, null),
                 rowFactory()
         );
-        
+
         reduce.register(map);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
-        
+
         assertTrue(root.hasNext());
         assertEquals(725d, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void mapReduceSum() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -120,7 +115,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.SUM,
                 false,
@@ -131,30 +126,27 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
                 accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
-        
+
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets,
                 accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
-        
+
         assertTrue(root.hasNext());
         assertEquals(2900, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void mapReduceMin() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -166,7 +158,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.MIN,
                 false,
@@ -177,30 +169,27 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
                 accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
-        
+
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets,
                 accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
-        
+
         assertTrue(root.hasNext());
         assertEquals(200, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void mapReduceMax() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -212,7 +201,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.MAX,
                 false,
@@ -223,30 +212,27 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
                 accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
-        
+
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets,
                 accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
-        
+
         assertTrue(root.hasNext());
         assertEquals(1400, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void mapReduceCount() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -258,7 +244,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.COUNT,
                 false,
@@ -269,30 +255,27 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
                 accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
-        
+
         RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> reduce = new HashAggregateNode<>(ctx, reduceType, REDUCE, grpSets,
                 accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
-        
+
         assertTrue(root.hasNext());
         assertEquals(4, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void singleAvg() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -304,7 +287,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.AVG,
                 false,
@@ -315,25 +298,22 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(double.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets,
                 accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
-        
+
         assertTrue(root.hasNext());
         assertEquals(725d, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void singleSum() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -345,7 +325,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.SUM,
                 false,
@@ -356,25 +336,22 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets,
                 accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
-        
+
         assertTrue(root.hasNext());
         assertEquals(2900, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void singleMin() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -386,7 +363,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.MIN,
                 false,
@@ -397,25 +374,22 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets,
                 accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
-        
+
         assertTrue(root.hasNext());
         assertEquals(200, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void singleMax() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -427,7 +401,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.MAX,
                 false,
@@ -438,26 +412,22 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> agg = new HashAggregateNode<>(ctx, aggType, SINGLE, grpSets,
                 accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
-        
+
         assertTrue(root.hasNext());
         assertEquals(1400, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    
-    /**
-     *
-     */
+
     @Test
     public void singleCount() {
         ExecutionContext<Object[]> ctx = executionContext();
@@ -469,7 +439,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 row("Ivan", 1400),
                 row("Alexey", 1000)
         ));
-        
+
         AggregateCall call = AggregateCall.create(
                 SqlStdOperatorTable.COUNT,
                 false,
@@ -480,9 +450,9 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 RelCollations.EMPTY,
                 tf.createJavaType(int.class),
                 null);
-        
+
         List<ImmutableBitSet> grpSets = List.of(ImmutableBitSet.of());
-        
+
         RelDataType aggType = TypeUtils.createRowType(tf, int.class);
         HashAggregateNode<Object[]> agg = new HashAggregateNode<>(
                 ctx,
@@ -492,20 +462,17 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
                 accFactory(ctx, call, SINGLE, rowType),
                 rowFactory()
         );
-        
+
         agg.register(scan);
-        
+
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
-        
+
         assertTrue(root.hasNext());
         assertEquals(4, root.next()[0]);
         assertFalse(root.hasNext());
     }
-    
-    /**
-     *
-     */
+
     protected Supplier<List<AccumulatorWrapper<Object[]>>> accFactory(
             ExecutionContext<Object[]> ctx,
             AggregateCall call,

@@ -23,9 +23,6 @@ import org.apache.ignite.internal.tostring.S;
  * A number native type representing a BigInteger with <code>precision</code> precision.
  */
 public class NumberNativeType extends NativeType {
-    /**
-     *
-     */
     private final int precision;
 
     /**
@@ -40,7 +37,7 @@ public class NumberNativeType extends NativeType {
     }
 
     /**
-     * @return Maximum allowed precision of a BigInteger value.
+     * Get maximum allowed precision of a BigInteger value.
      */
     public int precision() {
         return precision;

@@ -20,25 +20,19 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.util.UUID;
 
 /**
- *
+ * RemoteException.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class RemoteException extends RuntimeException {
-    /**
-     *
-     */
     private final String nodeId;
 
-    /**
-     *
-     */
     private final UUID queryId;
 
-    /**
-     *
-     */
     private final long fragmentId;
 
     /**
+     * Constructor.
+     *
      * @param cause      Cause.
      * @param nodeId     Node ID.
      * @param queryId    Query ID.
@@ -52,21 +46,21 @@ public class RemoteException extends RuntimeException {
     }
 
     /**
-     * @return Node ID.
+     * Get node ID.
      */
     public String nodeId() {
         return nodeId;
     }
 
     /**
-     * @return Query ID.
+     * Get query ID.
      */
     public UUID queryId() {
         return queryId;
     }
 
     /**
-     * @return Fragment ID.
+     * Get fragment ID.
      */
     public long fragmentId() {
         return fragmentId;

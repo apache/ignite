@@ -27,14 +27,8 @@ import org.apache.calcite.schema.impl.AbstractSchema;
  * Ignite schema.
  */
 public class IgniteSchema extends AbstractSchema {
-    /**
-     *
-     */
     private final String schemaName;
 
-    /**
-     *
-     */
     private final Map<String, IgniteTable> tblMap = new ConcurrentHashMap<>();
 
     /**
@@ -47,6 +41,8 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /**
+     * Get schema name.
+     *
      * @return Schema name.
      */
     public String getName() {
@@ -60,6 +56,9 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /**
+     * Add table.
+     *
+     * @param tblName Table name.
      * @param tbl Table.
      */
     public void addTable(String tblName, IgniteTable tbl) {
@@ -67,6 +66,8 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /**
+     * Remove table.
+     *
      * @param tblName Table name.
      */
     public void removeTable(String tblName) {

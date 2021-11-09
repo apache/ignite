@@ -239,7 +239,7 @@ public enum NativeTypeSpec {
     }
 
     /**
-     * @return {@code true} for fixed-length types, {@code false} otherwise.
+     * Get fixed length flag: {@code true} for fixed-length types, {@code false} otherwise.
      */
     public boolean fixedLength() {
         return fixedSize;

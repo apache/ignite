@@ -21,27 +21,28 @@ import java.util.List;
 import org.apache.ignite.network.annotations.Transferable;
 
 /**
- *
+ * QueryBatchMessage interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 @Transferable(value = SqlQueryMessageGroup.QUERY_BATCH_MESSAGE, autoSerializable = false)
 public interface QueryBatchMessage extends ExecutionContextAwareMessage {
     /**
-     * @return Exchange ID.
+     * Get exchange ID.
      */
     long exchangeId();
 
     /**
-     * @return Batch ID.
+     * Get batch ID.
      */
     int batchId();
 
     /**
-     * @return Last batch flag.
+     * Get last batch flag.
      */
     boolean last();
 
     /**
-     * @return Rows.
+     * Get rows.
      */
     List<Object> rows();
 }

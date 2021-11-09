@@ -30,7 +30,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 
 /**
- *
+ * IgniteValues.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class IgniteValues extends Values implements IgniteRel {
     /**
@@ -39,17 +40,19 @@ public class IgniteValues extends Values implements IgniteRel {
      * <p>Note that tuples passed in become owned by
      * this rel (without a deep copy), so caller must not modify them after this call, otherwise bad things will happen.
      *
-     * @param cluster Cluster that this relational expression belongs to
-     * @param rowType Row type for tuples produced by this rel
-     * @param tuples  2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all
-     *                tuples must be of same length, conforming to rowType
+     * @param cluster Cluster that this relational expression belongs to.
+     * @param rowType Row type for tuples produced by this rel.
+     * @param tuples  2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is
+     *               one tuple; all tuples must be of same length, conforming to rowType.
      */
-    public IgniteValues(RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits) {
+    public IgniteValues(RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples,
+            RelTraitSet traits) {
         super(cluster, rowType, tuples, traits);
     }
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteValues(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));

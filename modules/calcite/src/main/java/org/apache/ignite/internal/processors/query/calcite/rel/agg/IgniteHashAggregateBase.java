@@ -24,7 +24,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 
 /**
- *
+ * IgniteHashAggregateBase interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 interface IgniteHashAggregateBase extends TraitsAwareIgniteRel {
     /** {@inheritDoc} */

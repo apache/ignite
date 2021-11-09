@@ -21,21 +21,17 @@ import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 
 /**
- *
+ * FieldsMetadataImpl.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class FieldsMetadataImpl implements FieldsMetadata {
-    /**
-     *
-     */
     private final RelDataType rowType;
 
-    /**
-     *
-     */
     private final List<List<String>> origins;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins) {
         this.rowType = rowType;

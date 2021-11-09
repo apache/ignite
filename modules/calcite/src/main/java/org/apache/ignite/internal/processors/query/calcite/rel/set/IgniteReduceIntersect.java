@@ -35,7 +35,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
  */
 public class IgniteReduceIntersect extends IgniteIntersect implements IgniteReduceSetOp {
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteReduceIntersect(
             RelOptCluster cluster,
@@ -45,12 +46,13 @@ public class IgniteReduceIntersect extends IgniteIntersect implements IgniteRedu
             RelDataType rowType
     ) {
         super(cluster, traitSet, List.of(input), all);
-        
+
         this.rowType = rowType;
     }
-    
+
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteReduceIntersect(RelInput input) {
         this(
@@ -61,34 +63,34 @@ public class IgniteReduceIntersect extends IgniteIntersect implements IgniteRedu
                 input.getRowType("rowType")
         );
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw)
                 .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
-        
+
         return pw;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         return new IgniteReduceIntersect(getCluster(), traitSet, sole(inputs), all, rowType);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public IgniteReduceIntersect clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteReduceIntersect(cluster, getTraitSet(), sole(inputs), all, rowType);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public int aggregateFieldsCount() {

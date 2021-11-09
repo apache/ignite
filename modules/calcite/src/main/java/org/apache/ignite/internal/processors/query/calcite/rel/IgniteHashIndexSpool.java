@@ -49,7 +49,8 @@ public class IgniteHashIndexSpool extends AbstractIgniteSpool implements IgniteR
     private final RexNode cond;
 
     /**
-     *
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public IgniteHashIndexSpool(
             RelOptCluster cluster,
@@ -88,9 +89,6 @@ public class IgniteHashIndexSpool extends AbstractIgniteSpool implements IgniteR
         return visitor.visit(this);
     }
 
-    /**
-     *
-     */
     @Override
     public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), searchRow, cond);
@@ -108,9 +106,6 @@ public class IgniteHashIndexSpool extends AbstractIgniteSpool implements IgniteR
         return true;
     }
 
-    /**
-     *
-     */
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
@@ -138,21 +133,24 @@ public class IgniteHashIndexSpool extends AbstractIgniteSpool implements IgniteR
     }
 
     /**
-     *
+     * Get search row.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public List<RexNode> searchRow() {
         return searchRow;
     }
 
     /**
-     *
+     * Get keys.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ImmutableBitSet keys() {
         return keys;
     }
 
     /**
-     *
+     * Get condition.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public RexNode condition() {
         return cond;

@@ -34,7 +34,7 @@ public class PrimaryKeyDefinitionBuilderImpl implements SchemaObjectBuilder, Pri
     @IgniteToStringInclude
     private String[] columns;
 
-    /** Affinity columns, */
+    /** Affinity columns. */
     @IgniteToStringInclude
     private String[] affinityColumns;
 

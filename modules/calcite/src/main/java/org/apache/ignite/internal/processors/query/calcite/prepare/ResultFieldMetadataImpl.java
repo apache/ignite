@@ -27,19 +27,23 @@ import org.apache.ignite.internal.schema.NativeType;
 public class ResultFieldMetadataImpl implements ResultFieldMetadata {
     /** Name of the result's field. */
     private final String name;
-    
+
     /** Type of the result's field. */
     private final NativeType type;
-    
+
     /** Order of the result's field. */
     private final int order;
-    
+
     /** Nullable flag of the result's field. */
     private final boolean nullable;
-    
+
     /** Origin of the result's field. */
     private final List<String> origin;
-    
+
+    /**
+     * Constructor.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     */
     public ResultFieldMetadataImpl(
             String name,
             NativeType type,
@@ -53,31 +57,31 @@ public class ResultFieldMetadataImpl implements ResultFieldMetadata {
         this.nullable = nullable;
         this.origin = origin;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public String name() {
         return name;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public int order() {
         return order;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public NativeType type() {
         return type;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public boolean isNullable() {
         return nullable;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public List<String> origin() {

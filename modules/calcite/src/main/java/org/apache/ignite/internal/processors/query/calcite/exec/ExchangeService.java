@@ -22,7 +22,8 @@ import java.util.UUID;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 
 /**
- *
+ * ExchangeService interface.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public interface ExchangeService extends LifecycleAware {
     /**
@@ -71,6 +72,9 @@ public interface ExchangeService extends LifecycleAware {
     void closeOutbox(String nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteInternalCheckedException;
 
     /**
+     * Send error.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param nodeId     Target node ID.
      * @param qryId      Query ID.
      * @param fragmentId Source fragment ID.
@@ -80,6 +84,9 @@ public interface ExchangeService extends LifecycleAware {
     void sendError(String nodeId, UUID qryId, long fragmentId, Throwable err) throws IgniteInternalCheckedException;
 
     /**
+     * Alive.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
      * @param nodeId Node ID.
      * @return {@code true} if node is alive, {@code false} otherwise.
      */

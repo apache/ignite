@@ -28,7 +28,8 @@ import org.apache.calcite.rel.core.Spool;
  */
 public abstract class AbstractIgniteSpool extends Spool implements IgniteRel {
     /**
-     *
+     * Constructor.
+     * AbstractIgniteSpool
      */
     public AbstractIgniteSpool(
             RelOptCluster cluster,

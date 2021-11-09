@@ -33,15 +33,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * UnionConverterRule.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class UnionConverterRule extends RelRule<UnionConverterRule.Config> {
     /** Instance. */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
-    /**
-     *
-     */
     public UnionConverterRule(Config cfg) {
         super(cfg);
     }
@@ -71,12 +69,10 @@ public class UnionConverterRule extends RelRule<UnionConverterRule.Config> {
     }
 
     /**
-     *
+     * Config interface.
+     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public interface Config extends RelRule.Config {
-        /**
-         *
-         */
         UnionConverterRule.Config DEFAULT = RelRule.Config.EMPTY
                 .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
                 .withDescription("UnionConverterRule")

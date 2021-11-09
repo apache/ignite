@@ -43,70 +43,36 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
     /** Special value to highlights that all row were received and we are not waiting any more. */
     private static final int NOT_WAITING = -1;
 
-    /**
-     *
-     */
     private final TableImpl table;
 
-    /**
-     *
-     */
     private final TableDescriptor desc;
 
-    /**
-     *
-     */
     private final RowHandler.RowFactory<RowT> factory;
 
-    /**
-     *
-     */
     private final int[] parts;
 
-    /**
-     *
-     */
     private final Queue<RowT> inBuff = new LinkedBlockingQueue<>(inBufSize);
 
-    /**
-     *
-     */
     private final @Nullable Predicate<RowT> filters;
 
-    /**
-     *
-     */
     private final @Nullable Function<RowT, RowT> rowTransformer;
 
     /** Participating columns. */
     private final @Nullable ImmutableBitSet requiredColumns;
 
-    /**
-     *
-     */
     private int requested;
 
-    /**
-     *
-     */
     private int waiting;
 
-    /**
-     *
-     */
     private boolean inLoop;
 
-    /**
-     *
-     */
     private Subscription activeSubscription;
 
-    /**
-     *
-     */
     private int curPartIdx;
 
     /**
+     * Constructor.
+     *
      * @param ctx             Execution context.
      * @param rowType         Output type of the current node.
      * @param desc            Table descriptor this node should scan.
@@ -301,9 +267,6 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
         }
     }
 
-    /**
-     *
-     */
     private RowT convert(BinaryRow binRow) {
         final org.apache.ignite.internal.schema.row.Row wrapped = table.schemaView().resolve(binRow);
 

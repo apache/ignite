@@ -32,7 +32,7 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ConfigurationBuilder;
 
 /**
- * See {@link RelMetadataQuery}
+ * See {@link RelMetadataQuery}.
  */
 public class RelMetadataQueryEx extends RelMetadataQuery {
     static {
@@ -50,15 +50,9 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         JaninoRelMetadataProvider.DEFAULT.register(types);
     }
 
-    /**
-     *
-     */
     private static final IgniteMetadata.FragmentMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
             initialHandler(IgniteMetadata.FragmentMappingMetadata.Handler.class);
 
-    /**
-     *
-     */
     private IgniteMetadata.FragmentMappingMetadata.Handler sourceDistributionHandler;
 
     /**
@@ -84,9 +78,6 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         }
     }
 
-    /**
-     *
-     */
     private RelMetadataQueryEx() {
         sourceDistributionHandler = SOURCE_DISTRIBUTION_INITIAL_HANDLER;
     }

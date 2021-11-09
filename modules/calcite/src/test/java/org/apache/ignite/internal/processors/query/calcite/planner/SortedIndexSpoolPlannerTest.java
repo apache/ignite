@@ -39,11 +39,13 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * SortedIndexSpoolPlannerTest.
+ * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
-     * Check equi-join on not colocated fields. CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
+     * Check equi-join on not colocated fields. CorrelatedNestedLoopJoinTest is applicable for this case only with
+     * IndexSpool.
      */
     @Test
     public void testNotColocatedEqJoin() throws Exception {
@@ -116,7 +118,8 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Check case when exists index (collation) isn't applied not for whole join condition but may be used by part of condition.
+     * Check case when exists index (collation) isn't applied not for whole join condition but may be used by part of
+     * condition.
      */
     @Test
     public void testPartialIndexForCondition() throws Exception {

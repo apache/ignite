@@ -27,6 +27,8 @@ public class VarlenNativeType extends NativeType {
     private final int len;
 
     /**
+     * Constructor.
+     *
      * @param typeSpec Type spec.
      * @param len      Type length.
      */
@@ -43,7 +45,7 @@ public class VarlenNativeType extends NativeType {
     }
 
     /**
-     * @return Length of the type.
+     * Get length of the type.
      */
     public int length() {
         return len;

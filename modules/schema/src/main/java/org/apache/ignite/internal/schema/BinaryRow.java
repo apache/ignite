@@ -44,12 +44,12 @@ public interface BinaryRow {
     int HEADER_SIZE = KEY_CHUNK_OFFSET;
 
     /**
-     * @return Row schema version.
+     * Get row schema version.
      */
     int schemaVersion();
 
     /**
-     * @return {@code True} if row has non-null value, {@code false} otherwise.
+     * Get has value flag: {@code True} if row has non-null value, {@code false} otherwise.
      */
     boolean hasValue();
 
@@ -64,12 +64,12 @@ public interface BinaryRow {
     int hash();
 
     /**
-     * @return ByteBuffer slice representing the key chunk.
+     * Get ByteBuffer slice representing the key chunk.
      */
     ByteBuffer keySlice();
 
     /**
-     * @return ByteBuffer slice representing the value chunk.
+     * Get ByteBuffer slice representing the value chunk.
      */
     ByteBuffer valueSlice();
 
@@ -82,42 +82,56 @@ public interface BinaryRow {
     void writeTo(OutputStream stream) throws IOException;
 
     /**
+     * Read byte by offset.
+     *
      * @param off Offset.
      * @return Byte primitive value.
      */
     byte readByte(int off);
 
     /**
+     * Read short by offset.
+     *
      * @param off Offset.
      * @return Short primitive value.
      */
     short readShort(int off);
 
     /**
+     * Read integer by offset.
+     *
      * @param off Offset.
      * @return Integer primitive value.
      */
     int readInteger(int off);
 
     /**
+     * Read long by offset.
+     *
      * @param off Offset.
      * @return Long primitive value.
      */
     long readLong(int off);
 
     /**
+     * Read float by offset.
+     *
      * @param off Offset.
      * @return Float primitive value.
      */
     float readFloat(int off);
 
     /**
+     * Read double by offset.
+     *
      * @param off Offset.
      * @return Double primitive value.
      */
     double readDouble(int off);
 
     /**
+     * Read string by offset.
+     *
      * @param off Offset.
      * @param len Length.
      * @return String value.
@@ -125,6 +139,8 @@ public interface BinaryRow {
     String readString(int off, int len);
 
     /**
+     * Read bytes by offset.
+     *
      * @param off Offset.
      * @param len Length.
      * @return Byte array.
@@ -132,7 +148,7 @@ public interface BinaryRow {
     byte[] readBytes(int off, int len);
 
     /**
-     * @return Byte array of the row.
+     * Get byte array of the row.
      */
     byte[] bytes();
 

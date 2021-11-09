@@ -55,6 +55,8 @@ public class SchemaDescriptor implements Serializable {
     private ColumnMapper colMapper = ColumnMapping.identityMapping();
 
     /**
+     * Constructor.
+     *
      * @param ver     Schema version.
      * @param keyCols Key columns.
      * @param valCols Value columns.
@@ -64,6 +66,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
      * @param ver     Schema version.
      * @param keyCols Key columns.
      * @param affCols Affinity column names.
@@ -90,6 +94,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get schema version.
+     *
      * @return Schema version.
      */
     public int version() {
@@ -97,6 +103,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Check if column index belongs to the key column.
+     *
      * @param idx Column index to check.
      * @return {@code true} if the column belongs to the key chunk, {@code false} otherwise.
      */
@@ -107,6 +115,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get column by index.
+     *
      * @param colIdx Column index.
      * @return Column instance.
      */
@@ -117,6 +127,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get column by name.
+     *
      * @param name Column name.
      * @return Column.
      */
@@ -143,6 +155,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get key columns.
+     *
      * @return Key columns chunk.
      */
     public Columns keyColumns() {
@@ -150,6 +164,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get affinity columns.
+     *
      * @return Key affinity columns chunk.
      */
     public Column[] affinityColumns() {
@@ -157,6 +173,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get value columns.
+     *
      * @return Value columns chunk.
      */
     public Columns valueColumns() {
@@ -164,6 +182,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get total number of columns in schema.
+     *
      * @return Total number of columns in schema.
      */
     public int length() {
@@ -180,6 +200,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
+     * Get column mapper.
+     *
      * @return Column mapper.
      */
     public ColumnMapper columnMapping() {
