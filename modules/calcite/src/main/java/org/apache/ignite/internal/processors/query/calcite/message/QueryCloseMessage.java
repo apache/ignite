@@ -19,54 +19,31 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class OutboxCloseMessage implements CalciteMessage {
+public class QueryCloseMessage implements CalciteMessage {
     /** */
-    private UUID queryId;
+    private UUID qryId;
 
     /** */
-    private long fragmentId;
-
-    /** */
-    private long exchangeId;
-
-    /** */
-    public OutboxCloseMessage() {
+    public QueryCloseMessage() {
         // No-op.
     }
 
     /** */
-    public OutboxCloseMessage(UUID queryId, long fragmentId, long exchangeId) {
-        this.queryId = queryId;
-        this.fragmentId = fragmentId;
-        this.exchangeId = exchangeId;
+    public QueryCloseMessage(UUID qryId) {
+        this.qryId = qryId;
     }
 
     /**
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
-    }
-
-    /**
-     * @return Fragment ID.
-     */
-    public long fragmentId() {
-        return fragmentId;
-    }
-
-    /**
-     * @return Exchange ID.
-     */
-    public long exchangeId() {
-        return exchangeId;
+        return qryId;
     }
 
     /** {@inheritDoc} */
@@ -82,23 +59,10 @@ public class OutboxCloseMessage implements CalciteMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("exchangeId", exchangeId))
+                if (!writer.writeUuid("queryId", qryId))
                     return false;
 
                 writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("fragmentId", fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeUuid("queryId", queryId))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -113,23 +77,7 @@ public class OutboxCloseMessage implements CalciteMessage {
 
         switch (reader.state()) {
             case 0:
-                exchangeId = reader.readLong("exchangeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                fragmentId = reader.readLong("fragmentId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                queryId = reader.readUuid("queryId");
+                qryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,16 +86,16 @@ public class OutboxCloseMessage implements CalciteMessage {
 
         }
 
-        return reader.afterMessageRead(OutboxCloseMessage.class);
+        return reader.afterMessageRead(QueryCloseMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
-        return MessageType.QUERY_OUTBOX_CANCEL_MESSAGE;
+        return MessageType.QUERY_CLOSE_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 1;
     }
 }

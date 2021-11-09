@@ -43,4 +43,9 @@ public class DdlPlan implements QueryPlan {
     @Override public QueryPlan copy() {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return cmd.toString();
+    }
 }

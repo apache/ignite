@@ -22,8 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
-import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
 
@@ -44,11 +42,10 @@ public class NativeCommandHandler {
     /**
      * @param qryId Query id.
      * @param cmd   Native command.
-     * @param pctx  Planning context.
      */
-    public FieldsQueryCursor<List<?>> handle(UUID qryId, NativeCommandWrapper cmd, PlanningContext pctx) {
+    public FieldsQueryCursor<List<?>> handle(UUID qryId, NativeCommandWrapper cmd) {
         assert proc.isCommandSupported(cmd.command()) : cmd.command();
 
-        return proc.runCommand(pctx.query(), cmd.command(), pctx.unwrap(SqlClientContext.class));
+        return proc.runCommand(cmd.command());
     }
 }

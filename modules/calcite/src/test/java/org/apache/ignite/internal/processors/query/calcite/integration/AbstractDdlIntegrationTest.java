@@ -16,40 +16,29 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
-import org.junit.Before;
 
 /** */
-public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CLIENT_NODE_NAME = "client";
-
+public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     protected static final String DATA_REGION_NAME = "test_data_region";
 
     /** */
     protected static final String PERSISTENT_DATA_REGION = "pds_data_region";
 
-    /** */
-    protected IgniteEx client;
+    /** {@inheritDoc} */
+    @Override protected int nodeCount() {
+        return 1;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
-
-        client = startClientGrid(CLIENT_NODE_NAME);
+        super.beforeTestsStarted();
 
         client.cluster().state(ClusterState.ACTIVE);
     }
@@ -77,33 +66,8 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Before
-    public void init() {
-        client = grid(CLIENT_NODE_NAME);
-    }
-
-    /** */
     @After
     public void cleanUp() {
         client.destroyCaches(client.cacheNames());
-    }
-
-    /** */
-    protected List<List<?>> executeSql(String sql, Object... params) {
-        return executeSql(client, sql, params);
-    }
-
-    /** */
-    protected List<List<?>> executeSql(IgniteEx ignite, String sql, Object... params) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql, params);
-
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
-        }
-    }
-
-    /** */
-    private CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
-        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
     }
 }

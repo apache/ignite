@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.processors.query;
 
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.jetbrains.annotations.Nullable;
+import java.util.UUID;
 
 /**
  *
  */
-public interface SchemaHolder extends Service {
-    /**
-     * @return Specified schema if the schema name is specified or default schema when {@code schema} is {@code null}.
-     */
-    SchemaPlus schema(@Nullable String schema);
+public interface RunningQuery {
+    /** */
+    UUID id();
+
+    /** */
+    QueryState state();
+
+    /** */
+    void cancel();
 }

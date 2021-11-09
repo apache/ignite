@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface SchemaHolder extends Service {
+public interface PrepareService extends Service {
     /**
-     * @return Specified schema if the schema name is specified or default schema when {@code schema} is {@code null}.
+     * Prepare query plan.
      */
-    SchemaPlus schema(@Nullable String schema);
+    QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx);
 }

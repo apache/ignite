@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
