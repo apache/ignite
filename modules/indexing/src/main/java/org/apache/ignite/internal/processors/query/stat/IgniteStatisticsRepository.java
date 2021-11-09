@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.query.stat.view.ColumnLocalDataView
 import org.apache.ignite.internal.processors.query.stat.view.ColumnPartitionDataViewSupplier;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -73,8 +72,7 @@ public class IgniteStatisticsRepository {
     private final IgniteStatisticsHelper helper;
 
     /** Local statistics subscribers. */
-    private final List<Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>>> subscribers =
-        new CopyOnWriteArrayList<>();
+    private final List<Consumer<ObjectStatisticsEvent>> subscribers = new CopyOnWriteArrayList<>();
 
     /**
      * Constructor.
@@ -195,10 +193,9 @@ public class IgniteStatisticsRepository {
     ) {
         locStats.put(key, new VersionedStatistics(topVer, statistics));
 
-        GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion> newLocalStat =
-            new GridTuple3<>(key, statistics, topVer);
+        ObjectStatisticsEvent newLocalStat = new ObjectStatisticsEvent(key, statistics, topVer);
 
-        for (Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber : subscribers)
+        for (Consumer<ObjectStatisticsEvent> subscriber : subscribers)
             subscriber.accept(newLocalStat);
     }
 
@@ -353,8 +350,7 @@ public class IgniteStatisticsRepository {
      *
      * @param subscriber Local statitics subscriber.
      */
-    public void subscribeToLocalStatistics(
-        Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber
+    public void subscribeToLocalStatistics(Consumer<ObjectStatisticsEvent> subscriber
     ) {
         subscribers.add(subscriber);
     }

@@ -168,7 +168,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
      *
      * @param statMgr Statistics manager.
      * @param sysViewMgr System view manager.
-     //* @param statProc Statistics processor.
      * @param mgmtPool Statistics management pool.
      * @param discoMgr Grid discovery manager.
      * @param cluster Cluster state processor.
@@ -180,7 +179,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     public IgniteGlobalStatisticsManager(
         IgniteStatisticsManagerImpl statMgr,
         GridSystemViewManager sysViewMgr,
-        //StatisticsProcessor statProc,
         IgniteThreadPoolExecutor mgmtPool,
         GridDiscoveryManager discoMgr,
         GridClusterStateProcessor cluster,
@@ -190,7 +188,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.statMgr = statMgr;
-        //this.statProc = statProc;
         this.mgmtPool = mgmtPool;
         this.discoMgr = discoMgr;
         this.cluster = cluster;
@@ -199,7 +196,8 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         this.ioMgr = ioMgr;
         log = logSupplier.apply(IgniteGlobalStatisticsManager.class);
 
-        statMgr.subscribeToLocalStatistics(nls -> onLocalStatisticsAggregated(nls.get1(), nls.get2(), nls.get3()));
+        statMgr.subscribeToLocalStatistics(nls -> onLocalStatisticsAggregated(nls.key(), nls.statistics(),
+            nls.topologyVersion()));
         statMgr.subscribeToStatisticsConfig(this::onConfigChanged);
         ioMgr.addMessageListener(GridTopic.TOPIC_STATISTICS, this);
 

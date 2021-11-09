@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
@@ -526,9 +525,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      *
      * @param subscriber Local statitics subscriber.
      */
-    public void subscribeToLocalStatistics(
-        Consumer<GridTuple3<StatisticsKey, ObjectStatisticsImpl, AffinityTopologyVersion>> subscriber
-    ) {
+    public void subscribeToLocalStatistics(Consumer<ObjectStatisticsEvent> subscriber) {
         statsRepos.subscribeToLocalStatistics(subscriber);
     }
 

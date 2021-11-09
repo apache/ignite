@@ -176,13 +176,15 @@ public class StatisticsUtils {
     }
 
     /**
-     * Test if specified statistics is fit to all required versions.
+     * Test if specified statistics are fit to all required versions.
      * It means that specified statistics contains all columns with at least versions
      * from specified map.
      *
      * @param stat Statistics to check. Can be {@code null}.
      * @param versions Map of column name to required version.
-     * @return {@code true} if it is, {@code false} otherwise.
+     * @return positive value if statistics versions bigger than specified in versions map,
+     *         negative value if statistics version smaller than specified in version map,
+     *         zero it they are equals.
      */
     public static int compareVersions(
         ObjectStatisticsImpl stat,
