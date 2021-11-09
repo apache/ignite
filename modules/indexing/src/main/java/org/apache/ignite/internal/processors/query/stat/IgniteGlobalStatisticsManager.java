@@ -76,9 +76,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
     /** Statistics manager. */
     private final IgniteStatisticsManagerImpl statMgr;
 
-    /** Statistics gatherer. */
-    //private final StatisticsProcessor statProc;
-
     /** Pool to process statistics requests. */
     private final IgniteThreadPoolExecutor mgmtPool;
 

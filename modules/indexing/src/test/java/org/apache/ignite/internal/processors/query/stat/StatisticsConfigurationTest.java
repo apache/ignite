@@ -231,7 +231,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         IgniteEx client = startClientGrid("cli");
 
-        Thread.sleep(1000);
+        awaitPartitionMapExchange();
 
         collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
