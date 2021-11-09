@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.keys;
+package org.apache.ignite.internal.cache.query.index;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-/** */
-public class IntegerIndexKey implements IndexKey {
+/** Represents result of local execution of IndexQuery. */
+public class IndexQueryResult<K, V> {
+    /** Result data iterator. */
+    private final GridCloseableIterator<IgniteBiTuple<K, V>> iter;
+
+    /** Result metadata. */
+    private final IndexQueryResultMeta metadata;
+
     /** */
-    private final int key;
+    public IndexQueryResult(IndexQueryResultMeta metadata, GridCloseableIterator<IgniteBiTuple<K, V>> iter) {
+        this.iter = iter;
+        this.metadata = metadata;
+    }
 
     /** */
-    public IntegerIndexKey(int key) {
-        this.key = key;
+    public GridCloseableIterator<IgniteBiTuple<K, V>> iter() {
+        return iter;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.INT;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        return Integer.compare(key, ((IntegerIndexKey)o).key);
+    /** */
+    public IndexQueryResultMeta metadata() {
+        return metadata;
     }
 }

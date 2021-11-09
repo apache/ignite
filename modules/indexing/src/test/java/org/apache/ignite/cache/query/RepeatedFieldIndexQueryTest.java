@@ -19,8 +19,8 @@ package org.apache.ignite.cache.query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
@@ -232,15 +232,15 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
 
         assertEquals(errMsg, right - left, all.size());
 
-        Set<Integer> expKeys = IntStream.range(left, right).boxed().collect(Collectors.toSet());
+        boolean desc = Objects.equals(idxName, DESC_ID_IDX);
 
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Integer, Person> entry = all.get(i);
 
-            assertTrue(errMsg, expKeys.remove(entry.getKey()));
-        }
+            int exp = desc ? right - 1 - i : left + i;
 
-        assertTrue(errMsg, expKeys.isEmpty());
+            assertEquals(errMsg, exp, entry.getKey().intValue());
+        }
     }
 
     /** */

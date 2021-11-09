@@ -260,12 +260,10 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
         assertEquals(right - left, all.size());
 
-        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
-
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, SecondPerson> entry = all.get(i);
 
-            assertTrue(expKeys.remove(entry.getKey()));
+            assertEquals(left + i, entry.getKey().intValue());
 
             assertEquals(new SecondPerson(entry.getKey().intValue()), all.get(i).getValue());
         }
