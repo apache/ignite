@@ -66,11 +66,11 @@ control.bat --property get --name 'statistics.usage.state'
 ----
 --
 
-For more details on configuring SQL statistics, see the link:monitoring-metrics/system-views[System Views,window=_blank] and link:sql-reference/ddl[Data Definition Language,window=_blank] pages.
+For more details on configuring SQL statistics, see the link:monitoring-metrics/system-views#statistics_configuration[System Views,window=_blank] and link:sql-reference/ddl#analyze[Data Definition Language,window=_blank] pages.
 
 == Statistics Overriding
 
-Gathered values can be overridden by specifying additional parameters in the link:sql-reference/ddl#analyze[ANALYZE,window=_blank] command. The specified values override gathered one on each node in link:monitoring-metrics/system-views#statistics_local_data[STATISTICS_LOCAL_DATA,window=_blank], but not in link:monitoring-metrics/system-views#statistics_partition_data[STATISTICS_PARTITION_DATA,window=_blank]. Then, overriden values are used by SQL query optimizer.
+Gathered values can be overridden by specifying additional parameters in the link:sql-reference/ddl#analyze[ANALYZE,window=_blank] command. The specified values override gathered one on each node in link:monitoring-metrics/system-views#statistics_local_data[STATISTICS_LOCAL_DATA,window=_blank] (this data is used by SQL query optimizer), but not in link:monitoring-metrics/system-views#statistics_partition_data[STATISTICS_PARTITION_DATA,window=_blank] (keeps real statistics info by partitions). Then, overriden values are used by SQL query optimizer.
 
 Each ANALYZE command overrides all such values for its targets. For example, if there is an already overridden TOTAL value and a need to override DISTINCT value, one should use both parameters in one ANALYZE command. To set different values for different columns, use several ANALYZE commands as follows:
 
