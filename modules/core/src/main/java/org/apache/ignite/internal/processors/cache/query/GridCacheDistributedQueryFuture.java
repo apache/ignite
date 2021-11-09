@@ -165,7 +165,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void onMeta(IndexQueryResultMeta metaData) {
-        idxQryMetaFut.complete(metaData);
+        if (metaData != null)
+            idxQryMetaFut.complete(metaData);
     }
 
     /** {@inheritDoc} */
