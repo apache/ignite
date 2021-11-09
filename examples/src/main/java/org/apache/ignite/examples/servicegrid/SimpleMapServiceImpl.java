@@ -72,7 +72,7 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void init() throws Exception {
+    @Override public void init() {
         // Create a new cache for every service deployment.
         // Note that we use service name as cache name, which allows
         // for each service deployment to use its own isolated cache.
