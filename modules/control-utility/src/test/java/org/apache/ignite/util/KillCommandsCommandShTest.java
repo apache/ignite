@@ -231,7 +231,6 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         cfg.setName(consistencyCancheName);
         cfg.setBackups(SERVER_NODE_CNT - 1);
-        cfg.setCacheMode(CacheMode.REPLICATED);
         cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(1));
 
         IgniteCache<Integer, Integer> cache = client.getOrCreateCache(cfg);
