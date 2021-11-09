@@ -127,6 +127,13 @@ After opening the project in IntelliJ, double check that the Java SDK is properl
  language features
 
 Ignite uses machine code generation for some of it's modules. To generate necessary production code, build the project using maven (see [Building Ignite](#building-ignite)).
+
+Configure Idea code style (for IntelliJ Idea >= 2019):
+ * File -> Settings -> Editor -> Code Style -> Scheme -> gear (Show Scheme Actions) -> Import Scheme -> IntelliJ IDEA code style XML
+ * Choose: ${igniteProject}/idea/intellij-java-google-style.xml
+ * Import schema
+ * Reboot IntelliJ Idea
+
 ***
 
 
