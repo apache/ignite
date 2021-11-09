@@ -30,9 +30,7 @@ import org.apache.ignite.resources.LoggerResource;
  *
  */
 public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, String> {
-    /**
-     * Serial version uid.
-     */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Nothing found. */
