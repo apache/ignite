@@ -22,6 +22,7 @@ import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.jraft.RaftMessageGroup;
 import org.apache.ignite.raft.jraft.entity.RaftOutter;
 import org.apache.ignite.raft.jraft.error.RaftError;
+import org.apache.ignite.raft.jraft.rpc.impl.SMThrowable;
 import org.apache.ignite.raft.jraft.util.ByteString;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +63,14 @@ public final class RpcRequests {
          * @return String new leader id, null otherwise.
          */
         @Nullable String leaderId();
+    }
+
+    @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.SM_ERROR_RESPONSE, autoSerializable = false)
+    public interface SMErrorResponse extends Message {
+        /**
+         * @return Throwable from client's state machine logic.
+         */
+        SMThrowable error();
     }
 
     @Transferable(value = RaftMessageGroup.RpcRequestsMessageGroup.INSTALL_SNAPSHOT_REQUEST, autoSerializable = false)

@@ -746,6 +746,7 @@ public class RaftGroupServiceTest {
         assertEquals(NODES.subList(0, 1), service.peers());
         assertEquals(NODES.subList(1, 2), service.learners());
     }
+
     /**
      * @param delay {@code True} to create a delay before response.
      * @param peer Fail the request targeted to given peer.

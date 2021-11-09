@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkAddress;
@@ -545,6 +546,29 @@ public class RaftGroupServiceImpl implements RaftGroupService {
                     else
                         fut.completeExceptionally(
                             new RaftException(RaftError.forNumber(resp0.errorCode()), resp0.errorMsg()));
+                }
+                else if (resp instanceof RpcRequests.SMErrorResponse) {
+                    SMThrowable th = ((RpcRequests.SMErrorResponse)resp).error();
+                    if (th instanceof SMCompactedThrowable) {
+                        SMCompactedThrowable compactedThrowable = (SMCompactedThrowable)th;
+
+                        try {
+                            Throwable restoredTh = (Throwable)Class.forName(compactedThrowable.throwableClassName())
+                                .getConstructor(String.class)
+                                .newInstance(compactedThrowable.throwableMessage());
+
+                            fut.completeExceptionally(restoredTh);
+                        }
+                        catch (Exception e) {
+                            LOG.warn("Cannot restore throwable from user's state machine. " +
+                                "Check if throwable " + compactedThrowable.throwableClassName() +
+                                " is presented in the classpath.");
+
+                            fut.completeExceptionally(new IgniteException(compactedThrowable.throwableMessage()));
+                        }
+                    }
+                    else if (th instanceof SMFullThrowable)
+                        fut.completeExceptionally(((SMFullThrowable)th).throwable());
                 }
                 else {
                     leader = peer; // The OK response was received from a leader.

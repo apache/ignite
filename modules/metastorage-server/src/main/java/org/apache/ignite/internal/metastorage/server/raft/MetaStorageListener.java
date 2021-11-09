@@ -240,31 +240,35 @@ public class MetaStorageListener implements RaftGroupListener {
                 CursorMeta cursorDesc = cursors.get(cursorNextCmd.cursorId());
 
                 if (cursorDesc == null) {
-                    clo.result(new NoSuchElementException("Corresponding cursor on server side not found."));
+                    clo.result(new NoSuchElementException("Corresponding cursor on the server side is not found."));
 
                     return;
                 }
 
-                if (cursorDesc.type() == CursorType.RANGE) {
-                    Entry e = (Entry) cursorDesc.cursor().next();
+                try {
+                    if (cursorDesc.type() == CursorType.RANGE) {
+                        Entry e = (Entry) cursorDesc.cursor().next();
 
-                    clo.result(new SingleEntryResponse(e.key(), e.value(), e.revision(), e.updateCounter()));
-                } else if (cursorDesc.type() == CursorType.WATCH) {
-                    WatchEvent evt = (WatchEvent) cursorDesc.cursor().next();
+                        clo.result(new SingleEntryResponse(e.key(), e.value(), e.revision(), e.updateCounter()));
+                    } else if (cursorDesc.type() == CursorType.WATCH) {
+                        WatchEvent evt = (WatchEvent) cursorDesc.cursor().next();
 
-                    List<SingleEntryResponse> resp = new ArrayList<>(evt.entryEvents().size() * 2);
+                        List<SingleEntryResponse> resp = new ArrayList<>(evt.entryEvents().size() * 2);
 
-                    for (EntryEvent e : evt.entryEvents()) {
-                        Entry o = e.oldEntry();
+                        for (EntryEvent e : evt.entryEvents()) {
+                            Entry o = e.oldEntry();
 
-                        Entry n = e.entry();
+                            Entry n = e.entry();
 
-                        resp.add(new SingleEntryResponse(o.key(), o.value(), o.revision(), o.updateCounter()));
+                            resp.add(new SingleEntryResponse(o.key(), o.value(), o.revision(), o.updateCounter()));
 
-                        resp.add(new SingleEntryResponse(n.key(), n.value(), n.revision(), n.updateCounter()));
+                            resp.add(new SingleEntryResponse(n.key(), n.value(), n.revision(), n.updateCounter()));
+                        }
+
+                        clo.result(new MultipleEntryResponse(resp));
                     }
-
-                    clo.result(new MultipleEntryResponse(resp));
+                } catch (NoSuchElementException e) {
+                    clo.result(e);
                 }
             } else if (clo.command() instanceof CursorCloseCommand) {
                 CursorCloseCommand cursorCloseCmd = (CursorCloseCommand) clo.command();

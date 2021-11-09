@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Subscriber;
@@ -77,7 +78,6 @@ import org.apache.ignite.utils.ClusterServiceTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -322,7 +322,6 @@ public class ItInternalTableScanTest {
     /**
      * Checks that exception from storage cursors has next properly propagates to subscriber.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15581")
     @Test
     public void testExceptionRowScanCursorHasNext() throws Exception {
         AtomicReference<Throwable> gotException = new AtomicReference<>();
@@ -332,8 +331,10 @@ public class ItInternalTableScanTest {
         when(mockStorage.scan(any())).thenAnswer(invocation -> {
             var cursor = mock(Cursor.class);
 
-            when(cursor.hasNext()).thenAnswer(hnInvocation -> {
-                throw new StorageException("test");
+            when(cursor.hasNext()).thenAnswer(hnInvocation -> true);
+
+            when(cursor.next()).thenAnswer(hnInvocation -> {
+                throw new NoSuchElementException("test");
             });
 
             doAnswer(
@@ -371,7 +372,7 @@ public class ItInternalTableScanTest {
 
         assertTrue(waitForCondition(() -> gotException.get() != null, 1_000));
 
-        assertEquals(gotException.get().getCause().getClass(), StorageException.class);
+        assertEquals(gotException.get().getCause().getClass(), NoSuchElementException.class);
 
         assertTrue(waitForCondition(cursorClosed::get, 1_000));
     }
@@ -379,7 +380,6 @@ public class ItInternalTableScanTest {
     /**
      * Checks that exception from storage cursor creation properly propagates to subscriber.
      */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15581")
     @Test
     public void testExceptionRowScan() throws Exception {
         AtomicReference<Throwable> gotException = new AtomicReference<>();
