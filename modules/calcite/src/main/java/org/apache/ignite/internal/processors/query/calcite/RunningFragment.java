@@ -62,7 +62,7 @@ public class RunningFragment<Row> {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        RunningFragment fragment = (RunningFragment)o;
+        RunningFragment<Row> fragment = (RunningFragment<Row>)o;
 
         return Objects.equals(ectx, fragment.ectx);
     }

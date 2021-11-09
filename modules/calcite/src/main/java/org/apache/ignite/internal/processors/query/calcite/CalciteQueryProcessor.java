@@ -172,7 +172,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final MailboxRegistry mailboxRegistry;
 
     /** */
-    private final ExecutionService executionSvc;
+    private final ExecutionService<Object[]> executionSvc;
 
     /** */
     private final PrepareServiceImpl prepareSvc;

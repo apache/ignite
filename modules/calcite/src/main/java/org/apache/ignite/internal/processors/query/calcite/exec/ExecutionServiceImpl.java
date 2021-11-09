@@ -353,11 +353,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    public QueryRegistry queryRegistry() {
-        return qryReg;
-    }
-
-    /** */
     public void queryRegistry(QueryRegistry qryReg) {
         this.qryReg = qryReg;
     }
@@ -462,7 +457,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeDdl(RootQuery qry, DdlPlan plan) {
+    private FieldsQueryCursor<List<?>> executeDdl(RootQuery<Row> qry, DdlPlan plan) {
         try {
             ddlCmdHnd.handle(qry.id(), plan.command());
         }

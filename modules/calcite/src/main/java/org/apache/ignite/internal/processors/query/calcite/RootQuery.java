@@ -54,7 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
- * The RootQuery is created on the qury initiator (originator) node as the first step of a query run;
+ * The RootQuery is created on the query initiator (originator) node as the first step of a query run;
  * It contains the information about query state, contexts, remote fragments;
  * It provides 'cancel' functionality for running query like a base query class.
  */
@@ -205,16 +205,17 @@ public class RootQuery<RowT> extends Query<RowT> {
             if (state == QueryState.CLOSED)
                 return;
 
-            if (state == QueryState.INITED || state == QueryState.PLANNING) {
+            if (state == QueryState.INITED || state == QueryState.PLANNING || state == QueryState.MAPPING) {
                 state = QueryState.CLOSED;
 
                 return;
             }
 
-            if (state == QueryState.EXECUTING)
+            if (state == QueryState.EXECUTING) {
                 state0 = state = QueryState.CLOSING;
 
-            root.closeInternal();
+                root.closeInternal();
+            }
 
             if (state == QueryState.CLOSING && waiting.isEmpty())
                 state0 = state = QueryState.CLOSED;
@@ -238,7 +239,7 @@ public class RootQuery<RowT> extends Query<RowT> {
                 }
 
                 if (wrpEx != null)
-                    throw wrpEx;
+                    log.warning("An exception occures during the query cancel", wrpEx);
             }
             finally {
                 super.tryClose();
@@ -338,15 +339,6 @@ public class RootQuery<RowT> extends Query<RowT> {
         root.onError(error);
 
         tryClose();
-    }
-
-    /** */
-    public static PlanningContext createPlanningContext(BaseQueryContext ctx, String qry, Object[] params) {
-        return PlanningContext.builder()
-            .parentContext(ctx)
-            .query(qry)
-            .parameters(params)
-            .build();
     }
 
     /** */

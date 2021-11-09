@@ -115,11 +115,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
-    public QueryRegistry queryRegistry() {
-        return qryRegistry;
-    }
-
-    /** */
     public void queryRegistry(QueryRegistry qryRegistry) {
         this.qryRegistry = qryRegistry;
     }

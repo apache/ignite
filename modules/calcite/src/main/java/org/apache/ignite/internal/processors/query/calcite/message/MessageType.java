@@ -45,10 +45,10 @@ public enum MessageType {
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
 
     /** */
-    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new),
 
     /** */
-    QUERY_CLOSE_MESSAGE(308, QueryCloseMessage::new),
+    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
 
     /** */
     FRAGMENT_MAPPING(350, FragmentMapping::new),
