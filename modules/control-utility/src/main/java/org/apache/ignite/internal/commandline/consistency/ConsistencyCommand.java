@@ -98,7 +98,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object arg() {
+    @Override public VisorConsistencyRepairTaskArg arg() {
         return cmdArg;
     }
 
