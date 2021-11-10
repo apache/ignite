@@ -22,10 +22,12 @@ import static org.apache.ignite.internal.util.CollectionUtils.first;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
@@ -33,6 +35,7 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Geometries;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
 
@@ -233,7 +236,13 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     @Override
     public Charset getDefaultCharset() {
         // Use JVM default charset rather then Calcite default charset (ISO-8859-1).
-        return Charset.defaultCharset();
+        Charset jvmDefault = Charset.defaultCharset();
+        
+        if (SqlUtil.translateCharacterSetName(jvmDefault.name().toUpperCase(Locale.ROOT)) == null) {
+            jvmDefault = StandardCharsets.UTF_8;
+        }
+        
+        return jvmDefault;
     }
 
     private boolean allEquals(List<RelDataType> types) {
