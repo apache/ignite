@@ -518,3 +518,86 @@ Examples:
 DROP USER test;
 ----
 
+== ANALYZE
+
+The ANALYZE command collects link:SQL/sql-statistics[statistics,window=_blank].
+
+[source,sql]
+----
+ANALYZE 'schemaName'.'tableName'(column1, column2);
+----
+
+Parameters:
+
+* `schemaName` - a name of the schema to collect statistics for.
+* `tableName` - a name of the table to collect statistics for.
+* `(column1, column2)` - names of the columns to collect statistics for.
+
+image::images/svg/analyze_bnf1.svg[Embedded,opts=inline]
+
+image::images/svg/analyze_bnf2.svg[Embedded,opts=inline]
+
+When the ANALYZE command is used with `with` parameters statement, specified parameters are applied for every target. For example:
+
+[source,sql]
+----
+ANALYZE public.statistics_test, statistics_test2, statistics_test3(col3) WITH 'MAX_CHANGED_PARTITION_ROWS_PERCENT=15,NULLS=0'
+----
+
+Possible parameters:
+
+* MAX_CHANGED_PARTITION_ROWS_PERCENT - Maximum percentage of outdated rows in the table (the default value is 15%). See the link:SQL/sql-statistics#statistics-obsolescence[SQL Statistics,window=_blank] page for more details.
+* NULLS - Number of null values in column.
+* TOTAL - Total number of column values.
+* SIZE - Average size of column values (in bytes).
+* DISTINCT - Number of distinct non-null values in column.
+
+== REFRESH
+
+The command refreshes link:SQL/sql-statistics[statistics,window=_blank].
+
+[source,sql]
+----
+REFRESH 'schemaName'.'tableName'(column1, column2);
+----
+
+Parameters:
+
+* `schemaName` - a name of the schema to refresh statistics for.
+* `tableName` - a name of the table to refresh statistics for.
+* `(column1, column2)` - names of the columns to refresh statistics for.
+
+image::images/svg/refresh_bnf.svg[Embedded,opts=inline]
+
+Example:
+
+[source,sql]
+----
+REFRESH PRODUCTS, SALE(productId, discount)
+----
+
+== DROP STATISTICS
+
+The command drops link:SQL/sql-statistics[statistics,window=_blank].
+
+[source,sql]
+----
+DROP STATISTICS 'schemaName'.'tableName'(column1, column2);
+----
+
+Parameters:
+
+* `schemaName` - a name of the schema to drop statistics for.
+* `tableName` - a name of the table to drop statistics for.
+* `(column1, column2)` - names of the columns to drop statistics for.
+
+image::images/svg/drop_bnf.svg[Embedded,opts=inline]
+
+Example:
+
+[source,sql]
+----
+DROP STATISTICS USERS, ORDERS(customerId, productId)
+----
+
+
