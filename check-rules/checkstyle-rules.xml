@@ -330,10 +330,10 @@
     <module name="NonEmptyAtclauseDescription"/>
     <module name="InvalidJavadocPosition"/>
     <module name="JavadocTagContinuationIndentation"/>
-<!--    <module name="SummaryJavadoc">-->
-<!--      <property name="forbiddenSummaryFragments"-->
-<!--               value="^@return the *|^This method returns |^A [{]@code [a-zA-Z0-9]+[}]( is a )"/>-->
-<!--    </module>-->
+    <module name="SummaryJavadoc">
+      <property name="forbiddenSummaryFragments"
+               value="^@return the *|^This method returns |^A [{]@code [a-zA-Z0-9]+[}]( is a )"/>
+    </module>
     <module name="JavadocParagraph"/>
     <module name="RequireEmptyLineBeforeBlockTagGroup"/>
     <module name="AtclauseOrder">
@@ -348,20 +348,20 @@
       <property name="allowedAnnotations" value="Override, Test"/>
       <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF, COMPACT_CTOR_DEF"/>
     </module>
-<!--    <module name="MissingJavadocMethod">-->
-<!--      <property name="scope" value="public"/>-->
-<!--      <property name="minLineCount" value="2"/>-->
-<!--      <property name="allowedAnnotations" value="Override, Test"/>-->
-<!--      <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF,-->
-<!--                                   COMPACT_CTOR_DEF"/>-->
-<!--    </module>-->
-<!--    <module name="MissingJavadocType">-->
-<!--      <property name="scope" value="protected"/>-->
-<!--      <property name="tokens"-->
-<!--                value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,-->
-<!--                      RECORD_DEF, ANNOTATION_DEF"/>-->
-<!--      <property name="excludeScope" value="nothing"/>-->
-<!--    </module>-->
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="public"/>
+      <property name="minLineCount" value="2"/>
+      <property name="allowedAnnotations" value="Override, Test"/>
+      <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF,
+                                   COMPACT_CTOR_DEF"/>
+    </module>
+    <module name="MissingJavadocType">
+      <property name="scope" value="protected"/>
+      <property name="tokens"
+                value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
+                      RECORD_DEF, ANNOTATION_DEF"/>
+      <property name="excludeScope" value="nothing"/>
+    </module>
     <module name="SingleLineJavadoc"/>
     <module name="EmptyCatchBlock">
       <property name="exceptionVariableName" value="expected"/>
