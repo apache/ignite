@@ -25,7 +25,6 @@ import org.apache.ignite.internal.client.proto.ClientMessagePacker;
 import org.apache.ignite.internal.client.proto.ClientMessageUnpacker;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.table.manager.IgniteTables;
-import org.msgpack.core.MessageFormat;
 
 /**
  * Client schemas retrieval request.
@@ -47,7 +46,7 @@ public class ClientSchemasGetRequest {
     ) {
         var table = readTable(in, tables);
 
-        if (in.getNextFormat() == MessageFormat.NIL) {
+        if (in.tryUnpackNil()) {
             // Return the latest schema.
             out.packMapHeader(1);
 

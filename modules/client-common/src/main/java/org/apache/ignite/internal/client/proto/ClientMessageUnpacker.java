@@ -34,14 +34,12 @@ import static org.apache.ignite.internal.client.proto.ClientDataType.NUMBER;
 import static org.apache.ignite.internal.client.proto.ClientDataType.STRING;
 import static org.apache.ignite.internal.client.proto.ClientDataType.TIME;
 import static org.apache.ignite.internal.client.proto.ClientDataType.TIMESTAMP;
+import static org.msgpack.core.MessagePack.Code;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,24 +51,19 @@ import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.msgpack.core.ExtensionTypeHeader;
 import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageFormatException;
+import org.msgpack.core.MessageNeverUsedFormatException;
+import org.msgpack.core.MessagePackException;
 import org.msgpack.core.MessageSizeException;
 import org.msgpack.core.MessageTypeException;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.core.buffer.InputStreamBufferInput;
-import org.msgpack.value.ImmutableValue;
 
 /**
- * Ignite-specific MsgPack extension based on Netty ByteBuf.
- *
- * <p>Releases wrapped buffer on {@link #close()} .
+ * ByteBuf-based MsgPack implementation. Replaces {@link org.msgpack.core.MessageUnpacker} to avoid extra buffers and indirection.
+ * Releases wrapped buffer on {@link #close()} .
  */
-public class ClientMessageUnpacker extends MessageUnpacker {
+public class ClientMessageUnpacker implements AutoCloseable {
     /** Underlying buffer. */
     private final ByteBuf buf;
-
-    /** Underlying input. */
-    private final InputStreamBufferInput in;
 
     /** Ref count. */
     private int refCnt = 1;
@@ -81,266 +74,621 @@ public class ClientMessageUnpacker extends MessageUnpacker {
      * @param buf Input.
      */
     public ClientMessageUnpacker(ByteBuf buf) {
-        // TODO: Remove intermediate classes and buffers IGNITE-15234.
-        this(new InputStreamBufferInput(new ByteBufInputStream(buf)), buf);
-    }
+        assert buf != null;
 
-    private ClientMessageUnpacker(InputStreamBufferInput in, ByteBuf buf) {
-        super(in, MessagePack.DEFAULT_UNPACKER_CONFIG);
-
-        this.in = in;
         this.buf = buf;
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Creates an overflow exception.
+     *
+     * @param u32 int value.
+     * @return Excetion.
+     */
+    private static MessageSizeException overflowU32Size(int u32) {
+        long lv = (long) (u32 & 0x7fffffff) + 0x80000000L;
+        return new MessageSizeException(lv);
+    }
+
+    /**
+     * Create an exception for the case when an unexpected byte value is read.
+     *
+     * @param expected Expected format.
+     * @param b        Actual format.
+     * @return Exception to throw.
+     */
+    private static MessagePackException unexpected(String expected, byte b) {
+        MessageFormat format = MessageFormat.valueOf(b);
+
+        if (format == MessageFormat.NEVER_USED) {
+            return new MessageNeverUsedFormatException(String.format("Expected %s, but encountered 0xC1 \"NEVER_USED\" byte", expected));
+        } else {
+            String name = format.getValueType().name();
+            String typeName = name.charAt(0) + name.substring(1).toLowerCase();
+            return new MessageTypeException(String.format("Expected %s, but got %s (%02x)", expected, typeName, b));
+        }
+    }
+
+    /**
+     * Reads an int.
+     *
+     * @return the int value.
+     * @throws MessageTypeException when value is not MessagePack Integer type.
+     */
     public int unpackInt() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackInt();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixInt(code)) {
+            return code;
+        }
+
+        switch (code) {
+            case Code.UINT8:
+            case Code.INT8:
+                return buf.readByte();
+
+            case Code.UINT16:
+            case Code.INT16:
+                return buf.readShort();
+
+            case Code.UINT32:
+            case Code.INT32:
+                return buf.readInt();
+
+            default:
+                throw unexpected("Integer", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a string.
+     *
+     * @return String value.
+     */
     public String unpackString() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackString();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        int len = unpackRawStringHeader();
+        int pos = buf.readerIndex();
+
+        String res = buf.toString(pos, len, StandardCharsets.UTF_8);
+
+        buf.readerIndex(pos + len);
+
+        return res;
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a Nil byte.
+     *
+     * @throws MessageTypeException when value is not MessagePack Nil type
+     */
     public void unpackNil() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            super.unpackNil();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (code == Code.NIL) {
+            return;
         }
+
+        throw unexpected("Nil", code);
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a boolean value.
+     *
+     * @return Boolean.
+     */
     public boolean unpackBoolean() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackBoolean();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        switch (code) {
+            case Code.FALSE:
+                return false;
+
+            case Code.TRUE:
+                return true;
+
+            default:
+                throw unexpected("boolean", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a byte.
+     *
+     * @return Byte.
+     */
     public byte unpackByte() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackByte();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixInt(code)) {
+            return code;
+        }
+
+        switch (code) {
+            case Code.UINT8:
+            case Code.INT8:
+                return buf.readByte();
+
+            default:
+                throw unexpected("Integer", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a short value.
+     *
+     * @return Short.
+     */
     public short unpackShort() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackShort();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixInt(code)) {
+            return code;
+        }
+
+        switch (code) {
+            case Code.UINT8:
+                return buf.readUnsignedByte();
+
+            case Code.INT8:
+                return buf.readByte();
+
+            case Code.UINT16:
+                return (short) buf.readUnsignedShort();
+
+            case Code.INT16:
+                return buf.readShort();
+
+            default:
+                throw unexpected("Integer", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a long value.
+     *
+     * @return Long.
+     */
     public long unpackLong() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackLong();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixInt(code)) {
+            return code;
+        }
+
+        switch (code) {
+            case Code.UINT8:
+                return buf.readUnsignedByte();
+
+            case Code.INT8:
+                return buf.readByte();
+
+            case Code.UINT16:
+                return buf.readUnsignedShort();
+
+            case Code.INT16:
+                return buf.readShort();
+
+            case Code.UINT32:
+                return buf.readUnsignedInt();
+
+            case Code.INT32:
+                return buf.readInt();
+
+            case Code.UINT64:
+            case Code.INT64:
+                return buf.readLong();
+
+            default:
+                throw unexpected("Integer", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a BigInteger value.
+     *
+     * @return BigInteger.
+     */
     public BigInteger unpackBigInteger() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackBigInteger();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixInt(code)) {
+            return BigInteger.valueOf(code);
+        }
+
+        switch (code) {
+            case Code.UINT8:
+                return BigInteger.valueOf(buf.readUnsignedByte());
+
+            case Code.UINT16:
+                return BigInteger.valueOf(buf.readUnsignedShort());
+
+            case Code.UINT32:
+                return BigInteger.valueOf(buf.readUnsignedInt());
+
+            case Code.UINT64:
+                long u64 = buf.readLong();
+                if (u64 < 0L) {
+                    return BigInteger.valueOf(u64 + Long.MAX_VALUE + 1L).setBit(63);
+                } else {
+                    return BigInteger.valueOf(u64);
+                }
+
+            case Code.INT8:
+                return BigInteger.valueOf(buf.readByte());
+
+            case Code.INT16:
+                return BigInteger.valueOf(buf.readShort());
+
+            case Code.INT32:
+                return BigInteger.valueOf(buf.readInt());
+
+            case Code.INT64:
+                return BigInteger.valueOf(buf.readLong());
+
+            default:
+                throw unexpected("Integer", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a float value.
+     *
+     * @return Float.
+     */
     public float unpackFloat() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackFloat();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        switch (code) {
+            case Code.FLOAT32:
+                return buf.readFloat();
+
+            case Code.FLOAT64:
+                return (float) buf.readDouble();
+
+            default:
+                throw unexpected("Float", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a double value.
+     *
+     * @return Double.
+     */
     public double unpackDouble() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackDouble();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        switch (code) {
+            case Code.FLOAT32:
+                return buf.readFloat();
+
+            case Code.FLOAT64:
+                return buf.readDouble();
+
+            default:
+                throw unexpected("Float", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads an array header.
+     *
+     * @return Array size.
+     */
     public int unpackArrayHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackArrayHeader();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixedArray(code)) { // fixarray
+            return code & 0x0f;
+        }
+
+        switch (code) {
+            case Code.ARRAY16:
+                return readLength16();
+
+            case Code.ARRAY32:
+                return readLength32();
+
+            default:
+                throw unexpected("Array", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a map header.
+     *
+     * @return Map size.
+     */
     public int unpackMapHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackMapHeader();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixedMap(code)) { // fixmap
+            return code & 0x0f;
+        }
+
+        switch (code) {
+            case Code.MAP16:
+                return readLength16();
+
+            case Code.MAP32:
+                return readLength32();
+
+            default:
+                throw unexpected("Map", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads an extension type header.
+     *
+     * @return Extension type header.
+     */
     public ExtensionTypeHeader unpackExtensionTypeHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackExtensionTypeHeader();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        switch (code) {
+            case Code.FIXEXT1: {
+                return new ExtensionTypeHeader(buf.readByte(), 1);
+            }
+
+            case Code.FIXEXT2: {
+                return new ExtensionTypeHeader(buf.readByte(), 2);
+            }
+
+            case Code.FIXEXT4: {
+                return new ExtensionTypeHeader(buf.readByte(), 4);
+            }
+
+            case Code.FIXEXT8: {
+                return new ExtensionTypeHeader(buf.readByte(), 8);
+            }
+
+            case Code.FIXEXT16: {
+                return new ExtensionTypeHeader(buf.readByte(), 16);
+            }
+
+            case Code.EXT8: {
+                int length = readLength8();
+                byte type = buf.readByte();
+
+                return new ExtensionTypeHeader(type, length);
+            }
+
+            case Code.EXT16: {
+                int length = readLength16();
+                byte type = buf.readByte();
+
+                return new ExtensionTypeHeader(type, length);
+            }
+
+            case Code.EXT32: {
+                int length = readLength32();
+                byte type = buf.readByte();
+
+                return new ExtensionTypeHeader(type, length);
+            }
+
+            default:
+                throw unexpected("Ext", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a binary header.
+     *
+     * @return Binary payload size.
+     */
     public int unpackBinaryHeader() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.unpackBinaryHeader();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        byte code = buf.readByte();
+
+        if (Code.isFixedRaw(code)) { // FixRaw
+            return code & 0x1f;
+        }
+
+        switch (code) {
+            case Code.BIN8:
+                return readLength8();
+
+            case Code.BIN16:
+                return readLength16();
+
+            case Code.BIN32:
+                return readLength32();
+
+            default:
+                throw unexpected("Binary", code);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Tries to read a nil value.
+     *
+     * @return True when there was a nil value, false otherwise.
+     */
     public boolean tryUnpackNil() {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.tryUnpackNil();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        int idx = buf.readerIndex();
+        byte code = buf.getByte(idx);
+
+        if (code == Code.NIL) {
+            buf.readerIndex(idx + 1);
+            return true;
         }
+
+        return false;
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Reads a payload.
+     *
+     * @param length Payload size.
+     * @return Payload bytes.
+     */
     public byte[] readPayload(int length) {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.readPayload(length);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        byte[] res = new byte[length];
+        buf.readBytes(res);
+
+        return res;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public MessageFormat getNextFormat() {
+    /**
+     * Skips values.
+     *
+     * @param count Number of values to skip.
+     */
+    public void skipValues(int count) {
         assert refCnt > 0 : "Unpacker is closed";
 
-        try {
-            return super.getNextFormat();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+        while (count > 0) {
+            byte code = buf.readByte();
+            MessageFormat f = MessageFormat.valueOf(code);
 
-    /** {@inheritDoc} */
-    @Override
-    public void skipValue(int count) {
-        assert refCnt > 0 : "Unpacker is closed";
+            switch (f) {
+                case POSFIXINT:
+                case NEGFIXINT:
+                case BOOLEAN:
+                case NIL:
+                    break;
 
-        try {
-            super.skipValue(count);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+                case FIXMAP: {
+                    int mapLen = code & 0x0f;
+                    count += mapLen * 2;
+                    break;
+                }
 
-    /** {@inheritDoc} */
-    @Override
-    public void skipValue() {
-        assert refCnt > 0 : "Unpacker is closed";
+                case FIXARRAY: {
+                    int arrayLen = code & 0x0f;
+                    count += arrayLen;
+                    break;
+                }
 
-        try {
-            super.skipValue();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+                case FIXSTR: {
+                    int strLen = code & 0x1f;
+                    skipBytes(strLen);
+                    break;
+                }
 
-    /** {@inheritDoc} */
-    @Override
-    public boolean hasNext() {
-        assert refCnt > 0 : "Unpacker is closed";
+                case INT8:
+                case UINT8:
+                    skipBytes(1);
+                    break;
 
-        try {
-            return super.hasNext();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+                case INT16:
+                case UINT16:
+                    skipBytes(2);
+                    break;
 
-    /** {@inheritDoc} */
-    @Override
-    public ImmutableValue unpackValue() {
-        assert refCnt > 0 : "Unpacker is closed";
+                case INT32:
+                case UINT32:
+                case FLOAT32:
+                    skipBytes(4);
+                    break;
 
-        try {
-            return super.unpackValue();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+                case INT64:
+                case UINT64:
+                case FLOAT64:
+                    skipBytes(8);
+                    break;
+
+                case BIN8:
+                case STR8:
+                    skipBytes(readLength8());
+                    break;
+
+                case BIN16:
+                case STR16:
+                    skipBytes(readLength16());
+                    break;
+
+                case BIN32:
+                case STR32:
+                    skipBytes(readLength32());
+                    break;
+
+                case FIXEXT1:
+                    skipBytes(2);
+                    break;
+
+                case FIXEXT2:
+                    skipBytes(3);
+                    break;
+
+                case FIXEXT4:
+                    skipBytes(5);
+                    break;
+
+                case FIXEXT8:
+                    skipBytes(9);
+                    break;
+
+                case FIXEXT16:
+                    skipBytes(17);
+                    break;
+
+                case EXT8:
+                    skipBytes(readLength8() + 1);
+                    break;
+
+                case EXT16:
+                    skipBytes(readLength16() + 1);
+                    break;
+
+                case EXT32:
+                    skipBytes(readLength32() + 1);
+                    break;
+
+                case ARRAY16:
+                    count += readLength16();
+                    break;
+
+                case ARRAY32:
+                    count += readLength32();
+                    break;
+
+                case MAP16:
+                    count += readLength16() * 2;
+                    break;
+
+                case MAP32:
+                    count += readLength32() * 2;
+                    break;
+
+                default:
+                    throw new MessageFormatException("Unexpected format code: " + code);
+            }
+
+            count--;
         }
     }
 
@@ -366,11 +714,7 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageSizeException("Expected 16 bytes for UUID extension, but got " + len, len);
         }
 
-        var bytes = readPayload(16);
-
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
-        return new UUID(bb.getLong(), bb.getLong());
+        return new UUID(buf.readLong(), buf.readLong());
     }
 
     /**
@@ -395,11 +739,7 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageSizeException("Expected 24 bytes for UUID extension, but got " + len, len);
         }
 
-        var bytes = readPayload(24);
-
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
-        return new IgniteUuid(new UUID(bb.getLong(), bb.getLong()), bb.getLong());
+        return new IgniteUuid(new UUID(buf.readLong(), buf.readLong()), buf.readLong());
     }
 
     /**
@@ -419,13 +759,10 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageTypeException("Expected DECIMAL extension (2), but got " + type);
         }
 
-        var bytes = readPayload(len);
+        int scale = buf.readInt();
+        var bytes = readPayload(len - 4);
 
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
-        int scale = bb.getInt();
-
-        return new BigDecimal(new BigInteger(bytes, bb.position(), bb.remaining()), scale);
+        return new BigDecimal(new BigInteger(bytes), scale);
     }
 
     /**
@@ -517,9 +854,7 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageSizeException("Expected 6 bytes for DATE extension, but got " + len, len);
         }
 
-        var data = ByteBuffer.wrap(readPayload(len));
-
-        return LocalDate.of(data.getInt(), data.get(), data.get());
+        return LocalDate.of(buf.readInt(), buf.readByte(), buf.readByte());
     }
 
     /**
@@ -544,9 +879,7 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageSizeException("Expected 7 bytes for TIME extension, but got " + len, len);
         }
 
-        var data = ByteBuffer.wrap(readPayload(len));
-
-        return LocalTime.of(data.get(), data.get(), data.get(), data.getInt());
+        return LocalTime.of(buf.readByte(), buf.readByte(), buf.readByte(), buf.readInt());
     }
 
     /**
@@ -571,11 +904,9 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageSizeException("Expected 13 bytes for DATETIME extension, but got " + len, len);
         }
 
-        var data = ByteBuffer.wrap(readPayload(len));
-
         return LocalDateTime.of(
-                LocalDate.of(data.getInt(), data.get(), data.get()),
-                LocalTime.of(data.get(), data.get(), data.get(), data.getInt())
+                LocalDate.of(buf.readInt(), buf.readByte(), buf.readByte()),
+                LocalTime.of(buf.readByte(), buf.readByte(), buf.readByte(), buf.readInt())
         );
     }
 
@@ -601,9 +932,7 @@ public class ClientMessageUnpacker extends MessageUnpacker {
             throw new MessageSizeException("Expected 12 bytes for TIMESTAMP extension, but got " + len, len);
         }
 
-        var data = ByteBuffer.wrap(readPayload(len));
-
-        return Instant.ofEpochSecond(data.getLong(), data.getInt());
+        return Instant.ofEpochSecond(buf.readLong(), buf.readInt());
     }
 
     /**
@@ -677,10 +1006,8 @@ public class ClientMessageUnpacker extends MessageUnpacker {
                 return unpackTimestamp();
 
             default:
-                break;
+                throw new IgniteException("Unknown client data type: " + dataType);
         }
-
-        throw new IgniteException("Unknown client data type: " + dataType);
     }
 
     /**
@@ -715,22 +1042,6 @@ public class ClientMessageUnpacker extends MessageUnpacker {
     }
 
     /**
-     * Creates a copy of this unpacker and the underlying buffer.
-     *
-     * @return Copied unpacker.
-     * @throws UncheckedIOException When buffer operation fails.
-     */
-    public ClientMessageUnpacker copy() {
-        try {
-            in.reset(new ByteBufInputStream(buf.copy()));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        return this;
-    }
-
-    /**
      * Increases the reference count by {@code 1}.
      *
      * @return This instance.
@@ -755,5 +1066,54 @@ public class ClientMessageUnpacker extends MessageUnpacker {
         if (buf.refCnt() > 0) {
             buf.release();
         }
+    }
+    
+    /**
+     * Unpacks string header.
+     *
+     * @return String length.
+     */
+    public int unpackRawStringHeader() {
+        byte code = buf.readByte();
+
+        if (Code.isFixedRaw(code)) {
+            return code & 0x1f;
+        }
+
+        switch (code) {
+            case Code.STR8:
+                return readLength8();
+
+            case Code.STR16:
+                return readLength16();
+
+            case Code.STR32:
+                return readLength32();
+
+            default:
+                throw unexpected("String", code);
+        }
+    }
+
+    private int readLength8() {
+        return buf.readUnsignedByte();
+    }
+
+    private int readLength16() {
+        return buf.readUnsignedShort();
+    }
+
+    private int readLength32() {
+        int u32 = buf.readInt();
+
+        if (u32 < 0) {
+            throw overflowU32Size(u32);
+        }
+
+        return u32;
+    }
+
+    private void skipBytes(int bytes) {
+        buf.readerIndex(buf.readerIndex() + bytes);
     }
 }

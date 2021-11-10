@@ -372,10 +372,10 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             }
 
             var featuresLen = unpacker.unpackBinaryHeader();
-            unpacker.skipValue(featuresLen);
+            unpacker.skipValues(featuresLen);
 
             var extensionsLen = unpacker.unpackMapHeader();
-            unpacker.skipValue(extensionsLen);
+            unpacker.skipValues(extensionsLen);
 
             protocolCtx = protocolContextFromVersion(srvVer);
         }

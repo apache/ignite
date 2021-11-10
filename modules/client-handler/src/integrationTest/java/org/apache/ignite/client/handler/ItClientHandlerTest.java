@@ -167,7 +167,7 @@ public class ItClientHandlerTest {
             final var err = unpacker.unpackString();
             
             assertArrayEquals(MAGIC, magic);
-            assertEquals(31, len);
+            assertEquals(32, len);
             assertEquals(3, major);
             assertEquals(0, minor);
             assertEquals(0, patch);

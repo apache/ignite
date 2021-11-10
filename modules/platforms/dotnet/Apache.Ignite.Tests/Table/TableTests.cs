@@ -433,7 +433,7 @@ namespace Apache.Ignite.Tests.Table
             var skipped = await Table.DeleteAllExactAsync(new[] { GetTuple(1, "1"), GetTuple(2, "2") });
 
             Assert.AreEqual(2, skipped.Count);
-            CollectionAssert.AreEquivalent(new[] { 1, 2 }, skipped.Select(x => (int)x[0]!).ToArray());
+            CollectionAssert.AreEquivalent(new long[] { 1, 2 }, skipped.Select(x => (long)x[0]!).ToArray());
         }
 
         [Test]
@@ -493,6 +493,47 @@ namespace Apache.Ignite.Tests.Table
                 async () => await Table.DeleteAllAsync(new[] { GetTuple(1, "1"), null! }));
 
             Assert.AreEqual("Tuple collection can't contain null elements.", ex!.Message);
+        }
+
+        [Test]
+        public async Task TestLongValueRoundTrip([Values(
+            long.MinValue,
+            long.MinValue + 1,
+            (long)int.MinValue - 1,
+            int.MinValue,
+            int.MinValue + 1,
+            (long)short.MinValue - 1,
+            short.MinValue,
+            short.MinValue + 1,
+            (long)byte.MinValue - 1,
+            byte.MinValue,
+            byte.MinValue + 1,
+            -1,
+            0,
+            1,
+            byte.MaxValue - 1,
+            byte.MaxValue,
+            (long)byte.MaxValue + 1,
+            short.MaxValue - 1,
+            short.MaxValue,
+            (long)short.MaxValue + 1,
+            int.MaxValue - 1,
+            int.MaxValue,
+            (long)int.MaxValue + 1,
+            long.MaxValue - 1,
+            long.MaxValue)] long key)
+        {
+            var val = key.ToString(CultureInfo.InvariantCulture);
+            var tuple = new IgniteTuple { [KeyCol] = key, [ValCol] = val };
+            await Table.UpsertAsync(tuple);
+
+            var keyTuple = new IgniteTuple { [KeyCol] = key };
+            var resTuple = (await Table.GetAsync(keyTuple))!;
+
+            Assert.IsNotNull(resTuple);
+            Assert.AreEqual(2, resTuple.FieldCount);
+            Assert.AreEqual(key, resTuple["key"]);
+            Assert.AreEqual(val, resTuple["val"]);
         }
 
         private static IIgniteTuple GetTuple(int id, string? val = null) =>

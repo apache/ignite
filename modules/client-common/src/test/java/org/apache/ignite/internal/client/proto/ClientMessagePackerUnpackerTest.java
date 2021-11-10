@@ -273,7 +273,7 @@ public class ClientMessagePackerUnpackerTest {
             buf.readBytes(data);
 
             try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
-                unpacker.skipValue(4);
+                unpacker.skipValues(4);
                 int[] res = unpacker.unpackIntArray();
                 assertArrayEquals(arr, res);
             }
@@ -293,7 +293,7 @@ public class ClientMessagePackerUnpackerTest {
             buf.readBytes(data);
 
             try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
-                unpacker.skipValue(4);
+                unpacker.skipValues(4);
                 Object[] res = unpacker.unpackObjectArray();
                 assertArrayEquals(args, res);
             }
@@ -313,7 +313,7 @@ public class ClientMessagePackerUnpackerTest {
             buf.readBytes(data);
 
             try (var unpacker = new ClientMessageUnpacker(Unpooled.wrappedBuffer(data))) {
-                unpacker.skipValue(4);
+                unpacker.skipValues(4);
 
                 Object[] res = unpacker.unpackObjectArray();
 

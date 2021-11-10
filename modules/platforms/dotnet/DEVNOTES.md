@@ -13,7 +13,8 @@ In this dir: `dotnet build`
 In this dir: `dotnet test`
 
 ## Start a Test Node
-`mvn -Dtest=ITThinClientConnectionTest -DfailIfNoTests=false -DIGNITE_TEST_KEEP_NODES_RUNNING=true surefire:test`
+* cd `modules/runner`
+* `mvn exec:java@platform-test-node-runner`
 
 ## .NET Core 3.1 and .NET Standard 2.1
 
