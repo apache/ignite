@@ -76,9 +76,6 @@ class ItSimpleCounterServerTest extends RaftServerAbstractTest {
      */
     private RaftGroupService client2;
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path dataPath;
 
@@ -86,7 +83,7 @@ class ItSimpleCounterServerTest extends RaftServerAbstractTest {
     private ScheduledExecutorService executor;
 
     /**
-     * @throws Exception If failed.
+     * Before each.
      */
     @BeforeEach
     void before() throws Exception {
@@ -130,7 +127,7 @@ class ItSimpleCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * After each.
      */
     @AfterEach
     @Override
@@ -148,9 +145,6 @@ class ItSimpleCounterServerTest extends RaftServerAbstractTest {
         super.after();
     }
 
-    /**
-     *
-     */
     @Test
     public void testRefreshLeader() throws Exception {
         Peer leader = client1.leader();
@@ -162,9 +156,6 @@ class ItSimpleCounterServerTest extends RaftServerAbstractTest {
         assertNotNull(client1.leader());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testCounterCommandListener() throws Exception {
         client1.refreshLeader().get();

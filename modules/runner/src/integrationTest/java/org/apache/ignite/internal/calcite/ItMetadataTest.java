@@ -30,21 +30,18 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Group of tests to verify the query metadata returned alongside the query result.
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItMetadataTest extends AbstractBasicIntegrationTest {
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {
         createAndPopulateTable();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void trimColumnNames() {
         String var300 = generate(() -> "X").limit(300).collect(joining());
@@ -52,10 +49,7 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
         
         assertQuery("select '" + var300 + "' from person").columnNames(var256).check();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void columnNames() {
         assertQuery("select (select count(*) from person), (select avg(salary) from person) from person")
@@ -83,10 +77,7 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
         
         assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void infixTypeCast() {
         assertQuery("select id, id::tinyint as tid, id::smallint as sid, id::varchar as vid from person")
@@ -94,10 +85,7 @@ public class ItMetadataTest extends AbstractBasicIntegrationTest {
                 .columnTypes(Integer.class, Byte.class, Short.class, String.class)
                 .check();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void columnOrder() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "COLUMN_ORDER").columns(

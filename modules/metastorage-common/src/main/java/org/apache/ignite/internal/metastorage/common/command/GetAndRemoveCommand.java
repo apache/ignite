@@ -31,6 +31,8 @@ public final class GetAndRemoveCommand implements WriteCommand {
     private final byte[] key;
 
     /**
+     * Constructor.
+     *
      * @param key The key. Couldn't be {@code null}.
      */
     public GetAndRemoveCommand(@NotNull ByteArray key) {
@@ -38,7 +40,7 @@ public final class GetAndRemoveCommand implements WriteCommand {
     }
 
     /**
-     * @return The key. Couldn't be {@code null}.
+     * Returns the key. Couldn't be {@code null}.
      */
     public @NotNull byte[] key() {
         return key;

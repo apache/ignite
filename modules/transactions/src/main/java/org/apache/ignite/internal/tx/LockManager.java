@@ -25,14 +25,18 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface LockManager {
     /**
+     * Attempts to acquire a lock for the specified {@code key} in exclusive mode.
+     *
      * @param key       The key.
      * @param timestamp The timestamp.
-     * @return The future.
+     * @return The future that will be completed when a lock is successfully acquired.
      * @throws LockException When a lock can't be taken due to possible deadlock.
      */
     public CompletableFuture<Void> tryAcquire(Object key, Timestamp timestamp) throws LockException;
 
     /**
+     * Attempts to release a lock for the specified {@code key} in exclusive mode.
+     *
      * @param key       The key.
      * @param timestamp The timestamp.
      * @throws LockException If the unlock operation is invalid.
@@ -40,14 +44,18 @@ public interface LockManager {
     public void tryRelease(Object key, Timestamp timestamp) throws LockException;
 
     /**
+     * Attempts to acquire a lock for the specified {@code key} in shared mode.
+     *
      * @param key       The key.
      * @param timestamp The timestamp.
-     * @return The future.
+     * @return The future that will be completed when a lock is successfully acquired.
      * @throws LockException When a lock can't be taken due to possible deadlock.
      */
     public CompletableFuture<Void> tryAcquireShared(Object key, Timestamp timestamp) throws LockException;
 
     /**
+     * Attempts to release a lock for the specified {@code key} in shared mode.
+     *
      * @param key       The key.
      * @param timestamp The timestamp.
      * @throws LockException If the unlock operation is invalid.
@@ -55,12 +63,16 @@ public interface LockManager {
     public void tryReleaseShared(Object key, Timestamp timestamp) throws LockException;
 
     /**
+     * Returns a collection of timestamps that is associated with the specified {@code key}.
+     *
      * @param key The key.
      * @return The waiters queue.
      */
     public Collection<Timestamp> queue(Object key);
 
     /**
+     * Returns a waiter associated with the specified {@code key}.
+     *
      * @param key       The key.
      * @param timestamp The timestamp.
      * @return The waiter.

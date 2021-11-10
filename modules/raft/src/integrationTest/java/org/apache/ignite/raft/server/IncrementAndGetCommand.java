@@ -29,6 +29,8 @@ public class IncrementAndGetCommand implements WriteCommand {
     private final long delta;
 
     /**
+     * Constructor.
+     *
      * @param delta The delta.
      */
     public IncrementAndGetCommand(long delta) {
@@ -36,7 +38,7 @@ public class IncrementAndGetCommand implements WriteCommand {
     }
 
     /**
-     * @return The delta.
+     * Returns the delta.
      */
     public long delta() {
         return delta;

@@ -139,7 +139,7 @@ class ItLiveSchemaChangeTableTest extends AbstractSchemaChangeTest {
     }
     
     /**
-     * Check strict schema works correctly after live schema
+     * Check strict schema works correctly after live schema.
      */
     @Test
     public void testLiveSchemaAddColumnsSwitchToStrict() {

@@ -49,27 +49,19 @@ import picocli.CommandLine;
 @ExtendWith(MockitoExtension.class)
 @MicronautTest
 public class ModuleMangerTest extends AbstractCliTest {
-    /**
-     *
-     */
+    /** Maven artifact resolver. */
     @Inject
     MavenArtifactResolver mavenArtifactRslvr;
 
-    /**
-     *
-     */
+    /** Module manager. */
     @Inject
     ModuleManager moduleMgr;
 
-    /**
-     *
-     */
+    /** Module registery. */
     @Inject
     ModuleRegistry moduleRegistry;
 
-    /**
-     *
-     */
+    /** Path to the artifacts. */
     @TempDir
     Path artifactsDir;
 
@@ -77,9 +69,6 @@ public class ModuleMangerTest extends AbstractCliTest {
     @TempDir
     Path homeDir;
 
-    /**
-     *
-     */
     @Test
     void testCliModuleInstallation() throws IOException {
         var rootArtifact = generateJar("test-module", "1.0", true);
@@ -103,9 +92,6 @@ public class ModuleMangerTest extends AbstractCliTest {
                         && m.artifacts.equals(Collections.emptyList())));
     }
 
-    /**
-     *
-     */
     @Test
     void testServerModuleInstallation() throws IOException {
         var rootArtifact = generateJar("test-module", "1.0", false);
@@ -130,7 +116,9 @@ public class ModuleMangerTest extends AbstractCliTest {
     }
 
     /**
+     * Returns maven artifact resolver.
      *
+     * @return Maven artifact resolver.
      */
     @MockBean(MavenArtifactResolver.class)
     MavenArtifactResolver mavenArtifactResolver() {
@@ -138,7 +126,9 @@ public class ModuleMangerTest extends AbstractCliTest {
     }
 
     /**
+     * Returns module registry.
      *
+     * @return Module registry.
      */
     @MockBean(ModuleRegistry.class)
     ModuleRegistry moduleStorage() {
@@ -147,6 +137,12 @@ public class ModuleMangerTest extends AbstractCliTest {
 
     /**
      * Generates jar file with CLI module mark or not.
+     *
+     * @param artifactId  Artifact id.
+     * @param ver Version.
+     * @param isCliModule {@code true} if cli module.
+     *
+     * @return Path to the Jar file with CLI module mark or not.
      */
     private Path generateJar(String artifactId, String ver, boolean isCliModule) throws IOException {
         Manifest manifest = new Manifest();

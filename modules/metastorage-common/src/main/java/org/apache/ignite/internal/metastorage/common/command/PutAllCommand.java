@@ -35,6 +35,8 @@ public final class PutAllCommand implements WriteCommand {
     private final List<byte[]> vals;
 
     /**
+     * Constructor.
+     *
      * @param vals he map of keys and corresponding values. Couldn't be {@code null} or empty.
      */
     public PutAllCommand(@NotNull Map<ByteArray, byte[]> vals) {
@@ -61,14 +63,14 @@ public final class PutAllCommand implements WriteCommand {
     }
 
     /**
-     * @return Entries values.
+     * Returns entries values.
      */
     public @NotNull List<byte[]> keys() {
         return keys;
     }
 
     /**
-     * @return Entries values.
+     * Returns entries values.
      */
     public @NotNull List<byte[]> values() {
         return vals;

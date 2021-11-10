@@ -278,15 +278,16 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
     }
 
     /**
-     * @return Marshaller.
+     * Returns marshaller.
      */
     private RecordSerializer<R> serializer() {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /**
+     * Returns schema-aware row.
+     *
      * @param row Binary row.
-     * @return Schema-aware row.
      */
     private Row wrap(BinaryRow row) {
         if (row == null) {

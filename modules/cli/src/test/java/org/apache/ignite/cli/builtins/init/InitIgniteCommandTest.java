@@ -50,27 +50,19 @@ import picocli.CommandLine.Help.ColorScheme;
 @ExtendWith(MockitoExtension.class)
 @MicronautTest
 public class InitIgniteCommandTest extends AbstractCliTest {
-    /**
-     *
-     */
+    /** Path resolver.*/
     @Inject
     SystemPathResolver pathRslvr;
 
-    /**
-     *
-     */
+    /** Maven artifact resolver. */
     @Inject
     MavenArtifactResolver mavenArtifactRslvr;
 
-    /**
-     *
-     */
+    /** Init command instance. */
     @Inject
     InitIgniteCommand initIgniteCmd;
 
-    /**
-     *
-     */
+    /** Configuration loader. */
     @Inject
     CliPathsConfigLoader cliPathsCfgLdr;
 
@@ -82,9 +74,6 @@ public class InitIgniteCommandTest extends AbstractCliTest {
     @TempDir
     Path currDir;
 
-    /**
-     *
-     */
     @Test
     void init() throws IOException {
         when(pathRslvr.osHomeDirectoryPath()).thenReturn(homeDir);
@@ -102,9 +91,6 @@ public class InitIgniteCommandTest extends AbstractCliTest {
         assertTrue(ignitePaths.validateDirs());
     }
 
-    /**
-     *
-     */
     @Test
     void reinit() throws IOException {
         when(pathRslvr.osHomeDirectoryPath()).thenReturn(homeDir);
@@ -129,7 +115,9 @@ public class InitIgniteCommandTest extends AbstractCliTest {
     }
 
     /**
+     * Returns maven artifact resolver.
      *
+     * @return Maven artifact resolver.
      */
     @MockBean(MavenArtifactResolver.class)
     MavenArtifactResolver mavenArtifactResolver() {
@@ -137,7 +125,9 @@ public class InitIgniteCommandTest extends AbstractCliTest {
     }
 
     /**
+     * Returns system path resolver.
      *
+     * @return System path resolver.
      */
     @MockBean(SystemPathResolver.class)
     SystemPathResolver systemPathResolver() {
@@ -145,7 +135,9 @@ public class InitIgniteCommandTest extends AbstractCliTest {
     }
 
     /**
+     * Removes the specified {@dir} and its subdirectories.
      *
+     * @param dir Directory to be removed.
      */
     private void recursiveDirRemove(Path dir) throws IOException {
         Files.walk(dir)
@@ -153,6 +145,5 @@ public class InitIgniteCommandTest extends AbstractCliTest {
                 .map(Path::toFile)
                 .forEach(File::delete);
         dir.toFile().delete();
-
     }
 }

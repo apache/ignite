@@ -58,6 +58,8 @@ public class ModuleRegistry {
     }
 
     /**
+     * Returns path of registry file.
+     *
      * @return Path of registry file.
      */
     private Path moduleFile() {
@@ -103,6 +105,8 @@ public class ModuleRegistry {
     }
 
     /**
+     * Returns definitions of installed modules.
+     *
      * @return Definitions of installed modules.
      */
     public ModuleDefinitionsList listInstalled() {
@@ -171,7 +175,7 @@ public class ModuleRegistry {
         public final String src;
 
         /**
-         * Creates module defition.
+         * Creates module definition.
          *
          * @param name         Module name.
          * @param artifacts    Module server artifacts' paths.
@@ -194,6 +198,8 @@ public class ModuleRegistry {
         }
 
         /**
+         * Returns server artifacts' paths.
+         *
          * @return Server artifacts' paths.
          */
         @JsonGetter("artifacts")
@@ -202,6 +208,8 @@ public class ModuleRegistry {
         }
 
         /**
+         * Returns CLI artifacts paths.
+         *
          * @return CLI artifacts paths.
          */
         @JsonGetter("cliArtifacts")

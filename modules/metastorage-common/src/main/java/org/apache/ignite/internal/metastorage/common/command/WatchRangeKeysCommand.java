@@ -47,6 +47,8 @@ public final class WatchRangeKeysCommand implements WriteCommand {
     private final IgniteUuid cursorId;
 
     /**
+     * Constructor.
+     *
      * @param keyFrom         Start key of range (inclusive).
      * @param keyTo           End key of range (exclusive).
      * @param requesterNodeId Id of the node that requests watch.
@@ -62,6 +64,8 @@ public final class WatchRangeKeysCommand implements WriteCommand {
     }
 
     /**
+     * Constructor.
+     *
      * @param keyFrom         Start key of range (inclusive).
      * @param keyTo           End key of range (exclusive).
      * @param revision        Start revision inclusive. {@code 0} - all revisions.
@@ -83,35 +87,35 @@ public final class WatchRangeKeysCommand implements WriteCommand {
     }
 
     /**
-     * @return Start key of range (inclusive). Couldn't be {@code null}.
+     * Returns start key of range (inclusive). Couldn't be {@code null}.
      */
     public @Nullable byte[] keyFrom() {
         return keyFrom;
     }
 
     /**
-     * @return End key of range (exclusive). Could be {@code null}.
+     * Returns end key of range (exclusive). Could be {@code null}.
      */
     public @Nullable byte[] keyTo() {
         return keyTo;
     }
 
     /**
-     * @return Start revision inclusive. {@code 0} - all revisions.
+     * Returns start revision inclusive. {@code 0} - all revisions.
      */
     public long revision() {
         return revision;
     }
 
     /**
-     * @return Id of the node that requests range.
+     * Returns id of the node that requests range.
      */
     public @NotNull String requesterNodeId() {
         return requesterNodeId;
     }
 
     /**
-     * @return Id of cursor that is associated with the current command.
+     * Returns id of cursor that is associated with the current command.
      */
     public IgniteUuid getCursorId() {
         return cursorId;

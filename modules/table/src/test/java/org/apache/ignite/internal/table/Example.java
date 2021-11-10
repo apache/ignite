@@ -33,14 +33,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- *
+ * Example.
  */
 @SuppressWarnings({
         "PMD.EmptyLineSeparatorCheck", "emptylineseparator",
         "unused", "UnusedAssignment", "InstanceVariableMayNotBeInitialized", "JoinDeclarationAndAssignmentJava"})
 public class Example {
     /**
-     * @return Table implementation.
+     * Returns table implementation.
      */
     private static List<Table> tableFactory() {
         return Collections.singletonList(new TableImpl(new DummyInternalTableImpl(), null, null));
@@ -107,7 +107,7 @@ public class Example {
 
     /**
      * Use case 2: using simple KV mappings The table has structure is [ [id int, orgId int] // key [name varchar, lastName varchar, decimal
-     * salary, int department] // value ]
+     * salary, int department] // value ].
      */
     @Disabled
     @ParameterizedTest

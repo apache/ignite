@@ -44,6 +44,8 @@ public class InteractiveWrapper {
     private final Terminal terminal;
 
     /**
+     * Creates a new instance of {@code InteractiveWrapper} for the given {@code terminal}.
+     *
      * @param terminal Terminal.
      */
     public InteractiveWrapper(Terminal terminal) {
@@ -51,7 +53,7 @@ public class InteractiveWrapper {
     }
 
     /**
-     * Start interactive shell.
+     * Starts interactive shell.
      *
      * @param cmd Prepared CommandLine instance to use for interactive mode.
      */
@@ -103,7 +105,10 @@ public class InteractiveWrapper {
     }
 
     /**
+     * Returns a path to the user directory.
+     * This is the directory where JVM was run from.
      *
+     * @return Path to the user directory.
      */
     private static Path workDir() {
         return Paths.get(System.getProperty("user.dir"));

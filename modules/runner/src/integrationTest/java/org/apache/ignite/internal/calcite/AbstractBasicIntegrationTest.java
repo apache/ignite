@@ -48,14 +48,11 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- *
+ * Abstract basic integration test.
  */
 @ExtendWith(WorkDirectoryExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AbstractBasicIntegrationTest {
-    /**
-     *
-     */
     private static final IgniteLogger LOG = IgniteLogger.forClass(AbstractBasicIntegrationTest.class);
     
     /** Nodes bootstrap configuration. */
@@ -102,12 +99,12 @@ public class AbstractBasicIntegrationTest {
     /** Cluster nodes. */
     protected static final List<Ignite> CLUSTER_NODES = new ArrayList<>();
     
-    /** Work directory */
+    /** Work directory. */
     @WorkDirectory
     private static Path WORK_DIR;
     
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void startNodes() {
@@ -117,7 +114,7 @@ public class AbstractBasicIntegrationTest {
     }
     
     /**
-     *
+     * After all.
      */
     @AfterAll
     static void stopNodes() throws Exception {
@@ -129,10 +126,7 @@ public class AbstractBasicIntegrationTest {
         
         LOG.info("End tearDown()");
     }
-    
-    /**
-     *
-     */
+
     protected static QueryChecker assertQuery(String qry) {
         return new QueryChecker(qry) {
             @Override
@@ -141,10 +135,7 @@ public class AbstractBasicIntegrationTest {
             }
         };
     }
-    
-    /**
-     *
-     */
+
     protected static Table createAndPopulateTable() {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "PERSON").columns(
                 SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
@@ -170,10 +161,7 @@ public class AbstractBasicIntegrationTest {
         
         return tbl;
     }
-    
-    /**
-     *
-     */
+
     protected static void insertData(Table table, String[] columnNames, Object[]... tuples) {
         RecordView<Tuple> view = table.recordView();
         
@@ -208,10 +196,7 @@ public class AbstractBasicIntegrationTest {
             batch.clear();
         }
     }
-    
-    /**
-     *
-     */
+
     protected static List<List<?>> sql(String sql, Object... args) {
         return getAllFromCursor(
                 ((IgniteImpl) CLUSTER_NODES.get(0)).queryEngine().query("PUBLIC", sql, args).get(0)

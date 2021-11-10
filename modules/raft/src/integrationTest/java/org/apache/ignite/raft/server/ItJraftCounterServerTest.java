@@ -134,7 +134,7 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     private ScheduledExecutorService executor;
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void before() {
@@ -144,7 +144,7 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     @Override
@@ -186,6 +186,8 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
+     * Starts server.
+     *
      * @param idx The index.
      * @return Raft server instance.
      */
@@ -217,6 +219,8 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
+     * Starts client.
+     *
      * @param groupId Group id.
      * @return The client.
      * @throws Exception If failed.
@@ -308,9 +312,6 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     *
-     */
     @Test
     public void testRefreshLeader() throws Exception {
         startCluster();
@@ -332,9 +333,6 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
         assertNotNull(clients.get(1).leader());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testCounterCommandListener() throws Exception {
         startCluster();
@@ -465,7 +463,7 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
         }
     }
 
-    /** Tests if a raft group become unavailable in case of a critical error */
+    /** Tests if a raft group become unavailable in case of a critical error. */
     @Test
     public void testApplyWithFailure() throws Exception {
         listenerFactory = () -> new CounterListener() {
@@ -635,25 +633,16 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
         doTestFollowerCatchUp(false, true);
     }
 
-    /**
-     *
-     */
     @Test
     public void testFollowerCatchUpFromSnapshot() throws Exception {
         doTestFollowerCatchUp(true, true);
     }
 
-    /**
-     *
-     */
     @Test
     public void testFollowerCatchUpFromLog2() throws Exception {
         doTestFollowerCatchUp(false, false);
     }
 
-    /**
-     *
-     */
     @Test
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-15156")
     public void testFollowerCatchUpFromSnapshot2() throws Exception {
@@ -661,6 +650,8 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
+     * Do test follower catch up.
+     *
      * @param snapshot {@code True} to create snapshot on leader and truncate log.
      * @param cleanDir {@code True} to clean persistent state on follower before restart.
      * @throws Exception If failed.
@@ -749,6 +740,8 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
+     * Applies increments.
+     *
      * @param client The client
      * @param start  Start element.
      * @param stop   Stop element.
@@ -778,6 +771,8 @@ class ItJraftCounterServerTest extends RaftServerAbstractTest {
     }
 
     /**
+     * Validates state machine.
+     *
      * @param expected Expected value.
      * @param server   The server.
      * @param groupId  Group id.

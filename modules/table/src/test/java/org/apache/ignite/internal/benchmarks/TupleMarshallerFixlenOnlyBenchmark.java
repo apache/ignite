@@ -89,7 +89,7 @@ public class TupleMarshallerFixlenOnlyBenchmark {
     }
 
     /**
-     *
+     * Setup.
      */
     @Setup
     public void init() {

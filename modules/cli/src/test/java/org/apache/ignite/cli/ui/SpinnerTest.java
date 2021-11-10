@@ -27,40 +27,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Tests spinner.
  */
 public class SpinnerTest {
-    /**
-     *
-     */
+    /** Writer that is used in order to prints formatted representation to the underlying output stream. */
     private PrintWriter out;
 
-    /**
-     *
-     */
+    /** CLI output stream. */
     private ByteArrayOutputStream outputStream;
 
-    /**
-     *
-     */
     @BeforeEach
     public void setUp() {
         outputStream = new ByteArrayOutputStream();
         out = new PrintWriter(outputStream);
     }
 
-    /**
-     *
-     */
     @AfterEach
     public void tearDown() throws IOException {
         out.close();
         outputStream.close();
     }
 
-    /**
-     *
-     */
     @Test
     public void testSpinner() {
         var spinner = new Spinner(out, "Waiting");
@@ -78,9 +65,6 @@ public class SpinnerTest {
         assertEquals("\rWaiting.  \rWaiting.. \rWaiting...\rWaiting.  ", outputStream.toString());
     }
 
-    /**
-     *
-     */
     @Test
     public void testSpinnerClose() {
         var spinner = new Spinner(out, "Waiting");

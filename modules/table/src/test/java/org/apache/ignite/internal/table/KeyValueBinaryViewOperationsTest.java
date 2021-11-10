@@ -56,10 +56,7 @@ public class KeyValueBinaryViewOperationsTest {
     private KeyValueView<Tuple, Tuple> tableView() {
         return new KeyValueBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null, null);
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void put() {
         KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -92,10 +89,7 @@ public class KeyValueBinaryViewOperationsTest {
         tbl.put(key, val3);
         assertEqualsValues(schema, val3, tbl.get(key));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void putIfAbsent() {
         KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -118,10 +112,7 @@ public class KeyValueBinaryViewOperationsTest {
         assertEqualsValues(schema, val, tbl.get(key));
         assertEqualsValues(schema, val, tbl.get(Tuple.create().set("id", 1L)));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void getAndPut() {
         KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -145,10 +136,7 @@ public class KeyValueBinaryViewOperationsTest {
         assertEqualsValues(schema, val3, tbl.get(key));
         assertNull(tbl.get(Tuple.create().set("id", 2L)));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void contains() {
         KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -177,10 +165,7 @@ public class KeyValueBinaryViewOperationsTest {
         tbl.remove(Tuple.create().set("id", 2L));
         assertFalse(tbl.contains(Tuple.create().set("id", 2L)));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void remove() {
         KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -213,10 +198,7 @@ public class KeyValueBinaryViewOperationsTest {
         assertNull(tbl.get(key2));
         assertFalse(tbl.remove(key2));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void removeExact() {
         final KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -261,10 +243,7 @@ public class KeyValueBinaryViewOperationsTest {
         assertFalse(tbl.remove(key2, val2));
         assertNull(tbl.get(key2));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void replace() {
         KeyValueView<Tuple, Tuple> tbl = tableView();
@@ -300,10 +279,7 @@ public class KeyValueBinaryViewOperationsTest {
         assertFalse(tbl.replace(key2, null));
         assertNull(tbl.get(key2));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void replaceExact() {
         KeyValueView<Tuple, Tuple> tbl = tableView();

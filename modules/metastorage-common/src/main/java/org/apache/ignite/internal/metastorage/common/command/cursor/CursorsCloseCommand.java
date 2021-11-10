@@ -30,6 +30,8 @@ public class CursorsCloseCommand implements WriteCommand {
     private final String nodeId;
 
     /**
+     * Constructor.
+     *
      * @param nodeId Node id.
      */
     public CursorsCloseCommand(@NotNull String nodeId) {
@@ -37,7 +39,7 @@ public class CursorsCloseCommand implements WriteCommand {
     }
 
     /**
-     * @return Cursor id.
+     * Returns cursor id.
      */
     public @NotNull String nodeId() {
         return nodeId;

@@ -52,19 +52,13 @@ class ItIgnitionTest {
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
 
-    /**
-     *
-     */
     private final List<Ignite> startedNodes = new ArrayList<>();
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path workDir;
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp(TestInfo testInfo) {
@@ -113,7 +107,7 @@ class ItIgnitionTest {
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {

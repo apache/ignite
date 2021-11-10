@@ -36,7 +36,7 @@ public class SingleEntryResponse implements Serializable {
     /** Revision. */
     private final long rev;
 
-    /** Update counter */
+    /** Update counter. */
     private final long updCntr;
 
     /**

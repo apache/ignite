@@ -30,6 +30,11 @@ import org.fusesource.jansi.AnsiConsole;
  * Entry point of Ignite CLI.
  */
 public class IgniteCliApp {
+    /**
+     * Entry point of Ignite CLI.
+     *
+     * @param args Command line arguments.
+     */
     public static void main(String... args) {
         initJavaLoggerProps();
 

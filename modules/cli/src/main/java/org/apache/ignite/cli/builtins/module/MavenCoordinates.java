@@ -23,13 +23,13 @@ import org.apache.ignite.cli.IgniteCliException;
  * Simple wrapper of maven artifact coordinates groupid:artifactd:version.
  */
 public class MavenCoordinates {
-    /** Group id */
+    /** Group id. */
     public final String grpId;
 
-    /** Artifact id */
+    /** Artifact id. */
     public final String artifactId;
 
-    /** Artifact version */
+    /** Artifact version. */
     public final String ver;
 
     /**

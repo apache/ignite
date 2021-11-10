@@ -110,9 +110,6 @@ public class ItDistributedTableTest {
     /** Network factory. */
     private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
-    /**
-     *
-     */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
     /** Client. */
@@ -131,9 +128,6 @@ public class ItDistributedTableTest {
     /** Cluster. */
     private ArrayList<ClusterService> cluster = new ArrayList<>();
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path dataPath;
 
@@ -555,6 +549,8 @@ public class ItDistributedTableTest {
     }
 
     /**
+     * Starts client.
+     *
      * @param testInfo   Test info.
      * @param port       Local port.
      * @param nodeFinder Node finder.
@@ -575,6 +571,8 @@ public class ItDistributedTableTest {
     }
 
     /**
+     * Wait for topology.
+     *
      * @param cluster  The cluster.
      * @param expected Expected count.
      * @param timeout  The timeout in millis.

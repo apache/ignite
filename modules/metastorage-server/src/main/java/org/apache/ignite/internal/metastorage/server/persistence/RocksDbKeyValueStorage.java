@@ -92,7 +92,7 @@ import org.rocksdb.WriteOptions;
  * entry and the value is a {@code byte[]} that represents a {@code long[]} where every item is a revision of the storage.
  */
 public class RocksDbKeyValueStorage implements KeyValueStorage {
-    /** Suffix for the temporary snapshot folder */
+    /** Suffix for the temporary snapshot folder. */
     private static final String TMP_SUFFIX = ".tmp";
     
     /** A revision to store with system entries. */
@@ -1044,22 +1044,19 @@ public class RocksDbKeyValueStorage implements KeyValueStorage {
     }
     
     /**
-     * @return Database lock
+     * Returns database lock.
      */
     ReadWriteLock lock() {
         return rwLock;
     }
     
     /**
-     * @return Database.
+     * Returns database.
      */
     RocksDB db() {
         return db;
     }
-    
-    /**
-     *
-     */
+
     @TestOnly
     public Path getDbPath() {
         return dbPath;

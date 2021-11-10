@@ -235,14 +235,14 @@ public class WatchAggregator {
         }
 
         /**
-         * @return key criterion.
+         * Returns key criterion.
          */
         public KeyCriterion keyCriterion() {
             return keyCriterion;
         }
 
         /**
-         * @return watch listener.
+         * Returns watch listener.
          */
         public WatchListener listener() {
             return lsnr;

@@ -25,14 +25,18 @@ public class IgniteCliException extends RuntimeException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Message.
+     * Creates a new instance of {@code IgniteCliException} with the given {@code msg}.
+     *
+     * @param msg Detailed message.
      */
     public IgniteCliException(String msg) {
         super(msg);
     }
 
     /**
-     * @param msg   Message.
+     * Creates a new instance of {@code IgniteCliException} with the given {@code msg} and {@code cause}.
+     *
+     * @param msg   Detailed message.
      * @param cause Cause.
      */
     public IgniteCliException(String msg, Throwable cause) {

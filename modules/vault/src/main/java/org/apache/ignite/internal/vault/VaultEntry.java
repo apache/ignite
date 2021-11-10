@@ -23,7 +23,9 @@ import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a vault unit as entry with key and value, where
+ * Represents a vault unit as entry with key and value.
+ *
+ * <p>Where:
  * <ul>
  *     <li>key - an unique entry's key. Keys are comparable in lexicographic manner and represented as an
  *     array of bytes;</li>

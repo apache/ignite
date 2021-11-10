@@ -301,8 +301,9 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /**
+     * Returns extracted key.
+     *
      * @param row Row.
-     * @return Extracted key.
      */
     @NotNull
     private DummyInternalTableImpl.KeyWrapper extractAndWrapKey(@NotNull BinaryRow row) {
@@ -313,8 +314,9 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /**
+     * Returns extracted key.
+     *
      * @param row Row.
-     * @return Extracted key.
      */
     @NotNull
     private boolean equalValues(@NotNull BinaryRow row, @NotNull BinaryRow row2) {

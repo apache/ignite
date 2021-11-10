@@ -32,18 +32,12 @@ import org.junit.jupiter.api.Test;
  * Test suite for the {@link VaultManager}.
  */
 public class VaultManagerTest {
-    /**
-     *
-     */
     private static final int TIMEOUT_SECONDS = 1;
 
-    /**
-     *
-     */
     private final VaultManager vaultManager = new VaultManager(new InMemoryVaultService());
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {

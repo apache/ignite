@@ -90,9 +90,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testBoolean() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -163,9 +160,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         }, "Cannot convert to boolean: qwe");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testByte() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -203,9 +197,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testShort() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -244,9 +235,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testInteger() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -285,9 +273,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testLong() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -326,9 +311,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testFloat() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -367,9 +349,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testDouble() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -408,9 +387,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertEquals(1, cnt);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testBigDecimal() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -449,7 +425,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO: IGNITE-15163
+     * TODO: IGNITE-15163.
      *
      * @throws Exception If failed.
      */
@@ -463,6 +439,8 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
+     * Converts {@link String} to {@link BigDecimal}.
+     *
      * @param strDec String representation of a decimal value.
      * @param scale  Scale.
      * @return BigDecimal object.
@@ -476,9 +454,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testString() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
@@ -518,7 +493,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO: IGNITE-15163
+     * TODO: IGNITE-15163.
      *
      * @throws Exception If failed.
      */
@@ -542,7 +517,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO: IGNITE-15163
+     * TODO: IGNITE-15163.
      *
      * @throws Exception If failed.
      */
@@ -573,7 +548,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO: IGNITE-15163
+     * TODO: IGNITE-15163.
      *
      * @throws Exception If failed.
      */
@@ -604,7 +579,7 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
     }
 
     /**
-     * TODO: IGNITE-15163
+     * TODO: IGNITE-15163.
      *
      * @throws Exception If failed.
      */
@@ -708,9 +683,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertFalse(rs.isBeforeFirst());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testFindColumn() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
@@ -723,9 +695,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         assertThrows(SQLException.class, () -> rs.findColumn("wrong"), "Column not found: wrong");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testNotSupportedTypes() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
@@ -777,9 +746,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         checkNotSupported(() -> rs.getSQLXML("id"));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testUpdateNotSupported() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
@@ -953,9 +919,6 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
         checkNotSupported(rs::moveToInsertRow);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testExceptionOnClosedResultSet() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
@@ -1053,17 +1016,13 @@ public class ItJdbcResultSetSelfTest extends AbstractJdbcSelfTest {
      */
     @SuppressWarnings("PackageVisibleField")
     private static class TestObjectField implements Serializable {
-        /**
-         *
-         */
         final int ai;
 
-        /**
-         *
-         */
         final String bi;
 
         /**
+         * Constructor.
+         *
          * @param ai A.
          * @param bi B.
          */

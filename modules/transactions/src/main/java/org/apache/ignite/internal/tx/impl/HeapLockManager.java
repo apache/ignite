@@ -38,9 +38,6 @@ import org.jetbrains.annotations.NotNull;
  * it's validated against current lock owner: if where is an owner with a higher timestamp lock request is denied.
  */
 public class HeapLockManager implements LockManager {
-    /**
-     *
-     */
     private ConcurrentHashMap<Object, LockState> locks = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
@@ -68,8 +65,9 @@ public class HeapLockManager implements LockManager {
     }
 
     /**
+     * Returns the lock state for the key.
+     *
      * @param key The key.
-     * @return The lock state for the key.
      */
     private @NotNull LockState lockState(Object key) {
         return locks.computeIfAbsent(key, k -> new LockState());
@@ -81,6 +79,7 @@ public class HeapLockManager implements LockManager {
         return lockState(key).queue();
     }
 
+    /** {@inheritDoc} */
     @Override
     public Waiter waiter(Object key, Timestamp timestamp) {
         return lockState(key).waiter(timestamp);
@@ -92,8 +91,10 @@ public class HeapLockManager implements LockManager {
         private TreeMap<Timestamp, WaiterImpl> waiters = new TreeMap<>();
 
         /**
+         * Attempts to acquire a lock for the specified {@code key} in exclusive mode.
+         *
          * @param timestamp The timestamp.
-         * @return The future.
+         * @return The future that will be completed when a lock is successfully acquired.
          */
         public CompletableFuture<Void> tryAcquire(Timestamp timestamp) throws LockException {
             WaiterImpl w = new WaiterImpl(timestamp, false);
@@ -126,6 +127,8 @@ public class HeapLockManager implements LockManager {
         }
 
         /**
+         * Attempts to release a lock for the specified {@code key} in exclusive mode.
+         *
          * @param timestamp The timestamp.
          */
         public void tryRelease(Timestamp timestamp) throws LockException {
@@ -175,8 +178,10 @@ public class HeapLockManager implements LockManager {
         }
 
         /**
+         * Attempts to acquire a lock for the specified {@code key} in shared mode.
+         *
          * @param timestamp The timestamp.
-         * @return The future.
+         * @return The future that will be completed when a lock is successfully acquired.
          */
         public CompletableFuture<Void> tryAcquireShared(Timestamp timestamp) throws LockException {
             WaiterImpl waiter = new WaiterImpl(timestamp, true);
@@ -213,6 +218,12 @@ public class HeapLockManager implements LockManager {
             return waiter.fut;
         }
 
+        /**
+         * Attempts to release a lock for the specified {@code key} in shared mode.
+         *
+         * @param timestamp The timestamp.
+         * @throws LockException If the unlock operation is invalid.
+         */
         public void tryReleaseShared(Timestamp timestamp) throws LockException {
             WaiterImpl locked = null;
 
@@ -248,7 +259,9 @@ public class HeapLockManager implements LockManager {
         }
 
         /**
-         * @return Waiters queue.
+         * Returns a collection of timestamps that is associated with the specified {@code key}.
+         *
+         * @return The waiters queue.
          */
         public Collection<Timestamp> queue() {
             synchronized (waiters) {
@@ -257,6 +270,8 @@ public class HeapLockManager implements LockManager {
         }
 
         /**
+         * Returns a waiter for the specified {@code key}.
+         *
          * @param timestamp The timestamp.
          * @return The waiter.
          */
@@ -285,8 +300,10 @@ public class HeapLockManager implements LockManager {
         private boolean locked = false;
 
         /**
+         * Constructor.
+         *
          * @param timestamp The timestamp.
-         * @param forRead   {@code True} to request a read lock.
+         * @param forRead   {@code true} to request a read lock.
          */
         WaiterImpl(Timestamp timestamp, boolean forRead) {
             this.fut = new CompletableFuture<>();
@@ -327,7 +344,7 @@ public class HeapLockManager implements LockManager {
         }
 
         /**
-         * @return {@code True} if is locked for read.
+         * Returns {@code true} if is locked for read.
          */
         public boolean isForRead() {
             return forRead;

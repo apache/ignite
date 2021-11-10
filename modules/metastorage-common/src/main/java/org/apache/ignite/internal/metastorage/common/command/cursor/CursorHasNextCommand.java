@@ -30,6 +30,8 @@ public class CursorHasNextCommand implements ReadCommand {
     private final IgniteUuid cursorId;
 
     /**
+     * Constructor.
+     *
      * @param cursorId Cursor id.
      */
     public CursorHasNextCommand(@NotNull IgniteUuid cursorId) {
@@ -37,7 +39,7 @@ public class CursorHasNextCommand implements ReadCommand {
     }
 
     /**
-     * @return Cursor id.
+     * Returns cursor id.
      */
     public @NotNull IgniteUuid cursorId() {
         return cursorId;

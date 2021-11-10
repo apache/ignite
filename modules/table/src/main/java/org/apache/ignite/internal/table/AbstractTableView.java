@@ -35,11 +35,11 @@ abstract class AbstractTableView {
     /** Schema registry. */
     protected final SchemaRegistry schemaReg;
     
-    /** The transaction */
+    /** The transaction. */
     protected final @Nullable Transaction tx;
     
     /**
-     * Constructor
+     * Constructor.
      *
      * @param tbl       Internal table.
      * @param schemaReg Schema registry.
@@ -73,7 +73,7 @@ abstract class AbstractTableView {
     }
     
     /**
-     * @return Current transaction.
+     * Returns current transaction.
      */
     public @Nullable Transaction transaction() {
         return tx;

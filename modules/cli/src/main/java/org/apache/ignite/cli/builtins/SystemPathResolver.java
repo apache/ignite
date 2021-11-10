@@ -30,17 +30,21 @@ import org.apache.ignite.cli.IgniteCliException;
  */
 public interface SystemPathResolver {
     /**
+     * Returns system specific user home directory..
+     *
      * @return System specific user home directory.
      */
     Path osHomeDirectoryPath();
 
     /**
+     * Returns directory where CLI tool binary placed.
+     *
      * @return Directory where CLI tool binary placed.
      */
     Path toolHomeDirectoryPath();
 
     /**
-     *
+     * Default path resolver.
      */
     @Singleton
     @Introspected

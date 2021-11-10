@@ -175,6 +175,8 @@ public class NodeManager {
     }
 
     /**
+     * Returns actual classpath according to current installed modules.
+     *
      * @return Actual classpath according to current installed modules.
      * @throws IOException If couldn't read the module registry file.
      */
@@ -186,6 +188,8 @@ public class NodeManager {
     }
 
     /**
+     * Returns actual classpath items list according to current installed modules.
+     *
      * @return Actual classpath items list according to current installed modules.
      * @throws IOException If couldn't read the module registry file.
      */
@@ -220,6 +224,8 @@ public class NodeManager {
     }
 
     /**
+     * Returns list of running nodes.
+     *
      * @param logDir  Ignite installation work dir.
      * @param pidsDir Dir with nodes pids.
      * @return List of running nodes.
@@ -304,7 +310,7 @@ public class NodeManager {
     /**
      * Stops the process and waits for success.
      *
-     * @param pid Pid of proccess to stop.
+     * @param pid Pid of process to stop.
      * @return true if process was stopped, false otherwise.
      */
     private boolean stopWait(long pid) {
@@ -315,6 +321,8 @@ public class NodeManager {
     }
 
     /**
+     * Returns path of node log file.
+     *
      * @param logDir   Ignite log dir.
      * @param nodeName Node name.
      * @return Path of node log file.

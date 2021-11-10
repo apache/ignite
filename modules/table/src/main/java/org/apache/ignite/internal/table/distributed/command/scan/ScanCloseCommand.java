@@ -39,7 +39,7 @@ public class ScanCloseCommand implements WriteCommand {
     }
 
     /**
-     * @return Id of scan that is associated with the current command.
+     * Returns id of scan that is associated with the current command.
      */
     public @NotNull IgniteUuid scanId() {
         return scanId;

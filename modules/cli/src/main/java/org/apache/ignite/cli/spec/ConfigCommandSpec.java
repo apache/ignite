@@ -128,6 +128,8 @@ public class ConfigCommandSpec extends CategorySpec {
         private String endpoint;
 
         /**
+         * Returns REST endpoint port.
+         *
          * @return REST endpoint port.
          */
         private int port() {
@@ -145,6 +147,8 @@ public class ConfigCommandSpec extends CategorySpec {
         }
 
         /**
+         * Returns REST endpoint host.
+         *
          * @return REST endpoint host.
          */
         private String host() {

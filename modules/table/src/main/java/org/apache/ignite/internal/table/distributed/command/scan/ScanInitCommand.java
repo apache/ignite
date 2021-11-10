@@ -34,6 +34,8 @@ public class ScanInitCommand implements WriteCommand {
     private final IgniteUuid scanId;
 
     /**
+     * Constructor.
+     *
      * @param requesterNodeId Id of the node that requests scan.
      * @param scanId          Id of scan that is associated with the current command.
      */
@@ -46,14 +48,14 @@ public class ScanInitCommand implements WriteCommand {
     }
 
     /**
-     * @return Id of the node that requests scan.
+     * Returns id of the node that requests scan.
      */
     public @NotNull String requesterNodeId() {
         return requesterNodeId;
     }
 
     /**
-     * @return Id of scan that is associated with the current command.
+     * Returns id of scan that is associated with the current command.
      */
     @NotNull
     public IgniteUuid scanId() {

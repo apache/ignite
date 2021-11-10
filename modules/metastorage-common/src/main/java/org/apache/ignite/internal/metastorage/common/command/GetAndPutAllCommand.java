@@ -38,6 +38,8 @@ public final class GetAndPutAllCommand implements WriteCommand {
     private final List<byte[]> vals;
 
     /**
+     * Constructor.
+     *
      * @param vals Values.
      */
     public GetAndPutAllCommand(@NotNull Map<ByteArray, byte[]> vals) {
@@ -54,14 +56,14 @@ public final class GetAndPutAllCommand implements WriteCommand {
     }
 
     /**
-     * @return Keys.
+     * Returns keys.
      */
     public @NotNull List<byte[]> keys() {
         return keys;
     }
 
     /**
-     * @return Values.
+     * Returns values.
      */
     public @NotNull List<byte[]> vals() {
         return vals;

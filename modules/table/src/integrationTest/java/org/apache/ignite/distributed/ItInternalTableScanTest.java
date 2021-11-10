@@ -85,28 +85,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests for {@link InternalTable#scan(int, org.apache.ignite.tx.Transaction)}
+ * Tests for {@link InternalTable#scan(int, org.apache.ignite.tx.Transaction)}.
  */
 @ExtendWith(MockitoExtension.class)
 public class ItInternalTableScanTest {
-    /**
-     *
-     */
     private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
-    /**
-     *
-     */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
-    /**
-     *
-     */
     private static final RaftMessagesFactory FACTORY = new RaftMessagesFactory();
 
-    /**
-     *
-     */
     private static final String TEST_TABLE_NAME = "testTbl";
 
     /** Id for the test RAFT group. */
@@ -116,14 +104,8 @@ public class ItInternalTableScanTest {
     @Mock
     private PartitionStorage mockStorage;
 
-    /**
-     *
-     */
     private ClusterService network;
 
-    /**
-     *
-     */
     private RaftServer raftSrv;
 
     /** Internal table to test. */
@@ -133,7 +115,7 @@ public class ItInternalTableScanTest {
     ScheduledExecutorService executor;
 
     /**
-     * Prepare test environment:
+     * Prepare test environment.
      * <ol>
      * <li>Start network node.</li>
      * <li>Start raft server.</li>

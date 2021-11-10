@@ -42,14 +42,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 class ItPersistencePropertiesVaultServiceTest {
-    /**
-     *
-     */
     private static final int TIMEOUT_SECONDS = 1;
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path vaultDir;
 

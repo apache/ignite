@@ -377,8 +377,9 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
     }
     
     /**
+     * Returns row.
+     *
      * @param row Binary row.
-     * @return Row.
      */
     protected Row wrap(BinaryRow row) {
         if (row == null) {

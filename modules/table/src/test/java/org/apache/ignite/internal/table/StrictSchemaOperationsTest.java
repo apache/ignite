@@ -38,9 +38,6 @@ import org.junit.jupiter.api.function.Executable;
  * Check data by strict schema.
  */
 public class StrictSchemaOperationsTest {
-    /**
-     *
-     */
     @Test
     public void columnNotExist() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -53,10 +50,7 @@ public class StrictSchemaOperationsTest {
         
         assertThrowsWithCause(SchemaMismatchException.class, () -> recView.insert(Tuple.create().set("id", 0L).set("invalidCol", 0)));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void schemaMismatch() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -84,10 +78,7 @@ public class StrictSchemaOperationsTest {
         assertThrowsWithCause(SchemaMismatchException.class, () -> tbl.keyValueView().put(Tuple.create().set("id", 0L).set("affId", 1L),
                 Tuple.create().set("id", 0L).set("val", 0L)));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void typeMismatch() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -111,10 +102,7 @@ public class StrictSchemaOperationsTest {
         assertThrowsWithCause(InvalidTypeException.class,
                 () -> tbl.insert(Tuple.create().set("id", 0L).set("valBytes", new byte[]{0, 1, 2, 3})));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void stringTypeMatch() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -138,10 +126,7 @@ public class StrictSchemaOperationsTest {
         // Check string 3 char length and 9 bytes.
         tbl.insert(tuple.set("valString", "我是谁"));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void bytesTypeMatch() {
         SchemaDescriptor schema = new SchemaDescriptor(
@@ -170,7 +155,7 @@ public class StrictSchemaOperationsTest {
         return new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), null);
     }
     
-    public <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
+    private <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
         Throwable ex = assertThrows(IgniteException.class, executable);
         
         while (ex.getCause() != null) {

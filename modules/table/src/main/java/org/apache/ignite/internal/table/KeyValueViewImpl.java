@@ -304,8 +304,9 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     }
     
     /**
+     * Returns marshaller.
+     *
      * @param schemaVersion Schema version.
-     * @return Marshaller.
      */
     private KvMarshaller<K, V> marshaller(int schemaVersion) {
         if (marsh == null || marsh.schemaVersion == schemaVersion) {

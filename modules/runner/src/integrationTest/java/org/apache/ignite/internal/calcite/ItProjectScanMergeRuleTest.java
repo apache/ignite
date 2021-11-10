@@ -41,13 +41,10 @@ import org.junit.jupiter.api.Test;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItProjectScanMergeRuleTest extends AbstractBasicIntegrationTest {
-    /**
-     *
-     */
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
     
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {

@@ -65,20 +65,14 @@ class ItDynamicTableCreationTest {
     
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
-    
-    /**
-     *
-     */
+
     private final List<Ignite> clusterNodes = new ArrayList<>();
-    
-    /**
-     *
-     */
+
     @WorkDirectory
     private Path workDir;
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp(TestInfo testInfo) {
@@ -127,7 +121,7 @@ class ItDynamicTableCreationTest {
     }
     
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {
@@ -135,7 +129,7 @@ class ItDynamicTableCreationTest {
     }
     
     /**
-     * @return Grid nodes.
+     * Returns grid nodes.
      */
     @NotNull
     protected List<Ignite> startGrid() {

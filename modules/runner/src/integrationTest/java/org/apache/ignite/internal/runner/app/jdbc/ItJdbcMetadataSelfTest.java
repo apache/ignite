@@ -96,9 +96,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         tbl2.recordView().insert(Tuple.create().set("ID", 1).set("NAME", "AAA").set("BIGDATA", BigDecimal.valueOf(10)));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testResultSetMetaData() throws Exception {
         Statement stmt = DriverManager.getConnection(URL).createStatement();
@@ -129,9 +126,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         assertEquals(meta.getColumnClassName(2), "java.lang.Integer");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     @Disabled
     public void testDecimalAndDateTypeMetaData() throws Exception {
@@ -165,9 +159,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -193,9 +184,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testGetColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -292,9 +280,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -305,9 +290,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testSchemasMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -325,9 +307,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testEmptySchemasMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -337,9 +316,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testPrimaryKeyMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
@@ -357,9 +333,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testGetAllPrimaryKeys() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -382,9 +355,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testInvalidCatalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -412,9 +382,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testGetTableTypes() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -430,9 +397,6 @@ public class ItJdbcMetadataSelfTest extends AbstractJdbcSelfTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     @Disabled
     public void testParametersMetadata() throws Exception {

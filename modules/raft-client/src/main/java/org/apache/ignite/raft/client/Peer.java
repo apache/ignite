@@ -38,6 +38,8 @@ public final class Peer implements Serializable {
     private final int priority;
 
     /**
+     * Constructor.
+     *
      * @param peer Peer.
      */
     public Peer(Peer peer) {
@@ -46,6 +48,8 @@ public final class Peer implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
      * @param addr The address.
      */
     public Peer(NetworkAddress addr) {
@@ -53,6 +57,8 @@ public final class Peer implements Serializable {
     }
 
     /**
+     * Constructor.
+     *
      * @param addr     The address.
      * @param priority Election priority.
      */
@@ -62,14 +68,14 @@ public final class Peer implements Serializable {
     }
 
     /**
-     * @return The address.
+     * Returns address.
      */
     public NetworkAddress address() {
         return this.addr;
     }
 
     /**
-     * @return Election priority.
+     * Returns election priority.
      */
     public int getPriority() {
         return priority;

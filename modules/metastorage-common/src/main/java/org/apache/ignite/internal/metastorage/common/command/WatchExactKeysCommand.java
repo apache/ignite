@@ -45,6 +45,8 @@ public final class WatchExactKeysCommand implements WriteCommand {
     private final IgniteUuid cursorId;
 
     /**
+     * Constructor.
+     *
      * @param keys            The keys collection. Couldn't be {@code null}.
      * @param revision        Start revision inclusive. {@code 0} - all revisions.
      * @param requesterNodeId Id of the node that requests watch.
@@ -70,28 +72,28 @@ public final class WatchExactKeysCommand implements WriteCommand {
     }
 
     /**
-     * @return The keys list. Couldn't be {@code null}.
+     * Returns the keys list. Couldn't be {@code null}.
      */
     public @NotNull List<byte[]> keys() {
         return keys;
     }
 
     /**
-     * @return Start revision inclusive.
+     * Returns start revision inclusive.
      */
     public @NotNull Long revision() {
         return revision;
     }
 
     /**
-     * @return Id of the node that requests range.
+     * Returns id of the node that requests range.
      */
     public @NotNull String requesterNodeId() {
         return requesterNodeId;
     }
 
     /**
-     * @return Id of cursor that is associated with the current command.
+     * Returns id of cursor that is associated with the current command.
      */
     @NotNull
     public IgniteUuid getCursorId() {

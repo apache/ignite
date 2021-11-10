@@ -118,7 +118,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     private List<Ignite> clusterNodes;
 
     /**
-     * @throws Exception If failed.
+     * Before each.
      */
     @BeforeEach
     void beforeEach(TestInfo testInfo) throws Exception {
@@ -136,7 +136,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * After each.
      */
     @AfterEach
     void afterEach() throws Exception {
@@ -264,7 +264,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
         /** Inhibit flag. */
         private boolean inhibit = false;
 
-        /** Wrapped listener */
+        /** Wrapped listener. */
         private WatchListener realListener;
 
         /**
@@ -314,6 +314,8 @@ public class ItTablesApiTest extends IgniteAbstractTest {
     }
 
     /**
+     * Creates table.
+     *
      * @param node           Cluster node.
      * @param schemaName     Schema name.
      * @param shortTableName Table name.

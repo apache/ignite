@@ -159,9 +159,12 @@ public abstract class QueryChecker {
     public static Matcher<String> containsSubPlan(String subPlan) {
         return CoreMatchers.containsString(subPlan);
     }
-    
+
     /**
+     * Sub string matcher.
      *
+     * @param substring Substring.
+     * @return Matcher.
      */
     public static Matcher<String> matches(final String substring) {
         return new SubstringMatcher("contains", false, substring) {
@@ -176,7 +179,7 @@ public abstract class QueryChecker {
     }
     
     /**
-     *
+     * Adds plan matchers.
      */
     public QueryChecker matches(Matcher<String>... planMatcher) {
         Collections.addAll(planMatchers, planMatcher);
@@ -226,74 +229,58 @@ public abstract class QueryChecker {
                 Arrays.stream(idxNames).map(idx -> containsIndexScan(schema, tblName, idx)).collect(Collectors.toList())
         );
     }
-    
-    /**
-     *
-     */
+
     private final String qry;
-    
-    /**
-     *
-     */
+
     private final ArrayList<Matcher<String>> planMatchers = new ArrayList<>();
-    
-    /**
-     *
-     */
+
     private List<List<?>> expectedResult;
-    
-    /**
-     *
-     */
+
     private List<String> expectedColumnNames;
-    
-    /**
-     *
-     */
+
     private List<Type> expectedColumnTypes;
-    
-    /**
-     *
-     */
+
     private boolean ordered;
-    
-    /**
-     *
-     */
+
     private Object[] params = OBJECT_EMPTY_ARRAY;
-    
-    /**
-     *
-     */
+
     private String exactPlan;
-    
+
     /**
+     * Constructor.
      *
+     * @param qry Query.
      */
     public QueryChecker(String qry) {
         this.qry = qry;
     }
     
     /**
+     * Sets ordered.
      *
+     * @return This.
      */
     public QueryChecker ordered() {
         ordered = true;
         
         return this;
     }
-    
+
     /**
+     * Sets params.
      *
+     * @return This.
      */
     public QueryChecker withParams(Object... params) {
         this.params = params;
         
         return this;
     }
-    
+
     /**
+     * Sets returns.
      *
+     * @return This.
      */
     public QueryChecker returns(Object... res) {
         if (expectedResult == null) {
@@ -304,34 +291,38 @@ public abstract class QueryChecker {
         
         return this;
     }
-    
-    /**
-     *
-     */
+
+    /** Creates a matcher that matches if the examined string contains the specified string anywhere. */
     public static Matcher<String> containsUnion(boolean all) {
         return CoreMatchers.containsString("IgniteUnionAll(all=[" + all + "])");
     }
-    
+
     /**
+     * Sets columns names.
      *
+     * @return This.
      */
     public QueryChecker columnNames(String... columns) {
         expectedColumnNames = Arrays.asList(columns);
         
         return this;
     }
-    
+
     /**
+     * Sets columns types.
      *
+     * @return This.
      */
     public QueryChecker columnTypes(Type... columns) {
         expectedColumnTypes = Arrays.asList(columns);
         
         return this;
     }
-    
+
     /**
+     * Sets plan.
      *
+     * @return This.
      */
     public QueryChecker planEquals(String plan) {
         exactPlan = plan;
@@ -340,7 +331,7 @@ public abstract class QueryChecker {
     }
     
     /**
-     *
+     * Run checks.
      */
     public void check() {
         // Check plan.
@@ -398,10 +389,7 @@ public abstract class QueryChecker {
             assertEqualsCollections(expectedResult, res);
         }
     }
-    
-    /**
-     *
-     */
+
     protected abstract QueryProcessor getEngine();
     
     /**
@@ -442,12 +430,10 @@ public abstract class QueryChecker {
     }
     
     /**
-     *
+     * List comparator.
      */
     private class ListComparator implements Comparator<List<?>> {
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @SuppressWarnings({"rawtypes", "unchecked"})
         @Override
         public int compare(List<?> o1, List<?> o2) {

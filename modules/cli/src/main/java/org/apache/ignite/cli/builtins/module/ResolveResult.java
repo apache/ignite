@@ -38,6 +38,8 @@ public class ResolveResult {
     }
 
     /**
+     * Returns list of artifacts' paths.
+     *
      * @return List of artifacts' paths.
      */
     public List<Path> artifacts() {

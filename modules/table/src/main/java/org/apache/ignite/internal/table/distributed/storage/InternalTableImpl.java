@@ -101,6 +101,8 @@ public class InternalTableImpl implements InternalTable {
     private final TableStorage tableStorage;
 
     /**
+     * Constructor.
+     *
      * @param tableName  Table name.
      * @param tableId    Table id.
      * @param partMap    Map partition id to raft group.
@@ -433,9 +435,6 @@ public class InternalTableImpl implements InternalTable {
         /** {@link Publisher} that relatively notifies about partition rows. */
         private final RaftGroupService raftGrpSvc;
 
-        /**
-         *
-         */
         private AtomicBoolean subscribed;
 
         /**
@@ -468,14 +467,8 @@ public class InternalTableImpl implements InternalTable {
          * Partition Scan Subscription.
          */
         private class PartitionScanSubscription implements Subscription {
-            /**
-             *
-             */
             private final Subscriber<? super BinaryRow> subscriber;
 
-            /**
-             *
-             */
             private final AtomicBoolean canceled;
 
             /** Scan id to uniquely identify it on server side. */

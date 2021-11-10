@@ -38,6 +38,8 @@ public class IgniteProperties {
     }
 
     /**
+     * Reads properties.
+     *
      * @param path     Path.
      * @param props    Properties.
      * @param throwExc Flag indicating whether to throw an exception or not.
@@ -69,7 +71,7 @@ public class IgniteProperties {
     }
 
     /**
-     *
+     * Constructor.
      */
     private IgniteProperties() {
         // No-op.

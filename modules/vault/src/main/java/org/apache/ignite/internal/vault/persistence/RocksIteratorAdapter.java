@@ -35,7 +35,7 @@ import org.rocksdb.Slice;
  */
 class RocksIteratorAdapter implements Cursor<VaultEntry> {
     /**
-     *
+     * RocksDB iterator.
      */
     private final RocksIterator it;
 
@@ -50,9 +50,11 @@ class RocksIteratorAdapter implements Cursor<VaultEntry> {
     private final Slice upperBound;
 
     /**
-     * @param it         RocksDB iterator
-     * @param lowerBound lower iteration bound (included)
-     * @param upperBound upper iteration bound (not included)
+     * Constructor.
+     *
+     * @param it         RocksDB iterator.
+     * @param lowerBound lower iteration bound (included).
+     * @param upperBound upper iteration bound (not included).
      */
     RocksIteratorAdapter(RocksIterator it, Slice lowerBound, Slice upperBound) {
         this.it = it;

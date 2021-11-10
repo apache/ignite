@@ -101,11 +101,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
         IgniteComponent {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(TableManager.class);
-    
-    /** */
+
     private static final int INITIAL_SCHEMA_VERSION = 1;
-    
-    /** */
+
     private static final IgniteUuidGenerator TABLE_ID_GENERATOR = new IgniteUuidGenerator(UUID.randomUUID(), 0);
     
     /** Tables configuration. */

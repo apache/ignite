@@ -58,7 +58,7 @@ public class SingleRowResponse implements Serializable {
     }
 
     /**
-     * @return Binary row.
+     * Returns binary row.
      */
     @Nullable
     public BinaryRow getValue() {

@@ -47,7 +47,12 @@ public abstract class SpecAdapter implements Runnable {
 
     @CommandLine.Spec
     protected CommandSpec spec;
-
+    
+    /**
+     * Returns Ignite banner.
+     *
+     * @return Banner.
+     */
     public String banner() {
         String banner = Arrays
                 .stream(BANNER)

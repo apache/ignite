@@ -575,9 +575,10 @@ public class MutableRowTupleAdapterTest {
     }
     
     /**
+     * Returns random BitSet.
+     *
      * @param rnd  Random generator.
      * @param bits Amount of bits in bitset.
-     * @return Random BitSet.
      */
     private static BitSet randomBitSet(Random rnd, int bits) {
         BitSet set = new BitSet();

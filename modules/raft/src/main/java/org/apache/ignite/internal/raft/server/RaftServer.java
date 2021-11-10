@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface RaftServer extends IgniteComponent {
     /**
-     * @return Cluster service.
+     * Returns cluster service.
      */
     ClusterService clusterService();
 

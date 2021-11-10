@@ -595,7 +595,7 @@ public class PartitionListener implements RaftGroupListener {
     }
 
     /**
-     * @return Underlying storage.
+     * Returns underlying storage.
      */
     @TestOnly
     public PartitionStorage getStorage() {
@@ -627,14 +627,14 @@ public class PartitionListener implements RaftGroupListener {
         }
 
         /**
-         * @return Cursor.
+         * Returns cursor.
          */
         public Cursor<DataRow> cursor() {
             return cursor;
         }
 
         /**
-         * @return Id of the node that creates cursor.
+         * Returns id of the node that creates cursor.
          */
         public String requesterNodeId() {
             return requesterNodeId;

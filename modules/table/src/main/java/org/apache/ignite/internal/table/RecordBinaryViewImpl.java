@@ -401,8 +401,9 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
     }
     
     /**
+     * Returns table row tuple.
+     *
      * @param row Binary row.
-     * @return Table row tuple.
      */
     private Tuple wrap(BinaryRow row) {
         if (row == null) {
@@ -415,8 +416,9 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
     }
     
     /**
+     * Returns table rows.
+     *
      * @param rows Binary rows.
-     * @return Table rows.
      */
     private Collection<Tuple> wrap(Collection<BinaryRow> rows) {
         if (rows == null) {

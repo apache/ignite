@@ -38,7 +38,7 @@ public final class Operation {
     }
 
     /**
-     *
+     * Returns actual operation implementation.
      */
     public InnerOp inner() {
         return upd;
@@ -128,7 +128,7 @@ public final class Operation {
     }
 
     /**
-     *
+     * Extension of {@link InnerOp}.
      */
     private static class AbstractOp implements InnerOp {
         /** Key. */

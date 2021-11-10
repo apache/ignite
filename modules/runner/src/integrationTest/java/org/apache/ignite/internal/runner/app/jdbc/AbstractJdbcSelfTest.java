@@ -33,6 +33,9 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * Abstract jdbc self test.
+ */
 public class AbstractJdbcSelfTest {
     /** URL. */
     protected static final String URL = "jdbc:ignite:thin://127.0.1.1:10800";

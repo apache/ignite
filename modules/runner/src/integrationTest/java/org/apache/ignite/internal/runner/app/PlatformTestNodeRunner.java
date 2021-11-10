@@ -41,14 +41,8 @@ public class PlatformTestNodeRunner {
     /** Test node name. */
     private static final String NODE_NAME = PlatformTestNodeRunner.class.getCanonicalName();
 
-    /**
-     *
-     */
     private static final String SCHEMA_NAME = "PUB";
 
-    /**
-     *
-     */
     private static final String TABLE_NAME = "tbl1";
 
     /** Time to keep the node alive. */

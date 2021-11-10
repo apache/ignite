@@ -29,40 +29,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Tests progress bar.
  */
 public class ProgressBarTest extends AbstractCliTest {
-    /**
-     *
-     */
+    /** Writer that is used in order to prints formatted representation to the underlying output stream. */
     private PrintWriter out;
 
-    /**
-     *
-     */
+    /** CLI output stream. */
     private ByteArrayOutputStream outputStream;
 
-    /**
-     *
-     */
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         out = new PrintWriter(outputStream, true);
     }
 
-    /**
-     *
-     */
     @AfterEach
     void tearDown() throws IOException {
         out.close();
         outputStream.close();
     }
 
-    /**
-     *
-     */
     @Test
     public void testScaledToTerminalWidth() throws IOException {
         var progressBar = new ProgressBar(out, 3, 80);
@@ -74,9 +61,6 @@ public class ProgressBarTest extends AbstractCliTest {
         );
     }
 
-    /**
-     *
-     */
     @Test
     public void testRedundantStepsProgressBar() {
         var progressBar = new ProgressBar(out, 3, 80);

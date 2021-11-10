@@ -24,6 +24,8 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
  */
 public class LockException extends IgniteInternalCheckedException {
     /**
+     * Constructor.
+     *
      * @param msg The message.
      */
     public LockException(String msg) {
@@ -31,6 +33,8 @@ public class LockException extends IgniteInternalCheckedException {
     }
 
     /**
+     * Constructor.
+     *
      * @param waiter Conflicting waiter.
      */
     public LockException(Waiter waiter) {

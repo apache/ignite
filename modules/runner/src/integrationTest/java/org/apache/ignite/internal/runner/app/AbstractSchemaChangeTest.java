@@ -68,12 +68,12 @@ abstract class AbstractSchemaChangeTest {
     /** Cluster nodes. */
     private final List<Ignite> clusterNodes = new ArrayList<>();
     
-    /** Work directory */
+    /** Work directory. */
     @WorkDirectory
     private Path workDir;
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp(TestInfo testInfo) {
@@ -122,7 +122,7 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
-     *
+     * After each.
      */
     @AfterEach
     void afterEach() throws Exception {
@@ -174,7 +174,7 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
-     * @return Grid nodes.
+     * Returns grid nodes.
      */
     @NotNull
     protected List<Ignite> startGrid() {
@@ -186,6 +186,8 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
+     * Creates tables.
+     *
      * @param nodes Cluster nodes.
      */
     protected void createTable(List<Ignite> nodes) {
@@ -206,6 +208,8 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
+     * Adds column.
+     *
      * @param nodes       Cluster nodes.
      * @param columnToAdd Column to add.
      */
@@ -220,6 +224,8 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
+     * Drops column.
+     *
      * @param nodes   Cluster nodes.
      * @param colName Name of column to drop.
      */
@@ -238,6 +244,8 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
+     * Renames column.
+     *
      * @param nodes   Cluster nodes.
      * @param oldName Old column name.
      * @param newName New column name.
@@ -260,6 +268,8 @@ abstract class AbstractSchemaChangeTest {
     }
     
     /**
+     * Changes column default.
+     *
      * @param nodes   Cluster nodes.
      * @param colName Column name.
      * @param defSup  Default value supplier.
@@ -303,12 +313,8 @@ abstract class AbstractSchemaChangeTest {
             );
         });
     }
-    
-    /**
-     * @param expectedType Expected cause type.
-     * @param executable   Executable that throws exception.
-     */
-    public <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
+
+    protected <T extends Throwable> void assertThrowsWithCause(Class<T> expectedType, Executable executable) {
         Throwable ex = assertThrows(IgniteException.class, executable);
         
         while (ex.getCause() != null) {

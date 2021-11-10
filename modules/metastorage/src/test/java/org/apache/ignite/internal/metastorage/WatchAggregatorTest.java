@@ -41,12 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- *
+ * Test class for {@link WatchAggregator}.
  */
 public class WatchAggregatorTest {
-    /**
-     *
-     */
     @Test
     public void testEventsRouting() {
         var watchAggregator = new WatchAggregator();
@@ -78,9 +75,6 @@ public class WatchAggregatorTest {
         assertEquals(List.of(entryEvt2), watchEvt2Res.getValue().entryEvents());
     }
 
-    /**
-     *
-     */
     @Test
     public void testCancel() {
         var watchAggregator = new WatchAggregator();
@@ -115,9 +109,6 @@ public class WatchAggregatorTest {
         verify(lsnr2, times(2)).onUpdate(any());
     }
 
-    /**
-     *
-     */
     @Test
     public void testCancelByFalseFromListener() {
         var watchAggregator = new WatchAggregator();
@@ -152,9 +143,6 @@ public class WatchAggregatorTest {
 
     }
 
-    /**
-     *
-     */
     @Test
     public void testOneCriterionInference() {
         var watchAggregator = new WatchAggregator();
@@ -165,9 +153,6 @@ public class WatchAggregatorTest {
         assertEquals(new KeyCriterion.ExactCriterion(new ByteArray("key")), keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testTwoExactCriteriaUnion() {
         var watchAggregator = new WatchAggregator();
@@ -182,9 +167,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testTwoEqualExactCriteriaUnion() {
         var watchAggregator = new WatchAggregator();
@@ -196,9 +178,6 @@ public class WatchAggregatorTest {
         assertEquals(keyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testThatKeyCriteriaUnionAssociative() {
         var data = Arrays.asList(
@@ -213,9 +192,6 @@ public class WatchAggregatorTest {
         }
     }
 
-    /**
-     *
-     */
     @Test
     public void testTwoEqualCollectionCriteriaUnion() {
         var watchAggregator = new WatchAggregator();
@@ -230,9 +206,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testExactInTheMiddleAndRangeCriteriaOnTheEdgesUnion() {
         var watchAggregator = new WatchAggregator();
@@ -246,9 +219,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testHighExactAndLowerRangeCriteriaUnion() {
         var watchAggregator = new WatchAggregator();
@@ -262,9 +232,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testNullKeyAsStartOfRangeCriterion() {
         var watchAggregator = new WatchAggregator();
@@ -278,9 +245,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testNullKeyAsEndOfRangeCriterion() {
         var watchAggregator = new WatchAggregator();
@@ -294,9 +258,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     @Test
     public void testAllTypesOfCriteriaUnion() {
         var watchAggregator = new WatchAggregator();
@@ -311,9 +272,6 @@ public class WatchAggregatorTest {
         assertEquals(expKeyCriterion, keyCriterion);
     }
 
-    /**
-     *
-     */
     private Entry entry(String key, String val, long revision, long updateCntr) {
         return new Entry() {
             /** {@inheritDoc} */

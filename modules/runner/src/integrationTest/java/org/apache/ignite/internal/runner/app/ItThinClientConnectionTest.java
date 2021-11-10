@@ -52,26 +52,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 public class ItThinClientConnectionTest extends IgniteAbstractTest {
-    /**
-     *
-     */
     private static final String SCHEMA_NAME = "PUB";
 
-    /**
-     *
-     */
     private static final String TABLE_NAME = "tbl1";
 
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
 
-    /**
-     *
-     */
     private final List<Ignite> startedNodes = new ArrayList<>();
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setup(TestInfo testInfo) {
@@ -106,7 +97,7 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {

@@ -45,12 +45,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface RaftGroupService {
     /**
-     * @return Group id.
+     * Returns group id.
      */
     @NotNull String groupId();
 
     /**
-     * @return Default timeout for the operations in milliseconds.
+     * Returns default timeout for the operations in milliseconds.
      */
     long timeout();
 
@@ -62,18 +62,18 @@ public interface RaftGroupService {
     void timeout(long newTimeout);
 
     /**
-     * @return Current leader id or {@code null} if it has not been yet initialized.
+     * Returns current leader id or {@code null} if it has not been yet initialized.
      */
     @Nullable Peer leader();
 
     /**
-     * @return A list of voting peers or {@code null} if it has not been yet initialized. The order is corresponding to the time of joining
+     * Returns a list of voting peers or {@code null} if it has not been yet initialized. The order is corresponding to the time of joining
      *      to the replication group.
      */
     @Nullable List<Peer> peers();
 
     /**
-     * @return A list of leaners or {@code null} if it has not been yet initialized. The order is corresponding to the time of joining to
+     * Returns a list of leaners or {@code null} if it has not been yet initialized. The order is corresponding to the time of joining to
      *      the replication group.
      */
     @Nullable List<Peer> learners();

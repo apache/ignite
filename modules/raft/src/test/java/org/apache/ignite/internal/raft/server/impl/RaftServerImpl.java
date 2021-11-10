@@ -53,50 +53,28 @@ import org.jetbrains.annotations.Nullable;
  * A single node service implementation. Only for test purposes.
  */
 public class RaftServerImpl implements RaftServer {
-    /**
-     *
-     */
     private static final int QUEUE_SIZE = 1000;
 
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftServerImpl.class);
 
-    /**
-     *
-     */
     private final RaftMessagesFactory clientMsgFactory;
 
-    /**
-     *
-     */
     private final ClusterService service;
 
-    /**
-     *
-     */
     private final ConcurrentMap<String, RaftGroupListener> listeners = new ConcurrentHashMap<>();
 
-    /**
-     *
-     */
     private final BlockingQueue<CommandClosureEx<ReadCommand>> readQueue;
 
-    /**
-     *
-     */
     private final BlockingQueue<CommandClosureEx<WriteCommand>> writeQueue;
 
-    /**
-     *
-     */
     private volatile Thread readWorker;
 
-    /**
-     *
-     */
     private volatile Thread writeWorker;
 
     /**
+     * Constructor.
+     *
      * @param service          Network service.
      * @param clientMsgFactory Client message factory.
      */
@@ -216,6 +194,8 @@ public class RaftServerImpl implements RaftServer {
     }
 
     /**
+     * Handle action request.
+     *
      * @param sender        The sender.
      * @param req           The request.
      * @param corellationId Corellation id.
@@ -260,6 +240,8 @@ public class RaftServerImpl implements RaftServer {
     }
 
     /**
+     * Process the queue.
+     *
      * @param queue The queue.
      * @param clo   The closure.
      * @param <T>   Command type.
@@ -290,11 +272,11 @@ public class RaftServerImpl implements RaftServer {
     }
 
     /**
-     *
+     * Extension of {@link CommandClosure}.
      */
     private interface CommandClosureEx<T extends Command> extends CommandClosure<T> {
         /**
-         * @return The listener.
+         * Returns listener.
          */
         RaftGroupListener listener();
     }

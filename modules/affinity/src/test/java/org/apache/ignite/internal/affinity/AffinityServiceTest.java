@@ -32,9 +32,6 @@ import org.junit.jupiter.api.Test;
  * just checks {@link AffinityUtils} logic.
  */
 public class AffinityServiceTest {
-    /**
-     *
-     */
     @Test
     public void testCalculatedAssignmentHappyPath() {
         List<List<ClusterNode>> assignments = AffinityUtils.calculateAssignments(
@@ -59,9 +56,6 @@ public class AffinityServiceTest {
         }
     }
 
-    /**
-     *
-     */
     @Test
     public void testEmptyBaselineAssignmentsCalculation() {
         List<List<ClusterNode>> assignments = AffinityUtils.calculateAssignments(

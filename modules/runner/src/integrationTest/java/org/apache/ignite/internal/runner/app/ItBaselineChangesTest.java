@@ -46,7 +46,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Test for baseline changes
+ * Test for baseline changes.
  */
 @ExtendWith(WorkDirectoryExtension.class)
 public class ItBaselineChangesTest {
@@ -56,19 +56,13 @@ public class ItBaselineChangesTest {
     /** Nodes bootstrap configuration. */
     private final Map<String, String> initClusterNodes = new LinkedHashMap<>();
 
-    /**
-     *
-     */
     private final List<Ignite> clusterNodes = new ArrayList<>();
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path workDir;
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp(TestInfo testInfo) {
@@ -93,7 +87,7 @@ public class ItBaselineChangesTest {
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {
@@ -158,9 +152,6 @@ public class ItBaselineChangesTest {
         assertEquals(1, (Long) tbl4.recordView().get(keyTuple1).value("key"));
     }
 
-    /**
-     *
-     */
     private String buildConfig(String metastoreNodeName, int nodeIdx) {
         return "{\n"
                 + "  node.metastorageNodes: [ \"" + metastoreNodeName + "\" ],\n"
@@ -173,9 +164,6 @@ public class ItBaselineChangesTest {
                 + "}";
     }
 
-    /**
-     *
-     */
     private int nodePort(int nodeIdx) {
         return BASE_PORT + nodeIdx;
     }

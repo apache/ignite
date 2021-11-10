@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class ItJdbcConnectionPropertiesTest {
     /**
      * Test check the {@link ConnectionPropertiesImpl#getDriverPropertyInfo()} return properties with prefix {@link
-     * ConnectionPropertiesImpl#PROP_PREFIX}
+     * ConnectionPropertiesImpl#PROP_PREFIX}.
      */
     @Test
     public void testNamePrefixDriverPropertyInfo() {

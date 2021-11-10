@@ -24,32 +24,22 @@ import org.jetbrains.annotations.NotNull;
  * The timestamp.
  */
 public class Timestamp implements Comparable<Timestamp> {
-    /**
-     *
-     */
     private static long localTime;
 
-    /**
-     *
-     */
     private static long cntr;
 
-    /**
-     *
-     */
     private final long timestamp;
 
     /**
+     * Constructor.
+     *
      * @param timestamp The timestamp.
      */
     Timestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    /**
-     * @param other Other version.
-     * @return Comparison result.
-     */
+    /** {@inheritDoc} */
     @Override
     public int compareTo(@NotNull Timestamp other) {
         int ret = Long.compare(timestamp >> 16 << 16, other.timestamp >> 16 << 16);
@@ -57,6 +47,7 @@ public class Timestamp implements Comparable<Timestamp> {
         return ret != 0 ? ret : Long.compare(timestamp << 48 >> 48, other.timestamp << 48 >> 48);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof Timestamp)) {
@@ -66,6 +57,7 @@ public class Timestamp implements Comparable<Timestamp> {
         return compareTo((Timestamp) o) == 0;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return (int) (timestamp ^ (timestamp >>> 32));

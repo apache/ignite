@@ -82,14 +82,8 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
     /** Network factory. */
     private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
-    /**
-     *
-     */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path workDir;
 
@@ -157,7 +151,11 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
         private final boolean interactAfterSnapshot;
 
         /**
+         * Constructor.
          *
+         * @param deleteFolder {@code true} if the raft group's persistence must be cleared before the follower's restart.
+         * @param interactAfterSnapshot {@code true} if test should interact with the raft group after a snapshot has been captured.
+         *      In this case, the follower node should catch up with the leader using raft log.
          */
         private TestData(boolean deleteFolder, boolean interactAfterSnapshot) {
             this.deleteFolder = deleteFolder;
@@ -172,7 +170,7 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
     }
 
     /**
-     * @return {@link #testSnapshot} parameters.
+     * Returns {@link #testSnapshot} parameters.
      */
     private static List<TestData> testSnapshotData() {
         return List.of(
@@ -288,6 +286,8 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
     public abstract BooleanSupplier snapshotCheckClosure(JraftServerImpl restarted, boolean interactedAfterSnapshot);
 
     /**
+     * Returns path to the group's persistence.
+     *
      * @param listener Raft group listener.
      * @return Path to the group's persistence.
      */
@@ -302,7 +302,7 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
     public abstract RaftGroupListener createListener(Path listenerPersistencePath);
 
     /**
-     * @return Raft group id for tests.
+     * Returns raft group id for tests.
      */
     public abstract String raftGroupId();
 
@@ -323,6 +323,8 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
     }
 
     /**
+     * Wait for topology.
+     *
      * @param cluster The cluster.
      * @param exp     Expected count.
      * @param timeout The timeout in millis.
@@ -333,7 +335,7 @@ public abstract class ItAbstractListenerSnapshotTest<T extends RaftGroupListener
     }
 
     /**
-     * @return Local address.
+     * Returns local address.
      */
     private static String getLocalAddress() {
         try {

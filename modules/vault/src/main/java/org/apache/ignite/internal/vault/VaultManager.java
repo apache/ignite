@@ -33,7 +33,7 @@ public class VaultManager implements IgniteComponent {
     /** Special key, which reserved for storing the name of the current node. */
     private static final ByteArray NODE_NAME = new ByteArray("node_name");
 
-    /** Instance of vault */
+    /** Instance of vault. */
     private final VaultService vaultSvc;
 
     /**
@@ -59,7 +59,7 @@ public class VaultManager implements IgniteComponent {
     }
 
     /**
-     * See {@link VaultService#get}
+     * See {@link VaultService#get}.
      *
      * @param key Key. Couldn't be {@code null}.
      * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key}, then {@code Entry}
@@ -70,7 +70,7 @@ public class VaultManager implements IgniteComponent {
     }
 
     /**
-     * See {@link VaultService#put}
+     * See {@link VaultService#put}.
      *
      * @param key Vault key. Couldn't be {@code null}.
      * @param val Value. If value is equal to {@code null}, then previous value with key will be deleted if there was any mapping.
@@ -81,7 +81,7 @@ public class VaultManager implements IgniteComponent {
     }
 
     /**
-     * See {@link VaultService#remove}
+     * See {@link VaultService#remove}.
      *
      * @param key Vault key. Couldn't be {@code null}.
      * @return Future representing pending completion of the operation. Couldn't be {@code null}.
@@ -91,7 +91,7 @@ public class VaultManager implements IgniteComponent {
     }
 
     /**
-     * See {@link VaultService#range}
+     * See {@link VaultService#range}.
      *
      * @param fromKey Start key of range (inclusive). Couldn't be {@code null}.
      * @param toKey   End key of range (exclusive). Could be {@code null}.
@@ -127,7 +127,7 @@ public class VaultManager implements IgniteComponent {
     }
 
     /**
-     * @return {@code CompletableFuture} which, when complete, returns the node name, if was stored earlier, or {@code null} otherwise.
+     * Returns {@code CompletableFuture} which, when complete, returns the node name, if was stored earlier, or {@code null} otherwise.
      */
     public CompletableFuture<String> name() {
         return vaultSvc.get(NODE_NAME)

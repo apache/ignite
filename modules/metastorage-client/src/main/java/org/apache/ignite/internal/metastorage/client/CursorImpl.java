@@ -48,17 +48,13 @@ public class CursorImpl<T> implements Cursor<T> {
     /** Meta storage raft group service. */
     private final RaftGroupService metaStorageRaftGrpSvc;
 
-    /**
-     *
-     */
     private final Iterator<T> it;
 
-    /**
-     *
-     */
     private final Function<Object, T> fn;
 
     /**
+     * Constructor.
+     *
      * @param metaStorageRaftGrpSvc Meta storage raft group service.
      * @param initOp                Future that runs meta storage service operation that provides cursor.
      */
@@ -106,7 +102,7 @@ public class CursorImpl<T> implements Cursor<T> {
     }
 
     /**
-     *
+     * Extension of {@link Iterator}.
      */
     private class InnerIterator implements Iterator<T> {
         /** {@inheritDoc} */

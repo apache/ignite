@@ -25,12 +25,16 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface RecordSerializer<R> {
     /**
+     * Serializes the record.
+     *
      * @param red Record to serialize.
      * @return Table row with columns set from given object.
      */
     Row serialize(@NotNull R red);
 
     /**
+     * Deserializes the record.
+     *
      * @param row Table row.
      * @return Deserialized record object.
      */

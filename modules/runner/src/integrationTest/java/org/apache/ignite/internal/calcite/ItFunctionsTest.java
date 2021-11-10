@@ -42,18 +42,12 @@ import org.junit.jupiter.api.Test;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItFunctionsTest extends AbstractBasicIntegrationTest {
-    /**
-     *
-     */
     @Test
     public void testLength() {
         assertQuery("SELECT LENGTH('TEST')").returns(4).check();
         assertQuery("SELECT LENGTH(NULL)").returns(new Object[]{null}).check();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testCurrentDateTimeTimeStamp() {
         checkDateTimeQuery("SELECT CURRENT_DATE", Date::new);
@@ -65,10 +59,7 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
         checkDateTimeQuery("SELECT {fn CURTIME()}", Time::new);
         checkDateTimeQuery("SELECT {fn NOW()}", Timestamp::new);
     }
-    
-    /**
-     *
-     */
+
     private static <T> void checkDateTimeQuery(String sql, LongFunction<T> func) {
         while (true) {
             long tsBeg = System.currentTimeMillis();
@@ -96,10 +87,7 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
             return;
         }
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testRange() {
         assertQuery("SELECT * FROM table(system_range(1, 4))")
@@ -144,10 +132,7 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
         
         assertEquals("Increment can't be 0", ex.getCause().getMessage());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testRangeWithCache() {
         TableDefinition tblDef = SchemaBuilders.tableBuilder("PUBLIC", "TEST")
@@ -213,10 +198,7 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
             CLUSTER_NODES.get(0).tables().dropTable(tblName);
         }
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testPercentRemainder() {
         assertQuery("SELECT 3 % 2").returns(1).check();

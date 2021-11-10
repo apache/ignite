@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CommandClosure<R extends Command> {
     /**
-     * @return The command.
+     * Returns command.
      */
     R command();
 

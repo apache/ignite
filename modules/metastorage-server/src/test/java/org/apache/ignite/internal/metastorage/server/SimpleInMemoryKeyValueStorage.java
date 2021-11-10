@@ -385,9 +385,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     */
     private boolean doRemove(byte[] key, long curRev) {
         Entry e = doGet(key, LATEST_REV, false);
 
@@ -400,9 +397,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         return true;
     }
 
-    /**
-     *
-     */
     private void compactForKey(
             byte[] key,
             List<Long> revs,
@@ -427,9 +421,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         }
     }
 
-    /**
-     *
-     */
     @NotNull
     private Collection<Entry> doGetAll(List<byte[]> keys, long rev) {
         assert keys != null : "keys list can't be null.";
@@ -447,9 +438,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         return res;
     }
 
-    /**
-     *
-     */
     @NotNull
     private Entry doGet(byte[] key, long rev, boolean exactRev) {
         assert rev == LATEST_REV && !exactRev || rev > LATEST_REV :
@@ -499,9 +487,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         return -1;
     }
 
-    /**
-     *
-     */
     @NotNull
     private Entry doGetValue(byte[] key, long lastRev) {
         if (lastRev == 0) {
@@ -523,9 +508,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         return new Entry(key, lastVal.bytes(), lastRev, lastVal.updateCounter());
     }
 
-    /**
-     *
-     */
     private long doPut(byte[] key, byte[] bytes, long curRev) {
         long curUpdCntr = ++updCntr;
 
@@ -555,9 +537,6 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         return lastRev;
     }
 
-    /**
-     *
-     */
     private long doPutAll(long curRev, List<byte[]> keys, List<byte[]> bytesList) {
         synchronized (mux) {
             // Update revsIdx.
@@ -588,16 +567,10 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
         }
     }
 
-    /**
-     *
-     */
     private static long lastRevision(List<Long> revs) {
         return revs.get(revs.size() - 1);
     }
 
-    /**
-     *
-     */
     private static List<Long> listOf(long val) {
         List<Long> res = new ArrayList<>();
 
@@ -607,47 +580,23 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
     }
 
     /**
-     *
+     * Extension of {@link Cursor}.
      */
     private class RangeCursor implements Cursor<Entry> {
-        /**
-         *
-         */
         private final byte[] keyFrom;
 
-        /**
-         *
-         */
         private final byte[] keyTo;
 
-        /**
-         *
-         */
         private final long rev;
 
-        /**
-         *
-         */
         private final Iterator<Entry> it;
 
-        /**
-         *
-         */
         private Entry nextRetEntry;
 
-        /**
-         *
-         */
         private byte[] lastRetKey;
 
-        /**
-         *
-         */
         private boolean finished;
 
-        /**
-         *
-         */
         RangeCursor(byte[] keyFrom, byte[] keyTo, long rev) {
             this.keyFrom = keyFrom;
             this.keyTo = keyTo;
@@ -767,32 +716,17 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
     }
 
     /**
-     *
+     * Extension of {@link Cursor}.
      */
     private class WatchCursor implements Cursor<WatchEvent> {
-        /**
-         *
-         */
         private final Predicate<byte[]> predicate;
 
-        /**
-         *
-         */
         private final Iterator<WatchEvent> it;
 
-        /**
-         *
-         */
         private long lastRetRev;
 
-        /**
-         *
-         */
         private long nextRetRev = -1;
 
-        /**
-         *
-         */
         WatchCursor(long rev, Predicate<byte[]> predicate) {
             this.predicate = predicate;
             this.lastRetRev = rev - 1;

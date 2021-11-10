@@ -215,14 +215,14 @@ public abstract class KeyCriterion {
         }
 
         /**
-         * @return Start of the range.
+         * Returns start of the range.
          */
         public ByteArray from() {
             return from;
         }
 
         /**
-         * @return End of the range (exclusive).
+         * Returns end of the range (exclusive).
          */
         public ByteArray to() {
             return to;
@@ -293,7 +293,7 @@ public abstract class KeyCriterion {
         }
 
         /**
-         * @return Collection of keys.
+         * Returns collection of keys.
          */
         public Set<ByteArray> keys() {
             return keys;
@@ -360,7 +360,7 @@ public abstract class KeyCriterion {
         }
 
         /**
-         * @return The key of criterion.
+         * Returns the key of criterion.
          */
         public ByteArray key() {
             return key;

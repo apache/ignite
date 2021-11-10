@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
  */
 public class AbstractCliTest {
     /**
-     *
+     * Sets up a dumb terminal before tests.
      */
     @BeforeAll
     private static void beforeAll() {

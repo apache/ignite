@@ -74,9 +74,6 @@ public class ItDistributedConfigurationPropertiesTest {
     /** Test distributed configuration schema. */
     @ConfigurationRoot(rootName = "root", type = ConfigurationType.DISTRIBUTED)
     public static class DistributedConfigurationSchema {
-        /**
-         *
-         */
         @Value(hasDefault = true)
         @DirectAccess
         public String str = "foo";
@@ -86,39 +83,18 @@ public class ItDistributedConfigurationPropertiesTest {
      * An emulation of an Ignite node, that only contains components necessary for tests.
      */
     private static class Node {
-        /**
-         *
-         */
         private final List<String> metaStorageNodes;
-        
-        /**
-         *
-         */
+
         private final VaultManager vaultManager;
-        
-        /**
-         *
-         */
+
         private final ClusterService clusterService;
-        
-        /**
-         *
-         */
+
         private final Loza raftManager;
-        
-        /**
-         *
-         */
+
         private final ConfigurationManager cfgManager;
-        
-        /**
-         *
-         */
+
         private final MetaStorageManager metaStorageManager;
-        
-        /**
-         *
-         */
+
         private final ConfigurationManager distributedCfgManager;
         
         /** Flag that disables storage updates. */
@@ -240,19 +216,13 @@ public class ItDistributedConfigurationPropertiesTest {
             receivesUpdates = false;
         }
     }
-    
-    /**
-     *
-     */
+
     private Node firstNode;
-    
-    /**
-     *
-     */
+
     private Node secondNode;
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp(@WorkDirectory Path workDir, TestInfo testInfo) throws Exception {
@@ -283,7 +253,7 @@ public class ItDistributedConfigurationPropertiesTest {
     }
     
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {

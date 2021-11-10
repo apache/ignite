@@ -33,6 +33,8 @@ public final class GetAndRemoveAllCommand implements WriteCommand {
     private final List<byte[]> keys;
 
     /**
+     * Constructor.
+     *
      * @param keys The keys collection. Couldn't be {@code null}.
      */
     public GetAndRemoveAllCommand(@NotNull Set<ByteArray> keys) {
@@ -44,7 +46,7 @@ public final class GetAndRemoveAllCommand implements WriteCommand {
     }
 
     /**
-     * @return The keys collection. Couldn't be {@code null}.
+     * Returns the keys collection. Couldn't be {@code null}.
      */
     public @NotNull List<byte[]> keys() {
         return keys;

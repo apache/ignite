@@ -32,9 +32,6 @@ import org.junit.jupiter.api.Test;
  * Base class for testing {@link ConfigurationStorage} implementations.
  */
 public abstract class ConfigurationStorageTest {
-    /**
-     *
-     */
     private ConfigurationStorage storage;
 
     /**
@@ -43,7 +40,7 @@ public abstract class ConfigurationStorageTest {
     public abstract ConfigurationStorage getStorage();
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp() {

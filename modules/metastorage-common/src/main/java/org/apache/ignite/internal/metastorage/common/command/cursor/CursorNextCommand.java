@@ -30,6 +30,8 @@ public class CursorNextCommand implements WriteCommand {
     private final IgniteUuid cursorId;
 
     /**
+     * Constructor.
+     *
      * @param cursorId Cursor id.
      */
     public CursorNextCommand(@NotNull IgniteUuid cursorId) {
@@ -37,7 +39,7 @@ public class CursorNextCommand implements WriteCommand {
     }
 
     /**
-     * @return Cursor id.
+     * Returns cursor id.
      */
     public @NotNull IgniteUuid cursorId() {
         return cursorId;

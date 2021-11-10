@@ -58,7 +58,7 @@ public class MultiRowsResponse implements Serializable {
     }
 
     /**
-     * @return Binary rows.
+     * Returns binary rows.
      */
     public List<BinaryRow> getValues() {
         if (rows == null && rowsBytes != null) {

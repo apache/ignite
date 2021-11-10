@@ -273,6 +273,8 @@ public class TupleMarshallerImpl implements TupleMarshaller {
     }
     
     /**
+     * Extracts columns.
+     *
      * @param tuple  Tuple representing a Row.
      * @param schema Schema.
      * @return Extra columns.
@@ -366,6 +368,8 @@ public class TupleMarshallerImpl implements TupleMarshaller {
     }
     
     /**
+     * Writes column.
+     *
      * @param rowAsm Row assembler.
      * @param col    Column.
      * @param tup    Internal tuple.
@@ -432,15 +436,16 @@ public class TupleMarshallerImpl implements TupleMarshaller {
         }
         
         /**
-         * @return Number of columns that matches schema.
+         * Returns number of columns that matches schema.
          */
         public int knownColumns() {
             return knownColumns;
         }
         
         /**
+         * Returns column value.
+         *
          * @param columnName Columns name.
-         * @return Column value.
          */
         Object value(String columnName) {
             Object val = tuple.valueOrDefault(columnName, POISON_OBJECT);

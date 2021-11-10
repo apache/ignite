@@ -103,6 +103,8 @@ public class TableImpl implements Table {
     }
 
     /**
+     * Sets new schema management mode.
+     *
      * @param schemaMode New schema management mode.
      */
     public void schemaMode(SchemaManagementMode schemaMode) {

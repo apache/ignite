@@ -28,7 +28,7 @@ import javax.inject.Singleton;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
 
 /**
- * Due to the nature of Ignite CLI tool it can be runned in the environment without ignitecfg file at all. This class created to simplify
+ * Due to the nature of Ignite CLI tool it can be run in the environment without configuration file at all. This class created to simplify
  * the managing of the different cases:
  * <ul>
  *     <li>When user download binary and run it to manage any existence remote cluster</li>
@@ -93,6 +93,8 @@ public class CliPathsConfigLoader {
     }
 
     /**
+     * Returns path to Ignite CLI configuration file.
+     *
      * @return Path to Ignite CLI config file.
      */
     public Path configFilePath() {

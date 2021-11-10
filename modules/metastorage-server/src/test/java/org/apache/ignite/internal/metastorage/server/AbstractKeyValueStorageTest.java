@@ -43,11 +43,11 @@ import org.junit.jupiter.api.Test;
  * Tests for key-value storage implementations.
  */
 public abstract class AbstractKeyValueStorageTest {
-    /**
-     *
-     */
     private KeyValueStorage storage;
 
+    /**
+     * Before each.
+     */
     @BeforeEach
     public void setUp() {
         storage = storage();
@@ -55,13 +55,16 @@ public abstract class AbstractKeyValueStorageTest {
         storage.start();
     }
 
+    /**
+     * After each.
+     */
     @AfterEach
     void tearDown() throws Exception {
         storage.close();
     }
 
     /**
-     * @return Key value storage for this test.
+     * Returns key value storage for this test.
      */
     abstract KeyValueStorage storage();
 
@@ -2048,25 +2051,16 @@ public abstract class AbstractKeyValueStorageTest {
         assertFalse(it.hasNext());
     }
 
-    /**
-     *
-     */
     private static void fill(KeyValueStorage storage, int keySuffix, int num) {
         for (int i = 0; i < num; i++) {
             storage.getAndPut(key(keySuffix), keyValue(keySuffix, i + 1));
         }
     }
 
-    /**
-     *
-     */
     private static byte[] key(int k) {
         return ("key" + k).getBytes();
     }
 
-    /**
-     *
-     */
     private static byte[] keyValue(int k, int v) {
         return ("key" + k + '_' + "val" + v).getBytes();
     }

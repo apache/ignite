@@ -183,7 +183,7 @@ public class RendezvousAffinityFunction {
     }
 
     /**
-     * Creates assignment for REPLICATED table
+     * Creates assignment for REPLICATED table.
      *
      * @param nodes       Topology.
      * @param sortedNodes Sorted for specified partitions nodes.
@@ -302,7 +302,7 @@ public class RendezvousAffinityFunction {
     }
 
     /**
-     *
+     * Hash comparator.
      */
     private static class HashComparator implements Comparator<IgniteBiTuple<Long, ClusterNode>>, Serializable {
         /** Serial version uid. */
@@ -317,16 +317,18 @@ public class RendezvousAffinityFunction {
     }
 
     /**
-     * Sorts the initial array with linear sort algorithm array
+     * Sorts the initial array with linear sort algorithm array.
      */
     private static class LazyLinearSortedContainer implements Iterable<ClusterNode> {
         /** Initial node-hash array. */
         private final IgniteBiTuple<Long, ClusterNode>[] arr;
 
-        /** Count of the sorted elements */
+        /** Count of the sorted elements. */
         private int sorted;
 
         /**
+         * Constructor.
+         *
          * @param arr                Node / partition hash list.
          * @param needFirstSortedCnt Estimate count of elements to return by iterator.
          */
@@ -347,7 +349,7 @@ public class RendezvousAffinityFunction {
         }
 
         /**
-         *
+         * Sorting iterator.
          */
         private class SortIterator implements Iterator<ClusterNode> {
             /** Index of the first unsorted element. */

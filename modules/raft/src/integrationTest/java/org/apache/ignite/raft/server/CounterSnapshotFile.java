@@ -38,6 +38,8 @@ class CounterSnapshotFile {
     private String path;
 
     /**
+     * Constructor.
+     *
      * @param path The path.
      */
     CounterSnapshotFile(String path) {
@@ -46,7 +48,7 @@ class CounterSnapshotFile {
     }
 
     /**
-     * @return The path.
+     * Returns the path.
      */
     public String getPath() {
         return this.path;
@@ -68,7 +70,8 @@ class CounterSnapshotFile {
     }
 
     /**
-     * @return The loaded counter value.
+     * Returns the loaded counter value.
+     *
      * @throws IOException If failed.
      */
     public long load() throws IOException {

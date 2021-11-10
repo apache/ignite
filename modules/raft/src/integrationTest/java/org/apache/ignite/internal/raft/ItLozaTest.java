@@ -63,14 +63,8 @@ public class ItLozaTest {
     /** Server port offset. */
     private static final int PORT = 20010;
 
-    /**
-     *
-     */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path dataPath;
 
@@ -86,6 +80,8 @@ public class ItLozaTest {
     }
 
     /**
+     * Returns the client cluster view.
+     *
      * @param testInfo Test info.
      * @param port     Local port.
      * @param srvs     Server nodes of the cluster.
@@ -106,7 +102,7 @@ public class ItLozaTest {
     }
 
     /**
-     * Tests that RaftGroupServiceImpl uses shared executor for retrying RaftGroupServiceImpl#sendWithRetry()
+     * Tests that RaftGroupServiceImpl uses shared executor for retrying RaftGroupServiceImpl#sendWithRetry().
      */
     @Test
     public void testRaftServiceUsingSharedExecutor(TestInfo testInfo) throws Exception {

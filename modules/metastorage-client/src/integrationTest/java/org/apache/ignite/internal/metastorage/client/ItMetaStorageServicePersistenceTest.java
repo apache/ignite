@@ -41,38 +41,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 public class ItMetaStorageServicePersistenceTest extends ItAbstractListenerSnapshotTest<MetaStorageListener> {
-    /**
-     *
-     */
     private static final ByteArray FIRST_KEY = ByteArray.fromString("first");
 
-    /**
-     *
-     */
     private static final byte[] FIRST_VALUE = "firstValue".getBytes(StandardCharsets.UTF_8);
 
-    /**
-     *
-     */
     private static final ByteArray SECOND_KEY = ByteArray.fromString("second");
 
-    /**
-     *
-     */
     private static final byte[] SECOND_VALUE = "secondValue".getBytes(StandardCharsets.UTF_8);
 
-    /**
-     *
-     */
     private MetaStorageServiceImpl metaStorage;
 
-    /**
-     *
-     */
     private KeyValueStorage storage;
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {

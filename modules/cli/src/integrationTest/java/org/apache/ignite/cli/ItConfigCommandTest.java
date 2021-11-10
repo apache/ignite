@@ -56,10 +56,10 @@ public class ItConfigCommandTest extends AbstractCliTest {
     /** stdout. */
     private ByteArrayOutputStream out;
 
-    /** Port for REST communication */
+    /** Port for REST communication. */
     private int restPort;
 
-    /** Port for thin client communication */
+    /** Port for thin client communication. */
     private int clientPort;
 
     /** Network port. */
@@ -68,9 +68,6 @@ public class ItConfigCommandTest extends AbstractCliTest {
     /** Node. */
     private Ignite node;
 
-    /**
-     *
-     */
     @BeforeEach
     void setup(@TempDir Path workDir, TestInfo testInfo) throws IOException {
         // TODO: IGNITE-15131 Must be replaced by receiving the actual port configs from the started node.
@@ -95,9 +92,6 @@ public class ItConfigCommandTest extends AbstractCliTest {
         out = new ByteArrayOutputStream();
     }
 
-    /**
-     *
-     */
     @AfterEach
     void tearDown(TestInfo testInfo) {
         IgnitionManager.stop(testNodeName(testInfo, networkPort));
@@ -163,6 +157,8 @@ public class ItConfigCommandTest extends AbstractCliTest {
     }
 
     /**
+     * Returns any available prt.
+     *
      * @return Any available port.
      * @throws IOException if can't allocate port to open socket.
      */
@@ -174,6 +170,8 @@ public class ItConfigCommandTest extends AbstractCliTest {
     }
 
     /**
+     * Creates a new command line interpreter.
+     *
      * @param applicationCtx DI context.
      * @return New command line instance.
      */

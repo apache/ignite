@@ -30,6 +30,8 @@ public class CursorCloseCommand implements WriteCommand {
     private final IgniteUuid cursorId;
 
     /**
+     * Constructor.
+     *
      * @param cursorId Cursor id.
      */
     public CursorCloseCommand(@NotNull IgniteUuid cursorId) {
@@ -37,7 +39,7 @@ public class CursorCloseCommand implements WriteCommand {
     }
 
     /**
-     * @return Cursor id.
+     * Returns cursor id.
      */
     public @NotNull IgniteUuid cursorId() {
         return cursorId;

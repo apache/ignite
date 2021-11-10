@@ -34,6 +34,8 @@ public class ScanRetrieveBatchCommand implements WriteCommand {
     private final IgniteUuid scanId;
 
     /**
+     * Constructor.
+     *
      * @param itemsToRetrieveCnt Amount of items to retrieve.
      * @param scanId             Id of scan that is associated with the current command.
      */
@@ -46,14 +48,14 @@ public class ScanRetrieveBatchCommand implements WriteCommand {
     }
 
     /**
-     * @return Amount of items to retrieve.
+     * Returns amount of items to retrieve.
      */
     public int itemsToRetrieveCount() {
         return itemsToRetrieveCnt;
     }
 
     /**
-     * @return Id of scan that is associated with the current command.
+     * Returns id of scan that is associated with the current command.
      */
     @NotNull
     public IgniteUuid scanId() {

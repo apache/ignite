@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItSetOpTest extends AbstractBasicIntegrationTest {
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {
@@ -68,9 +68,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         });
     }
 
-    /**
-     *
-     */
     @Test
     public void testExcept() {
         List<List<?>> rows = sql("SELECT name FROM emp1 EXCEPT SELECT name FROM emp2");
@@ -79,9 +76,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals("Igor", rows.get(0).get(0));
     }
 
-    /**
-     *
-     */
     @Test
     public void testExceptFromEmpty() {
         List<List<?>> rows = sql("SELECT name FROM emp1 WHERE salary < 0 EXCEPT SELECT name FROM emp2");
@@ -89,9 +83,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(0, rows.size());
     }
 
-    /**
-     *
-     */
     @Test
     public void testExceptSeveralColumns() {
         List<List<?>> rows = sql("SELECT name, salary FROM emp1 EXCEPT SELECT name, salary FROM emp2");
@@ -101,9 +92,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(1, countIf(rows, r -> r.get(0).equals("Roman")));
     }
 
-    /**
-     *
-     */
     @Test
     public void testExceptAll() {
         List<List<?>> rows = sql("SELECT name FROM emp1 EXCEPT ALL SELECT name FROM emp2");
@@ -113,9 +101,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(1, countIf(rows, r -> r.get(0).equals("Igor1")));
     }
 
-    /**
-     *
-     */
     @Test
     public void testExceptNested() {
         List<List<?>> rows =
@@ -126,9 +111,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(1, countIf(rows, r -> r.get(0).equals("Igor1")));
     }
 
-    /**
-     *
-     */
     @Test
     @Disabled
     public void testSetOpBigBatch() {
@@ -205,9 +187,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(128, countIf(rows, r -> r.get(0).equals(3)));
     }
 
-    /**
-     *
-     */
     @Test
     public void testIntersect() {
         List<List<?>> rows = sql("SELECT name FROM emp1 INTERSECT SELECT name FROM emp2");
@@ -217,9 +196,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(1, countIf(rows, r -> r.get(0).equals("Roman")));
     }
 
-    /**
-     *
-     */
     @Test
     public void testIntersectAll() {
         List<List<?>> rows = sql("SELECT name FROM emp1 INTERSECT ALL SELECT name FROM emp2");
@@ -229,9 +205,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(1, countIf(rows, r -> r.get(0).equals("Roman")));
     }
 
-    /**
-     *
-     */
     @Test
     public void testIntersectEmpty() {
         List<List<?>> rows = sql("SELECT name FROM emp1 WHERE salary < 0 INTERSECT SELECT name FROM emp2");
@@ -239,9 +212,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(0, rows.size());
     }
 
-    /**
-     *
-     */
     @Test
     public void testIntersectSeveralColumns() {
         List<List<?>> rows = sql("SELECT name, salary FROM emp1 INTERSECT ALL SELECT name, salary FROM emp2");
@@ -250,9 +220,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(2, countIf(rows, r -> r.get(0).equals("Igor1")));
     }
 
-    /**
-     *
-     */
     @Test
     public void testUnionAll() {
         List<List<?>> rows = sql("SELECT name, salary FROM emp1 "
@@ -264,9 +231,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(14, rows.size());
     }
 
-    /**
-     *
-     */
     @Test
     public void testUnion() {
         List<List<?>> rows = sql("SELECT name, salary FROM emp1 "
@@ -278,9 +242,6 @@ public class ItSetOpTest extends AbstractBasicIntegrationTest {
         assertEquals(9, rows.size());
     }
 
-    /**
-     *
-     */
     @Test
     public void testUnionWithDistinct() {
         List<List<?>> rows = sql(

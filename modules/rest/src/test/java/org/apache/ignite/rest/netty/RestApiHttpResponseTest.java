@@ -32,9 +32,6 @@ import org.junit.jupiter.api.Test;
  * Testing the {@link RestApiHttpResponse}.
  */
 public class RestApiHttpResponseTest {
-    /**
-     *
-     */
     @Test
     void testToJson() {
         RestApiHttpResponse res = new RestApiHttpResponse(new DefaultHttpResponse(HttpVersion.HTTP_1_1, OK));

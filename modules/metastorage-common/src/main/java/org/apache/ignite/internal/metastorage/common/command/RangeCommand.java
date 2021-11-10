@@ -49,6 +49,8 @@ public final class RangeCommand implements WriteCommand {
     private final IgniteUuid cursorId;
 
     /**
+     * Constructor.
+     *
      * @param keyFrom         Start key of range (inclusive).
      * @param keyTo           End key of range (exclusive).
      * @param requesterNodeId Id of the node that requests range.
@@ -64,6 +66,8 @@ public final class RangeCommand implements WriteCommand {
     }
 
     /**
+     * Constructor.
+     *
      * @param keyFrom         Start key of range (inclusive).
      * @param keyTo           End key of range (exclusive).
      * @param revUpperBound   The upper bound for entry revision. {@code -1} means latest revision.
@@ -85,35 +89,35 @@ public final class RangeCommand implements WriteCommand {
     }
 
     /**
-     * @return Start key of range (inclusive). Couldn't be {@code null}.
+     * Returns start key of range (inclusive). Couldn't be {@code null}.
      */
     public @NotNull byte[] keyFrom() {
         return keyFrom;
     }
 
     /**
-     * @return End key of range (exclusive). Could be {@code null}.
+     * Returns end key of range (exclusive). Could be {@code null}.
      */
     public @Nullable byte[] keyTo() {
         return keyTo;
     }
 
     /**
-     * @return The upper bound for entry revision. Means latest revision.
+     * Returns the upper bound for entry revision. Means latest revision.
      */
     public @NotNull long revUpperBound() {
         return revUpperBound;
     }
 
     /**
-     * @return Id of the node that requests range.
+     * Returns id of the node that requests range.
      */
     public @NotNull String requesterNodeId() {
         return requesterNodeId;
     }
 
     /**
-     * @return Id of cursor that is associated with the current command.
+     * Returns id of cursor that is associated with the current command.
      */
     @NotNull
     public IgniteUuid getCursorId() {

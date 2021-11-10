@@ -72,7 +72,7 @@ public class MavenArtifactResolver {
     private PrintWriter out;
 
     /**
-     * Creates resolver
+     * Creates a new resolver.
      *
      * @param pathRslvr Resolver of system paths like home directory and etc.
      * @param terminal  User system terminal.
@@ -169,9 +169,9 @@ public class MavenArtifactResolver {
     }
 
     /**
-     * Gets artifact file name by artifactId and version
+     * Gets artifact file name by artifactId and version.
      *
-     * <p>Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging
+     * <p>Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging.
      *
      * @param artifactId Maven artifact id.
      * @param ver        Maven version

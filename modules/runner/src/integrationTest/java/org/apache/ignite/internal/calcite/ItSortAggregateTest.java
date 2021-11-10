@@ -36,13 +36,10 @@ import org.junit.jupiter.api.Test;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItSortAggregateTest extends AbstractBasicIntegrationTest {
-    /**
-     *
-     */
     public static final int ROWS = 103;
 
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {
@@ -82,9 +79,6 @@ public class ItSortAggregateTest extends AbstractBasicIntegrationTest {
         }
     }
 
-    /**
-     *
-     */
     @Test
     public void mapReduceAggregate() {
         List<List<?>> res = sql(

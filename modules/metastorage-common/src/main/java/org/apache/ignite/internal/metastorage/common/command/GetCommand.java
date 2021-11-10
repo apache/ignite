@@ -33,6 +33,8 @@ public final class GetCommand implements ReadCommand {
     private long revUpperBound;
 
     /**
+     * Constructor.
+     *
      * @param key Key. Couldn't be {@code null}.
      */
     public GetCommand(@NotNull ByteArray key) {
@@ -40,6 +42,8 @@ public final class GetCommand implements ReadCommand {
     }
 
     /**
+     * Constructor.
+     *
      * @param key           Key. Couldn't be {@code null}.
      * @param revUpperBound The upper bound for entry revisions. Must be positive.
      */
@@ -52,14 +56,14 @@ public final class GetCommand implements ReadCommand {
     }
 
     /**
-     * @return Key.
+     * Returns key.
      */
     public @NotNull byte[] key() {
         return key;
     }
 
     /**
-     * @return The upper bound for entry revisions, or {@code null} if wasn't specified.
+     * Returns the upper bound for entry revisions, or {@code null} if wasn't specified.
      */
     public long revision() {
         return revUpperBound;

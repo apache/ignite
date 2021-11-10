@@ -35,6 +35,8 @@ public class TableEventParameters implements EventParameters {
     private final TableImpl table;
 
     /**
+     * Constructor.
+     *
      * @param table Table instance.
      */
     public TableEventParameters(TableImpl table) {
@@ -42,6 +44,8 @@ public class TableEventParameters implements EventParameters {
     }
 
     /**
+     * Constructor.
+     *
      * @param tableId   Table identifier.
      * @param tableName Table name.
      */
@@ -50,6 +54,8 @@ public class TableEventParameters implements EventParameters {
     }
 
     /**
+     * Constructor.
+     *
      * @param tableId   Table identifier.
      * @param tableName Table name.
      * @param table     Table instance.

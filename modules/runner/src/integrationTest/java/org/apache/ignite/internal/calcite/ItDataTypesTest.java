@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15107")
 public class ItDataTypesTest extends AbstractBasicIntegrationTest {
     /**
-     *
+     * Before all.
      */
     @Test
     public void testUnicodeStrings() {

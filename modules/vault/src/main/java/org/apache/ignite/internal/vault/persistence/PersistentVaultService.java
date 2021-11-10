@@ -53,19 +53,10 @@ public class PersistentVaultService implements VaultService {
         RocksDB.loadLibrary();
     }
 
-    /**
-     *
-     */
     private final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
-    /**
-     *
-     */
     private final Options options = new Options();
 
-    /**
-     *
-     */
     private volatile RocksDB db;
 
     /** Base path for RocksDB. */
@@ -196,9 +187,6 @@ public class PersistentVaultService implements VaultService {
      */
     @FunctionalInterface
     private static interface RocksSupplier<T> {
-        /**
-         *
-         */
         T supply() throws RocksDBException;
     }
 
@@ -220,9 +208,6 @@ public class PersistentVaultService implements VaultService {
      */
     @FunctionalInterface
     private static interface RocksRunnable {
-        /**
-         *
-         */
         void run() throws RocksDBException;
     }
 

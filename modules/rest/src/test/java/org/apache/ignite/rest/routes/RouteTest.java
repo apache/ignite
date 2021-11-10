@@ -29,12 +29,9 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Test class for {@link Route}.
  */
 public class RouteTest {
-    /**
-     *
-     */
     @Test
     void testMatchByUri() {
         var route = new Route("/user", GET, null, (request, response) -> {
@@ -43,9 +40,6 @@ public class RouteTest {
         assertTrue(route.match(req));
     }
 
-    /**
-     *
-     */
     @Test
     void testNonMatchByUri() {
         var route = new Route("/user", GET, null, (request, response) -> {
@@ -54,9 +48,6 @@ public class RouteTest {
         assertFalse(route.match(req));
     }
 
-    /**
-     *
-     */
     @Test
     void testMatchByContentTypeIfAcceptTypeEmpty() {
         var route = new Route("/user", GET, null, (request, response) -> {
@@ -66,9 +57,6 @@ public class RouteTest {
         assertTrue(route.match(req));
     }
 
-    /**
-     *
-     */
     @Test
     void testMatchByContentTypeIfAcceptTypeNonEmpty() {
         var route = new Route("/user", PUT, "text/plain", (request, response) -> {
@@ -78,9 +66,6 @@ public class RouteTest {
         assertTrue(route.match(req));
     }
 
-    /**
-     *
-     */
     @Test
     void testNonMatchByContentTypeIfAcceptTypeNonEmpty() {
         var route = new Route("/user", PUT, "text/plain", (request, response) -> {
@@ -90,9 +75,6 @@ public class RouteTest {
         assertFalse(route.match(req));
     }
 
-    /**
-     *
-     */
     @Test
     void testMatchByUriWithParams() {
         var route = new Route("/user/:user", GET, null, (request, response) -> {

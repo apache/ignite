@@ -80,6 +80,8 @@ public class MetaStorageListener implements RaftGroupListener {
     private final Map<IgniteUuid, CursorMeta> cursors;
 
     /**
+     * Constructor.
+     *
      * @param storage Storage.
      */
     public MetaStorageListener(KeyValueStorage storage) {
@@ -376,16 +378,13 @@ public class MetaStorageListener implements RaftGroupListener {
     }
 
     /**
-     * @return {@link KeyValueStorage} that is backing this listener.
+     * Returns {@link KeyValueStorage} that is backing this listener.
      */
     @TestOnly
     public KeyValueStorage getStorage() {
         return storage;
     }
 
-    /**
-     *
-     */
     private static Condition toCondition(ConditionInfo info) {
         byte[] key = info.key();
 
@@ -418,9 +417,6 @@ public class MetaStorageListener implements RaftGroupListener {
         }
     }
 
-    /**
-     *
-     */
     private static List<Operation> toOperations(List<OperationInfo> infos) {
         List<Operation> ops = new ArrayList<>(infos.size());
 
@@ -461,21 +457,21 @@ public class MetaStorageListener implements RaftGroupListener {
         }
 
         /**
-         * @return Cursor.
+         * Returns cursor.
          */
         public Cursor<?> cursor() {
             return cursor;
         }
 
         /**
-         * @return Cursor type.
+         * Returns cursor type.
          */
         public CursorType type() {
             return type;
         }
 
         /**
-         * @return Id of the node that creates cursor.
+         * Returns id of the node that creates cursor.
          */
         public String requesterNodeId() {
             return requesterNodeId;

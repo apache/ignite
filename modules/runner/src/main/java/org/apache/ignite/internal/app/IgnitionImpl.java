@@ -40,9 +40,6 @@ public class IgnitionImpl implements Ignition {
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(IgnitionImpl.class);
 
-    /**
-     *
-     */
     private static final String[] BANNER = {
             "",
             "           #              ___                         __",
@@ -59,9 +56,6 @@ public class IgnitionImpl implements Ignition {
             "       ##                  /____/\n"
     };
 
-    /**
-     *
-     */
     private static final String VER_KEY = "version";
 
     /**
@@ -157,16 +151,10 @@ public class IgnitionImpl implements Ignition {
         return nodeToStart;
     }
 
-    /**
-     *
-     */
     private static void ackSuccessStart() {
         LOG.info("Apache Ignite started successfully!");
     }
 
-    /**
-     *
-     */
     private static void ackBanner() {
         String ver = IgniteProperties.get(VER_KEY);
 

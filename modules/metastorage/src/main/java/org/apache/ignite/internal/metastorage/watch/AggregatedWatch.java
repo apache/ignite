@@ -46,21 +46,21 @@ public class AggregatedWatch {
     }
 
     /**
-     * @return Key criterion.
+     * Returns key criterion.
      */
     public KeyCriterion keyCriterion() {
         return keyCriterion;
     }
 
     /**
-     * @return Watch listener.
+     * Returns watch listener.
      */
     public WatchListener listener() {
         return lsnr;
     }
 
     /**
-     * @return Revision.
+     * Returns revision.
      */
     public long revision() {
         return revision;

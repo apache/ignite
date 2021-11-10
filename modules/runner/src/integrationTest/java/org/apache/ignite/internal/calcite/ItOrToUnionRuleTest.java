@@ -43,28 +43,16 @@ import org.junit.jupiter.api.Test;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-14925")
 public class ItOrToUnionRuleTest extends AbstractBasicIntegrationTest {
-    /**
-     *
-     */
     public static final String IDX_SUBCAT_ID = "IDX_SUBCAT_ID";
-    
-    /**
-     *
-     */
+
     public static final String IDX_SUBCATEGORY = "IDX_SUBCATEGORY";
-    
-    /**
-     *
-     */
+
     public static final String IDX_CATEGORY = "IDX_CATEGORY";
-    
-    /**
-     *
-     */
+
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
     
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {

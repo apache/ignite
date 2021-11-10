@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine.Help.ColorScheme;
 
 /**
- * Client to get/put HOCON based configuration from/to Ignite server nodes
+ * Client to get/put HOCON based configuration from/to Ignite server nodes.
  */
 @Singleton
 public class ConfigurationClient {

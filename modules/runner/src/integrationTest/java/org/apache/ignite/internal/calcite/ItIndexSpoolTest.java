@@ -42,13 +42,10 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItIndexSpoolTest extends AbstractBasicIntegrationTest {
-    /**
-     *
-     */
     private static final IgniteLogger LOG = IgniteLogger.forClass(AbstractBasicIntegrationTest.class);
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     protected void cleanUp() {
@@ -66,7 +63,7 @@ public class ItIndexSpoolTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     *
+     * Test.
      */
     @ParameterizedTest(name = "tableSize=" + ARGUMENTS_PLACEHOLDER)
     @ValueSource(ints = {1, 10, 512, 513, 2000})

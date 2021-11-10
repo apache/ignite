@@ -33,7 +33,7 @@ public class Table {
     /** Color scheme for table output. */
     private final ColorScheme cs;
 
-    /** Table data */
+    /** Table data. */
     private final Collection<Row> data = new ArrayList<>();
 
     /** Columns lengths. */
@@ -116,9 +116,6 @@ public class Table {
         return sb.toString().stripTrailing();
     }
 
-    /**
-     *
-     */
     private void appendLine(StringBuilder sb) {
         sb.append(" ".repeat(indent));
 
@@ -130,7 +127,10 @@ public class Table {
     }
 
     /**
+     * Appends the given {@code row} to the specified string builder {@code sb}.
      *
+     * @param sb String builder that accumulates a result.
+     * @param row Row to be appended to the string builder.
      */
     private void appendRow(StringBuilder sb, Row row) {
         sb.append(" ".repeat(indent))
@@ -148,13 +148,13 @@ public class Table {
      * Row with actual data.
      */
     private class DataRow implements Row {
-        /**
-         *
-         */
+        /** Text. */
         private final Text[] row;
 
         /**
+         * Creates a new {@code DataRow} with the specified data.
          *
+         * @param row Text to be rendered.
          */
         DataRow(Text[] row) {
             this.row = row;
@@ -185,13 +185,11 @@ public class Table {
      * Row with table title.
      */
     private class SectionTitle implements Row {
-        /**
-         *
-         */
+        /** Title. */
         private final Text title;
 
         /**
-         *
+         * Creates a new {@code SectionTitle} with the given {@code title}.
          */
         SectionTitle(Text title) {
             this.title = title;

@@ -55,19 +55,13 @@ class ItTableCreationTest {
     /** Nodes bootstrap configuration with preconfigured tables. */
     private final LinkedHashMap<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
 
-    /**
-     *
-     */
     private final List<Ignite> clusterNodes = new ArrayList<>();
 
-    /**
-     *
-     */
     @WorkDirectory
     private Path workDir;
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void setUp(TestInfo testInfo) {
@@ -191,7 +185,7 @@ class ItTableCreationTest {
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void tearDown() throws Exception {

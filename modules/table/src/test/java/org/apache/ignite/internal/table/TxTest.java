@@ -44,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 /**
- *
+ * Test for transactions.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -52,30 +52,15 @@ public class TxTest {
     /** Accounts table. */
     private Table accounts;
 
-    /**
-     *
-     */
     public static final double BALANCE_1 = 500;
 
-    /**
-     *
-     */
     public static final double BALANCE_2 = 500;
 
-    /**
-     *
-     */
     public static final double DELTA = 500;
 
-    /**
-     *
-     */
     @Mock
     private IgniteTransactions igniteTransactions;
 
-    /**
-     *
-     */
     @Mock
     private Transaction tx;
 
@@ -198,27 +183,14 @@ public class TxTest {
         assertEquals(BALANCE_2 + DELTA, accounts.recordView().get(makeKey(2)).doubleValue("balance"));
     }
 
-    /**
-     * @param id The id.
-     * @return The key tuple.
-     */
     private Tuple makeKey(long id) {
         return Tuple.create().set("accountNumber", id);
     }
 
-    /**
-     * @param id      The id.
-     * @param balance The balance.
-     * @return The value tuple.
-     */
     private Tuple makeRecord(long id, double balance) {
         return Tuple.create().set("accountNumber", id).set("balance", balance);
     }
 
-    /**
-     * @param balance The balance.
-     * @return The value tuple.
-     */
     private Tuple makeValue(double balance) {
         return Tuple.create().set("balance", balance);
     }

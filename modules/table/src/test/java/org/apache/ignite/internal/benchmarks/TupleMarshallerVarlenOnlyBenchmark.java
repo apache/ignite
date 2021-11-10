@@ -102,7 +102,7 @@ public class TupleMarshallerVarlenOnlyBenchmark {
     }
 
     /**
-     *
+     * Setup.
      */
     @Setup
     public void init() {

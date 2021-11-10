@@ -57,7 +57,7 @@ public class ConfigurationPresentationTest {
     private static TestRootConfiguration cfg;
     
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void beforeAll() {
@@ -87,7 +87,7 @@ public class ConfigurationPresentationTest {
     }
     
     /**
-     *
+     * After all.
      */
     @AfterAll
     static void afterAll() {
@@ -100,16 +100,13 @@ public class ConfigurationPresentationTest {
     }
     
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void beforeEach() throws Exception {
         cfg.change(cfg -> cfg.changeFoo("foo").changeSubCfg(subCfg -> subCfg.changeBar("bar"))).get(1, SECONDS);
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testRepresentWholeCfg() {
         String s = "{\"root\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"bar\"}}}";
@@ -117,10 +114,7 @@ public class ConfigurationPresentationTest {
         assertEquals(s, cfgPresentation.represent());
         assertEquals(s, cfgPresentation.representByPath(null));
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testCorrectRepresentCfgByPath() {
         assertEquals("{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"bar\"}}", cfgPresentation.representByPath("root"));
@@ -128,10 +122,7 @@ public class ConfigurationPresentationTest {
         assertEquals("{\"bar\":\"bar\"}", cfgPresentation.representByPath("root.subCfg"));
         assertEquals("\"bar\"", cfgPresentation.representByPath("root.subCfg.bar"));
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testErrorRepresentCfgByPath() {
         assertThrows(
@@ -139,10 +130,7 @@ public class ConfigurationPresentationTest {
                 () -> cfgPresentation.representByPath(UUID.randomUUID().toString())
         );
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testCorrectUpdateFullCfg() {
         String updateVal = "{\"root\":{\"foo\":\"bar\",\"subCfg\":{\"bar\":\"foo\"}}}";
@@ -153,10 +141,7 @@ public class ConfigurationPresentationTest {
         assertEquals("foo", cfg.subCfg().bar().value());
         assertEquals(updateVal, cfgPresentation.represent());
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testCorrectUpdateSubCfg() {
         cfgPresentation.update("{\"root\":{\"subCfg\":{\"bar\":\"foo\"}}}");
@@ -165,10 +150,7 @@ public class ConfigurationPresentationTest {
         assertEquals("foo", cfg.subCfg().bar().value());
         assertEquals("{\"root\":{\"foo\":\"foo\",\"subCfg\":{\"bar\":\"foo\"}}}", cfgPresentation.represent());
     }
-    
-    /**
-     *
-     */
+
     @Test
     void testErrorUpdateCfg() {
         assertThrows(

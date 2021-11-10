@@ -33,6 +33,8 @@ public class Spinner implements AutoCloseable {
     private int spinnerCnt;
 
     /**
+     * Creates a new {@code Spinner}.
+     *
      * @param out Writer to display spinner.
      */
     public Spinner(PrintWriter out) {
@@ -40,6 +42,8 @@ public class Spinner implements AutoCloseable {
     }
 
     /**
+     * Creates a new {@code Spinner}.
+     *
      * @param out               Writer to display spinner.
      * @param spinnerPrefixText Spinner prefix text.
      */
@@ -59,9 +63,7 @@ public class Spinner implements AutoCloseable {
         spinnerCnt = 1 + spinnerCnt % 3;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void close() {
         out.print("\r" + spinnerPrefixText + "...");

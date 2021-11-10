@@ -25,7 +25,7 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 /**
- * Factory for producing JLine {@link Terminal} instances
+ * Factory for producing JLine {@link Terminal} instances.
  */
 @Factory
 public class TerminalFactory {

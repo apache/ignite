@@ -49,23 +49,14 @@ import org.junit.jupiter.api.BeforeEach;
  * Tests for the {@link DistributedConfigurationStorage}.
  */
 public class DistributedConfigurationStorageTest extends ConfigurationStorageTest {
-    /**
-     *
-     */
     private final VaultManager vaultManager = new VaultManager(new InMemoryVaultService());
 
-    /**
-     *
-     */
     private final KeyValueStorage metaStorage = new SimpleInMemoryKeyValueStorage();
 
-    /**
-     *
-     */
     private final MetaStorageManager metaStorageManager = mockMetaStorageManager();
 
     /**
-     *
+     * Before each.
      */
     @BeforeEach
     void start() {
@@ -75,7 +66,7 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
     }
 
     /**
-     *
+     * After each.
      */
     @AfterEach
     void stop() throws Exception {
@@ -181,7 +172,9 @@ public class DistributedConfigurationStorageTest extends ConfigurationStorageTes
         private final Cursor<org.apache.ignite.internal.metastorage.server.Entry> internalCursor;
 
         /**
+         * Constructor.
          *
+         * @param internalCursor internal cursor.
          */
         CursorAdapter(Cursor<org.apache.ignite.internal.metastorage.server.Entry> internalCursor) {
             this.internalCursor = internalCursor;

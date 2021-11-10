@@ -28,21 +28,18 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Group of tests to verify aggregation functions.
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItAggregatesTest extends AbstractBasicIntegrationTest {
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {
         createAndPopulateTable();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void countOfNonNumericField() {
         assertQuery("select count(name) from person").returns(4L).check();
@@ -115,10 +112,7 @@ public class ItAggregatesTest extends AbstractBasicIntegrationTest {
                 .returns(12d)
                 .check();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testMultipleRowsFromSingleAggr() {
         assertThrows(
@@ -139,10 +133,7 @@ public class ItAggregatesTest extends AbstractBasicIntegrationTest {
         
         assertQuery("SELECT t.id, (SELECT x FROM TABLE(system_range(t.id, t.id))) FROM person t").check();
     }
-    
-    /**
-     *
-     */
+
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-14597")
     @Test
     public void testAnyValAggr() {

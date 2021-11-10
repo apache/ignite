@@ -33,12 +33,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- *
+ * Group of tests that still has not been sorted out. It’s better to avoid extending this class with new tests.
  */
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-15655")
 public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
     /**
-     *
+     * Before all.
      */
     @BeforeAll
     static void initTestData() {
@@ -105,10 +105,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         assertEquals(1, rows.size());
         assertEquals(Arrays.asList("щщ", "Б"), first(rows));
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testOrderingByColumnOutsideSelectList() {
         assertQuery("select salary from emp2 order by id desc")
@@ -125,10 +122,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
                 .returns("Igor1", 26d)
                 .check();
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testEqConditionWithDistinctSubquery() {
         List<List<?>> rows = sql(
@@ -136,10 +130,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(3, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testEqConditionWithAggregateSubqueryMax() {
         List<List<?>> rows = sql(
@@ -147,10 +138,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(3, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testEqConditionWithAggregateSubqueryMin() {
         List<List<?>> rows = sql(
@@ -158,10 +146,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(1, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testInConditionWithSubquery() {
         List<List<?>> rows = sql(
@@ -169,10 +154,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(4, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testDistinctQueryWithInConditionWithSubquery() {
         List<List<?>> rows = sql("SELECT distinct(name) FROM emp1 o WHERE name IN ("
@@ -181,10 +163,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(2, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testNotInConditionWithSubquery() {
         List<List<?>> rows = sql(
@@ -192,10 +171,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(3, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testExistsConditionWithSubquery() {
         List<List<?>> rows = sql("SELECT name FROM emp1 o WHERE EXISTS ("
@@ -205,10 +181,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(4, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Test
     public void testNotExistsConditionWithSubquery() {
         List<List<?>> rows = sql("SELECT name FROM emp1 o WHERE NOT EXISTS ("
@@ -232,10 +205,7 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
         
         assertEquals(1, rows.size());
     }
-    
-    /**
-     *
-     */
+
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-15107")
     @Test
     public void testSequentialInserts() {

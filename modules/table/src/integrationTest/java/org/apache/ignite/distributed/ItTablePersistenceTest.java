@@ -50,33 +50,18 @@ import org.apache.ignite.raft.client.service.RaftGroupService;
  * Persistent partitions raft group snapshots tests.
  */
 public class ItTablePersistenceTest extends ItAbstractListenerSnapshotTest<PartitionListener> {
-    /**
-     *
-     */
     private static final SchemaDescriptor SCHEMA = new SchemaDescriptor(
             1,
             new Column[]{new Column("key", NativeTypes.INT64, false)},
             new Column[]{new Column("value", NativeTypes.INT64, false)}
     );
 
-    /**
-     *
-     */
     private static final Row FIRST_KEY = createKeyRow(0);
 
-    /**
-     *
-     */
     private static final Row FIRST_VALUE = createKeyValueRow(0, 0);
 
-    /**
-     *
-     */
     private static final Row SECOND_KEY = createKeyRow(1);
 
-    /**
-     *
-     */
     private static final Row SECOND_VALUE = createKeyValueRow(1, 1);
 
     /** Paths for created partition listeners. */

@@ -21,7 +21,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a storage unit as entry with key, value and revision, where
+ * Represents a storage unit as entry with key, value and revision.
+ *
+ * <p>Where:
  * <ul>
  *     <li>key - an unique entry's key represented by an array of bytes. Keys are comparable in lexicographic manner.</li>
  *     <li>value - a data which is associated with a key and represented as an array of bytes.</li>
