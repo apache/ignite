@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
@@ -223,6 +224,7 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
         private TestService injected;
 
         /** Service context. */
+        @ServiceContextResource
         private ServiceContext ctx;
 
         /** {@inheritDoc} */
@@ -248,21 +250,6 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
             ctx.currentCallContext().put(STR_ATTR_NAME, val);
 
             return injected.attribute(false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
-            this.ctx = ctx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel(ServiceContext ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
-            // No-op.
         }
     }
 }

@@ -38,11 +38,8 @@ import org.apache.ignite.lang.IgniteExperimental;
  *
  * // Service implementation.
  * class HelloServiceImpl implements HelloService {
+ *     &#64;ServiceContextResource
  *     ServiceContext ctx;
- *
- *     public void init(ServiceContext ctx) {
- *         this.ctx = ctx;
- *     }
  *
  *     public String call(Strig msg) {
  *         return msg + ctx.currentCallContext().attribute("user");
