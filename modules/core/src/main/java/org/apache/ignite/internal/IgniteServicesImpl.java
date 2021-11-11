@@ -382,7 +382,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         final boolean sticky,
         final long timeout
     ) throws IgniteException {
-        return (T) serviceProxy(name, svcItf, sticky, (Supplier<ServiceCallContext>)null, timeout);
+        return (T)serviceProxy(name, svcItf, sticky, (Supplier<ServiceCallContext>)null, timeout);
     }
 
     /** {@inheritDoc} */
@@ -393,7 +393,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         @Nullable ServiceCallContext callCtx,
         final long timeout
     ) throws IgniteException {
-        return (T) serviceProxy(name, svcItf, sticky, callCtx != null ? callCtx::copy : null, timeout);
+        return (T)serviceProxy(name, svcItf, sticky, callCtx != null ? callCtx::copy : null, timeout);
     }
 
     /** {@inheritDoc} */

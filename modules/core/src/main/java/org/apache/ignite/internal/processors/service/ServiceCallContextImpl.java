@@ -32,6 +32,9 @@ import org.apache.ignite.services.ServiceCallContext;
  * Service call context implementation.
  */
 public class ServiceCallContextImpl implements ServiceCallContext {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Service call context attributes. */
     private Map<String, byte[]> attrs;
 

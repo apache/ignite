@@ -125,8 +125,8 @@ public class GridServiceProxy<T> implements Serializable {
         boolean sticky,
         long timeout,
         GridKernalContext ctx,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider)
-    {
+        @Nullable Supplier<ServiceCallContext> callCtxProvider
+    ) {
         assert timeout >= 0 : timeout;
 
         this.prj = prj;
