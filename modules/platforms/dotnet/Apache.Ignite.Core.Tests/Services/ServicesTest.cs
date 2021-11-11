@@ -562,6 +562,27 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests the server binary flag.
+        /// </summary>
+        [Test]
+        public void TestWithKeepBinaryServerArray()
+        {
+            var svc = new TestIgniteServiceBinarizable();
+
+            Grid1.GetCluster()
+                .ForNodeIds(Grid2.GetCluster().GetLocalNode().Id)
+                .GetServices()
+                .WithServerKeepBinary()
+                .DeployNodeSingleton(SvcName, svc);
+
+            var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
+            var obj = new [] {new BinarizableObject{Val = 1}};
+
+            var res = prx.Method(obj);
+            Assert.IsNotNull(res);
+        }
+
+        /// <summary>
         /// Tests server and client binary flag.
         /// </summary>
         [Test]
@@ -920,12 +941,23 @@ namespace Apache.Ignite.Core.Tests.Services
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
 
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+            var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(javaSvcName, true));
 
             DoTestService(svc);
 
             DoTestJavaExceptions(svc);
         }
+
+        /// Test cases for services[all cases for both USE_TYPED_ARRAYS=true,false]:
+        /// 1. Local platform service.
+        /// 2. Remote platform service.
+        /// 3. Local java service.
+        /// 4. Remote java service.
+        /// 5. Thin client local platform service.
+        /// 6. Thin client local java service.
+        /// 7. Thin client remote platform service.
+        /// 8. Thin client remote java service.
+        /// Why enum now require to be same case?!
 
         /// <summary>
         /// Test remote .Net service invocation.
@@ -955,8 +987,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
 
             var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
+            var binSvc = svcsForProxy.WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(platformSvcName, false);
 
             DoTestService(svc);
+
+            DoTestBinary(svc, binSvc);
 
             Services.Cancel(platformSvcName);
         }
@@ -1198,11 +1234,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testBinarizableArray(null));
 
             // Binary object array.
-            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+            var binArr = new[] {10, 11, 12}.Select(x =>
+                Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = x})).ToArray();
 
-            var binObjs = binSvc.testBinaryObjectArray(binArr);
+            var binObjs = binSvc.testBinaryObjectArray(binArr).Select(x => x.GetField<int>("Field")).ToArray();
 
-            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
+            Assert.AreEqual(new[] {11, 12, 13}, binObjs);
 
             // Binary object
             Assert.AreEqual(15,

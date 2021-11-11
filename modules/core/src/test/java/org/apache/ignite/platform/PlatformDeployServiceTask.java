@@ -530,13 +530,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals("HR", iter.next().getName());
             assertEquals("IT", iter.next().getName());
 
-            Collection<Department> res = new ArrayList<>();
+            List<Department> res = new ArrayList<>();
 
-            Department d = new Department();
-
-            d.setName("Executive");
-
-            res.add(d);
+            res.add(new Department("Executive"));
 
             return res;
         }
@@ -642,6 +638,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** */
+        public Object testRoundtrip(Object x) {
+            return x;
         }
     }
 

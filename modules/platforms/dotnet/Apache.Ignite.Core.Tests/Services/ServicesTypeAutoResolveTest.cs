@@ -32,6 +32,8 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTest
     {
+        const string PlatformSvcName = "PlatformTestService";
+
         /** */
         protected internal static readonly Employee[] Emps = new[]
         {
@@ -96,23 +98,21 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
+        /// Tests .Net service invocation on remote node.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceRemote()
+        {
+            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+        }
+
+        /// <summary>
+        /// Tests .Net service invocation on local node.
         /// </summary>
         [Test]
         public void TestCallPlatformServiceLocal()
         {
-            const string platformSvcName = "PlatformTestService";
-
-            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
-
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(platformSvcName);
+            DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name), true);
         }
 
         /// <summary>
@@ -122,11 +122,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-            var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
-
-            DoTestService(new JavaServiceDynamicProxy(svc));
+            DoTestService(name =>
+                new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(name, true)));
         }
 
         /// <summary>
@@ -136,16 +133,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceLocal()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
+            DoTestService(name => _grid1.GetServices().GetServiceProxy<IJavaService>(name, false));
         }
 
         /// <summary>
@@ -155,39 +143,36 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceRemote()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
+            DoTestService(name => _client.GetServices().GetServiceProxy<IJavaService>(name, false));
         }
 
         /// <summary>
-        /// Tests departments call.
+        /// Tests service invocation.
         /// </summary>
-        private void DoTestDepartments(IJavaService svc)
+        public void DoTestService(Func<String, IJavaService> svcProvider, bool isPlatform = false)
         {
+            string svcName;
+            if (isPlatform)
+            {
+                svcName = PlatformSvcName;
+
+                _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+            }
+            else
+                svcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = svcProvider.Invoke(svcName);
+
             Assert.IsNull(svc.testDepartments(null));
 
-            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToList();
 
             ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-        }
 
-        /// <summary>
-        /// Tests java service instance.
-        /// </summary>
-        private static void DoTestService(IJavaService svc)
-        {
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
@@ -204,6 +189,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var emps = svc.testEmployees(Emps);
 
+            Assert.AreEqual(typeof(Employee[]), emps.GetType());
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
 
@@ -225,6 +211,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var accs = svc.testAccounts();
 
+            Assert.AreEqual(typeof(Account[]), accs.GetType());
             Assert.NotNull(accs);
             Assert.AreEqual(2, accs.Length);
             Assert.AreEqual("123", accs[0].Id);
@@ -234,14 +221,22 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var users = svc.testUsers();
 
+            Assert.AreEqual(typeof(User[]), users.GetType());
             Assert.NotNull(users);
             Assert.AreEqual(2, users.Length);
             Assert.AreEqual(1, users[0].Id);
-            Assert.AreEqual(ACL.Allow, users[0].Acl);
+            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
+
             Assert.AreEqual("admin", users[0].Role.Name);
             Assert.AreEqual(2, users[1].Id);
-            Assert.AreEqual(ACL.Deny, users[1].Acl);
+            Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+
+            var users2 = svc.testRoundtrip(users);
+            Assert.NotNull(users2);
+            Assert.AreEqual(typeof(User[]), users2.GetType());
+
+            _grid1.GetServices().Cancel(PlatformSvcName);
         }
 
         /// <summary>

@@ -525,8 +525,8 @@ namespace Apache.Ignite.Core.Tests.Services
         public User[] testUsers()
         {
             return new[] {
-                new User {Id = 1, Acl = ACL.Allow, Role = new Role {Name = "admin"}},
-                new User {Id = 2, Acl = ACL.Deny, Role = new Role {Name = "user"}}
+                new User {Id = 1, Acl = ACL.ALLOW, Role = new Role {Name = "admin"}},
+                new User {Id = 2, Acl = ACL.DENY, Role = new Role {Name = "user"}}
             };
         }
 
@@ -616,6 +616,12 @@ namespace Apache.Ignite.Core.Tests.Services
         public void sleep(long delayMs)
         {
             throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public object testRoundtrip(object x)
+        {
+            return x;
         }
     }
 }
