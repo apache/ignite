@@ -55,6 +55,11 @@ public class ObjectStatisticsEvent {
         return key;
     }
 
+    /**
+     * Get object statistics.
+     *
+     * @return Object statistics.
+     */
     public ObjectStatisticsImpl statistics() {
         return statistics;
     }
