@@ -48,9 +48,6 @@ class VisorConsole {
     /** Copyright. */
     protected def copyright() = COPYRIGHT
 
-    /** Release date. */
-    protected def releaseDate() = new SimpleDateFormat("ddMMyyyy").parse(RELEASE_DATE_STR)
-
     /** Program name. */
     protected val progName = sys.props.getOrElse(IGNITE_PROG_NAME, "ignitevisorcmd")
 
@@ -326,7 +323,7 @@ class VisorConsole {
                 new java.lang.reflect.InvocationHandler {
                     def invoke(proxy: Any, mth: java.lang.reflect.Method, args: Array[Object]) = {
                         AboutDialog.centerShow("Visor - Ignite Shell Console", bannerIconUrl.toExternalForm,
-                            version(), releaseDate(), copyright())
+                            version(), RELEASE_DATE, copyright())
 
                         null
                     }

@@ -29,8 +29,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
@@ -150,8 +153,11 @@ public class DdlSqlToCommandConverter {
     private CreateTableCommand convertCreateTable(IgniteSqlCreateTable createTblNode, PlanningContext ctx) {
         CreateTableCommand createTblCmd = new CreateTableCommand();
 
-        createTblCmd.schemaName(deriveSchemaName(createTblNode.name(), ctx));
-        createTblCmd.tableName(deriveObjectName(createTblNode.name(), ctx, "tableName"));
+        String schemaName = deriveSchemaName(createTblNode.name(), ctx);
+        String tableName = deriveObjectName(createTblNode.name(), ctx, "tableName");
+
+        createTblCmd.schemaName(schemaName);
+        createTblCmd.tableName(tableName);
         createTblCmd.ifNotExists(createTblNode.ifNotExists());
         createTblCmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
 
@@ -163,56 +169,109 @@ public class DdlSqlToCommandConverter {
             }
         }
 
-        List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList().getList().stream()
-            .filter(SqlColumnDeclaration.class::isInstance)
-            .map(SqlColumnDeclaration.class::cast)
-            .collect(Collectors.toList());
-
         IgnitePlanner planner = ctx.planner();
 
-        List<ColumnDefinition> cols = new ArrayList<>();
-
-        for (SqlColumnDeclaration col : colDeclarations) {
-            if (!col.name.isSimple())
-                throw new IgniteSQLException("Unexpected value of columnName [" +
-                    "expected a simple identifier, but was " + col.name + "; " +
-                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
-
-            String name = col.name.getSimple();
-            RelDataType type = planner.convert(col.dataType);
-
-            Object dflt = null;
-            if (col.expression != null)
-                dflt = ((SqlLiteral)col.expression).getValue();
-
-            cols.add(new ColumnDefinition(name, type, dflt));
-        }
-
-        createTblCmd.columns(cols);
-
-        List<SqlKeyConstraint> pkConstraints = createTblNode.columnList().getList().stream()
-            .filter(SqlKeyConstraint.class::isInstance)
-            .map(SqlKeyConstraint.class::cast)
-            .collect(Collectors.toList());
-
-        if (pkConstraints.size() > 1)
-            throw new IgniteSQLException("Unexpected amount of primary key constraints [" +
-                "expected at most one, but was " + pkConstraints.size() + "; " +
-                "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
-
-        if (!F.isEmpty(pkConstraints)) {
-            Set<String> dedupSet = new HashSet<>();
-
-            List<String> pkCols = pkConstraints.stream()
-                .map(pk -> pk.getOperandList().get(1))
-                .map(SqlNodeList.class::cast)
-                .flatMap(l -> l.getList().stream())
-                .map(SqlIdentifier.class::cast)
-                .map(SqlIdentifier::getSimple)
-                .filter(dedupSet::add)
+        if (createTblNode.query() == null) {
+            List<SqlColumnDeclaration> colDeclarations = createTblNode.columnList().getList().stream()
+                .filter(SqlColumnDeclaration.class::isInstance)
+                .map(SqlColumnDeclaration.class::cast)
                 .collect(Collectors.toList());
 
-            createTblCmd.primaryKeyColumns(pkCols);
+            List<ColumnDefinition> cols = new ArrayList<>();
+
+            for (SqlColumnDeclaration col : colDeclarations) {
+                if (!col.name.isSimple())
+                    throw new IgniteSQLException("Unexpected value of columnName [" +
+                        "expected a simple identifier, but was " + col.name + "; " +
+                        "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+
+                String name = col.name.getSimple();
+                RelDataType type = planner.convert(col.dataType);
+
+                Object dflt = null;
+                if (col.expression != null)
+                    dflt = ((SqlLiteral)col.expression).getValue();
+
+                cols.add(new ColumnDefinition(name, type, dflt));
+            }
+
+            createTblCmd.columns(cols);
+
+            List<SqlKeyConstraint> pkConstraints = createTblNode.columnList().getList().stream()
+                .filter(SqlKeyConstraint.class::isInstance)
+                .map(SqlKeyConstraint.class::cast)
+                .collect(Collectors.toList());
+
+            if (pkConstraints.size() > 1)
+                throw new IgniteSQLException("Unexpected amount of primary key constraints [" +
+                    "expected at most one, but was " + pkConstraints.size() + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+
+            if (!F.isEmpty(pkConstraints)) {
+                Set<String> dedupSet = new HashSet<>();
+
+                List<String> pkCols = pkConstraints.stream()
+                    .map(pk -> pk.getOperandList().get(1))
+                    .map(SqlNodeList.class::cast)
+                    .flatMap(l -> l.getList().stream())
+                    .map(SqlIdentifier.class::cast)
+                    .map(SqlIdentifier::getSimple)
+                    .filter(dedupSet::add)
+                    .collect(Collectors.toList());
+
+                createTblCmd.primaryKeyColumns(pkCols);
+            }
+        }
+        else { // CREATE AS SELECT.
+            ValidationResult res = planner.validateAndGetTypeMetadata(createTblNode.query());
+
+            // Create INSERT node on top of AS SELECT node.
+            SqlInsert sqlInsert = new SqlInsert(
+                createTblNode.query().getParserPosition(),
+                SqlNodeList.EMPTY,
+                createTblNode.name(),
+                res.sqlNode(),
+                null
+            );
+
+            createTblCmd.insertStatement(sqlInsert);
+
+            List<RelDataTypeField> fields = res.dataType().getFieldList();
+            List<ColumnDefinition> cols = new ArrayList<>(fields.size());
+
+            if (createTblNode.columnList() != null) {
+                // Derive column names from the CREATE TABLE clause and column types from the query.
+                List<SqlIdentifier> colNames = createTblNode.columnList().getList().stream()
+                    .map(SqlIdentifier.class::cast)
+                    .collect(Collectors.toList());
+
+                if (fields.size() != colNames.size()) {
+                    throw new IgniteSQLException("Number of columns must match number of query columns",
+                        IgniteQueryErrorCode.PARSING);
+                }
+
+                for (int i = 0; i < colNames.size(); i++) {
+                    SqlIdentifier colName = colNames.get(i);
+
+                    assert colName.isSimple();
+
+                    RelDataType type = fields.get(i).getType();
+
+                    cols.add(new ColumnDefinition(colName.getSimple(), type, null));
+                }
+            }
+            else {
+                // Derive column names and column types from the query.
+                for (RelDataTypeField field : fields)
+                    cols.add(new ColumnDefinition(field.getName(), field.getType(), null));
+            }
+
+            createTblCmd.columns(cols);
+        }
+
+        if (createTblCmd.columns() == null) {
+            throw new IgniteSQLException("Column list or query should be specified for CREATE TABLE command",
+                IgniteQueryErrorCode.PARSING);
         }
 
         return createTblCmd;

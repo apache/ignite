@@ -1,0 +1,129 @@
+# name: test/sql/function/string/regex_search.test
+# description: regex search test
+# group: [string]
+
+# constant strings
+query T
+SELECT 'asdf' ~ '.*sd.*'
+----
+true
+
+query T
+SELECT 'asdf' ~ '.*yu.*'
+----
+false
+
+query T
+SELECT 'asdf' ~ ''
+----
+true
+
+# partial matches okay
+query T
+SELECT 'asdf' ~ 'sd'
+----
+true
+
+query T
+SELECT 'asdf' ~ '^sd$'
+----
+false
+
+query T
+SELECT 'asdf' ~ '^.sd.$'
+----
+true
+
+query T
+SELECT 'asdf' ~ '^sdf$'
+----
+false
+
+# empty strings
+query T
+SELECT '' ~ '.*yu.*'
+----
+false
+
+query T
+SELECT '' ~ '.*'
+----
+true
+
+# NULLs
+query T
+SELECT 'asdf' ~ CAST(NULL AS VARCHAR)
+----
+NULL
+
+query T
+SELECT CAST(NULL AS VARCHAR) ~ '.*sd.*'
+----
+NULL
+
+query T
+SELECT CAST(NULL AS VARCHAR) ~ CAST(NULL AS VARCHAR)
+----
+NULL
+
+query T
+SELECT 'foobarbequebaz' ~ '(bar)(beque)'
+----
+true
+
+# postgres says throw error on invalid regex
+statement error
+SELECT '' ~ '[a-z'
+
+statement ok
+CREATE TABLE regex(s VARCHAR, p VARCHAR)
+
+statement ok
+INSERT INTO regex VALUES ('asdf', 'sd'), ('asdf', '^sd'), (NULL, '^sd'), ('asdf', NULL)
+
+query T
+SELECT s ~ '.*' FROM regex ORDER BY s
+----
+NULL
+true
+true
+true
+
+query T
+SELECT s ~ p FROM regex order by s, p
+----
+NULL
+NULL
+false
+true
+
+# test regex with case sensitivity
+query T
+SELECT 'asdf' ~* '.*SD.*'
+----
+true
+
+query T
+SELECT 'asdf' ~ '.*SD.*'
+----
+false
+
+# this also works with tables
+statement ok
+CREATE TABLE test(v VARCHAR);
+
+statement ok
+INSERT INTO test VALUES ('hello'), ('HELLO');
+
+query T
+SELECT v ~* 'h.*' FROM test ORDER BY v
+----
+true
+true
+
+query T
+SELECT v ~ 'h.*' FROM test ORDER BY v
+----
+false
+true
+

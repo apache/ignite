@@ -42,7 +42,7 @@ SELECT a % 2, b FROM test UNION SELECT b, a % 2 AS k ORDER BY a % 2
 
 # but works if not ambiguous
 query II
-SELECT a % 2, b FROM test UNION SELECT a % 2 AS k, b FROM test ORDER BY a % 2
+SELECT mod(a , 2) as a, b FROM test UNION SELECT a % 2 AS k, b FROM test ORDER BY a % 2
 ----
 0	21
 1	22

@@ -5,44 +5,27 @@
 statement ok
 PRAGMA enable_verification
 
-# 30 days = 1 month for ordering purposes, but NOT for equality purposes
-query T
+# Cannot compare DAY-TIME and YEAR-MONTHS intervals
+statement error
 SELECT INTERVAL '30' DAY > INTERVAL '1' MONTH
-----
-0
-
-query T
-SELECT INTERVAL '30' DAY = INTERVAL '1' MONTH
-----
-0
-
-query T
-SELECT INTERVAL '30' DAY >= INTERVAL '1' MONTH
-----
-0
-
-query T
-SELECT INTERVAL '31' DAY > INTERVAL '1' MONTH
-----
-1
 
 query T
 SELECT INTERVAL '1' HOUR < INTERVAL '1' DAY
 ----
-1
+true
 
 query T
 SELECT INTERVAL '30' HOUR <= INTERVAL '1' DAY
 ----
-0
+false
 
 query T
 SELECT INTERVAL '1' HOUR = INTERVAL '1' HOUR
 ----
-1
+true
 
 query T
 SELECT INTERVAL '1' YEAR = INTERVAL '12' MONTH
 ----
-1
+true
 

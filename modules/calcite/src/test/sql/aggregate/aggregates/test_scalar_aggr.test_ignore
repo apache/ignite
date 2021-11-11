@@ -37,7 +37,7 @@ statement ok
 INSERT INTO integers VALUES (1), (2), (NULL)
 
 query IIIIIT
-SELECT COUNT(1), MIN(1), FIRST(1), MAX(1), SUM(1), STRING_AGG('hello', ',') FROM integers
+SELECT COUNT(1), MIN(1), ANY_VALUE(1), MAX(1), SUM(1), STRING_AGG('hello', ',') FROM integers
 ----
 3
 1
@@ -48,12 +48,11 @@ hello,hello,hello
 
 # test aggregates on a set of values with scalar NULL values as inputs
 query IIIIIT
-SELECT COUNT(NULL), MIN(NULL), FIRST(NULL), MAX(NULL), SUM(NULL), STRING_AGG(NULL, NULL) FROM integers
+SELECT COUNT(NULL), MIN(NULL), ANY_VALUE(NULL), MAX(NULL), SUM(NULL), STRING_AGG(NULL, NULL) FROM integers
 ----
+NULL
+NULL
+NULL
+NULL
 0
-NULL
-NULL
-NULL
-NULL
-NULL
 

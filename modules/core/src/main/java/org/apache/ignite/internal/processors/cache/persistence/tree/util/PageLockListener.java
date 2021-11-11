@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 /**
  * Page lock listener.
  */
-public interface PageLockListener {
+public interface PageLockListener extends AutoCloseable {
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
@@ -66,4 +66,7 @@ public interface PageLockListener {
      * @param pageAddr Page address.
      */
     public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr);
+
+    /** {@inheritDoc} */
+    @Override public void close();
 }

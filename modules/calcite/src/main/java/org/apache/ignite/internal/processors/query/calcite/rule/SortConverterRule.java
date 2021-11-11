@@ -27,6 +27,7 @@ import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
  * Converter rule for sort operator.
@@ -44,6 +45,7 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
 
     /** Rule configuration. */
     public interface Config extends RelRule.Config {
+        /** Default config. */
         SortConverterRule.Config DEFAULT = EMPTY
             .withOperandSupplier(b ->
                 b.operand(LogicalSort.class).anyInputs())
@@ -59,19 +61,21 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
     @Override public void onMatch(RelOptRuleCall call) {
         final Sort sort = call.rel(0);
         RelOptCluster cluster = sort.getCluster();
-        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
-        RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(sort.getInput(), inTraits);
 
         if (sort.fetch != null || sort.offset != null) {
-            RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
+            RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replace(sort.getCollation())
+                .replace(IgniteDistributions.single());
 
             call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
                 sort.fetch));
-
-            return;
         }
+        else {
+            RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
+            RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+            RelNode input = convert(sort.getInput(), inTraits);
 
-        call.transformTo(new IgniteSort(cluster, outTraits, input, sort.getCollation()));
+            call.transformTo(new IgniteSort(cluster, outTraits, input, sort.getCollation()));
+        }
     }
 }

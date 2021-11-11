@@ -1,139 +1,126 @@
 # name: test/sql/function/string/regex_search.test
 # description: regex search test
 # group: [string]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14991
+# Ignored https://issues.apache.org/jira/browse/IGNITE-15562
 
 # constant strings
 query T
-SELECT regexp_matches('asdf', '.*sd.*')
+SELECT 'asdf' ~ '.*sd.*'
 ----
-1
+true
 
 query T
-SELECT regexp_matches('asdf', '.*yu.*')
+SELECT 'asdf' ~ '.*yu.*'
 ----
-0
+false
 
 query T
-SELECT regexp_matches('asdf', '')
+SELECT 'asdf' ~ ''
 ----
-1
+true
 
 # partial matches okay
 query T
-SELECT regexp_matches('asdf', 'sd')
+SELECT 'asdf' ~ 'sd'
 ----
-1
+true
 
 query T
-SELECT regexp_full_match('asdf', 'sd')
+SELECT 'asdf' ~ '^sd$'
 ----
-0
+false
 
 query T
-SELECT regexp_full_match('asdf', '.sd.')
+SELECT 'asdf' ~ '^.sd.$'
 ----
-1
+true
 
 query T
-SELECT regexp_matches('asdf', '^sdf$')
+SELECT 'asdf' ~ '^sdf$'
 ----
-0
+false
 
 # empty strings
 query T
-SELECT regexp_matches('', '.*yu.*')
+SELECT '' ~ '.*yu.*'
 ----
-0
+false
 
 query T
-SELECT regexp_matches('', '.*')
+SELECT '' ~ '.*'
 ----
-1
+true
 
 # NULLs
 query T
-SELECT regexp_matches('asdf', CAST(NULL AS STRING))
+SELECT 'asdf' ~ CAST(NULL AS VARCHAR)
 ----
 NULL
 
 query T
-SELECT regexp_matches(CAST(NULL AS STRING), '.*sd.*')
+SELECT CAST(NULL AS VARCHAR) ~ '.*sd.*'
 ----
 NULL
 
 query T
-SELECT regexp_matches(CAST(NULL AS STRING), CAST(NULL AS STRING))
+SELECT CAST(NULL AS VARCHAR) ~ CAST(NULL AS VARCHAR)
 ----
 NULL
 
 query T
-SELECT regexp_matches('foobarbequebaz', '(bar)(beque)')
+SELECT 'foobarbequebaz' ~ '(bar)(beque)'
 ----
-1
+true
 
 # postgres says throw error on invalid regex
 statement error
-SELECT regexp_matches('', '\X')
+SELECT '' ~ '\X'
 
 statement ok
-CREATE TABLE regex(s STRING, p STRING)
+CREATE TABLE regex(s VARCHAR, p VARCHAR)
 
 statement ok
 INSERT INTO regex VALUES ('asdf', 'sd'), ('asdf', '^sd'), (NULL, '^sd'), ('asdf', NULL)
 
 query T
-SELECT regexp_matches(s, '.*') FROM regex
+SELECT s ~ '.*' FROM regex ORDER BY s
 ----
-1
-1
 NULL
-1
+true
+true
+true
 
 query T
-SELECT regexp_matches(s, p) FROM regex
+SELECT s ~ p FROM regex order by s, p
 ----
-1
-0
 NULL
 NULL
+false
+true
 
-# test regex_matches with options
-# case sensitivity
+# test regex with case sensitivity
 query T
-SELECT regexp_matches('asdf', '.*SD.*', 'i')
+SELECT 'asdf' ~* '.*SD.*'
 ----
-1
-
-query T
-SELECT regexp_matches('asdf', '.*SD.*', 'c')
-----
-0
-
-# dot matches newline
-query T
-SELECT regexp_matches('hello
-world', '.*', 's')
-----
-1
+true
 
 query T
-SELECT regexp_full_match('hello
-world', '.*', 'n')
+SELECT 'asdf' ~ '.*SD.*'
 ----
-0
+false
 
-# whitespace is ignored
+# newlines
 query T
-SELECT regexp_matches('asdf', '.*SD.*', ' i 	')
+SELECT 'hello
+world' ~ '.*'
 ----
-1
+true
 
-# NULL in options is ignored
 query T
-SELECT regexp_matches('asdf', '.*SD.*', NULL)
+SELECT 'hello
+world' ~ '^.*$'
 ----
-0
+true
 
 # this also works with tables
 statement ok
@@ -143,25 +130,14 @@ statement ok
 INSERT INTO test VALUES ('hello'), ('HELLO');
 
 query T
-SELECT regexp_matches(v, 'h.*', 'i') FROM test ORDER BY v
+SELECT v ~* 'h.*' FROM test ORDER BY v
 ----
-1
-1
+true
+true
 
 query T
-SELECT regexp_matches(v, 'h.*', 'c') FROM test ORDER BY v
+SELECT v ~ 'h.*' FROM test ORDER BY v
 ----
-0
-1
-
-statement error
-SELECT regexp_matches(v, 'h.*', v) FROM test ORDER BY v
-
-# throw on invalid options
-statement error
-SELECT regexp_matches('asdf', '.*SD.*', 'q')
-
-# can only use "g" with regexp replace
-statement error
-SELECT regexp_matches('asdf', '.*SD.*', 'g')
+false
+true
 

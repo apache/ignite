@@ -23,6 +23,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheStoreNodeRestartAbstractTest;
 
+/** */
 public class CacheHibernateBlobStoreNodeRestartTest extends IgniteCacheStoreNodeRestartAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheStore getStore() {

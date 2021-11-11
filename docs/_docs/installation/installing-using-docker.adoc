@@ -182,7 +182,7 @@ To enable specific link:setup#enabling-modules[modules], specify their names in 
 [source, shell]
 ----
 sudo docker run -d \
-  -e "OPTION_LIBS=ignite-rest-http,ignite-aws" \
+  -e "OPTION_LIBS=ignite-rest-http" \
   apacheignite/ignite
 ----
 

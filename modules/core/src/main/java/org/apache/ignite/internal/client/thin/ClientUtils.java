@@ -749,37 +749,98 @@ final class ClientUtils {
 
     /** Thin client protocol cache configuration item codes. */
     private enum CfgItem {
-        /** Name. */NAME(0),
-        /** Cache mode. */CACHE_MODE(1),
-        /** Atomicity mode. */ATOMICITY_MODE(2),
-        /** Backups. */BACKUPS(3),
-        /** Write synchronization mode. */WRITE_SYNC_MODE(4),
-        /** Read from backup. */READ_FROM_BACKUP(6),
-        /** Eager ttl. */EAGER_TTL(405),
-        /** Group name. */GROUP_NAME(400),
-        /** Default lock timeout. */DEFAULT_LOCK_TIMEOUT(402),
-        /** Partition loss policy. */PART_LOSS_POLICY(404),
-        /** Rebalance batch size. */REBALANCE_BATCH_SIZE(303),
-        /** Rebalance batches prefetch count. */REBALANCE_BATCHES_PREFETCH_COUNT(304),
-        /** Rebalance delay. */REBALANCE_DELAY(301),
-        /** Rebalance mode. */REBALANCE_MODE(300),
-        /** Rebalance order. */REBALANCE_ORDER(305),
-        /** Rebalance throttle. */REBALANCE_THROTTLE(306),
-        /** Rebalance timeout. */REBALANCE_TIMEOUT(302),
-        /** Copy on read. */COPY_ON_READ(5),
-        /** Data region name. */DATA_REGION_NAME(100),
-        /** Stats enabled. */STATS_ENABLED(406),
-        /** Max async ops. */MAX_ASYNC_OPS(403),
-        /** Max query iterators. */MAX_QUERY_ITERATORS(206),
-        /** Onheap cache enabled. */ONHEAP_CACHE_ENABLED(101),
-        /** Query metric size. */QUERY_METRIC_SIZE(202),
-        /** Query parallelism. */QUERY_PARALLELISM(201),
-        /** Sql escape all. */SQL_ESCAPE_ALL(205),
-        /** Sql index max inline size. */SQL_IDX_MAX_INLINE_SIZE(204),
-        /** Sql schema. */SQL_SCHEMA(203),
-        /** Key configs. */KEY_CONFIGS(401),
-        /** Key entities. */QUERY_ENTITIES(200),
-        /** Expire policy. */EXPIRE_POLICY(407);
+        /** Name. */
+        NAME(0),
+
+        /** Cache mode. */
+        CACHE_MODE(1),
+
+        /** Atomicity mode. */
+        ATOMICITY_MODE(2),
+
+        /** Backups. */
+        BACKUPS(3),
+
+        /** Write synchronization mode. */
+        WRITE_SYNC_MODE(4),
+
+        /** Read from backup. */
+        READ_FROM_BACKUP(6),
+
+        /** Eager ttl. */
+        EAGER_TTL(405),
+
+        /** Group name. */
+        GROUP_NAME(400),
+
+        /** Default lock timeout. */
+        DEFAULT_LOCK_TIMEOUT(402),
+
+        /** Partition loss policy. */
+        PART_LOSS_POLICY(404),
+
+        /** Rebalance batch size. */
+        REBALANCE_BATCH_SIZE(303),
+
+        /** Rebalance batches prefetch count. */
+        REBALANCE_BATCHES_PREFETCH_COUNT(304),
+
+        /** Rebalance delay. */
+        REBALANCE_DELAY(301),
+
+        /** Rebalance mode. */
+        REBALANCE_MODE(300),
+
+        /** Rebalance order. */
+        REBALANCE_ORDER(305),
+
+        /** Rebalance throttle. */
+        REBALANCE_THROTTLE(306),
+
+        /** Rebalance timeout. */
+        REBALANCE_TIMEOUT(302),
+
+        /** Copy on read. */
+        COPY_ON_READ(5),
+
+        /** Data region name. */
+        DATA_REGION_NAME(100),
+
+        /** Stats enabled. */
+        STATS_ENABLED(406),
+
+        /** Max async ops. */
+        MAX_ASYNC_OPS(403),
+
+        /** Max query iterators. */
+        MAX_QUERY_ITERATORS(206),
+
+        /** Onheap cache enabled. */
+        ONHEAP_CACHE_ENABLED(101),
+
+        /** Query metric size. */
+        QUERY_METRIC_SIZE(202),
+
+        /** Query parallelism. */
+        QUERY_PARALLELISM(201),
+
+        /** Sql escape all. */
+        SQL_ESCAPE_ALL(205),
+
+        /** Sql index max inline size. */
+        SQL_IDX_MAX_INLINE_SIZE(204),
+
+        /** Sql schema. */
+        SQL_SCHEMA(203),
+
+        /** Key configs. */
+        KEY_CONFIGS(401),
+
+        /** Key entities. */
+        QUERY_ENTITIES(200),
+
+        /** Expire policy. */
+        EXPIRE_POLICY(407);
 
         /** Code. */
         private final short code;

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -147,6 +148,9 @@ public class CancelTest extends GridCommonAbstractTest {
             fail("Unexpected exception: " + ex);
         }
 
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> engine.runningQueries().isEmpty(), 10_000));
+
         awaitReservationsRelease(grid(0), "TEST");
     }
 
@@ -167,6 +171,11 @@ public class CancelTest extends GridCommonAbstractTest {
         it.next();
 
         stopGrid(0);
+
+        QueryEngine engine1 = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> engine1.runningQueries().isEmpty(), 10_000));
 
         awaitReservationsRelease(grid(1), "TEST");
     }

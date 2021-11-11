@@ -62,6 +62,7 @@ public class WeightedMinkowskiDistanceTest {
     );
   }
 
+  /** */
   private final TestData testData;
 
   /** */
@@ -80,17 +81,24 @@ public class WeightedMinkowskiDistanceTest {
         distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
   }
 
+  /** */
   private static class TestData {
+    /** */
     public final Vector vectorA;
 
+    /** */
     public final Vector vectorB;
 
+    /** */
     public final Integer p;
 
+    /** */
     public final double[] weights;
 
+    /** */
     public final Double expRes;
 
+    /** */
     private TestData(double[] vectorA, double[] vectorB, Integer p, double[] weights, double expRes) {
       this.vectorA = new DenseVector(vectorA);
       this.vectorB = new DenseVector(vectorB);
@@ -99,6 +107,7 @@ public class WeightedMinkowskiDistanceTest {
       this.expRes = expRes;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
       return String.format("d(%s,%s;%s,%s) = %s",
           Arrays.toString(vectorA.asArray()),

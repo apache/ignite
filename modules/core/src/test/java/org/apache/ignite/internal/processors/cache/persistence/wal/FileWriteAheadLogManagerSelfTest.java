@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.lang.System.setProperty;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.minWalArchiveSize;
@@ -34,10 +37,9 @@ public class FileWriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
      * Testing of {@link FileWriteAheadLogManager#minWalArchiveSize(DataStorageConfiguration)}.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, value = "-1")
     public void testGettingMinWalArchiveSizeFromConfiguration() {
-        DataStorageConfiguration cfg = new DataStorageConfiguration();
-
-        cfg.setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE);
+        DataStorageConfiguration cfg = new DataStorageConfiguration().setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE);
 
         for (long i : F.asList(10L, 20L, HALF_MAX_WAL_ARCHIVE_SIZE))
             assertEquals(UNLIMITED_WAL_ARCHIVE, minWalArchiveSize(cfg.setMinWalArchiveSize(i)));
@@ -48,5 +50,31 @@ public class FileWriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
             assertEquals(i, minWalArchiveSize(cfg.setMinWalArchiveSize(i)));
 
         assertEquals(50, minWalArchiveSize(cfg.setMinWalArchiveSize(HALF_MAX_WAL_ARCHIVE_SIZE)));
+    }
+
+    /**
+     * Testing of {@link FileWriteAheadLogManager#minWalArchiveSize(DataStorageConfiguration)}.
+     */
+    @Test
+    public void testGettingMinWalArchiveSizeFromSystemProperty() {
+        DataStorageConfiguration cfg = new DataStorageConfiguration()
+            .setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE)
+            .setMinWalArchiveSize(HALF_MAX_WAL_ARCHIVE_SIZE);
+
+        for (double i : F.asList(0.1d, 0.3d, (double)HALF_MAX_WAL_ARCHIVE_SIZE)) {
+            setProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, Double.toString(i));
+            assertEquals(UNLIMITED_WAL_ARCHIVE, minWalArchiveSize(cfg));
+        }
+
+        int max = 100;
+        cfg.setMaxWalArchiveSize(max);
+
+        for (double i : F.asList(0.1d, 0.2d)) {
+            setProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, Double.toString(i));
+            assertEquals((long)(i * max), minWalArchiveSize(cfg));
+        }
+
+        setProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, Double.toString(0.5));
+        assertEquals(25, minWalArchiveSize(cfg.setMinWalArchiveSize(25)));
     }
 }

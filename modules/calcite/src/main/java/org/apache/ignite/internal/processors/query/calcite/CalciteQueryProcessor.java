@@ -17,12 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -34,10 +46,12 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -55,6 +69,11 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityServ
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteTypeCoercion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -62,7 +81,11 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderIm
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
@@ -87,6 +110,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     .build()
             )
         )
+        .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(
             SqlParser.config()
                 .withParserFactory(IgniteSqlParserImpl.FACTORY)
@@ -94,7 +118,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 .withConformance(IgniteSqlConformance.INSTANCE))
         .sqlValidatorConfig(SqlValidator.Config.DEFAULT
             .withIdentifierExpansion(true)
-            .withSqlConformance(IgniteSqlConformance.INSTANCE))
+            .withDefaultNullCollation(NullCollation.LOW)
+            .withSqlConformance(IgniteSqlConformance.INSTANCE)
+            .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
         .operatorTable(SqlOperatorTables.chain(
             SqlLibraryOperatorTableFactory.INSTANCE
@@ -109,6 +135,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         // Custom cost factory to use during optimization
         .costFactory(new IgniteCostFactory())
         .typeSystem(IgniteTypeSystem.INSTANCE)
+        .traitDefs(new RelTraitDef<?>[] {
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE,
+        })
         .build();
 
     /** */
@@ -139,7 +172,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final MailboxRegistry mailboxRegistry;
 
     /** */
-    private final ExecutionService executionSvc;
+    private final ExecutionService<Object[]> executionSvc;
+
+    /** */
+    private final PrepareServiceImpl prepareSvc;
+
+    /** */
+    private final QueryRegistry qryReg;
 
     /**
      * @param ctx Kernal context.
@@ -157,6 +196,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         msgSvc = new MessageServiceImpl(ctx);
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
+        prepareSvc = new PrepareServiceImpl(ctx);
+        qryReg = new QueryRegistryImpl(ctx.log(QueryRegistry.class));
     }
 
     /**
@@ -222,6 +263,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return failureProcessor;
     }
 
+    /** */
+    public PrepareServiceImpl prepareService() {
+        return prepareSvc;
+    }
+
     /** {@inheritDoc} */
     @Override public void start() {
         onStart(ctx,
@@ -233,13 +279,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             taskExecutor,
             mappingSvc,
             qryPlanCache,
-            exchangeSvc
+            exchangeSvc,
+            qryReg
         );
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         onStop(
+            qryReg,
             executionSvc,
             mailboxRegistry,
             partSvc,
@@ -253,10 +301,96 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
-        String qry, Object... params) throws IgniteSQLException {
+    @Override public List<FieldsQueryCursor<List<?>>> query(
+        @Nullable QueryContext qryCtx,
+        @Nullable String schemaName,
+        String sql,
+        Object... params
+    ) throws IgniteSQLException {
+        SchemaPlus schema = schemaHolder.schema(schemaName);
 
-        return executionSvc.executeQuery(qryCtx, schemaName, qry, params);
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
+
+        if (plan != null) {
+            RootQuery<Object[]> qry = new RootQuery<>(
+                sql,
+                schema,
+                params,
+                qryCtx,
+                exchangeSvc,
+                (q) -> qryReg.unregister(q.id()),
+                log
+            );
+
+            qryReg.register(qry);
+
+            try {
+                return Collections.singletonList(executionSvc.executePlan(
+                    qry,
+                    plan
+                ));
+            }
+            catch (Exception e) {
+                boolean isCanceled = qry.isCancelled();
+
+                qry.cancel();
+
+                qryReg.unregister(qry.id());
+
+                if (isCanceled)
+                    throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
+                else
+                    throw e;
+
+            }
+        }
+
+        SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
+
+        List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());
+
+        for (final SqlNode sqlNode: qryList) {
+            RootQuery<Object[]> qry = new RootQuery<>(
+                sqlNode.toString(),
+                schemaHolder.schema(schemaName), // Update schema for each query in multiple statements.
+                params,
+                qryCtx,
+                exchangeSvc,
+                (q) -> qryReg.unregister(q.id()),
+                log
+            );
+
+            qrys.add(qry);
+
+            qryReg.register(qry);
+
+            try {
+                if (qryList.size() == 1) {
+                    plan = queryPlanCache().queryPlan(
+                        new CacheKey(schemaName, qry.sql()),
+                        () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext()));
+                }
+                else
+                    plan = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
+
+                cursors.add(executionSvc.executePlan(qry, plan));
+            }
+            catch (Exception e) {
+                boolean isCanceled = qry.isCancelled();
+
+                qrys.forEach(RootQuery::cancel);
+
+                qryReg.unregister(qry.id());
+
+                if (isCanceled)
+                    throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
+                else
+                    throw e;
+            }
+        }
+
+        return cursors;
     }
 
     /** */
@@ -273,5 +407,20 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             if (service instanceof LifecycleAware)
                 ((LifecycleAware) service).onStop();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public RunningQuery runningQuery(UUID id) {
+        return qryReg.query(id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<? extends RunningQuery> runningQueries() {
+        return qryReg.runningQueries();
+    }
+
+    /** */
+    public QueryRegistry queryRegistry() {
+        return qryReg;
     }
 }

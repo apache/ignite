@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.junit.Test;
@@ -32,7 +31,6 @@ import org.junit.Test;
 /**
  * Table spool test.
  */
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class TableSpoolPlannerTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.
@@ -76,59 +74,6 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
 
         RelNode phys = physicalPlan(sql, publicSchema,
             "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");
-
-        assertNotNull(phys);
-
-        IgniteTableSpool tblSpool = findFirstNode(phys, byClass(IgniteTableSpool.class));
-
-        assertNotNull("Invalid plan:\n" + RelOptUtil.toString(phys), tblSpool);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void tableSpoolBroadcastNotRewindable() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build(),
-            RewindabilityTrait.ONE_WAY) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build(),
-            RewindabilityTrait.ONE_WAY) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
-
-        RelNode phys = physicalPlan(sql, publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter",
-            "FilterSpoolMergeToHashIndexSpoolRule", "FilterSpoolMergeToSortIndexSpoolRule");
 
         assertNotNull(phys);
 

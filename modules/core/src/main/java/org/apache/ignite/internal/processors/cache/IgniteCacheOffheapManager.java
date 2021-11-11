@@ -101,31 +101,6 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * Partition counter update callback. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition.
-     * @param cntr Partition counter.
-     */
-    public void onPartitionCounterUpdated(int part, long cntr);
-
-    /**
-     * Initial counter will be updated on state restore only
-     *
-     * @param part Partition
-     * @param start Start.
-     * @param delta Delta.
-     */
-    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
-
-    /**
-     * Partition counter provider. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition ID.
-     * @return Last updated counter.
-     */
-    public long lastUpdatedPartitionCounter(int part);
-
-    /**
      * @param entry Cache entry.
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
@@ -153,10 +128,10 @@ public interface IgniteCacheOffheapManager {
     public Iterable<CacheDataStore> cacheDataStores();
 
     /**
-     * @param part Partition.
-     * @return Data store.
+     * @param part Local partition or {@code null} if a related cache group is <tt>LOCAL</tt>.
+     * @return Cache data store associated with given partition or the cache data store for a <tt>LOCAL</tt> cache group.
      */
-    public CacheDataStore dataStore(GridDhtLocalPartition part);
+    public CacheDataStore dataStore(@Nullable GridDhtLocalPartition part);
 
     /**
      * @param store Data store.
@@ -513,12 +488,12 @@ public interface IgniteCacheOffheapManager {
     /**
      * Store entries.
      *
-     * @param partId Partition number.
+     * @param part Local partition.
      * @param infos Entry infos.
      * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
      * @throws IgniteCheckedException If failed.
      */
-    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+    public void storeEntries(GridDhtLocalPartition part, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
     /**
@@ -563,11 +538,15 @@ public interface IgniteCacheOffheapManager {
     public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
+     * Dropping the root page of the index tree.
+     *
      * @param cacheId Cache ID.
      * @param idxName Index name.
+     * @param segment Segment index.
+     * @return Dropped root page of the index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
+    @Nullable RootPage dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * Renaming the root page of the index tree.
@@ -600,18 +579,12 @@ public interface IgniteCacheOffheapManager {
     public long cacheEntriesCount(int cacheId);
 
     /**
-     * @param part Partition.
-     * @return Number of entries.
-     */
-    public long totalPartitionEntriesCount(int part);
-
-    /**
      * Preload a partition. Must be called under partition reservation for DHT caches.
      *
-     * @param part Partition.
+     * @param pardId Partition id.
      * @throws IgniteCheckedException If failed.
      */
-    public void preloadPartition(int part) throws IgniteCheckedException;
+    public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
      *
@@ -1082,6 +1055,11 @@ public interface IgniteCacheOffheapManager {
          * Mark store as destroyed.
          */
         public void markDestroyed() throws IgniteCheckedException;
+
+        /**
+         * @return {@code true} If marked as destroyed.
+         */
+        public boolean destroyed();
 
         /**
          * Clears all the records associated with logical cache with given ID.

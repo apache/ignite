@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -56,7 +55,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             PageLockListener pll = mgr.createPageLockTracker("test");
 
             Assert.assertNotNull(pll);
-            Assert.assertSame(pll, DataStructure.NOOP_LSNR);
+            Assert.assertSame(PageLockTrackerManager.NOOP_LSNR, pll);
 
         } finally {
             System.clearProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE");
@@ -70,7 +69,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             PageLockListener pll = mgr.createPageLockTracker("test");
 
             Assert.assertNotNull(pll);
-            Assert.assertNotSame(pll, DataStructure.NOOP_LSNR);
+            Assert.assertNotSame(PageLockTrackerManager.NOOP_LSNR, pll);
 
         } finally {
             System.clearProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE");
@@ -217,6 +216,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void printOverhead(PageLockTrackerManager mgr) {
         System.out.println(
             "Head:" + mgr.getHeapOverhead()

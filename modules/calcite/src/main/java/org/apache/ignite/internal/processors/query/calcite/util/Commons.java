@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -38,8 +40,12 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
@@ -48,9 +54,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -66,7 +77,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class Commons {
     /** */
-    private Commons(){}
+    private Commons() {
+        // No-op.
+    }
 
     /**
      * Converts a QueryContext into a planner context.
@@ -75,6 +88,19 @@ public final class Commons {
      */
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
+    }
+
+    /**
+     * Gets appropriate field from two rows by offset.
+     * @param hnd RowHandler impl.
+     * @param offset Current offset.
+     * @param row1 row1.
+     * @param row2 row2.
+     * @return Returns field by offset.
+     */
+    public static <Row> Object getFieldFromBiRows(RowHandler<Row> hnd, int offset, Row row1, Row row2) {
+        return offset < hnd.columnCount(row1) ? hnd.get(offset, row1) :
+            hnd.get(offset - hnd.columnCount(row1), row2);
     }
 
     /**
@@ -153,24 +179,47 @@ public final class Commons {
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
-    public static PlanningContext context(RelNode rel) {
+    public static BaseQueryContext context(RelNode rel) {
         return context(rel.getCluster());
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
-    public static PlanningContext context(RelOptCluster cluster) {
-        return context(cluster.getPlanner().getContext());
+    public static BaseQueryContext context(RelOptCluster cluster) {
+        return Objects.requireNonNull(cluster.getPlanner().getContext().unwrap(BaseQueryContext.class));
     }
 
     /**
-     * Extracts planner context.
+     * Parses a SQL statement.
+     *
+     * @param qry Query string.
+     * @param parserCfg Parser config.
+     * @return Parsed query.
      */
-    public static PlanningContext context(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
+    public static SqlNodeList parse(String qry, SqlParser.Config parserCfg) {
+        try {
+            return parse(new SourceStringReader(qry), parserCfg);
+        }
+        catch (SqlParseException e) {
+            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
+        }
+    }
+
+    /**
+     * Parses a SQL statement.
+     *
+     * @param reader Source string reader.
+     * @param parserCfg Parser config.
+     * @return Parsed query.
+     * @throws org.apache.calcite.sql.parser.SqlParseException on parse error.
+     */
+    public static SqlNodeList parse(Reader reader, SqlParser.Config parserCfg) throws SqlParseException {
+        SqlParser parser = SqlParser.create(reader, parserCfg);
+
+        return parser.parseStmtList();
     }
 
     /**
@@ -379,5 +428,20 @@ public final class Commons {
         }
 
         return res;
+    }
+
+    /** */
+    public static RelOptCluster cluster() {
+        return BaseQueryContext.CLUSTER;
+    }
+
+    /** */
+    public static IgniteTypeFactory typeFactory() {
+        return BaseQueryContext.TYPE_FACTORY;
+    }
+
+    /** */
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
+        return new MappingQueryContext(locNodeId, topVer);
     }
 }

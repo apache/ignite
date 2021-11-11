@@ -2,6 +2,13 @@
 # description: UPPER/LOWER test
 # group: [string]
 
+# test NULL constant
+query TT
+select UPPER(NULL), LOWER(NULL)
+----
+NULL
+NULL
+
 # unicode
 query TTTT
 select UPPER('áaaá'), UPPER('ö'), LOWER('S̈'), UPPER('ω')
@@ -47,7 +54,7 @@ hulld
 motörhead
 
 query T
-select LOWER(b) FROM strings ORDER BY b
+select LOWER(b) FROM strings ORDER BY b NULLS LAST
 ----
 räcks
 world

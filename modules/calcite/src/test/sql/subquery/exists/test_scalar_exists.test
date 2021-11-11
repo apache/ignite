@@ -8,7 +8,7 @@ PRAGMA enable_verification
 query T
 SELECT EXISTS(SELECT 1)
 ----
-1
+true
 
 statement ok
 CREATE TABLE integers(i INTEGER)
@@ -19,18 +19,18 @@ INSERT INTO integers VALUES (1), (2), (3), (NULL)
 query T
 SELECT EXISTS(SELECT 1) FROM integers
 ----
-1
-1
-1
-1
+true
+true
+true
+true
 
 query T
 SELECT EXISTS(SELECT * FROM integers)
 ----
-1
+true
 
 query T
 SELECT EXISTS(SELECT * FROM integers WHERE i IS NULL)
 ----
-1
+true
 

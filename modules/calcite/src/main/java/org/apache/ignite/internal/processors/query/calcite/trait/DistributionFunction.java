@@ -225,6 +225,7 @@ public abstract class DistributionFunction {
 
     /** */
     private static final class HashDistribution extends DistributionFunction {
+        /** Singleton instance. */
         public static final DistributionFunction INSTANCE = new HashDistribution();
 
         /** {@inheritDoc} */

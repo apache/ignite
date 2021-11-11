@@ -42,7 +42,7 @@ INSERT INTO test VALUES (11, 22), (NULL, 21), (13, 22)
 
 # NULL selection
 query I
-SELECT a FROM test ORDER BY a;
+SELECT a FROM test ORDER BY a NULLS LAST
 ----
 11
 13
@@ -50,7 +50,7 @@ NULL
 
 # cast NULL
 query I
-SELECT cast(a AS BIGINT) FROM test ORDER BY a;
+SELECT cast(a AS BIGINT) FROM test ORDER BY a NULLS LAST;
 ----
 11
 13
@@ -58,7 +58,7 @@ NULL
 
 # NULL addition results in NULL
 query I
-SELECT a + b FROM test ORDER BY a;
+SELECT a + b FROM test ORDER BY a NULLS LAST
 ----
 33
 35

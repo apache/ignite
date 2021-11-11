@@ -26,18 +26,20 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.message.OutboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,6 +49,9 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
     /** */
+    private final UUID locaNodeId;
+
+    /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
@@ -55,11 +60,16 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /** */
     private MessageService msgSvc;
 
+    /** */
+    private QueryRegistry qryRegistry;
+
     /**
      * @param ctx Kernal context.
      */
     public ExchangeServiceImpl(GridKernalContext ctx) {
         super(ctx);
+
+        locaNodeId = ctx.localNodeId();
     }
 
     /**
@@ -104,6 +114,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         return msgSvc;
     }
 
+    /** */
+    public void queryRegistry(QueryRegistry qryRegistry) {
+        this.qryRegistry = qryRegistry;
+    }
+
     /** {@inheritDoc} */
     @Override public <Row> void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId,
         boolean last, List<Row> rows) throws IgniteCheckedException {
@@ -117,8 +132,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** {@inheritDoc} */
-    @Override public void closeOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
-        messageService().send(nodeId, new OutboxCloseMessage(qryId, fragmentId, exchangeId));
+    @Override public void closeQuery(UUID nodeId, UUID qryId) throws IgniteCheckedException {
+        messageService().send(nodeId, new QueryCloseMessage(qryId));
     }
 
     /** {@inheritDoc} */
@@ -139,6 +154,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());
         messageService(proc.messageService());
+        queryRegistry(proc.queryRegistry());
 
         init();
     }
@@ -146,9 +162,9 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /** {@inheritDoc} */
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (InboxCloseMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (OutboxCloseMessage) m), MessageType.QUERY_OUTBOX_CANCEL_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
         messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryCloseMessage) m), MessageType.QUERY_CLOSE_MESSAGE);
     }
 
     /** {@inheritDoc} */
@@ -174,22 +190,15 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
-    protected void onMessage(UUID nodeId, OutboxCloseMessage msg) {
-        Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
+    protected void onMessage(UUID nodeId, QueryCloseMessage msg) {
+        RunningQuery qry = qryRegistry.query(msg.queryId());
 
-        if (!F.isEmpty(outboxes)) {
-            for (Outbox<?> outbox : outboxes)
-                outbox.context().execute(outbox::close, outbox::onError);
-
-            for (Outbox<?> outbox : outboxes)
-                outbox.context().execute(outbox.context()::cancel, outbox::onError);
-        }
-        else if (log.isDebugEnabled()) {
-            log.debug("Stale oubox cancel message received: [" +
+        if (qry != null)
+            qry.cancel();
+        else {
+            log.warning("Stale query close message received: [" +
                 "nodeId=" + nodeId +
-                ", queryId=" + msg.queryId() +
-                ", fragmentId=" + msg.fragmentId() +
-                ", exchangeId=" + msg.exchangeId() + "]");
+                ", queryId=" + msg.queryId() + "]");
         }
     }
 
@@ -255,12 +264,14 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      */
     private ExecutionContext<?> baseInboxContext(UUID nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
-            taskExecutor(),
-            PlanningContext.builder()
-                .originatingNodeId(nodeId)
+            BaseQueryContext.builder()
                 .logger(log)
                 .build(),
+            taskExecutor(),
             qryId,
+            locaNodeId,
+            nodeId,
+            null,
             new FragmentDescription(
                 fragmentId,
                 null,

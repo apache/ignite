@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/** */
 @SuppressWarnings({"ConstantConditions"})
 public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], BigDecimal> {
     /** {@inheritDoc} */

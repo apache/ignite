@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
+import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
@@ -25,12 +25,17 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
  */
 public interface QueryPlanCache extends Service {
     /**
-     * @param ctx Context.
      * @param key Cache key.
-     * @param factory Factory method to generate a plan on cache miss.
+     * @param planSupplier Factory method to generate a plan on cache miss.
      * @return Query plan.
      */
-    List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
+    QueryPlan queryPlan(CacheKey key, Supplier<QueryPlan> planSupplier);
+
+    /**
+     * @param key Cache key.
+     * @return Query plan.
+     */
+    QueryPlan queryPlan(CacheKey key);
 
     /**
      * Clear cache.

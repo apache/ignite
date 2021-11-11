@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -53,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -85,6 +85,12 @@ public class SnapshotRestoreProcess {
 
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
+
+    /** Snapshot restore operation finish message. */
+    private static final String OP_FINISHED_MSG = "Cache groups have been successfully restored from the snapshot";
+
+    /** Snapshot restore operation failed message. */
+    private static final String OP_FAILED_MSG = "Failed to restore snapshot cache groups";
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -151,6 +157,7 @@ public class SnapshotRestoreProcess {
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
     public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames) {
+        IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
         try {
@@ -168,7 +175,7 @@ public class SnapshotRestoreProcess {
             if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), SNAPSHOT_RESTORE_CACHE_GROUP))
                 throw new IgniteException(OP_REJECT_MSG + "Not all nodes in the cluster support restore operation.");
 
-            if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
+            if (snpMgr.isSnapshotCreating())
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
@@ -181,10 +188,41 @@ public class SnapshotRestoreProcess {
             }
         }
         catch (IgniteException e) {
+            snpMgr.recordSnapshotEvent(
+                snpName,
+                OP_FAILED_MSG + ": " + e.getMessage(),
+                EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
+            );
+
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        ctx.cache().context().snapshotMgr().checkSnapshot(snpName, cacheGrpNames).listen(f -> {
+        fut0.listen(f -> {
+            if (f.error() != null) {
+                snpMgr.recordSnapshotEvent(
+                    snpName,
+                    OP_FAILED_MSG + ": " + f.error().getMessage() + " [reqId=" + fut0.rqId + "].",
+                    EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
+                );
+            }
+            else {
+                snpMgr.recordSnapshotEvent(
+                    snpName,
+                    OP_FINISHED_MSG + " [reqId=" + fut0.rqId + "].",
+                    EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED
+                );
+            }
+        });
+
+        String msg = "Cluster-wide snapshot restore operation started [reqId=" + fut0.rqId + ", snpName=" + snpName +
+            (cacheGrpNames == null ? "" : ", grps=" + cacheGrpNames) + ']';
+
+        if (log.isInfoEnabled())
+            log.info(msg);
+
+        snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
+
+        snpMgr.checkSnapshot(snpName, cacheGrpNames, true).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -214,7 +252,7 @@ public class SnapshotRestoreProcess {
 
                 assert meta != null : entry.getKey().id();
 
-                if (!entry.getKey().consistentId().equals(meta.consistentId()))
+                if (!entry.getKey().consistentId().toString().equals(meta.consistentId()))
                     continue;
 
                 if (snpBltNodes == null)
@@ -251,20 +289,8 @@ public class SnapshotRestoreProcess {
                 return;
             }
 
-            IdleVerifyResultV2 res = f.result().idleVerifyResult();
-
-            if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
-                StringBuilder sb = new StringBuilder();
-
-                res.print(sb::append, true);
-
-                finishProcess(fut0.rqId, new IgniteException(sb.toString()));
-
-                return;
-            }
-
-            SnapshotOperationRequest req = new SnapshotOperationRequest(
-                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+            SnapshotOperationRequest req =
+                new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
 
             prepareRestoreProc.start(req.requestId(), req);
         });
@@ -358,9 +384,9 @@ public class SnapshotRestoreProcess {
      */
     private void finishProcess(UUID reqId, @Nullable Throwable err) {
         if (err != null)
-            log.error("Failed to restore snapshot cache group [reqId=" + reqId + ']', err);
+            log.error(OP_FAILED_MSG + " [reqId=" + reqId + "].", err);
         else if (log.isInfoEnabled())
-            log.info("Successfully restored cache group(s) from the snapshot [reqId=" + reqId + ']');
+            log.info(OP_FINISHED_MSG + " [reqId=" + reqId + "].");
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
@@ -373,7 +399,7 @@ public class SnapshotRestoreProcess {
             if (fut0 != null && reqId.equals(fut0.rqId)) {
                 fut = null;
 
-                ctx.getSystemExecutorService().submit(() -> fut0.onDone(null, err));
+                ctx.pools().getSystemExecutorService().submit(() -> fut0.onDone(null, err));
             }
         }
     }
@@ -484,6 +510,16 @@ public class SnapshotRestoreProcess {
 
             if (ctx.cache().context().snapshotMgr().isSnapshotCreating())
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
+
+            if (ctx.encryption().isMasterKeyChangeInProgress()) {
+                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing " +
+                    "process is not finished yet."));
+            }
+
+            if (ctx.encryption().reencryptionInProgress()) {
+                return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Caches re-encryption " +
+                    "process is not finished yet."));
+            }
 
             for (UUID nodeId : req.nodes()) {
                 ClusterNode node = ctx.discovery().node(nodeId);

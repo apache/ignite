@@ -59,6 +59,7 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
@@ -72,9 +73,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
     public static final String CLI_CONN_VIEW_DESC = "Client connections";
 
-    /** The name of the metric registry associated with the thin client connector. */
-    public static final String CLIENT_CONNECTOR_METRIC_REGISTRY_NAME = metricName("connector", "client", "thin", "tcp");
-
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -83,9 +81,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Cancel counter. For testing purposes only. */
     public static final AtomicLong CANCEL_COUNTER = new AtomicLong(0);
-
-    /** Default number of selectors. */
-    private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = true;
@@ -162,6 +157,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 int selectorCnt = cliConnCfg.getSelectorCount();
 
+                ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
@@ -180,7 +177,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
-                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_METRIC_REGISTRY_NAME))
+                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_METRICS))
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -338,7 +335,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRIC_REGISTRY_NAME));
+                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);
 

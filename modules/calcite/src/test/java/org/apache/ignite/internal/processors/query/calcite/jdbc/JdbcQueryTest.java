@@ -103,6 +103,31 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      * @throws SQLException If failed.
      */
     @Test
+    public void testMultilineQuery() throws Exception {
+        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+            "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
+            "ALTER TABLE test ADD COLUMN val2 int;" +
+            "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
+            "ALTER TABLE test DROP COLUMN val2;";
+        stmt.execute(multiLineQuery);
+
+        try (ResultSet rs = stmt.executeQuery("select * from test order by val0")) {
+            int i;
+            for (i = 0; rs.next(); i++) {
+                assertEquals(i, rs.getInt(1));
+                assertEquals("test" + i, rs.getString(2));
+            }
+            assertEquals(2, i);
+        }
+
+        stmt.execute("drop table test");
+        stmt.close();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
     public void testQueryColumnTypes() throws Exception {
         stmt.execute("CREATE TABLE t1 (id INT NOT NULL, " +
             "bool_col BOOLEAN, " +
@@ -119,14 +144,17 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             "timestamp_col_10 TIMESTAMP(10), " +
             "timestamp_col_def TIMESTAMP, " +
             "date_col DATE, " +
+            "interval_ym_col INTERVAL YEAR TO MONTH, " +
+            "interval_dt_col INTERVAL DAY TO SECONDS, " +
             "PRIMARY KEY (id));");
 
         grid(0).context().cache().context().exchange().affinityReadyFuture(
             new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
 
         stmt.executeUpdate("INSERT INTO t1 (id, bool_col, tinyint_col, smallint_col, int_col, bigint_col, " +
-            "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, timestamp_col_def, date_col) " +
-            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
+            "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, " +
+            "timestamp_col_def, date_col, interval_ym_col, interval_dt_col) " +
+            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
 
         try (ResultSet rs = stmt.executeQuery("SELECT * FROM t1;")) {
             assertTrue(rs.next());
@@ -149,6 +177,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertEquals(Types.TIMESTAMP, md.getColumnType(13));
             assertEquals(Types.TIMESTAMP, md.getColumnType(14));
             assertEquals(Types.DATE, md.getColumnType(15));
+            // Custom java types Period and Duration for intervals.
+            assertEquals(Types.OTHER, md.getColumnType(16));
+            assertEquals(Types.OTHER, md.getColumnType(17));
         }
 
         stmt.execute("DROP TABLE t1");

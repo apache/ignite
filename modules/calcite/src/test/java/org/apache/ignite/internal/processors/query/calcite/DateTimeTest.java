@@ -21,6 +21,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -35,6 +36,7 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 
+/** */
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class DateTimeTest extends GridCommonAbstractTest {
     /** */
@@ -82,6 +84,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
     }
 
+    /** */
     @Test
     public void testQuery1() throws Exception {
         checkQuery("SELECT SQLDATE FROM datetimetable where SQLTIME = '12:00:00'")
@@ -89,6 +92,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery2() throws Exception {
         checkQuery("SELECT SQLDATE FROM datetimetable where JAVADATE = ?")
@@ -97,6 +101,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery3() throws Exception {
         checkQuery("SELECT SQLDATE FROM datetimetable where JAVADATE = ?")
@@ -105,6 +110,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery4() throws Exception {
         checkQuery("SELECT MAX(SQLDATE) FROM datetimetable")
@@ -112,6 +118,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery5() throws Exception {
         checkQuery("SELECT MIN(SQLDATE) FROM datetimetable")
@@ -119,6 +126,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery6() throws Exception {
         checkQuery("SELECT JAVADATE FROM datetimetable WHERE SQLTIME = '13:15:00'")
@@ -126,6 +134,7 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** */
     @Test
     public void testQuery7() throws Exception {
         checkQuery("SELECT t1.JAVADATE, t2.JAVADATE FROM datetimetable t1 " +
@@ -137,17 +146,88 @@ public class DateTimeTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /**
+     * Test right date/time interpretation taking into account DST clock shift.
+     */
+    @Test
+    public void testDstShift() throws Exception {
+        TimeZone oldTz = TimeZone.getDefault();
+
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
+
+            // Time zone change (EET->MSK) 1992-01-19 02:00:00 -> 1992-01-19 03:00:00
+            checkQuery("select date '1992-01-19'").returns(sqlDate("1992-01-19")).check();
+            checkQuery("select date '1992-01-18' + interval (1) days").returns(sqlDate("1992-01-19")).check();
+            checkQuery("select date '1992-01-18' + interval (24) hours").returns(sqlDate("1992-01-19")).check();
+            checkQuery("SELECT timestamp '1992-01-18 02:30:00' + interval (25) hours")
+                .returns(sqlTimestamp("1992-01-19 03:30:00.000")).check();
+            checkQuery("SELECT timestamp '1992-01-18 02:30:00' + interval (23) hours")
+                .returns(sqlTimestamp("1992-01-19 01:30:00.000")).check();
+            checkQuery("SELECT timestamp '1992-01-18 02:30:00' + interval (24) hours")
+                .returns(sqlTimestamp("1992-01-19 02:30:00.000")).check();
+
+            // DST started 1992-03-29 02:00:00 -> 1992-03-29 03:00:00
+            checkQuery("select date '1992-03-29'").returns(sqlDate("1992-03-29")).check();
+            checkQuery("select date '1992-03-28' + interval (1) days").returns(sqlDate("1992-03-29")).check();
+            checkQuery("select date '1992-03-28' + interval (24) hours").returns(sqlDate("1992-03-29")).check();
+            checkQuery("SELECT timestamp '1992-03-28 02:30:00' + interval (25) hours")
+                .returns(sqlTimestamp("1992-03-29 03:30:00.000")).check();
+            checkQuery("SELECT timestamp '1992-03-28 02:30:00' + interval (23) hours")
+                .returns(sqlTimestamp("1992-03-29 01:30:00.000")).check();
+            checkQuery("SELECT timestamp '1992-03-28 02:30:00' + interval (24) hours")
+                .returns(sqlTimestamp("1992-03-29 02:30:00.000")).check();
+
+            // DST ended 1992-09-27 03:00:00 -> 1992-09-27 02:00:00
+            checkQuery("select date '1992-09-27'").returns(sqlDate("1992-09-27")).check();
+            checkQuery("select date '1992-09-26' + interval (1) days").returns(sqlDate("1992-09-27")).check();
+            checkQuery("select date '1992-09-26' + interval (24) hours").returns(sqlDate("1992-09-27")).check();
+            checkQuery("SELECT timestamp '1992-09-26 02:30:00' + interval (25) hours")
+                .returns(sqlTimestamp("1992-09-27 03:30:00.000")).check();
+            checkQuery("SELECT timestamp '1992-09-26 02:30:00' + interval (23) hours")
+                .returns(sqlTimestamp("1992-09-27 01:30:00.000")).check();
+            checkQuery("SELECT timestamp '1992-09-26 02:30:00' + interval (24) hours")
+                .returns(sqlTimestamp("1992-09-27 02:30:00.000")).check();
+
+            TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"));
+
+            // DST ended 2021-11-07 02:00:00 -> 2021-11-07 01:00:00
+            checkQuery("select date '2021-11-07'").returns(sqlDate("2021-11-07")).check();
+            checkQuery("select date '2021-11-06' + interval (1) days").returns(sqlDate("2021-11-07")).check();
+            checkQuery("select date '2021-11-06' + interval (24) hours").returns(sqlDate("2021-11-07")).check();
+            checkQuery("SELECT timestamp '2021-11-06 01:30:00' + interval (25) hours")
+                .returns(sqlTimestamp("2021-11-07 02:30:00.000")).check();
+            // Check string representation here, since after timestamp calculation we have '2021-11-07T01:30:00.000-0800'
+            // but Timestamp.valueOf method converts '2021-11-07 01:30:00' in 'America/Los_Angeles' time zone to
+            // '2021-11-07T01:30:00.000-0700' (we pass through '2021-11-07 01:30:00' twice after DST ended).
+            checkQuery("SELECT (timestamp '2021-11-06 02:30:00' + interval (23) hours)::varchar")
+                .returns("2021-11-07 01:30:00").check();
+            checkQuery("SELECT (timestamp '2021-11-06 01:30:00' + interval (24) hours)::varchar")
+                .returns("2021-11-07 01:30:00").check();
+        }
+        finally {
+            TimeZone.setDefault(oldTz);
+        }
+    }
+
+    /** */
     public static class DateTimeEntry {
+        /** */
         long id;
 
+        /** */
         Date javaDate;
 
+        /** */
         java.sql.Date sqlDate;
 
+        /** */
         Time sqlTime;
 
+        /** */
         Timestamp sqlTimestamp;
 
+        /** */
         public DateTimeEntry(long id, Date javaDate, java.sql.Date sqlDate, Time sqlTime, Timestamp sqlTimestamp) {
             this.id = id;
             this.javaDate = javaDate;

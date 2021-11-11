@@ -31,6 +31,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,6 +42,7 @@ import static org.apache.calcite.util.NumberUtil.multiply;
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdRowCount extends RelMdRowCount {
+    /** */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.ROW_COUNT.method, new IgniteMdRowCount());
@@ -128,6 +130,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * Estimation of row count for Aggregate operator.
      */
     public double getRowCount(IgniteAggregate rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /**
+     * Estimation of row count for Limit operator.
+     */
+    public double getRowCount(IgniteLimit rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 }

@@ -67,6 +67,7 @@ public class FileSystemUtilsTest {
         doTestSparseFiles(Paths.get("/xfs/test_file"), true);
     }
 
+    /** */
     private static int getFD(FileChannel ch) throws IgniteCheckedException {
         return U.<Integer>field(U.<FileDescriptor>field(ch, "fd"), "fd");
     }

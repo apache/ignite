@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.List;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,6 +36,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+
 /**
  *
  */
@@ -42,19 +48,26 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(3);
+        startGrids(nodeCount());
 
         client = startClientGrid("client");
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws Exception {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
         }
 
+        awaitPartitionMapExchange();
+
         cleanQueryPlanCache();
+    }
+
+    /** */
+    protected int nodeCount() {
+        return 3;
     }
 
     /** */
@@ -77,6 +90,28 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected List<List<?>> executeSql(String sql, Object... args) {
+        CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
+
+        List<FieldsQueryCursor<List<?>>> cur = qryProc.query(null, "PUBLIC", sql, args);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
+        }
+    }
+
+    /**
+     * Asserts that executeSql throws an exception.
+     *
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
+        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
+    }
+
+    /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName("person")
@@ -86,6 +121,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         );
 
         int idx = 0;
+
         person.put(idx++, new Employer("Igor", 10d));
         person.put(idx++, new Employer(null, 15d));
         person.put(idx++, new Employer("Ilya", 15d));
@@ -93,6 +129,25 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         person.put(idx++, new Employer("Roma", 10d));
 
         return person;
+    }
+
+    /** */
+    protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
+        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
+    }
+
+    /** */
+    protected List<List<?>> sql(String sql, Object... params) {
+        return sql(client, sql, params);
+    }
+
+    /** */
+    protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql, params);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
+        }
     }
 
     /** */

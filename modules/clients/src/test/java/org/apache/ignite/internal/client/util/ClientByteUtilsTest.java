@@ -94,6 +94,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testShortToBytes() throws Exception {
         Map<String, Short> map = new HashMap<>();
@@ -119,6 +120,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testIntToBytes() throws Exception {
         Map<String, Integer> map = new HashMap<>();
@@ -144,6 +146,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testLongToBytes() throws Exception {
         Map<String, Long> map = new LinkedHashMap<>();
@@ -173,6 +176,7 @@ public class ClientByteUtilsTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private byte[] asByteArray(String text) {
         String[] split = text.split("-");
         byte[] b = new byte[split.length];

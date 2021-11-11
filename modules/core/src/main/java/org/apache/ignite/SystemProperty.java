@@ -28,12 +28,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 public @interface SystemProperty {
-    /** Description. */
+    /** @return Description. */
     String value();
 
-    /** Type. */
+    /** @return Type. */
     Class<?> type() default Boolean.class;
 
-    /** Default value. */
+    /** @return Default value. */
     String defaults() default "";
 }

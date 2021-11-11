@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -68,6 +67,8 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
+            case "ANY_VALUE":
+                return AnyVal.FACTORY;
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -91,32 +92,38 @@ public class Accumulators {
     /** */
     private static Supplier<Accumulator> sumFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
+            case BIGINT:
+            case DECIMAL:
+                return () -> new Sum(new DecimalSumEmptyIsZero());
+
             case DOUBLE:
             case REAL:
             case FLOAT:
-                return DoubleSum.FACTORY;
-            case DECIMAL:
-                return DecimalSum.FACTORY;
+                return () -> new Sum(new DoubleSumEmptyIsZero());
+
+            case TINYINT:
+            case SMALLINT:
             case INTEGER:
-                return IntSum.FACTORY;
-            case BIGINT:
             default:
-                return LongSum.FACTORY;
+                return () -> new Sum(new LongSumEmptyIsZero());
         }
     }
 
     /** */
     private static Supplier<Accumulator> sumEmptyIsZeroFactory(AggregateCall call) {
         switch (call.type.getSqlTypeName()) {
+            case BIGINT:
+            case DECIMAL:
+                return DecimalSumEmptyIsZero.FACTORY;
+
             case DOUBLE:
             case REAL:
             case FLOAT:
                 return DoubleSumEmptyIsZero.FACTORY;
-            case DECIMAL:
-                return DecimalSumEmptyIsZero.FACTORY;
+
+            case TINYINT:
+            case SMALLINT:
             case INTEGER:
-                return IntSumEmptyIsZero.FACTORY;
-            case BIGINT:
             default:
                 return LongSumEmptyIsZero.FACTORY;
         }
@@ -163,10 +170,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class SingleVal implements Accumulator {
-        /** */
-        private Object holder;
-
+    private static class SingleVal extends AnyVal {
         /** */
         private boolean touched;
 
@@ -175,21 +179,47 @@ public class Accumulators {
 
         /** */
         @Override public void add(Object... args) {
-            assert args.length == 1 : args.length;
-
             if (touched)
                 throw new IllegalArgumentException("Subquery returned more than 1 value.");
 
             touched = true;
 
-            holder = args[0];
+            super.add(args);
         }
 
         /** */
         @Override public void apply(Accumulator other) {
-            assert holder == null : "sudden apply for: " + other + " on SingleVal";
+            if (((SingleVal)other).touched) {
+                if (touched)
+                    throw new IllegalArgumentException("Subquery returned more than 1 value.");
+                else
+                    touched = true;
+            }
 
-            holder = ((SingleVal)other).holder;
+            super.apply(other);
+        }
+    }
+
+    /** */
+    private static class AnyVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = AnyVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            if (holder == null)
+                holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            if (holder == null)
+                holder = ((AnyVal)other).holder;
         }
 
         /** */
@@ -339,193 +369,51 @@ public class Accumulators {
     }
 
     /** */
-    private static class DoubleSum implements Accumulator {
+    private static class Sum implements Accumulator {
         /** */
-        public static final Supplier<Accumulator> FACTORY = DoubleSum::new;
-
-        /** */
-        private double sum;
+        private Accumulator acc;
 
         /** */
         private boolean empty = true;
 
+        /** */
+        public Sum(Accumulator acc) {
+            this.acc = acc;
+        }
+
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double)args[0];
-
-            if (in == null)
+            if (args[0] == null)
                 return;
 
             empty = false;
-            sum += in;
+            acc.add(args[0]);
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleSum other0 = (DoubleSum)other;
+            Sum other0 = (Sum)other;
 
             if (other0.empty)
                 return;
 
             empty = false;
-            sum += other0.sum;
+            acc.apply(other0.acc);
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            return empty ? null : sum;
+            return empty ? null : acc.end();
         }
 
         /** {@inheritDoc} */
         @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(DOUBLE), true));
+            return acc.argumentTypes(typeFactory);
         }
 
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DOUBLE), true);
-        }
-    }
-
-    /** */
-    private static class IntSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = IntSum::new;
-
-        /** */
-        private int sum;
-
-        /** */
-        private boolean empty = true;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Integer in = (Integer)args[0];
-
-            if (in == null)
-                return;
-
-            empty = false;
-            sum += in;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            IntSum other0 = (IntSum)other;
-
-            if (other0.empty)
-                return;
-
-            empty = false;
-            sum += other0.sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return empty ? null : sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(INTEGER), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(INTEGER), true);
-        }
-    }
-
-    /** */
-    private static class LongSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = LongSum::new;
-
-        /** */
-        private long sum;
-
-        /** */
-        private boolean empty = true;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Long in = (Long)args[0];
-
-            if (in == null)
-                return;
-
-            empty = false;
-            sum += in;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            LongSum other0 = (LongSum)other;
-
-            if (other0.empty)
-                return;
-
-            empty = false;
-            sum += other0.sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return empty ? null : sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true);
-        }
-    }
-
-    /** */
-    private static class DecimalSum implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DecimalSum::new;
-
-        /** */
-        private BigDecimal sum;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal)args[0];
-
-            if (in == null)
-                return;
-
-            sum = sum == null ? in : sum.add(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            DecimalSum other0 = (DecimalSum)other;
-
-            if (other0.sum == null)
-                return;
-
-            sum = sum == null ? other0.sum : sum.add(other0.sum);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(DECIMAL), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DECIMAL), true);
+            return acc.returnType(typeFactory);
         }
     }
 
@@ -567,47 +455,6 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DOUBLE), true);
-        }
-    }
-
-    /** */
-    private static class IntSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = IntSumEmptyIsZero::new;
-
-        /** */
-        private int sum;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            Integer in = (Integer)args[0];
-
-            if (in == null)
-                return;
-
-            sum += in;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            IntSumEmptyIsZero other0 = (IntSumEmptyIsZero)other;
-
-            sum += other0.sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(INTEGER), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(INTEGER), true);
         }
     }
 

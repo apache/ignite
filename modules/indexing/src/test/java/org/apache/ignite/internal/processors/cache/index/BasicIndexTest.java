@@ -44,7 +44,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1033,6 +1035,52 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
+    /**
+     * Tests that it's forbidden to create index with duplicated columns from SQL.
+     */
+    @Test
+    public void testFailToCreateSqlIndexWithDuplicatedColumn() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(0);
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, TEST_TBL_NAME, 1, "ID", "NAME");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME, NAME)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME ASC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME ASC, NAME DESC)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME ASC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME DESC, ID, NAME)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME DESC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(ID, ID)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: ID");
+    }
+
     /** */
     @Test
     public void testNoIndexesWithPersistence() throws Exception {
@@ -1441,6 +1489,34 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             sql("insert into test (id1, id2, val) values (?, ?, ?)", 0, i, i);
 
         assertEquals(5, sql("select * from test where id1 = 0 and id2 > 0").getAll().size());
+    }
+
+    /** */
+    @Test
+    public void testCreateLuceneIndex() throws Exception {
+        inlineSize = 10;
+
+        startGrid();
+
+        sql("create table test0(id1 int primary key, val varchar) " +
+            "WITH \"WRAP_VALUE=false\"");
+
+        IgniteH2Indexing idx = ((IgniteH2Indexing)grid().context().query().getIndexing());
+
+        H2TableDescriptor tblDesc0 = idx.schemaManager().dataTable("PUBLIC", "TEST0")
+            .rowDescriptor().tableDescriptor();
+
+        assertNotNull(GridTestUtils.getFieldValue(tblDesc0, "luceneIdx"));
+
+        idx.distributedConfiguration().disableCreateLuceneIndexForStringValueType(true).get();
+
+        sql("create table test1(id1 int primary key, val varchar) " +
+            "WITH \"WRAP_VALUE=false\"");
+
+        H2TableDescriptor tblDesc1 = idx.schemaManager().dataTable("PUBLIC", "TEST1")
+            .rowDescriptor().tableDescriptor();
+
+        assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
     }
 
     /** */

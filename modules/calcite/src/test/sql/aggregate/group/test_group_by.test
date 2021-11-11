@@ -106,6 +106,13 @@ SELECT i, i + 10 FROM integers GROUP BY i ORDER BY i
 statement error
 SELECT i, SUM(j), j FROM integers GROUP BY i ORDER BY i
 
+# but it works if we wrap it in ANY_VALUE()
+query IRI
+SELECT i, SUM(j), ANY_VALUE(j) FROM integers GROUP BY i ORDER BY i
+----
+2	4.000000	4
+3	8.000000	4
+
 # use an alias that is identical to a column name (should prioritize column name)
 query IR
 SELECT 1 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 2;
@@ -146,9 +153,8 @@ statement error
 SELECT 1 AS k, SUM(i) FROM integers GROUP BY k+1 ORDER BY 2;
 
 # group by column refs should be recognized, even if one uses an explicit table specifier and the other does not
-query IR
+query II
 SELECT test.b, SUM(a) FROM test GROUP BY b ORDER BY COUNT(a) DESC;
 ----
-21	48.000000
-22	24.000000
-
+21	48
+22	24

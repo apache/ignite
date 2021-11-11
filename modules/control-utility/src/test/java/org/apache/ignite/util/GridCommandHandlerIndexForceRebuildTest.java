@@ -34,9 +34,9 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -54,6 +54,7 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -106,10 +107,13 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        return super.getConfiguration(igniteInstanceName)
-            .setGridLogger(testLog);
+        cfg.setGridLogger(new ListeningTestLogger(log));
+
+        cfg.setBuildIndexThreadPoolSize(max(2, cfg.getBuildIndexThreadPoolSize()));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -153,6 +157,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         createAndFillCache(ignite, CACHE_NAME_2_1, GRP_NAME_2);
 
         createAndFillThreeFieldsEntryCache(ignite, CACHE_NAME_NO_GRP, null, Collections.singletonList(complexIndexEntity()));
+
+        assertTrue(grid(LAST_NODE_NUM).context().config().getBuildIndexThreadPoolSize() > 1);
     }
 
     /**
@@ -432,7 +438,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
             assertNotNull(intlRebIdxFut);
 
-            assertTrue(waitForCondition(intlRebIdxFut.cancelToken()::isCancelled, getTestTimeout()));
+            assertTrue(waitForCondition(() -> intlRebIdxFut.cancelToken().cancelException() != null, getTestTimeout()));
 
             stopLoad.set(true);
 
@@ -706,7 +712,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
         @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
-            SchemaIndexCacheVisitorClosure clo, SchemaIndexOperationCancellationToken cancel) {
+            SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
             super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo, cancel);
         }
     }

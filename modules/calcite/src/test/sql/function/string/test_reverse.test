@@ -3,10 +3,10 @@
 # group: [string]
 
 # test reverse on scalars
-query TTT
-select REVERSE(''), REVERSE('Hello'), REVERSE('MotörHead')
+query TTTT
+select REVERSE(''), REVERSE('Hello'), REVERSE('MotörHead'), REVERSE(NULL)
 ----
-(empty)	olleH	daeHrötoM
+(empty)	olleH	daeHrötoM	NULL
 
 # test reverse on tables
 statement ok

@@ -28,6 +28,8 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -44,11 +46,23 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * @see CdcConsumer
  */
 public class WalRecordsConsumer<K, V> {
+    /** Events count metric name. */
+    public static final String EVTS_CNT = "EventsCount";
+
+    /** Last event time metric name. */
+    public static final String LAST_EVT_TIME = "LastEventTime";
+
     /** Ignite logger. */
     private final IgniteLogger log;
 
     /** Data change events consumer. */
     private final CdcConsumer consumer;
+
+    /** Event count metric */
+    private AtomicLongMetric evtsCnt;
+
+    /** Timestamp of last event process. */
+    private AtomicLongMetric lastEvtTs;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPERATIONS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -99,6 +113,10 @@ public class WalRecordsConsumer<K, V> {
                 if (!hasCurrent())
                     throw new NoSuchElementException();
 
+                evtsCnt.increment();
+
+                lastEvtTs.value(System.currentTimeMillis());
+
                 return entries.next();
             }
 
@@ -142,10 +160,15 @@ public class WalRecordsConsumer<K, V> {
     /**
      * Starts the consumer.
      *
+     * @param cdcReg CDC metric registry.
+     * @param cdcConsumerReg CDC consumer metric registry.
      * @throws IgniteCheckedException If failed.
      */
-    public void start() throws IgniteCheckedException {
-        consumer.start();
+    public void start(MetricRegistry cdcReg, MetricRegistry cdcConsumerReg) throws IgniteCheckedException {
+        consumer.start(cdcConsumerReg);
+
+        evtsCnt = cdcReg.longMetric(EVTS_CNT, "Count of events processed by the consumer");
+        lastEvtTs = cdcReg.longMetric(LAST_EVT_TIME, "Time of the last event process");
 
         if (log.isDebugEnabled())
             log.debug("WalRecordsConsumer started [consumer=" + consumer.getClass() + ']');
@@ -153,7 +176,7 @@ public class WalRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start()}.
+     * This methods can be invoked only after {@link #start(MetricRegistry, MetricRegistry)}.
      */
     public void stop() {
         consumer.stop();
