@@ -542,7 +542,14 @@ public class GridServiceProxy<T> implements Serializable {
             U.writeString(out, mtdName);
             U.writeArray(out, argTypes);
             U.writeArray(out, args);
-            U.writeMap(out, callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values());
+
+            if (callCtx != null) {
+                out.writeBoolean(true);
+                callCtx.writeExternal(out);
+            }
+            else
+                out.writeBoolean(false);
+
         }
 
         /** {@inheritDoc} */
@@ -552,10 +559,10 @@ public class GridServiceProxy<T> implements Serializable {
             argTypes = U.readClassArray(in);
             args = U.readArray(in);
 
-            Map<String, byte[]> map = U.readMap(in);
-
-            if (map != null)
-                callCtx = new ServiceCallContextImpl(map);
+            if (in.readBoolean()) {
+                callCtx = new ServiceCallContextImpl();
+                callCtx.readExternal(in);
+            }
         }
 
         /** {@inheritDoc} */

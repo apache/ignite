@@ -17,6 +17,7 @@
 
 package org.apache.ignite.services;
 
+import java.io.Externalizable;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -60,7 +61,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see ServiceContext
  */
 @IgniteExperimental
-public interface ServiceCallContext {
+public interface ServiceCallContext extends Externalizable {
     /**
      * Factory method for creating an internal implementation.
      *
@@ -105,4 +106,11 @@ public interface ServiceCallContext {
      * @return This for chaining.
      */
     public ServiceCallContext put(String name, byte[] value);
+
+    /**
+     * Make a copy of the context.
+     *
+     * @return Context copy.
+     */
+    public ServiceCallContext copy();
 }

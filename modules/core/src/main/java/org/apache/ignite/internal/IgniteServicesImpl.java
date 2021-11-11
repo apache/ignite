@@ -390,7 +390,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
-        Supplier<ServiceCallContext> callCtxProvider = callCtx != null ? () -> new ServiceCallContextImpl(callCtx) : null;
+        Supplier<ServiceCallContext> callCtxProvider = callCtx != null ? callCtx::copy : null;
 
         guard();
 

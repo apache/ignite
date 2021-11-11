@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceCallContext;
 
 /**
@@ -29,7 +33,7 @@ import org.apache.ignite.services.ServiceCallContext;
  */
 public class ServiceCallContextImpl implements ServiceCallContext {
     /** Service call context attributes. */
-    private final Map<String, byte[]> attrs;
+    private Map<String, byte[]> attrs;
 
     /**
      * Default contructor.
@@ -43,17 +47,8 @@ public class ServiceCallContextImpl implements ServiceCallContext {
      *
      * @param attrs Service call context attributes.
      */
-    public ServiceCallContextImpl(Map<String, byte[]> attrs) {
+    protected ServiceCallContextImpl(Map<String, byte[]> attrs) {
         this.attrs = Collections.unmodifiableMap(attrs);
-    }
-
-    /**
-     * Constructs an immutable context.
-     *
-     * @param callCtx Service call context.
-     */
-    public ServiceCallContextImpl(ServiceCallContext callCtx) {
-        this(((ServiceCallContextImpl)callCtx).values());
     }
 
     /** {@inheritDoc} */
@@ -91,10 +86,18 @@ public class ServiceCallContextImpl implements ServiceCallContext {
         return this;
     }
 
-    /**
-     * @return Service call context attributes.
-     */
-    protected Map<String, byte[]> values() {
-        return attrs;
+    /** {@inheritDoc} */
+    @Override public ServiceCallContext copy() {
+        return new ServiceCallContextImpl(attrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeMap(out, attrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        attrs = Collections.unmodifiableMap(U.readMap(in));
     }
 }
