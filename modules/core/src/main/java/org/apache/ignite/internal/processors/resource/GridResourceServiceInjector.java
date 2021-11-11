@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.resource;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteServicesEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.service.ServiceCallContextHolder;
 import org.apache.ignite.resources.ServiceResource;
@@ -69,20 +70,12 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         if (ann.proxyInterface() == Void.class)
             return ignite.services().service(ann.serviceName());
 
-        ignite.context().gateway().readLock();
-
-        try {
-            return ignite.context().service().serviceProxy(
-                ignite.services().clusterGroup(),
-                ann.serviceName(),
-                (Class<? super T>)ann.proxyInterface(),
-                ann.proxySticky(),
-                ann.forwardCallerContext() ? ServiceCallContextHolder::current : null,
-                0
-            );
-        }
-        finally {
-            ignite.context().gateway().readUnlock();
-        }
+        return ((IgniteServicesEx)ignite.services()).serviceProxy(
+            ann.serviceName(),
+            (Class<? super T>)ann.proxyInterface(),
+            ann.proxySticky(),
+            ann.forwardCallerContext() ? ServiceCallContextHolder::current : null,
+            0
+        );
     }
 }

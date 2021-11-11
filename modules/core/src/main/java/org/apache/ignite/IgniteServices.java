@@ -621,16 +621,16 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param svcItf Interface for the service.
      * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
+     * @param callCtx Service call context.
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
-     * @param callCtx Service call context.
      * @param <T> Service type.
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
     @IgniteExperimental
-    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, ServiceCallContext callCtx, long timeout)
-        throws IgniteException;
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, @Nullable ServiceCallContext callCtx,
+        long timeout) throws IgniteException;
 
     /** {@inheritDoc} */
     @Deprecated

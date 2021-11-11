@@ -291,8 +291,12 @@ public class GridServiceProxy<T> implements Serializable {
      * @param callCtx Service call context.
      * @return Invocation result.
      */
-    private static Object callServiceMethod(Service svc, Method mtd, Object[] args, @Nullable ServiceCallContext callCtx)
-        throws InvocationTargetException, IllegalAccessException {
+    private static Object callServiceMethod(
+        Service svc,
+        Method mtd,
+        Object[] args,
+        @Nullable ServiceCallContext callCtx
+    ) throws InvocationTargetException, IllegalAccessException {
         if (callCtx != null)
             ServiceCallContextHolder.current(callCtx);
 
@@ -484,8 +488,13 @@ public class GridServiceProxy<T> implements Serializable {
          * @param args Arguments for invocation.
          * @param callCtx Service call context.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args,
-            @Nullable ServiceCallContext callCtx) {
+        private ServiceProxyCallable(
+            String mtdName,
+            String svcName,
+            Class<?>[] argTypes,
+            Object[] args,
+            @Nullable ServiceCallContext callCtx
+        ) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;

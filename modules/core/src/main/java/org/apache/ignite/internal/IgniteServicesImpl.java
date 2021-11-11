@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
-import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link org.apache.ignite.IgniteServices} implementation.
  */
-public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
+public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServicesEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -377,20 +376,38 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
-        throws IgniteException {
-        return (T) serviceProxy(name, svcItf, sticky, null, timeout);
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        final long timeout
+    ) throws IgniteException {
+        return (T) serviceProxy(name, svcItf, sticky, (Supplier<ServiceCallContext>)null, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
-        @Nullable final ServiceCallContext callCtx, final long timeout) throws IgniteException {
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable ServiceCallContext callCtx,
+        final long timeout
+    ) throws IgniteException {
+        return (T) serviceProxy(name, svcItf, sticky, callCtx != null ? callCtx::copy : null, timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        final long timeout
+    ) throws IgniteException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-
-        Supplier<ServiceCallContext> callCtxProvider = callCtx != null ? callCtx::copy : null;
 
         guard();
 

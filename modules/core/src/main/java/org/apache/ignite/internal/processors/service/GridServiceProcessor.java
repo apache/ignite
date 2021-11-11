@@ -1023,9 +1023,14 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        Supplier<ServiceCallContext> callCtxProvider, long timeout)
-        throws IgniteException {
+    @Override public <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {
