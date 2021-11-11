@@ -43,6 +43,11 @@ public interface IgniteServicesEx extends IgniteServices {
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
-    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider, long timeout);
+    public <T> T serviceProxy(
+        String name,
+        Class<? super T> svcItf,
+        boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) throws IgniteException;
 }

@@ -946,9 +946,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider, long timeout)
-        throws IgniteException {
+    @Override public <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {

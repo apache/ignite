@@ -168,7 +168,11 @@ public class GridServiceProxy<T> implements Serializable {
      * @return Result.
      */
     @SuppressWarnings("BusyWait")
-    public Object invokeMethod(final Method mtd, final Object[] args, @Nullable final ServiceCallContext callCtx) throws Throwable {
+    public Object invokeMethod(
+        final Method mtd,
+        final Object[] args,
+        @Nullable final ServiceCallContext callCtx
+    ) throws Throwable {
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -277,7 +281,12 @@ public class GridServiceProxy<T> implements Serializable {
      * @param callCtx Service call context.
      * @return Invocation result.
      */
-    private Object callServiceLocally(Service svc, Method mtd, Object[] args, ServiceCallContext callCtx) throws Exception {
+    private Object callServiceLocally(
+        Service svc,
+        Method mtd,
+        Object[] args,
+        @Nullable ServiceCallContext callCtx
+    ) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
         else

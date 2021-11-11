@@ -1030,7 +1030,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         boolean sticky,
         Supplier<ServiceCallContext> callCtxProvider,
         long timeout
-    ) {
+    ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {

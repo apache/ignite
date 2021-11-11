@@ -629,8 +629,13 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @throws IgniteException If failed to create service proxy.
      */
     @IgniteExperimental
-    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, @Nullable ServiceCallContext callCtx,
-        long timeout) throws IgniteException;
+    public <T> T serviceProxy(
+        String name,
+        Class<? super T> svcItf,
+        boolean sticky,
+        @Nullable ServiceCallContext callCtx,
+        long timeout
+    ) throws IgniteException;
 
     /** {@inheritDoc} */
     @Deprecated

@@ -128,8 +128,14 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
-    public abstract <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider, long timeout) throws IgniteException;
+    public abstract <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) throws IgniteException;
 
     /**
      * @param name Service name.
