@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvert
  * @see IgniteConvertletTable for functions and operators convertlets.
  * @see Accumulators for aggregates implementors.
  *
- * Note: Actialy we don't use reflective capabilities of ReflectiveSqlOperatorTable (init method never called), but
+ * Note: Actially we don't use reflective capabilities of ReflectiveSqlOperatorTable (init method never called), but
  * this class have infrastructure to register operators manualy and for fast operators lookup, so it's handy to use it.
  */
 public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
