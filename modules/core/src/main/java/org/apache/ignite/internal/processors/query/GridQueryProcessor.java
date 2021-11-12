@@ -63,6 +63,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
+import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -3374,7 +3375,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryIndex(
+    public <K, V> IndexQueryResult<K, V> queryIndex(
         String cacheName,
         String valCls,
         final IndexQueryDesc idxQryDesc,
@@ -3389,8 +3390,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             final GridCacheContext<K, V> cctx = (GridCacheContext<K, V>) ctx.cache().internalCache(cacheName).context();
 
             return executeQuery(GridCacheQueryType.INDEX, valCls, cctx,
-                new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
-                    @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<IndexQueryResult<K, V>>() {
+                    @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
                         IndexQueryContext qryCtx = new IndexQueryContext(filters, null);
 
                         return idxQryPrc.queryLocal(cctx, idxQryDesc, filter, qryCtx, keepBinary);

@@ -17,22 +17,36 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.Order;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Defines a signle index key.
  */
-public class IndexKeyDefinition {
+public class IndexKeyDefinition implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Index key type. {@link IndexKeyTypes}. */
-    private final int idxType;
+    private int idxType;
 
     /** Order. */
-    private final Order order;
+    private Order order;
 
     /** Precision for variable length key types. */
-    private final int precision;
+    private int precision;
+
+    /** */
+    public IndexKeyDefinition() {
+        // No-op.
+    }
 
     /** */
     public IndexKeyDefinition(int idxType, Order order, long precision) {
@@ -69,5 +83,18 @@ public class IndexKeyDefinition {
             return true;
 
         return idxType == key.type();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // Send only required info for using in MergeSort algorithm.
+        out.writeInt(idxType);
+        U.writeEnum(out, order.sortOrder());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        idxType = in.readInt();
+        order = new Order(U.readEnum(in, SortOrder.class), null);
     }
 }
