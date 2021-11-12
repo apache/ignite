@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Integration tests for statistics collection.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-15455")
 public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -158,7 +158,6 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      */
     @Test
     public void testDropStatistics() throws IgniteInterruptedCheckedException {
-        Logger.getLogger(StatisticsProcessor.class).setLevel(Level.TRACE);
         sql("ANALYZE PUBLIC.TEST, test2");
 
         testStatistics(SCHEMA, "TEST", false);

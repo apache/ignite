@@ -48,7 +48,7 @@ public class StatisticsClearTest extends StatisticsRestartAbstractTest {
      */
     @Test
     public void testStatisticsClear() throws Exception {
-        updateStatistics(SMALL_TARGET);
+        updateStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         Assert.assertNotNull(statisticsMgr(0).getLocalStatistics(SMALL_KEY));
 

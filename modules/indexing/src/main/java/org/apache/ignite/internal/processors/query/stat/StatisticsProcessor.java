@@ -235,7 +235,7 @@ public class StatisticsProcessor {
         Collection<ObjectPartitionStatisticsImpl> allParts = statRepo.getLocalPartitionsStatistics(key);
 
         if (ctx.forceRecollect())
-            statRepo.aggregatedLocalStatistics(allParts, ctx.configuration());
+            statRepo.aggregatedLocalStatistics(allParts, ctx.configuration(), ctx.topologyVersion());
         else {
             Set<Integer> partsToRemove = new HashSet<>();
             Collection<ObjectPartitionStatisticsImpl> partsToAggregate = new ArrayList<>();
@@ -251,7 +251,7 @@ public class StatisticsProcessor {
                 statRepo.clearLocalPartitionsStatistics(ctx.configuration().key(), partsToRemove);
 
             if (!partsToAggregate.isEmpty())
-                statRepo.aggregatedLocalStatistics(partsToAggregate, ctx.configuration());
+                statRepo.aggregatedLocalStatistics(partsToAggregate, ctx.configuration(), ctx.topologyVersion());
         }
     }
 

@@ -17,31 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Types of statistics width.
+ * Test global view with persistence.
  */
-public enum StatisticsType {
-    /** Statistics by some particular partition. */
-    PARTITION,
+public class StatisticsGlobalViewPersistenceTest extends StatisticsGlobalViewTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    /** Statistics by some data node. */
-    LOCAL,
-
-    /** Statistics by the whole object. */
-    GLOBAL,;
-
-    /** Enumerated values. */
-    private static final StatisticsType[] VALUES = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     */
-    @Nullable public static StatisticsType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALUES.length ? VALUES[ord] : null;
+        return addPersistenceRegion(cfg, igniteInstanceName);
     }
 }

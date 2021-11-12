@@ -72,7 +72,7 @@ public class PSUCompositeIndexTableStatisticsUsageTest extends StatisticsAbstrac
             sql(sql);
         }
 
-        collectStatistics("ci_table");
+        collectStatistics(StatisticsType.GLOBAL, "ci_table");
     }
 
     /**
@@ -92,12 +92,12 @@ public class PSUCompositeIndexTableStatisticsUsageTest extends StatisticsAbstrac
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"CI_TABLE_ABC"}, sql, new String[1][]);
 
         sql("CREATE INDEX ci_table_c ON ci_table(col_c)");
-        updateStatistics("ci_table");
+        updateStatistics(StatisticsType.GLOBAL, "ci_table");
 
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"CI_TABLE_ABC"}, sql, new String[1][]);
 
         sql("DROP INDEX IF EXISTS ci_table_c");
-        updateStatistics("ci_table");
+        updateStatistics(StatisticsType.GLOBAL, "ci_table");
     }
 
     /**
@@ -117,12 +117,12 @@ public class PSUCompositeIndexTableStatisticsUsageTest extends StatisticsAbstrac
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{}, sql, new String[1][]);
 
         sql("CREATE INDEX ci_table_c ON ci_table(col_c)");
-        updateStatistics("ci_table");
+        updateStatistics(StatisticsType.GLOBAL, "ci_table");
 
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"CI_TABLE_C"}, sql, new String[1][]);
 
         sql("DROP INDEX IF EXISTS ci_table_c");
-        updateStatistics("ci_table");
+        updateStatistics(StatisticsType.GLOBAL, "ci_table");
     }
 
     /**

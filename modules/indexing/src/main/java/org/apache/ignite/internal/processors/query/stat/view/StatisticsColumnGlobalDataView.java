@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.processors.query.stat.view;
 
 import java.sql.Timestamp;
-
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 
 /**
- * Statistics local data view.
+ * Statistics global data view.
  */
-public class StatisticsColumnLocalDataView {
+public class StatisticsColumnGlobalDataView {
     /** Statistics key */
     private final StatisticsKey key;
 
@@ -44,7 +43,7 @@ public class StatisticsColumnLocalDataView {
      * @param column Column name.
      * @param statistics Object local statistics.
      */
-    public StatisticsColumnLocalDataView(StatisticsKey key, String column, ObjectStatisticsImpl statistics) {
+    public StatisticsColumnGlobalDataView(StatisticsKey key, String column, ObjectStatisticsImpl statistics) {
         this.key = key;
         this.column = column;
         this.statistics = statistics;

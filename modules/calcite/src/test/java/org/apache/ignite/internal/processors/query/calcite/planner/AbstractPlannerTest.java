@@ -363,13 +363,14 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             clearTraits(expected);
             clearTraits(deserialized);
 
-            if (!expected.deepEquals(deserialized))
-            assertTrue(
-                "Invalid serialization / deserialization.\n" +
-                    "Expected:\n" + RelOptUtil.toString(expected) +
-                    "Deserialized:\n" + RelOptUtil.toString(deserialized),
-                expected.deepEquals(deserialized)
-            );
+            if (!expected.deepEquals(deserialized)) {
+                assertTrue(
+                    "Invalid serialization / deserialization.\n" +
+                        "Expected:\n" + RelOptUtil.toString(expected) +
+                        "Deserialized:\n" + RelOptUtil.toString(deserialized),
+                    expected.deepEquals(deserialized)
+                );
+            }
         }
     }
 
