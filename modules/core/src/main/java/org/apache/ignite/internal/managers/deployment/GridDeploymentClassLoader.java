@@ -568,22 +568,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /**
-     * Computes end time based on timeout value passed in.
-     *
-     * @param timeout Timeout.
-     * @return End time.
-     */
-    private long computeEndTime(long timeout) {
-        long endTime = U.currentTimeMillis() + timeout;
-
-        // Account for overflow.
-        if (endTime < 0)
-            endTime = Long.MAX_VALUE;
-
-        return endTime;
-    }
-
-    /**
      * Sends class-loading request to all nodes associated with this class loader.
      *
      * @param name Class name.

@@ -391,7 +391,7 @@ class GridDeploymentCommunication {
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);
 
-        final ResourceDeploymentFuture future = new ResourceDeploymentFuture();
+        final GridFutureAdapter<GridDeploymentResponse> future = new GridFutureAdapter<>();
 
         GridLocalEventListener discoLsnr = resourceDiscoListener(dstNode, rsrcName, future);
 
@@ -413,6 +413,11 @@ class GridDeploymentCommunication {
                 log.debug("Sent peer class loading request [node=" + dstNode.id() + ", req=" + req + ']');
 
             try {
+                if (log.isDebugEnabled()) {
+                    log.debug("Waiting for peer response from node [node=" + dstNode.id() +
+                            ", timeout=" + timeout + ']');
+                }
+
                 GridDeploymentResponse res = future.get(timeout);
 
                 assert res != null;
@@ -456,7 +461,7 @@ class GridDeploymentCommunication {
     public GridLocalEventListener resourceDiscoListener(
         ClusterNode dstNode,
         String rsrcName,
-        ResourceDeploymentFuture fut
+        GridFutureAdapter<GridDeploymentResponse> fut
     ) {
         return new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -472,12 +477,17 @@ class GridDeploymentCommunication {
                     // Not a destination node.
                     return;
 
+                GridDeploymentResponse fake = new GridDeploymentResponse();
+
                 String errMsg = "Originating node left grid (resource will not be peer loaded) " +
                     "[nodeId=" + dstNode.id() + ", rsrc=" + rsrcName + ']';
 
                 U.warn(log, errMsg);
 
-                fut.onDone(new IgniteCheckedException(errMsg));
+                fake.success(false);
+                fake.errorMessage(errMsg);
+
+                fut.onDone(fake);
             }
         };
     }
@@ -486,7 +496,7 @@ class GridDeploymentCommunication {
      * @param fut Result future.
      * @return Listener for response message for class loading requests.
      */
-    public GridMessageListener resourceMessageListener(ResourceDeploymentFuture fut) {
+    public GridMessageListener resourceMessageListener(GridFutureAdapter<GridDeploymentResponse> fut) {
         return new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
@@ -509,9 +519,5 @@ class GridDeploymentCommunication {
                     fut.onDone((GridDeploymentResponse) msg);
             }
         };
-    }
-
-    /** Resource request future. */
-    private static class ResourceDeploymentFuture extends GridFutureAdapter<GridDeploymentResponse> {
     }
 }
