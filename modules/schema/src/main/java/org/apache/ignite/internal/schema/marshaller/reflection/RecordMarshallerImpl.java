@@ -22,50 +22,49 @@ import static org.apache.ignite.internal.schema.marshaller.MarshallerUtil.getVal
 import java.util.Objects;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
+import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.Columns;
-import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.marshaller.KvMarshaller;
 import org.apache.ignite.internal.schema.marshaller.MarshallerException;
+import org.apache.ignite.internal.schema.marshaller.RecordMarshaller;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.schema.row.RowAssembler;
+import org.apache.ignite.internal.util.ArrayUtils;
 import org.apache.ignite.table.mapper.Mapper;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Key-value marshaller for given schema and mappers.
+ * Record marshaller for given schema and mappers.
  *
- * @param <K> Key type.
- * @param <V> Value type.
+ * @param <R> Record type.
  */
-public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
+public class RecordMarshallerImpl<R> implements RecordMarshaller<R> {
     /** Schema. */
     private final SchemaDescriptor schema;
     
     /** Key marshaller. */
     private final Marshaller keyMarsh;
     
-    /** Value marshaller. */
-    private final Marshaller valMarsh;
+    /** Record marshaller. */
+    private final Marshaller recMarsh;
     
-    /** Key type. */
-    private final Class<K> keyClass;
-    
-    /** Value type. */
-    private final Class<V> valClass;
+    /** Record type. */
+    private final Class<R> recClass;
     
     /**
      * Creates KV marshaller.
      */
-    public KvMarshallerImpl(SchemaDescriptor schema, Mapper<K> keyMapper, Mapper<V> valueMapper) {
+    public RecordMarshallerImpl(SchemaDescriptor schema, Mapper<R> mapper) {
         this.schema = schema;
         
-        keyClass = keyMapper.targetType();
-        valClass = valueMapper.targetType();
+        recClass = mapper.targetType();
         
-        keyMarsh = Marshaller.createMarshaller(schema.keyColumns().columns(), keyMapper);
-        valMarsh = Marshaller.createMarshaller(schema.valueColumns().columns(), valueMapper);
+        keyMarsh = Marshaller.createMarshaller(schema.keyColumns().columns(), mapper);
+        
+        recMarsh = Marshaller.createMarshaller(
+                ArrayUtils.concat(schema.keyColumns().columns(), schema.valueColumns().columns()),
+                mapper
+        );
     }
     
     /** {@inheritDoc} */
@@ -76,17 +75,24 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
     
     /** {@inheritDoc} */
     @Override
-    public BinaryRow marshal(@NotNull K key, V val) throws MarshallerException {
-        assert keyClass.isInstance(key);
-        assert val == null || valClass.isInstance(val);
+    public BinaryRow marshal(@NotNull R rec) throws MarshallerException {
+        assert recClass.isInstance(rec);
         
-        final RowAssembler asm = createAssembler(Objects.requireNonNull(key), val);
+        final RowAssembler asm = createAssembler(Objects.requireNonNull(rec), rec);
         
-        keyMarsh.writeObject(key, asm);
+        recMarsh.writeObject(rec, asm);
         
-        if (val != null) {
-            valMarsh.writeObject(val, asm);
-        }
+        return new ByteBufferRow(asm.toBytes());
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public BinaryRow marshalKey(@NotNull R rec) throws MarshallerException {
+        assert recClass.isInstance(rec);
+        
+        final RowAssembler asm = createAssembler(Objects.requireNonNull(rec), null);
+        
+        keyMarsh.writeObject(rec, asm);
         
         return new ByteBufferRow(asm.toBytes());
     }
@@ -94,27 +100,12 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
     /** {@inheritDoc} */
     @NotNull
     @Override
-    public K unmarshalKey(@NotNull Row row) throws MarshallerException {
-        final Object o = keyMarsh.readObject(row);
+    public R unmarshal(@NotNull Row row) throws MarshallerException {
+        final Object o = recMarsh.readObject(row);
         
-        assert keyClass.isInstance(o);
+        assert recClass.isInstance(o);
         
-        return (K) o;
-    }
-    
-    /** {@inheritDoc} */
-    @Nullable
-    @Override
-    public V unmarshalValue(@NotNull Row row) throws MarshallerException {
-        if (!row.hasValue()) {
-            return null;
-        }
-        
-        final Object o = valMarsh.readObject(row);
-        
-        assert o == null || valClass.isInstance(o);
-        
-        return (V) o;
+        return (R) o;
     }
     
     /**
@@ -125,8 +116,8 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
      * @return Row assembler.
      */
     private RowAssembler createAssembler(Object key, Object val) {
-        ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
-        ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
+        ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), recMarsh, key);
+        ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), recMarsh, val);
         
         return new RowAssembler(schema, keyStat.nonNullColsSize, keyStat.nonNullCols,
                 valStat.nonNullColsSize, valStat.nonNullCols);
@@ -149,14 +140,14 @@ public class KvMarshallerImpl<K, V> implements KvMarshaller<K, V> {
         int size = 0;
         
         for (int i = cols.firstVarlengthColumn(); i < cols.length(); i++) {
-            final Object val = marsh.value(obj, i);
-            final NativeType colType = cols.column(i).type();
+            final Column column = cols.column(i);
+            final Object val = marsh.value(obj, column.schemaIndex());
             
-            if (val == null || colType.spec().fixedLength()) {
+            if (val == null || column.type().spec().fixedLength()) {
                 continue;
             }
             
-            size += getValueSize(val, colType);
+            size += getValueSize(val, column.type());
             cnt++;
         }
         

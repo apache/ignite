@@ -42,15 +42,11 @@ import org.jetbrains.annotations.Nullable;
  * Key-value view implementation.
  */
 public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValueView<K, V> {
-    /**
-     * Marshaller factory.
-     */
-    private final Function<SchemaDescriptor, KvMarshallerImpl<K, V>> marshallerFactory;
+    /** Marshaller factory. */
+    private final Function<SchemaDescriptor, KvMarshaller<K, V>> marshallerFactory;
     
-    /**
-     * Marshaller.
-     */
-    private KvMarshallerImpl<K, V> marsh;
+    /** Key-value marshaller. */
+    private KvMarshaller<K, V> marsh;
     
     /**
      * Constructor.

@@ -41,24 +41,24 @@ public abstract class Marshaller {
      * @param mapper Mapper.
      * @return Marshaller.
      */
-    public static <T> Marshaller createMarshaller(Columns cols, Mapper<T> mapper) {
+    public static <T> Marshaller createMarshaller(Column[] cols, Mapper<T> mapper) {
         final BinaryMode mode = MarshallerUtil.mode(mapper.targetType());
         
         if (mode != null) {
-            final Column col = cols.column(0);
+            final Column col = cols[0];
             
-            assert cols.length() == 1;
+            assert cols.length == 1;
             assert mode.typeSpec() == col.type().spec() : "Target type is not compatible.";
             assert !mapper.targetType().isPrimitive() : "Non-nullable types are not allowed.";
             
             return new SimpleMarshaller(FieldAccessor.createIdentityAccessor(col, col.schemaIndex(), mode));
         }
         
-        FieldAccessor[] fieldAccessors = new FieldAccessor[cols.length()];
+        FieldAccessor[] fieldAccessors = new FieldAccessor[cols.length];
         
         // Build handlers.
-        for (int i = 0; i < cols.length(); i++) {
-            final Column col = cols.column(i);
+        for (int i = 0; i < cols.length; i++) {
+            final Column col = cols[i];
             
             String fieldName = mapper.columnToField(col.name());
             
@@ -77,7 +77,8 @@ public abstract class Marshaller {
      * @param cls  Type.
      * @return Marshaller.
      */
-    @Deprecated // TODO drop method.
+    //TODO: IGNITE-15907 drop
+    @Deprecated
     public static Marshaller createMarshaller(Columns cols, Class<? extends Object> cls) {
         final BinaryMode mode = MarshallerUtil.mode(cls);
         

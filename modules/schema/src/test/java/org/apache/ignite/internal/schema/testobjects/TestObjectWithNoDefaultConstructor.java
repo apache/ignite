@@ -28,25 +28,28 @@ public class TestObjectWithNoDefaultConstructor {
      * Creates an object with random data.
      */
     public static TestObjectWithNoDefaultConstructor randomObject(Random rnd) {
-        return new TestObjectWithNoDefaultConstructor(rnd.nextLong());
+        return new TestObjectWithNoDefaultConstructor(rnd.nextLong(), rnd.nextInt());
     }
     
-    /** Value. */
     private final long primLongCol;
+    
+    private final int primIntCol;
     
     /**
      * Private constructor.
      */
-    public TestObjectWithNoDefaultConstructor(long val) {
-        primLongCol = val;
+    public TestObjectWithNoDefaultConstructor(long longVal, int intVal) {
+        primLongCol = longVal;
+        primIntCol = intVal;
     }
     
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-    
+        
         if (o == null || getClass() != o.getClass()) {
             return false;
         }

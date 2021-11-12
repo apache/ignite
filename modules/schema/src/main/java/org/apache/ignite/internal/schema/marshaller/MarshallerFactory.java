@@ -23,7 +23,6 @@ import org.apache.ignite.table.mapper.Mapper;
 /**
  * Marshaller factory interface.
  */
-@FunctionalInterface
 public interface MarshallerFactory {
     /**
      * Creates key-value marshaller using provided mappers.
@@ -48,5 +47,26 @@ public interface MarshallerFactory {
     default <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, Class<K> keyClass,
             Class<V> valueClass) {
         return create(schema, Mapper.identity(keyClass), Mapper.identity(valueClass));
+    }
+    
+    /**
+     * Creates record marshaller using provided mapper.
+     *
+     * @param schema Schema descriptor.
+     * @param mapper Record mapper.
+     * @return Record marshaller.
+     */
+    <R> RecordMarshaller<R> create(SchemaDescriptor schema, Mapper<R> mapper);
+    
+    /**
+     * Shortcut method creates record marshaller for classes using identity mappers.
+     *
+     * @param schema      Schema descriptor.
+     * @param recordClass Record type.
+     * @return Record marshaller.
+     * @see Mapper#identity(Class)
+     */
+    default <R> RecordMarshaller<R> create(SchemaDescriptor schema, Class<R> recordClass) {
+        return create(schema, Mapper.identity(recordClass));
     }
 }

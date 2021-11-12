@@ -32,12 +32,14 @@ public class TestObjectWithPrivateConstructor {
         final TestObjectWithPrivateConstructor obj = new TestObjectWithPrivateConstructor();
         
         obj.primLongCol = rnd.nextLong();
+        obj.primIntCol = rnd.nextInt();
         
         return obj;
     }
     
-    /** Value. */
     private long primLongCol;
+    
+    private int primIntCol;
     
     /**
      * Private constructor.
@@ -46,11 +48,12 @@ public class TestObjectWithPrivateConstructor {
     }
     
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-    
+        
         if (o == null || getClass() != o.getClass()) {
             return false;
         }

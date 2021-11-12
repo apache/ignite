@@ -31,6 +31,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface KvMarshaller<K, V> {
     /**
+     * Returns marshaller schema version.
+     */
+    int schemaVersion();
+    
+    /**
      * Marshal given key and value objects to a table row.
      *
      * @param key Key object to marshal.

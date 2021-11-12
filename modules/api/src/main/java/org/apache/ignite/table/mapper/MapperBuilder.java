@@ -18,6 +18,7 @@
 package org.apache.ignite.table.mapper;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -34,7 +35,7 @@ public final class MapperBuilder<T> {
     private Class<T> targetType;
     
     /** Column-to-field name mapping. */
-    private Map<String, String> mapping;
+    private Map<String, String> columnToFields;
     
     /**
      * Creates a mapper builder for a type.
@@ -44,7 +45,7 @@ public final class MapperBuilder<T> {
     MapperBuilder(@NotNull Class<T> targetType) {
         this.targetType = targetType;
         
-        mapping = new HashMap<>(targetType.getDeclaredFields().length);
+        columnToFields = new HashMap<>(targetType.getDeclaredFields().length);
     }
     
     /**
@@ -53,13 +54,15 @@ public final class MapperBuilder<T> {
      * @param fieldName  Field name.
      * @param columnName Column name.
      * @return {@code this} for chaining.
+     * @throws IllegalArgumentException if a column was already mapped to some field.
+     * @throws IllegalStateException if tries to reuse the builder after a mapping has been built.
      */
     public MapperBuilder<T> map(@NotNull String fieldName, @NotNull String columnName) {
-        if (mapping == null) {
+        if (columnToFields == null) {
             throw new IllegalStateException("Mapper builder can't be reused.");
         }
         
-        if (mapping.put(Objects.requireNonNull(columnName), Objects.requireNonNull(fieldName)) != null) {
+        if (columnToFields.put(Objects.requireNonNull(columnName), Objects.requireNonNull(fieldName)) != null) {
             throw new IllegalArgumentException("Mapping for a column already exists: " + columnName);
         }
         
@@ -102,11 +105,24 @@ public final class MapperBuilder<T> {
      * Builds mapper.
      *
      * @return Mapper.
+     * @throws IllegalStateException if nothing were mapped or more than one column were mapped to the same field.
      */
     public Mapper<T> build() {
-        Map<String, String> mapping = this.mapping;
+        if (columnToFields.isEmpty()) {
+            throw new IllegalStateException("Empty mapping isn't allowed.");
+        }
         
-        this.mapping = null;
+        Map<String, String> mapping = this.columnToFields;
+        
+        this.columnToFields = null;
+        
+        HashSet<String> fields = new HashSet<>(mapping.size());
+        
+        for (String f : mapping.values()) {
+            if (!fields.add(f)) {
+                throw new IllegalStateException("More than one column is mapped to the field: field=" + f);
+            }
+        }
         
         return new DefaultColumnMapper<>(targetType, mapping);
     }

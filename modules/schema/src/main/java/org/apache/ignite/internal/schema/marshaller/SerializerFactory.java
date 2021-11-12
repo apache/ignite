@@ -26,6 +26,7 @@ import org.apache.ignite.internal.schema.marshaller.reflection.JavaSerializerFac
  *
  * @deprecated Replaced with {@link MarshallerFactory}
  */
+//TODO: IGNITE-15888 drop
 @FunctionalInterface
 @Deprecated(forRemoval = true)
 public interface SerializerFactory {

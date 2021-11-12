@@ -126,11 +126,11 @@ public class KeyValueViewOperationsTest {
         
         assertNull(tbl.get(key));
         
-        // Insert new tuple.
+        // Insert new KV pair.
         assertNull(tbl.getAndPut(key, obj));
-        
         assertEquals(obj, tbl.get(key));
-        
+    
+        // Update KV pair.
         assertEquals(obj, tbl.getAndPut(key, obj2));
         assertEquals(obj2, tbl.getAndPut(key, obj3));
         

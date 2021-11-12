@@ -24,6 +24,7 @@ import org.apache.ignite.internal.schema.marshaller.SerializerFactory;
 /**
  * Factory for reflection-based serializer.
  */
+//TODO: IGNITE-15907 drop
 @Deprecated(forRemoval = true)
 public class JavaSerializerFactory implements SerializerFactory {
     /** {@inheritDoc} */
