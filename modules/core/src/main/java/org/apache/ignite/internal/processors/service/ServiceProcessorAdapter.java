@@ -122,8 +122,8 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param name Service name.
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
-     * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param callCtxProvider Caller context provider.
+     * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.

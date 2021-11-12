@@ -116,8 +116,8 @@ public class GridServiceProxy<T> implements Serializable {
      * @param svc Service type class.
      * @param sticky Whether multi-node request should be done.
      * @param timeout Service availability wait timeout. Cannot be negative.
-     * @param callCtxProvider Caller context provider.
      * @param ctx Context.
+     * @param callCtxProvider Caller context provider.
      */
     public GridServiceProxy(ClusterGroup prj,
         String name,
@@ -171,7 +171,7 @@ public class GridServiceProxy<T> implements Serializable {
     public Object invokeMethod(
         final Method mtd,
         final Object[] args,
-        @Nullable final ServiceCallContext callCtx
+        @Nullable ServiceCallContext callCtx
     ) throws Throwable {
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
@@ -567,7 +567,6 @@ public class GridServiceProxy<T> implements Serializable {
             }
             else
                 out.writeBoolean(false);
-
         }
 
         /** {@inheritDoc} */

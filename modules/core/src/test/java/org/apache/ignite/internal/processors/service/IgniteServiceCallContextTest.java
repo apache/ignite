@@ -102,8 +102,11 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
      * @return Service configuration.
      */
     private ServiceConfiguration serviceCfg(String name, boolean clusterSingleton) {
-        return new ServiceConfiguration().setName(name).setTotalCount(clusterSingleton ? 1 : NODES_CNT * SVC_PER_NODE)
-            .setMaxPerNodeCount(SVC_PER_NODE).setService(new TestServiceImpl());
+        return new ServiceConfiguration()
+            .setName(name)
+            .setTotalCount(clusterSingleton ? 1 : NODES_CNT * SVC_PER_NODE)
+            .setMaxPerNodeCount(SVC_PER_NODE)
+            .setService(new TestServiceImpl());
     }
 
     /**
@@ -184,15 +187,10 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
      * @return Service proxy instance.
      */
     private TestService createProxyWithContext(Ignite node, String attrVal, byte[] binVal) {
-        return createProxy(node, ServiceCallContext.create().put(STR_ATTR_NAME, attrVal).put(BIN_ATTR_NAME, binVal));
-    }
+        ServiceCallContext callCtx = ServiceCallContext.create()
+            .put(STR_ATTR_NAME, attrVal)
+            .put(BIN_ATTR_NAME, binVal);
 
-    /**
-     * @param node Ignite node.
-     * @param callCtx Service call context.
-     * @return Service proxy instance.
-     */
-    private TestService createProxy(Ignite node, ServiceCallContext callCtx) {
         return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, callCtx, 0);
     }
 
