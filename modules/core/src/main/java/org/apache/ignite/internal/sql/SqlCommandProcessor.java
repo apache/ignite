@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
@@ -88,17 +88,14 @@ public class SqlCommandProcessor {
     /**
      * Execute command.
      *
-     * @param sql SQL.
      * @param cmdNative Native command.
-     * @param cliCtx Client context.
      * @return Result.
      */
-    @Nullable public FieldsQueryCursor<List<?>> runCommand(String sql, SqlCommand cmdNative,
-        @Nullable SqlClientContext cliCtx) {
+    @Nullable public FieldsQueryCursor<List<?>> runCommand(SqlCommand cmdNative) {
         assert cmdNative != null;
 
         if (isDdl(cmdNative))
-            runCommandNativeDdl(sql, cmdNative);
+            runCommandNativeDdl(cmdNative);
         else if (cmdNative instanceof SqlKillComputeTaskCommand)
             processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
         else if (cmdNative instanceof SqlKillTransactionCommand)
@@ -192,10 +189,9 @@ public class SqlCommandProcessor {
     /**
      * Run DDL statement.
      *
-     * @param sql Original SQL.
      * @param cmd Command.
      */
-    private void runCommandNativeDdl(String sql, SqlCommand cmd) {
+    private void runCommandNativeDdl(SqlCommand cmd) {
         IgniteInternalFuture<?> fut = null;
 
         try {
@@ -306,7 +302,7 @@ public class SqlCommandProcessor {
                 ctx.security().dropUser(dropCmd.userName());
             }
             else
-                throw new IgniteSQLException("Unsupported DDL operation: " + sql,
+                throw new IgniteSQLException("Unsupported DDL operation: " + cmd,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (fut != null)

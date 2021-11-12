@@ -18,32 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.RootQuery;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface ExecutionService extends Service {
-    /**
-     * Executes a query.
-     *
-     * @param ctx Query external context, contains flags and connection settings like a locale or a timezone.
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
-     */
-    List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params);
-
-    /**
-     * Cancels a running query.
-     *
-     * @param queryId Query ID.
-     */
-    void cancelQuery(UUID queryId);
+public interface ExecutionService<Row> extends Service {
+    /** */
+    FieldsQueryCursor<List<?>> executePlan(RootQuery<Row> qry, QueryPlan plan);
 }

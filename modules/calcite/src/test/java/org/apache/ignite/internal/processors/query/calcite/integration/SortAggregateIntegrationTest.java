@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -108,10 +107,10 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
         assertEquals(ROWS / 10, res.size());
 
         res.forEach(r -> {
-            Integer s0 = (Integer)r.get(0);
-            Integer s1 = (Integer)r.get(1);
+            long s0 = (Long)r.get(0);
+            long s1 = (Long)r.get(1);
 
-            assertEquals(s0 * 2, (int)s1);
+            assertEquals(s0 * 2, s1);
         });
     }
 

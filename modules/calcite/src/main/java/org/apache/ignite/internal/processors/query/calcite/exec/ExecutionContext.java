@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +35,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -236,13 +236,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         return unwrap(BaseQueryContext.class).typeFactory();
     }
 
-    /**
-     * @return Query cancel.
-     */
-    public GridQueryCancel queryCancel() {
-        return unwrap(BaseQueryContext.class).queryCancel();
-    }
-
     /** {@inheritDoc} */
     @Override public QueryProvider getQueryProvider() {
         return null; // TODO
@@ -301,7 +294,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
-                task.run();
+                if (!isCancelled())
+                    task.run();
             }
             catch (Throwable e) {
                 onError.accept(e);
@@ -353,5 +347,22 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public boolean isCancelled() {
         return cancelFlag.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ExecutionContext<?> context = (ExecutionContext<?>)o;
+
+        return qryId.equals(context.qryId) && fragmentDesc.fragmentId() == context.fragmentDesc.fragmentId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(qryId, fragmentDesc.fragmentId());
     }
 }

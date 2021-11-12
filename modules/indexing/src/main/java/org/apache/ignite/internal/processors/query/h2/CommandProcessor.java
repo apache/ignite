@@ -442,7 +442,7 @@ public class CommandProcessor extends SqlCommandProcessor {
     public FieldsQueryCursor<List<?>> runNativeCommand(String sql, SqlCommand cmdNative,
         QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
         if (super.isCommandSupported(cmdNative))
-            return runCommand(sql, cmdNative, cliCtx);
+            return runCommand(cmdNative);
 
         if (cmdNative instanceof SqlBulkLoadCommand)
             return processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
@@ -593,6 +593,7 @@ public class CommandProcessor extends SqlCommandProcessor {
             .map(t -> {
                 if (t.key().schema() == null) {
                     StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+
                     return new StatisticsObjectConfiguration(key, t.columns().values(),
                         t.maxPartitionObsolescencePercent());
                 }

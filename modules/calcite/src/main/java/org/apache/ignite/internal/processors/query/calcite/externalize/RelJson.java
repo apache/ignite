@@ -361,16 +361,17 @@ class RelJson {
                 SqlTypeName sqlTypeName = toEnum(map.get("type"));
                 Integer precision = (Integer)map.get("precision");
                 Integer scale = (Integer)map.get("scale");
+                RelDataType type;
+
                 if (SqlTypeName.INTERVAL_TYPES.contains(sqlTypeName)) {
                     TimeUnit startUnit = sqlTypeName.getStartUnit();
                     TimeUnit endUnit = sqlTypeName.getEndUnit();
-                    return typeFactory.createSqlIntervalType(
+                    type = typeFactory.createSqlIntervalType(
                         new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY)
-                    return typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
-                RelDataType type;
-                if (precision == null)
+                    type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+                else if (precision == null)
                     type = typeFactory.createSqlType(sqlTypeName);
                 else if (scale == null)
                     type = typeFactory.createSqlType(sqlTypeName, precision);

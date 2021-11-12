@@ -301,24 +301,27 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      *
      * @param cctx Context.
      * @param type Query type.
+     * @param idxQryDesc Index query descriptor.
      * @param clsName Class name.
+     * @param filter Index query remote filter.
      */
     public GridCacheQueryAdapter(
         GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         IndexQueryDesc idxQryDesc,
-        @Nullable String clsName
+        @Nullable String clsName,
+        @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
         this.cctx = cctx;
         this.type = type;
         this.clsName = clsName;
         this.idxQryDesc = idxQryDesc;
+        this.filter = filter;
 
         log = cctx.logger(getClass());
 
-        this.clause = null;
-        this.filter = null;
-        this.incMeta = false;
+        clause = null;
+        incMeta = false;
     }
 
     /**
@@ -904,7 +907,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                         return (cur = convert(fut.next())) != null;
 
                     try {
-                        fut.awaitFirstPage();
+                        fut.awaitFirstItemAvailable();
 
                         firstItemReturned = true;
 

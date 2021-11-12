@@ -223,7 +223,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         catch (Throwable e) {
             handler.unregisterRequest(req.requestId());
 
-            U.error(log, "Failed to process client request [req=" + req + ']', e);
+            U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
 

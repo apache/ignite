@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.time.Duration;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -100,7 +102,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws InterruptedException {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
@@ -110,6 +112,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             qryProc.queryPlanCache().clear();
         }
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -242,16 +246,16 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 assertEquals(1, res.size());
                 assertEquals(1, res.get(0).size());
                 assertEquals(40L, res.get(0).get(0));
+
+                awaitReservationsRelease("RISK");
+                awaitReservationsRelease("TRADE");
+                awaitReservationsRelease("BATCH");
+
+                assertFalse(lsnr.check());
             }
         }
 
-        assertFalse(lsnr.check());
-
         listeningLog.clearListeners();
-
-        awaitReservationsRelease("RISK");
-        awaitReservationsRelease("TRADE");
-        awaitReservationsRelease("BATCH");
     }
 
     /**
@@ -1017,7 +1021,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         QueryEngine engineSrv = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
         FieldsQueryCursor<List<?>> cur = engineSrv.query(null, "PUBLIC",
-            "select id, id::tinyint as tid, id::smallint as sid, id::varchar as vid from test_tbl").get(0);
+            "select id, id::tinyint as tid, id::smallint as sid, id::varchar as vid, id::interval hour, " +
+                "id::interval year from test_tbl").get(0);
 
         assertThat(cur, CoreMatchers.instanceOf(QueryCursorEx.class));
 
@@ -1027,6 +1032,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertThat(qCur.fieldsMeta().get(1).fieldTypeName(), equalTo(Byte.class.getName()));
         assertThat(qCur.fieldsMeta().get(2).fieldTypeName(), equalTo(Short.class.getName()));
         assertThat(qCur.fieldsMeta().get(3).fieldTypeName(), equalTo(String.class.getName()));
+        assertThat(qCur.fieldsMeta().get(4).fieldTypeName(), equalTo(Duration.class.getName()));
+        assertThat(qCur.fieldsMeta().get(5).fieldTypeName(), equalTo(Period.class.getName()));
     }
 
     /** Quantified predicates test. */

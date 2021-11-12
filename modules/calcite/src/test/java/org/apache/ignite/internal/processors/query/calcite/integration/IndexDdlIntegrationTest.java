@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -35,10 +37,8 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     private static final String CACHE_NAME = "my_cache";
 
     /** {@inheritDoc} */
-    @Override public void init() {
-        super.init();
-
-        executeSql("create table my_table(id int, val_int int, val_str varchar) with cache_name=\"" + CACHE_NAME + "\"");
+    @Override protected void beforeTest() throws Exception {
+        sql("create table my_table(id int, val_int int, val_str varchar) with cache_name=\"" + CACHE_NAME + "\"");
     }
 
     /**
@@ -48,11 +48,11 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createDropIndexSimpleCase() {
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index my_index on my_table(id)");
+        sql("create index my_index on my_table(id)");
 
         assertNotNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("drop index my_index");
+        sql("drop index my_index");
 
         assertNull(findIndex(CACHE_NAME, "my_index"));
     }
@@ -64,20 +64,20 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createDropIndexWithSchema() {
         String cacheName = "cache2";
 
-        executeSql("create table my_schema.my_table2(id int) with cache_name=\"" + cacheName + "\"");
+        sql("create table my_schema.my_table2(id int) with cache_name=\"" + cacheName + "\"");
 
         assertNull(findIndex(cacheName, "my_index2"));
 
-        executeSql("create index my_index2 on my_schema.my_table2(id)");
+        sql("create index my_index2 on my_schema.my_table2(id)");
 
         assertNotNull(findIndex(cacheName, "my_index2"));
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> executeSql("drop index my_index2"), IgniteSQLException.class,
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql("drop index my_index2"), IgniteSQLException.class,
             "Index doesn't exist");
 
         assertNotNull(findIndex(cacheName, "my_index2"));
 
-        executeSql("drop index my_schema.my_index2");
+        sql("drop index my_schema.my_index2");
 
         assertNull(findIndex(cacheName, "my_index2"));
     }
@@ -89,22 +89,22 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createIndexWithIfNotExistsClause() {
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index if not exists my_index on my_table(id)");
+        sql("create index if not exists my_index on my_table(id)");
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> executeSql("create index my_index on my_table(val_int)"),
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql("create index my_index on my_table(val_int)"),
             IgniteSQLException.class, "Index already exists");
 
         assertNotNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index if not exists my_index on my_table(val_str)");
+        sql("create index if not exists my_index on my_table(val_str)");
 
         Index idx = findIndex(CACHE_NAME, "my_index");
 
         assertNotNull(idx);
 
-        List<IndexKeyDefinition> keyDefs = indexKeyDefinitions(idx);
+        List<String> keys = new ArrayList<>(indexKeyDefinitions(idx).keySet());
 
-        assertEquals("ID", keyDefs.get(0).name());
+        assertEquals("ID", keys.get(0));
     }
 
     /**
@@ -114,17 +114,17 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void dropIndexWithIfExistsClause() {
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index my_index on my_table(id)");
+        sql("create index my_index on my_table(id)");
 
         assertNotNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("drop index if exists my_index");
+        sql("drop index if exists my_index");
 
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("drop index if exists my_index");
+        sql("drop index if exists my_index");
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> executeSql("drop index my_index"), IgniteSQLException.class,
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql("drop index my_index"), IgniteSQLException.class,
             "Index doesn't exist");
     }
 
@@ -135,20 +135,21 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createIndexWithColumnsOrdering() {
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index my_index on my_table(id, val_int asc, val_str desc)");
+        sql("create index my_index on my_table(id, val_int asc, val_str desc)");
 
         Index idx = findIndex(CACHE_NAME, "my_index");
 
         assertNotNull(idx);
 
-        List<IndexKeyDefinition> keyDefs = indexKeyDefinitions(idx);
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = indexKeyDefinitions(idx);
+        List<String> keys = new ArrayList<>(keyDefs.keySet());
 
-        assertEquals("ID", keyDefs.get(0).name());
-        assertEquals(SortOrder.ASC, keyDefs.get(0).order().sortOrder());
-        assertEquals("VAL_INT", keyDefs.get(1).name());
-        assertEquals(SortOrder.ASC, keyDefs.get(1).order().sortOrder());
-        assertEquals("VAL_STR", keyDefs.get(2).name());
-        assertEquals(SortOrder.DESC, keyDefs.get(2).order().sortOrder());
+        assertEquals("ID", keys.get(0));
+        assertEquals(SortOrder.ASC, keyDefs.get(keys.get(0)).order().sortOrder());
+        assertEquals("VAL_INT", keys.get(1));
+        assertEquals(SortOrder.ASC, keyDefs.get(keys.get(1)).order().sortOrder());
+        assertEquals("VAL_STR", keys.get(2));
+        assertEquals(SortOrder.DESC, keyDefs.get(keys.get(2)).order().sortOrder());
     }
 
     /**
@@ -158,7 +159,7 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createIndexWithInlineSize() {
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index my_index on my_table(val_str) inline_size 10");
+        sql("create index my_index on my_table(val_str) inline_size 10");
 
         Index idx = findIndex(CACHE_NAME, "my_index");
 
@@ -177,7 +178,7 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createIndexWithParallel() {
         assertNull(findIndex(CACHE_NAME, "my_index"));
 
-        executeSql("create index my_index on my_table(val_str) parallel 10");
+        sql("create index my_index on my_table(val_str) parallel 10");
 
         assertNotNull(findIndex(CACHE_NAME, "my_index"));
     }
@@ -193,11 +194,7 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /** */
-    private static List<IndexKeyDefinition> indexKeyDefinitions(Index idx) {
-        InlineIndex inlineIdx = idx.unwrap(InlineIndex.class);
-
-        assertNotNull(inlineIdx);
-
-        return inlineIdx.segment(0).rowHandler().indexKeyDefinitions();
+    private LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions(Index idx) {
+        return grid(0).context().indexProcessor().indexDefinition(idx.id()).indexKeyDefinitions();
     }
 }

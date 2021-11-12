@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
@@ -155,6 +156,12 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
+
+        for (Ignite ig : G.allGrids()) {
+            GridTestUtils.waitForCondition(
+                () -> ((IgniteEx)ig).context().cache().publicCaches().stream().allMatch(c -> c.indexReadyFuture().isDone()),
+                TIMEOUT);
+        }
 
         List<String> currIdxNames = executeSql(snp, "SELECT * FROM SYS.INDEXES").stream().
             map(l -> (String)l.get(6))

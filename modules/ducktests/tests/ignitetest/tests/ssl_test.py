@@ -29,7 +29,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
 
 
-# pylint: disable=W0223
 class SslTest(IgniteTest):
     """
     Ssl test.

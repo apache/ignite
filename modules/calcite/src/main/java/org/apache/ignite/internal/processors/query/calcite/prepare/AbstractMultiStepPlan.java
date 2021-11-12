@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
@@ -88,8 +89,8 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(MappingQueryContext ctx) {
-        executionPlan = queryTemplate.map(ctx);
+    @Override public void init(MappingService mappingService, MappingQueryContext ctx) {
+        executionPlan = queryTemplate.map(mappingService, ctx);
     }
 
     /** */

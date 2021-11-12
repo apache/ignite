@@ -82,6 +82,11 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
             cache.put(i, i);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        // No-op.
+    }
+
     /** */
     @Override public void cleanUp() {
         // No-op.
@@ -105,14 +110,20 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         long qryId = qryView.queryId();
         UUID originNodeId = qryView.originNodeId();
 
-        executeSql(client, "KILL SCAN '" + originNodeId + "' '" + DEFAULT_CACHE_NAME + "' " + qryId);
+        sql(client, "KILL SCAN '" + originNodeId + "' '" + DEFAULT_CACHE_NAME + "' " + qryId);
 
         // Fetch all cached entries.
         for (int i = 0; i < PAGE_SZ * servers().size() - 1; i++)
             assertNotNull(scanQryIter.next());
 
-        // Fetch of the next page should throw the exception.
-        assertThrowsWithCause(scanQryIter::next, IgniteCheckedException.class);
+        // New page is delivered in parallel to iterating, eventually exception should be thrown
+        // but before all entries are read by query iterator.
+        assertThrowsWithCause(() -> {
+            for (int i = 0; i < PAGE_SZ * (PAGES_CNT - servers().size()); i++)
+                assertNotNull(scanQryIter.next());
+
+            return null;
+        }, IgniteCheckedException.class);
     }
 
     /** */
@@ -142,7 +153,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
             assertTrue(res);
 
-            executeSql(client, "KILL COMPUTE '" + jobViewHolder.get().id() + "'");
+            sql(client, "KILL COMPUTE '" + jobViewHolder.get().id() + "'");
 
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
         }
@@ -161,7 +172,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         try (Transaction tx = client.transactions().txStart()) {
             cache.put(testKey, 1);
 
-            executeSql(client, "KILL TRANSACTION '" + tx.xid() + "'");
+            sql(client, "KILL TRANSACTION '" + tx.xid() + "'");
 
             assertThrowsWithCause(tx::commit, IgniteException.class);
         }
@@ -185,7 +196,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         TestService svc = client.services().serviceProxy(serviceName, TestService.class, true);
         assertNotNull(svc);
 
-        executeSql(client, "KILL SERVICE '" + serviceName + "'");
+        sql(client, "KILL SERVICE '" + serviceName + "'");
 
         boolean res = waitForCondition(() -> grid(0).context().systemView().view(SVCS_VIEW).size() == 0, TIMEOUT);
         assertTrue(res);
@@ -226,7 +237,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         UUID nodeId = cqView.nodeId();
         UUID routineId = cqView.routineId();
 
-        executeSql(client, "KILL CONTINUOUS '" + nodeId + "' '" + routineId + "'");
+        sql(client, "KILL CONTINUOUS '" + nodeId + "' '" + routineId + "'");
 
         long cnt = cntr.get();
 
@@ -241,31 +252,31 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** */
     @Test
     public void testCancelUnknownScanQuery() {
-        executeSql(client, "KILL SCAN '" + client.localNode().id() + "' 'unknown' 1");
+        sql(client, "KILL SCAN '" + client.localNode().id() + "' 'unknown' 1");
     }
 
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
-        executeSql(client, "KILL COMPUTE '" + IgniteUuid.randomUuid() + "'");
+        sql(client, "KILL COMPUTE '" + IgniteUuid.randomUuid() + "'");
     }
 
     /** */
     @Test
     public void testCancelUnknownService() {
-        executeSql(client, "KILL SERVICE 'unknown'");
+        sql(client, "KILL SERVICE 'unknown'");
     }
 
     /** */
     @Test
     public void testCancelUnknownTx() {
-        executeSql(client, "KILL TRANSACTION '" + IgniteUuid.randomUuid() + "'");
+        sql(client, "KILL TRANSACTION '" + IgniteUuid.randomUuid() + "'");
     }
 
     /** */
     @Test
     public void testCancelUnknownContinuousQuery() {
-        executeSql(client, "KILL CONTINUOUS '" + grid(0).localNode().id() + "' '" + UUID.randomUUID() + "'");
+        sql(client, "KILL CONTINUOUS '" + grid(0).localNode().id() + "' '" + UUID.randomUUID() + "'");
     }
 
     /** */
