@@ -18,7 +18,6 @@
 package org.apache.ignite.table;
 
 import org.apache.ignite.table.mapper.Mapper;
-import org.apache.ignite.table.mapper.Mappers;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see RecordView
  * @see KeyValueView
+ * @see org.apache.ignite.table.mapper.Mapper
  */
 public interface Table {
     /**
@@ -62,7 +62,7 @@ public interface Table {
      * @return Table record view.
      */
     default <R> RecordView<R> recordView(Class<R> recCls) {
-        return recordView(Mappers.ofRecordClass(recCls));
+        return recordView(Mapper.of(recCls));
     }
 
     /**
@@ -93,6 +93,6 @@ public interface Table {
      * @return Table key-value view.
      */
     default <K, V> KeyValueView<K, V> keyValueView(Class<K> keyCls, Class<V> valCls) {
-        return keyValueView(Mappers.ofKeyClass(keyCls), Mappers.ofValueClass(valCls));
+        return keyValueView(Mapper.of(keyCls), Mapper.of(valCls));
     }
 }

@@ -15,20 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.marshaller.reflection;
+package org.apache.ignite.internal.schema.marshaller;
 
-import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.marshaller.Serializer;
-import org.apache.ignite.internal.schema.marshaller.SerializerFactory;
+import org.apache.ignite.lang.IgniteInternalCheckedException;
 
 /**
- * Factory for reflection-based serializer.
+ * Exception that is thrown during object marshal/unmarshal.
  */
-@Deprecated(forRemoval = true)
-public class JavaSerializerFactory implements SerializerFactory {
-    /** {@inheritDoc} */
-    @Override
-    public Serializer create(SchemaDescriptor schema, Class<?> keyClass, Class<?> valClass) {
-        return new JavaSerializer(schema, keyClass, valClass);
+public class MarshallerException extends IgniteInternalCheckedException {
+    /**
+     * Constructor.
+     *
+     * @param cause Cause.
+     */
+    public MarshallerException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param message Message.
+     * @param cause   Cause.
+     */
+    public MarshallerException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

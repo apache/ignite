@@ -17,15 +17,23 @@
 
 package org.apache.ignite.internal.table;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaTestUtils;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.table.KeyValueView;
@@ -38,29 +46,14 @@ import org.junit.jupiter.api.Test;
  * <p>TODO: IGNITE-14487 Add bulk operations tests.
  * TODO: IGNITE-14487 Add async operations tests.
  */
-public class KeyValueOperationsTest {
-    /** Default mapper. */
-    private final Mapper<Long> mapper = new Mapper<>() {
-        @Override
-        public Class<Long> getType() {
-            return Long.class;
-        }
-    };
-    
-    /** Simple schema. */
-    private SchemaDescriptor schema = new SchemaDescriptor(
-            1,
-            new Column[]{new Column("id", NativeTypes.INT64, false)},
-            new Column[]{new Column("val", NativeTypes.INT64, false)}
-    );
-    
+public class KeyValueViewOperationsSimpleSchemaTest {
     /**
      * Creates table view.
      *
      * @return Table KV-view.
      */
     private KeyValueView<Long, Long> kvView() {
-        return new KeyValueViewImpl<>(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema), mapper, mapper, null);
+        return kvViewForValueType(NativeTypes.INT64, Long.class);
     }
 
     @Test
@@ -274,5 +267,75 @@ public class KeyValueOperationsTest {
         
         // Remove non-existed KV pair.
         assertTrue(tbl.replace(2L, null, null));
+    }
+    
+    @Test
+    public void putGetAllTypes() {
+        Random rnd = new Random();
+        Long key = 42L;
+        
+        List<NativeType> allTypes = List.of(
+                NativeTypes.INT8,
+                NativeTypes.INT16,
+                NativeTypes.INT32,
+                NativeTypes.INT64,
+                NativeTypes.FLOAT,
+                NativeTypes.DOUBLE,
+                NativeTypes.DATE,
+                NativeTypes.UUID,
+                NativeTypes.numberOf(20),
+                NativeTypes.decimalOf(25, 5),
+                NativeTypes.bitmaskOf(22),
+                NativeTypes.time(),
+                NativeTypes.datetime(),
+                NativeTypes.timestamp(),
+                NativeTypes.BYTES,
+                NativeTypes.STRING);
+        
+        // Validate all types are tested.
+        assertEquals(Set.of(NativeTypeSpec.values()),
+                allTypes.stream().map(NativeType::spec).collect(Collectors.toSet()));
+        
+        for (NativeType type : allTypes) {
+            final Object val = SchemaTestUtils.generateRandomValue(rnd, type);
+            
+            assertFalse(type.mismatch(NativeTypes.fromObject(val)));
+            
+            KeyValueViewImpl<Long, Object> kvView = kvViewForValueType(NativeTypes.fromObject(val),
+                    (Class<Object>) val.getClass());
+            
+            kvView.put(key, val);
+    
+            if (val instanceof byte[]) {
+                assertArrayEquals((byte[]) val, (byte[]) kvView.get(key));
+            } else {
+                assertEquals(val, kvView.get(key));
+            }
+        }
+    }
+    
+    /**
+     * Creates key-value view.
+     *
+     * @param type   Value column native type.
+     * @param valueClass Value class.
+     */
+    private <T> KeyValueViewImpl<Long, T> kvViewForValueType(NativeType type, Class<T> valueClass) {
+        Mapper<Long> keyMapper = Mapper.identity(Long.class);
+        Mapper<T> valMapper = Mapper.identity(valueClass);
+        
+        SchemaDescriptor schema = new SchemaDescriptor(
+                1,
+                new Column[]{new Column("id", NativeTypes.INT64, false)},
+                new Column[]{new Column("val", type, false)}
+        );
+        
+        return new KeyValueViewImpl<>(
+                new DummyInternalTableImpl(),
+                new DummySchemaManagerImpl(schema),
+                keyMapper,
+                valMapper,
+                null
+        );
     }
 }

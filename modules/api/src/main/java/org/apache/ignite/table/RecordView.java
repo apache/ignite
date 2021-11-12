@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * Table view interface provides methods to access table records.
  *
  * @param <R> Mapped record type.
+ * @see org.apache.ignite.table.mapper.Mapper
  */
 public interface RecordView<R> {
     /**

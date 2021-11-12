@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.BitSet;
 import org.apache.ignite.schema.definition.ColumnType;
+import org.jetbrains.annotations.Contract;
 
 /**
  * A thin wrapper over {@link NativeTypeSpec} to instantiate parameterized constrained types.
@@ -195,6 +196,7 @@ public class NativeTypes {
      * @param val Object to map to native type.
      * @return {@code null} for {@code null} value. Otherwise returns NativeType according to the value's type.
      */
+    @Contract("null -> null")
     public static NativeType fromObject(Object val) {
         NativeTypeSpec spec = NativeTypeSpec.fromObject(val);
 

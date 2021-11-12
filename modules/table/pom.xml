@@ -165,6 +165,13 @@
             <type>test-jar</type>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schema</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Logging in tests -->
         <dependency>
             <groupId>org.slf4j</groupId>

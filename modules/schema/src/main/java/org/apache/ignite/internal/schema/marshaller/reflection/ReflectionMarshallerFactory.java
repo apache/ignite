@@ -15,30 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema.marshaller;
+package org.apache.ignite.internal.schema.marshaller.reflection;
 
-import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.marshaller.KvMarshaller;
+import org.apache.ignite.internal.schema.marshaller.MarshallerFactory;
+import org.apache.ignite.table.mapper.Mapper;
 
 /**
- * Serialization exception.
+ * Factory for reflection-based marshaller.
  */
-public class SerializationException extends IgniteInternalCheckedException {
-    /**
-     * Constructor.
-     *
-     * @param cause Cause.
-     */
-    public SerializationException(Throwable cause) {
-        super(cause);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param message Message.
-     * @param cause   Cause.
-     */
-    public SerializationException(String message, Throwable cause) {
-        super(message, cause);
+public class ReflectionMarshallerFactory implements MarshallerFactory {
+    /** {@inheritDoc} */
+    @Override public <K, V> KvMarshaller<K, V> create(SchemaDescriptor schema, Mapper<K> keyMapper, Mapper<V> valueMapper) {
+        return new KvMarshallerImpl<>(schema, keyMapper, valueMapper);
     }
 }

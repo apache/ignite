@@ -75,9 +75,21 @@ public enum BinaryMode {
     NUMBER(NativeTypeSpec.NUMBER),
 
     /** BigDecimal. */
-    DECIMAL(NativeTypeSpec.DECIMAL);
+    DECIMAL(NativeTypeSpec.DECIMAL),
 
-    /** Natove type spec. */
+    /** Date. */
+    DATE(NativeTypeSpec.DATE),
+
+    /** Time. */
+    TIME(NativeTypeSpec.TIME),
+
+    /** Datetime. */
+    DATETIME(NativeTypeSpec.DATETIME),
+
+    /** Timestamp. */
+    TIMESTAMP(NativeTypeSpec.TIMESTAMP);
+
+    /** Native type spec. */
     private final NativeTypeSpec typeSpec;
 
     /**

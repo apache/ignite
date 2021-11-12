@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.table.mapper.Mappers;
 import org.apache.ignite.tx.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * @param <K> Mapped key type.
  * @param <V> Mapped value type.
  * @apiNote 'Key/value class field' &gt;-&lt; 'table column' mapping laid down in implementation.
- * @see Mappers
+ * @see org.apache.ignite.table.mapper.Mapper
  */
 public interface KeyValueView<K, V> {
     /**

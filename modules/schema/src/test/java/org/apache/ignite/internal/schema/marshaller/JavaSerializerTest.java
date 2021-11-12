@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema.marshaller;
 
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.DATE;
 import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
 import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
 import static org.apache.ignite.internal.schema.NativeTypes.INT16;
@@ -26,6 +27,9 @@ import static org.apache.ignite.internal.schema.NativeTypes.INT64;
 import static org.apache.ignite.internal.schema.NativeTypes.INT8;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.apache.ignite.internal.schema.NativeTypes.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.datetime;
+import static org.apache.ignite.internal.schema.NativeTypes.time;
+import static org.apache.ignite.internal.schema.NativeTypes.timestamp;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,15 +46,9 @@ import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
-import java.util.UUID;
 import java.util.stream.Stream;
 import javax.annotation.processing.Generated;
 import org.apache.ignite.internal.schema.BinaryRow;
@@ -59,11 +57,13 @@ import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
 import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.TestUtils;
+import org.apache.ignite.internal.schema.SchemaTestUtils;
 import org.apache.ignite.internal.schema.marshaller.asm.AsmSerializerGenerator;
 import org.apache.ignite.internal.schema.marshaller.reflection.JavaSerializerFactory;
 import org.apache.ignite.internal.schema.row.Row;
-import org.apache.ignite.internal.testframework.IgniteTestUtils;
+import org.apache.ignite.internal.schema.testobjects.TestObjectWithAllTypes;
+import org.apache.ignite.internal.schema.testobjects.TestObjectWithNoDefaultConstructor;
+import org.apache.ignite.internal.schema.testobjects.TestObjectWithPrivateConstructor;
 import org.apache.ignite.internal.util.ObjectFactory;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,10 +80,7 @@ public class JavaSerializerTest {
      * Get list of serializers for test.
      */
     private static List<SerializerFactory> serializerFactoryProvider() {
-        return Arrays.asList(
-                new JavaSerializerFactory(),
-                new AsmSerializerGenerator()
-        );
+        return List.of(new JavaSerializerFactory(), new AsmSerializerGenerator());
     }
 
     /** Random. */
@@ -137,19 +134,18 @@ public class JavaSerializerTest {
      * ComplexType.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      *
-     * @throws SerializationException If serialization failed.
+     * @throws MarshallerException If serialization failed.
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void complexType(SerializerFactory factory) throws SerializationException {
+    public void complexType(SerializerFactory factory) throws MarshallerException {
         Column[] cols = new Column[]{
-                new Column("primByteCol", INT8, false),
-                new Column("primShortCol", INT16, false),
-                new Column("primIntCol", INT32, false),
-                new Column("primLongCol", INT64, false),
-                new Column("primFloatCol", FLOAT, false),
-                new Column("primDoubleCol", DOUBLE, false),
-
+                new Column("primitiveByteCol", INT8, false),
+                new Column("primitiveShortCol", INT16, false),
+                new Column("primitiveIntCol", INT32, false),
+                new Column("primitiveLongCol", INT64, false),
+                new Column("primitiveFloatCol", FLOAT, false),
+                new Column("primitiveDoubleCol", DOUBLE, false),
                 new Column("byteCol", INT8, true),
                 new Column("shortCol", INT16, true),
                 new Column("intCol", INT32, true),
@@ -157,7 +153,12 @@ public class JavaSerializerTest {
                 new Column("nullLongCol", INT64, true),
                 new Column("floatCol", FLOAT, true),
                 new Column("doubleCol", DOUBLE, true),
-
+        
+                new Column("dateCol", DATE, false),
+                new Column("timeCol", time(), false),
+                new Column("dateTimeCol", datetime(), false),
+                new Column("timestampCol", timestamp(), false),
+        
                 new Column("uuidCol", UUID, true),
                 new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
                 new Column("stringCol", STRING, true),
@@ -169,9 +170,8 @@ public class JavaSerializerTest {
 
         SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
 
-        final Object key = TestObject.randomObject(rnd);
-        final Object val = TestObject.randomObject(rnd);
-
+        final Object key = TestObjectWithAllTypes.randomObject(rnd);
+        final Object val = TestObjectWithAllTypes.randomObject(rnd);
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
         BinaryRow row = serializer.serialize(key, val);
@@ -201,13 +201,12 @@ public class JavaSerializerTest {
 
         SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
 
-        final Object key = TestObject.randomObject(rnd);
-        final Object val = TestObject.randomObject(rnd);
-
+        final Object key = TestObjectWithAllTypes.randomObject(rnd);
+        final Object val = TestObjectWithAllTypes.randomObject(rnd);
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
         assertThrows(
-                SerializationException.class,
+                MarshallerException.class,
                 () -> serializer.serialize(key, val),
                 "Failed to write field [name=shortCol]"
         );
@@ -221,19 +220,18 @@ public class JavaSerializerTest {
     @MethodSource("serializerFactoryProvider")
     public void classWithIncorrectBitmaskSize(SerializerFactory factory) {
         Column[] cols = new Column[]{
-                new Column("primLongCol", INT64, false),
+                new Column("primitiveLongCol", INT64, false),
                 new Column("bitmaskCol", NativeTypes.bitmaskOf(9), true),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
 
-        final Object key = TestObject.randomObject(rnd);
-        final Object val = TestObject.randomObject(rnd);
-
+        final Object key = TestObjectWithAllTypes.randomObject(rnd);
+        final Object val = TestObjectWithAllTypes.randomObject(rnd);
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
         assertThrows(
-                SerializationException.class,
+                MarshallerException.class,
                 () -> serializer.serialize(key, val),
                 "Failed to write field [name=bitmaskCol]"
         );
@@ -245,7 +243,7 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void classWithPrivateConstructor(SerializerFactory factory) throws SerializationException {
+    public void classWithPrivateConstructor(SerializerFactory factory) throws MarshallerException {
         Column[] cols = new Column[]{
                 new Column("primLongCol", INT64, false),
         };
@@ -282,9 +280,8 @@ public class JavaSerializerTest {
 
         SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
 
-        final Object key = WrongTestObject.randomObject(rnd);
-        final Object val = WrongTestObject.randomObject(rnd);
-
+        final Object key = TestObjectWithNoDefaultConstructor.randomObject(rnd);
+        final Object val = TestObjectWithNoDefaultConstructor.randomObject(rnd);
         assertThrows(IgniteInternalException.class, () -> factory.create(schema, key.getClass(), val.getClass()));
     }
 
@@ -294,17 +291,17 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void privateClass(SerializerFactory factory) throws SerializationException {
+    public void privateClass(SerializerFactory factory) throws MarshallerException {
         Column[] cols = new Column[]{
                 new Column("primLongCol", INT64, false),
         };
 
         SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
 
-        final Object key = PrivateTestObject.randomObject(rnd);
-        final Object val = PrivateTestObject.randomObject(rnd);
+        final Object key = TestObjectWithPrivateConstructor.randomObject(rnd);
+        final Object val = TestObjectWithPrivateConstructor.randomObject(rnd);
 
-        final ObjectFactory<?> objFactory = new ObjectFactory<>(PrivateTestObject.class);
+        final ObjectFactory<?> objFactory = new ObjectFactory<>(TestObjectWithPrivateConstructor.class);
         final Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
         BinaryRow row = serializer.serialize(key, objFactory.create());
@@ -322,7 +319,7 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void classLoader(SerializerFactory factory) throws SerializationException {
+    public void classLoader(SerializerFactory factory) throws MarshallerException {
         final ClassLoader loader = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(new DynamicClassLoader(getClass().getClassLoader()));
@@ -364,10 +361,10 @@ public class JavaSerializerTest {
      * @param factory Serializer factory.
      * @param keyType Key type.
      * @param valType Value type.
-     * @throws SerializationException If (de)serialization failed.
+     * @throws MarshallerException If (de)serialization failed.
      */
     private void checkBasicType(SerializerFactory factory, NativeType keyType,
-            NativeType valType) throws SerializationException {
+                                NativeType valType) throws MarshallerException {
         final Object key = generateRandomValue(keyType);
         final Object val = generateRandomValue(valType);
 
@@ -411,7 +408,7 @@ public class JavaSerializerTest {
      * @param type Type.
      */
     private Object generateRandomValue(NativeType type) {
-        return TestUtils.generateRandomValue(rnd, type);
+        return SchemaTestUtils.generateRandomValue(rnd, type);
     }
 
     /**
@@ -455,266 +452,5 @@ public class JavaSerializerTest {
                 .runAsmVerifier(true)
                 .dumpRawBytecode(true)
                 .defineClass(classDef, Object.class);
-    }
-
-    /**
-     * Test object.
-     */
-    @SuppressWarnings("InstanceVariableMayNotBeInitialized")
-    public static class TestObject {
-        /**
-         * Get random TestObject.
-         */
-        public static TestObject randomObject(Random rnd) {
-            final TestObject obj = new TestObject();
-
-            obj.primByteCol = (byte) rnd.nextInt(255);
-            obj.primShortCol = (short) rnd.nextInt(65535);
-            obj.primIntCol = rnd.nextInt();
-            obj.primLongCol = rnd.nextLong();
-            obj.primFloatCol = rnd.nextFloat();
-            obj.primDoubleCol = rnd.nextDouble();
-
-            obj.byteCol = (byte) rnd.nextInt(255);
-            obj.shortCol = (short) rnd.nextInt(65535);
-            obj.intCol = rnd.nextInt();
-            obj.longCol = rnd.nextLong();
-            obj.floatCol = rnd.nextFloat();
-            obj.doubleCol = rnd.nextDouble();
-            obj.nullLongCol = null;
-
-            obj.nullBytesCol = null;
-            obj.uuidCol = new UUID(rnd.nextLong(), rnd.nextLong());
-            obj.bitmaskCol = IgniteTestUtils.randomBitSet(rnd, 42);
-            obj.stringCol = IgniteTestUtils.randomString(rnd, rnd.nextInt(255));
-            obj.bytesCol = IgniteTestUtils.randomBytes(rnd, rnd.nextInt(255));
-            obj.numberCol = (BigInteger) TestUtils.generateRandomValue(rnd, NativeTypes.numberOf(12));
-            obj.decimalCol = (BigDecimal) TestUtils.generateRandomValue(rnd, NativeTypes.decimalOf(19, 3));
-
-            return obj;
-        }
-
-        // Primitive typed
-        private byte primByteCol;
-
-        private short primShortCol;
-
-        private int primIntCol;
-
-        private long primLongCol;
-
-        private float primFloatCol;
-
-        private double primDoubleCol;
-
-        // Reference typed
-        private Byte byteCol;
-
-        private Short shortCol;
-
-        private Integer intCol;
-
-        private Long longCol;
-
-        private Long nullLongCol;
-
-        private Float floatCol;
-
-        private Double doubleCol;
-
-        private UUID uuidCol;
-
-        private BitSet bitmaskCol;
-
-        private String stringCol;
-
-        private byte[] bytesCol;
-
-        private byte[] nullBytesCol;
-
-        private BigInteger numberCol;
-
-        private BigDecimal decimalCol;
-
-        /** {@inheritDoc} */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            TestObject object = (TestObject) o;
-
-            return primByteCol == object.primByteCol
-                    && primShortCol == object.primShortCol
-                    && primIntCol == object.primIntCol
-                    && primLongCol == object.primLongCol
-                    && Float.compare(object.primFloatCol, primFloatCol) == 0
-                    && Double.compare(object.primDoubleCol, primDoubleCol) == 0
-                    && Objects.equals(byteCol, object.byteCol)
-                    && Objects.equals(shortCol, object.shortCol)
-                    && Objects.equals(intCol, object.intCol)
-                    && Objects.equals(longCol, object.longCol)
-                    && Objects.equals(nullLongCol, object.nullLongCol)
-                    && Objects.equals(floatCol, object.floatCol)
-                    && Objects.equals(doubleCol, object.doubleCol)
-                    && Objects.equals(uuidCol, object.uuidCol)
-                    && Objects.equals(bitmaskCol, object.bitmaskCol)
-                    && Objects.equals(stringCol, object.stringCol)
-                    && Arrays.equals(bytesCol, object.bytesCol)
-                    && Objects.equals(numberCol, object.numberCol)
-                    && Objects.equals(decimalCol, object.decimalCol);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public int hashCode() {
-            return 73;
-        }
-    }
-
-    /**
-     * Test object with private constructor.
-     */
-    @SuppressWarnings("InstanceVariableMayNotBeInitialized")
-    public static class TestObjectWithPrivateConstructor {
-        /**
-         * Get random TestObject.
-         */
-        static TestObjectWithPrivateConstructor randomObject(Random rnd) {
-            final TestObjectWithPrivateConstructor obj = new TestObjectWithPrivateConstructor();
-
-            obj.primLongCol = rnd.nextLong();
-
-            return obj;
-        }
-
-        /** Value. */
-        private long primLongCol;
-
-        /**
-         * Private constructor.
-         */
-        private TestObjectWithPrivateConstructor() {
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            TestObjectWithPrivateConstructor object = (TestObjectWithPrivateConstructor) o;
-
-            return primLongCol == object.primLongCol;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public int hashCode() {
-            return Objects.hash(primLongCol);
-        }
-    }
-
-    /**
-     * Test object without default constructor.
-     */
-    public static class WrongTestObject {
-        /**
-         * Get random TestObject.
-         */
-        static WrongTestObject randomObject(Random rnd) {
-            return new WrongTestObject(rnd.nextLong());
-        }
-
-        /** Value. */
-        private final long primLongCol;
-
-        /**
-         * Private constructor.
-         */
-        public WrongTestObject(long val) {
-            primLongCol = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            WrongTestObject object = (WrongTestObject) o;
-
-            return primLongCol == object.primLongCol;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public int hashCode() {
-            return Objects.hash(primLongCol);
-        }
-    }
-
-    /**
-     * Test object without default constructor.
-     */
-    @SuppressWarnings("InstanceVariableMayNotBeInitialized")
-    private static class PrivateTestObject {
-        /**
-         * Get random TestObject.
-         */
-        static PrivateTestObject randomObject(Random rnd) {
-            return new PrivateTestObject(rnd.nextInt());
-        }
-
-        /** Value. */
-        private long primLongCol;
-
-        /** Constructor. */
-        PrivateTestObject() {
-        }
-
-        /**
-         * Private constructor.
-         */
-        PrivateTestObject(long val) {
-            primLongCol = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            WrongTestObject object = (WrongTestObject) o;
-
-            return primLongCol == object.primLongCol;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public int hashCode() {
-            return Objects.hash(primLongCol);
-        }
     }
 }

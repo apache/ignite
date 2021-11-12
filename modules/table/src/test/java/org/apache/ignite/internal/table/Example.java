@@ -27,7 +27,7 @@ import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
-import org.apache.ignite.table.mapper.Mappers;
+import org.apache.ignite.table.mapper.Mapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -240,8 +240,8 @@ public class Example {
             String bankName;
         }
 
-        KeyValueView<OrderKey, OrderValue> orderKvView = t.keyValueView(Mappers.ofKeyClass(OrderKey.class),
-                Mappers.ofValueClassBuilder(OrderValue.class)
+        KeyValueView<OrderKey, OrderValue> orderKvView = t.keyValueView(Mapper.of(OrderKey.class),
+                Mapper.builderFor(OrderValue.class)
                         .map("billingDetails", (row) -> {
                             BinaryObject binObj = row.binaryObjectValue("conditionalDetails");
                             int type = row.intValue("type");
@@ -353,12 +353,12 @@ public class Example {
         }
 
         RecordView<TruncatedRecord> truncatedView = t.recordView(
-                Mappers.ofRecordClassBuilder(TruncatedRecord.class)
+                Mapper.builderFor(TruncatedRecord.class)
                         .map("upgradedObject", JavaPersonV2.class).build());
 
         // Or we can have a custom conditional type selection.
         RecordView<TruncatedRecord> truncatedView2 = t.recordView(
-                Mappers.ofRecordClassBuilder(TruncatedRecord.class)
+                Mapper.builderFor(TruncatedRecord.class)
                         .map("upgradedObject", (row) -> {
                             BinaryObject binObj1 = row.binaryObjectValue("upgradedObject");
                             int dept = row.intValue("department");
@@ -426,7 +426,7 @@ public class Example {
         employeeView.put(1L, BinaryObjects.wrap(new byte[0] /* serialized Employee */));
 
         t.keyValueView(
-                Mappers.identity(),
-                Mappers.ofValueClassBuilder(BinaryObject.class).deserializeTo(Employee.class).build());
+                Mapper.identity(Long.class),
+                Mapper.builderFor(BinaryObject.class).deserializeTo(Employee.class).build());
     }
 }

@@ -35,7 +35,7 @@ import org.apache.ignite.internal.testframework.IgniteTestUtils;
 /**
  * Test utility class.
  */
-public final class TestUtils {
+public final class SchemaTestUtils {
     /**
      * Generates random value of given type.
      *
@@ -118,6 +118,6 @@ public final class TestUtils {
     /**
      * Stub.
      */
-    private TestUtils() {
+    private SchemaTestUtils() {
     }
 }

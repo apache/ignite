@@ -468,7 +468,7 @@ public class RowTest {
      * @return Random value of requested type.
      */
     private Object generateRandomValue(NativeType type) {
-        return TestUtils.generateRandomValue(rnd, type);
+        return SchemaTestUtils.generateRandomValue(rnd, type);
     }
 
     /**

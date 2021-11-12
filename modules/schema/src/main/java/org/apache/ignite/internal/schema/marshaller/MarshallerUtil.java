@@ -19,6 +19,10 @@ package org.apache.ignite.internal.schema.marshaller;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.InvalidTypeException;
@@ -42,22 +46,22 @@ public final class MarshallerUtil {
         switch (type.spec()) {
             case BYTES:
                 return ((byte[]) val).length;
-
+            
             case STRING:
                 // Overestimating size here prevents from later unwanted row buffer expanding.
                 return ((CharSequence) val).length() << 1;
-
+            
             case NUMBER:
                 return RowAssembler.sizeInBytes((BigInteger) val);
-
+            
             case DECIMAL:
                 return RowAssembler.sizeInBytes((BigDecimal) val);
-
+            
             default:
                 throw new InvalidTypeException("Unsupported variable-length type: " + type);
         }
     }
-
+    
     /**
      * Gets binary read/write mode for given class.
      *
@@ -66,7 +70,7 @@ public final class MarshallerUtil {
      */
     public static BinaryMode mode(Class<?> cls) {
         assert cls != null;
-
+        
         // Primitives.
         if (cls == byte.class) {
             return BinaryMode.P_BYTE;
@@ -92,6 +96,14 @@ public final class MarshallerUtil {
             return BinaryMode.FLOAT;
         } else if (cls == Double.class) {
             return BinaryMode.DOUBLE;
+        } else if (cls == LocalDate.class) { // Temporal types
+            return BinaryMode.DATE;
+        } else if (cls == LocalTime.class) {
+            return BinaryMode.TIME;
+        } else if (cls == LocalDateTime.class) {
+            return BinaryMode.DATETIME;
+        } else if (cls == Instant.class) {
+            return BinaryMode.TIMESTAMP;
         } else if (cls == byte[].class) { // Other types
             return BinaryMode.BYTE_ARR;
         } else if (cls == String.class) {
@@ -105,15 +117,15 @@ public final class MarshallerUtil {
         } else if (cls == BigDecimal.class) {
             return BinaryMode.DECIMAL;
         }
-
+        
         return null;
     }
-
+    
     /**
      * Creates object factory for class.
      *
      * @param targetCls Target class.
-     * @param <T>  Target type.
+     * @param <T>       Target type.
      * @return Object factory.
      */
     public static <T> ObjectFactory<T> factoryForClass(Class<T> targetCls) {
@@ -123,8 +135,10 @@ public final class MarshallerUtil {
             return null;
         }
     }
-
-    /** Stub. */
+    
+    /**
+     * Stub.
+     */
     private MarshallerUtil() {
     }
 }

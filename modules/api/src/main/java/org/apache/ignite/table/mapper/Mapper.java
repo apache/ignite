@@ -17,8 +17,8 @@
 
 package org.apache.ignite.table.mapper;
 
-import java.util.function.Function;
-import org.apache.ignite.table.Tuple;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Mapper interface defines methods that are required for a marshaller to map class field names to table columns.
@@ -27,50 +27,50 @@ import org.apache.ignite.table.Tuple;
  */
 public interface Mapper<T> {
     /**
+     * Creates a mapper for a class.
+     *
+     * @param cls Key class.
+     * @param <K> Key type.
+     * @return Mapper.
+     */
+    static <K> Mapper<K> of(Class<K> cls) {
+        return identity(cls);
+    }
+    
+    /**
+     * Creates a mapper builder for a class.
+     *
+     * @param cls Value class.
+     * @param <V> Value type.
+     * @return Mapper builder.
+     */
+    static <V> MapperBuilder<V> builderFor(Class<V> cls) {
+        return new MapperBuilder<>(cls);
+    }
+    
+    /**
+     * Creates identity mapper which is used for simple types that have native support or objects with field names that match column names.
+     *
+     * @param targetClass Target type class.
+     * @param <T>         Target type.
+     * @return Mapper.
+     */
+    static <T> Mapper<T> identity(Class<T> targetClass) {
+        return new IdentityMapper<T>(targetClass);
+    }
+    
+    /**
      * Return mapped type.
      *
      * @return Mapped type.
      */
-    Class<T> getType();
-
+    Class<T> targetType();
+    
     /**
-     * Mapper builder.
+     * Maps a column name to a field name.
      *
-     * @param <T> Mapped type.
+     * @param columnName Column name.
+     * @return Field name or {@code null} if no field mapped to a column.
      */
-    interface Builder<T> {
-        /**
-         * Map a field to a type of given class.
-         *
-         * @param fieldName Field name.
-         * @param targetClass Target class.
-         * @return {@code this} for chaining.
-         */
-        Builder<T> map(String fieldName, Class<?> targetClass);
-
-        /**
-         * Adds a functional mapping for a field,
-         * the result depends on function call for every particular row.
-         *
-         * @param fieldName Field name.
-         * @param mappingFunction Mapper function.
-         * @return {@code this} for chaining.
-         */
-        Builder<T> map(String fieldName, Function<Tuple, Object> mappingFunction);
-
-        /**
-         * Sets a target class to deserialize to.
-         *
-         * @param targetClass Target class.
-         * @return {@code this} for chaining.
-         */
-        Builder<T> deserializeTo(Class<?> targetClass);
-
-        /**
-         * Builds mapper.
-         *
-         * @return Mapper.
-         */
-        Mapper<T> build();
-    }
+    @Nullable String columnToField(@NotNull String columnName);
 }

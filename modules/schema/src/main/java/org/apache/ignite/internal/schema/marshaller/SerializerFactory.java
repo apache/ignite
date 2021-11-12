@@ -23,8 +23,11 @@ import org.apache.ignite.internal.schema.marshaller.reflection.JavaSerializerFac
 
 /**
  * (De)Serializer factory interface.
+ *
+ * @deprecated Replaced with {@link MarshallerFactory}
  */
 @FunctionalInterface
+@Deprecated(forRemoval = true)
 public interface SerializerFactory {
     /**
      * CreateGeneratedSerializerFactory.
