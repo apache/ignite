@@ -56,9 +56,6 @@ public final class PlanningContext implements Context {
     /** */
     private IgnitePlanner planner;
 
-    /** */
-    private SqlOperatorTable opTable;
-
     /**
      * Private constructor, used by a builder.
      */
@@ -89,16 +86,6 @@ public final class PlanningContext implements Context {
     }
 
     // Helper methods
-    /**
-     * @return Sql operators table.
-     */
-    public SqlOperatorTable opTable() {
-        if (opTable == null)
-            opTable = SqlOperatorTables.chain(config().getOperatorTable(), catalogReader());
-
-        return opTable;
-    }
-
     /**
      * @return Sql conformance.
      */
@@ -135,6 +122,13 @@ public final class PlanningContext implements Context {
      */
     public IgniteTypeFactory typeFactory() {
         return unwrap(BaseQueryContext.class).typeFactory();
+    }
+
+    /**
+     * @return Sql operators table.
+     */
+    public SqlOperatorTable opTable() {
+        return unwrap(BaseQueryContext.class).opTable();
     }
 
     /**

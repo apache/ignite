@@ -31,6 +31,8 @@ import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
@@ -113,6 +115,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
     private CalciteCatalogReader catalogReader;
 
     /** */
+    private SqlOperatorTable opTable;
+
+    /** */
     private final GridQueryCancel qryCancel;
 
     /**
@@ -177,6 +182,16 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     public RexBuilder rexBuilder() {
         return rexBuilder;
+    }
+
+    /**
+     * @return Sql operators table.
+     */
+    public SqlOperatorTable opTable() {
+        if (opTable == null)
+            opTable = SqlOperatorTables.chain(config().getOperatorTable(), catalogReader());
+
+        return opTable;
     }
 
     /**

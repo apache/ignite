@@ -96,7 +96,7 @@ import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -220,6 +220,14 @@ class RelJson {
             "org.apache.calcite.rel.logical.",
             "org.apache.calcite.adapter.jdbc.",
             "org.apache.calcite.adapter.jdbc.JdbcRules$");
+
+    /** Query context. */
+    private final BaseQueryContext qctx;
+
+    /** */
+    RelJson(BaseQueryContext qctx) {
+        this.qctx = qctx;
+    }
 
     /** */
     Function<RelInput, RelNode> factory(String type) {
@@ -525,9 +533,7 @@ class RelJson {
         SqlSyntax sqlSyntax = toEnum(map.get("syntax"));
         List<SqlOperator> operators = new ArrayList<>();
 
-        PlanningContext pctx = (PlanningContext)cluster.getPlanner().getContext();
-
-        pctx.opTable().lookupOperatorOverloads(
+        qctx.opTable().lookupOperatorOverloads(
             new SqlIdentifier(name, new SqlParserPos(0, 0)),
             null,
             sqlSyntax,

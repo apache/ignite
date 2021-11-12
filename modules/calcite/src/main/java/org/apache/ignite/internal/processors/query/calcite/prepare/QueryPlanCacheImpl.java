@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.GridKernalContext;
@@ -135,6 +136,6 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onFunctionCreated(String schemaName, String name, Method method) {
-        clear();
+        // No-op.
     }
 }

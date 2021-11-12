@@ -33,6 +33,7 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 
 /**
  * Callback for a relational expression to dump itself as JSON.
@@ -73,7 +74,7 @@ public class RelJsonWriter implements RelWriter {
     public RelJsonWriter(RelOptCluster cluster, boolean pretty) {
         this.pretty = pretty;
 
-        relJson = new RelJson();
+        relJson = new RelJson(cluster.getPlanner().getContext().unwrap(BaseQueryContext.class));
     }
 
     /** {@inheritDoc} */
