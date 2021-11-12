@@ -95,7 +95,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
         err = new ByteArrayOutputStream();
         out = new ByteArrayOutputStream();
     }
-    
+
     /**
      * Stops application context after a test.
      */
@@ -116,7 +116,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
                 .setErr(new PrintWriter(err, true))
                 .setOut(new PrintWriter(out, true));
     }
-    
+
     /**
      * Tests "init" command.
      */
@@ -320,7 +320,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
             var node =
                     new NodeManager.RunningNode(1, nodeName, Path.of("logfile"));
 
-            when(nodeMgr.start(any(), any(), any(), any(), any(), any()))
+            when(nodeMgr.start(any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(node);
 
             when(cliPathsCfgLdr.loadIgnitePathsOrThrowError())
@@ -334,6 +334,7 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
 
             verify(nodeMgr).start(
                     nodeName,
+                    ignitePaths.nodesBaseWorkDir(),
                     ignitePaths.logDir,
                     ignitePaths.cliPidsDir(),
                     Path.of("conf.json"),

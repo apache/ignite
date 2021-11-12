@@ -69,19 +69,37 @@ public class NodeManager {
      * Starts new Ignite node and check if it was successfully started. It has very naive implementation of successful run check - just
      * waiting for appropriate message in the node logs.
      *
-     * @param nodeName Node name.
-     * @param logDir   Log dir for receiving node state.
-     * @param pidsDir  Dir where pid files of running nodes will be stored.
-     * @param srvCfg   Config for Ignite node
-     * @param out      PrintWriter for user messages.
+     * @param nodeName     Node name.
+     * @param baseWorkDir  Root directory to store nodes data.
+     * @param logDir       Path to log directory for receiving node state.
+     * @param pidsDir      Path to directory where pid files of running nodes will be stored.
+     * @param srvCfg       Path to configuration file for Ignite node.
+     * @param javaLogProps Path to logging properties file.
+     * @param out          PrintWriter for user messages.
      * @return Information about successfully started node
      */
-    public RunningNode start(String nodeName, Path logDir, Path pidsDir, Path srvCfg, Path javaLogProps, PrintWriter out) {
+    public RunningNode start(
+            String nodeName,
+            Path baseWorkDir,
+            Path logDir,
+            Path pidsDir,
+            Path srvCfg,
+            Path javaLogProps,
+            PrintWriter out
+    ) {
         if (getRunningNodes(logDir, pidsDir).stream().anyMatch(n -> n.name.equals(nodeName))) {
             throw new IgniteCliException("Node with nodeName " + nodeName + " is already exist");
         }
 
         try {
+            Path workDir = workDir(baseWorkDir, nodeName);
+
+            // If working directory does not exist then it should be created,
+            // otherwise, just start a new node with existing data.
+            if (!Files.exists(workDir)) {
+                Files.createDirectory(workDir);
+            }
+
             Path logFile = logFile(logDir, nodeName);
 
             if (Files.exists(logFile)) {
@@ -107,11 +125,12 @@ public class NodeManager {
                 cmdArgs.add(srvCfg.toAbsolutePath().toString());
             }
 
+            cmdArgs.add("--work-dir");
+            cmdArgs.add(workDir.toAbsolutePath().toString());
+
             cmdArgs.add(nodeName);
 
-            ProcessBuilder pb = new ProcessBuilder(
-                    cmdArgs
-            )
+            ProcessBuilder pb = new ProcessBuilder(cmdArgs)
                     .redirectError(logFile.toFile())
                     .redirectOutput(logFile.toFile());
 
@@ -329,6 +348,17 @@ public class NodeManager {
      */
     private static Path logFile(Path logDir, String nodeName) {
         return logDir.resolve(nodeName + ".log");
+    }
+
+    /**
+     * Returns a path to the node work directory.
+     *
+     * @param baseWorkDir Base ignite working directory.
+     * @param nodeName Node name.
+     * @return Path to node work directory.
+     */
+    private static Path workDir(Path baseWorkDir, String nodeName) {
+        return baseWorkDir.resolve(nodeName);
     }
 
     /**
