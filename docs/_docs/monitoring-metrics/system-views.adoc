@@ -457,8 +457,6 @@ This view exposes information about currently running continuous queries.
 |TOPIC | string |  Query topic name
 |===
 
-
-
 == SQL_QUERIES
 
 This view exposes information about currently running SQL queries.
@@ -489,7 +487,6 @@ This view exposes information about currently running SQL queries.
 |DURATION_MAX | long |    Maximum duration of execution
 |LAST_START_TIME | date |    Last execution date
 |===
-
 
 == SCHEMAS
 
@@ -569,10 +566,7 @@ The NODE_METRICS view provides various metrics about the state of nodes, resourc
 
 |===
 
-
-
 == TABLES
-
 
 The TABLES view contains information about the SQL tables.
 
@@ -592,7 +586,6 @@ The TABLES view contains information about the SQL tables.
 |VALUE_TYPE_NAME | string |  Value type name
 
 |===
-
 
 == TABLE_COLUMNS
 
@@ -614,8 +607,6 @@ This view exposes information about SQL table columns.
 |TYPE | string |  Column type
 |===
 
-
-
 == VIEWS
 
 This view exposes information about SQL views.
@@ -627,7 +618,6 @@ This view exposes information about SQL views.
 |SCHEMA | string |  Schema
 |DESCRIPTION | string |  Description
 |===
-
 
 == VIEW_COLUMNS
 
@@ -665,7 +655,6 @@ The INDEXES view contains information about SQL indexes.
 |IS_UNIQUE | boolean | True if unique index
 |===
 
-
 == PAGE_LISTS
 
 The page list is a data structure used to store a list of partially free data pages (free lists) and fully free allocated
@@ -678,7 +667,6 @@ use the `CACHE_GROUP_PAGE_LISTS` system view. If Ignite persistence is disabled,
 In this case, the `DATA_REGION_PAGE_LISTS` system view needs to used. These views contain information about each bucket
 of each page list that is useful to understand how much data can be inserted into a cache without allocating new pages
 and also helps to detect skews in page lists utilization.
-
 
 === CACHE_GROUP_PAGE_LISTS
 
@@ -898,4 +886,66 @@ Note, lock will be shown on the non parent node only after initial usage on that
 |GROUP_NAME | string | Cache group name to store data structure
 |GROUP_ID | int | Cache group id to store data structure
 |REMOVED | boolean | `True` if removed
+|===
+
+== STATISTICS_CONFIGURATION
+
+The STATISTICS_CONFIGURATION view contains information about link:SQL/sql-statistics[SQL statistics,window=_blank] configuration.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|MAX_PARTITION_OBSOLESCENCE_PERCENT |TINYINT |Maximum percentage of obsolescent rows in statistics. See the link:SQL/sql-statistics#statistics-obsolescence[SQL Statistics,window=_blank] page for more details.
+|MANUAL_NULLS |BIGINT |If not null - overrided number of null values.
+|MANUAL_DISTINCT |BIGINT |If not null - overrided number of distinct values.
+|MANUAL_TOTAL |BIGINT |If not null - overrided total number of values.
+|MANUAL_SIZE |INT |If not null - overrided average size of non null values in column.
+|VERSION |BIGINT |Configuration version.
+|===
+
+
+== STATISTICS_LOCAL_DATA
+
+The STATISTICS_LOCAL_DATA view contains link:SQL/sql-statistics[SQL statistics,window=_blank] for locally managed (or stored) data. This view is node-specific, so each node has an instance of the view that contains information about its local data statistics.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|ROWS_COUNT |BIGINT |Count of column rows.
+|DISTINCT |BIGINT |Number of unique non-null values.
+|NULLS |BIGINT |Number of null values.
+|TOTAL |BIGINT |Total number of values in column.
+|SIZE |INTEGER |Average value size in bytes.
+|VERSION |BIGINT |Statistics version.
+|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|===
+
+== STATISTICS_PARTITION_DATA
+
+The STATISTICS_PARTITION_DATA view contains information about link:SQL/sql-statistics[SQL statistics,window=_blank] on every partition data stored on a local node.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|PARTITION |INTEGER |Partition number.
+|ROWS_COUNT |BIGINT |Count of column rows.
+|UPDATE_COUNTER |BIGINT |Partition counter update when statistics are collected.
+|DISTINCT |BIGINT |Number of unique non-null values.
+|NULLS |BIGINT |Number of null values.
+|TOTAL |BIGINT |Total number of values in column.
+|SIZE |INTEGER |Average value size in bytes.
+|VERSION |BIGINT |Statistics version.
+|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
 |===

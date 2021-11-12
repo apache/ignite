@@ -975,6 +975,57 @@ Parameters:
 | `status`| Get status of collecting performance statistics in the cluster.
 |===
 
+== Working with Cluster Properties
+
+The `control.sh|bat` script provides an ability to work with link:SQL/sql-statistics[SQL statistics,window=_blank] functionality.
+
+To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property list
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property list
+----
+--
+
+You can set property value with `--property set` command. For example, to enable or disable SQL statistics in cluster use, specify `ON`, `OFF`,  or `NO_UPDATE` values:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name 'statistics.usage.state' --val 'ON'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+----
+--
+
+You can also get property value with `--property get` command. For example:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property get --name 'statistics.usage.state'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property get --name 'statistics.usage.state'
+----
+
 == Cache Consistency
 
 === Repair
