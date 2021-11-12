@@ -105,7 +105,7 @@ tab:C++[unsupported]
 ====
 [discrete]
 === Performance Considerations
-Colocated computations yield performance benefits when the amount of the data you want to process is sufficiently large. In some cases, when the amount of data is small, a link:key-value-api/using-scan-queries[scan query] may perform better.
+Colocated computations yield performance benefits when the amount of the data you want to process is sufficiently large. In some cases, when the amount of data is small, a link:key-value-api/using-cache-queries[scan query] may perform better.
 
 ====
 

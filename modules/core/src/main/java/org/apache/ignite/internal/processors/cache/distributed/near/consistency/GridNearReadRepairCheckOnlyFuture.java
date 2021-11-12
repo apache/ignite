@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -33,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartition
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -94,33 +95,44 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
     /** {@inheritDoc} */
     @Override protected void reduce() {
-        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>();
-
-        Map<KeyCacheObject, T2<Object, CacheEntryVersion>> prevMap = new HashMap<>();
-
+        Map<KeyCacheObject, EntryGetResult> resMap = new HashMap<>(keys.size());
         Set<KeyCacheObject> inconsistentKeys = new HashSet<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
-                KeyCacheObject curKey = entry.getKey();
-                EntryGetResult curRes = entry.getValue();
+            for (KeyCacheObject key : fut.keys()) {
+                EntryGetResult curRes = fut.result().get(key);
 
-                Object curVal = ctx.unwrapBinaryIfNeeded(curRes.value(), !deserializeBinary, false, null);
+                if (!resMap.containsKey(key)) {
+                    resMap.put(key, curRes);
 
-                T2<Object, CacheEntryVersion> prev = prevMap.get(curKey);
-
-                if (prev != null) {
-                    Object prevVal = prev.get1();
-                    CacheEntryVersion prevVer = prev.get2();
-
-                    if (prevVer.compareTo(curRes.version()) != 0 || !prevVal.equals(curVal))
-                        inconsistentKeys.add(curKey);
+                    continue;
                 }
-                else {
-                    resMap.put(curKey, curRes);
 
-                    prevMap.put(curKey, new T2<>(curVal, curRes.version()));
+                EntryGetResult prevRes = resMap.get(key);
+
+                if (curRes != null) {
+                    if (prevRes == null || prevRes.version().compareTo(curRes.version()) != 0)
+                        inconsistentKeys.add(key);
+                    else {
+                        CacheObjectAdapter curVal = curRes.value();
+                        CacheObjectAdapter prevVal = prevRes.value();
+
+                        try {
+                            byte[] curBytes = curVal.valueBytes(ctx.cacheObjectContext());
+                            byte[] prevBytes = prevVal.valueBytes(ctx.cacheObjectContext());
+
+                            if (!Arrays.equals(curBytes, prevBytes))
+                                inconsistentKeys.add(key);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+
+                            return;
+                        }
+                    }
                 }
+                else if (prevRes != null)
+                    inconsistentKeys.add(key);
             }
         }
 
@@ -136,6 +148,9 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
             return;
         }
+
+        // Misses recorded to detect partial misses, but should not be propagated when the key is null at each node.
+        resMap.values().removeIf(Objects::isNull);
 
         onDone(resMap);
     }

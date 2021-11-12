@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
@@ -36,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -54,8 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -134,15 +130,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to resolve client connector host: " + host, e);
                 }
 
-                execSvc = new IgniteThreadPoolExecutor(
-                    "client-connector",
-                    cfg.getIgniteInstanceName(),
-                    cliConnCfg.getThreadPoolSize(),
-                    cliConnCfg.getThreadPoolSize(),
-                    0,
-                    new LinkedBlockingQueue<Runnable>(),
-                    GridIoPolicy.UNDEFINED,
-                    new OomExceptionHandler(ctx));
+                execSvc = ctx.pools().getThinClientExecutorService();
 
                 Exception lastErr = null;
 
@@ -366,11 +354,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             ctx.ports().deregisterPorts(getClass());
 
-            if (execSvc != null) {
-                U.shutdownNow(getClass(), execSvc, log);
-
-                execSvc = null;
-            }
+            execSvc = null;
 
             if (!U.IGNITE_MBEANS_DISABLED)
                 unregisterMBean();
