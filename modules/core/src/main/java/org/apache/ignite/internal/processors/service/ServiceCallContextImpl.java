@@ -21,10 +21,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceCallContext;
 
@@ -46,12 +44,10 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     }
 
     /**
-     * Constructs an immutable context from the map.
-     *
      * @param attrs Service call context attributes.
      */
-    protected ServiceCallContextImpl(Map<String, byte[]> attrs) {
-        this.attrs = Collections.unmodifiableMap(attrs);
+    public ServiceCallContextImpl(Map<String, byte[]> attrs) {
+        this.attrs = new HashMap<>(attrs);
     }
 
     /** {@inheritDoc} */
@@ -70,37 +66,12 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ServiceCallContext put(String name, String value) {
-        A.notNullOrEmpty(name, "name");
-        A.notNull(value, "value");
-
-        attrs.put(name, value.getBytes(StandardCharsets.UTF_8));
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ServiceCallContext put(String name, byte[] value) {
-        A.notNullOrEmpty(name, "name");
-        A.notNull(value, "value");
-
-        attrs.put(name, value);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ServiceCallContext copy() {
-        return new ServiceCallContextImpl(attrs);
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeMap(out, attrs);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        attrs = Collections.unmodifiableMap(U.readMap(in));
+        attrs = U.readMap(in);
     }
 }
