@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -128,6 +129,25 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         person.put(idx++, new Employer("Roma", 10d));
 
         return person;
+    }
+
+    /** */
+    protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
+        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
+    }
+
+    /** */
+    protected List<List<?>> sql(String sql, Object... params) {
+        return sql(client, sql, params);
+    }
+
+    /** */
+    protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql, params);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
+        }
     }
 
     /** */

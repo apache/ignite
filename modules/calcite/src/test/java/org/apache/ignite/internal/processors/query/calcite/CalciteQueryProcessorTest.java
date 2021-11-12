@@ -246,16 +246,16 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 assertEquals(1, res.size());
                 assertEquals(1, res.get(0).size());
                 assertEquals(40L, res.get(0).get(0));
+
+                awaitReservationsRelease("RISK");
+                awaitReservationsRelease("TRADE");
+                awaitReservationsRelease("BATCH");
+
+                assertFalse(lsnr.check());
             }
         }
 
-        assertFalse(lsnr.check());
-
         listeningLog.clearListeners();
-
-        awaitReservationsRelease("RISK");
-        awaitReservationsRelease("TRADE");
-        awaitReservationsRelease("BATCH");
     }
 
     /**

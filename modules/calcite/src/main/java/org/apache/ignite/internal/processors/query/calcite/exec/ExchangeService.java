@@ -63,10 +63,8 @@ public interface ExchangeService extends Service {
      * Sends cancel request.
      * @param nodeId Target node ID.
      * @param qryId Query ID.
-     * @param fragmentId Target fragment ID.
-     * @param exchangeId Exchange ID.
      */
-    void closeOutbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException;
+    void closeQuery(UUID nodeId, UUID qryId) throws IgniteCheckedException;
 
     /**
      * @param nodeId Target node ID.

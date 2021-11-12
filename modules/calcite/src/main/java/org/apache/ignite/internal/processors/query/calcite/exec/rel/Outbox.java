@@ -150,10 +150,12 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
     }
 
     /** {@inheritDoc} */
-    @Override protected void onErrorInternal(Throwable e) {
-        U.error(context().logger(),
-            "Error occurred during execution: " + X.getFullStackTrace(e));
+    @Override public void onError(Throwable e) {
+        onErrorInternal(e);
+    }
 
+    /** {@inheritDoc} */
+    @Override protected void onErrorInternal(Throwable e) {
         try {
             sendError(e);
         }

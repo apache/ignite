@@ -22,31 +22,82 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Test SQL data types.
  */
-public class DataTypesTest extends GridCommonAbstractTest {
-    /** */
-    private static QueryEngine qryEngine;
+public class DataTypesTest extends AbstractBasicIntegrationTest {
+    /**
+     * Tests numeric types mapping on Java types.
+     */
+    @Test
+    public void testNumericRanges() {
+        try {
+            executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        IgniteEx grid = startGrid();
+            executeSql("INSERT INTO tbl VALUES (" + Byte.MAX_VALUE + ", " + Short.MAX_VALUE + ", " +
+                Integer.MAX_VALUE + ", " + Long.MAX_VALUE + ')');
 
-        qryEngine = Commons.lookupComponent(grid.context(), QueryEngine.class);
+            assertQuery("SELECT tiny FROM tbl").returns(Byte.MAX_VALUE).check();
+            assertQuery("SELECT small FROM tbl").returns(Short.MAX_VALUE).check();
+            assertQuery("SELECT i FROM tbl").returns(Integer.MAX_VALUE).check();
+            assertQuery("SELECT big FROM tbl").returns(Long.MAX_VALUE).check();
+
+            executeSql("DELETE from tbl");
+
+            executeSql("INSERT INTO tbl VALUES (" + Byte.MIN_VALUE + ", " + Short.MIN_VALUE + ", " +
+                Integer.MIN_VALUE + ", " + Long.MIN_VALUE + ')');
+
+            assertQuery("SELECT tiny FROM tbl").returns(Byte.MIN_VALUE).check();
+            assertQuery("SELECT small FROM tbl").returns(Short.MIN_VALUE).check();
+            assertQuery("SELECT i FROM tbl").returns(Integer.MIN_VALUE).check();
+            assertQuery("SELECT big FROM tbl").returns(Long.MIN_VALUE).check();
+        }
+        finally {
+            executeSql("DROP TABLE if exists tbl");
+        }
+    }
+
+    /**
+     * Tests numeric type convertation on equals.
+     */
+    @Test
+    public void testNumericConvertationOnEquals() {
+        try {
+            executeSql("CREATE TABLE tbl(tiny TINYINT, small SMALLINT, i INTEGER, big BIGINT)");
+
+            executeSql("INSERT INTO tbl VALUES (1, 2, 3, 4), (5, 5, 5, 5)");
+
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.small)").returns((byte)5).check();
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.tiny)").returns((short)5).check();
+
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.i)").returns((byte)5).check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.tiny)").returns(5).check();
+
+            assertQuery("SELECT t1.tiny FROM tbl t1 JOIN tbl t2 ON (t1.tiny=t2.big)").returns((byte)5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.tiny)").returns(5L).check();
+
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.i)").returns((short)5).check();
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.small)").returns(5).check();
+
+            assertQuery("SELECT t1.small FROM tbl t1 JOIN tbl t2 ON (t1.small=t2.big)").returns((short)5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.small)").returns(5L).check();
+
+            assertQuery("SELECT t1.i FROM tbl t1 JOIN tbl t2 ON (t1.i=t2.big)").returns(5).check();
+            assertQuery("SELECT t1.big FROM tbl t1 JOIN tbl t2 ON (t1.big=t2.i)").returns(5L).check();
+        }
+        finally {
+            executeSql("DROP TABLE if exists tbl");
+        }
     }
 
     /** */
     @Test
     public void testUnicodeStrings() {
-        grid().getOrCreateCache(new CacheConfiguration<Integer, String>()
+        client.getOrCreateCache(new CacheConfiguration<Integer, String>()
             .setName("string_cache")
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, String.class).setTableName("string_table")))
@@ -85,10 +136,5 @@ public class DataTypesTest extends GridCommonAbstractTest {
             assertEquals(1, rows.size());
             assertEquals(val.length(), rows.get(0).get(0));
         }
-    }
-
-    /** */
-    public List<List<?>> executeSql(String sql, Object... params) {
-        return qryEngine.query(null, "PUBLIC", sql, params).get(0).getAll();
     }
 }

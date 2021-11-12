@@ -60,7 +60,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createTableSimpleCase() {
         Set<String> cachesBefore = new HashSet<>(client.cacheNames());
 
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
         Set<String> newCaches = new HashSet<>(client.cacheNames());
         newCaches.removeAll(cachesBefore);
@@ -91,7 +91,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableDifferentDataTypes() {
-        executeSql("create table my_table (" +
+        sql("create table my_table (" +
             "id int primary key, " +
             "c1 varchar, " +
             "c2 date, " +
@@ -107,7 +107,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "c12 decimal(20, 10) " +
             ")");
 
-        executeSql("insert into my_table values (" +
+        sql("insert into my_table values (" +
             "0, " +
             "'test', " +
             "date '2021-01-01', " +
@@ -123,7 +123,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "1234567890.1234567890" +
             ")");
 
-        List<List<?>> res = executeSql("select * from my_table");
+        List<List<?>> res = sql("select * from my_table");
 
         assertEquals(1, res.size());
 
@@ -152,7 +152,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createTableWithOptions() {
         Set<String> cachesBefore = new HashSet<>(client.cacheNames());
 
-        executeSql("create table my_table (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+        sql("create table my_table (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
             " backups=2," +
             " affinity_key=id2," +
             " atomicity=transactional," +
@@ -199,8 +199,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createTableWithTemplate() {
         Set<String> cachesBefore = new HashSet<>(client.cacheNames());
 
-        executeSql("create table my_table_replicated (id int, val varchar) with template=replicated, cache_name=repl");
-        executeSql("create table my_table_partitioned (id int, val varchar) with template=partitioned, cache_name=part");
+        sql("create table my_table_replicated (id int, val varchar) with template=replicated, cache_name=repl");
+        sql("create table my_table_partitioned (id int, val varchar) with template=partitioned, cache_name=part");
 
         Set<String> newCaches = new HashSet<>(client.cacheNames());
         newCaches.removeAll(cachesBefore);
@@ -224,13 +224,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void createTableIfNotExists() {
-        executeSql("create table my_table (id int, val varchar)");
+        sql("create table my_table (id int, val varchar)");
 
         GridTestUtils.assertThrows(log,
-            () -> executeSql("create table my_table (id int, val varchar)"),
+            () -> sql("create table my_table (id int, val varchar)"),
             IgniteSQLException.class, "Table already exists: MY_TABLE");
 
-        executeSql("create table if not exists my_table (id int, val varchar)");
+        sql("create table if not exists my_table (id int, val varchar)");
     }
 
     /**
@@ -238,12 +238,12 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableWithoutPk() {
-        executeSql("create table my_table (f1 int, f2 varchar)");
+        sql("create table my_table (f1 int, f2 varchar)");
 
-        executeSql("insert into my_table(f1, f2) values (1, '1'),(2, '2')");
-        executeSql("insert into my_table values (1, '1'),(2, '2')");
+        sql("insert into my_table(f1, f2) values (1, '1'),(2, '2')");
+        sql("insert into my_table values (1, '1'),(2, '2')");
 
-        assertThat(executeSql("select * from my_table"), hasSize(4));
+        assertThat(sql("select * from my_table"), hasSize(4));
     }
 
     /**
@@ -251,12 +251,12 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableCustomSchema() {
-        executeSql("create table my_schema.my_table (f1 int, f2 varchar)");
+        sql("create table my_schema.my_table (f1 int, f2 varchar)");
 
-        executeSql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
-        executeSql("insert into my_schema.my_table values (1, '1'),(2, '2')");
+        sql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
+        sql("insert into my_schema.my_table values (1, '1'),(2, '2')");
 
-        assertThat(executeSql("select * from my_schema.my_table"), hasSize(4));
+        assertThat(sql("select * from my_schema.my_table"), hasSize(4));
     }
 
     /**
@@ -266,11 +266,11 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void createTableOnExistingCache() {
         IgniteCache<Object, Object> cache = client.getOrCreateCache("my_cache");
 
-        executeSql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache\"");
+        sql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache\"");
 
-        executeSql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
+        sql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
 
-        assertThat(executeSql("select * from my_schema.my_table"), hasSize(2));
+        assertThat(sql("select * from my_schema.my_table"), hasSize(2));
 
         assertEquals(2, cache.size(CachePeekMode.PRIMARY));
     }
@@ -280,8 +280,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectSimpleCase() {
-        executeSql("create table my_table as select 1 as i, 'test' as s");
-        List<List<?>> res = executeSql("select i, s from my_table");
+        sql("create table my_table as select 1 as i, 'test' as s");
+        List<List<?>> res = sql("select i, s from my_table");
 
         assertEquals(1, res.size());
 
@@ -296,8 +296,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectWithColumns() {
-        executeSql("create table my_table(i, s) as select 1 as a, 'test' as b");
-        List<List<?>> res = executeSql("select i, s from my_table");
+        sql("create table my_table(i, s) as select 1 as a, 'test' as b");
+        List<List<?>> res = sql("select i, s from my_table");
 
         assertEquals(1, res.size());
 
@@ -315,8 +315,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @SuppressWarnings("unchecked")
     @Test
     public void createTableAsSelectWithOptions() {
-        executeSql("create table my_table(s, i) with cache_name=\"CacheWithOpts\", cache_group=\"CacheGroup\" as select '1', 1");
-        List<List<?>> res = executeSql("select * from my_table");
+        sql("create table my_table(s, i) with cache_name=\"CacheWithOpts\", cache_group=\"CacheGroup\" as select '1', 1");
+        List<List<?>> res = sql("select * from my_table");
 
         assertEquals(1, res.size());
 
@@ -335,8 +335,8 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectWithParameters() {
-        executeSql("create table my_table(s, i) as select cast(? as varchar), cast(? as int)", "a", 1);
-        List<List<?>> res = executeSql("select * from my_table");
+        sql("create table my_table(s, i) as select cast(? as varchar), cast(? as int)", "a", 1);
+        List<List<?>> res = sql("select * from my_table");
 
         assertEquals(1, res.size());
 
@@ -350,7 +350,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @Test
     public void createTableAsSelectWrongColumnsCount() {
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> executeSql("create table my_table(i, s1, s2) as select 1, 'test'"),
+            () -> sql("create table my_table(i, s1, s2) as select 1, 'test'"),
             IgniteSQLException.class, "Number of columns");
     }
 
@@ -359,13 +359,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void createTableAsSelectFromDistributedTable() {
-        executeSql("create table my_table1(i) as select x from table(system_range(1, 100))");
+        sql("create table my_table1(i) as select x from table(system_range(1, 100))");
 
-        assertEquals(100L, executeSql("select count(*) from my_table1").get(0).get(0));
+        assertEquals(100L, sql("select count(*) from my_table1").get(0).get(0));
 
-        executeSql("create table my_table2(i) as select * from my_table1");
+        sql("create table my_table2(i) as select * from my_table1");
 
-        assertEquals(100L, executeSql("select count(*) from my_table2").get(0).get(0));
+        assertEquals(100L, sql("select count(*) from my_table2").get(0).get(0));
     }
 
     /**
@@ -375,7 +375,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void dropTableDefaultSchema() {
         Set<String> cachesBefore = new HashSet<>(client.cacheNames());
 
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
         Set<String> cachesAfter = new HashSet<>(client.cacheNames());
         cachesAfter.removeAll(cachesBefore);
@@ -384,7 +384,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         String createdCacheName = cachesAfter.iterator().next();
 
-        executeSql("drop table my_table");
+        sql("drop table my_table");
 
         cachesAfter = new HashSet<>(client.cacheNames());
         cachesAfter.removeAll(cachesBefore);
@@ -401,7 +401,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void dropTableCustomSchema() {
         Set<String> cachesBefore = new HashSet<>(client.cacheNames());
 
-        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+        sql("create table my_schema.my_table (id int primary key, val varchar)");
 
         Set<String> cachesAfter = new HashSet<>(client.cacheNames());
         cachesAfter.removeAll(cachesBefore);
@@ -410,7 +410,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         String createdCacheName = cachesAfter.iterator().next();
 
-        executeSql("drop table my_schema.my_table");
+        sql("drop table my_schema.my_table");
 
         cachesAfter = new HashSet<>(client.cacheNames());
         cachesAfter.removeAll(cachesBefore);
@@ -427,19 +427,19 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void dropTableIfExists() {
-        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+        sql("create table my_schema.my_table (id int primary key, val varchar)");
 
         GridTestUtils.assertThrows(log,
-            () -> executeSql("drop table my_table"),
+            () -> sql("drop table my_table"),
             IgniteSQLException.class, "Table doesn't exist: MY_TABLE");
 
-        executeSql("drop table my_schema.my_table");
+        sql("drop table my_schema.my_table");
 
         GridTestUtils.assertThrows(log,
-            () -> executeSql("drop table my_schema.my_table"),
+            () -> sql("drop table my_schema.my_table"),
             IgniteSQLException.class, "Table doesn't exist: MY_TABLE");
 
-        executeSql("drop table if exists my_schema.my_table");
+        sql("drop table if exists my_schema.my_table");
     }
 
     /**
@@ -447,20 +447,20 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableAddDropSimpleCase() {
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
-        executeSql("alter table my_table add column val2 varchar");
+        sql("alter table my_table add column val2 varchar");
 
-        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+        sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(2));
 
-        executeSql("alter table my_table drop column val2");
+        sql("alter table my_table drop column val2");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -471,21 +471,21 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableAddDropTwoColumns() {
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
-        executeSql("alter table my_table add column (val2 varchar, val3 int)");
+        sql("alter table my_table add column (val2 varchar, val3 int)");
 
-        executeSql("insert into my_table (id, val, val2, val3) values (0, '1', '2', 3)");
+        sql("insert into my_table (id, val, val2, val3) values (0, '1', '2', 3)");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(2));
         assertEquals(3, res.get(0).get(3));
 
-        executeSql("alter table my_table drop column (val2, val3)");
+        sql("alter table my_table drop column (val2, val3)");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -496,20 +496,20 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableAddDropCustomSchema() {
-        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+        sql("create table my_schema.my_table (id int primary key, val varchar)");
 
-        executeSql("alter table my_schema.my_table add column val2 varchar");
+        sql("alter table my_schema.my_table add column val2 varchar");
 
-        executeSql("insert into my_schema.my_table (id, val, val2) values (0, '1', '2')");
+        sql("insert into my_schema.my_table (id, val, val2) values (0, '1', '2')");
 
-        List<List<?>> res = executeSql("select * from my_schema.my_table ");
+        List<List<?>> res = sql("select * from my_schema.my_table ");
 
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(2));
 
-        executeSql("alter table my_schema.my_table drop column val2");
+        sql("alter table my_schema.my_table drop column val2");
 
-        res = executeSql("select * from my_schema.my_table ");
+        res = sql("select * from my_schema.my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -522,29 +522,29 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     public void alterTableAddDropIfTableExists() {
         assertThrows("alter table my_table add val2 varchar", IgniteSQLException.class, "Table doesn't exist");
 
-        executeSql("alter table if exists my_table add column val2 varchar");
+        sql("alter table if exists my_table add column val2 varchar");
 
         assertThrows("alter table my_table drop column val2", IgniteSQLException.class, "Table doesn't exist");
 
-        executeSql("alter table if exists my_table drop column val2");
+        sql("alter table if exists my_table drop column val2");
 
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
-        executeSql("alter table if exists my_table add column val3 varchar");
+        sql("alter table if exists my_table add column val3 varchar");
 
-        executeSql("insert into my_table (id, val, val3) values (0, '1', '2')");
+        sql("insert into my_table (id, val, val3) values (0, '1', '2')");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(2));
 
-        executeSql("alter table if exists my_table drop column val3");
+        sql("alter table if exists my_table drop column val3");
 
         assertThrows("alter table if exists my_table drop column val3", IgniteSQLException.class,
             "Column doesn't exist");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -555,50 +555,50 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableAddDropIfColumnExists() {
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
-        executeSql("insert into my_table (id, val) values (0, '1')");
+        sql("insert into my_table (id, val) values (0, '1')");
 
         assertThrows("alter table my_table add column val varchar", IgniteSQLException.class,
             "Column already exist");
 
-        executeSql("alter table my_table add column if not exists val varchar");
+        sql("alter table my_table add column if not exists val varchar");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
 
         assertThrows("alter table my_table drop column val2", IgniteSQLException.class,
             "Column doesn't exist");
 
-        executeSql("alter table my_table drop column if exists val2");
+        sql("alter table my_table drop column if exists val2");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
 
-        executeSql("alter table my_table add column if not exists val3 varchar");
+        sql("alter table my_table add column if not exists val3 varchar");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).size());
 
-        executeSql("alter table my_table drop column if exists val3");
+        sql("alter table my_table drop column if exists val3");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
 
         // Mixing existsing and not existsing columns
-        executeSql("alter table my_table add column if not exists (val varchar, val4 varchar)");
+        sql("alter table my_table add column if not exists (val varchar, val4 varchar)");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).size());
 
-        executeSql("alter table my_table drop column if exists (val4, val5)");
+        sql("alter table my_table drop column if exists (val4, val5)");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
     }
@@ -608,16 +608,16 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableAddNotNullColumn() {
-        executeSql("create table my_table (id int primary key, val varchar)");
+        sql("create table my_table (id int primary key, val varchar)");
 
-        executeSql("alter table my_table add column val2 varchar not null");
+        sql("alter table my_table add column val2 varchar not null");
 
         assertThrows("insert into my_table (id, val, val2) values (0, '1', null)", IgniteSQLException.class,
             "Null value is not allowed");
 
-        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+        sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(2));
@@ -628,11 +628,11 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableDropForbiddenColumn() {
-        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+        sql("create table my_table (id int primary key, val varchar, val2 varchar)");
 
-        executeSql("create index my_index on my_table(val)");
+        sql("create index my_index on my_table(val)");
 
-        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+        sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
         assertThrows("alter table my_table drop column id", IgniteSQLException.class,
             "Cannot drop column");
@@ -640,14 +640,14 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThrows("alter table my_table drop column val", IgniteSQLException.class,
             "Cannot drop column");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).size());
 
-        executeSql("alter table my_table drop column val2");
+        sql("alter table my_table drop column val2");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -658,39 +658,39 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableServerAndClient() throws Exception {
-        executeSql(grid(0), "create table my_table (id int primary key, val varchar)");
+        sql(grid(0), "create table my_table (id int primary key, val varchar)");
 
-        executeSql(grid(0), "alter table my_table add column val2 varchar");
+        sql(grid(0), "alter table my_table add column val2 varchar");
 
-        executeSql(grid(0), "insert into my_table (id, val, val2) values (0, '1', '2')");
+        sql(grid(0), "insert into my_table (id, val, val2) values (0, '1', '2')");
 
-        List<List<?>> res = executeSql(grid(0), "select * from my_table ");
-
-        assertEquals(1, res.size());
-        assertEquals(3, res.get(0).size());
-
-        executeSql(grid(0), "drop table my_table");
-
-        awaitPartitionMapExchange();
-
-        executeSql("create table my_table (id int primary key, val varchar)");
-
-        executeSql("alter table my_table add column val2 varchar");
-
-        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
-
-        res = executeSql("select * from my_table ");
+        List<List<?>> res = sql(grid(0), "select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).size());
 
-        awaitPartitionMapExchange();
-
-        executeSql(grid(0), "alter table my_table drop column val2");
+        sql(grid(0), "drop table my_table");
 
         awaitPartitionMapExchange();
 
-        res = executeSql("select * from my_table ");
+        sql("create table my_table (id int primary key, val varchar)");
+
+        sql("alter table my_table add column val2 varchar");
+
+        sql("insert into my_table (id, val, val2) values (0, '1', '2')");
+
+        res = sql("select * from my_table ");
+
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).size());
+
+        awaitPartitionMapExchange();
+
+        sql(grid(0), "alter table my_table drop column val2");
+
+        awaitPartitionMapExchange();
+
+        res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -701,20 +701,20 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void alterTableDropAddColumn() {
-        executeSql("create table my_table (id int primary key, val varchar, val2 varchar)");
+        sql("create table my_table (id int primary key, val varchar, val2 varchar)");
 
-        executeSql("insert into my_table (id, val, val2) values (0, '1', '2')");
+        sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
-        executeSql("alter table my_table drop column val2");
+        sql("alter table my_table drop column val2");
 
-        List<List<?>> res = executeSql("select * from my_table ");
+        List<List<?>> res = sql("select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
 
-        executeSql("alter table my_table add column val2 varchar not null");
+        sql("alter table my_table add column val2 varchar not null");
 
-        res = executeSql("select * from my_table ");
+        res = sql("select * from my_table ");
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).size());
         // The command DROP COLUMN does not remove actual data from the cluster, it's a known and documented limitation.
@@ -723,9 +723,9 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
             "Null value is not allowed");
 
-        executeSql("insert into my_table (id, val, val2) values (1, '2', '3')");
+        sql("insert into my_table (id, val, val2) values (1, '2', '3')");
 
-        assertEquals(2, executeSql("select * from my_table").size());
+        assertEquals(2, sql("select * from my_table").size());
     }
 
     /**
@@ -740,11 +740,11 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         assertTrue(client.cluster().isWalEnabled(cacheName));
 
-        executeSql("alter table \"" + cacheName + "\".Integer nologging");
+        sql("alter table \"" + cacheName + "\".Integer nologging");
 
         assertFalse(client.cluster().isWalEnabled(cacheName));
 
-        executeSql("alter table \"" + cacheName + "\".Integer logging");
+        sql("alter table \"" + cacheName + "\".Integer logging");
 
         assertTrue(client.cluster().isWalEnabled(cacheName));
     }
@@ -760,9 +760,9 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
             "ALTER TABLE test DROP COLUMN val2;";
 
-        executeSql(multiLineQuery);
+        sql(multiLineQuery);
 
-        List<List<?>> res = executeSql("SELECT * FROM test order by val0");
+        List<List<?>> res = sql("SELECT * FROM test order by val0");
         assertEquals(2, res.size());
 
         for (int i = 0; i < res.size(); i++) {
@@ -772,17 +772,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             assertEquals(i, row.get(0));
             assertEquals("test" + i, row.get(1));
         }
-    }
-
-    /**
-     * Asserts that executeSql throws an exception.
-     *
-     * @param sql Query.
-     * @param cls Exception class.
-     * @param msg Error message.
-     */
-    private void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
-        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
     }
 
     /**
