@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -103,5 +104,20 @@ public class ObjectStatisticsImpl implements Cloneable, ObjectStatistics {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ObjectStatisticsImpl.class, this);
+    }
+
+    /**
+     * Remove specified columns from clone of current ObjectStatistics object.
+     *
+     * @param cols Columns to remove.
+     * @return Cloned object without specified columns statistics.
+     */
+    public <T extends ObjectStatisticsImpl> T subtract(Set<String> cols) {
+        T res = (T)clone();
+
+        for (String col : cols)
+            res.columnsStatistics().remove(col);
+
+        return res;
     }
 }

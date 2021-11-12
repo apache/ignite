@@ -67,7 +67,7 @@ public class ColumnLocalDataViewSupplier {
         if (!F.isEmpty(schema) && !F.isEmpty(name)) {
             StatisticsKey key = new StatisticsKey(schema, name);
 
-            ObjectStatisticsImpl objLocStat = repo.getLocalStatistics(key);
+            ObjectStatisticsImpl objLocStat = repo.getLocalStatistics(key, null);
 
             if (objLocStat == null)
                 return Collections.emptyList();
@@ -77,7 +77,7 @@ public class ColumnLocalDataViewSupplier {
         else
             locStatsMap = repo.localStatisticsMap().entrySet().stream()
                 .filter(e -> F.isEmpty(schema) || schema.equals(e.getKey().schema()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().statistics()));
 
         List<StatisticsColumnLocalDataView> res = new ArrayList<>();
 

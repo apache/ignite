@@ -83,7 +83,7 @@ public abstract class StatisticsTypesAbstractTest extends StatisticsAbstractTest
         for (int i = 0; i > -SMALL_SIZE / 2; i--)
             sql(insertNulls(i));
 
-        collectStatistics("dtypes");
+        collectStatistics(StatisticsType.GLOBAL, "dtypes");
     }
 
     /**

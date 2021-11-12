@@ -90,7 +90,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
         ignite.cluster().state(ClusterState.ACTIVE);
 
         createSmallTable(null);
-        sql("ANALYZE SMALL");
+        collectStatistics(StatisticsType.GLOBAL, "SMALL");
 
         ignite.cluster().state(ClusterState.INACTIVE);
 

@@ -17,31 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.jetbrains.annotations.Nullable;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
 
 /**
- * Types of statistics width.
+ * Statistics request with target/sender node id.
  */
-public enum StatisticsType {
-    /** Statistics by some particular partition. */
-    PARTITION,
+public class StatisticsAddressedRequest {
+    /** Statistics request */
+    private final StatisticsRequest req;
 
-    /** Statistics by some data node. */
-    LOCAL,
-
-    /** Statistics by the whole object. */
-    GLOBAL,;
-
-    /** Enumerated values. */
-    private static final StatisticsType[] VALUES = values();
+    /** Target/sender node id. */
+    private final UUID nodeId;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Constructor.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @param req Statistics request.
+     * @param nodeId Target/sender node id.
      */
-    @Nullable public static StatisticsType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALUES.length ? VALUES[ord] : null;
+    public StatisticsAddressedRequest(StatisticsRequest req, UUID nodeId) {
+        this.req = req;
+        this.nodeId = nodeId;
+    }
+
+    /**
+     * @return Statistics request.
+     */
+    public StatisticsRequest req() {
+        return req;
+    }
+
+    /**
+     * @return Target/sender node id.
+     */
+    public UUID nodeId() {
+        return nodeId;
     }
 }
+
