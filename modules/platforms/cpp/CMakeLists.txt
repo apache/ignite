@@ -16,7 +16,7 @@
 #
 
 cmake_minimum_required(VERSION 3.6)
-project(Ignite.C++ VERSION 2.12.0.56898)
+project(Ignite.C++ VERSION 2.13.0.58917)
 
 set(CMAKE_CXX_STANDARD 98)
 
@@ -73,7 +73,6 @@ add_subdirectory(common)
 add_subdirectory(binary)
 
 if (${WITH_CORE} OR ${WITH_TESTS})
-    add_subdirectory(jni)
     add_subdirectory(core)
     add_subdirectory(ignite)
 endif()

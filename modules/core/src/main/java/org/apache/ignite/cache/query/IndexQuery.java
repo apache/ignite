@@ -20,31 +20,38 @@ package org.apache.ignite.cache.query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Index query runs over internal index structure and returns cache entries for index rows that match specified criteria.
+ * Index queries work over distributed indexes and retrieve cache entries that match the specified criteria.
+ * {@code QueryCursor} delivers sorted cache entries by the order defined for queried index.
+ *
+ * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is as follows:
+ * 1. If {@link #idxName} is set, then use it.
+ * 2. If {@link #idxName} is not set, then find an index that matches criteria fields.
+ * 3. If neither {@link #idxName}, nor {@link #setCriteria(List)} is used, then perform index scan over PK index for specified Value type.
+ *
+ * Conjuction of items in {@link #criteria} has to represent a valid range to traverse the index tree.
  */
 @IgniteExperimental
 public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Index query criteria. */
-    private List<IndexQueryCriterion> criteria;
-
     /** Cache Value type. Describes a table within a cache that runs a query. */
     private final String valType;
 
-    /** Index name. If {@code null} then Ignite tries to find an index by {@link #criteria} fields. */
+    /** Index name. */
     private final @Nullable String idxName;
+
+    /** Index query criteria. */
+    private @Nullable List<IndexQueryCriterion> criteria;
 
     /**
      * Specify index with cache value class.
@@ -167,21 +174,15 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** */
     private void validateAndSetCriteria(List<IndexQueryCriterion> criteria) {
-        A.notEmpty(criteria, "criteria");
-        A.notNull(criteria.get(0), "criteria");
+        if (F.isEmpty(criteria))
+            return;
 
         Class<?> critCls = criteria.get(0).getClass();
-
-        Set<String> fields = new HashSet<>();
 
         for (IndexQueryCriterion c: criteria) {
             A.notNull(c, "criteria");
             A.ensure(c.getClass() == critCls,
                 "Expect a the same criteria class for merging criteria. Exp=" + critCls + ", act=" + c.getClass());
-
-            A.ensure(!fields.contains(c.field()), "Duplicated field in criteria: " + c.field() + ".");
-
-            fields.add(c.field());
         }
 
         this.criteria = Collections.unmodifiableList(criteria);

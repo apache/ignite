@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
+    using NUnit.Framework.Interfaces;
+    using NUnit.Framework.Internal;
+    using ILogger = Apache.Ignite.Core.Log.ILogger;
 
     /// <summary>
     /// Test utility methods.
@@ -594,7 +597,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null, bool noLogger = false)
         {
             return new IgniteConfiguration
             {
@@ -616,7 +619,7 @@ namespace Apache.Ignite.Core.Tests
                 },
                 FailureHandler = new NoOpFailureHandler(),
                 WorkDirectory = WorkDir,
-                Logger = new TestContextLogger()
+                Logger = noLogger ? null : new TestContextLogger()
             };
         }
 
@@ -654,10 +657,11 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                proc.AttachProcessConsoleReader();
+                var reader = new ListDataReader();
+                proc.AttachProcessConsoleReader(reader, new IgniteProcessConsoleOutputReader());
 
-                Assert.IsTrue(proc.WaitForExit(50000));
-                Assert.AreEqual(0, proc.ExitCode);
+                Assert.IsTrue(proc.WaitForExit(50000), string.Join("\n", reader.GetOutput()));
+                Assert.AreEqual(0, proc.ExitCode, string.Join("\n", reader.GetOutput()));
             }
             finally
             {
@@ -690,6 +694,19 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class TestContextLogger : ILogger
         {
+            private readonly TestExecutionContext _ctx = TestExecutionContext.CurrentContext;
+
+            private readonly ITestListener _listener;
+
+            public TestContextLogger()
+            {
+                var prop = _ctx.GetType().GetProperty("Listener", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Debug.Assert(prop != null);
+
+                _listener = (ITestListener)prop.GetValue(_ctx);
+            }
+
             /** <inheritdoc /> */
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
                 string category, string nativeErrorInfo, Exception ex)
@@ -703,11 +720,7 @@ namespace Apache.Ignite.Core.Tests
                     ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
                     : message;
 
-#if NETCOREAPP
-                TestContext.Progress.WriteLine(text);
-#else
-                Console.WriteLine(text);
-#endif
+                _listener.TestOutput(new TestOutput(text + Environment.NewLine, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
             }
 
             /** <inheritdoc /> */

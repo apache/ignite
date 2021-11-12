@@ -48,7 +48,10 @@ import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientPersistentTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryFailoverTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryLimitTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryPagesTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -495,8 +498,11 @@ import org.junit.runners.Suite;
     CacheQueryEvictDataLostTest.class,
 
     // Full text queries.
+    GridCacheFullTextQueryFailoverTest.class,
     GridCacheFullTextQuerySelfTest.class,
     GridCacheFullTextQueryMultithreadedSelfTest.class,
+    GridCacheFullTextQueryPagesTest.class,
+    GridCacheFullTextQueryLimitTest.class,
     IgniteCacheFullTextQueryNodeJoiningSelfTest.class,
 
     // Ignite cache and H2 comparison.

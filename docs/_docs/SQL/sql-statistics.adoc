@@ -1,0 +1,182 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= SQL Statistics
+
+== Overview
+
+Apache Ignite can calculate statistics by request and use it to build an optimal SQL query plan. This enables you to significantly speed up the SQL query execution.
+
+Without statistics, SQL query execution planner tries to guess about the query conditions selectivity using only general heuristics. To get better plans, make sure that statistics usage is link:tools/control-script#working-with-cluster-properties[enabled,window=_blank] and link:sql-reference/ddl#analyze[configure statistics collection,window=_blank] for tables participated in the query. See the link:SQL/sql-statistics#obtaining-a-better-execution-plan-using-statistics[example] for more details.
+
+Statistics are checked and updated each time after one of the following actions:
+
+* Node start
+* Topology change
+* Configuration change
+
+A node checks partitions and collects statistics for each of them, which can be used in SQL query optimization.
+
+== Configuring Statistics
+
+By default, statistics functionality is enabled.
+
+Statistics are stored locally, while statistics configuration parameters are stored cluster-wide.
+
+To enable or disable statistics in cluster use, execute the following command, specifying  `ON`, `OFF`,  or `NO_UPDATE` values:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name 'statistics.usage.state' --val 'ON'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+----
+--
+
+To see the statistics usage state, execute the command below:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property get --name 'statistics.usage.state'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property get --name 'statistics.usage.state'
+----
+--
+
+For more details on configuring SQL statistics, see the link:monitoring-metrics/system-views#statistics_configuration[System Views,window=_blank] and link:sql-reference/ddl#analyze[Data Definition Language,window=_blank] pages.
+
+== Statistics Overriding
+
+Gathered values can be overridden by specifying additional parameters in the link:sql-reference/ddl#analyze[ANALYZE,window=_blank] command. The specified values override gathered one on each node in link:monitoring-metrics/system-views#statistics_local_data[STATISTICS_LOCAL_DATA,window=_blank] (this data is used by SQL query optimizer), but not in link:monitoring-metrics/system-views#statistics_partition_data[STATISTICS_PARTITION_DATA,window=_blank] (keeps real statistics info by partitions). Then, overriden values are used by SQL query optimizer.
+
+Each ANALYZE command overrides all such values for its targets. For example, if there is an already overridden TOTAL value and a need to override DISTINCT value, one should use both parameters in one ANALYZE command. To set different values for different columns, use several ANALYZE commands as follows:
+
+[source, sql]
+----
+ANALYZE MY_TABLE(COL_A) WITH 'DISTINCT=5,NULLS=6';
+ANALYZE MY_TABLE(COL_B) WITH 'DISTINCT=500,NULLS=1000,TOTAL=10000';
+----
+
+== Statistics Obsolescence
+
+Each partition has a specialized counter to track the total number of modified (inserted, removed, or updated) rows. If the total number of modified rows is greater than `MAX_CHANGED_PARTITION_ROWS_PERCENT`, a partition is analyzed again. After that, a node aggregates statistics once again to get new statistics.
+
+To adjust the MAX_CHANGED_PARTITION_ROWS_PERCENT parameter, run the `ANALYZE` command with a desired parameter value once again.
+
+By default, the `DEFAULT_OBSOLESCENCE_MAX_PERCENT = 15` parameter is used.
+
+These parameters are applied for all specified targets.
+
+NOTE: As statistics are aggregated through the full scan of each partition, we recommend to disable statistics obsolescence functionality when working with a small number of changing rows. This is particularly true in the case of working with large amounts of data, when a full scan may lead to a performance drop.
+
+To save CPU resources on obsolescence tracking, use the `NO_UPDATE` state:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name 'statistics.usage.state' --val 'NO_UPDATE'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property set --name 'statistics.usage.state' --val 'NO_UPDATE'
+----
+--
+
+== Obtaining a Better Execution Plan Using Statistics
+
+The steps below show an example of obtaining an optimized execution plan for basic query.
+
+. Create a table and insert data into it:
++
+[source, sql]
+----
+CREATE TABLE statistics_test(col1 int PRIMARY KEY, col2 varchar, col3 date);
+
+INSERT INTO statistics_test(col1, col2, col3) VALUES(1, 'val1', '2019-01-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(2, 'val2', '2019-03-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(3, 'val3', '2019-06-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(4, 'val4', '2019-09-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(5, 'val5', '2019-12-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(6, 'val6', '2020-02-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(7, 'val7', '2020-05-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(8, 'val8', '2020-08-01');
+INSERT INTO statistics_test(col1, col2, col3) VALUES(9, 'val9', '2020-11-01');
+----
++
+. Create indexes for each column:
++
+[source, sql]
+----
+CREATE INDEX st_col1 ON statistics_test(col1);
+CREATE INDEX st_col2 ON statistics_test(col2);
+CREATE INDEX st_col3 ON statistics_test(col3);
+----
++
+. Get execution plan for basic query:
++
+Note that the `col2` value is less than the max value in the table, while the `col3` value is higher than the maximum one. So it is highly probable that the second condition returns no result, which makes its selectivity higher. Therefore the database should use `st_col3` index.
++
+[source, sql]
+----
+EXPLAIN SELECT * FROM statistics_test WHERE col2 > 'val2' AND col3 > '2020-12-01'
+
+SELECT
+"__Z0"."COL1" AS "__C0_0",
+"__Z0"."COL2" AS "__C0_1",
+"__Z0"."COL3" AS "__C0_2"
+FROM "PUBLIC"."STATISTICS_TEST" "__Z0"
+/* PUBLIC.ST_COL2: COL2 > 'val2' */
+WHERE ("__Z0"."COL2" > 'val2')
+AND ("__Z0"."COL3" > DATE '2020-12-01')
+----
++
+Note that without collected statistics the database does not have enough information to choose the right index (as both indexes have the same selectivity from the planner's point of view). This issue is fixed below.
++
+. Collect statistics for `statistics_test table`:
++
+[source, sql]
+----
+ANALYZE statistics_test;
+----
++
+. Get execution plan again and make sure that `st_col3 index` is chosen:
++
+[source, sql]
+----
+EXPLAIN SELECT * FROM statistics_test WHERE col2 > 'val2' AND col3 > '2020-12-01'
+
+SELECT
+"__Z0"."COL1" AS "__C0_0",
+"__Z0"."COL2" AS "__C0_1",
+"__Z0"."COL3" AS "__C0_2"
+FROM "PUBLIC"."STATISTICS_TEST" "__Z0"
+/* PUBLIC.ST_COL3: COL3 > DATE '2020-12-01' */
+WHERE ("__Z0"."COL2" > 'val2')
+AND ("__Z0"."COL3" > DATE '2020-12-01')
+----

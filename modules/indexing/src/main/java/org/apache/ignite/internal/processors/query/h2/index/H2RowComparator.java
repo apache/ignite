@@ -49,11 +49,14 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     /** Ignite H2 session. */
     private final SessionInterface ses;
 
+    /** Key type settings for this index. */
+    private final IndexKeyTypeSettings keyTypeSettings;
+
     /** */
     public H2RowComparator(GridH2Table table, IndexKeyTypeSettings keyTypeSettings) {
-        super(keyTypeSettings);
-
         this.table = table;
+        this.keyTypeSettings = keyTypeSettings;
+
         coctx = table.rowDescriptor().context().cacheObjectContext();
         ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
     }
@@ -87,8 +90,8 @@ public class H2RowComparator extends IndexRowCompartorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
-        int cmp = super.compareKey(left, right, idx);
+    @Override public int compareRow(IndexRow left, IndexRow right, int idx) throws IgniteCheckedException {
+        int cmp = super.compareRow(left, right, idx);
 
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;
@@ -114,6 +117,21 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         return Integer.signum(c);
     }
 
+    /** {@inheritDoc} */
+    @Override public int compareKey(IndexKey left, IndexKey right) throws IgniteCheckedException {
+        int cmp = super.compareKey(left, right);
+
+        if (cmp != COMPARE_UNSUPPORTED)
+            return cmp;
+
+        int ltype = DataType.getTypeFromClass(left.key().getClass());
+        int rtype = DataType.getTypeFromClass(right.key().getClass());
+
+        int c = compareValues(wrap(left.key(), ltype), wrap(right.key(), rtype));
+
+        return Integer.signum(c);
+    }
+
     /** */
     private Value wrap(Object val, int type) throws IgniteCheckedException {
         return H2Utils.wrap(coctx, val, type);
@@ -126,7 +144,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
      */
     public int compareValues(Value v1, Value v2) throws IgniteCheckedException {
         try {
-            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+            return table.compareTypeSafe(v1, v2);
 
         } catch (DbException ex) {
             throw new IgniteCheckedException("Rows cannot be compared", ex);

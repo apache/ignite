@@ -86,12 +86,14 @@ class IgniteSpec(metaclass=ABCMeta):
                 self._add_jvm_opts(jvm_opts)
         else:
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
-                                                gc_dump_path=os.path.join(service.log_dir, "ignite_gc.log"),
-                                                oom_path=os.path.join(service.log_dir, "ignite_out_of_mem.hprof"))
+                                                gc_dump_path=os.path.join(service.log_dir, "gc.log"),
+                                                oom_path=os.path.join(service.log_dir, "out_of_mem.hprof"))
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
-                            "-Dlog4j.configuration=file:" + self.service.log_config_file,
                             "-Dlog4j.configDebug=true"])
+
+        if self.service.config and self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
+            self._add_jvm_opts(["-Dlog4j.configuration=file:" + self.service.log_config_file])
 
         if service.context.globals.get(JFR_ENABLED, False):
             self._add_jvm_opts(["-XX:+UnlockCommercialFeatures",
@@ -162,7 +164,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return {
             'EXCLUDE_TEST_CLASSES': 'true',
-            'IGNITE_LOG_DIR': self.service.persistent_root,
+            'IGNITE_LOG_DIR': self.service.log_dir,
             'USER_LIBS': ":".join(self.libs())
         }
 
