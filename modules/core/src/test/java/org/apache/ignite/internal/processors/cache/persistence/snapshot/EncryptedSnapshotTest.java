@@ -75,28 +75,28 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     @Test
     public void testReencryptDuringRestore() throws Exception {
         checkActionFailsDuringSnapshotOperation(true, this::chageCacheKey, "Cache group key change " +
-                "was rejected.", IgniteException.class);
+            "was rejected.", IgniteException.class);
     }
 
     /** Checks master key changing fails during snapshot restoration. */
     @Test
     public void testMasterKeyChangeDuringRestore() throws Exception {
         checkActionFailsDuringSnapshotOperation(true, this::chageMasterKey, "Master key change was " +
-                "rejected.", IgniteException.class);
+            "rejected.", IgniteException.class);
     }
 
     /** Checks re-encryption fails during snapshot creation. */
     @Test
     public void testReencryptDuringSnapshot() throws Exception {
         checkActionFailsDuringSnapshotOperation(false, this::chageCacheKey, "Cache group key change " +
-                "was rejected.", IgniteException.class);
+            "was rejected.", IgniteException.class);
     }
 
     /** Checks master key changing fails during snapshot creation. */
     @Test
     public void testMasterKeyChangeDuringSnapshot() throws Exception {
         checkActionFailsDuringSnapshotOperation(false, this::chageMasterKey, "Master key change was " +
-                "rejected.", IgniteException.class);
+            "rejected.", IgniteException.class);
     }
 
     /** Checks snapshot action fail during cache group key change. */
@@ -136,7 +136,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             log,
             () -> snp(ig1).restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
             IgniteCheckedException.class,
-            "different signature of the master key"
+            "different master key digest"
         );
     }
 
@@ -196,7 +196,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME).get();
 
         for (Exception e : snpCheckRes.exceptions().values()) {
-            if (e.getMessage().contains("different signature of the master key"))
+            if (e.getMessage().contains("different master key digest"))
                 return;
         }
 

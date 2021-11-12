@@ -76,8 +76,7 @@ public class SnapshotMetadata implements Serializable {
     private byte[] masterKeyDigest;
 
     /**
-     * @param rqId Unique snapshot request id.
-     * @param snpName Snapshot name.
+     * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
@@ -179,19 +178,16 @@ public class SnapshotMetadata implements Serializable {
 
     /**
      * @param masterKeyDigest Master key digest for encrypted caches.
-     * @return this meta.
      */
-    public SnapshotMetadata masterKeyDigest(@Nullable byte[] masterKeyDigest) {
-        this.masterKeyDigest = masterKeyDigest == null ? null : masterKeyDigest.clone();
-
-        return this;
+    public void masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest;
     }
 
     /**
      * @return Master key digest for encrypted caches.
      */
     public byte[] masterKeyDigest() {
-        return masterKeyDigest == null ? null : masterKeyDigest.clone();
+        return masterKeyDigest;
     }
 
     /** {@inheritDoc} */

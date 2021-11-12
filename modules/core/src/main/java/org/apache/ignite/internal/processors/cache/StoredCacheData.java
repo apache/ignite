@@ -126,14 +126,14 @@ public class StoredCacheData implements Serializable {
     /**
      * @return Ciphered encryption key for this cache or cache group. {@code Null} if not encrypted.
      */
-    public GroupKeyEncrypted grpKeyEncrypted() {
+    public GroupKeyEncrypted groupKeyEncrypted() {
         return grpKeyEncrypted;
     }
 
     /**
      * @param grpKeyEncrypted Ciphered encryption key for this cache or cache group.
      */
-    public void grpKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
+    public void groupKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
         this.grpKeyEncrypted = grpKeyEncrypted;
     }
 

@@ -3807,49 +3807,49 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
             (grpKeys, masterKeyDigest) -> {
-                List<DynamicCacheChangeRequest> srvReqs = null;
-                Map<String, DynamicCacheChangeRequest> clientReqs = null;
+            List<DynamicCacheChangeRequest> srvReqs = null;
+            Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
-                Iterator<byte[]> grpKeysIter = grpKeys.iterator();
+            Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
-                for (StoredCacheData ccfg : storedCacheDataList) {
-                    assert ccfg.grpKeyEncrypted() == null || ccfg.config().isEncryptionEnabled();
+            for (StoredCacheData ccfg : storedCacheDataList) {
+                assert ccfg.groupKeyEncrypted() == null || ccfg.config().isEncryptionEnabled();
 
-                    // Reuse encription key if passed for this group. Take next generated otherwise.
-                    GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ? (ccfg.grpKeyEncrypted() != null ?
-                        ccfg.grpKeyEncrypted() : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
+                // Reuse encription key if passed for this group. Take next generated otherwise.
+                GroupKeyEncrypted encrKey = ccfg.config().isEncryptionEnabled() ? (ccfg.groupKeyEncrypted() != null ?
+                    ccfg.groupKeyEncrypted() : new GroupKeyEncrypted(0, grpKeysIter.next())) : null;
 
-                    DynamicCacheChangeRequest req = prepareCacheChangeRequest(
-                        ccfg.config(),
-                        ccfg.config().getName(),
-                        null,
-                        resolveCacheType(ccfg.config()),
-                        ccfg.sql(),
-                        failIfExists,
-                        true,
-                        restartId,
-                        disabledAfterStart,
-                        ccfg.queryEntities(),
-                        encrKey != null ? encrKey.key() : null,
-                        encrKey != null ? encrKey.id() : null,
-                        encrKey != null ? masterKeyDigest : null
-                        );
+                DynamicCacheChangeRequest req = prepareCacheChangeRequest(
+                    ccfg.config(),
+                    ccfg.config().getName(),
+                    null,
+                    resolveCacheType(ccfg.config()),
+                    ccfg.sql(),
+                    failIfExists,
+                    true,
+                    restartId,
+                    disabledAfterStart,
+                    ccfg.queryEntities(),
+                    encrKey != null ? encrKey.key() : null,
+                    encrKey != null ? encrKey.id() : null,
+                    encrKey != null ? masterKeyDigest : null
+                );
 
-                    if (req != null) {
-                        if (req.clientStartOnly()) {
-                            if (clientReqs == null)
-                                clientReqs = U.newLinkedHashMap(storedCacheDataList.size());
+                if (req != null) {
+                    if (req.clientStartOnly()) {
+                        if (clientReqs == null)
+                            clientReqs = U.newLinkedHashMap(storedCacheDataList.size());
 
-                            clientReqs.put(req.cacheName(), req);
-                        }
-                        else {
-                            if (srvReqs == null)
-                                srvReqs = new ArrayList<>(storedCacheDataList.size());
+                        clientReqs.put(req.cacheName(), req);
+                    }
+                    else {
+                        if (srvReqs == null)
+                            srvReqs = new ArrayList<>(storedCacheDataList.size());
 
-                            srvReqs.add(req);
-                        }
+                        srvReqs.add(req);
                     }
                 }
+            }
 
             if (srvReqs == null && clientReqs == null)
                 return new GridFinishedFuture<>();
@@ -3876,7 +3876,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         int encGrpCnt = 0;
 
         for (StoredCacheData ccfg : storedCacheDataList) {
-            if (ccfg.config().isEncryptionEnabled() && ccfg.grpKeyEncrypted() == null)
+            if (ccfg.config().isEncryptionEnabled())
                 encGrpCnt++;
         }
 

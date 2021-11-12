@@ -582,7 +582,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpLocDir Local snapshot directory.
      * @return Snapshot data directory.
      */
-    File snapshotDbDir(File snpLocDir) {
+    File snapshotDataDirectory(File snpLocDir) {
         return new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
     }
 
@@ -1116,7 +1116,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, curMasterKeyDigest)) {
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
-                                    "' has different signature of the master key. Unable to decrypt data to validate.")))));
+                                    "' has different master key digest. Unable to decrypt data to validate.")))));
 
                             return;
                         }
@@ -2184,7 +2184,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            dbDir = snapshotDbDir(snpLocDir);
+            dbDir = snapshotDataDirectory(snpLocDir);
 
             if (dbDir.exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +
@@ -2227,7 +2227,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
 
-                    cacheData.grpKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
+                    cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
 
                     storeMgr.writeCacheData(cacheData, targetCacheCfg);
                 }

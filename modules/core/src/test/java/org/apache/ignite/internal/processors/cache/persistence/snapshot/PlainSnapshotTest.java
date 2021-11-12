@@ -57,10 +57,11 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
      * <p>
      * <b>NOTE:</b>
      * This test is actual only for not-encrypted snapshots.
-     * Writting the deltas causes several page writes into file. Every page write calls encrypt(). Every repatable encrypt() produces
-     * different record even for same original data. Re-writting pages from delta to partition file in the shanpshot leads to additional
-     * encryption before writting to the snapshot partition file. Thus, page in original partition and in snapshot partiton has different
-     * encrypted CRC and same de-crypted CRC. Different encrypted CRC looks like different data in point of view of third-party observer.
+     * Writing the deltas causes several page writes into file. Every page write calls encrypt(). Every repeatable
+     * encrypt() produces different record even for same original data. Re-writing pages from delta to partition file
+     * in the shanpshot leads to additional encryption before writing to the snapshot partition file. Thus, page in
+     * original partition and in snapshot partiton has different encrypted CRC and same de-crypted CRC. Different
+     * encrypted CRC looks like different data in point of view of third-party observer.
      *
      * @throws Exception If fails.
      */

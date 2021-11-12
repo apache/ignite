@@ -148,7 +148,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
-        EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncrKeyProvider(cctx.kernalContext(), grpDirs);
+        EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(cctx.kernalContext(), grpDirs);
 
         for (GridComponent comp : snpCtx)
             comp.start();
@@ -266,7 +266,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /**
      * Provides encryption keys stored within snapshot.
      */
-    private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
+    private static class SnapshotEncryptionKeyProvider implements EncryptionCacheKeyProvider {
         /** Kernal context */
         private final GridKernalContext ctx;
 
@@ -282,7 +282,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
          * @param ctx     Kernal context.
          * @param grpDirs Data dirictories of cache groups by id.
          */
-        private SnapshotEncrKeyProvider(GridKernalContext ctx, Map<Integer, File> grpDirs) {
+        private SnapshotEncryptionKeyProvider(GridKernalContext ctx, Map<Integer, File> grpDirs) {
             this.ctx = ctx;
             this.grpDirs = grpDirs;
         }
@@ -297,7 +297,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     for (Path p : ds) {
                         StoredCacheData cacheData = ((FilePageStoreManager)ctx.cache().context().pageStore()).readCacheData(p.toFile());
 
-                        GroupKeyEncrypted grpKeyEncrypted = cacheData.grpKeyEncrypted();
+                        GroupKeyEncrypted grpKeyEncrypted = cacheData.groupKeyEncrypted();
 
                         if (grpKeyEncrypted == null)
                             return null;

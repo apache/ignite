@@ -1140,7 +1140,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             marshaller.marshal(cacheData, stream);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("An error occurred during cache configuration writting to file [file=" +
+            throw new IgniteCheckedException("An error occurred during cache configuration writing to file [file=" +
                 conf.getAbsolutePath() + "]", e);
         }
     }
