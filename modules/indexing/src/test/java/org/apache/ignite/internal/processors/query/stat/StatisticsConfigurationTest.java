@@ -181,7 +181,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -209,7 +209,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -231,7 +231,9 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         IgniteEx client = startClientGrid("cli");
 
-        collectStatistics(SMALL_TARGET);
+        awaitPartitionMapExchange();
+
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         sql("delete from small");
 
@@ -269,7 +271,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -330,7 +332,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         createSmallTable(null);
 
         // 1. Create statistic for a table;
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         // 2. Check statistics on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
@@ -343,7 +345,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
             (stats) -> stats.forEach(s -> assertNull(s.columnStatistics("A"))));
 
         // 5. Re-create statistics;
-        collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "A"));
+        collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "A"));
 
         // 6. Check statistics on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
@@ -369,7 +371,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -406,7 +408,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         createSmallTable(null);
         createSmallTable("_A");
 
-        collectStatistics(
+        collectStatistics(StatisticsType.GLOBAL,
             new StatisticsTarget(SCHEMA, "SMALL"),
             new StatisticsTarget(SCHEMA, "SMALL_A"));
 
@@ -440,7 +442,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -475,7 +477,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 

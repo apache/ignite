@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.persistence.ReadWriteMetaStorageMock;
@@ -195,16 +196,16 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
         ObjectStatisticsImpl stat1 = getStatistics();
         ObjectStatisticsImpl stat2 = getStatistics();
 
-        repo.saveLocalStatistics(K1, stat1);
-        repo.saveLocalStatistics(K2, stat2);
+        repo.saveLocalStatistics(K1, stat1, AffinityTopologyVersion.ZERO);
+        repo.saveLocalStatistics(K2, stat2, AffinityTopologyVersion.ZERO);
 
-        assertEquals(stat1, repo.getLocalStatistics(K1));
-        assertEquals(stat1, repo.getLocalStatistics(K2));
+        assertEquals(stat1, repo.getLocalStatistics(K1, null));
+        assertEquals(stat1, repo.getLocalStatistics(K2, AffinityTopologyVersion.ZERO));
 
         repo.clearLocalPartitionsStatistics(K1, null);
 
-        assertNull(repo.getLocalStatistics(K1));
-        assertEquals(stat2, repo.getLocalStatistics(K2));
+        assertNull(repo.getLocalStatistics(K1, AffinityTopologyVersion.ZERO));
+        assertEquals(stat2, repo.getLocalStatistics(K2, null));
     }
 
     /**
