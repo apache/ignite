@@ -92,7 +92,7 @@ class IgniteSpec(metaclass=ABCMeta):
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
                             "-Dlog4j.configDebug=true"])
 
-        if self.service.config and self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
+        if self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
             self._add_jvm_opts(["-Dlog4j.configuration=file:" + self.service.log_config_file])
 
         if service.context.globals.get(JFR_ENABLED, False):

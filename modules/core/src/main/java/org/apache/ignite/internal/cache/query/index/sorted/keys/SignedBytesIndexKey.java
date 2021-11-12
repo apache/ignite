@@ -26,6 +26,8 @@ public class SignedBytesIndexKey extends BytesIndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return BytesCompareUtils.compareNotNullSigned(key, ((BytesIndexKey)o).key);
+        byte[] okey = (byte[]) o.key();
+
+        return BytesCompareUtils.compareNotNullSigned(key, okey);
     }
 }

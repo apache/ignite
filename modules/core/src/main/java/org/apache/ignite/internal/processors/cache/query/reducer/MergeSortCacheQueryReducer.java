@@ -22,14 +22,14 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
 
 /**
  * Reducer of cache query results that sort result through all nodes. Note that it's assumed that every node
  * returns pre-sorted collection of data.
  */
-abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
+public class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,19 +43,19 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
     private UUID pendingNodeId;
 
     /** */
-    protected MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
+    public MergeSortCacheQueryReducer(final Map<UUID, NodePageStream<R>> pageStreams) {
         super(pageStreams);
     }
-
-    /** @return Comparator for pages from nodes. */
-    protected abstract CompletableFuture<Comparator<NodePage<R>>> pageComparator();
 
     /** {@inheritDoc} */
     @Override public boolean hasNextX() throws IgniteCheckedException {
         // Initial sort.
         if (nodePages == null) {
             // Compares head pages from all nodes to get the lowest value at the moment.
-            nodePages = new PriorityQueue<>(pageStreams.size(), get(pageComparator()));
+            Comparator<NodePage<R>> pageCmp = (o1, o2) -> textResultComparator.compare(
+                (ScoredCacheEntry<?, ?>)o1.head(), (ScoredCacheEntry<?, ?>)o2.head());
+
+            nodePages = new PriorityQueue<>(pageStreams.size(), pageCmp);
 
             for (NodePageStream<R> s : pageStreams.values()) {
                 NodePage<R> p = get(s.headPage());
@@ -76,8 +76,6 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
                 if (p != null && p.hasNext())
                     nodePages.add(p);
             }
-
-            pendingNodeId = null;
         }
 
         return !nodePages.isEmpty();
@@ -99,4 +97,8 @@ abstract class MergeSortCacheQueryReducer<R> extends CacheQueryReducer<R> {
 
         return o;
     }
+
+    /** Compares rows for {@code TextQuery} results for ordering results in MergeSort reducer. */
+    private static final Comparator<ScoredCacheEntry<?, ?>> textResultComparator = (c1, c2) ->
+        Float.compare(c2.score(), c1.score());
 }

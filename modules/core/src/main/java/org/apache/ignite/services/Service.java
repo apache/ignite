@@ -18,7 +18,6 @@
 package org.apache.ignite.services;
 
 import java.io.Serializable;
-import org.apache.ignite.resources.ServiceContextResource;
 
 /**
  * An instance of grid-managed service. Grid-managed services may be deployed from
@@ -27,7 +26,7 @@ import org.apache.ignite.resources.ServiceContextResource;
  * Whenever service is deployed, Ignite will automatically calculate how many
  * instances of this service should be deployed on each node within the cluster.
  * Whenever service is deployed on a cluster node, Ignite will call
- * {@link #execute()} method on that service. It is up to the user
+ * {@link #execute(ServiceContext)} method on that service. It is up to the user
  * to control whenever the service should exit from the {@code execute} method.
  * For example, user may choose to implement service as follows:
  * <pre name="code" class="java">
@@ -37,15 +36,12 @@ import org.apache.ignite.resources.ServiceContextResource;
  *      // You should inject resources only as needed.
  *      &#64;IgniteInstanceResource
  *      private Ignite ignite;
- *
- *      &#64;ServiceContextResource
- *      private ServiceContext ctx;
  *      ...
- *      &#64;Override public void cancel() {
+ *      &#64;Override public void cancel(ServiceContext ctx) {
  *          // No-op.
  *      }
  *
- *      &#64;Override public void execute() {
+ *      &#64;Override public void execute(ServiceContext ctx) {
  *          // Loop until service is cancelled.
  *          while (!ctx.isCancelled()) {
  *              // Do something.
@@ -80,54 +76,13 @@ import org.apache.ignite.resources.ServiceContextResource;
  * <h1 class="header">Cancellation</h1>
  * Services can be cancelled by calling any of the {@code cancel} methods on {@link org.apache.ignite.IgniteServices} API.
  * Whenever a deployed service is cancelled, Ignite will automatically call
- * {@link #cancel()} method on that service.
+ * {@link Service#cancel(ServiceContext)} method on that service.
  * <p>
- * Note that Ignite cannot guarantee that the service exits from {@link #execute()}
- * method whenever {@link #cancel()} is called. It is up to the user to
+ * Note that Ignite cannot guarantee that the service exits from {@link Service#execute(ServiceContext)}
+ * method whenever {@link #cancel(ServiceContext)} is called. It is up to the user to
  * make sure that the service code properly reacts to cancellations.
  */
 public interface Service extends Serializable {
-    /**
-     * Cancels this service. Ignite will automatically call this method whenever any of the
-     * {@code cancel} methods on {@link org.apache.ignite.IgniteServices} API are called.
-     * <p>
-     * Note that Ignite cannot guarantee that the service exits from {@link #execute()}
-     * method whenever {@code cancel()} method is called. It is up to the user to
-     * make sure that the service code properly reacts to cancellations.
-     *
-     * @see ServiceContextResource
-     */
-    public default void cancel() {
-        // No-op.
-    }
-
-    /**
-     * Pre-initializes service before execution. This method is guaranteed to be called before
-     * service deployment is complete (this guarantees that this method will be called
-     * before method {@link #execute()} is called).
-     *
-     * @see ServiceContextResource
-     * @throws Exception If service initialization failed.
-     */
-    public default void init() throws Exception {
-        // No-op.
-    }
-
-    /**
-     * Starts execution of this service. This method is automatically invoked whenever an instance of the service
-     * is deployed on a grid node. Note that service is considered deployed even after it exits the {@code execute}
-     * method and can be cancelled (or undeployed) only by calling any of the {@code cancel} methods on
-     * {@link org.apache.ignite.IgniteServices} API. Also note that service is not required to exit from {@code execute} method until
-     * {@link #cancel()} method was called.
-     *
-     * @see ServiceContextResource
-     * @throws Exception If service execution failed. Not that service will still remain deployed, until
-     *      {@link org.apache.ignite.IgniteServices#cancel(String)} method will be called.
-     */
-    public default void execute() throws Exception {
-        // No-op.
-    }
-
     /**
      * Cancels this service. Ignite will automatically call this method whenever any of the
      * {@code cancel} methods on {@link org.apache.ignite.IgniteServices} API are called.
@@ -137,12 +92,8 @@ public interface Service extends Serializable {
      * make sure that the service code properly reacts to cancellations.
      *
      * @param ctx Service execution context.
-     * @deprecated Use {@link #cancel()} instead.
      */
-    @Deprecated
-    public default void cancel(ServiceContext ctx) {
-        cancel();
-    }
+    public void cancel(ServiceContext ctx);
 
     /**
      * Pre-initializes service before execution. This method is guaranteed to be called before
@@ -151,12 +102,8 @@ public interface Service extends Serializable {
      *
      * @param ctx Service execution context.
      * @throws Exception If service initialization failed.
-     * @deprecated Use {@link #init()} instead.
      */
-    @Deprecated
-    public default void init(ServiceContext ctx) throws Exception {
-        init();
-    }
+    public void init(ServiceContext ctx) throws Exception;
 
     /**
      * Starts execution of this service. This method is automatically invoked whenever an instance of the service
@@ -168,10 +115,6 @@ public interface Service extends Serializable {
      * @param ctx Service execution context.
      * @throws Exception If service execution failed. Not that service will still remain deployed, until
      *      {@link org.apache.ignite.IgniteServices#cancel(String)} method will be called.
-     * @deprecated Use {@link #execute()} instead.
      */
-    @Deprecated
-    public default void execute(ServiceContext ctx) throws Exception {
-        execute();
-    }
+    public void execute(ServiceContext ctx) throws Exception;
 }

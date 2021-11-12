@@ -41,6 +41,8 @@ public class DoubleIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Double.compare(key, ((DoubleIndexKey)o).key);
+        double okey = (double) o.key();
+
+        return Double.compare(key, okey);
     }
 }

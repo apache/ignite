@@ -73,6 +73,7 @@ add_subdirectory(common)
 add_subdirectory(binary)
 
 if (${WITH_CORE} OR ${WITH_TESTS})
+    add_subdirectory(jni)
     add_subdirectory(core)
     add_subdirectory(ignite)
 endif()

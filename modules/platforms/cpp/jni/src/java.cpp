@@ -827,7 +827,7 @@ namespace ignite
                 ExceptionCheck(env, err);
             }
 
-            jobject JniContext::TargetInStreamOutObject(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
+           jobject JniContext::TargetInStreamOutObject(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObject, opType, memPtr);

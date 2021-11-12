@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.IgniteSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -330,7 +329,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case LOAD_BALANCER:
             case TASK_CONTINUOUS_MAPPER:
             case CACHE_STORE_SESSION:
-            case SERVICE_CONTEXT:
                 res = new GridResourceBasicInjector<>(param);
                 break;
 
@@ -516,13 +514,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * Injects resources into service.
      *
      * @param svc Service to inject.
-     * @param svcCtx Service context to be injected into the service.
      * @throws IgniteCheckedException If failed.
      */
-    public void inject(Service svc, ServiceContext svcCtx) throws IgniteCheckedException {
+    public void inject(Service svc) throws IgniteCheckedException {
         injectGeneric(svc);
-
-        inject(svc, GridResourceIoc.ResourceAnnotation.SERVICE_CONTEXT, null, null, svcCtx);
     }
 
     /**

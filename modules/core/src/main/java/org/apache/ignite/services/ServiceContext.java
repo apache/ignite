@@ -19,14 +19,12 @@ package org.apache.ignite.services;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.resources.ServiceContextResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Service execution context. This context is provided using {@link ServiceContextResource} annotation and contains
- * information about specific service execution.
- *
- * @see ServiceContextResource
+ * Service execution context. Execution context is provided into {@link Service#execute(ServiceContext)}
+ * and {@link Service#cancel(ServiceContext)} methods and contains information about specific service
+ * execution.
  */
 public interface ServiceContext extends Serializable {
     /**

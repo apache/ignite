@@ -2179,7 +2179,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String outputStr = testOut.toString();
 
         assertContains(log, outputStr, "The check procedure failed on 1 node.");
-        assertContains(log, outputStr, "CRC check of partition failed");
+        assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
     }
 
     /** */

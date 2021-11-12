@@ -3602,7 +3602,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
                         continue;
 
-                    cacheGrpAffNodes.computeIfAbsent(grpId, id -> new ArrayList<>()).add(node);
+                    List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
+
+                    if (nodes == null)
+                        cacheGrpAffNodes.put(grpId, nodes = new ArrayList<>());
+
+                    nodes.add(node);
                 }
             }
 

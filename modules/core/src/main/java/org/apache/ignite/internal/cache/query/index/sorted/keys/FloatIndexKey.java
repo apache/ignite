@@ -41,6 +41,8 @@ public class FloatIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Float.compare(key, ((FloatIndexKey)o).key);
+        float okey = (float) o.key();
+
+        return Float.compare(key, okey);
     }
 }

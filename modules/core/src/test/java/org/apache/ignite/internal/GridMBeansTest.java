@@ -72,7 +72,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBean("Thread Pools", "GridClassLoadingExecutor", "Terminated", false);
         checkBean("Thread Pools", "GridQueryExecutor", "Terminated", false);
         checkBean("Thread Pools", "GridSchemaExecutor", "Terminated", false);
-        checkBean("Thread Pools", "GridThinClientExecutor", "Terminated", false);
         checkBean("Thread Pools", "StripedExecutor", "Terminated", false);
 
         // custom executors

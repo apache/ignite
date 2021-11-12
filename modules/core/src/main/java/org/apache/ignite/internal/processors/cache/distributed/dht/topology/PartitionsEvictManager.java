@@ -35,7 +35,6 @@ import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
@@ -142,13 +141,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             GroupEvictionContext grpEvictionCtx = evictionGroupsMap.computeIfAbsent(
                 grpId, k -> new GroupEvictionContext(grp));
 
-            EvictReason reason = context().kernalContext().recoveryMode() ? EvictReason.CLEARING_ON_RECOVERY :
-                part.state() == RENTING ? EvictReason.EVICTION : EvictReason.CLEARING;
+            EvictReason reason = part.state() == RENTING ? EvictReason.EVICTION : EvictReason.CLEARING;
 
             if (log.isDebugEnabled())
                 log.debug("The partition has been scheduled for clearing [grp=" + grp.cacheOrGroupName()
-                    + ", topVer=" + (cctx.kernalContext().recoveryMode() ?
-                    AffinityTopologyVersion.NONE : grp.topology().readyTopologyVersion())
+                    + ", topVer=" + grp.topology().readyTopologyVersion()
                     + ", id=" + part.id() + ", state=" + part.state()
                     + ", fullSize=" + part.fullSize() + ", reason=" + reason + ']');
 
@@ -413,8 +410,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
                 if (log.isDebugEnabled()) {
                     log.debug("The partition has been cleared [grp=" + part.group().cacheOrGroupName() +
-                        ", topVer=" + (cctx.kernalContext().recoveryMode() ?
-                        AffinityTopologyVersion.NONE : part.group().topology().readyTopologyVersion()) +
+                        ", topVer=" + part.group().topology().readyTopologyVersion() +
                         ", id=" + part.id() + ", state=" + part.state() + ", cleared=" + clearedEntities +
                         ", fullSize=" + part.fullSize() + ']');
                 }
@@ -429,9 +425,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 if (cctx.kernalContext().isStopping()) {
                     LT.warn(log, ex, "Partition eviction has been cancelled (local node is stopping) " +
                         "[grp=" + grpEvictionCtx.grp.cacheOrGroupName() +
-                        ", readyVer=" + (cctx.kernalContext().recoveryMode() ?
-                            AffinityTopologyVersion.NONE : grpEvictionCtx.grp.topology().readyTopologyVersion()) +
-                        ']',
+                        ", readyVer=" + grpEvictionCtx.grp.topology().readyTopologyVersion() + ']',
                         false,
                         true);
                 }
@@ -462,13 +456,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * Partition evicted after changing to
          * {@link GridDhtPartitionState#MOVING MOVING} state.
          */
-        CLEARING,
-
-        /**
-         * Partition clearing on logical WAL recovery.
-         * Used to repeat partition clearing if the node was stopped without previous clearing checkpointed.
-         */
-        CLEARING_ON_RECOVERY;
+        CLEARING;
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -481,13 +469,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @param c Update closure.
      */
     private void updateMetrics(CacheGroupContext grp, EvictReason reason, BiConsumer<EvictReason, CacheMetricsImpl> c) {
-        if (reason != EvictReason.CLEARING_ON_RECOVERY) {
-            for (GridCacheContext cctx : grp.caches()) {
-                if (cctx.statisticsEnabled()) {
-                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+        for (GridCacheContext cctx : grp.caches()) {
+            if (cctx.statisticsEnabled()) {
+                final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
-                    c.accept(reason, metrics);
-                }
+                c.accept(reason, metrics);
             }
         }
     }

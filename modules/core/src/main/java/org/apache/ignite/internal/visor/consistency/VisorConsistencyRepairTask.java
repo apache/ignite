@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.consistency;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
@@ -26,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -35,7 +37,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -44,7 +48,8 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 /**
  *
  */
-public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorConsistencyRepairTaskArg, String> {
+public class VisorConsistencyRepairTask extends
+    VisorMultiNodeTask<VisorConsistencyRepairTaskArg, VisorConsistencyRepairTaskResult, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -60,6 +65,37 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorConsistencyRepairTaskArg, String> job(VisorConsistencyRepairTaskArg arg) {
         return new VisorConsistencyRepairJob(arg, debug);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected VisorConsistencyRepairTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
+        VisorConsistencyRepairTaskResult taskRes = new VisorConsistencyRepairTaskResult();
+        StringBuilder sb = new StringBuilder();
+
+        for (ComputeJobResult res : results) {
+            if (res.isCancelled())
+                taskRes.cancelled(true);
+
+            Exception e = res.getException();
+
+            if (e != null) {
+                taskRes.failed(true);
+
+                sb.append("Node: ").append(res.getNode()).append("\n")
+                    .append("  Exception: ").append(e).append("\n")
+                    .append(X.getFullStackTrace(e)).append("\n");
+            }
+
+            String data = res.getData();
+
+            if (data != null)
+                sb.append("Node: ").append(res.getNode()).append("\n")
+                    .append("  Result: ").append(data).append("\n\n");
+        }
+
+        taskRes.message(sb.toString());
+
+        return taskRes;
     }
 
     /**
@@ -113,8 +149,6 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
             log.info("Consistency check started [grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]");
 
-            VisorConsistencyStatusTask.MAP.put(arg, "0/" + part.fullSize());
-
             long cnt = 0;
             long statusTs = 0;
 
@@ -164,8 +198,6 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
                             log.info("Consistency check progress [grp=" + grpCtx.cacheOrGroupName() +
                                 ", part=" + p + ", checked=" + cnt + "/" + part.fullSize() + "]");
-
-                            VisorConsistencyStatusTask.MAP.put(arg, cnt + "/" + part.fullSize());
                         }
 
                     }
@@ -180,14 +212,12 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             }
             finally {
                 part.release();
-
-                VisorConsistencyStatusTask.MAP.remove(arg);
             }
 
             if (!evts.isEmpty())
                 return processEvents(cctx, p, cnt);
             else
-                return NOTHING_FOUND + " [processed=" + cnt + "]\n";
+                return NOTHING_FOUND + " [processed=" + cnt + "]";
         }
 
         /**
@@ -236,7 +266,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                 return CONSISTENCY_VIOLATIONS_FOUND + " [found=" + found + ", fixed=" + fixed + ", processed=" + cnt + "]";
             }
             else
-                return NOTHING_FOUND + " [processed=" + cnt + "]\n";
+                return NOTHING_FOUND + " [processed=" + cnt + "]";
         }
 
         /**

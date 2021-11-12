@@ -16,24 +16,35 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception to distinguish partition meta page broken invariants.
  */
-public class CorruptedPartitionMetaPageException extends CorruptedDataStructureException {
-    /** Serial version uid. */
+public class CorruptedPartitionMetaPageException extends AbstractCorruptedPersistenceException {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Constrictor.
-     *
-     * @param msg     Message.
-     * @param cause   Cause.
-     * @param grpId   Cache group id.
-     * @param pageIds PageId's that can be corrupted.
+     * @param msg   Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pages Ids of pages that might be corrupted.
      */
-    protected CorruptedPartitionMetaPageException(String msg, @Nullable Throwable cause, int grpId, long... pageIds) {
-        super(msg, cause, grpId, pageIds);
+    protected CorruptedPartitionMetaPageException(String msg, @Nullable Throwable cause, int grpId, long... pages) {
+        this(msg, cause, toPagesArray(grpId, pages));
+    }
+
+    /**
+     * @param msg   Message.
+     * @param cause Cause.
+     * @param pages (groupId, pageId) pairs for pages that might be corrupted.
+     */
+    protected CorruptedPartitionMetaPageException(String msg,
+        @Nullable Throwable cause,
+        T2<Integer, Long>[] pages
+    ) {
+        super(msg, cause, pages);
     }
 }

@@ -19,9 +19,8 @@
 
 #include <string>
 
-#include <ignite/common/common.h>
-#include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
+#include <ignite/common/common.h>
 
 namespace ignite
 {
@@ -54,7 +53,8 @@ namespace ignite
              * Default constructor
              */
             JavaGlobalRef() :
-                obj(NULL)
+                ctx(0),
+                obj(0)
             {
                 // No-op.
             }
@@ -65,10 +65,11 @@ namespace ignite
              * @param ctx JNI context.
              * @param obj Java object.
              */
-            JavaGlobalRef(common::concurrent::SharedPointer<java::JniContext>& ctx, jobject obj)
-                : obj(NULL)
+            JavaGlobalRef(java::JniContext& ctx, jobject obj) :
+                ctx(&ctx),
+                obj(ctx.Acquire(obj))
             {
-                Init(ctx, obj);
+                // No-op.
             }
 
             /**
@@ -76,10 +77,11 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            JavaGlobalRef(const JavaGlobalRef& other)
-                : obj(NULL)
+            JavaGlobalRef(const JavaGlobalRef& other) :
+                ctx(other.ctx),
+                obj(ctx->Acquire(other.obj))
             {
-                Init(other.ctx, other.obj);
+                // No-op.
             }
 
             /**
@@ -92,9 +94,11 @@ namespace ignite
             {
                 if (this != &other)
                 {
-                    java::JniContext::Release(obj);
+                    if (ctx)
+                        ctx->Release(obj);
 
-                    Init(other.ctx, other.obj);
+                    ctx = other.ctx;
+                    obj = ctx->Acquire(other.obj);
                 }
 
                 return *this;
@@ -105,7 +109,8 @@ namespace ignite
              */
             ~JavaGlobalRef()
             {
-                java::JniContext::Release(obj);
+                if (ctx)
+                    ctx->Release(obj);
             }
 
             /**
@@ -119,16 +124,8 @@ namespace ignite
             }
 
         private:
-            /** Initializer */
-            void Init(const common::concurrent::SharedPointer<java::JniContext>& ctx0, jobject obj0) {
-                ctx = ctx0;
-
-                if (ctx.IsValid())
-                    this->obj = ctx.Get()->Acquire(obj0);
-            }
-
             /** Context. */
-            common::concurrent::SharedPointer<java::JniContext> ctx;
+            java::JniContext* ctx;
 
             /** Object. */
             jobject obj;

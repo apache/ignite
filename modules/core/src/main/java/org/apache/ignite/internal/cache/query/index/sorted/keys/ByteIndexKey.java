@@ -41,6 +41,8 @@ public class ByteIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Byte.compare(key, ((ByteIndexKey)o).key);
+        byte okey = (byte) o.key();
+
+        return Byte.compare(key, okey);
     }
 }

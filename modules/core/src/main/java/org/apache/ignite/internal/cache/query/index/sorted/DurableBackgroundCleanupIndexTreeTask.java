@@ -54,7 +54,6 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
  *
  * @deprecated Use {@link DurableBackgroundCleanupIndexTreeTaskV2}.
  */
-@Deprecated
 public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundTask {
     /** */
     private static final long serialVersionUID = 0L;

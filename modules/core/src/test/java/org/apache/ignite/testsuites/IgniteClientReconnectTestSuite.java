@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteClientReconnectContinuousProcessorTest;
 import org.apache.ignite.internal.IgniteClientReconnectDelayedSpiTest;
 import org.apache.ignite.internal.IgniteClientReconnectDiscoveryStateTest;
 import org.apache.ignite.internal.IgniteClientReconnectFailoverTest;
-import org.apache.ignite.internal.IgniteClientReconnectLockTest;
 import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
 import org.apache.ignite.internal.IgniteClientReconnectStopTest;
 import org.apache.ignite.internal.IgniteClientReconnectStreamerTest;
@@ -53,7 +52,6 @@ import org.junit.runners.Suite;
     IgniteClientReconnectComputeTest.class,
     IgniteClientReconnectAtomicsTest.class,
     IgniteClientReconnectAtomicsWithLostPartitionsTest.class,
-    IgniteClientReconnectLockTest.class,
     IgniteClientReconnectCollectionsTest.class,
     IgniteClientReconnectServicesTest.class,
     IgniteClientReconnectStreamerTest.class,

@@ -758,7 +758,14 @@ public class CacheGroupContext {
      * @return Group name if it is specified, otherwise cache name.
      */
     public String cacheOrGroupName() {
-        return CU.cacheOrGroupName(ccfg);
+        return cacheOrGroupName(ccfg);
+    }
+
+    /**
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
     }
 
     /**
@@ -1053,7 +1060,17 @@ public class CacheGroupContext {
     public void start() throws IgniteCheckedException {
         GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
 
-        aff = affCache == null ? GridAffinityAssignmentCache.create(ctx.kernalContext(), ccfg.getAffinity(), ccfg) : affCache;
+        if (affCache != null)
+            aff = affCache;
+        else
+            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
+                cacheOrGroupName(),
+                grpId,
+                ccfg.getAffinity(),
+                ccfg.getNodeFilter(),
+                ccfg.getBackups(),
+                ccfg.getCacheMode() == LOCAL
+            );
 
         if (ccfg.getCacheMode() != LOCAL) {
             top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));

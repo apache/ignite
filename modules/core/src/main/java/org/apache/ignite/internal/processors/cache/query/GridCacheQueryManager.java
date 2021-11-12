@@ -38,7 +38,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
@@ -62,8 +61,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
-import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
@@ -629,11 +626,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
-                    IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                        qry.scanFilter(), filter(qry), qry.keepBinary());
-
-                    iter = idxQryRes.iter();
-                    res.metadata(idxQryRes.metadata());
+                    iter = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(), qry.scanFilter(),
+                        filter(qry), qry.keepBinary());
 
                     break;
 
@@ -994,7 +988,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Query is cancelled.
                     if (row == null) {
-                        onPageReady(qryInfo.local(), qryInfo, null, null, true, null);
+                        onPageReady(qryInfo.local(), qryInfo, null, true, null);
 
                         break;
                     }
@@ -1197,7 +1191,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Query is cancelled.
                     if (row0 == null) {
-                        onPageReady(loc, qryInfo, null, null, true, null);
+                        onPageReady(loc, qryInfo, null, true, null);
 
                         break;
                     }
@@ -1301,7 +1295,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                             // Reduce.
                             if (!rdc.collect(entry) || !iter.hasNext()) {
-                                onPageReady(loc, qryInfo, null, Collections.singletonList(rdc.reduce()), true, null);
+                                onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
 
                                 pageSent = true;
 
@@ -1323,11 +1317,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         if (++cnt == pageSize || !iter.hasNext()) {
                             boolean finished = !iter.hasNext();
 
-                            onPageReady(loc, qryInfo, res.metadata(), data, finished, null);
+                            onPageReady(loc, qryInfo, data, finished, null);
 
                             pageSent = true;
-
-                            res.onPageSend();
 
                             if (!finished)
                                 rmvIter = false;
@@ -1345,11 +1337,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 if (!pageSent) {
                     if (rdc == null)
-                        onPageReady(loc, qryInfo, res.metadata(), data, true, null);
+                        onPageReady(loc, qryInfo, data, true, null);
                     else
-                        onPageReady(loc, qryInfo, res.metadata(), Collections.singletonList(rdc.reduce()), true, null);
-
-                    res.onPageSend();
+                        onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
                 }
             }
             catch (Throwable e) {
@@ -1368,7 +1358,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
                     U.error(log, "Failed to run query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
 
-                onPageReady(loc, qryInfo, null, null, true, e);
+                onPageReady(loc, qryInfo, null, true, e);
 
                 if (e instanceof Error)
                     throw (Error)e;
@@ -1719,13 +1709,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param loc Local query or not.
      * @param qryInfo Query info.
-     * @param metaData Meta data.
      * @param data Result data.
      * @param finished Last page or not.
      * @param e Exception in case of error.
      * @return {@code true} if page was processed right.
      */
-    protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo, @Nullable IndexQueryResultMeta metaData,
+    protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo,
         @Nullable Collection<?> data, boolean finished, @Nullable Throwable e);
 
     /**
@@ -2406,13 +2395,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public static class QueryResult<K, V> extends CachedResult<IgniteBiTuple<K, V>> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final GridCacheQueryType type;
-
-        /** Future of query result metadata. Completed when query actually started. */
-        private final CompletableFuture<IndexQueryResultMeta> metadata;
-
-        /** Flag shows whether first result page was delivered to user. */
-        private volatile boolean sentFirst;
 
         /**
          * @param type Query type.
@@ -2422,8 +2408,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             super(rcpt);
 
             this.type = type;
-
-            metadata = type == INDEX ? new CompletableFuture<>() : null;
         }
 
         /**
@@ -2431,37 +2415,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         public GridCacheQueryType type() {
             return type;
-        }
-
-        /** */
-        public IndexQueryResultMeta metadata() {
-            if (sentFirst || metadata == null)
-                return null;
-
-            assert metadata.isDone() : "QueryResult metadata isn't completed yet.";
-
-            return metadata.getNow(null);
-        }
-
-        /** */
-        public void metadata(IndexQueryResultMeta metadata) {
-            if (this.metadata != null)
-                this.metadata.complete(metadata);
-        }
-
-        /** Callback to invoke, when next data page was delivered to user. */
-        public void onPageSend() {
-            sentFirst = true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> res, @Nullable Throwable err) {
-            boolean done = super.onDone(res, err);
-
-            if (done && err != null && metadata != null)
-                metadata.completeExceptionally(err);
-
-            return done;
         }
     }
 

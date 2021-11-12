@@ -90,8 +90,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCacheFullTextQueryAbstr
     public void testTextQueryMultiplePagesNoLimit() {
         checkTextQuery("1*", 0, PAGE_SIZE);
 
-        // Send 2 additional load requests on each node.
-        checkPages(NODES, NODES * 2, 0);
+        checkPages(4, 8, 0);
     }
 
     /** Test that do not send cache page request after limit exceeded. */
@@ -99,9 +98,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCacheFullTextQueryAbstr
     public void testTextQueryLimitedMultiplePages() {
         checkTextQuery("1*", QUERY_LIMIT, 30);
 
-        // We hold 2 pre-loaded pages per node. Then we send additional load request for every node on beginning,
-        // and 2 more while iterating over data and finish preloaded pages (depends on page size).
-        checkPages(NODES, NODES + 2, NODES);
+        checkPages(4, 7, 3);
     }
 
     /** Test that rerequest some pages but then send a cancel query after limit exceeded. */
@@ -109,9 +106,7 @@ public class GridCacheFullTextQueryPagesTest extends GridCacheFullTextQueryAbstr
     public void testTextQueryHighLimitedMultiplePages() {
         checkTextQuery("1*", QUERY_LIMIT, 20);
 
-        // We hold 2 pre-loaded pages per node. Then we send additional load request for every node on beginning,
-        // and 4 more while iterating over data and finish preloaded pages (depends on page size).
-        checkPages(NODES, NODES + 4, NODES);
+        checkPages(4, 8, 3);
     }
 
     /** */

@@ -32,9 +32,17 @@ Apache Ignite cluster and perform data caching.
 If you use Maven to manage dependencies in your project, you can add Apache Ignite Spring Cache extension
 dependencies to the application's `pom.xml` file like this:
 
+[NOTE]
+====
+For Apache Ignite 2.10.0 and earlier the `ignite-spring-cache-ext` dependency must be added to
+classpath before `ignite-spring`, due to duplication of Spring Cache integration classes. If you use Maven
+to manage dependencies, place `ignite-spring-cache-ext` before the `ignite-spring` dependency in the
+application's `pom.xml` file.
+====
+
 [tabs]
 --
-tab: For all Apache Ignite versions since 2.12.0[]
+tab:pom.xml[]
 [source,xml]
 ----
 <dependency>
@@ -49,6 +57,20 @@ tab: For all Apache Ignite versions since 2.12.0[]
     <version>${ignite.version}</version>
 </dependency>
 
+<!-- Note, that 'ignite-spring' depends on version of Spring dependencies, that may conflict with version of Spring
+     dependencies used in your project. It is safe to exclude Spring dependencies from 'ignite-spring' and add them
+     with version updated to match the Spring version used in your project.
+
+     For Apache Ignite 2.11.0 and earlier the following list of Spring dependencies must be excluded to
+     avoid possible Spring version conflicts:
+        - 'spring-core'
+        - 'spring-aop'
+        - 'spring-context'
+        - 'spring-expressions'
+        - 'spring-beans'
+        - 'spring-jdbc'
+        - 'spring-tx'
+ -->
 <dependency>
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-spring</artifactId>
@@ -61,64 +83,7 @@ tab: For all Apache Ignite versions since 2.12.0[]
     </exclusions>
 </dependency>
 
-<dependency>
-    <groupId>org.springframework</groupId>
-    <artifactId>spring-context</artifactId>
-    <version>${spring.version}</version>
-</dependency>
-----
-tab:For Apache Ignite 2.11.0[]
-[source,xml]
-----
-<dependency>
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring-cache-ext</artifactId>
-    <version>${ignite-spring-cache-ext.version}</version>
-</dependency>
-
-<dependency>
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-core</artifactId>
-    <version>${ignite.version}</version>
-</dependency>
-
-<dependency>
-    <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring</artifactId>
-    <version>${ignite.version}</version>
-     <exclusions>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expressions</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-
-<dependency>
+ <dependency>
     <groupId>org.springframework</groupId>
     <artifactId>spring-context</artifactId>
     <version>${spring.version}</version>

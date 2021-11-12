@@ -87,7 +87,6 @@ import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -148,7 +147,6 @@ import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -377,15 +375,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final SimpleDistributedProperty<Integer> historicalRebalanceThreshold =
         new SimpleDistributedProperty<>(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, Integer::parseInt);
 
-    /** */
-    private GridKernalContext ctx;
-
     /**
      * @param ctx Kernal context.
      */
     public GridCacheDatabaseSharedManager(GridKernalContext ctx) {
-        this.ctx = ctx;
-
         IgniteConfiguration cfg = ctx.config();
 
         persistenceCfg = cfg.getDataStorageConfiguration();
@@ -646,15 +639,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             long newSize = (long)(region.getMaxSize() * shrinkPercentage);
             long newInitSize = Math.min(region.getInitialSize(), newSize);
 
-            if (log.isInfoEnabled()) {
-                log.info("Region size was reassigned by defragmentation reason: " +
-                    "region = '" + region.getName() + "', " +
-                    "oldInitialSize = '" + region.getInitialSize() + "', " +
-                    "newInitialSize = '" + newInitSize + "', " +
-                    "oldMaxSize = '" + region.getMaxSize() + "', " +
-                    "newMaxSize = '" + newSize
-                );
-            }
+            log.info("Region size was reassigned by defragmentation reason: " +
+                "region = '" + region.getName() + "', " +
+                "oldInitialSize = '" + region.getInitialSize() + "', " +
+                "newInitialSize = '" + newInitSize + "', " +
+                "oldMaxSize = '" + region.getMaxSize() + "', " +
+                "newMaxSize = '" + newSize
+            );
 
             region.setMaxSize(newSize);
             region.setInitialSize(newInitSize);
@@ -1103,8 +1094,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long time = System.currentTimeMillis();
 
         try {
-            if (log.isInfoEnabled())
-                log.info("Starting binary memory restore for: " + cctx.cache().cacheGroupDescriptors().keySet());
+            log.info("Starting binary memory restore for: " + cctx.cache().cacheGroupDescriptors().keySet());
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.beforeBinaryMemoryRestore(this);
@@ -2839,46 +2829,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
 
                         break;
-
-                    case PARTITION_CLEARING_START_RECORD:
-                        PartitionClearingStartRecord rec0 = (PartitionClearingStartRecord) rec;
-
-                        CacheGroupContext grp = this.ctx.cache().cacheGroup(rec0.groupId());
-
-                        if (grp != null) {
-                            GridDhtLocalPartition part;
-
-                            try {
-                                part = grp.topology().forceCreatePartition(rec0.partitionId());
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteException("Cannot get or create a partition [groupId=" + rec0.groupId() +
-                                    ", partitionId=" + rec0.partitionId() + "]", e);
-                            }
-
-                            stripedApply(() -> {
-                                try {
-                                    part.updateClearVersion(rec0.clearVersion());
-
-                                    IgniteInternalFuture<?> clearFut = grp.
-                                        shared().
-                                        evict().
-                                        evictPartitionAsync(grp, part, new GridFutureAdapter<>());
-
-                                    clearFut.get();
-
-                                    part.updateClearVersion();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to apply partition clearing record, " + rec0);
-
-                                    applyError.compareAndSet(null, e);
-                                }
-                            }, rec0.groupId(), rec0.partitionId(), exec, semaphore);
-                        }
-
-                        break;
-
                     default:
                         // Skip other records.
                 }
@@ -3676,10 +3626,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 // We roll memory up until we find a checkpoint start record registered in the status.
                 if (F.eq(cpRec.checkpointId(), status.cpStartId)) {
-                    if (log.isInfoEnabled()) {
-                        log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
-                            ", pos=" + rec.position() + ']');
-                    }
+                    log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
+                        ", pos=" + rec.position() + ']');
 
                     needApplyBinaryUpdates = false;
                 }
@@ -3704,10 +3652,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Flag indicates need throws CRC exception or not.
          */
         @Override public boolean throwsCRCError() {
-            if (log.isInfoEnabled()) {
-                log.info("Throws CRC error check [needApplyBinaryUpdates=" + needApplyBinaryUpdates +
-                    ", lastArchivedSegment=" + lastArchivedSegment + ", lastRead=" + lastReadRecordPointer() + ']');
-            }
+            log.info("Throws CRC error check [needApplyBinaryUpdates=" + needApplyBinaryUpdates +
+                ", lastArchivedSegment=" + lastArchivedSegment + ", lastRead=" + lastReadRecordPointer() + ']');
 
             if (needApplyBinaryUpdates)
                 return true;

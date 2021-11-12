@@ -22,13 +22,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -81,7 +83,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        crd = startGrids(2);
+        crd = startGrids(1);
 
         cache = crd.createCache(new CacheConfiguration<>().setName(CACHE));
     }
@@ -148,16 +150,16 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), qryDescIdxName)
             .setCriteria(lt("descId", pivot));
 
-        check(qry, 0, pivot);
+        check(tblCache.query(qry), 0, pivot);
 
         qry = new IndexQuery<Long, Person>(Person.class.getName(), qryDescIdxName)
             .setCriteria(lt("DESCID", pivot));
 
-        check(qry, 0, pivot);
+        check(tblCache.query(qry), 0, pivot);
 
         qry = new IndexQuery<>(Person.class.getName(), qryDescIdxName);
 
-        check(qry, 0, CNT);
+        check(tblCache.query(qry), 0, CNT);
     }
 
     /** Should support only original field. */
@@ -172,7 +174,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), qryDescIdxName)
             .setCriteria(lt("descId", pivot));
 
-        check(qry, 0, pivot);
+        check(tblCache.query(qry), 0, pivot);
 
         String errMsg = qryDescIdxName != null ? "Index doesn't match criteria." : "No index found for criteria.";
 
@@ -199,7 +201,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), idx)
             .setCriteria(lt("descId", pivot));
 
-        check(qry, 0, pivot);
+        check(tblCache.query(qry), 0, pivot);
 
         if (qryDescIdxName != null) {
             GridTestUtils.assertThrowsAnyCause(null, () -> {
@@ -254,26 +256,24 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class.getName(), qryDescIdxName)
             .setCriteria(eq("_KEY", (long) pivot), lte("descId", pivot));
 
-        check(qry, pivot, pivot + 1);
+        check(tblCache.query(qry), pivot, pivot + 1);
     }
 
     /**
      * @param left First cache key, inclusive.
      * @param right Last cache key, exclusive.
      */
-    private void check(IndexQuery<Long, Person> qry, int left, int right) {
-        boolean pk = qry.getIndexName() == null && F.isEmpty(qry.getCriteria());
-
-        List<Cache.Entry<Long, Person>> all = tblCache.query(qry).getAll();
+    private void check(QueryCursor<Cache.Entry<Long, Person>> cursor, int left, int right) {
+        List<Cache.Entry<Long, Person>> all = cursor.getAll();
 
         assertEquals(right - left, all.size());
+
+        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
 
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, Person> entry = all.get(i);
 
-            int exp = pk ? left + i : right - i - 1;
-
-            assertEquals(exp, entry.getKey().intValue());
+            assertTrue(expKeys.remove(entry.getKey()));
 
             assertEquals(new Person(entry.getKey().intValue()), all.get(i).getValue());
         }
@@ -288,10 +288,13 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         assertEquals(right - left, all.size());
 
+        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
+
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, BinaryObject> entry = all.get(i);
 
-            assertEquals(right - 1 - i, entry.getKey().intValue());
+            assertTrue(expKeys.remove(entry.getKey()));
+
             assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("id"));
             assertEquals(entry.getKey().intValue(), (int) entry.getValue().field("descId"));
         }

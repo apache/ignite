@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.consistency;
 
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,10 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum ConsistencySubCommand {
     /** Repair. */
-    REPAIR("repair", VisorConsistencyRepairTask.class.getName()),
-
-    /** Status. */
-    STATUS("status", VisorConsistencyStatusTask.class.getName());
+    REPAIR("repair", VisorConsistencyRepairTask.class.getName());
 
     /** Sub-command name. */
     private final String name;

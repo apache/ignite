@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,17 +29,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.reducer.IndexQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortCacheQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
-import org.apache.ignite.internal.processors.cache.query.reducer.TextQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 
 /**
@@ -64,9 +60,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** Set of nodes that deliver their first page. */
     private Set<UUID> rcvdFirstPage = ConcurrentHashMap.newKeySet();
-
-    /** Metadata for IndexQuery. */
-    private final CompletableFuture<IndexQueryResultMeta> idxQryMetaFut;
 
     /**
      * @param ctx Cache context.
@@ -96,16 +89,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
-        if (qry.query().type() == INDEX) {
-            idxQryMetaFut = new CompletableFuture<>();
-
-            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMetaFut);
-        }
-        else {
-            idxQryMetaFut = null;
-
-            reducer = qry.query().type() == TEXT ? new TextQueryReducer<>(streamsMap) : new UnsortedCacheQueryReducer<>(streamsMap);
-        }
+        reducer = qry.query().type() == TEXT ?
+            new MergeSortCacheQueryReducer<>(streamsMap)
+            : new UnsortedCacheQueryReducer<>(streamsMap);
     }
 
     /** {@inheritDoc} */
@@ -161,12 +147,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             if (cnt + 1 >= streams.size())
                 onDone();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onMeta(IndexQueryResultMeta metaData) {
-        if (metaData != null)
-            idxQryMetaFut.complete(metaData);
     }
 
     /** {@inheritDoc} */
@@ -289,9 +269,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void onError(Throwable err) {
         if (onDone(err)) {
             streams.values().forEach(s -> s.cancel(err));
-
-            if (idxQryMetaFut != null && !idxQryMetaFut.isDone())
-                idxQryMetaFut.completeExceptionally(err);
 
             firstPageLatch.countDown();
         }

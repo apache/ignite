@@ -57,7 +57,6 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         metricName(THREAD_POOLS, "GridQueryExecutor"),
         metricName(THREAD_POOLS, "GridSchemaExecutor"),
         metricName(THREAD_POOLS, "GridRebalanceExecutor"),
-        metricName(THREAD_POOLS, "GridThinClientExecutor"),
         metricName(THREAD_POOLS, "GridRebalanceStripedExecutor"),
         metricName(THREAD_POOLS, "GridDataStreamExecutor")
     );

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.consistency;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -29,19 +28,18 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskArg;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.REPAIR;
-import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.STATUS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.of;
 
 /**
  *
  */
-public class ConsistencyCommand extends AbstractCommand<Object> {
+public class ConsistencyCommand extends AbstractCommand<VisorConsistencyRepairTaskArg> {
     /** Command argument. */
     private VisorConsistencyRepairTaskArg cmdArg;
 
@@ -55,7 +53,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
         StringBuilder sb = new StringBuilder();
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorConsistencyTaskResult res = executeTaskByNameOnNode(
+            VisorConsistencyRepairTaskResult res = executeTaskByNameOnNode(
                 client,
                 cmd.taskName(),
                 arg(),
@@ -117,13 +115,6 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             REPAIR.toString(),
             "cache-name",
             "partition");
-
-        usage(
-            log,
-            "Cache consistency check/repair operations status:",
-            CONSISTENCY,
-            Collections.emptyMap(),
-            STATUS.toString());
     }
 
     /** {@inheritDoc} */
@@ -136,8 +127,6 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
             cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part);
         }
-        else if (cmd == STATUS)
-            cmdArg = null;
         else
             throw new IllegalArgumentException("Unsupported operation.");
     }

@@ -47,12 +47,11 @@ public abstract class CacheQueryReducer<T> extends GridIteratorAdapter<T> {
     }
 
     /**
-     * @return Object that completed the specified future.
-     * @throws IgniteCheckedException for all failures.
+     * @return Page with query results data from specified stream.
      */
-    public static <T> T get(CompletableFuture<?> fut) throws IgniteCheckedException {
+    public static <T> NodePage<T> get(CompletableFuture<?> pageFut) throws IgniteCheckedException {
         try {
-            return (T) fut.get();
+            return (NodePage<T>) pageFut.get();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -199,10 +199,6 @@ public class PoolProcessor extends GridProcessorAdapter {
     @GridToStringExclude
     private ThreadPoolExecutor rebalanceExecSvc;
 
-    /** Executor service for thin clients. */
-    @GridToStringExclude
-    private ExecutorService thinClientExec;
-
     /** Rebalance striped executor service. */
     @GridToStringExclude
     private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
@@ -503,18 +499,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
-        if (cfg.getClientConnectorConfiguration() != null) {
-            thinClientExec = new IgniteThreadPoolExecutor(
-                "client-connector",
-                cfg.getIgniteInstanceName(),
-                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
-                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<>(),
-                GridIoPolicy.UNDEFINED,
-                oomeHnd);
-        }
-
         rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
             cfg.getRebalanceThreadPoolSize(),
             cfg.getIgniteInstanceName(),
@@ -579,9 +563,6 @@ public class PoolProcessor extends GridProcessorAdapter {
             // Striped executor uses a custom adapter.
             monitorStripedPool("StripedExecutor", stripedExecSvc);
         }
-
-        if (thinClientExec != null)
-            monitorExecutor("GridThinClientExecutor", thinClientExec);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
@@ -843,15 +824,6 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Executor service for thin clients.
-     *
-     * @return Executor service for thin clients.
-     */
-    public ExecutorService getThinClientExecutorService() {
-        return thinClientExec;
-    }
-
-    /**
      * Executor service that is in charge of processing unorderable rebalance messages.
      *
      * @return Executor service that is in charge of processing unorderable rebalance messages.
@@ -1008,9 +980,6 @@ public class PoolProcessor extends GridProcessorAdapter {
             registerStripedExecutorMBean(mbMgr, "StripedExecutor", stripedExecSvc);
         }
 
-        if (thinClientExec != null)
-            registerExecutorMBean(mbMgr, "GridThinClientExecutor", thinClientExec);
-
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
                 registerExecutorMBean(mbMgr, entry.getKey(), entry.getValue());
@@ -1132,11 +1101,6 @@ public class PoolProcessor extends GridProcessorAdapter {
         U.shutdownNow(getClass(), callbackExecSvc, log);
 
         callbackExecSvc = null;
-
-        if (thinClientExec != null)
-            U.shutdownNow(getClass(), thinClientExec, log);
-
-        thinClientExec = null;
 
         if (!F.isEmpty(customExecs)) {
             for (ThreadPoolExecutor exec : customExecs.values())

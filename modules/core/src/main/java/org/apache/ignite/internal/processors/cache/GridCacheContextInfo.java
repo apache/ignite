@@ -98,7 +98,7 @@ public class GridCacheContextInfo<K, V> {
      * @return Cache group name.
      */
     public String groupName() {
-        return CU.cacheOrGroupName(config);
+        return CacheGroupContext.cacheOrGroupName(config);
     }
 
     /**

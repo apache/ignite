@@ -2024,7 +2024,7 @@ public class ClusterCachesInfo {
                     ", conflictingCacheName=" + desc.cacheName() + ']';
         }
 
-        int grpId = CU.cacheGroupId(cfg);
+        int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
 
         if (cfg.getGroupName() != null) {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
@@ -2284,7 +2284,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        int grpId = CU.cacheGroupId(startedCacheCfg);
+        int grpId = CU.cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 

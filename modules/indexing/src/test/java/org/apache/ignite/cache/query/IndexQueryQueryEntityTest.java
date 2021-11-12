@@ -23,6 +23,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -177,13 +180,13 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
             .setCriteria(lt("id", pivot));
 
-        check(cache.query(qry), 0, pivot, false);
+        check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
         IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class, qryDescIdx)
             .setCriteria(lt("descId", pivot));
 
-        check(cache.query(descQry), 0, pivot, true);
+        check(cache.query(descQry), 0, pivot);
     }
 
     /** */
@@ -197,30 +200,30 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
             .setCriteria(lt("id", pivot));
 
-        check(cacheTblName.query(qry), 0, pivot, false);
+        check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
         IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class, qryDescIdx)
             .setCriteria(lt("descId", pivot));
 
-        check(cacheTblName.query(descQry), 0, pivot, true);
+        check(cacheTblName.query(descQry), 0, pivot);
     }
 
     /**
      * @param left First cache key, inclusive.
      * @param right Last cache key, exclusive.
      */
-    private void check(QueryCursor<Cache.Entry<Long, Person>> cursor, int left, int right, boolean desc) {
+    private void check(QueryCursor<Cache.Entry<Long, Person>> cursor, int left, int right) {
         List<Cache.Entry<Long, Person>> all = cursor.getAll();
 
         assertEquals(right - left, all.size());
 
+        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
+
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, Person> entry = all.get(i);
 
-            int exp = desc ? right - i - 1 : left + i;
-
-            assertEquals(exp, entry.getKey().intValue());
+            assertTrue(expKeys.remove(entry.getKey()));
 
             assertEquals(new Person(entry.getKey().intValue()), all.get(i).getValue());
         }

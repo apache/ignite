@@ -41,6 +41,8 @@ public class BooleanIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Boolean.compare(key, ((BooleanIndexKey)o).key);
+        boolean okey = (boolean) o.key();
+
+        return Boolean.compare(key, okey);
     }
 }

@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +37,6 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     @Override protected boolean onPageReady(
         boolean loc,
         GridCacheQueryInfo qryInfo,
-        IndexQueryResultMeta metadata,
         Collection<?> data,
         boolean finished, Throwable e) {
         GridCacheQueryFutureAdapter fut = qryInfo.localQueryFuture();
@@ -46,9 +44,9 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         assert fut != null;
 
         if (e != null)
-            fut.onPage(null, null, null, e, true);
+            fut.onPage(null, null, e, true);
         else
-            fut.onPage(null, metadata, data, null, finished);
+            fut.onPage(null, data, null, finished);
 
         return true;
     }
@@ -70,7 +68,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         if (e != null)
             fut.onPage(null, null, null, e, true);
         else
-            fut.onFieldsPage(null, metaData, data, null, finished);
+            fut.onPage(null, metaData, data, null, finished);
 
         return true;
     }

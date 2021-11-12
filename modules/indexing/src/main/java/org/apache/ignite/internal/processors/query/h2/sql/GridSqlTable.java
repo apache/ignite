@@ -19,9 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
 import java.util.List;
-
-import javax.cache.CacheException;
-
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.Parser;
@@ -64,11 +61,11 @@ public class GridSqlTable extends GridSqlElement {
      * @param tblName Table name.
      * @param tbl H2 Table.
      */
-    private GridSqlTable(String schema, String tblName, @Nullable Table tbl) {
+    private GridSqlTable(@Nullable String schema, String tblName, @Nullable Table tbl) {
         super(Collections.<GridSqlAst>emptyList());
 
-        if (schema == null || tblName == null)
-            throw new CacheException("Table not found.");
+        assert schema != null : "schema";
+        assert tblName != null : "tblName";
 
         this.schema = schema;
         this.tblName = tblName;

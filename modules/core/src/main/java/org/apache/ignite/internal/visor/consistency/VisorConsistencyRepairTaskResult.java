@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class VisorConsistencyTaskResult extends IgniteDataTransferObject {
+public class VisorConsistencyRepairTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 

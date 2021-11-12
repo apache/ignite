@@ -64,7 +64,7 @@ namespace ignite
         {
             pthread_key_create(&attachKey, DestroyAttachKey);
         }
-        
+		
         AttachHelper::~AttachHelper()
         {
             JniContext::Detach();
@@ -449,7 +449,7 @@ namespace ignite
             char* res = getcwd(curDir.GetData(), curDir.GetSize());
 
             if (!res)
-                return std::string();
+				return std::string();
 
             std::string curDirStr(curDir.GetData());
 

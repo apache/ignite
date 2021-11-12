@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -1445,7 +1444,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         protected final PartitionUpdateCounter pCntr;
 
         /** Partition size. */
-        private final LongAdder storageSize = new LongAdder();
+        private final AtomicLong storageSize = new AtomicLong();
 
         /** */
         private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap<>();
@@ -1552,7 +1551,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return size != null ? (int)size.get() : 0;
             }
 
-            return storageSize.sum();
+            return storageSize.get();
         }
 
         /** {@inheritDoc} */
@@ -1569,7 +1568,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long fullSize() {
-            return storageSize.sum();
+            return storageSize.get();
         }
 
         /**
@@ -1581,7 +1580,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                  * TODO https://issues.apache.org/jira/browse/IGNITE-10082
                  * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
                  */
-                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.sum() == 0;
+                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
             }
             catch (IgniteCheckedException e) {
                 U.error(grp.shared().logger(IgniteCacheOffheapManagerImpl.class), "Failed to perform operation.", e);
@@ -1592,7 +1591,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
-            storageSize.add(delta);
+            storageSize.addAndGet(delta);
 
             if (grp.sharedGroup()) {
                 AtomicLong size = cacheSizes.get(cacheId);
@@ -3070,8 +3069,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
             pCntr.init(updCntr, cntrUpdData);
 
-            storageSize.reset();
-            storageSize.add(size);
+            storageSize.set(size);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
