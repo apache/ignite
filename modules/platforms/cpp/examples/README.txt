@@ -6,7 +6,7 @@ Common requirements
  * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
- * Ignite must be built and packaged using Maven. You can use the following Maven command: mvn clean package -DskipTests
+ * Ignite must be built and packaged using Maven. You can use the following Maven command: ./mvnw clean package -DskipTests
  * Apache Ignite C++ must be built according to instructions for your platform. Refer to
    $IGNITE_HOME/platforms/cpp/DEVNOTES.txt for instructions.
  * For odbc-example additionally ODBC Driver Manager must be present and installed on your platform and

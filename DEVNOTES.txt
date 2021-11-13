@@ -4,26 +4,26 @@ Apache Ignite Maven Build Instructions
 
 2) Compile and install:
 
-        mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
 
    or if you have built Apache Ignite.NET on the first step use following command:
    (Note that 'doxygen' should be installed before running this command.)
 
-        mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation (optional):
 
-        mvn initialize -Pjavadoc
+        ./mvnw initialize -Pjavadoc
 
 4) Build Apache Ignite assembly:
 
-        mvn initialize -Prelease
+        ./mvnw initialize -Prelease
 
    Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
 
 5) Build Apache Ignite slim edition assembly:
 
-        mvn initialize -Prelease -Dignite.edition=apache-ignite-slim
+        ./mvnw initialize -Prelease -Dignite.edition=apache-ignite-slim
 
    Look for apache-ignite-slim-<version>-bin.zip in ./target/bin directory.
 
@@ -34,20 +34,20 @@ Apache Ignite with LGPL Maven Build Instructions
 
 2) Compile and install:
 
-        mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests
 
    or if you have built Apache Ignite.NET on the first step use following command:
    (Note that 'doxygen' should be installed before running this command.)
 
-        mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation with LGPL (optional):
 
-        mvn initialize -Pjavadoc,lgpl
+        ./mvnw initialize -Pjavadoc,lgpl
 
 4) Build Apache Ignite assembly with LGPL dependencies:
 
-        mvn initialize -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl
+        ./mvnw initialize -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl
 
    Look for apache-ignite-lgpl-<version>-bin.zip in ./target/bin directory.
 
@@ -133,18 +133,18 @@ Ignite Release Instructions
 
    3.1) Deploy Ignite to maven repository, prepares sources and binaries.
 
-                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
+                ./mvnw deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
 
    3.2) Javadoc generation:
 
-                mvn initialize -Pjavadoc
+                ./mvnw initialize -Pjavadoc
 
    3.3) Assembly Apache Ignite:
 
-                mvn initialize -Prelease
+                ./mvnw initialize -Prelease
 
    NOTE: Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
-   release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.
+   release candidate number, for example "Apache Ignite 1.0.0-rc7", when `./mvnw deploy` finished.
 
    3.5) Checkout https://dist.apache.org/repos/dist/dev/ignite svn. Create release candidate folder with name
         equals to release version with "-rc*" ending, for example "1.0.0-rc7", at svn root.
@@ -167,7 +167,7 @@ JCache TCK compliance
 ======================
 To test compliance with JCache TCK use:
 
-        mvn test -P-release,jcache-tck -pl :ignite-core -am
+        ./mvnw test -P-release,jcache-tck -pl :ignite-core -am
 
 
 Ignite Mesos Maven Build Instructions
@@ -192,7 +192,7 @@ Run tests
 =========
 To run tests locally use:
 
-        mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
+        ./mvnw clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
 
 For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
 
@@ -200,7 +200,7 @@ Test suites
 =========
 All unit tests must be included in any test suite. Travis runs a check for that. To check it locally run for the root project:
 
-        mvn test -Pcheck-test-suites
+        ./mvnw test -Pcheck-test-suites
 
 If you want to check a single module only:
 
@@ -208,17 +208,17 @@ If you want to check a single module only:
 
 2) Install ignite-tools with command:
 
-    mvn install -Pcheck-test-suites
+    ./mvnw install -Pcheck-test-suites
 
 3) Run tests in the module:
 
-    mvn test
+    ./mvnw test
 
 Apache RAT Instructions
 =======================
 To check license headers use:
 
-        mvn clean validate -Pcheck-licenses
+        ./mvnw clean validate -Pcheck-licenses
 
 For more information (e.g. exclude list) see "check-licenses" profile in "parent/pom.xml".
 

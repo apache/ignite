@@ -164,7 +164,7 @@ CONFIGS="-b 1 -sm PRIMARY_SYNC -dn PutBenchmark`IgniteNode"
 
 == Building From Sources
 
-Run `mvn clean package -Pyardstick -pl modules/yardstick -am -DskipTests` in the Apache Ignite root directory.
+Run `./mvnw clean package -Pyardstick -pl modules/yardstick -am -DskipTests` in the Apache Ignite root directory.
 
 This command will compile the project and also unpack the scripts from `yardstick-resources.zip` file to `modules/yardstick/target/assembly/bin` directory.
 
