@@ -272,16 +272,16 @@ public class SnapshotRestoreProcess {
                 cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
-                SnapshotMetadata meta = F.first(entry.getValue());
-
-                assert meta != null : entry.getKey().id();
-
-                if (snpBltNodes == null)
-                    snpBltNodes = new HashSet<>(meta.baselineNodes());
-
                 dataNodes.add(entry.getKey().id());
 
-                reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+                for (SnapshotMetadata meta : entry.getValue()) {
+                    assert meta != null : entry.getKey().id();
+
+                    if (snpBltNodes == null)
+                        snpBltNodes = new HashSet<>(meta.baselineNodes());
+
+                    reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+                }
             }
 
             if (snpBltNodes == null) {

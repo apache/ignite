@@ -23,8 +23,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +38,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -42,11 +46,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -68,6 +74,16 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
     /** */
     private static final String SECOND_CLUSTER_PREFIX = "two_";
+
+    /** */
+    private static final String CACHE_WITH_NODE_FILTER = "cacheWithFilter";
+
+    /** Node filter filter test restoring on some nodes only. */
+    private static final IgnitePredicate<ClusterNode> ZERO_SUFFIX_NODE_FILTER = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode node) {
+            return node.consistentId().toString().endsWith("0");
+        }
+    };
 
     /** {@code true} if snapshot parts has been initialized on test-class startup. */
     private static boolean inited;
@@ -104,8 +120,14 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             CacheConfiguration<Integer, Object> cacheCfg2 =
                 txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
 
+            CacheConfiguration<Integer, Object> cacheCfg3 =
+                txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE_WITH_NODE_FILTER))
+                    .setBackups(1)
+                    .setAffinity(new RendezvousAffinityFunction(false, 16))
+                    .setNodeFilter(ZERO_SUFFIX_NODE_FILTER);
+
             IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, 6, CACHE_KEYS_RANGE, valBuilder,
-                dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
+                dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2, cacheCfg3);
 
             ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -145,6 +167,9 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         grid(0).cache(DEFAULT_CACHE_NAME).destroy();
 
+        for (Ignite g : G.allGrids())
+            TestRecordingCommunicationSpi.spi(g).record(SnapshotFilesRequestMessage.class);
+
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
@@ -155,6 +180,37 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         assertCacheKeys(scc.cache(CACHE2), CACHE_KEYS_RANGE);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
+
+        List<Object> msgs = new ArrayList<>();
+
+        for (Ignite g : G.allGrids())
+            msgs.addAll(TestRecordingCommunicationSpi.spi(g).recordedMessages(true));
+
+        assertPartitionsDuplicates(msgs);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRestoreNoRebalance() throws Exception {
+        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
+        scc.cluster().state(ClusterState.ACTIVE);
+
+        copyAndShuffle(snpParts, G.allGrids());
+
+        grid(0).cache(DEFAULT_CACHE_NAME).destroy();
+
+        for (Ignite g : G.allGrids())
+            TestRecordingCommunicationSpi.spi(g).record(GridDhtPartitionDemandMessage.class);
+
+        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE_WITH_NODE_FILTER)).get(TIMEOUT);
+
+        awaitPartitionMapExchange(true, true, null, true);
+
+        assertCacheKeys(scc.cache(CACHE_WITH_NODE_FILTER), CACHE_KEYS_RANGE);
+        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
+
+        for (Ignite g : G.allGrids())
+            assertTrue(TestRecordingCommunicationSpi.spi(g).recordedMessages(true).isEmpty());
     }
 
     /** @throws Exception If failed. */
@@ -387,5 +443,22 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    private static void assertPartitionsDuplicates(List<Object> msgs) {
+        List<GroupPartitionId> all = new ArrayList<>();
+
+        for (Object o : msgs) {
+            SnapshotFilesRequestMessage msg0 = (SnapshotFilesRequestMessage)o;
+            Map<Integer, Set<Integer>> parts = msg0.parts();
+
+            for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
+                for (Integer partId : e.getValue())
+                    all.add(new GroupPartitionId(e.getKey(), partId));
+            }
+        }
+
+        assertEquals(all.size(), new HashSet<>(all).size());
     }
 }
