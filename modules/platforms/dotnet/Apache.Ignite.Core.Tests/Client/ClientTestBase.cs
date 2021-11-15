@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client
         protected const string RequestNamePrefixStreamer = "streamer.ClientDataStreamer";
 
         /** Grid count. */
-        private readonly int _gridCount = 1;
+        protected readonly int _gridCount = 1;
 
         /** SSL. */
         private readonly bool _enableSsl;
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
-        public void FixtureTearDown()
+        public virtual void FixtureTearDown()
         {
             Ignition.StopAll(true);
             Client.Dispose();

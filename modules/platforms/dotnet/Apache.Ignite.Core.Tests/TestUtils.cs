@@ -41,7 +41,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged.Jni;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
     using NUnit.Framework.Interfaces;
@@ -105,6 +107,9 @@ namespace Apache.Ignite.Core.Tests
         /** */
         public static bool UseTypedArray = DfltUseTypedArray;
 
+        /** Decimal task name. */
+        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseTypedArrayTask";
+
         /** */
         [ThreadStatic]
         private static Random _random;
@@ -141,9 +146,6 @@ namespace Apache.Ignite.Core.Tests
                 foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
             }
-
-            if (UseTypedArray)
-                ops.Add("-DIGNITE_USE_TYPED_ARRAYS=true");
 
             return ops;
         }
@@ -451,19 +453,18 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="timeout">Timeout, in milliseconds.</param>
         public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
         {
-            var handleRegistry = ((Ignite)grid).HandleRegistry;
+            Func<IEnumerable<KeyValuePair<long, object>>> getItems = () =>
+                ((Ignite)grid).HandleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder));
 
-            expectedCount++;  // Skip default lifecycle bean
-
-            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
+            if (WaitForCondition(() => getItems().Count() == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
+            var items = getItems().ToList();
 
             if (items.Any())
             {
                 Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'",
-                    grid.Name, expectedCount, handleRegistry.Count,
+                    grid.Name, expectedCount, items.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
             }
         }
@@ -608,7 +609,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null, bool noLogger = false)
         {
-            return new IgniteConfiguration
+            var cfg = new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
@@ -630,6 +631,30 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = WorkDir,
                 Logger = noLogger ? null : new TestContextLogger()
             };
+
+            // Can't use JVM options here, because JVM instance are cached inside IgniteManager#CreateJvm
+            // and can't be changed after initialization.
+            if (UseTypedArray)
+                cfg.LifecycleHandlers = new[] { new SetUseTypedArray() };
+
+            return cfg;
+        }
+
+        private class SetUseTypedArray : ILifecycleHandler
+        {
+            [InstanceResource]
+            private readonly IIgnite _ignite = null;
+
+            public void OnLifecycleEvent(LifecycleEventType evt)
+            {
+                if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)
+                    return;
+
+                _ignite.GetCompute().ExecuteJavaTask<object>(
+                    SetUseTypedArrayTask,
+                    evt == LifecycleEventType.AfterNodeStart ? !DfltUseTypedArray : DfltUseTypedArray
+                );
+            }
         }
 
         /// <summary>
@@ -740,3 +765,4 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 }
+

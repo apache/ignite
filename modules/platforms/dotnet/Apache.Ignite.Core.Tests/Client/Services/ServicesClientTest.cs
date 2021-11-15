@@ -305,9 +305,17 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1, svc.Foo(default(uint)));
             Assert.AreEqual(4, svc.Foo(default(ushort)));
 
-            // Array types are not distinguished.
-            // TODO: fixme IGNITE-14299.
-            Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
+            if (!TestUtils.UseTypedArray)
+            {
+                // Array types are not distinguished.
+                Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
+            }
+            else
+            {
+                Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
+                Assert.AreEqual(9, svc.Foo(new object[] {new Person(0)}));
+                Assert.AreEqual(10, svc.Foo(new Person[] {new Person(0)}));
+            }
         }
 
         /// <summary>
@@ -584,6 +592,30 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         private static IServices ServerServices
         {
             get { return Ignition.GetIgnite().GetServices(); }
+        }
+    }
+
+    /// <summary>
+    /// Tests for <see cref="IServicesClient"/>.
+    /// </summary>
+    public class ServicesClientTestTypedArrays : ServicesClientTest
+    {
+        /// <summary>Setup UseTypedArray flag value.</summary>
+        [TestFixtureSetUp]
+        public override void FixtureSetUp()
+        {
+            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+            base.FixtureSetUp();
+        }
+
+        /// <summary>Executes after all tests.</summary>
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
+        {
+            base.FixtureTearDown();
+
+            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
         }
     }
 }
