@@ -243,10 +243,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestNestedGenericsArrays()
         {
             TypeNameParser.Parse(
-                @"Apache.Ignite.Core.Tests.Binary.TypeResolverTest+AsyncGenericArraysTestClass+<Apache-Ignite-Core-Tests-Binary-TypeResolverTest-ITestConverter<System-String\,System-Byte\[\]>-Convert>d__0");
+                @"Apache.Ignite.Test+Foo+<Apache-Ignite-ITestConverter<System-String\,System-Byte\[\]>-Convert>d__0");
 
             TypeNameParser.Parse(
-                @"MassTransit.Initializers.PropertyConverters.MessageDataPropertyConverter+<MassTransit-Initializers-IPropertyConverter<MassTransit-MessageData<System-Byte\[\]>\,MassTransit-MessageData<System-String>>-Convert>d__4`1");
+                @"Foo.Bar+<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1");
         }
 
         /// <summary>
