@@ -32,27 +32,27 @@ import org.apache.ignite.services.ServiceContext;
  * It is guaranteed that context will be injected before calling the {@link Service#init()} method.
  * <p>
  * Here is how injection would typically happen:
- * <pre>{@code
+ * <pre name="code" class="java">
  * public class MyServiceImpl implements MyService {
  *      ...
- *      @ServiceContextResource
+ *      &#64;ServiceContextResource
  *      private ServiceContext ctx;
  *      ...
- *  }
- * }</pre>
+ * }
+ * </pre>
  * or attach the same annotation to the method:
- * <pre>{@code
+ * <pre name="code" class="java">
  * public class MyServiceImpl implements MyService {
  *     ...
  *     private ServiceContext ctx;
  *     ...
- *     @ServiceContextResource
+ *     &#64;ServiceContextResource
  *     public void setServiceContext(ServiceContext ctx) {
  *          this.ctx = ctx;
  *     }
  *     ...
  * }
- * }</pre>
+ * </pre>
  *
  * @see Service
  * @see ServiceContext
