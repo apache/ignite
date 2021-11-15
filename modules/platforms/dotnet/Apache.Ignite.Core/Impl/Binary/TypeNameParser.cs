@@ -418,7 +418,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_pos > 0 && _typeName[_pos - 1] == escape)
                 {
                     // Ignore escaped characters in compiler-generated type names.
-                    return escape;
+                    // Return any non-separator character to continue parsing.
+                    return default;
                 }
 
                 return _typeName[_pos];
