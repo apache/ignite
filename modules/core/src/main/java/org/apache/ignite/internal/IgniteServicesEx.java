@@ -21,14 +21,15 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.services.ServiceCallContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended interface that provides additional internal methods for managing services.
  */
 public interface IgniteServicesEx extends IgniteServices {
     /**
-     * Gets a remote handle on the service with timeout. If service is available locally,
-     * then local instance is returned and timeout ignored, otherwise, a remote proxy is dynamically
+     * Gets a remote handle on the service. If service is available locally and no caller context provider is
+     * specified, then a local instance is returned and the timeout is ignored, otherwise, a proxy is dynamically
      * created and provided for the specified service.
      *
      * @param name Service name.
@@ -39,14 +40,15 @@ public interface IgniteServicesEx extends IgniteServices {
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
      * @param <T> Service type.
-     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @return Either proxy over remote service or local service if it is deployed locally and no caller context
+     *         provider is specified.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(
         String name,
         Class<? super T> svcItf,
         boolean sticky,
-        Supplier<ServiceCallContext> callCtxProvider,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
         long timeout
     ) throws IgniteException;
 }

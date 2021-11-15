@@ -390,6 +390,16 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         final String name,
         final Class<? super T> svcItf,
         final boolean sticky,
+        @Nullable ServiceCallContext callCtx
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, callCtx, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
         @Nullable ServiceCallContext callCtx,
         final long timeout
     ) throws IgniteException {

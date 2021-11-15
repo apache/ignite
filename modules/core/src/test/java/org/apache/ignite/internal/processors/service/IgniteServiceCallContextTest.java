@@ -189,7 +189,7 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
             .put(BIN_ATTR_NAME, binVal)
             .build();
 
-        return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, callCtx, 0);
+        return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, callCtx);
     }
 
     /** */
