@@ -294,7 +294,6 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), TransmissionCancelledException.class,
             "Future cancelled prior to the all requested partitions processed");
-        futs[0].get(TIMEOUT);
     }
 
     /**

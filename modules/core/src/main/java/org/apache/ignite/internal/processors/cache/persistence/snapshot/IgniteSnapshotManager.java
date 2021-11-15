@@ -2419,22 +2419,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          */
         public synchronized void submit(@Nullable IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
             RemoteSnapshotFilesRecevier curr = active;
+            RemoteSnapshotFilesRecevier next0 = next == null ? queue.poll() : next;
 
             if (curr == null || curr.isDone()) {
-                if (next == null)
+                if (next0 == null)
                     return;
 
-                next.listen(f -> submit(queue.poll()));
+                next0.listen(f -> submit(null));
 
-                active = next;
+                active = next0;
 
                 if (stopping)
-                    next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+                    next0.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
                 else
-                    next.init();
+                    next0.init();
             }
-            else if (next != null)
-                queue.offer(next);
+            else if (next0 != null)
+                queue.offer(next0);
         }
 
         /** Stopping handler. */
