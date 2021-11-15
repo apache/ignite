@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFuncti
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -186,7 +186,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteIndexScan rel, RelMetadataQuery mq) {
         return FragmentMapping.create(rel.sourceId(),
-                rel.getTable().unwrap(IgniteTable.class).colocationGroup(Commons.context(rel)));
+                rel.getTable().unwrap(InternalIgniteTable.class).colocationGroup(Commons.context(rel)));
     }
 
     /**
@@ -194,7 +194,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteTableScan rel, RelMetadataQuery mq) {
         return FragmentMapping.create(rel.sourceId(),
-                rel.getTable().unwrap(IgniteTable.class).colocationGroup(Commons.context(rel)));
+                rel.getTable().unwrap(InternalIgniteTable.class).colocationGroup(Commons.context(rel)));
     }
 
     /**

@@ -29,7 +29,7 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 public class IgniteSchema extends AbstractSchema {
     private final String schemaName;
 
-    private final Map<String, IgniteTable> tblMap = new ConcurrentHashMap<>();
+    private final Map<String, InternalIgniteTable> tblMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a Schema.
@@ -61,7 +61,7 @@ public class IgniteSchema extends AbstractSchema {
      * @param tblName Table name.
      * @param tbl Table.
      */
-    public void addTable(String tblName, IgniteTable tbl) {
+    public void addTable(String tblName, InternalIgniteTable tbl) {
         tblMap.put(tblName, tbl);
     }
 

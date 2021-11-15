@@ -27,7 +27,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -50,7 +50,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             @Nullable RexNode cond,
             @Nullable ImmutableBitSet requiredColumns
     ) {
-        IgniteTable tbl = table.unwrap(IgniteTable.class);
+        InternalIgniteTable tbl = table.unwrap(InternalIgniteTable.class);
         IgniteTypeFactory typeFactory = Commons.typeFactory(cluster);
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
         RelCollation collation = tbl.getIndex(idxName).collation();

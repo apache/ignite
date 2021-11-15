@@ -43,7 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /**
  * Ignite table implementation.
  */
-public class IgniteTableImpl extends AbstractTable implements IgniteTable {
+public class IgniteTableImpl extends AbstractTable implements InternalIgniteTable {
     private final TableDescriptor desc;
 
     private final Statistic statistic;

@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -531,7 +531,7 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         rel.getInputs().forEach(this::clearTraits);
     }
 
-    abstract static class TestTable implements IgniteTable {
+    abstract static class TestTable implements InternalIgniteTable {
         private final String name;
 
         private final RelProtoDataType protoType;

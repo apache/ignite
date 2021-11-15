@@ -28,13 +28,13 @@ public class IgniteIndex {
     private final String idxName;
 
     //    private final GridIndex<H2Row> idx;
-    private final IgniteTable tbl;
+    private final InternalIgniteTable tbl;
 
     /**
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public IgniteIndex(RelCollation collation, String name, IgniteTable tbl) {
+    public IgniteIndex(RelCollation collation, String name, InternalIgniteTable tbl) {
         this.collation = collation;
         idxName = name;
         this.tbl = tbl;
@@ -48,7 +48,7 @@ public class IgniteIndex {
         return idxName;
     }
 
-    public IgniteTable table() {
+    public InternalIgniteTable table() {
         return tbl;
     }
 }
