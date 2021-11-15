@@ -19,6 +19,9 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
 #if !NETCOREAPP
     using System.Linq;
     using System.Reflection;
@@ -171,6 +174,17 @@ namespace Apache.Ignite.Core.Tests.Binary
                 resolver.ResolveType("TestGenericBinarizable`1[[TypeResolverTest]][]", nameMapper: mapper));
         }
 
+        [Test]
+        public void TestAsyncGenericArrays()
+        {
+            var resolver = new TypeResolver();
+            var mapper = BinaryBasicNameMapper.SimpleNameInstance;
+
+            Assert.AreEqual(
+                typeof(AsyncGenericArraysTestClass),
+                resolver.ResolveType("AsyncGenericArraysTestClass", nameMapper: mapper));
+        }
+
 #if !NETCOREAPP
         /// <summary>
         /// Tests loading a type from referenced assembly that is not yet loaded.
@@ -210,5 +224,74 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsNotNull(typeof(TestDll.TestClass));
         }
 #endif
+
+        private interface ITestConverter<T, TRes>
+        {
+            Task<List<TRes>> Convert(List<T> data);
+        }
+
+        private class AsyncGenericArraysTestClass :
+            ITestConverter<string, byte[]>,
+            ITestConverter<string, int>,
+            ITestConverter<int, int>,
+            ITestConverter<int, long>,
+            ITestConverter<int, byte>,
+            ITestConverter<byte, short>,
+            ITestConverter<byte, int>,
+            ITestConverter<byte, long>,
+            ITestConverter<byte, string>
+        {
+            async Task<List<byte[]>> ITestConverter<string, byte[]>.Convert(List<string> data)
+            {
+                if (data.Count == 0)
+                {
+                    return null;
+                }
+
+                await Task.Delay(1);
+
+                return data.Select(x => Encoding.UTF8.GetBytes(x)).ToList();
+            }
+
+            Task<List<int>> ITestConverter<int, int>.Convert(List<int> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<long>> ITestConverter<int, long>.Convert(List<int> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<byte>> ITestConverter<int, byte>.Convert(List<int> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<short>> ITestConverter<byte, short>.Convert(List<byte> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<int>> ITestConverter<byte, int>.Convert(List<byte> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<long>> ITestConverter<byte, long>.Convert(List<byte> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<string>> ITestConverter<byte, string>.Convert(List<byte> data)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task<List<int>> ITestConverter<string, int>.Convert(List<string> data)
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }
