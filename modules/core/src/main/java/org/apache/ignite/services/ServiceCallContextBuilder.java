@@ -40,12 +40,9 @@ public class ServiceCallContextBuilder {
      * @return This for chaining.
      */
     public ServiceCallContextBuilder put(String name, String value) {
-        A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        attrs.put(name, value.getBytes(StandardCharsets.UTF_8));
-
-        return this;
+        return put(name, value.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
