@@ -60,7 +60,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -155,7 +154,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_TYPED_ARRAYS;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
@@ -190,6 +188,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected void beforeTestsStarted() throws Exception {
         String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
         System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
+        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
 
         super.beforeTestsStarted();
 
@@ -199,16 +198,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
+        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
 
         super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
-
-        BinaryArray.USE_TYPED_ARRAYS = useTypedArrays;
-
         super.beforeTest();
 
         grid(0).cluster().state(ACTIVE);
@@ -227,10 +223,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         grid(0).cluster().state(ACTIVE);
 
         super.afterTest();
-
-        System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
-
-        BinaryArray.USE_TYPED_ARRAYS = DFLT_IGNITE_USE_TYPED_ARRAYS;
     }
 
     /**

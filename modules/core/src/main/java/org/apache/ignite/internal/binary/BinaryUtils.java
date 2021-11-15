@@ -2006,7 +2006,7 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                if (BinaryArray.USE_TYPED_ARRAYS)
+                if (BinaryArray.useTypedArrays())
                     return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize);
                 else
                     return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
