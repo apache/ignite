@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
  * IgniteAggregate.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
+public abstract class IgniteAggregate extends Aggregate implements InternalIgniteRel {
     /** {@inheritDoc} */
     protected IgniteAggregate(
             RelOptCluster cluster,

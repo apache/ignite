@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
-import static org.apache.ignite.internal.processors.query.calcite.exec.PlannerHelper.optimize;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
+import static org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper.optimize;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.util.CollectionUtils.first;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
@@ -392,9 +392,9 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         ValidationResult validated = planner.validateAndGetTypeMetadata(sqlNode);
 
         sqlNode = validated.sqlNode();
-
-        IgniteRel igniteRel = optimize(sqlNode, planner, LOG);
-
+        
+        IgniteRel igniteRel = optimize(sqlNode, planner);
+        
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
@@ -448,8 +448,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         sqlNode = planner.validate(sqlNode);
 
         // Convert to Relational operators graph
-        IgniteRel igniteRel = optimize(sqlNode, planner, LOG);
-
+        IgniteRel igniteRel = optimize(sqlNode, planner);
+        
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
@@ -475,8 +475,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         sql = planner.validate(sql);
 
         // Convert to Relational operators graph
-        IgniteRel igniteRel = optimize(sql, planner, LOG);
-
+        IgniteRel igniteRel = optimize(sql, planner);
+        
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
         return new ExplainPlan(plan, explainFieldsMetadata(ctx));

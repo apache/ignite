@@ -99,7 +99,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.InternalIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -234,7 +234,7 @@ class RelJson {
     }
 
     String classToTypeName(Class<? extends RelNode> cls) {
-        if (IgniteRel.class.isAssignableFrom(cls)) {
+        if (InternalIgniteRel.class.isAssignableFrom(cls)) {
             return cls.getSimpleName();
         }
 

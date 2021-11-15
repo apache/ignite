@@ -33,7 +33,7 @@ import org.apache.calcite.util.Pair;
 /**
  * Relational expression that receives elements from remote {@link IgniteSender}.
  */
-public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
+public class IgniteReceiver extends AbstractRelNode implements InternalIgniteRel {
     private final long exchangeId;
 
     private final long sourceFragmentId;

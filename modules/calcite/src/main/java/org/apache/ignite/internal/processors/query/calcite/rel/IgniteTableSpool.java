@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteTableSpool extends AbstractIgniteSpool implements IgniteRel {
+public class IgniteTableSpool extends AbstractIgniteSpool implements InternalIgniteRel {
     /**
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859

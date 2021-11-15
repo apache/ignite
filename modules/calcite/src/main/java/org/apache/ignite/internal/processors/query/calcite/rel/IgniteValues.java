@@ -33,7 +33,7 @@ import org.apache.calcite.rex.RexLiteral;
  * IgniteValues.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public class IgniteValues extends Values implements IgniteRel {
+public class IgniteValues extends Values implements InternalIgniteRel {
     /**
      * Creates a new Values.
      *

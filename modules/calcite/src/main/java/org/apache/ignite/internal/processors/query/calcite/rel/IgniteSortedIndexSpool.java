@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 /**
  * Relational operator that returns the sorted contents of a table and allow to lookup rows by specified bounds.
  */
-public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements IgniteRel {
+public class IgniteSortedIndexSpool extends AbstractIgniteSpool implements InternalIgniteRel {
     private final RelCollation collation;
 
     /** Index condition. */

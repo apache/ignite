@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 /**
  * Ignite sort operator.
  */
-public class IgniteSort extends Sort implements IgniteRel {
+public class IgniteSort extends Sort implements InternalIgniteRel {
     /**
      * Constructor.
      *

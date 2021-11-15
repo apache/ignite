@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 /**
  * Relational expression that iterates over its input and sends elements to remote {@link IgniteReceiver}.
  */
-public class IgniteSender extends SingleRel implements IgniteRel {
+public class IgniteSender extends SingleRel implements InternalIgniteRel {
     private final long exchangeId;
 
     private final long targetFragmentId;

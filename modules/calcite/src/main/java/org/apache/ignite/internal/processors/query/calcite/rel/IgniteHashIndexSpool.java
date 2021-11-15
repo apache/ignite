@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 /**
  * Relational operator that returns the hashed contents of a table and allow to lookup rows by specified keys.
  */
-public class IgniteHashIndexSpool extends AbstractIgniteSpool implements IgniteRel {
+public class IgniteHashIndexSpool extends AbstractIgniteSpool implements InternalIgniteRel {
     /** Search row. */
     private final List<RexNode> searchRow;
 

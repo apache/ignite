@@ -25,14 +25,14 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.InternalIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * TraitsAwareIgniteRel interface.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public interface TraitsAwareIgniteRel extends IgniteRel {
+public interface TraitsAwareIgniteRel extends InternalIgniteRel {
     /** {@inheritDoc} */
     @Override
     public default List<RelNode> derive(List<List<RelTraitSet>> inTraits) {

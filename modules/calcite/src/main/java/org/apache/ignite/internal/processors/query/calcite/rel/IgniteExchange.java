@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 /**
  * Relational expression that imposes a particular distribution on its input without otherwise changing its content.
  */
-public class IgniteExchange extends Exchange implements IgniteRel {
+public class IgniteExchange extends Exchange implements InternalIgniteRel {
     /**
      * Creates an Exchange.
      *
