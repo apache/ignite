@@ -633,7 +633,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
         String name,
         Class<? super T> svcItf,
         boolean sticky,
-        @Nullable ServiceCallContext callCtx,
+        ServiceCallContext callCtx,
         long timeout
     ) throws IgniteException;
 

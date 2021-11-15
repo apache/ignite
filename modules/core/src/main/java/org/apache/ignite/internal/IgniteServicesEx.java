@@ -47,7 +47,7 @@ public interface IgniteServicesEx extends IgniteServices {
         String name,
         Class<? super T> svcItf,
         boolean sticky,
-        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        Supplier<ServiceCallContext> callCtxProvider,
         long timeout
     ) throws IgniteException;
 }
