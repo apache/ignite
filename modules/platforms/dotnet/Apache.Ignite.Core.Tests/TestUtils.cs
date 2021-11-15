@@ -100,6 +100,12 @@ namespace Apache.Ignite.Core.Tests
         public static bool JvmDebug = true;
 
         /** */
+        public static readonly bool DfltUseTypedArray = false;
+
+        /** */
+        public static bool UseTypedArray = DfltUseTypedArray;
+
+        /** */
         [ThreadStatic]
         private static Random _random;
 
@@ -135,6 +141,9 @@ namespace Apache.Ignite.Core.Tests
                 foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
             }
+
+            if (UseTypedArray)
+                ops.Add("-DIGNITE_USE_TYPED_ARRAYS=true");
 
             return ops;
         }

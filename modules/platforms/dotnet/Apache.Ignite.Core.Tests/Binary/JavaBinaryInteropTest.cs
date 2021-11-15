@@ -105,6 +105,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Custom type arrays.
             // Array type is lost, because in binary mode on Java side we receive the value as Object[].
+            // TODO: add test here.
             CheckValueCaching(new[] {new Foo {X = -1}, new Foo {X = 1}}, false);
             CheckValueCaching(new[] {new Bar {X = -10}, new Bar {X = 10}}, false);
         }

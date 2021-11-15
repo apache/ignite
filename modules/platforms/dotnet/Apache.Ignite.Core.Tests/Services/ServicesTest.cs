@@ -1228,7 +1228,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var bins = svc.testBinarizableArray(arr);
 
-            Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
+            if (TestUtils.UseTypedArray)
+                Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
+
             Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
 
             Assert.IsNull(svc.testBinarizableArray(null));

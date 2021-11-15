@@ -306,6 +306,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(4, svc.Foo(default(ushort)));
 
             // Array types are not distinguished.
+            // TODO: fixme IGNITE-14299.
             Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
         }
 
