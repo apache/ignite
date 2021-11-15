@@ -147,7 +147,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         awaitPartitionMapExchange();
 
-        // On one node the index will be copied right from snapshot, on the other it will be rebuilt.
         for (Ignite g : G.allGrids())
             ofNullable(indexRebuildFuture((IgniteEx)g, CU.cacheId(DEFAULT_CACHE_NAME))).orElse(new GridFinishedFuture<>()).get(TIMEOUT);
 

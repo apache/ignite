@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -43,11 +42,8 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -64,8 +60,6 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FI
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
 public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRestoreBaseTest {
@@ -102,11 +96,6 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
     /** Cache value builder. */
     private final Function<Integer, Object> valBuilder = String::valueOf;
-
-    /** {@inheritDoc} */
-    @Override protected Function<Integer, Object> valueBuilder() {
-        return valBuilder;
-    }
 
     /** @throws Exception If fails. */
     @Before
@@ -245,83 +234,6 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             "Test exception. Uploading partition file failed");
         assertNull(scc.cache(DEFAULT_CACHE_NAME));
         ensureCacheAbsent(dfltCacheCfg);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testSnapshotCachesStoppedIfNodeCrashed() throws Exception {
-        CacheConfiguration<?, ?> ccfg0 = dfltCacheCfg;
-        dfltCacheCfg = null;
-
-        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 3);
-        scc.cluster().state(ClusterState.ACTIVE);
-
-        copyAndShuffle(snpParts, G.allGrids());
-
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(2));
-
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, RESTORE_CACHE_GROUP_SNAPSHOT_START, DEFAULT_CACHE_NAME);
-        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(2, true));
-
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> fut.get(TIMEOUT),
-            ClusterTopologyCheckedException.class,
-            "Required node has left the cluster"
-        );
-
-        stopFut.get(TIMEOUT);
-
-        awaitPartitionMapExchange();
-        ensureCacheAbsent(ccfg0);
-
-        Ignite g3 = startDedicatedGrid(SECOND_CLUSTER_PREFIX, 2);
-
-        awaitPartitionMapExchange();
-        assertNull(g3.cache(DEFAULT_CACHE_NAME));
-        ensureCacheAbsent(ccfg0);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testSnapshotRestoreDuringForceReassignment() throws Exception {
-        String locCacheName = "IgniteTestCache";
-        dfltCacheCfg = null;
-
-        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, 2);
-        scc.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Object> cache = scc.getOrCreateCache(new CacheConfiguration<Integer, Object>(locCacheName)
-            .setAffinity(new RendezvousAffinityFunction(false, 8)).setBackups(2));
-
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            cache.put(i, valBuilder.apply(i));
-
-        forceCheckpoint();
-        awaitPartitionMapExchange();
-
-        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
-        spi0.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
-
-        startDedicatedGrid(SECOND_CLUSTER_PREFIX, 2);
-
-        resetBaselineTopology();
-        spi0.waitForBlocked();
-
-        copyAndShuffle(snpParts, G.allGrids());
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi0, RESTORE_CACHE_GROUP_SNAPSHOT_START, DEFAULT_CACHE_NAME);
-
-        IgniteFuture<?> forceRebFut = cache.rebalance();
-
-        spi0.stopBlock();
-
-        fut.get(TIMEOUT);
-        forceRebFut.get(TIMEOUT);
-
-        awaitPartitionMapExchange(true, true, null);
-
-        assertCacheKeys(scc.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-        assertCacheKeys(scc.cache(locCacheName), CACHE_KEYS_RANGE);
     }
 
     /**
