@@ -183,6 +183,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(
                 typeof(AsyncGenericArraysTestClass),
                 resolver.ResolveType("AsyncGenericArraysTestClass", nameMapper: mapper));
+
+            Assert.IsNull(resolver.ResolveType("BadType"));
+
+            var types = typeof(AsyncGenericArraysTestClass).Assembly.GetTypes()
+                .Where(t => t.FullName.Contains("AsyncGenericArraysTestClass+"))
+                .ToList();
+
+            Assert.AreEqual(1, types.Count);
         }
 
 #if !NETCOREAPP

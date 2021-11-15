@@ -166,6 +166,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return null;
             }
 
+            // TODO: Exclude generic types from search.
             return assemblies.Select(a => FindType(a, typeName, nameMapper)).FirstOrDefault(x => x != null);
         }
 
@@ -287,6 +288,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             try
             {
+                // TODO: Exclude compiler-generated types.
                 return asm.GetTypes();
             }
             catch (ReflectionTypeLoadException ex)
