@@ -24,11 +24,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
-import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_TYPED_ARRAYS;
 
 /** Base test to check both mode for {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
 @RunWith(Parameterized.class)
-public class AbstractTypedArrayTest extends GridCommonAbstractTest {
+public abstract class AbstractTypedArrayTest extends GridCommonAbstractTest {
     /** Generates values for the {@link #useTypedArrays} parameter. */
     @Parameterized.Parameters(name = "useTypedArrays = {0}")
     public static Iterable<Object[]> useTypedArrays() {
@@ -42,8 +41,7 @@ public class AbstractTypedArrayTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
-
-        BinaryArray.USE_TYPED_ARRAYS = useTypedArrays;
+        BinaryArray.initUseTypedArrays();
 
         super.beforeTest();
     }
@@ -53,7 +51,6 @@ public class AbstractTypedArrayTest extends GridCommonAbstractTest {
         super.afterTest();
 
         System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
-
-        BinaryArray.USE_TYPED_ARRAYS = DFLT_IGNITE_USE_TYPED_ARRAYS;
+        BinaryArray.initUseTypedArrays();
     }
 }

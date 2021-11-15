@@ -618,7 +618,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws NoSuchMethodException On error.
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
-            if (BinaryArray.USE_TYPED_ARRAYS)
+            if (BinaryArray.useTypedArrays())
                 GridServiceProxy.KEEP_BINARY.set(true);
 
             try {
@@ -633,14 +633,14 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                     Method mtd = getMethod(serviceClass, mthdName, args);
 
-                    if (!BinaryArray.USE_TYPED_ARRAYS)
+                    if (!BinaryArray.useTypedArrays())
                         convertArrayArgs(args, mtd);
 
                     return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
                 }
             }
             finally {
-                if (BinaryArray.USE_TYPED_ARRAYS)
+                if (BinaryArray.useTypedArrays())
                     GridServiceProxy.KEEP_BINARY.set(false);
             }
         }

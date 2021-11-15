@@ -148,7 +148,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         IgniteServices services = grp.services();
 
-        if (BinaryArray.USE_TYPED_ARRAYS)
+        if (BinaryArray.useTypedArrays())
             GridServiceProxy.KEEP_BINARY.set(true);
 
         try {
@@ -176,7 +176,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
                 Method method = resolveMethod(ctx, svcCls);
 
-                if (!BinaryArray.USE_TYPED_ARRAYS)
+                if (!BinaryArray.useTypedArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
                 res = proxy.invokeMethod(method, args);
@@ -193,7 +193,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
             throw new IgniteException(e);
         }
         finally {
-            if (BinaryArray.USE_TYPED_ARRAYS)
+            if (BinaryArray.useTypedArrays())
                 GridServiceProxy.KEEP_BINARY.set(false);
         }
     }

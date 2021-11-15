@@ -47,7 +47,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = true;
 
     /** Value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    public static boolean USE_TYPED_ARRAYS =
+    private static boolean USE_TYPED_ARRAYS =
         IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
 
     /** */
@@ -241,5 +241,20 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BinaryArray.class, this);
+    }
+
+    /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */
+    public static boolean useTypedArrays() {
+        return USE_TYPED_ARRAYS;
+    }
+
+    /**
+     * Initialize {@link #USE_TYPED_ARRAYS} value with
+     * {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS} system property value.
+     *
+     * This method invoked using reflection in tests.
+     */
+    public static void initUseTypedArrays() {
+        USE_TYPED_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_TYPED_ARRAYS, DFLT_IGNITE_USE_TYPED_ARRAYS);
     }
 }
