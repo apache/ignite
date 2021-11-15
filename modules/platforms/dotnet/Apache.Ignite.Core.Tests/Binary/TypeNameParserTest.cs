@@ -240,18 +240,17 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         [Test]
-        public void TestNestedGenericsArrays()
+        public void TestCompilerGeneratedTypes()
         {
-            // TODO: Handle escaped characters in type names.
             var res = TypeNameParser.Parse(
                 @"Foo.Bar+<Abc-Def<System-String\,System-Byte\[\]>-Convert>d__0");
 
-            Assert.AreEqual("Foo.Bar", res.GetName());
+            Assert.AreEqual(@"<Abc-Def<System-String\,System-Byte\[\]>-Convert>d__0", res.GetName());
 
             var res2 = TypeNameParser.Parse(
                 @"Foo.Bar+<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1");
 
-            Assert.AreEqual("Foo.Bar", res2.GetName());
+            Assert.AreEqual(@"<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1", res2.GetName());
         }
 
         /// <summary>

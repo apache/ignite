@@ -411,7 +411,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private char Char
         {
-            get { return _typeName[_pos]; }
+            get
+            {
+                const char escape = '\\';
+
+                if (_pos > 0 && _typeName[_pos - 1] == escape)
+                {
+                    // Ignore escaped characters in compiler-generated type names.
+                    return escape;
+                }
+
+                return _typeName[_pos];
+            }
         }
 
         /** <inheritdoc /> */
