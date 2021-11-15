@@ -43,7 +43,6 @@ import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.table.Tuple;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
-import org.msgpack.core.MessageFormat;
 
 /**
  * Common table functionality.

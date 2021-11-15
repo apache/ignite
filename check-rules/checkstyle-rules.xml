@@ -63,6 +63,9 @@
   </module>
 
   <module name="TreeWalker">
+    <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
+    <module name="UnusedImports"/>
+
     <module name="OuterTypeFilename"/>
     <module name="IllegalTokenText">
       <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
