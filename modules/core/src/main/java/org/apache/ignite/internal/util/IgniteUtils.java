@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.LoggerMessageHelper;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -518,10 +519,10 @@ public class IgniteUtils {
      * @param msg Message to print with the stack.
      * @deprecated Calls to this method should never be committed to master.
      */
-    public static void dumpStack(IgniteLogger log, String msg) {
+    public static void dumpStack(IgniteLogger log, String msg, Object... params) {
         String reason = "Dumping stack.";
-        
-        var err = new Exception(msg);
+    
+        var err = new Exception(LoggerMessageHelper.format(msg, params));
     
         if (log != null) {
             log.error(reason, err);

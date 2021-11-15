@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.configuration.schema.ExtendedTableChange;
 import org.apache.ignite.internal.configuration.schema.ExtendedTableConfiguration;
 import org.apache.ignite.internal.configuration.schema.ExtendedTableView;
+import org.apache.ignite.internal.configuration.schema.SchemaConfiguration;
 import org.apache.ignite.internal.configuration.schema.SchemaView;
 import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.internal.manager.EventListener;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.manager.Producer;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
+import org.apache.ignite.internal.schema.SchemaException;
 import org.apache.ignite.internal.schema.SchemaUtils;
 import org.apache.ignite.internal.schema.marshaller.schema.SchemaSerializerImpl;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
@@ -182,7 +185,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     @Override
     public void start() {
         tablesCfg.tables()
-                .listenElements(new ConfigurationNamedListListener<>() {
+                .listenElements(new ConfigurationNamedListListener<TableView>() {
                     @Override
                     public @NotNull CompletableFuture<?> onCreate(@NotNull ConfigurationNotificationEvent<TableView> ctx) {
                         if (!busyLock.enterBusy()) {
@@ -503,11 +506,31 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
                     partitionMap.put(p, service);
                 }
-
-                InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions, netAddrResolver,
-                        tableStorage);
-
-                var schemaRegistry = new SchemaRegistryImpl(v -> schemaDesc);
+    
+                InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap,
+                        partitions, netAddrResolver, tableStorage);
+    
+                var schemaRegistry = new SchemaRegistryImpl(v -> {
+                    if (!busyLock.enterBusy()) {
+                        throw new IgniteException(new NodeStoppingException());
+                    }
+        
+                    try {
+                        return tableSchema(tblId, v);
+                    } finally {
+                        busyLock.leaveBusy();
+                    }
+                }, () -> {
+                    if (!busyLock.enterBusy()) {
+                        throw new IgniteException(new NodeStoppingException());
+                    }
+        
+                    try {
+                        return latestSchemaVersion(tblId);
+                    } finally {
+                        busyLock.leaveBusy();
+                    }
+                });
 
                 schemaRegistry.onSchemaRegistered(schemaDesc);
 
@@ -524,7 +547,76 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             } catch (Exception e) {
                 fireEvent(TableEvent.CREATE, new TableEventParameters(tblId, name), e);
             }
-        });
+        }).join();
+    }
+
+    /**
+     * Return table schema of certain version from history.
+     *
+     * @param tblId Table id.
+     * @param schemaVer Schema version.
+     * @return Schema descriptor.
+     */
+    private SchemaDescriptor tableSchema(IgniteUuid tblId, int schemaVer) {
+        try {
+            TableImpl table = tablesById.get(tblId);
+
+            assert table != null : "Table is undefined [tblId=" + tblId + ']';
+
+            ExtendedTableConfiguration tblCfg = ((ExtendedTableConfiguration) tablesCfg.tables().get(table.tableName()));
+
+            if (schemaVer <= table.schemaView().lastSchemaVersion()) {
+                return getSchemaDescriptorLocally(schemaVer, tblCfg);
+            }
+
+            CompletableFuture<SchemaDescriptor> fur = new CompletableFuture<>();
+
+            var clo = new EventListener<TableEventParameters>() {
+                @Override
+                public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable exception) {
+                    if (tblId.equals(parameters.tableId()) && schemaVer <= parameters.table().schemaView().lastSchemaVersion()) {
+                        fur.complete(getSchemaDescriptorLocally(schemaVer, tblCfg));
+
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                @Override public void remove(@NotNull Throwable exception) {
+                    fur.completeExceptionally(exception);
+                }
+            };
+
+            listen(TableEvent.ALTER, clo);
+
+            if (schemaVer <= table.schemaView().lastSchemaVersion()) {
+                fur.complete(getSchemaDescriptorLocally(schemaVer, tblCfg));
+            }
+
+            if (!isSchemaExists(tblId, schemaVer) && fur.complete(null)) {
+                removeListener(TableEvent.ALTER, clo);
+            }
+
+            return fur.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new SchemaException("Can't read schema from vault: ver=" + schemaVer, e);
+        }
+    }
+
+    /**
+     * Gets a schema descriptor from the local node configuration storage.
+     *
+     * @param schemaVer Schema version.
+     * @param tblCfg Table configuration.
+     * @return Schema descriptor.
+     */
+    @NotNull private SchemaDescriptor getSchemaDescriptorLocally(int schemaVer, ExtendedTableConfiguration tblCfg) {
+        SchemaConfiguration schemaCfg = tblCfg.schemas().get(String.valueOf(schemaVer));
+
+        assert schemaCfg != null;
+
+        return SchemaSerializerImpl.INSTANCE.deserialize(schemaCfg.schema().value());
     }
 
     /**
@@ -979,7 +1071,56 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     private List<String> tableNamesConfigured() {
         return ConfigurationUtil.directValue(tablesCfg.tables()).namedListKeys();
     }
-
+    
+    /**
+     * Checks that the schema is configured in the Metasorage consensus.
+     *
+     * @param tblId     Table id.
+     * @param schemaVer Schema version.
+     * @return True when the schema configured, false otherwise.
+     */
+    // TODO: IGNITE-15412 Configuration manager will be used to retrieve distributed values
+    private boolean isSchemaExists(IgniteUuid tblId, int schemaVer) {
+        return latestSchemaVersion(tblId) >= schemaVer;
+    }
+    
+    /**
+     * Gets the latest version of the table schema which available in Metastore.
+     *
+     * @param tblId Table id.
+     * @return The latest schema version.
+     */
+    private int latestSchemaVersion(IgniteUuid tblId) {
+        NamedListView<TableView> directTablesCfg = ((DirectConfigurationProperty<NamedListView<TableView>>) tablesCfg
+                .tables()).directValue();
+        
+        ExtendedTableView viewForId = null;
+        
+        // TODO: IGNITE-15721 Need to review this approach after the ticket would be fixed.
+        // Probably, it won't be required getting configuration of all tables from Metastor.
+        for (String name : directTablesCfg.namedListKeys()) {
+            ExtendedTableView tblView = (ExtendedTableView) directTablesCfg.get(name);
+            
+            if (tblView != null && tblId.equals(IgniteUuid.fromString(tblView.id()))) {
+                viewForId = tblView;
+                
+                break;
+            }
+        }
+        
+        int lastVer = INITIAL_SCHEMA_VERSION;
+        
+        for (String schemaVerAsStr : viewForId.schemas().namedListKeys()) {
+            int ver = Integer.parseInt(schemaVerAsStr);
+            
+            if (ver > lastVer) {
+                lastVer = ver;
+            }
+        }
+        
+        return lastVer;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public Table table(String name) {

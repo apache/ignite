@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import static org.apache.ignite.internal.schema.registry.SchemaRegistryImpl.INITIAL_SCHEMA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -114,11 +115,11 @@ public class StopCalciteModuleTest {
                 new Column[]{new Column("ID", NativeTypes.INT32, false)},
                 new Column[]{new Column("VAL", NativeTypes.INT32, false)}
         );
-
-        schemaReg = new SchemaRegistryImpl(0, (v) -> schemaDesc);
-
+    
+        schemaReg = new SchemaRegistryImpl(0, (v) -> schemaDesc, () -> INITIAL_SCHEMA_VERSION);
+    
         when(tbl.tableName()).thenReturn("PUBLIC.TEST");
-
+    
         // Mock create table (notify on register listener).
         doAnswer(invocation -> {
             EventListener<TableEventParameters> clo = (EventListener<TableEventParameters>) invocation.getArguments()[1];

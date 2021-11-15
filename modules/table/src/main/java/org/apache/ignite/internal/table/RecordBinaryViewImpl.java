@@ -19,6 +19,7 @@ package org.apache.ignite.internal.table;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -424,7 +425,15 @@ public class RecordBinaryViewImpl extends AbstractTableView implements RecordVie
         if (rows == null) {
             return null;
         }
-        
-        return rows.stream().filter(Objects::nonNull).map(this::wrap).collect(Collectors.toSet());
+    
+        Collection<BinaryRow> nonEmptyRows = rows.stream().filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    
+        if (nonEmptyRows.isEmpty()) {
+            return Collections.EMPTY_LIST;
+        }
+    
+        return schemaReg.resolve(nonEmptyRows).stream().map(TableRow::tuple)
+                .collect(Collectors.toList());
     }
 }

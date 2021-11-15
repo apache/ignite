@@ -17,9 +17,11 @@
 
 package org.apache.ignite.client.fakes;
 
+import java.util.Collection;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaRegistry;
@@ -91,6 +93,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     }
 
     /** {@inheritDoc} */
+    @Override public SchemaDescriptor waitLatestSchema() {
+        return schema();
+    }
+
+    /** {@inheritDoc} */
     @Override
     public int lastSchemaVersion() {
         return lastVer;
@@ -100,5 +107,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     @Override
     public Row resolve(BinaryRow row) {
         return new Row(schema(row.schemaVersion()), row);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Collection<Row> resolve(Collection<BinaryRow> rows) {
+        return rows.stream().map(this::resolve).collect(Collectors.toList());
     }
 }

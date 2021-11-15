@@ -20,6 +20,7 @@ package org.apache.ignite.internal.benchmarks;
 import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
 import static org.apache.ignite.internal.schema.NativeTypes.INT64;
 import static org.apache.ignite.internal.schema.NativeTypes.STRING;
+import static org.apache.ignite.internal.schema.registry.SchemaRegistryImpl.INITIAL_SCHEMA_VERSION;
 
 import java.io.Serializable;
 import java.util.Random;
@@ -119,7 +120,7 @@ public class TupleMarshallerVarlenOnlyBenchmark {
                         .toArray(Column[]::new)
         );
 
-        marshaller = new TupleMarshallerImpl(null, null, new SchemaRegistryImpl(v -> null) {
+        marshaller = new TupleMarshallerImpl(null, null, new SchemaRegistryImpl(v -> null, () -> INITIAL_SCHEMA_VERSION) {
             @Override
             public SchemaDescriptor schema() {
                 return schema;

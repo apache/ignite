@@ -25,7 +25,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.BitSet;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
+import org.apache.ignite.internal.thread.NamedThreadFactory;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.LoggerMessageHelper;
 import org.jetbrains.annotations.NotNull;
@@ -192,6 +195,66 @@ public final class IgniteTestUtils {
         }
 
         return false;
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static CompletableFuture runAsync(final Runnable task) {
+        return runAsync(task, "async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static CompletableFuture runAsync(final Runnable task, String threadName) {
+        return runAsync(() -> {
+            task.run();
+
+            return null;
+        }, threadName);
+    }
+
+    /**
+     * Runs callable task asyncronously.
+     *
+     * @param task Callable.
+     * @return Future with task result.
+     */
+    public static <T> CompletableFuture<T> runAsync(final Callable<T> task) {
+        return runAsync(task, "async-callable-runner");
+    }
+
+    /**
+     * Runs callable task asyncronously.
+     *
+     * @param task Callable.
+     * @param threadName Thread name.
+     * @return Future with task result.
+     */
+    public static <T> CompletableFuture<T> runAsync(final Callable<T> task, String threadName) {
+        final NamedThreadFactory thrFactory = new NamedThreadFactory(threadName);
+
+        final CompletableFuture<T> fut = new CompletableFuture<T>();
+
+        thrFactory.newThread(() -> {
+            try {
+                // Execute task.
+                T res = task.call();
+
+                fut.complete(res);
+            } catch (Throwable e) {
+                fut.completeExceptionally(e);
+            }
+        }).start();
+
+        return fut;
     }
 
     /**

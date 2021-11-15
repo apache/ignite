@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.schema.registry;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.mapping.ColumnMapper;
 import org.apache.ignite.internal.schema.mapping.ColumnMapping;
 import org.apache.ignite.internal.schema.row.Row;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,25 +53,30 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     /** Schema store. */
     private final Function<Integer, SchemaDescriptor> history;
 
+    /** The method to provide the latest schema version on cluster. */
+    private final IntSupplier latestVersionStore;
+
     /**
      * Default constructor.
      *
      * @param history Schema history.
+     * @param latestVersionStore The method to provide the latest version of the schema.
      */
-    public SchemaRegistryImpl(Function<Integer, SchemaDescriptor> history) {
-        lastVer = INITIAL_SCHEMA_VERSION;
-        this.history = history;
+    public SchemaRegistryImpl(Function<Integer, SchemaDescriptor> history, IntSupplier latestVersionStore) {
+        this(INITIAL_SCHEMA_VERSION, history, latestVersionStore);
     }
 
     /**
      * Constructor.
      *
      * @param initialVer Initial version.
-     * @param history    Schema history.
+     * @param history Schema history.
+     * @param latestVersionStore The method to provide the latest version of the schema.
      */
-    public SchemaRegistryImpl(int initialVer, Function<Integer, SchemaDescriptor> history) {
+    public SchemaRegistryImpl(int initialVer, Function<Integer, SchemaDescriptor> history, IntSupplier latestVersionStore) {
         lastVer = initialVer;
         this.history = history;
+        this.latestVersionStore = latestVersionStore;
     }
 
     /** {@inheritDoc} */
@@ -107,6 +116,20 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     }
 
     /** {@inheritDoc} */
+    @Override public SchemaDescriptor waitLatestSchema() {
+        int lastVer0 = latestVersionStore.getAsInt();
+    
+        if (lastVer0 == INITIAL_SCHEMA_VERSION) {
+            return schema();
+        }
+    
+        assert lastVer <= lastVer0 : "Cached schema is earlier than consensus [lastVer=" + lastVer
+                + ", consLastVer=" + lastVer0 + ']';
+
+        return schema(lastVer0);
+    }
+
+    /** {@inheritDoc} */
     @Override
     public int lastSchemaVersion() {
         return lastVer;
@@ -115,15 +138,38 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     /** {@inheritDoc} */
     @Override
     public Row resolve(BinaryRow row) {
-        final SchemaDescriptor rowSchema = schema(row.schemaVersion());
-        final SchemaDescriptor curSchema = schema();
+        final SchemaDescriptor curSchema = waitLatestSchema();
+    
+        return resolveInternal(row, curSchema);
+    }
 
+    /** {@inheritDoc} */
+    @Override
+    public Collection<Row> resolve(Collection<BinaryRow> rows) {
+        final SchemaDescriptor curSchema = waitLatestSchema();
+    
+        return rows.stream().map(row -> resolveInternal(row, curSchema))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Resolves a schema for row.
+     * The method is optimal when the latest schema is already gotten.
+     *
+     * @param row Binary row.
+     * @param curSchema The latest available local schema.
+     * @return Schema-aware rows.
+     */
+    @NotNull
+    private Row resolveInternal(BinaryRow row, SchemaDescriptor curSchema) {
+        final SchemaDescriptor rowSchema = schema(row.schemaVersion());
+    
         if (curSchema.version() == rowSchema.version()) {
             return new Row(rowSchema, row);
         }
-
+    
         ColumnMapper mapping = resolveMapping(curSchema, rowSchema);
-
+    
         return new UpgradingRowAdapter(curSchema, rowSchema, row, mapping);
     }
 
@@ -182,9 +228,9 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             throw new SchemaRegistryException("Try to register schema of wrong version: ver=" + desc.version() + ", lastVer=" + lastVer);
         }
 
-        schemaCache.put(desc.version(), desc);
-
         lastVer = desc.version();
+
+        schemaCache.put(desc.version(), desc);
     }
 
     /**

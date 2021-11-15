@@ -21,14 +21,9 @@ import static org.apache.ignite.internal.schema.configuration.SchemaConfiguratio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -37,14 +32,9 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgnitionManager;
 import org.apache.ignite.internal.ItUtils;
-import org.apache.ignite.internal.app.IgniteImpl;
-import org.apache.ignite.internal.metastorage.MetaStorageManager;
-import org.apache.ignite.internal.metastorage.client.WatchEvent;
-import org.apache.ignite.internal.metastorage.client.WatchListener;
-import org.apache.ignite.internal.metastorage.watch.AggregatedWatch;
-import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
 import org.apache.ignite.internal.table.IgniteTablesInternal;
 import org.apache.ignite.internal.table.TableImpl;
+import org.apache.ignite.internal.test.WatchListenerInhibitor;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -57,8 +47,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.platform.commons.util.ReflectionUtils;
-import org.mockito.Mockito;
 
 /**
  * Integration tests to check consistent of java API on different nodes.
@@ -154,7 +142,7 @@ public class ItTablesApiTest extends IgniteAbstractTest {
 
         Ignite ignite1 = clusterNodes.get(1);
 
-        WatchListenerInhibitor ignite1Inhibitor = metastorageEventsInhibitor(ignite1);
+        WatchListenerInhibitor ignite1Inhibitor = WatchListenerInhibitor.metastorageEventsInhibitor(ignite1);
 
         ignite1Inhibitor.startInhibit();
 
@@ -205,112 +193,6 @@ public class ItTablesApiTest extends IgniteAbstractTest {
         }
 
         ignite1Inhibitor.stopInhibit();
-    }
-
-    /**
-     * Creates the specific listener which can inhibit events for real metastorage listener.
-     *
-     * @param ignite Ignite.
-     * @return Listener inhibitor.
-     * @throws Exception If something wrong when creating the listener inhibitor.
-     */
-    private WatchListenerInhibitor metastorageEventsInhibitor(Ignite ignite) throws Exception {
-        //TODO: IGNITE-15723 After a component factory will be implemented, need to got rid of reflection here.
-        MetaStorageManager metaMngr = (MetaStorageManager) ReflectionUtils.tryToReadFieldValue(
-                IgniteImpl.class,
-                "metaStorageMgr",
-                (IgniteImpl) ignite
-        ).get();
-
-        assertNotNull(metaMngr);
-
-        WatchAggregator aggregator = (WatchAggregator) ReflectionUtils.tryToReadFieldValue(
-                MetaStorageManager.class,
-                "watchAggregator",
-                metaMngr
-        ).get();
-
-        assertNotNull(aggregator);
-
-        WatchAggregator aggregatorSpy = Mockito.spy(aggregator);
-
-        WatchListenerInhibitor inhibitor = new WatchListenerInhibitor();
-
-        doAnswer(mock -> {
-            Optional<AggregatedWatch> op = (Optional<AggregatedWatch>) mock.callRealMethod();
-
-            assertTrue(op.isPresent());
-
-            inhibitor.setRealListener(op.get().listener());
-
-            return Optional.of(new AggregatedWatch(op.get().keyCriterion(), op.get().revision(), inhibitor));
-        }).when(aggregatorSpy).watch(anyLong(), any());
-
-        IgniteTestUtils.setFieldValue(metaMngr, "watchAggregator", aggregatorSpy);
-
-        // Redeploy metastorage watch. The Watch inhibitor will be used after.
-        metaMngr.unregisterWatch(-1);
-
-        return inhibitor;
-    }
-
-    /**
-     * Listener which wraps another one to inhibit events.
-     */
-    private static class WatchListenerInhibitor implements WatchListener {
-        /** Inhibited events. */
-        private final ArrayList<WatchEvent> inhibitEvents = new ArrayList<>();
-
-        /** Inhibit flag. */
-        private boolean inhibit = false;
-
-        /** Wrapped listener. */
-        private WatchListener realListener;
-
-        /**
-         * Sets a wrapped listener.
-         *
-         * @param realListener Listener to wrap.
-         */
-        public void setRealListener(WatchListener realListener) {
-            this.realListener = realListener;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public synchronized boolean onUpdate(WatchEvent evt) {
-            if (!inhibit) {
-                return realListener.onUpdate(evt);
-            }
-
-            return inhibitEvents.add(evt);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public synchronized void onError(Throwable e) {
-            realListener.onError(e);
-        }
-
-        /**
-         * Starts inhibit events.
-         */
-        synchronized void startInhibit() {
-            inhibit = true;
-        }
-
-        /**
-         * Stops inhibit events.
-         */
-        synchronized void stopInhibit() {
-            inhibit = false;
-
-            for (WatchEvent evt : inhibitEvents) {
-                realListener.onUpdate(evt);
-            }
-
-            inhibitEvents.clear();
-        }
     }
 
     /**
