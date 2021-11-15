@@ -101,7 +101,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>${artifactId}-shaded-${version}</finalName>
+                            <finalName>${project.artifactId}-shaded-${project.version}</finalName>
                             <relocations>
                                 <relocation>
                                     <pattern>it.unimi.dsi.fastutil</pattern>
