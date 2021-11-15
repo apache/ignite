@@ -287,8 +287,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             try
             {
-                // Exclude compiler-generated types by checking for '<'.
-                return asm.GetTypes().Where(t => !t.Name.Contains('<'));
+                return asm.GetTypes();
             }
             catch (ReflectionTypeLoadException ex)
             {
