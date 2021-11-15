@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 #else
             const string coreAsmNamePrefix = "mscorlib,";
 #endif
-            
+
             // Simple name.
             var res = TypeNameParser.Parse("List`1[[Int]]");
             Assert.AreEqual("List`1", res.GetName());
@@ -193,9 +193,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("System.Int32", gen.GetNameWithNamespace());
 
             res = TypeNameParser.Parse(typeof(NestedGeneric<int>.NestedGeneric2<string>).AssemblyQualifiedName);
-            
+
             Assert.AreEqual("NestedGeneric2`1", res.GetName());
-            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric`1+NestedGeneric2`1", 
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric`1+NestedGeneric2`1",
                 res.GetNameWithNamespace());
 
             Assert.AreEqual(2, res.Generics.Count);
@@ -237,6 +237,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckType(typeof(List<int>[]));
             CheckType(typeof(List<int>[,]));
             CheckType(typeof(List<int>[][]));
+        }
+
+        [Test]
+        public void TestNestedGenericsArrays()
+        {
+            TypeNameParser.Parse(
+                @"Apache.Ignite.Core.Tests.Binary.TypeResolverTest+AsyncGenericArraysTestClass+<Apache-Ignite-Core-Tests-Binary-TypeResolverTest-ITestConverter<System-String\,System-Byte\[\]>-Convert>d__0");
+
+            TypeNameParser.Parse(
+                @"MassTransit.Initializers.PropertyConverters.MessageDataPropertyConverter+<MassTransit-Initializers-IPropertyConverter<MassTransit-MessageData<System-Byte\[\]>\,MassTransit-MessageData<System-String>>-Convert>d__4`1");
         }
 
         /// <summary>
