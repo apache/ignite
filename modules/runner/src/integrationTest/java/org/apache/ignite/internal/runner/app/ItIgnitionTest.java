@@ -20,6 +20,7 @@ package org.apache.ignite.internal.runner.app;
 import static org.apache.ignite.internal.testframework.IgniteTestUtils.testNodeName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,8 +53,10 @@ class ItIgnitionTest {
     /** Nodes bootstrap configuration. */
     private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>();
 
+    /** Collection of started nodes. */
     private final List<Ignite> startedNodes = new ArrayList<>();
 
+    /** Path to the working directory. */
     @WorkDirectory
     private Path workDir;
 
@@ -65,7 +68,7 @@ class ItIgnitionTest {
         String node0Name = testNodeName(testInfo, PORTS[0]);
         String node1Name = testNodeName(testInfo, PORTS[1]);
         String node2Name = testNodeName(testInfo, PORTS[2]);
-    
+
         nodesBootstrapCfg.put(
                 node0Name,
                 "{\n"
@@ -78,7 +81,7 @@ class ItIgnitionTest {
                         + "  }\n"
                         + "}"
         );
-    
+
         nodesBootstrapCfg.put(
                 node1Name,
                 "{\n"
@@ -91,7 +94,7 @@ class ItIgnitionTest {
                         + "  }\n"
                         + "}"
         );
-    
+
         nodesBootstrapCfg.put(
                 node2Name,
                 "{\n"
@@ -142,7 +145,7 @@ class ItIgnitionTest {
      * Tests scenario when we try to start cluster with single node, but without any node, that hosts metastorage.
      */
     @Test
-    void testErrorWhenStartSingleNodeClusterWithoutMetastorage() throws Exception {
+    void testErrorWhenStartSingleNodeClusterWithoutMetastorage() {
         try {
             startedNodes.add(IgnitionManager.start("other-name", "{\n"
                     + "    \"node\": {\n"
@@ -188,7 +191,7 @@ class ItIgnitionTest {
                     + "      }\n"
                     + "    }\n"
                     + "}", workDir.resolve("node-0"));
-    
+
             ig2 = IgnitionManager.start("other-name", "{\n"
                     + "    \"node\": {\n"
                     + "        \"metastorageNodes\": [\n"
@@ -206,6 +209,26 @@ class ItIgnitionTest {
             assertEquals(ig2.name(), "other-name");
         } finally {
             IgniteUtils.closeAll(ig2, ig1);
+        }
+    }
+
+    /**
+     * Tests scenario when we try to start node with invalid configuration.
+     */
+    @Test
+    void testErrorWhenStartNodeWithInvalidConfiguration() {
+        try {
+            startedNodes.add(IgnitionManager.start("invalid-config-name",
+                    "{Invalid-Configuration}",
+                    workDir.resolve("invalid-config-name"))
+            );
+
+            fail();
+        } catch (Throwable t) {
+            assertTrue(IgniteTestUtils.hasCause(t,
+                    IgniteException.class,
+                    "Unable to parse user-specific configuration."
+            ));
         }
     }
 }

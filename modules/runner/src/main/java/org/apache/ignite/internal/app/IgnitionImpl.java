@@ -73,9 +73,7 @@ public class IgnitionImpl implements Ignition {
                     workDir
             );
         } catch (IOException e) {
-            LOG.warn("Unable to read user specific configuration, default configuration will be used: "
-                    + e.getMessage());
-            return start(nodeName, workDir);
+            throw new IgniteException("Unable to read user specific configuration.", e);
         }
     }
 
@@ -89,9 +87,7 @@ public class IgnitionImpl implements Ignition {
                     workDir
             );
         } catch (IOException e) {
-            LOG.warn("Unable to read user specific configuration, default configuration will be used: "
-                    + e.getMessage());
-            return start(name, workDir);
+            throw new IgniteException("Unable to read user specific configuration.", e);
         }
     }
 
@@ -143,7 +139,11 @@ public class IgnitionImpl implements Ignition {
         } catch (Exception e) {
             nodes.remove(nodeName);
 
-            throw new IgniteException(e);
+            if (e instanceof IgniteException) {
+                throw e;
+            } else {
+                throw new IgniteException(e);
+            }
         }
 
         ackSuccessStart();
@@ -160,8 +160,6 @@ public class IgnitionImpl implements Ignition {
 
         String banner = String.join("\n", BANNER);
 
-        LOG.info(() ->
-                        LoggerMessageHelper.format("{}\n" + " ".repeat(22) + "Apache Ignite ver. {}\n", banner, ver),
-                null);
+        LOG.info(() -> LoggerMessageHelper.format("{}\n" + " ".repeat(22) + "Apache Ignite ver. {}\n", banner, ver), null);
     }
 }
