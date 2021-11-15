@@ -47,7 +47,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
      * @param attrs Service call context attributes.
      */
     public ServiceCallContextImpl(Map<String, byte[]> attrs) {
-        this.attrs = new HashMap<>(attrs);
+        this.attrs = attrs;
     }
 
     /** {@inheritDoc} */

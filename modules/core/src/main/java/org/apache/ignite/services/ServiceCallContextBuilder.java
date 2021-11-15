@@ -18,6 +18,7 @@
 package org.apache.ignite.services;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
@@ -56,7 +57,7 @@ public class ServiceCallContextBuilder {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        attrs.put(name, value);
+        attrs.put(name, Arrays.copyOf(value, value.length));
 
         return this;
     }
@@ -68,6 +69,6 @@ public class ServiceCallContextBuilder {
         if (attrs.isEmpty())
             throw new IllegalStateException("Cannot create an empty context.");
 
-        return new ServiceCallContextImpl(attrs);
+        return new ServiceCallContextImpl(new HashMap<>(attrs));
     }
 }
