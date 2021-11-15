@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -58,11 +57,6 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         Map<Integer, Set<Integer>> parts
     ) {
         super(cctx, srcNodeId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> started() {
-        return null;
     }
 
     /** {@inheritDoc} */

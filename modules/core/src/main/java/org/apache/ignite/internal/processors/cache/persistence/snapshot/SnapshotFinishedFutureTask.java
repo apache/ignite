@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 
 /** */
 public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void> {
@@ -29,11 +28,6 @@ public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void>
         super(null, null, null, null, null, null, null);
 
         onDone(e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> started() {
-        return null;
     }
 
     /** {@inheritDoc} */

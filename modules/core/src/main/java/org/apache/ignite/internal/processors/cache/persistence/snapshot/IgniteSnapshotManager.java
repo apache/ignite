@@ -717,7 +717,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (withMetaStorage) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
-                    .suspend(((AbstractSnapshotFutureTask<Set<GroupPartitionId>>)task0).started());
+                    .suspend(((SnapshotFutureTask)task0).started());
             }
 
             clusterSnpReq = req;
@@ -1491,7 +1491,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 long start = U.currentTimeMillis();
 
-                task.started().get();
+                ((SnapshotFutureTask)task).started().get();
 
                 if (log.isInfoEnabled()) {
                     log.info("Finished waiting for a synchronized checkpoint under topology lock " +
@@ -2561,8 +2561,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             assert task.partsLeft.get() == 0 : task;
             assert task.rmtNodeId.equals(nodeId);
 
-            log.info("Requested snapshot from remote node has been fully received " +
-                "[rqId=" + task.reqId + ", task=" + task + ']');
+            if (log.isInfoEnabled()) {
+                log.info("Requested snapshot from remote node has been fully received " +
+                    "[rqId=" + task.reqId + ", task=" + task + ']');
+            }
 
             task.onDone((Void)null);
         }

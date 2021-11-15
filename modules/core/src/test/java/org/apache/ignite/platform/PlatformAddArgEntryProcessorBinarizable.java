@@ -19,6 +19,7 @@ package org.apache.ignite.platform;
 
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**

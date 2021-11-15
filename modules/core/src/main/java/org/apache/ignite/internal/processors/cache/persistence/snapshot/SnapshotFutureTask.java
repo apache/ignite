@@ -229,7 +229,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /**
      * @return Started future.
      */
-    @Override public IgniteInternalFuture<?> started() {
+    public IgniteInternalFuture<?> started() {
         return startedFut;
     }
 

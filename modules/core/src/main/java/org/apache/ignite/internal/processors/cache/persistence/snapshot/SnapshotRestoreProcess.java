@@ -117,10 +117,10 @@ public class SnapshotRestoreProcess {
     /** Cache group restore prepare phase. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotRestoreOperationResponse> prepareRestoreProc;
 
-    /**Cache group restore cache start phase. */
+    /** Cache group restore preload partitions phase. */
     private final DistributedProcess<UUID, Boolean> preloadProc;
 
-    /** Cache group restore cache start and load phase. */
+    /** Cache group restore cache start phase. */
     private final DistributedProcess<UUID, Boolean> cacheStartProc;
 
     /** Cache group restore rollback phase. */
@@ -324,14 +324,6 @@ public class SnapshotRestoreProcess {
         ClusterSnapshotFuture fut0 = fut;
 
         return fut0 != null ? fut0.name : null;
-    }
-
-    /**
-     * @param opCtx Restoring context.
-     * @return The request id of restoring snapshot operation.
-     */
-    private @Nullable UUID restoringId(@Nullable SnapshotRestoreContext opCtx) {
-        return opCtx == null ? null : opCtx.reqId;
     }
 
     /**

@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -108,12 +107,6 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     public UUID sourceNodeId() {
         return srcNodeId;
     }
-
-    /**
-     * // TODO started and start methods can be merged.
-     * @return Started future.
-     */
-    public abstract IgniteInternalFuture<?> started();
 
     /**
      * Initiates snapshot task.
