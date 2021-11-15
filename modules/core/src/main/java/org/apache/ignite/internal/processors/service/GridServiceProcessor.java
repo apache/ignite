@@ -1028,7 +1028,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         String name,
         Class<? super T> srvcCls,
         boolean sticky,
-        Supplier<ServiceCallContext> callCtxProvider,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
         long timeout
     ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
