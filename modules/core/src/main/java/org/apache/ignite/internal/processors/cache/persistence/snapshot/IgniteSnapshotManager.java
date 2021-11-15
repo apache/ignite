@@ -704,7 +704,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<Set<GroupPartitionId>> task0;
+        IgniteInternalFuture<?> task0;
 
         if (parts.isEmpty() && !withMetaStorage)
             task0 = new GridFinishedFuture<>(Collections.emptySet());
@@ -715,7 +715,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 withMetaStorage,
                 locSndrFactory.apply(req.snapshotName()));
 
-            if (withMetaStorage) {
+            if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
                     .suspend(((SnapshotFutureTask)task0).started());
             }
@@ -746,7 +746,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     blts,
-                    fut.result());
+                    (Set<GroupPartitionId>)fut.result());
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh, meta, out);
@@ -1669,15 +1669,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
-    SnapshotFutureTask registerSnapshotTask(
+    AbstractSnapshotFutureTask<?> registerSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
-        return (SnapshotFutureTask)registerSnapshotTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName, tmpWorkDir,
-            ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+        AbstractSnapshotFutureTask<?> task = registerSnapshotTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName,
+            tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+
+        if (!withMetaStorage) {
+            for (Integer grpId : parts.keySet()) {
+                if (!cctx.cache().isEncrypted(grpId))
+                    continue;
+
+                task.onDone(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId +
+                    " but doesn't include metastore. Metastore is required because it contains encryption keys " +
+                    "required to start with encrypted caches contained in the snapshot."));
+
+                return task;
+            }
+        }
+
+        return task;
     }
 
     /**

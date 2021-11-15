@@ -614,10 +614,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         GridCacheSharedContext<?, ?> cctx,
         String snpName,
         Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts,
-            false, snpSndr);
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts,
+            withMetaStorage, snpSndr);
+
+        if (!(task instanceof SnapshotFutureTask))
+            throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);
+
+        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)task;
 
         snpFutTask.start();
 

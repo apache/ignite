@@ -598,6 +598,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
+            encryption,
             mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
 
         snpFut.get();
