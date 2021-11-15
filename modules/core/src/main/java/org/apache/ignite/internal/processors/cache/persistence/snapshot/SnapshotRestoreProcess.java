@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -910,10 +909,19 @@ public class SnapshotRestoreProcess {
             }
 
             // Load other partitions from remote nodes.
+            List<PartitionRestoreFuture> rmtAwaitParts = rmtLoadParts.values().stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
             // This is necessary for sending only one partitions request per each cluster node.
-            Map<UUID, Map<Integer, Set<Integer>>> snpAff = snapshotAffinity(opCtx0.metasPerNode,
+            Map<UUID, Map<Integer, Set<Integer>>> snpAff = snapshotAffinity(
+                opCtx0.metasPerNode.entrySet()
+                    .stream()
+                    .filter(e -> !e.getKey().equals(ctx.localNodeId()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 (grpId, partId) -> rmtLoadParts.get(grpId) != null &&
-                    rmtLoadParts.get(grpId).contains(new PartitionRestoreFuture(partId)));
+                    rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId)));
+
             Map<Integer, File> grpToDir = opCtx0.dirs.stream()
                 .collect(Collectors.toMap(d -> CU.cacheId(FilePageStoreManager.cacheGroupName(d)),
                     d -> d));
@@ -927,9 +935,6 @@ public class SnapshotRestoreProcess {
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
-                    if (m.getKey().equals(ctx.localNodeId()))
-                        continue;
-
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.snpName,
@@ -937,7 +942,7 @@ public class SnapshotRestoreProcess {
                             opCtx0.stopChecker,
                             (snpFile, t) -> {
                                 if (opCtx0.stopChecker.getAsBoolean())
-                                    throw new TransmissionCancelledException("Snapshot remote operation request cancelled.");
+                                    throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
 
                                 if (t == null) {
                                     int grpId = CU.cacheId(cacheGroupName(snpFile.getParentFile()));
@@ -967,19 +972,19 @@ public class SnapshotRestoreProcess {
                                     }
                                     catch (Exception e) {
                                         opCtx0.errHnd.accept(e);
-                                        completeListExceptionally(rmtLoadParts.values(), e);
+                                        completeListExceptionally(rmtAwaitParts, e);
                                     }
                                 }
                                 else {
                                     opCtx0.errHnd.accept(t);
-                                    completeListExceptionally(rmtLoadParts.values(), t);
+                                    completeListExceptionally(rmtAwaitParts, t);
                                 }
                             });
                 }
             }
             catch (IgniteCheckedException e) {
                 opCtx0.errHnd.accept(e);
-                completeListExceptionally(rmtLoadParts.values(), e);
+                completeListExceptionally(rmtAwaitParts, e);
             }
 
             List<PartitionRestoreFuture> allParts = opCtx0.locProgress.values().stream().flatMap(Collection::stream)
@@ -1115,12 +1120,12 @@ public class SnapshotRestoreProcess {
      * @return Map of cache partitions per each node.
      */
     private static Map<UUID, Map<Integer, Set<Integer>>> snapshotAffinity(
-        Map<UUID, ArrayList<SnapshotMetadata>> metas,
+        Map<UUID, List<SnapshotMetadata>> metas,
         BiPredicate<Integer, Integer> filter
     ) {
         Map<UUID, Map<Integer, Set<Integer>>> nodeToSnp = new HashMap<>();
 
-        for (Map.Entry<UUID, ArrayList<SnapshotMetadata>> e : metas.entrySet()) {
+        for (Map.Entry<UUID, List<SnapshotMetadata>> e : metas.entrySet()) {
             UUID nodeId = e.getKey();
 
             for (SnapshotMetadata meta : ofNullable(e.getValue()).orElse(new ArrayList<>())) {
@@ -1316,10 +1321,9 @@ public class SnapshotRestoreProcess {
      * @param col Collection of sets to complete.
      * @param ex Exception to set.
      */
-    private static void completeListExceptionally(Collection<Set<PartitionRestoreFuture>> col, Throwable ex) {
-        col.stream()
-            .flatMap(Collection::stream)
-            .forEach(f -> f.completeExceptionally(ex));
+    private static void completeListExceptionally(List<PartitionRestoreFuture> col, Throwable ex) {
+        for (PartitionRestoreFuture f : col)
+            f.completeExceptionally(ex);
     }
 
     /**
@@ -1359,7 +1363,7 @@ public class SnapshotRestoreProcess {
         private final AtomicReference<Throwable> err = new AtomicReference<>();
 
         /** Distribution of snapshot metadata files across the cluster. */
-        private final Map<UUID, ArrayList<SnapshotMetadata>> metasPerNode = new HashMap<>();
+        private final Map<UUID, List<SnapshotMetadata>> metasPerNode = new HashMap<>();
 
         /** Context error handler. */
         private final Consumer<Throwable> errHnd = (ex) -> err.compareAndSet(null, ex);
@@ -1467,6 +1471,11 @@ public class SnapshotRestoreProcess {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(partId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PartitionRestoreFuture.class, this);
         }
     }
 }

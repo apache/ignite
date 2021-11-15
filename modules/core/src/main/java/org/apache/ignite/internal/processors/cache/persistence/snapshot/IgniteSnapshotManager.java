@@ -71,6 +71,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
@@ -2358,7 +2359,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (stopChecker.getAsBoolean())
                 throw new TransmissionCancelledException("Future cancelled prior to the all requested partitions processed.");
 
-            partHnd.accept(part, null);
+            try {
+                partHnd.accept(part, null);
+            }
+            catch (IgniteInterruptedException e) {
+                throw new TransmissionCancelledException(e.getMessage());
+            }
+
             partsLeft.decrementAndGet();
         }
 

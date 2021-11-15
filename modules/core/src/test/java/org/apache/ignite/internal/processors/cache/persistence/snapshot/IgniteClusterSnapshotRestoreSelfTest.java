@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -155,6 +156,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         awaitPartitionMapExchange();
 
+        for (Ignite g : G.allGrids())
+            TestRecordingCommunicationSpi.spi(g).record(SnapshotFilesRequestMessage.class);
+
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
@@ -165,6 +169,12 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
+
+        // Ensure there is no remote snapshot requests occurred.
+        for (Ignite g : G.allGrids()) {
+            assertTrue("Snapshot files remote requests must not happened due to all the files are available locally",
+                TestRecordingCommunicationSpi.spi(g).recordedMessages(true).isEmpty());
+        }
     }
 
     /** @throws Exception If failed. */
@@ -615,7 +625,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         IgniteFuture<Void> fut =
             grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME));
 
-        stopFut.get();
+        stopFut.get(TIMEOUT);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
