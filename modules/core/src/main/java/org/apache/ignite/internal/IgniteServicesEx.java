@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.services.ServiceCallContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended interface that provides additional internal methods for managing services.
