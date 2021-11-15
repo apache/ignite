@@ -41,9 +41,12 @@ public class ServiceCallContextBuilder {
      * @return This for chaining.
      */
     public ServiceCallContextBuilder put(String name, String value) {
+        A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        return put(name, value.getBytes(StandardCharsets.UTF_8));
+        attrs.put(name, value.getBytes(StandardCharsets.UTF_8));
+
+        return this;
     }
 
     /**
@@ -69,6 +72,6 @@ public class ServiceCallContextBuilder {
         if (attrs.isEmpty())
             throw new IllegalStateException("Cannot create an empty context.");
 
-        return new ServiceCallContextImpl(new HashMap<>(attrs));
+        return new ServiceCallContextImpl(attrs);
     }
 }
