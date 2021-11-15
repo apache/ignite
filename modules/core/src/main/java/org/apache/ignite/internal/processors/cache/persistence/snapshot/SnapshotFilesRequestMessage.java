@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class SnapshotRequestMessage extends AbstractSnapshotMessage {
+public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     /** Snapshot request message type (value is {@code 178}). */
     public static final short TYPE_CODE = 178;
 
@@ -52,7 +52,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public SnapshotRequestMessage() {
+    public SnapshotFilesRequestMessage() {
         // No-op.
     }
 
@@ -61,7 +61,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
      * @param snpName Snapshot name.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
-    public SnapshotRequestMessage(String reqId, String snpName, Map<Integer, Set<Integer>> parts) {
+    public SnapshotFilesRequestMessage(String reqId, String snpName, Map<Integer, Set<Integer>> parts) {
         super(reqId);
 
         assert parts != null && !parts.isEmpty();
@@ -154,7 +154,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
             reader.incrementState();
         }
 
-        return reader.afterMessageRead(SnapshotRequestMessage.class);
+        return reader.afterMessageRead(SnapshotFilesRequestMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -169,6 +169,6 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRequestMessage.class, this, super.toString());
+        return S.toString(SnapshotFilesRequestMessage.class, this, super.toString());
     }
 }

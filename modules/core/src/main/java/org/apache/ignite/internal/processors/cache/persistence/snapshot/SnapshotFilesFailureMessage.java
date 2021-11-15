@@ -25,9 +25,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Message indicating a failure occurred during processing snapshot files request.
  */
-public class SnapshotResponseMessage extends AbstractSnapshotMessage {
+public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     /** Snapshot response message type (value is {@code 179}). */
     public static final short TYPE_CODE = 179;
 
@@ -40,7 +40,7 @@ public class SnapshotResponseMessage extends AbstractSnapshotMessage {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public SnapshotResponseMessage() {
+    public SnapshotFilesFailureMessage() {
         // No-op.
     }
 
@@ -48,7 +48,7 @@ public class SnapshotResponseMessage extends AbstractSnapshotMessage {
      * @param reqId Request id to which response related to.
      * @param errMsg Response error message.
      */
-    public SnapshotResponseMessage(String reqId, String errMsg) {
+    public SnapshotFilesFailureMessage(String reqId, String errMsg) {
         super(reqId);
 
         this.errMsg = errMsg;
@@ -65,7 +65,7 @@ public class SnapshotResponseMessage extends AbstractSnapshotMessage {
      * @param errMsg Response error message.
      * @return {@code this} for chaining.
      */
-    public SnapshotResponseMessage errorMessage(String errMsg) {
+    public SnapshotFilesFailureMessage errorMessage(String errMsg) {
         this.errMsg = errMsg;
 
         return this;
@@ -114,7 +114,7 @@ public class SnapshotResponseMessage extends AbstractSnapshotMessage {
             reader.incrementState();
         }
 
-        return reader.afterMessageRead(SnapshotResponseMessage.class);
+        return reader.afterMessageRead(SnapshotFilesFailureMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -129,6 +129,6 @@ public class SnapshotResponseMessage extends AbstractSnapshotMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotResponseMessage.class, this, super.toString());
+        return S.toString(SnapshotFilesFailureMessage.class, this, super.toString());
     }
 }

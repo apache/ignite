@@ -931,7 +931,7 @@ public class SnapshotRestoreProcess {
                         continue;
 
                     ctx.cache().context().snapshotMgr()
-                        .requestRemoteSnapshot(m.getKey(),
+                        .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.snpName,
                             m.getValue(),
                             opCtx0.stopChecker,
@@ -1185,37 +1185,37 @@ public class SnapshotRestoreProcess {
         }
 
         try {
-                ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
-                    if (log.isInfoEnabled()) {
-                        log.info("Removing restored cache directories [reqId=" + reqId +
-                            ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
+            ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
+                if (log.isInfoEnabled()) {
+                    log.info("Removing restored cache directories [reqId=" + reqId +
+                        ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
+                }
+
+                IgniteCheckedException ex = null;
+
+                for (File cacheDir : opCtx0.dirs) {
+                    File tmpCacheDir = formatTmpDirName(cacheDir);
+
+                    if (tmpCacheDir.exists() && !U.delete(tmpCacheDir)) {
+                        log.error("Unable to perform rollback routine completely, cannot remove temp directory " +
+                            "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + tmpCacheDir + ']');
+
+                        ex = new IgniteCheckedException("Unable to remove temporary cache directory " + cacheDir);
                     }
 
-                    IgniteCheckedException ex = null;
+                    if (cacheDir.exists() && !U.delete(cacheDir)) {
+                        log.error("Unable to perform rollback routine completely, cannot remove cache directory " +
+                            "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + cacheDir + ']');
 
-                    for (File cacheDir : opCtx0.dirs) {
-                        File tmpCacheDir = formatTmpDirName(cacheDir);
-
-                        if (tmpCacheDir.exists() && !U.delete(tmpCacheDir)) {
-                            log.error("Unable to perform rollback routine completely, cannot remove temp directory " +
-                                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + tmpCacheDir + ']');
-
-                            ex = new IgniteCheckedException("Unable to remove temporary cache directory " + cacheDir);
-                        }
-
-                        if (cacheDir.exists() && !U.delete(cacheDir)) {
-                            log.error("Unable to perform rollback routine completely, cannot remove cache directory " +
-                                "[reqId=" + reqId + ", snapshot=" + opCtx0.snpName + ", dir=" + cacheDir + ']');
-
-                            ex = new IgniteCheckedException("Unable to remove cache directory " + cacheDir);
-                        }
+                        ex = new IgniteCheckedException("Unable to remove cache directory " + cacheDir);
                     }
+                }
 
-                    if (ex != null)
-                        retFut.onDone(ex);
-                    else
-                        retFut.onDone(true);
-                });
+                if (ex != null)
+                    retFut.onDone(ex);
+                else
+                    retFut.onDone(true);
+            });
         }
         catch (RejectedExecutionException e) {
             log.error("Unable to perform rollback routine, task has been rejected " +
@@ -1323,24 +1323,6 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param cacheStartFut The cache started future to wrap exception if need.
-     * @param <T> Result future type.
-     * @return Future which completes with wrapped exception if it occurred.
-     */
-    private static <T> IgniteInternalFuture<T> chainCacheStartException(IgniteInternalFuture<T> cacheStartFut) {
-        GridFutureAdapter<T> out = new GridFutureAdapter<>();
-
-        cacheStartFut.listen(f -> {
-            if (f.error() == null)
-                out.onDone(f.result());
-            else
-                out.onDone(new RestoreCacheStartException(f.error()));
-        });
-
-        return out;
-    }
-
-    /**
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
@@ -1433,27 +1415,16 @@ public class SnapshotRestoreProcess {
         }
     }
 
-    /** */
-    private static class RestoreCacheStartException extends IgniteCheckedException {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** @param cause Error. */
-        public RestoreCacheStartException(Throwable cause) {
-            super(cause);
-        }
-    }
-
     /** Snapshot operation prepare response. */
     private static class SnapshotRestoreOperationResponse implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** Cache configurations on local node. */
-        private ArrayList<StoredCacheData> ccfgs;
+        private final List<StoredCacheData> ccfgs;
 
         /** Snapshot metadata files on local node. */
-        private ArrayList<SnapshotMetadata> metas;
+        private final List<SnapshotMetadata> metas;
 
         /**
          * @param ccfgs Cache configurations on local node.

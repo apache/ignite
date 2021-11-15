@@ -81,7 +81,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
                 IgniteInternalFuture<Void> locFut = null;
 
-                compFut.add(locFut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+                compFut.add(locFut = snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
                     SNAPSHOT_NAME,
                     parts,
                     () -> false,
@@ -117,15 +117,15 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         Map<Integer, Set<Integer>> fromNode0 = owningParts(grid(1), CU.cacheId(DEFAULT_CACHE_NAME), node0);
 
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g)
-            .blockMessages((n, msg) -> msg instanceof SnapshotRequestMessage));
+            .blockMessages((n, msg) -> msg instanceof SnapshotFilesRequestMessage));
 
         CountDownLatch latch = new CountDownLatch(fromNode1.values().stream().mapToInt(Set::size).sum() +
             fromNode0.values().stream().mapToInt(Set::size).sum());
 
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshot(node1, SNAPSHOT_NAME, fromNode1, () -> false,
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshotFiles(node1, SNAPSHOT_NAME, fromNode1, () -> false,
             defaultPartitionConsumer(fromNode1, latch));
-        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshot(node0, SNAPSHOT_NAME, fromNode0, () -> false,
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshotFiles(node0, SNAPSHOT_NAME, fromNode0, () -> false,
             defaultPartitionConsumer(fromNode0, latch));
 
         G.allGrids().forEach(g -> TestRecordingCommunicationSpi.spi(g).stopBlock());
@@ -172,7 +172,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             }
         });
 
-        snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+        snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
             () -> false,
@@ -213,7 +213,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+        IgniteInternalFuture<?> fut = snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
             () -> false,
@@ -259,7 +259,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         CountDownLatch latch = new CountDownLatch(1);
         AtomicBoolean stopChecker = new AtomicBoolean();
 
-        IgniteInternalFuture<Void> fut = snp(ignite).requestRemoteSnapshot(grid(1).localNode().id(),
+        IgniteInternalFuture<Void> fut = snp(ignite).requestRemoteSnapshotFiles(grid(1).localNode().id(),
             SNAPSHOT_NAME,
             parts,
             stopChecker::get,
