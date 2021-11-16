@@ -78,7 +78,6 @@ public final class ClientTuple implements Tuple {
     /** {@inheritDoc} */
     @Override
     public Tuple set(@NotNull String columnName, Object value) {
-        // TODO: Live schema and schema evolution support IGNITE-15194
         var col = schema.column(columnName);
 
         vals[col.schemaIndex() - minColumnIndex] = value == null ? NULL_OBJ : value;

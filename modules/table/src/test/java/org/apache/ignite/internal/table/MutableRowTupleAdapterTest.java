@@ -61,10 +61,8 @@ import org.apache.ignite.internal.schema.marshaller.TupleMarshallerImpl;
 import org.apache.ignite.internal.schema.row.Row;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
-import org.apache.ignite.schema.definition.SchemaManagementMode;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 /**
  * Tests server tuple builder implementation.
@@ -72,10 +70,6 @@ import org.mockito.Mockito;
  * <p>Should be in sync with org.apache.ignite.client.ClientTupleBuilderTest.
  */
 public class MutableRowTupleAdapterTest {
-    /** Mocked table. */
-    private InternalTable tbl = Mockito.when(Mockito.mock(InternalTable.class).schemaMode()).thenReturn(SchemaManagementMode.STRICT)
-            .getMock();
-    
     /** Schema descriptor. */
     private SchemaDescriptor schema = new SchemaDescriptor(
             42,
@@ -217,7 +211,7 @@ public class MutableRowTupleAdapterTest {
                 .set("name", "Shirt")
                 .set("price", 5.99d);
         
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(schema));
         
         Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(original).bytes()));
         
@@ -243,7 +237,7 @@ public class MutableRowTupleAdapterTest {
     
     @Test
     public void testRowTupleMutability() throws TupleMarshallerException {
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(schema));
         
         Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
         
@@ -270,7 +264,7 @@ public class MutableRowTupleAdapterTest {
     
     @Test
     public void testKeyValueTupleMutability() throws TupleMarshallerException {
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(schema));
         
         Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
         
@@ -299,7 +293,7 @@ public class MutableRowTupleAdapterTest {
     
     @Test
     public void testRowTupleSchemaAwareness() throws TupleMarshallerException {
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(schema));
         
         Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
         
@@ -322,7 +316,7 @@ public class MutableRowTupleAdapterTest {
     
     @Test
     public void testKeyValueTupleSchemaAwareness() throws TupleMarshallerException {
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(schema));
         
         Row row = new Row(schema, new ByteBufferRow(marshaller.marshal(Tuple.create().set("id", 1L).set("name", "Shirt")).bytes()));
         
@@ -349,7 +343,7 @@ public class MutableRowTupleAdapterTest {
     public void testVariousColumnTypes() throws TupleMarshallerException {
         Random rnd = new Random();
         
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(fullSchema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(fullSchema));
         
         Tuple tuple = Tuple.create()
                 .set("valByteCol", (byte) 1)
@@ -401,7 +395,7 @@ public class MutableRowTupleAdapterTest {
                 .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
                 .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
         
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(fullSchema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(fullSchema));
         
         Row row = new Row(fullSchema, new ByteBufferRow(marshaller.marshal(tup1).bytes()));
         
@@ -436,7 +430,7 @@ public class MutableRowTupleAdapterTest {
         Tuple tuple = Tuple.create(valTuple).set(keyTuple.columnName(0), keyTuple.value(0));
         
         // Check tuples backed with Row.
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(fullSchema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(fullSchema));
         
         Row row = new Row(fullSchema, new ByteBufferRow(marshaller.marshal(keyTuple, valTuple).bytes()));
         
@@ -519,7 +513,7 @@ public class MutableRowTupleAdapterTest {
                 .set("valNumberCol", BigInteger.valueOf(rnd.nextLong()))
                 .set("valDecimalCol", BigDecimal.valueOf(rnd.nextLong(), 5));
         
-        TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(fullSchema));
+        TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(fullSchema));
         
         Row row = new Row(fullSchema, new ByteBufferRow(marshaller.marshal(key1, val1).bytes()));
         
@@ -566,7 +560,7 @@ public class MutableRowTupleAdapterTest {
                     .set("id", 3L)
                     .set("name", "Shirt");
             
-            TupleMarshaller marshaller = new TupleMarshallerImpl(null, tbl, new DummySchemaManagerImpl(schema));
+            TupleMarshaller marshaller = new TupleMarshallerImpl(new DummySchemaManagerImpl(schema));
             
             return TableRow.tuple(new Row(schema, new ByteBufferRow(marshaller.marshal(original).bytes())));
         } catch (TupleMarshallerException e) {

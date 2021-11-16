@@ -59,7 +59,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     /**
      * Default constructor.
      *
-     * @param history Schema history.
+     * @param history            Schema history.
      * @param latestVersionStore The method to provide the latest version of the schema.
      */
     public SchemaRegistryImpl(Function<Integer, SchemaDescriptor> history, IntSupplier latestVersionStore) {
@@ -69,8 +69,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     /**
      * Constructor.
      *
-     * @param initialVer Initial version.
-     * @param history Schema history.
+     * @param initialVer         Initial version.
+     * @param history            Schema history.
      * @param latestVersionStore The method to provide the latest version of the schema.
      */
     public SchemaRegistryImpl(int initialVer, Function<Integer, SchemaDescriptor> history, IntSupplier latestVersionStore) {
@@ -118,11 +118,11 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     /** {@inheritDoc} */
     @Override public SchemaDescriptor waitLatestSchema() {
         int lastVer0 = latestVersionStore.getAsInt();
-    
+
         if (lastVer0 == INITIAL_SCHEMA_VERSION) {
             return schema();
         }
-    
+
         assert lastVer <= lastVer0 : "Cached schema is earlier than consensus [lastVer=" + lastVer
                 + ", consLastVer=" + lastVer0 + ']';
 
@@ -139,7 +139,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     @Override
     public Row resolve(BinaryRow row) {
         final SchemaDescriptor curSchema = waitLatestSchema();
-    
+
         return resolveInternal(row, curSchema);
     }
 
@@ -147,7 +147,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     @Override
     public Collection<Row> resolve(Collection<BinaryRow> rows) {
         final SchemaDescriptor curSchema = waitLatestSchema();
-    
+
         return rows.stream().map(row -> resolveInternal(row, curSchema))
                 .collect(Collectors.toList());
     }
@@ -156,20 +156,20 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      * Resolves a schema for row.
      * The method is optimal when the latest schema is already gotten.
      *
-     * @param row Binary row.
+     * @param row       Binary row.
      * @param curSchema The latest available local schema.
      * @return Schema-aware rows.
      */
     @NotNull
     private Row resolveInternal(BinaryRow row, SchemaDescriptor curSchema) {
         final SchemaDescriptor rowSchema = schema(row.schemaVersion());
-    
+
         if (curSchema.version() == rowSchema.version()) {
             return new Row(rowSchema, row);
         }
-    
+
         ColumnMapper mapping = resolveMapping(curSchema, rowSchema);
-    
+
         return new UpgradingRowAdapter(curSchema, rowSchema, row, mapping);
     }
 
@@ -228,9 +228,9 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             throw new SchemaRegistryException("Try to register schema of wrong version: ver=" + desc.version() + ", lastVer=" + lastVer);
         }
 
-        lastVer = desc.version();
-
         schemaCache.put(desc.version(), desc);
+
+        lastVer = desc.version();
     }
 
     /**

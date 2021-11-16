@@ -46,7 +46,7 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
     private final Function<SchemaDescriptor, KvMarshaller<K, V>> marshallerFactory;
     
     /** Key-value marshaller. */
-    private KvMarshaller<K, V> marsh;
+    private volatile KvMarshaller<K, V> marsh;
     
     /**
      * Constructor.
@@ -384,12 +384,15 @@ public class KeyValueViewImpl<K, V> extends AbstractTableView implements KeyValu
      * @param schemaVersion Schema version.
      */
     private KvMarshaller<K, V> marshaller(int schemaVersion) {
-        if (marsh == null || marsh.schemaVersion() == schemaVersion) {
-            // TODO: Cache marshaller for schema version or upgrade row?
-            marsh = marshallerFactory.apply(schemaReg.schema(schemaVersion));
+        KvMarshaller<K, V> marsh = this.marsh;
+
+        if (marsh != null && marsh.schemaVersion() == schemaVersion) {
+            return marsh;
         }
-        
-        return marsh;
+
+        // TODO: Cache marshaller for schema version or upgrade row?
+
+        return this.marsh = marshallerFactory.apply(schemaReg.schema(schemaVersion));
     }
     
     /**

@@ -60,7 +60,7 @@ public class KeyValueBinaryViewImpl extends AbstractTableView implements KeyValu
         
         this.tblMgr = tblMgr;
         
-        marsh = new TupleMarshallerImpl(tblMgr, tbl, schemaReg);
+        marsh = new TupleMarshallerImpl(schemaReg);
     }
     
     /** {@inheritDoc} */
