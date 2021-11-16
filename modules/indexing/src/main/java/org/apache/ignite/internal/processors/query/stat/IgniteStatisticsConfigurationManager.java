@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -135,6 +136,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param statProc Staitistics processor.
      * @param persistence Persistence enabled flag.
      * @param mgmtPool Statistics management pool
+     * @param stopping Stopping state supplier.
      * @param logSupplier Log supplier.
      * @param isServerNode Server node flag.
      */
@@ -146,13 +148,14 @@ public class IgniteStatisticsConfigurationManager {
         StatisticsProcessor statProc,
         boolean persistence,
         IgniteThreadPoolExecutor mgmtPool,
+        Supplier<Boolean> stopping,
         Function<Class<?>, IgniteLogger> logSupplier,
         boolean isServerNode
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
         this.persistence = persistence;
-        this.mgmtBusyExecutor = new BusyExecutor("configuration", mgmtPool, logSupplier);
+        this.mgmtBusyExecutor = new BusyExecutor("configuration", mgmtPool, stopping, logSupplier);
         this.statProc = statProc;
         this.cluster = cluster;
         this.isServerNode = isServerNode;
@@ -363,7 +366,7 @@ public class IgniteStatisticsConfigurationManager {
             schemaMgr.unregisterDropTableListener(dropTblLsnr);
         }
 
-        mgmtBusyExecutor.deactivate(() -> {});
+        mgmtBusyExecutor.deactivate();
 
         if (log.isDebugEnabled())
             log.debug("Statistics configuration manager stopped.");
