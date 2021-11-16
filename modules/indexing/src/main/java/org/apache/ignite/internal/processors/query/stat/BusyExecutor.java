@@ -190,9 +190,7 @@ public class BusyExecutor {
      * @param r Task to execute.
      */
     public void execute(Runnable r) {
-        GridBusyLock lock = busyLock;
-
-        pool.execute(() -> busyRun(r, lock));
+        submit(r);
     }
 
     /**
