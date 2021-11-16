@@ -686,11 +686,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     CertificatePassword = "123456",
                     SkipServerCertificateValidation = true,
                     CheckCertificateRevocation = true,
-#if !NETCOREAPP
-                    SslProtocols = SslProtocols.Tls
-#else
                     SslProtocols = SslProtocols.Tls12
-#endif
                 }
             };
 
@@ -720,7 +716,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 Endpoints = new[] { "127.0.0.1:11120" },
                 SslStreamFactory = new SslStreamFactory
                 {
-                    SkipServerCertificateValidation = true
+                    SkipServerCertificateValidation = true,
+                    SslProtocols = SslProtocols.Tls12
                 }
             };
 
