@@ -1,3 +1,15 @@
+A note about invoking Maven
+===========================
+
+Apache Ignite build system uses Maven Wrapper to simplify and standardize build process. On different operating
+systems, it should be run slightly differently:
+
+* On Unix-like systems (including Cygwin, WSL, git-bash), it's `./mvnw <arguments>`
+* On Windows (in PowerShell), it's `./mvnw <arguments>` as well
+* On Windows (in cmd shell), it's `.\mvnw <arguments>` or `mvnw <arguments>` (in older versions)
+
+Further in our documentation, we always use the ./mvnw form. Please adapt it to your system if needed.
+
 Apache Ignite Maven Build Instructions
 ======================================
 1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
