@@ -105,7 +105,6 @@
                                 <configuration>
                                     <failsOnError>true</failsOnError>
                                     <consoleOutput>true</consoleOutput>
-                                    <logViolationsToConsole>true</logViolationsToConsole>
                                 </configuration>
                                 <goals>
                                     <goal>checkstyle-aggregate</goal>
@@ -148,7 +147,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
-                    <sourcepath combine.self="override"></sourcepath>
+                    <sourcepath combine.self="override"/>
                 </configuration>
             </plugin>
         </plugins>
