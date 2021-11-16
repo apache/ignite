@@ -27,7 +27,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.table.RecordView;
@@ -38,7 +38,7 @@ import org.apache.ignite.table.Tuple;
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<RowT>, Downstream<RowT> {
-    protected final TableDescriptor desc;
+    private final InternalIgniteTable table;
 
     private final TableModify.Operation op;
 
@@ -64,24 +64,24 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
      *
      * @param ctx  Execution context.
      * @param rowType Rel data type.
-     * @param desc Table descriptor.
+     * @param table Table object.
      * @param op Operation/
      * @param cols Update column list.
      */
     public ModifyNode(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            TableDescriptor desc,
+            InternalIgniteTable table,
             TableModify.Operation op,
             List<String> cols
     ) {
         super(ctx, rowType);
 
-        this.desc = desc;
+        this.table = table;
         this.op = op;
         this.cols = cols;
 
-        tableView = desc.table().recordView();
+        tableView = table.table().recordView();
     }
 
     /** {@inheritDoc} */
@@ -114,7 +114,7 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
             case DELETE:
             case UPDATE:
             case INSERT:
-                tuples.add(desc.toTuple(context(), row, op, cols));
+                tuples.add(table.toTuple(context(), row, op, cols));
 
                 flushTuples(false);
 
@@ -201,13 +201,13 @@ public class ModifyNode<RowT> extends AbstractNode<RowT> implements SingleNode<R
                     IgniteTypeFactory typeFactory = context().getTypeFactory();
                     RowHandler.RowFactory<RowT> rowFactory = context().rowHandler().factory(
                             context().getTypeFactory(),
-                            desc.insertRowType(typeFactory)
+                            table.descriptor().insertRowType(typeFactory)
                     );
 
                     throw new IgniteInternalException(
                             "Failed to INSERT some keys because they are already in cache. "
                                     + "[tuples=" + duplicates.stream()
-                                    .map(tup -> desc.toRow(context(), tup, rowFactory, null))
+                                    .map(tup -> table.toRow(context(), tup, rowFactory, null))
                                     .map(context().rowHandler()::toString)
                                     .collect(Collectors.toList()) + ']'
                     );

@@ -56,7 +56,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.TableModify.Operation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -74,7 +74,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
@@ -725,6 +725,25 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
         public String name() {
             return name;
         }
+
+        /** {@inheritDoc} */
+        @Override
+        public TableImpl table() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public <RowT> RowT toRow(ExecutionContext<RowT> ectx, Tuple row, RowFactory<RowT> factory,
+                @Nullable ImmutableBitSet requiredColumns) {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public <RowT> Tuple toTuple(ExecutionContext<RowT> ectx, RowT row, Operation op, @Nullable Object arg) {
+            throw new AssertionError();
+        }
     }
 
     /**
@@ -753,12 +772,6 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public TableImpl table() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override
         public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
             return rowType;
         }
@@ -771,20 +784,6 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public <RowT> RowT toRow(ExecutionContext<RowT> ectx, Tuple row, RowHandler.RowFactory<RowT> factory,
-                @Nullable ImmutableBitSet requiredColumns) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public <RowT> Tuple toTuple(ExecutionContext<RowT> ectx, RowT row, TableModify.Operation op,
-                @Nullable Object arg) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override
         public ColumnDescriptor columnDescriptor(String fieldName) {
             RelDataTypeField field = rowType.getField(fieldName, false, false);
             return new TestColumnDescriptor(field.getIndex(), fieldName);
@@ -792,13 +791,21 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public boolean isGeneratedAlways(RelOptTable table, int idxColumn) {
-            throw new AssertionError();
+        public ColumnDescriptor columnDescriptor(int idx) {
+            RelDataTypeField field = rowType.getFieldList().get(idx);
+
+            return new TestColumnDescriptor(field.getIndex(), field.getName());
         }
 
         /** {@inheritDoc} */
         @Override
-        public ColocationGroup colocationGroup(PlanningContext ctx) {
+        public int columnsCount() {
+            return rowType.getFieldCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean isGeneratedAlways(RelOptTable table, int idxColumn) {
             throw new AssertionError();
         }
 

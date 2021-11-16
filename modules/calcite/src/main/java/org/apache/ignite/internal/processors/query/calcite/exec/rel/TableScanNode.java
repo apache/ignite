@@ -30,7 +30,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgniteTable;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.TableRow;
@@ -43,9 +43,11 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
     /** Special value to highlights that all row were received and we are not waiting any more. */
     private static final int NOT_WAITING = -1;
 
-    private final TableImpl table;
+    /** Table that provides access to underlying data. */
+    private final TableImpl physTable;
 
-    private final TableDescriptor desc;
+    /** Table that is an object in SQL schema. */
+    private final InternalIgniteTable schemaTable;
 
     private final RowHandler.RowFactory<RowT> factory;
 
@@ -75,7 +77,7 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
      *
      * @param ctx             Execution context.
      * @param rowType         Output type of the current node.
-     * @param desc            Table descriptor this node should scan.
+     * @param schemaTable     The table this node should scan.
      * @param parts           Partition numbers to scan.
      * @param filters         Optional filter to filter out rows.
      * @param rowTransformer  Optional projection function.
@@ -84,7 +86,7 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
     public TableScanNode(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            TableDescriptor desc,
+            InternalIgniteTable schemaTable,
             int[] parts,
             @Nullable Predicate<RowT> filters,
             @Nullable Function<RowT, RowT> rowTransformer,
@@ -94,8 +96,8 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
 
         assert !nullOrEmpty(parts);
 
-        table = desc.table();
-        this.desc = desc;
+        this.physTable = schemaTable.table();
+        this.schemaTable = schemaTable;
         this.parts = parts;
         this.filters = filters;
         this.rowTransformer = rowTransformer;
@@ -210,7 +212,7 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
         if (subscription != null) {
             subscription.request(waiting);
         } else if (curPartIdx < parts.length) {
-            table.internalTable().scan(parts[curPartIdx++], null).subscribe(new SubscriberImpl());
+            physTable.internalTable().scan(parts[curPartIdx++], null).subscribe(new SubscriberImpl());
         } else {
             waiting = NOT_WAITING;
         }
@@ -268,8 +270,8 @@ public class TableScanNode<RowT> extends AbstractNode<RowT> {
     }
 
     private RowT convert(BinaryRow binRow) {
-        final org.apache.ignite.internal.schema.row.Row wrapped = table.schemaView().resolve(binRow);
+        final org.apache.ignite.internal.schema.row.Row wrapped = physTable.schemaView().resolve(binRow);
 
-        return desc.toRow(context(), TableRow.tuple(wrapped), factory, requiredColumns);
+        return schemaTable.toRow(context(), TableRow.tuple(wrapped), factory, requiredColumns);
     }
 }

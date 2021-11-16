@@ -45,13 +45,13 @@ public interface IgniteTable extends TranslatableTable, Wrapper {
      * @return Table descriptor.
      */
     TableDescriptor descriptor();
-    
+
     /** {@inheritDoc} */
     @Override
     default RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return getRowType(typeFactory, null);
     }
-    
+
     /**
      * Returns new type according {@code requiredColumns} param.
      *
@@ -59,13 +59,13 @@ public interface IgniteTable extends TranslatableTable, Wrapper {
      * @param requiredColumns Used columns enumeration.
      */
     RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet requiredColumns);
-    
+
     /** {@inheritDoc} */
     @Override
     default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         return toRel(context.getCluster(), relOptTable);
     }
-    
+
     /**
      * Converts table into relational expression.
      *
@@ -74,31 +74,31 @@ public interface IgniteTable extends TranslatableTable, Wrapper {
      * @return Table relational expression.
      */
     TableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl);
-    
+
     /**
      * Returns table distribution.
      *
      * @return Table distribution.
      */
     IgniteDistribution distribution();
-    
+
     /** {@inheritDoc} */
     default Schema.TableType getJdbcTableType() {
         return Schema.TableType.TABLE;
     }
-    
+
     /** {@inheritDoc} */
     default boolean isRolledUp(String column) {
         return false;
     }
-    
+
     /** {@inheritDoc} */
     default boolean rolledUpColumnValidInsideAgg(String column, SqlCall call,
             @Nullable SqlNode parent,
             @Nullable CalciteConnectionConfig config) {
         return false;
     }
-    
+
     /** {@inheritDoc} */
     default Statistic getStatistic() {
         return new Statistic() {
@@ -108,7 +108,7 @@ public interface IgniteTable extends TranslatableTable, Wrapper {
             }
         };
     }
-    
+
     /** {@inheritDoc} */
     @Override
     default <C> @Nullable C unwrap(Class<C> cls) {
