@@ -361,9 +361,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x)
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x)
         {
-            return x == null ? null : new ServicesTest.PlatformComputeBinarizable { Field = x.Field + 1};
+            return x == null ? null : new PlatformComputeBinarizable { Field = x.Field + 1};
         }
 
         /** <inheritDoc /> */
@@ -375,8 +375,8 @@ namespace Apache.Ignite.Core.Tests.Services
             for (int i = 0; i < x.Length; i++)
                 x[i] = x[i] == null
                     ? null
-                    : new ServicesTest.PlatformComputeBinarizable
-                        {Field = ((ServicesTest.PlatformComputeBinarizable) x[i]).Field + 1};
+                    : new PlatformComputeBinarizable
+                        {Field = ((PlatformComputeBinarizable) x[i]).Field + 1};
 
             return x;
         }
@@ -394,10 +394,10 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x)
+        public PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x)
         {
             // ReSharper disable once CoVariantArrayConversion
-            return (ServicesTest.PlatformComputeBinarizable[])testBinarizableArrayOfObjects(x);
+            return (PlatformComputeBinarizable[])testBinarizableArrayOfObjects(x);
         }
 
         /** <inheritDoc /> */
@@ -410,8 +410,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             foreach (var x in arg)
             {
-                res.Add(new ServicesTest.PlatformComputeBinarizable
-                    {Field = ((ServicesTest.PlatformComputeBinarizable) x).Field + 1});
+                res.Add(new PlatformComputeBinarizable
+                    {Field = ((PlatformComputeBinarizable) x).Field + 1});
             }
 
             return res;

@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x)
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x)
         {
             return _svc.testBinarizable(x);
         }
@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x)
+        public PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x)
         {
             return _svc.testBinarizableArray(x);
         }

@@ -18,7 +18,6 @@
 // ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Services
 {
-    using Apache.Ignite.Core.Impl.Services;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,37 +25,19 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class CallPlatformServiceTestTypedArrays : CallPlatformServiceTest
     {
-        /// <summary>Start grids and deploy test service.</summary>
         [SetUp]
-        public void SetUp0()
+        public override void SetUp()
         {
             TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+            base.SetUp();
         }
 
-        /// <summary>Executes after each test.</summary>
         [TearDown]
-        public void TearDown0()
+        public override void TearDown()
         {
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
-        }
-    }
+            base.TearDown();
 
-    /// <summary>
-    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepBinary mode enabled on server.
-    /// </summary>
-    public class ServiceProxyTestKeepBinaryServerTypedArrays : ServiceProxyTestKeepBinaryServer
-    {
-        /// <summary>Start grids and deploy test service.</summary>
-        [SetUp]
-        public void SetUp0()
-        {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
-        }
-
-        /// <summary>Executes after each test.</summary>
-        [TearDown]
-        public void TearDown0()
-        {
             TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
         }
     }
@@ -66,17 +47,18 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTestTypedArrays : ServicesTest
     {
-        /// <summary>Start grids and deploy test service.</summary>
         [SetUp]
-        public void SetUp0()
+        public override void SetUp()
         {
             TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+            base.SetUp();
         }
 
-        /// <summary>Executes after each test.</summary>
-        [TearDown]
-        public void TearDown0()
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
         {
+            base.FixtureTearDown();
             TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
         }
     }
@@ -86,17 +68,18 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTestAsyncTypedArrays : ServicesTestAsync
     {
-        /// <summary>Start grids and deploy test service.</summary>
         [SetUp]
-        public void SetUp0()
+        public override void SetUp()
         {
             TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+            base.SetUp();
         }
 
-        /// <summary>Executes after each test.</summary>
-        [TearDown]
-        public void TearDown0()
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
         {
+            base.FixtureTearDown();
             TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
         }
     }
@@ -106,17 +89,18 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTestFullFooterTypedArrays : ServicesTestFullFooter
     {
-        /// <summary>Start grids and deploy test service.</summary>
         [SetUp]
-        public void SetUp0()
+        public override void SetUp()
         {
             TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+            base.SetUp();
         }
 
-        /// <summary>Executes after each test.</summary>
-        [TearDown]
-        public void TearDown0()
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
         {
+            base.FixtureTearDown();
             TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
         }
     }
@@ -128,15 +112,18 @@ namespace Apache.Ignite.Core.Tests.Services
     {
         /// <summary>Start grids and deploy test service.</summary>
         [SetUp]
-        public void SetUp0()
+        public override void SetUp()
         {
             TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+            base.SetUp();
         }
 
-        /// <summary>Executes after each test.</summary>
-        [TearDown]
-        public void TearDown0()
+        [TestFixtureTearDown]
+        public override void FixtureTearDown()
         {
+            base.FixtureTearDown();
+
             TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
         }
     }

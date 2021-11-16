@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Services
         protected IIgnite[] Grids;
 
         [TestFixtureTearDown]
-        public void FixtureTearDown()
+        public virtual void FixtureTearDown()
         {
             StopGrids();
         }
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Executes before each test.
         /// </summary>
         [SetUp]
-        public void SetUp()
+        public virtual void SetUp()
         {
             StartGrids();
         }
@@ -559,27 +559,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             res = (BinarizableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Val);
-        }
-
-        /// <summary>
-        /// Tests the server binary flag.
-        /// </summary>
-        [Test]
-        public void TestWithKeepBinaryServerArray()
-        {
-            var svc = new TestIgniteServiceBinarizable();
-
-            Grid1.GetCluster()
-                .ForNodeIds(Grid2.GetCluster().GetLocalNode().Id)
-                .GetServices()
-                .WithServerKeepBinary()
-                .DeployNodeSingleton(SvcName, svc);
-
-            var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
-            var obj = new [] {new BinarizableObject{Val = 1}};
-
-            var res = prx.Method(obj);
-            Assert.IsNotNull(res);
         }
 
         /// <summary>
@@ -1215,7 +1194,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 x => new PlatformComputeBinarizable {Field = x}).ToArray();
             var arrOfObj = arr.ToArray<object>();
 
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr.ToList())
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
             var binarizableObjs = svc.testBinarizableArrayOfObjects(arrOfObj);
@@ -1766,15 +1745,6 @@ namespace Apache.Ignite.Core.Tests.Services
         private class BinarizableObject
         {
             public int Val { get; set; }
-        }
-
-        /// <summary>
-        /// Interop class.
-        /// </summary>
-        public class PlatformComputeBinarizable
-        {
-            /** */
-            public int Field { get; set; }
         }
 
         /// <summary>

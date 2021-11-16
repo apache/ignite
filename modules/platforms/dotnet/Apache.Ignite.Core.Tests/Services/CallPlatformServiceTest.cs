@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Start grids and deploy test service.
         /// </summary>
         [SetUp]
-        public void SetUp()
+        public virtual void SetUp()
         {
             StartGrids();
         }
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Stop grids after test.
         /// </summary>
         [TearDown]
-        public void TearDown()
+        public virtual void TearDown()
         {
             StopGrids();
         }

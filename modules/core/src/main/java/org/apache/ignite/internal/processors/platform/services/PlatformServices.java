@@ -286,13 +286,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
-                if (args != null) {
-                    for (Object o : args) {
-                        if (o instanceof BinaryArray)
-                            throw new IgniteException("BinaryArray found! componentTypeId = " + ((BinaryArray)o).componentTypeId());
-                    }
-                }
-
                 try {
                     Object result = svc.invoke(mthdName, srvKeepBinary, args);
 

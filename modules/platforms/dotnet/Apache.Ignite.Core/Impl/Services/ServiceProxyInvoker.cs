@@ -102,6 +102,13 @@ namespace Apache.Ignite.Core.Impl.Services
                         methodName, svcType, argsLength));
 
             // 2) There is more than 1 method with specified name - resolve with argument types.
+            methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters(), true)).ToArray();
+
+            if (methods.Length == 1)
+                return (obj, args) => methods[0].Invoke(obj, args);
+
+            // Try to search applicable without equality of all arguments.
+            // TODO: do we need to do it? Can we just invoke using standart reflection?
             methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters())).ToArray();
 
             if (methods.Length == 1)
@@ -146,8 +153,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         /// <param name="methodArgs">Method argument types.</param>
         /// <param name="targetParameters">Target method parameter definitions.</param>
+        /// <param name="checkEq">If true check argument type for equality.</param>
         /// <returns>True if a target method can be called with specified set of arguments; otherwise, false.</returns>
-        private static bool AreMethodArgsCompatible(object[] methodArgs, ParameterInfo[] targetParameters)
+        private static bool AreMethodArgsCompatible(object[] methodArgs, ParameterInfo[] targetParameters, bool checkEq = false)
         {
             if (methodArgs == null || methodArgs.Length == 0)
                 return targetParameters.Length == 0;
@@ -155,8 +163,18 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methodArgs.Length != targetParameters.Length)
                 return false;
 
+            Func<object, ParameterInfo, bool> checker;
+            if (checkEq)
+            {
+                checker = (arg, param) => arg == null || param.ParameterType.IsInstanceOfType(arg);
+            }
+            else
+            {
+                checker = (arg, param) => arg == null || param.ParameterType == arg.GetType();
+            }
+
             return methodArgs
-                .Zip(targetParameters, (arg, param) => arg == null || param.ParameterType.IsInstanceOfType(arg))
+                .Zip(targetParameters, checker)
                 .All(x => x);
         }
     }
