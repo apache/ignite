@@ -42,6 +42,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Phaser;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
+import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.affinity.AffinityUtils;
@@ -117,7 +120,12 @@ public class TableManagerTest extends IgniteAbstractTest {
     private Loza rm;
 
     /** Tables configuration. */
-    @InjectConfiguration(internalExtensions = {ExtendedTableConfigurationSchema.class})
+    @InjectConfiguration(
+            internalExtensions = ExtendedTableConfigurationSchema.class,
+            polymorphicExtensions = {
+                    HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class
+            }
+    )
     private TablesConfiguration tblsCfg;
 
     /** Data storage configuration. */

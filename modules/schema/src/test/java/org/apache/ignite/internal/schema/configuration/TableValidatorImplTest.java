@@ -29,6 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageView;
+import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.configuration.validation.ValidationContext;
@@ -47,11 +50,16 @@ import org.mockito.ArgumentCaptor;
 @ExtendWith(ConfigurationExtension.class)
 public class TableValidatorImplTest {
     /** Basic table configuration to mutate and then validate. */
-    @InjectConfiguration("mock.tables.table {\n"
+    @InjectConfiguration(
+            value = "mock.tables.table {\n"
             + "    name = schema.table,\n"
             + "    columns.0 {name = id, type.type = STRING, nullable = true},\n"
             + "    primaryKey {columns = [id], affinityColumns = [id]}\n"
-            + "}")
+            + "}",
+            polymorphicExtensions = {
+                    HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class
+            }
+    )
     private TablesConfiguration tableCfg;
 
     /** Tests that validator finds no issues in a simple valid configuration. */

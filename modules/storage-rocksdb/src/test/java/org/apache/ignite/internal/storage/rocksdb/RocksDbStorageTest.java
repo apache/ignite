@@ -23,6 +23,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.file.Path;
 import org.apache.ignite.configuration.schemas.store.DataRegionConfiguration;
+import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.internal.configuration.testframework.ConfigurationExtension;
 import org.apache.ignite.internal.configuration.testframework.InjectConfiguration;
@@ -53,7 +56,13 @@ public class RocksDbStorageTest extends AbstractPartitionStorageTest {
     public void setUp(
             @WorkDirectory Path workDir,
             @InjectConfiguration DataRegionConfiguration dataRegionCfg,
-            @InjectConfiguration TableConfiguration tableCfg
+            @InjectConfiguration(
+                    polymorphicExtensions = {
+                            HashIndexConfigurationSchema.class,
+                            SortedIndexConfigurationSchema.class,
+                            PartialIndexConfigurationSchema.class
+                    })
+                    TableConfiguration tableCfg
     ) throws Exception {
         dataRegionCfg.change(cfg -> cfg.changeSize(16 * 1024).changeWriteBufferSize(16 * 1024)).get();
 

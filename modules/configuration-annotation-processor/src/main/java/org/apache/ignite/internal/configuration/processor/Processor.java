@@ -149,10 +149,6 @@ public class Processor extends AbstractProcessor {
                     .addModifiers(PUBLIC);
             
             for (VariableElement field : fields) {
-                if (field.getModifiers().contains(STATIC)) {
-                    continue;
-                }
-    
                 if (!field.getModifiers().contains(PUBLIC)) {
                     throw new ProcessorException("Field " + clazz.getQualifiedName() + "." + field + " must be public");
                 }
@@ -541,6 +537,7 @@ public class Processor extends AbstractProcessor {
     private static List<VariableElement> fields(TypeElement type) {
         return type.getEnclosedElements().stream()
                 .filter(el -> el.getKind() == ElementKind.FIELD)
+                .filter(el -> !el.getModifiers().contains(STATIC)) // ignore static members
                 .map(VariableElement.class::cast)
                 .collect(toList());
     }

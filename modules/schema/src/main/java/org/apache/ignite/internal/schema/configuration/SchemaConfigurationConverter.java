@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import static org.apache.ignite.configuration.schemas.table.TableIndexConfigurationSchema.HASH_INDEX_TYPE;
+import static org.apache.ignite.configuration.schemas.table.TableIndexConfigurationSchema.PARTIAL_INDEX_TYPE;
+import static org.apache.ignite.configuration.schemas.table.TableIndexConfigurationSchema.SORTED_INDEX_TYPE;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -36,9 +40,15 @@ import org.apache.ignite.configuration.schemas.table.ColumnChange;
 import org.apache.ignite.configuration.schemas.table.ColumnTypeChange;
 import org.apache.ignite.configuration.schemas.table.ColumnTypeView;
 import org.apache.ignite.configuration.schemas.table.ColumnView;
+import org.apache.ignite.configuration.schemas.table.HashIndexChange;
+import org.apache.ignite.configuration.schemas.table.HashIndexView;
 import org.apache.ignite.configuration.schemas.table.IndexColumnChange;
 import org.apache.ignite.configuration.schemas.table.IndexColumnView;
+import org.apache.ignite.configuration.schemas.table.PartialIndexChange;
+import org.apache.ignite.configuration.schemas.table.PartialIndexView;
 import org.apache.ignite.configuration.schemas.table.PrimaryKeyView;
+import org.apache.ignite.configuration.schemas.table.SortedIndexChange;
+import org.apache.ignite.configuration.schemas.table.SortedIndexView;
 import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableIndexChange;
@@ -68,16 +78,9 @@ import org.apache.ignite.schema.definition.index.SortedIndexDefinition;
  * Configuration to schema and vice versa converter.
  */
 public class SchemaConfigurationConverter {
-    /** Hash index type. */
-    private static final String HASH_TYPE = "HASH";
-
-    /** Sorted index type. */
-    private static final String SORTED_TYPE = "SORTED";
-
-    /** Partial index type. */
-    private static final String PARTIAL_TYPE = "PARTIAL";
-
-    /** Types map. */
+    /**
+     * Types map.
+     */
     private static final Map<String, ColumnType> types = new HashMap<>();
 
     static {
@@ -139,53 +142,45 @@ public class SchemaConfigurationConverter {
      */
     public static TableIndexChange convert(IndexDefinition idx, TableIndexChange idxChg) {
         idxChg.changeName(idx.name());
-        idxChg.changeType(idx.type());
 
         switch (idx.type().toUpperCase()) {
-            case HASH_TYPE:
+            case HASH_INDEX_TYPE:
                 HashIndexDefinition hashIdx = (HashIndexDefinition) idx;
 
                 String[] colNames = hashIdx.columns().stream().map(IndexColumnDefinition::name).toArray(String[]::new);
 
-                idxChg.changeColNames(colNames);
+                return idxChg.convert(HashIndexChange.class).changeColNames(colNames);
 
-                break;
-
-            case PARTIAL_TYPE:
+            case PARTIAL_INDEX_TYPE:
                 PartialIndexDefinition partIdx = (PartialIndexDefinition) idx;
 
-                idxChg.changeUniq(partIdx.unique());
-                idxChg.changeExpr(partIdx.expr());
+                return idxChg.changeUniq(partIdx.unique())
+                        .convert(PartialIndexChange.class)
+                        .changeExpr(partIdx.expr())
+                        .changeColumns(colsChg -> {
+                            int colIdx = 0;
 
-                idxChg.changeColumns(colsChg -> {
-                    int colIdx = 0;
+                            for (SortedIndexColumnDefinition col : partIdx.columns()) {
+                                colsChg.create(String.valueOf(colIdx++), colInit -> convert(col, colInit));
+                            }
+                        });
 
-                    for (SortedIndexColumnDefinition col : partIdx.columns()) {
-                        colsChg.create(String.valueOf(colIdx++), colInit -> convert(col, colInit));
-                    }
-                });
-
-                break;
-
-            case SORTED_TYPE:
+            case SORTED_INDEX_TYPE:
                 SortedIndexDefinition sortIdx = (SortedIndexDefinition) idx;
-                idxChg.changeUniq(sortIdx.unique());
 
-                idxChg.changeColumns(colsInit -> {
-                    int colIdx = 0;
+                return idxChg.changeUniq(sortIdx.unique())
+                        .convert(SortedIndexChange.class)
+                        .changeColumns(colsInit -> {
+                            int colIdx = 0;
 
-                    for (SortedIndexColumnDefinition col : sortIdx.columns()) {
-                        colsInit.create(String.valueOf(colIdx++), colInit -> convert(col, colInit));
-                    }
-                });
-
-                break;
+                            for (SortedIndexColumnDefinition col : sortIdx.columns()) {
+                                colsInit.create(String.valueOf(colIdx++), colInit -> convert(col, colInit));
+                            }
+                        });
 
             default:
                 throw new IllegalArgumentException("Unknown index type " + idx.type());
         }
-
-        return idxChg;
     }
 
     /**
@@ -199,29 +194,31 @@ public class SchemaConfigurationConverter {
         String type = idxView.type();
 
         switch (type.toUpperCase()) {
-            case HASH_TYPE:
-                String[] hashCols = idxView.colNames();
+            case HASH_INDEX_TYPE:
+                String[] hashCols = ((HashIndexView) idxView).colNames();
 
                 return new HashIndexDefinitionImpl(name, hashCols);
 
-            case SORTED_TYPE:
+            case SORTED_INDEX_TYPE:
                 SortedMap<Integer, SortedIndexColumnDefinition> sortedCols = new TreeMap<>();
 
-                for (String key : idxView.columns().namedListKeys()) {
-                    SortedIndexColumnDefinition col = convert(idxView.columns().get(key));
+                NamedListView<? extends IndexColumnView> columns = ((SortedIndexView) idxView).columns();
+
+                for (String key : columns.namedListKeys()) {
+                    SortedIndexColumnDefinition col = convert(columns.get(key));
 
                     sortedCols.put(Integer.valueOf(key), col);
                 }
 
                 return new SortedIndexDefinitionImpl(name, new ArrayList<>(sortedCols.values()), idxView.uniq());
 
-            case PARTIAL_TYPE:
-                String expr = idxView.expr();
+            case PARTIAL_INDEX_TYPE:
+                String expr = ((PartialIndexView) idxView).expr();
 
-                NamedListView<? extends IndexColumnView> colsView = idxView.columns();
+                NamedListView<? extends IndexColumnView> colsView = ((PartialIndexView) idxView).columns();
                 SortedMap<Integer, SortedIndexColumnDefinition> partialCols = new TreeMap<>();
 
-                for (String key : idxView.columns().namedListKeys()) {
+                for (String key : colsView.namedListKeys()) {
                     SortedIndexColumnDefinition col = convert(colsView.get(key));
 
                     partialCols.put(Integer.valueOf(key), col);

@@ -17,40 +17,37 @@
 
 package org.apache.ignite.configuration.schemas.table;
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.NamedConfigValue;
+import org.apache.ignite.configuration.annotation.PolymorphicConfig;
+import org.apache.ignite.configuration.annotation.PolymorphicId;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Immutable;
 
 /**
  * SQL index configuration.
  */
-@Config
+@PolymorphicConfig
 public class TableIndexConfigurationSchema {
+    /** Hash index type. */
+    public static final String HASH_INDEX_TYPE = "HASH";
+    
+    /** Sorted index type. */
+    public static final String SORTED_INDEX_TYPE = "SORTED";
+    
+    /** Partial index type. */
+    public static final String PARTIAL_INDEX_TYPE = "PARTIAL";
+    
+    /** Index type name. */
+    @PolymorphicId
+    public String type;
+    
     /** Index name. */
     @Value
     @Immutable
     public String name;
 
-    /** Index type name. */
-    @Value
-    public String type;
-
     /** Has default value flag. */
     @Value(hasDefault = true)
     public boolean uniq = false;
-
-    /** Columns configuration for sorted indexes. */
-    @NamedConfigValue
-    public IndexColumnConfigurationSchema columns;
-
-    /** Columns names for hash indexes. */
-    @Value(hasDefault = true)
-    public String[] colNames = new String[0];
-
-    /** Expression for PartialIndex: PARTIAL indexes. */
-    @Value(hasDefault = true)
-    public String expr = "";
 
     /** Affinity column names for PrimaryKey. */
     @Value(hasDefault = true)

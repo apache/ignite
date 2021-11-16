@@ -34,26 +34,30 @@ import javax.tools.JavaFileObject;
  */
 public class AbstractProcessorTest {
     /**
+     * Compiles a given set of source files.
+     */
+    protected static Compilation compile(ClassName... schemaClasses) {
+        List<String> fileNames = Arrays.stream(schemaClasses)
+                .map(name -> {
+                    String folderName = name.packageName().replace(".", "/");
+
+                    return String.format("%s/%s.java", folderName, name.simpleName());
+                })
+                .collect(Collectors.toList());
+
+        List<JavaFileObject> fileObjects = fileNames.stream().map(JavaFileObjects::forResource).collect(Collectors.toList());
+
+        return javac().withProcessors(new Processor()).compile(fileObjects);
+    }
+
+    /**
      * Compile set of classes.
      *
      * @param schemaClasses Configuration schema classes.
      * @return Result of batch compilation.
      */
     protected static BatchCompilation batchCompile(ClassName... schemaClasses) {
-        List<String> fileNames = Arrays.stream(schemaClasses)
-                .map(name -> {
-                    final String folderName = name.packageName().replace(".", "/");
-                    return String.format("%s/%s.java", folderName, name.simpleName());
-                })
-                .collect(Collectors.toList());
-
-        final List<JavaFileObject> fileObjects = fileNames.stream().map(JavaFileObjects::forResource).collect(Collectors.toList());
-
-        final Compilation compilation = javac()
-                .withProcessors(new Processor())
-                .compile(fileObjects);
-
-        return new BatchCompilation(Arrays.asList(schemaClasses), compilation);
+        return new BatchCompilation(Arrays.asList(schemaClasses), compile(schemaClasses));
     }
 
     /**

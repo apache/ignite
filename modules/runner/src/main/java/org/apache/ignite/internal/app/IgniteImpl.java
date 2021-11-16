@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -39,6 +38,9 @@ import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
 import org.apache.ignite.configuration.schemas.table.ColumnTypeValidator;
+import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.baseline.BaselineManager;
@@ -190,8 +192,8 @@ public class IgniteImpl implements Ignite {
                         ColumnTypeValidator.class, Set.of(ColumnTypeValidatorImpl.INSTANCE)
                 ),
                 new DistributedConfigurationStorage(metaStorageMgr, vaultMgr),
-                Collections.singletonList(ExtendedTableConfigurationSchema.class),
-                List.of()
+                List.of(ExtendedTableConfigurationSchema.class),
+                List.of(HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class)
         );
 
         baselineMgr = new BaselineManager(

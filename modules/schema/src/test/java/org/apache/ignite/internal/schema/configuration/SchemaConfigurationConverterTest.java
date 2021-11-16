@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.schemas.store.DataStorageConfiguration;
+import org.apache.ignite.configuration.schemas.table.HashIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.PartialIndexConfigurationSchema;
+import org.apache.ignite.configuration.schemas.table.SortedIndexConfigurationSchema;
 import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
@@ -77,7 +80,7 @@ public class SchemaConfigurationConverterTest {
                 Map.of(TableValidator.class, Set.of(TableValidatorImpl.INSTANCE)),
                 new TestConfigurationStorage(DISTRIBUTED),
                 List.of(),
-                List.of()
+                List.of(HashIndexConfigurationSchema.class, SortedIndexConfigurationSchema.class, PartialIndexConfigurationSchema.class)
         );
         
         confRegistry.start();
@@ -110,7 +113,7 @@ public class SchemaConfigurationConverterTest {
      * Add/remove HashIndex into configuration and read it back.
      */
     @Test
-    public void testConvertHashIndex() throws ExecutionException, InterruptedException {
+    public void testConvertHashIndex() throws Exception {
         HashIndexDefinitionBuilder builder = SchemaBuilders.hashIndex("testHI")
                 .withColumns("A", "B", "C")
                 .withHints(Collections.singletonMap("param", "value"));
@@ -131,7 +134,7 @@ public class SchemaConfigurationConverterTest {
      * Add/remove SortedIndex into configuration and read it back.
      */
     @Test
-    public void testConvertSortedIndex() throws ExecutionException, InterruptedException {
+    public void testConvertSortedIndex() throws Exception {
         SortedIndexDefinitionBuilder builder = SchemaBuilders.sortedIndex("SIDX");
         
         builder.addIndexColumn("A").asc().done();
@@ -158,7 +161,7 @@ public class SchemaConfigurationConverterTest {
      * Add/remove index on primary key into configuration and read it back.
      */
     @Test
-    public void testUniqIndex() throws ExecutionException, InterruptedException {
+    public void testUniqIndex() throws Exception {
         SortedIndexDefinition idx = SchemaBuilders.sortedIndex("pk_sorted")
                 .addIndexColumn("COL1").desc().done()
                 .unique(true)
@@ -183,7 +186,7 @@ public class SchemaConfigurationConverterTest {
      */
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-15483")
     @Test
-    public void testUniqueIndexDetection() throws ExecutionException, InterruptedException {
+    public void testUniqueIndexDetection() throws Exception {
         SortedIndexDefinition idx = SchemaBuilders.sortedIndex("uniq_sorted")
                 .addIndexColumn("A").done()
                 .addIndexColumn("COL1").desc().done()
@@ -212,7 +215,7 @@ public class SchemaConfigurationConverterTest {
      * Add/remove PartialIndex into configuration and read it back.
      */
     @Test
-    public void testPartialIndex() throws ExecutionException, InterruptedException {
+    public void testPartialIndex() throws Exception {
         PartialIndexDefinitionBuilder builder = SchemaBuilders.partialIndex("TEST");
         
         builder.addIndexColumn("A").done();
