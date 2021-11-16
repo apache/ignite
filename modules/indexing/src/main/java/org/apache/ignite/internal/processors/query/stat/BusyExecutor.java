@@ -157,6 +157,11 @@ public class BusyExecutor {
 
         CompletableFuture<Boolean> res = new CompletableFuture<>();
 
+        if (r instanceOf CancellableTask) {
+            res = res.thenApply(() -> cancellableTasks.remove(ct));
+            cancellableTasks.add(ct)
+        }
+
         pool.execute(() -> res.complete(busyRun(r, lock)));
 
         return res;
