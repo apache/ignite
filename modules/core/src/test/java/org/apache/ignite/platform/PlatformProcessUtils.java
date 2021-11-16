@@ -54,7 +54,7 @@ public class PlatformProcessUtils {
         pb.directory(new File(workDir));
         pb.redirectErrorStream(true);
         
-        if (env != null) {
+        if (env != null && !env.isEmpty()) {
             for (String pair : env.split("\\|")) {
                 String[] kv = pair.split("#");
                 assert kv.length == 2;
