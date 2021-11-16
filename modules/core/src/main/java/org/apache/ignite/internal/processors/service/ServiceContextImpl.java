@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -152,6 +153,11 @@ public class ServiceContextImpl implements ServiceContext {
         }
 
         return mtd == NULL_METHOD ? null : mtd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceCallContext currentCallContext() {
+        return ServiceCallContextHolder.current();
     }
 
     /**

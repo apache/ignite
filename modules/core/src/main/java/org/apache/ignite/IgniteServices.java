@@ -22,9 +22,11 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -609,6 +611,53 @@ public interface IgniteServices extends IgniteAsyncSupport {
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException;
+
+    /**
+     * Gets a remote handle on the service with the specified caller context. The proxy
+     * is dynamically created and provided for the specified service.
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service.
+     * @param sticky Whether or not Ignite should always contact the same remote
+     *      service or try to load-balance between services.
+     * @param callCtx Service call context.
+     * @param <T> Service type.
+     * @return Proxy over service.
+     * @throws IgniteException If failed to create service proxy.
+     * @see ServiceCallContext
+     */
+    @IgniteExperimental
+    public <T> T serviceProxy(
+        String name,
+        Class<? super T> svcItf,
+        boolean sticky,
+        ServiceCallContext callCtx
+    ) throws IgniteException;
+
+    /**
+     * Gets a remote handle on the service with the specified caller context and timeout.
+     * The proxy is dynamically created and provided for the specified service.
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service.
+     * @param sticky Whether or not Ignite should always contact the same remote
+     *      service or try to load-balance between services.
+     * @param callCtx Service call context.
+     * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
+     *  and will limit remote service invocation time.
+     * @param <T> Service type.
+     * @return Proxy over service.
+     * @throws IgniteException If failed to create service proxy.
+     * @see ServiceCallContext
+     */
+    @IgniteExperimental
+    public <T> T serviceProxy(
+        String name,
+        Class<? super T> svcItf,
+        boolean sticky,
+        ServiceCallContext callCtx,
+        long timeout
+    ) throws IgniteException;
 
     /** {@inheritDoc} */
     @Deprecated

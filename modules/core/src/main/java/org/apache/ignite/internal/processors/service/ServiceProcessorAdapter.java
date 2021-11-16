@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -29,8 +30,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Adapter for different service processor implementations.
@@ -119,13 +122,20 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param name Service name.
      * @param srvcCls Service class.
      * @param sticky Whether multi-node request should be done.
+     * @param callCtxProvider Caller context provider.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
-    public abstract <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout) throws IgniteException;
+    public abstract <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) throws IgniteException;
 
     /**
      * @param name Service name.
