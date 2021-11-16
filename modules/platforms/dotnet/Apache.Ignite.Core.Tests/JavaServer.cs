@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Common;
@@ -68,6 +69,18 @@ namespace Apache.Ignite.Core.Tests
             EnsureJvmCreated();
 
             var time = DateTime.Now;
+
+            if (Jvm.IsJava9())
+            {
+                // foreach (var option in Jvm.Java9Options)
+                // {
+                //     // commandSb.Append(" -D")
+                //     En
+                // }
+
+                var opts = string.Join(' ', Jvm.Java9Options);
+                Environment.SetEnvironmentVariable("MAVEN_OPTS", opts);
+            }
 
             TestUtilsJni.StartProcess(
                 file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
