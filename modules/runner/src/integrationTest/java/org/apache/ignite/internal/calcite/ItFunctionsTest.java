@@ -205,5 +205,35 @@ public class ItFunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT 4 % 2").returns(0).check();
         assertQuery("SELECT NULL % 2").returns(new Object[]{null}).check();
         assertQuery("SELECT 3 % NULL::int").returns(new Object[]{null}).check();
+        assertQuery("SELECT 3 % NULL").returns(new Object[] { null }).check();
+    }
+
+    @Test
+    public void testNullFunctionArguments() {
+        // Don't infer result data type from arguments (result is always INTEGER_NULLABLE).
+        assertQuery("SELECT ASCII(NULL)").returns(new Object[] { null }).check();
+        // Inferring result data type from first STRING argument.
+        assertQuery("SELECT REPLACE(NULL, '1', '2')").returns(new Object[] { null }).check();
+        // Inferring result data type from both arguments.
+        assertQuery("SELECT MOD(1, null)").returns(new Object[] { null }).check();
+        // Inferring result data type from first NUMERIC argument.
+        assertQuery("SELECT TRUNCATE(NULL, 0)").returns(new Object[] { null }).check();
+        // Inferring arguments data types and then inferring result data type from all arguments.
+        assertQuery("SELECT FALSE AND NULL").returns(false).check();
+    }
+
+    @Test
+    public void testReplace() {
+        assertQuery("SELECT REPLACE('12341234', '1', '55')").returns("5523455234").check();
+        assertQuery("SELECT REPLACE(NULL, '1', '5')").returns(new Object[] { null }).check();
+        assertQuery("SELECT REPLACE('1', NULL, '5')").returns(new Object[] { null }).check();
+        assertQuery("SELECT REPLACE('11', '1', NULL)").returns(new Object[] { null }).check();
+        assertQuery("SELECT REPLACE('11', '1', '')").returns("").check();
+    }
+
+    @Test
+    public void testMonthnameDayname() {
+        assertQuery("SELECT MONTHNAME(DATE '2021-01-01')").returns("January").check();
+        assertQuery("SELECT DAYNAME(DATE '2021-01-01')").returns("Friday").check();
     }
 }

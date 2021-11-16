@@ -26,9 +26,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -97,6 +97,7 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15235")
     public void tableSpoolBroadcastNotRewindable() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -105,8 +106,8 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
                         .add("ID", f.createJavaType(Integer.class))
                         .add("JID", f.createJavaType(Integer.class))
                         .add("VAL", f.createJavaType(String.class))
-                        .build(),
-                RewindabilityTrait.ONE_WAY) {
+                        .build()
+                ) {
 
             @Override
             public IgniteDistribution distribution() {
@@ -119,8 +120,8 @@ public class TableSpoolPlannerTest extends AbstractPlannerTest {
                         .add("ID", f.createJavaType(Integer.class))
                         .add("JID", f.createJavaType(Integer.class))
                         .add("VAL", f.createJavaType(String.class))
-                        .build(),
-                RewindabilityTrait.ONE_WAY) {
+                        .build()
+                ) {
 
             @Override
             public IgniteDistribution distribution() {

@@ -163,10 +163,6 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         }
     }
 
-    public boolean simple() {
-        return condition == null && projects == null && requiredColumns == null;
-    }
-
     /**
      * PushUpPredicate.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859

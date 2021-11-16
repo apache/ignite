@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptRule;
@@ -41,10 +43,13 @@ public class IgnitePrograms {
     public static Program hep(RuleSet rules) {
         return (planner, rel, traits, materializations, lattices) -> {
             final HepProgramBuilder builder = new HepProgramBuilder();
+            final List<RelOptRule> ruleList = new ArrayList<>();
 
             for (RelOptRule rule : rules) {
-                builder.addRuleInstance(rule);
+                ruleList.add(rule);
             }
+
+            builder.addRuleCollection(ruleList);
 
             final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
                     null, Commons.context(rel).config().getCostFactory());

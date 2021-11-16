@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
-import static org.apache.calcite.rex.RexUtil.EXECUTOR;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -44,17 +44,24 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -63,6 +70,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
@@ -71,7 +79,9 @@ import org.apache.ignite.internal.generated.query.calcite.sql.IgniteSqlParserImp
 import org.apache.ignite.internal.processors.query.calcite.ResultSetMetadata;
 import org.apache.ignite.internal.processors.query.calcite.SqlCursor;
 import org.apache.ignite.internal.processors.query.calcite.SqlQueryType;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractMultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
@@ -80,6 +90,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.schema.BitmaskNativeType;
@@ -90,6 +103,7 @@ import org.apache.ignite.internal.schema.TemporalNativeType;
 import org.apache.ignite.internal.schema.VarlenNativeType;
 import org.apache.ignite.internal.util.ArrayUtils;
 import org.apache.ignite.lang.IgniteException;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
@@ -104,7 +118,7 @@ public final class Commons {
     public static final int IN_BUFFER_SIZE = 512;
 
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
-            .executor(EXECUTOR)
+            .executor(new RexExecutorImpl(DataContexts.EMPTY))
             .sqlToRelConverterConfig(SqlToRelConverter.config()
                     .withTrimUnusedFields(true)
                     // currently SqlToRelConverter creates not optimal plan for both optimization and execution
@@ -112,6 +126,7 @@ public final class Commons {
                     // TODO: remove this after IGNITE-14277
                     .withInSubQueryThreshold(Integer.MAX_VALUE)
                     .withDecorrelationEnabled(true)
+                    .withExpand(false)
                     .withHintStrategyTable(
                             HintStrategyTable.builder()
                                     .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
@@ -126,6 +141,7 @@ public final class Commons {
                             .withConformance(IgniteSqlConformance.INSTANCE))
             .sqlValidatorConfig(SqlValidator.Config.DEFAULT
                     .withIdentifierExpansion(true)
+                    .withDefaultNullCollation(NullCollation.LOW)
                     .withSqlConformance(IgniteSqlConformance.INSTANCE))
             // Dialects support.
             .operatorTable(SqlOperatorTables.chain(
@@ -141,6 +157,13 @@ public final class Commons {
             // Custom cost factory to use during optimization
             .costFactory(new IgniteCostFactory())
             .typeSystem(IgniteTypeSystem.INSTANCE)
+            .traitDefs(new RelTraitDef<?>[] {
+                    ConventionTraitDef.INSTANCE,
+                    RelCollationTraitDef.INSTANCE,
+                    DistributionTraitDef.INSTANCE,
+                    RewindabilityTraitDef.INSTANCE,
+                    CorrelationTraitDef.INSTANCE,
+            })
             .build();
 
     private Commons() {
@@ -199,6 +222,20 @@ public final class Commons {
                 }
             }
         };
+    }
+
+    /**
+     * Gets appropriate field from two rows by offset.
+     *
+     * @param hnd RowHandler impl.
+     * @param offset Current offset.
+     * @param row1 row1.
+     * @param row2 row2.
+     * @return Returns field by offset.
+     */
+    public static <RowT> Object getFieldFromBiRows(RowHandler<RowT> hnd, int offset, RowT row1, RowT row2) {
+        return offset < hnd.columnCount(row1) ? hnd.get(offset, row1) :
+            hnd.get(offset - hnd.columnCount(row1), row2);
     }
 
     /**
@@ -745,5 +782,34 @@ public final class Commons {
 
             return 0;
         };
+    }
+
+    /**
+     * Parses a SQL statement.
+     *
+     * @param qry Query string.
+     * @param parserCfg Parser config.
+     * @return Parsed query.
+     */
+    public static SqlNodeList parse(String qry, SqlParser.Config parserCfg) {
+        try {
+            return parse(new SourceStringReader(qry), parserCfg);
+        } catch (SqlParseException e) {
+            throw new IgniteInternalException("Failed to parse query", e);
+        }
+    }
+
+    /**
+     * Parses a SQL statement.
+     *
+     * @param reader Source string reader.
+     * @param parserCfg Parser config.
+     * @return Parsed query.
+     * @throws org.apache.calcite.sql.parser.SqlParseException on parse error.
+     */
+    public static SqlNodeList parse(Reader reader, SqlParser.Config parserCfg) throws SqlParseException {
+        SqlParser parser = SqlParser.create(reader, parserCfg);
+
+        return parser.parseStmtList();
     }
 }

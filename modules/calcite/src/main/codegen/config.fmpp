@@ -425,6 +425,7 @@ data: {
       "RELATIVE"
       "RELEASE"
 #     "REPEAT" # not a keyword in Calcite
+      "REPLACE"
       "RESET"
 #     "RESIGNAL" # not a keyword in Calcite
       "RESTRICT"

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+
 /**
- * Scalar.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+ * Single scalar used for single input and single output.
  */
-public interface Scalar {
+@FunctionalInterface
+public interface SingleScalar extends Scalar {
+    /** Single input and single output. */
+    void execute(ExecutionContext ctx, Object in, Object out);
 }

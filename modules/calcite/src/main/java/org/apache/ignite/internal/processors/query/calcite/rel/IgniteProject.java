@@ -68,7 +68,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
      * @param rowType  Output row type.
      */
     public IgniteProject(RelOptCluster cluster, RelTraitSet traits, RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
-        super(cluster, traits, input, projects, rowType);
+        super(cluster, traits, List.of(), input, projects, rowType);
     }
 
     /**

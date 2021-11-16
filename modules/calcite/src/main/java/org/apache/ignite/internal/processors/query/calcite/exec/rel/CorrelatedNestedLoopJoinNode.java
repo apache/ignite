@@ -25,7 +25,7 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class CorrelatedNestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
-    private final Predicate<RowT> cond;
+    private final BiPredicate<RowT, RowT> cond;
 
     private final List<CorrelationId> correlationIds;
 
@@ -83,7 +83,7 @@ public class CorrelatedNestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
      * @param correlationIds Set of collections ids.
      * @param joinType Join rel type.
      */
-    public CorrelatedNestedLoopJoinNode(ExecutionContext<RowT> ctx, RelDataType rowType, Predicate<RowT> cond,
+    public CorrelatedNestedLoopJoinNode(ExecutionContext<RowT> ctx, RelDataType rowType, BiPredicate<RowT, RowT> cond,
             Set<CorrelationId> correlationIds, JoinRelType joinType) {
         super(ctx, rowType);
 
@@ -367,13 +367,16 @@ public class CorrelatedNestedLoopJoinNode<RowT> extends AbstractNode<RowT> {
 
                 while (requested > 0 && leftIdx < leftInBuf.size()) {
                     checkState();
-
-                    RowT row = handler.concat(leftInBuf.get(leftIdx), rightInBuf.get(rightIdx));
-
-                    if (cond.test(row)) {
+    
+                    RowT left = leftInBuf.get(leftIdx);
+                    RowT right = rightInBuf.get(rightIdx);
+    
+                    if (cond.test(left, right)) {
                         leftMatched.set(leftIdx);
 
                         requested--;
+
+                        RowT row = handler.concat(left, right);
 
                         downstream().push(row);
                     }

@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
  * TreeIndexSpoolExecutionTest.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public class TreeIndexSpoolExecutionTest extends AbstractExecutionTest {
+public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
     @Test
     public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext();

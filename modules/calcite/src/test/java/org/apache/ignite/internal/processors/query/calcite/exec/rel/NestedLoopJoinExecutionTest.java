@@ -23,6 +23,7 @@ import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getFieldFromBiRows;
 import static org.apache.ignite.internal.util.ArrayUtils.asList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
@@ -33,6 +34,7 @@ import java.util.Set;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.junit.jupiter.api.Test;
 
@@ -319,8 +321,11 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
         } else {
             outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
         }
-
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType, r -> r[2] == r[3]);
+    
+        RowHandler<Object[]> hnd = ctx.rowHandler();
+    
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType,
+                (r1, r2) -> getFieldFromBiRows(hnd, 2, r1, r2) == getFieldFromBiRows(hnd, 3, r1, r2));
         join.register(asList(leftNode, rightNode));
 
         RelDataType rowType;

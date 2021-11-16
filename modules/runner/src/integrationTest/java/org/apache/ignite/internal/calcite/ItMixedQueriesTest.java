@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.calcite;
 
+import static org.apache.ignite.internal.calcite.util.QueryChecker.containsIndexScan;
+import static org.apache.ignite.internal.calcite.util.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.util.CollectionUtils.first;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -259,7 +262,6 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
     }
     
     /** Quantified predicates test. */
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-13159")
     @Test
     public void quantifiedCompTest() throws InterruptedException {
         assertQuery("select salary from emp2 where salary > SOME (10, 11) ORDER BY salary")
@@ -292,6 +294,105 @@ public class ItMixedQueriesTest extends AbstractBasicIntegrationTest {
                 .check();
     }
     
+    /**
+     * Checks bang equal is allowed and works.
+     */
+    @Test
+    public void testBangEqual() {
+        assertEquals(4, sql("SELECT * FROM EMP1 WHERE name != ?", "Igor").size());
+    }
+    
+    /**
+     * Test verifies that
+     * 1) proper indexes will be chosen for queries with different kinds of ordering, and
+     * 2) result set returned will be sorted as expected.
+     */
+    @Test
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15107")
+    public void testSelectWithOrdering() {
+        // sql("drop table if exists test_tbl", true);
+        // sql("create table test_tbl (c1 int)", true);
+        // sql("insert into test_tbl values (1), (2), (3), (null)", true);
+    
+        // TODO: support indexes. https://issues.apache.org/jira/browse/IGNITE-14925
+        // sql("create index idx_asc on test_tbl (c1)", true);
+        // sql("create index idx_desc on test_tbl (c1 desc)", true);
+
+        createTable(
+                SchemaBuilders.tableBuilder("PUBLIC", "TEST_TBL").columns(
+                        SchemaBuilders.column("ID", ColumnType.INT32).asNonNull().build(),
+                        SchemaBuilders.column("C1", ColumnType.INT32).asNonNull().build()
+                ).withPrimaryKey("ID")
+        );
+
+        insertData(
+                "PUBLIC.TEST_TBL",
+                new String[] {"ID", "C1"},
+                new Object[] {0, 1},
+                new Object[] {0, 2},
+                new Object[] {0, 3},
+                new Object[] {0, null}
+        );
+        
+        assertQuery("select c1 from test_tbl ORDER BY c1")
+                // .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_ASC"))
+                // .matches(not(containsSubPlan("IgniteSort")))
+                .ordered()
+                .returns(new Object[]{null})
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        
+        assertQuery("select c1 from test_tbl ORDER BY c1 asc nulls first")
+                .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_ASC"))
+                .matches(not(containsSubPlan("IgniteSort")))
+                .ordered()
+                .returns(new Object[]{null})
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        
+        assertQuery("select c1 from test_tbl ORDER BY c1 asc nulls last")
+                .matches(containsSubPlan("IgniteSort"))
+                .ordered()
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .returns(new Object[]{null})
+                .check();
+        
+        assertQuery("select c1 from test_tbl ORDER BY c1 desc")
+                .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_DESC"))
+                .matches(not(containsSubPlan("IgniteSort")))
+                .ordered()
+                .returns(3)
+                .returns(2)
+                .returns(1)
+                .returns(new Object[]{null})
+                .check();
+        
+        assertQuery("select c1 from test_tbl ORDER BY c1 desc nulls first")
+                .matches(containsSubPlan("IgniteSort"))
+                .ordered()
+                .returns(new Object[]{null})
+                .returns(3)
+                .returns(2)
+                .returns(1)
+                .check();
+        
+        assertQuery("select c1 from test_tbl ORDER BY c1 desc nulls last")
+                .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX_DESC"))
+                .matches(not(containsSubPlan("IgniteSort")))
+                .ordered()
+                .returns(3)
+                .returns(2)
+                .returns(1)
+                .returns(new Object[]{null})
+                .check();
+    }
+
     private static Table createTable(String tableName) {
         TableDefinition schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", tableName)
                 .columns(

@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -48,6 +49,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
+import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
@@ -207,6 +209,11 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
     }
 
     /** {@inheritDoc} */
+    @Override public BiPredicate<RowT, RowT> biPredicate(RexNode filter, RelDataType rowType) {
+        return new BiPredicateImpl(biScalar(filter, rowType));
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Function<RowT, RowT> project(List<RexNode> projects, RelDataType rowType) {
         return new ProjectImpl(scalar(projects, rowType), ctx.rowHandler().factory(typeFactory, RexUtil.types(projects)));
@@ -221,7 +228,7 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
     /** {@inheritDoc} */
     @Override
     public <T> Supplier<T> execute(RexNode node) {
-        return new ValueImpl<T>(scalar(node, null), ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())));
+        return new ValueImpl<>(scalar(node, null), ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())));
     }
 
     /** {@inheritDoc} */
@@ -254,14 +261,45 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
 
         return rows;
     }
-
-    /** {@inheritDoc} */
-    @Override
-    public Scalar scalar(List<RexNode> nodes, RelDataType type) {
-        return SCALAR_CACHE.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
+    
+    /**
+     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
+     *
+     * @param node Expression.
+     * @param type Row type.
+     * @return SingleScalar.
+     */
+    private SingleScalar scalar(RexNode node, RelDataType type) {
+        return scalar(List.of(node), type);
     }
-
-    private Scalar compile(Iterable<RexNode> nodes, RelDataType type) {
+    
+    /**
+     * Creates {@link SingleScalar}, a code-generated expressions evaluator.
+     *
+     * @param nodes Expressions.
+     * @param type Row type.
+     * @return SingleScalar.
+     */
+    public SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
+        return (SingleScalar) SCALAR_CACHE.computeIfAbsent(digest(nodes, type, false),
+                k -> compile(nodes, type, false));
+    }
+    
+    /**
+     * Creates {@link BiScalar}, a code-generated expressions evaluator.
+     *
+     * @param node Expression.
+     * @param type Row type.
+     * @return BiScalar.
+     */
+    public BiScalar biScalar(RexNode node, RelDataType type) {
+        List<RexNode> nodes = List.of(node);
+        
+        return (BiScalar) SCALAR_CACHE.computeIfAbsent(digest(nodes, type, true),
+                k -> compile(nodes, type, true));
+    }
+    
+    private Scalar compile(Iterable<RexNode> nodes, RelDataType type, boolean biInParams) {
         if (type == null) {
             type = emptyType;
         }
@@ -278,10 +316,13 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
 
         ParameterExpression ctx =
                 Expressions.parameter(ExecutionContext.class, "ctx");
-
-        ParameterExpression in =
-                Expressions.parameter(Object.class, "in");
-
+    
+        ParameterExpression in1 =
+                Expressions.parameter(Object.class, "in1");
+    
+        ParameterExpression in2 =
+                Expressions.parameter(Object.class, "in2");
+    
         ParameterExpression out =
                 Expressions.parameter(Object.class, "out");
 
@@ -291,8 +332,9 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
         Expression hnd = builder.append("hnd",
                 Expressions.call(ctx,
                         IgniteMethod.CONTEXT_ROW_HANDLER.method()));
-
-        InputGetter inputGetter = new FieldGetter(hnd, in, type);
+    
+        InputGetter inputGetter = biInParams ? new BiFieldGetter(hnd, in1, in2, type) :
+                new FieldGetter(hnd, in1, type);
 
         Function1<String, InputGetter> correlates = new CorrelatesBuilder(builder, ctx, hnd).build(nodes);
 
@@ -307,14 +349,22 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
                                     Expressions.constant(i), out, projects.get(i))));
         }
 
+        String methodName = biInParams ? IgniteMethod.BI_SCALAR_EXECUTE.method().getName() :
+                IgniteMethod.SCALAR_EXECUTE.method().getName();
+
+        List<ParameterExpression> params = biInParams ? List.of(ctx, in1, in2, out) :
+                List.of(ctx, in1, out);
+    
         MethodDeclaration decl = Expressions.methodDecl(
-                Modifier.PUBLIC, void.class, IgniteMethod.SCALAR_EXECUTE.method().getName(),
-                List.of(ctx, in, out), builder.toBlock());
-
-        return Commons.compile(Scalar.class, Expressions.toString(List.of(decl), "\n", false));
+                Modifier.PUBLIC, void.class, methodName,
+                params, builder.toBlock());
+    
+        Class<? extends Scalar> clazz = biInParams ? BiScalar.class : SingleScalar.class;
+    
+        return Commons.compile(clazz, Expressions.toString(List.of(decl), "\n", false));
     }
-
-    private String digest(List<RexNode> nodes, RelDataType type) {
+    
+    private String digest(List<RexNode> nodes, RelDataType type, boolean biParam) {
         StringBuilder b = new StringBuilder();
 
         b.append('[');
@@ -325,7 +375,17 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
             }
 
             b.append(nodes.get(i));
+
+            new RexShuttle() {
+                @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
+                    b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
+
+                    return super.visitFieldAccess(fieldAccess);
+                }
+            }.apply(nodes.get(i));
         }
+
+        b.append(", biParam=").append(biParam);
 
         b.append(']');
 
@@ -335,36 +395,60 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
 
         return b.toString();
     }
-
-    private class PredicateImpl implements Predicate<RowT> {
-        private final Scalar scalar;
-
-        private final RowT out;
-
-        private final RowHandler<RowT> handler;
+    
+    private abstract class AbstractScalarPredicate<T extends Scalar> {
+        protected final T scalar;
+    
+        protected final RowT out;
+    
+        protected final RowHandler<RowT> hnd;
 
         /**
          * Constructor.
          *
          * @param scalar Scalar.
          */
-        private PredicateImpl(Scalar scalar) {
+        private AbstractScalarPredicate(T scalar) {
             this.scalar = scalar;
-            handler = ctx.rowHandler();
-            out = handler.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+            hnd = ctx.rowHandler();
+            out = hnd.factory(typeFactory, typeFactory.createJavaType(Boolean.class)).create();
+        }
+    }
+
+    /**
+     * Predicate implementation.
+     */
+    private class PredicateImpl extends AbstractScalarPredicate<SingleScalar> implements Predicate<RowT> {
+        private PredicateImpl(SingleScalar scalar) {
+            super(scalar);
         }
 
         /** {@inheritDoc} */
         @Override
         public boolean test(RowT r) {
             scalar.execute(ctx, r, out);
+            
+            return Boolean.TRUE == hnd.get(0, out);
+        }
+    }
 
-            return Boolean.TRUE == handler.get(0, out);
+    /**
+     * Binary predicate implementation: check on two rows (used for join: left and right rows).
+     */
+    private class BiPredicateImpl extends AbstractScalarPredicate<BiScalar> implements BiPredicate<RowT, RowT> {
+        private BiPredicateImpl(BiScalar scalar) {
+            super(scalar);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean test(RowT r1, RowT r2) {
+            scalar.execute(ctx, r1, r2, out);
+            return Boolean.TRUE == hnd.get(0, out);
         }
     }
 
     private class ProjectImpl implements Function<RowT, RowT> {
-        private final Scalar scalar;
+        private final SingleScalar scalar;
 
         private final RowFactory<RowT> factory;
 
@@ -374,7 +458,7 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
          * @param scalar  Scalar.
          * @param factory Row factory.
          */
-        private ProjectImpl(Scalar scalar, RowFactory<RowT> factory) {
+        private ProjectImpl(SingleScalar scalar, RowFactory<RowT> factory) {
             this.scalar = scalar;
             this.factory = factory;
         }
@@ -390,14 +474,14 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
     }
 
     private class ValuesImpl implements Supplier<RowT> {
-        private final Scalar scalar;
+        private final SingleScalar scalar;
 
         private final RowFactory<RowT> factory;
 
         /**
          * Constructor.
          */
-        private ValuesImpl(Scalar scalar, RowFactory<RowT> factory) {
+        private ValuesImpl(SingleScalar scalar, RowFactory<RowT> factory) {
             this.scalar = scalar;
             this.factory = factory;
         }
@@ -413,14 +497,14 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
     }
 
     private class ValueImpl<T> implements Supplier<T> {
-        private final Scalar scalar;
+        private final SingleScalar scalar;
 
         private final RowFactory<RowT> factory;
 
         /**
          * Constructor.
          */
-        private ValueImpl(Scalar scalar, RowFactory<RowT> factory) {
+        private ValueImpl(SingleScalar scalar, RowFactory<RowT> factory) {
             this.scalar = scalar;
             this.factory = factory;
         }
@@ -434,31 +518,68 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
             return (T) ctx.rowHandler().get(0, res);
         }
     }
-
-    private class FieldGetter implements InputGetter {
-        private final Expression hnd;
-
-        private final Expression row;
-
-        private final RelDataType rowType;
-
+    
+    private class BiFieldGetter extends CommonFieldGetter {
+        private final Expression row2;
+    
+        private BiFieldGetter(Expression hnd, Expression row1, Expression row2, RelDataType rowType) {
+            super(hnd, row1, rowType);
+            this.row2 = row2;
+        }
+    
+        /** {@inheritDoc} */
+        @Override
+        protected Expression fillExpressions(BlockBuilder list, int index) {
+            Expression row1 = list.append("row1", this.row);
+            Expression row2 = list.append("row2", this.row2);
+        
+            Expression field = Expressions.call(
+                    IgniteMethod.ROW_HANDLER_BI_GET.method(), hnd,
+                    Expressions.constant(index), row1, row2);
+        
+            return field;
+        }
+    }
+    
+    private class FieldGetter extends CommonFieldGetter {
         private FieldGetter(Expression hnd, Expression row, RelDataType rowType) {
+            super(hnd, row, rowType);
+        }
+        
+        /** {@inheritDoc} */
+        @Override protected Expression fillExpressions(BlockBuilder list, int index) {
+            Expression row = list.append("row", this.row);
+            
+            Expression field = Expressions.call(hnd,
+                    IgniteMethod.ROW_HANDLER_GET.method(),
+                    Expressions.constant(index), row);
+            
+            return field;
+        }
+    }
+    
+    private abstract class CommonFieldGetter implements InputGetter {
+        protected final Expression hnd;
+        
+        protected final Expression row;
+        
+        protected final RelDataType rowType;
+        
+        private CommonFieldGetter(Expression hnd, Expression row, RelDataType rowType) {
             this.hnd = hnd;
             this.row = row;
             this.rowType = rowType;
         }
-
+        
+        protected abstract Expression fillExpressions(BlockBuilder list, int index);
+        
         /** {@inheritDoc} */
         @Override
         public Expression field(BlockBuilder list, int index, Type desiredType) {
-            Expression row = list.append("row", this.row);
-
-            Expression field = Expressions.call(hnd,
-                    IgniteMethod.ROW_HANDLER_GET.method(),
-                    Expressions.constant(index), row);
-
+            Expression fldExpression = fillExpressions(list, index);
+            
             Type fieldType = typeFactory.getJavaClass(rowType.getFieldList().get(index).getType());
-
+            
             if (desiredType == null) {
                 desiredType = fieldType;
                 fieldType = Object.class;
@@ -467,11 +588,12 @@ public class ExpressionFactoryImpl<RowT> implements ExpressionFactory<RowT> {
                     && fieldType != java.sql.Timestamp.class) {
                 fieldType = Object.class;
             }
-
-            return EnumUtils.convert(field, fieldType, desiredType);
+            
+            return EnumUtils.convert(fldExpression, fieldType, desiredType);
         }
     }
-
+    
+    
     private class CorrelatesBuilder extends RexShuttle {
         private final BlockBuilder builder;
 

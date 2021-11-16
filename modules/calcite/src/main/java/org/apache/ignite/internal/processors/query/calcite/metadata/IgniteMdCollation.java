@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.apache.calcite.adapter.enumerable.EnumerableCorrelate;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableNestedLoopJoin;
@@ -181,48 +180,6 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
      */
     public ImmutableList<RelCollation> collations(TableScan scan, RelMetadataQuery mq) {
         return ImmutableList.copyOf(table(scan.getTable()));
-    }
-
-    /**
-     * Collations.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     */
-    public ImmutableList<RelCollation> collations(EnumerableMergeJoin join, RelMetadataQuery mq) {
-        // In general a join is not sorted. But a merge join preserves the sort
-        // order of the left and right sides.
-        return ImmutableList.copyOf(
-                RelMdCollation.mergeJoin(mq, join.getLeft(), join.getRight(),
-                        join.analyzeCondition().leftKeys, join.analyzeCondition().rightKeys,
-                        join.getJoinType()));
-    }
-
-    /**
-     * Collations.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     */
-    public ImmutableList<RelCollation> collations(EnumerableHashJoin join, RelMetadataQuery mq) {
-        return ImmutableList.copyOf(
-                RelMdCollation.enumerableHashJoin(mq, join.getLeft(), join.getRight(), join.getJoinType()));
-    }
-
-    /**
-     * Collations.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     */
-    public ImmutableList<RelCollation> collations(EnumerableNestedLoopJoin join, RelMetadataQuery mq) {
-        return ImmutableList.copyOf(
-                RelMdCollation.enumerableNestedLoopJoin(mq, join.getLeft(), join.getRight(),
-                        join.getJoinType()));
-    }
-
-    /**
-     * Collations.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     */
-    public ImmutableList<RelCollation> collations(EnumerableCorrelate join, RelMetadataQuery mq) {
-        return ImmutableList.copyOf(
-                RelMdCollation.enumerableCorrelate(mq, join.getLeft(), join.getRight(),
-                        join.getJoinType()));
     }
 
     /**

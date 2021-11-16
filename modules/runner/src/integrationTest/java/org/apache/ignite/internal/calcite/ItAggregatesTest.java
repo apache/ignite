@@ -134,7 +134,6 @@ public class ItAggregatesTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT t.id, (SELECT x FROM TABLE(system_range(t.id, t.id))) FROM person t").check();
     }
 
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14597")
     @Test
     public void testAnyValAggr() {
         List<List<?>> res = sql("select any_value(name) from person");

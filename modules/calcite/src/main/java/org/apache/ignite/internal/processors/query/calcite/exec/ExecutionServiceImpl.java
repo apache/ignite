@@ -27,6 +27,7 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -36,17 +37,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
@@ -88,9 +87,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.NodeLeaveHandler;
@@ -195,11 +191,33 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             String qry,
             Object[] params
     ) {
-        PlanningContext pctx = createContext(topologyVersion(), locNodeId, schema, qry, params);
+        QueryPlan plan = qryPlanCache.queryPlan(new CacheKey(getDefaultSchema(schema).getName(), qry));
+        if (plan != null) {
+            PlanningContext pctx = createContext(schema, qry, params);
 
-        List<QueryPlan> qryPlans = qryPlanCache.queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareQuery);
+            return Collections.singletonList(executePlan(UUID.randomUUID(), pctx, plan));
+        }
 
-        return executePlans(qryPlans, pctx);
+        SqlNodeList qryList = Commons.parse(qry, FRAMEWORK_CONFIG.getParserConfig());
+        List<SqlCursor<List<?>>> cursors = new ArrayList<>(qryList.size());
+
+        for (final SqlNode qry0 : qryList) {
+            PlanningContext pctx = createContext(schema, qry0.toString(), params);
+
+            if (qryList.size() == 1) {
+                plan = qryPlanCache.queryPlan(
+                        pctx,
+                        new CacheKey(pctx.schemaName(), pctx.query()),
+                        pctx0 -> prepareSingle(qry0, pctx0)
+                );
+            } else {
+                plan = prepareSingle(qry0, pctx);
+            }
+
+            cursors.add(executePlan(UUID.randomUUID(), pctx, plan));
+        }
+
+        return cursors;
     }
 
     private SqlCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
@@ -329,16 +347,12 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         return 1L;
     }
 
+    private PlanningContext createContext(@Nullable String schema, String qry, Object[] params) {
+        return createContext(topologyVersion(), locNodeId, schema, qry, params);
+    }
+
     private PlanningContext createContext(long topVer, String originator,
             @Nullable String schema, String qry, Object[] params) {
-        RelTraitDef<?>[] traitDefs = {
-                ConventionTraitDef.INSTANCE,
-                RelCollationTraitDef.INSTANCE,
-                DistributionTraitDef.INSTANCE,
-                RewindabilityTraitDef.INSTANCE,
-                CorrelationTraitDef.INSTANCE,
-        };
-
         return PlanningContext.builder()
                 .localNodeId(locNodeId)
                 .originatingNodeId(originator)
@@ -347,7 +361,6 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
                         .defaultSchema(schema != null
                                 ? schemaHolder.schema().getSubSchema(schema)
                                 : schemaHolder.schema())
-                        .traitDefs(traitDefs)
                         .build())
                 .query(qry)
                 .parameters(params)
@@ -355,34 +368,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
                 .build();
     }
 
-    private List<QueryPlan> prepareQuery(PlanningContext ctx) {
-        try {
-            String qry = ctx.query();
-
-            assert qry != null;
-
-            // Parse query.
-            SqlNode sqlNode = ctx.planner().parse(qry);
-
-            if (single(sqlNode)) {
-                return singletonList(prepareSingle(sqlNode, ctx));
-            }
-
-            List<SqlNode> nodes = ((SqlNodeList) sqlNode).getList();
-            List<QueryPlan> res = new ArrayList<>(nodes.size());
-
-            for (SqlNode node : nodes) {
-                res.add(prepareSingle(node, ctx));
-            }
-
-            return res;
-        } catch (SqlParseException e) {
-            throw new IgniteInternalException("Failed to parse query", e);
-        } catch (ValidationException e) {
-            throw new IgniteInternalException("Failed to validate query", e);
-        } catch (Exception e) {
-            throw new IgniteInternalException("Failed to plan query.", e);
-        }
+    private SchemaPlus getDefaultSchema(String schema) {
+        return schema != null ? schemaHolder.schema().getSubSchema(schema) : schemaHolder.schema();
     }
 
     private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext ctx) {
@@ -403,41 +390,45 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         return new MultiStepQueryPlan(template, resultSetMetadata(ctx, validated.dataType(), validated.origins()));
     }
 
-    private List<QueryPlan> prepareFragment(PlanningContext ctx) {
-        return List.of(new FragmentPlan(fromJson(ctx, ctx.query())));
+    private QueryPlan prepareFragment(PlanningContext ctx) {
+        return new FragmentPlan(fromJson(ctx, ctx.query()));
     }
 
-    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
-        assert single(sqlNode);
+    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) {
+        try {
+            assert single(sqlNode);
 
-        ctx.planner().reset();
+            ctx.planner().reset();
 
-        switch (sqlNode.getKind()) {
-            case SELECT:
-            case ORDER_BY:
-            case WITH:
-            case VALUES:
-            case UNION:
-            case EXCEPT:
-            case INTERSECT:
-                return prepareQuery(sqlNode, ctx);
-
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                return prepareDml(sqlNode, ctx);
-
-            case EXPLAIN:
-                return prepareExplain(sqlNode, ctx);
-
-            case CREATE_TABLE:
-            case DROP_TABLE:
+            if (SqlKind.DDL.contains(sqlNode.getKind())) {
                 return prepareDdl(sqlNode, ctx);
+            }
 
-            default:
-                throw new IgniteInternalException("Unsupported operation ["
+            switch (sqlNode.getKind()) {
+                case SELECT:
+                case ORDER_BY:
+                case WITH:
+                case VALUES:
+                case UNION:
+                case EXCEPT:
+                case INTERSECT:
+                    return prepareQuery(sqlNode, ctx);
+
+                case INSERT:
+                case DELETE:
+                case UPDATE:
+                    return prepareDml(sqlNode, ctx);
+
+                case EXPLAIN:
+                    return prepareExplain(sqlNode, ctx);
+
+                default:
+                    throw new IgniteInternalException("Unsupported operation ["
                         + "sqlNodeKind=" + sqlNode.getKind() + "; "
                         + "querySql=\"" + ctx.query() + "\"]");
+            }
+        } catch (ValidationException e) {
+            throw new IgniteInternalException("Failed to validate query", e);
         }
     }
 
@@ -576,15 +567,14 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             PlanningContext pctx = createContext(msg.topologyVersion(), nodeId, msg.schema(),
                     msg.root(), msg.parameters());
 
-            List<QueryPlan> qryPlans = qryPlanCache.queryPlan(
+            QueryPlan qryPlan = qryPlanCache.queryPlan(
                     pctx,
                     new CacheKey(pctx.schemaName(), pctx.query()),
                     this::prepareFragment
             );
 
-            assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
 
-            FragmentPlan plan = (FragmentPlan) qryPlans.get(0);
+            FragmentPlan plan = (FragmentPlan) qryPlan;
 
             executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
         } catch (Throwable ex) {

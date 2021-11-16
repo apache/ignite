@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -70,6 +71,15 @@ public interface ExpressionFactory<RowT> {
     Predicate<RowT> predicate(RexNode filter, RelDataType rowType);
 
     /**
+     * Creates a Filter predicate.
+     *
+     * @param filter Filter expression.
+     * @param rowType Input row type.
+     * @return Filter predicate.
+     */
+    BiPredicate<RowT, RowT> biPredicate(RexNode filter, RelDataType rowType);
+
+    /**
      * Creates a Project function. Resulting function returns a row with different fields, fields order, fields types, etc.
      *
      * @param projects Projection expressions.
@@ -100,24 +110,4 @@ public interface ExpressionFactory<RowT> {
      * Executes expression.
      */
     <T> Supplier<T> execute(RexNode node);
-
-    /**
-     * Creates {@link Scalar}, a code-generated expressions evaluator.
-     *
-     * @param node Expression.
-     * @param type Row type.
-     * @return Scalar.
-     */
-    default Scalar scalar(RexNode node, RelDataType type) {
-        return scalar(List.of(node), type);
-    }
-
-    /**
-     * Creates {@link Scalar}, a code-generated expressions evaluator.
-     *
-     * @param nodes Expressions.
-     * @param type  Row type.
-     * @return Scalar.
-     */
-    Scalar scalar(List<RexNode> nodes, RelDataType type);
 }

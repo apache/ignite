@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test;
  * RuntimeTreeIndexTest.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public class RuntimeTreeIndexTest extends IgniteAbstractTest {
+public class RuntimeSortedIndexTest extends IgniteAbstractTest {
     private static final int UNIQUE_GROUPS = 10_000;
 
     private static final int[] NOT_UNIQUE_ROWS_IN_GROUP = new int[]{1, 10};
@@ -72,7 +72,7 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
 
         for (Pair<RelDataType, ImmutableIntList> testIdx : testIndexes) {
             for (int notUnique : NOT_UNIQUE_ROWS_IN_GROUP) {
-                RuntimeTreeIndex<Object[]> idx0 = generate(testIdx.getKey(), testIdx.getValue(), notUnique);
+                RuntimeSortedIndex<Object[]> idx0 = generate(testIdx.getKey(), testIdx.getValue(), notUnique);
 
                 int rowIdLow = ThreadLocalRandom.current().nextInt(UNIQUE_GROUPS * notUnique);
                 int rowIdUp = rowIdLow + ThreadLocalRandom.current().nextInt(UNIQUE_GROUPS * notUnique - rowIdLow);
@@ -101,8 +101,8 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
         }
     }
 
-    private RuntimeTreeIndex<Object[]> generate(RelDataType rowType, final List<Integer> idxCols, int notUnique) {
-        RuntimeTreeIndex<Object[]> idx = new RuntimeTreeIndex<>(
+    private RuntimeSortedIndex<Object[]> generate(RelDataType rowType, final List<Integer> idxCols, int notUnique) {
+        RuntimeSortedIndex<Object[]> idx = new RuntimeSortedIndex<>(
                 new ExecutionContext<>(
                         null,
                         PlanningContext.builder()
@@ -128,11 +128,9 @@ public class RuntimeTreeIndexTest extends IgniteAbstractTest {
 
         // First random fill
         for (int i = 0; i < UNIQUE_GROUPS * notUnique; ++i) {
-            int rowId = ThreadLocalRandom.current().nextInt(UNIQUE_GROUPS);
-
-            if (!rowIds.get(rowId)) {
-                idx.push(generateRow(rowId, rowType, notUnique));
-                rowIds.set(rowId);
+            if (!rowIds.get(i)) {
+                idx.push(generateRow(i, rowType, notUnique));
+                rowIds.set(i);
             }
         }
 

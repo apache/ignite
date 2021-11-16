@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.table.Tuple;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +38,12 @@ import org.jetbrains.annotations.Nullable;
  * Ignite internal table.
  */
 public interface InternalIgniteTable extends IgniteTable {
+    /** {@inheritDoc} */
+    @Override
+    default IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
+        return toRel(cluster, relOptTbl, null, null, null);
+    }
+    
     /**
      * Converts table into relational expression.
      *
@@ -43,8 +52,33 @@ public interface InternalIgniteTable extends IgniteTable {
      * @param idxName   Index name.
      * @return Table relational expression.
      */
-    IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
+    default IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+        return toRel(cluster, relOptTbl, idxName, null, null, null);
+    }
+    
+    /**
+     * Converts table into table scan relational expression.
+     */
+    IgniteLogicalTableScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+    );
 
+    /**
+     * Converts table into index scan relational expression.
+     */
+    IgniteLogicalIndexScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            String idxName,
+            List<RexNode> proj,
+            RexNode condition,
+            ImmutableBitSet requiredCols
+    );
+    
     /** Returns the internal table. */
     TableImpl table();
 

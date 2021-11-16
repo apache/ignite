@@ -23,38 +23,36 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.util.Cursor;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Runtime sorted index based on on-heap tree.
+ * Runtime sorted index.
  */
-public class RuntimeTreeIndex<RowT> implements RuntimeIndex<RowT>, TreeIndex<RowT> {
+public class RuntimeSortedIndex<RowT> implements RuntimeIndex<RowT>, TreeIndex<RowT> {
     protected final ExecutionContext<RowT> ectx;
 
     protected final Comparator<RowT> comp;
 
-    /** Collation. */
     private final RelCollation collation;
 
-    /** Rows. */
-    private TreeMap<RowT, List<RowT>> rows;
-
+    private final ArrayList<RowT> rows = new ArrayList<>();
+    
     /**
      * Constructor.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     *
+     * @param ectx Execution context.
+     * @param collation Index collation.
+     * @param comp Index row comparator.
      */
-    public RuntimeTreeIndex(
+    public RuntimeSortedIndex(
             ExecutionContext<RowT> ectx,
             RelCollation collation,
             Comparator<RowT> comp
@@ -65,21 +63,14 @@ public class RuntimeTreeIndex<RowT> implements RuntimeIndex<RowT>, TreeIndex<Row
         assert Objects.nonNull(collation);
 
         this.collation = collation;
-        rows = new TreeMap<>(comp);
     }
 
     /** {@inheritDoc} */
     @Override
     public void push(RowT r) {
-        List<RowT> newEqRows = new ArrayList<>();
+        assert rows.isEmpty() || comp.compare(r, rows.get(rows.size() - 1)) >= 0 : "Not sorted input";
 
-        List<RowT> eqRows = rows.putIfAbsent(r, newEqRows);
-
-        if (eqRows != null) {
-            eqRows.add(r);
-        } else {
-            newEqRows.add(r);
-        }
+        rows.add(r);
     }
 
     /** {@inheritDoc} */
@@ -94,13 +85,13 @@ public class RuntimeTreeIndex<RowT> implements RuntimeIndex<RowT>, TreeIndex<Row
         int firstCol = first(collation.getKeys());
 
         if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) != null) {
-            return new CursorImpl(rows.subMap(lower, true, upper, true));
+            return new CursorImpl(rows, lower, upper);
         } else if (ectx.rowHandler().get(firstCol, lower) == null && ectx.rowHandler().get(firstCol, upper) != null) {
-            return new CursorImpl(rows.headMap(upper, true));
+            return new CursorImpl(rows, null, upper);
         } else if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) == null) {
-            return new CursorImpl(rows.tailMap(lower, true));
+            return new CursorImpl(rows, lower, null);
         } else {
-            return new CursorImpl(rows);
+            return new CursorImpl(rows, null, null);
         }
     }
 
@@ -117,74 +108,100 @@ public class RuntimeTreeIndex<RowT> implements RuntimeIndex<RowT>, TreeIndex<Row
         return new IndexScan(rowType, this, filter, lowerBound, upperBound);
     }
 
+    /**
+     * Cursor to navigate through a sorted list with duplicates.
+     */
     private class CursorImpl implements Cursor<RowT> {
-        /** Sub map iterator. */
-        private final Iterator<Map.Entry<RowT, List<RowT>>> mapIt;
+        /** List of rows. */
+        private final List<RowT> rows;
 
-        /** Iterator over rows with equal index keys. */
-        private Iterator<RowT> listIt;
+        /** Upper bound. */
+        private final RowT upper;
 
-        private RowT row;
+        /** Current index of list element. */
+        private int idx;
 
-        CursorImpl(SortedMap<RowT, List<RowT>> subMap) {
-            mapIt = subMap.entrySet().iterator();
-            listIt = null;
+        CursorImpl(List<RowT> rows, @Nullable RowT lower, @Nullable RowT upper) {
+            this.rows = rows;
+            this.upper = upper;
+
+            idx = lower == null ? 0 : lowerBound(rows, lower);
         }
 
-        /** {@inheritDoc} */
-        @Override
-        public RowT next() throws IgniteInternalException {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
+        /**
+         * Searches the lower bound (skipping duplicates) using a binary search.
+         *
+         * @param rows List of rows.
+         * @param bound Lower bound.
+         * @return Lower bound position in the list.
+         */
+        private int lowerBound(List<RowT> rows, RowT bound) {
+            int low = 0;
+            int high = rows.size() - 1;
+            int idx = -1;
+
+            while (low <= high) {
+                int mid = (high - low) / 2 + low;
+                int compRes = comp.compare(rows.get(mid), bound);
+
+                if (compRes > 0) {
+                    high = mid - 1;
+                } else if (compRes == 0) {
+                    idx = mid;
+                    high = mid - 1;
+                } else {
+                    low = mid + 1;
+                }
             }
 
-            advance();
-
-            return listIt.next();
+            return idx == -1 ? low : idx;
         }
 
         /** {@inheritDoc} */
         @Override
         public boolean hasNext() {
-            return listIt != null && listIt.hasNext() || mapIt.hasNext();
+            if (idx == rows.size() || (upper != null && comp.compare(upper, rows.get(idx)) < 0)) {
+                return false;
+            }
+
+            return true;
         }
 
-        private void advance() {
-            if (listIt == null || !listIt.hasNext()) {
-                listIt = mapIt.next().getValue().iterator();
+        /** {@inheritDoc} */
+        @Override
+        public RowT next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
             }
+
+            return rows.get(idx++);
         }
 
         /** {@inheritDoc} */
         @Override
         public void close() throws Exception {
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @NotNull
         @Override
-        public Iterator<RowT> iterator() {
+        @NotNull public Iterator<RowT> iterator() {
             return this;
         }
     }
 
+    /**
+     * Index scan for RuntimeSortedIndex.
+     */
     private class IndexScan extends AbstractIndexScan<RowT, RowT> {
-        /**
-         * Constructor.
-         *
-         * @param rowType    Row type.
-         * @param idx        Physical index.
-         * @param filter     Additional filters.
-         * @param lowerBound Lower index scan bound.
-         * @param upperBound Upper index scan bound.
-         */
         IndexScan(
                 RelDataType rowType,
                 TreeIndex<RowT> idx,
                 Predicate<RowT> filter,
                 Supplier<RowT> lowerBound,
-                Supplier<RowT> upperBound) {
-            super(RuntimeTreeIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
+                Supplier<RowT> upperBound
+        ) {
+            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
         }
 
         /** {@inheritDoc} */

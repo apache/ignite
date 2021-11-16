@@ -25,6 +25,7 @@ import static org.apache.ignite.internal.util.CollectionUtils.first;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -216,7 +217,7 @@ public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>>
         JoinRelType joinType = rel.getJoinType();
 
         RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
-        Predicate<RowT> cond = expressionFactory.predicate(rel.getCondition(), rowType);
+        BiPredicate<RowT, RowT> cond = expressionFactory.biPredicate(rel.getCondition(), rowType);
 
         Node<RowT> node = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType, cond);
 
@@ -236,7 +237,7 @@ public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>>
         RelDataType rightType = rel.getRight().getRowType();
 
         RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
-        Predicate<RowT> cond = expressionFactory.predicate(rel.getCondition(), rowType);
+        BiPredicate<RowT, RowT> cond = expressionFactory.biPredicate(rel.getCondition(), rowType);
 
         assert rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.LEFT
                 : CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG;

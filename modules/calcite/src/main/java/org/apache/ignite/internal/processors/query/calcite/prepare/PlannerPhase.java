@@ -69,14 +69,54 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectS
  * Represents a planner phase with its description and a used rule set.
  */
 public enum PlannerPhase {
-    HEURISTIC_OPTIMIZATION("Heuristic optimization phase") {
+    HEP_DECORRELATE("Heuristic phase to decorrelate subqueries") {
         /** {@inheritDoc} */
         @Override
         public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
                     CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                     CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE);
+                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    HEP_FILTER_PUSH_DOWN("Heuristic phase to push down filters") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return RuleSets.ofList(
+                CoreRules.FILTER_MERGE,
+                CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+                CoreRules.FILTER_SET_OP_TRANSPOSE,
+                CoreRules.JOIN_CONDITION_PUSH,
+                CoreRules.FILTER_INTO_JOIN,
+                CoreRules.FILTER_PROJECT_TRANSPOSE
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return hep(getRules(ctx));
+        }
+    },
+
+    HEP_PROJECT_PUSH_DOWN("Heuristic phase to push down and merge projects") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return RuleSets.ofList(
+                ProjectScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
+                ProjectScanMergeRule.INDEX_SCAN_SKIP_CORRELATED,
+
+                CoreRules.JOIN_PUSH_EXPRESSIONS,
+                CoreRules.PROJECT_MERGE,
+                CoreRules.PROJECT_REMOVE,
+                CoreRules.PROJECT_FILTER_TRANSPOSE
+            );
         }
 
         /** {@inheritDoc} */
@@ -149,6 +189,7 @@ public enum PlannerPhase {
                             CoreRules.UNION_REMOVE,
                             CoreRules.JOIN_COMMUTE,
                             CoreRules.AGGREGATE_REMOVE,
+                            CoreRules.JOIN_COMMUTE_OUTER,
 
                             // Useful of this rule is not clear now.
                             // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
@@ -163,6 +204,8 @@ public enum PlannerPhase {
                             ExposeIndexRule.INSTANCE,
                             ProjectScanMergeRule.TABLE_SCAN,
                             ProjectScanMergeRule.INDEX_SCAN,
+                            FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
+                            FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
                             FilterScanMergeRule.TABLE_SCAN,
                             FilterScanMergeRule.INDEX_SCAN,
 
@@ -189,8 +232,6 @@ public enum PlannerPhase {
                             TableModifyConverterRule.INSTANCE,
                             UnionConverterRule.INSTANCE,
                             SortConverterRule.INSTANCE,
-                            FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
-                            FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
                             TableFunctionScanConverterRule.INSTANCE
                     )
             );

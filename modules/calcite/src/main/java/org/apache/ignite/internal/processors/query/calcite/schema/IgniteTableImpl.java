@@ -34,6 +34,7 @@ import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -101,24 +102,37 @@ public class IgniteTableImpl extends AbstractTable implements InternalIgniteTabl
 
     /** {@inheritDoc} */
     @Override
-    public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
+    public IgniteLogicalTableScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTbl,
+            @Nullable List<RexNode> proj,
+            @Nullable RexNode cond,
+            @Nullable ImmutableBitSet requiredColumns
+    ) {
         RelTraitSet traitSet = cluster.traitSetOf(distribution())
                 .replace(RewindabilityTrait.REWINDABLE);
 
-        return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
+        return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override
-    public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
+    public IgniteLogicalIndexScan toRel(
+            RelOptCluster cluster,
+            RelOptTable relOptTable,
+            String idxName,
+            List<RexNode> proj,
+            RexNode condition,
+            ImmutableBitSet requiredCols
+    ) {
         RelTraitSet traitSet = cluster.traitSetOf(Convention.Impl.NONE)
                 .replace(distribution())
                 .replace(RewindabilityTrait.REWINDABLE)
                 .replace(getIndex(idxName).collation());
-
-        return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
+        
+        return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTable, idxName, proj, condition, requiredCols);
     }
-
+    
     /** {@inheritDoc} */
     @Override
     public IgniteDistribution distribution() {

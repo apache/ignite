@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.definition.ColumnType;
 import org.apache.ignite.schema.definition.TableDefinition;
+import org.apache.ignite.schema.definition.builder.TableDefinitionBuilder;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
@@ -160,6 +161,20 @@ public class AbstractBasicIntegrationTest {
         });
         
         return tbl;
+    }
+    
+    protected static void createTable(TableDefinitionBuilder tblBld) {
+        TableDefinition schTbl1 = tblBld.build();
+        
+        CLUSTER_NODES.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
+                SchemaConfigurationConverter.convert(schTbl1, tblCh)
+                        .changeReplicas(1)
+                        .changePartitions(10)
+        );
+    }
+
+    protected static void insertData(String tblName, String[] columnNames, Object[]... tuples) {
+        insertData(CLUSTER_NODES.get(0).tables().table(tblName), columnNames, tuples);
     }
 
     protected static void insertData(Table table, String[] columnNames, Object[]... tuples) {
