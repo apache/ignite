@@ -76,7 +76,7 @@ public class BusyExecutor {
      */
     public synchronized void activate() {
         busyLock = new GridBusyLock();
-        
+
         active = true;
 
         if (log.isDebugEnabled())
@@ -157,34 +157,19 @@ public class BusyExecutor {
 
         CompletableFuture<Boolean> res = new CompletableFuture<>();
 
-        if (r instanceOf CancellableTask) {
-            res = res.thenApply(() -> cancellableTasks.remove(ct));
-            cancellableTasks.add(ct)
+        if (r instanceof CancellableTask) {
+            CancellableTask ct = (CancellableTask) r;
+
+            res.thenApply(result -> {
+                cancellableTasks.remove(ct);
+
+                return result;
+            });
+
+            cancellableTasks.add(ct);
         }
 
         pool.execute(() -> res.complete(busyRun(r, lock)));
-
-        return res;
-    }
-
-    /**
-     * Submit cancellable task to execute in thread pool.
-     *
-     * @param ct Task to execute.
-     * @return Completable future with executed flag in result.
-     */
-    public CompletableFuture<Boolean> submit(CancellableTask ct) {
-        GridBusyLock lock = busyLock;
-
-        CompletableFuture<Boolean> res = new CompletableFuture<>();
-
-        cancellableTasks.add(ct);
-
-        pool.execute(() -> {
-            res.complete(busyRun(ct, lock));
-
-            cancellableTasks.remove(ct);
-        });
 
         return res;
     }
