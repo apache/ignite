@@ -1,4 +1,4 @@
-A note about invoking Maven
+A Note about Invoking Maven
 ===========================
 
 Apache Ignite build system uses Maven Wrapper to simplify and standardize build process. On different operating
