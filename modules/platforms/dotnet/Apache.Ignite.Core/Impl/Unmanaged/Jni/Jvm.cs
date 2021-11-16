@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
@@ -104,8 +105,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             _methodId = new MethodId(env);
 
-            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
-            // (which fails due to _AppDomain usage).
+            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core.
             _callbacks = AppDomain.CurrentDomain.IsDefaultAppDomain()
                 ? new Callbacks(env, this)
                 : GetCallbacksFromDefaultDomain();
@@ -114,13 +114,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the callbacks.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static Callbacks GetCallbacksFromDefaultDomain()
         {
-#if !NETCOREAPP
             return GetCallbacksFromDefaultDomainImpl();
-#else
-            throw new IgniteException("Multiple domains are not supported on .NET Core.");
-#endif
         }
 
         /// <summary>

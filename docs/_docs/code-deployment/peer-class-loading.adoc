@@ -28,12 +28,12 @@ If you develop C# and .NET applications, then refer to the link:net-specific/net
 page for details on how to set up and use the peer-class-loading feature with that type of applications.
 ====
 
-For example, when link:key-value-api/using-scan-queries[querying data] with a custom transformer, you only need to define your tasks on the client node that initiates the computation, and Ignite loads the classes to the server nodes.
+For example, when link:key-value-api/using-cache-queries[querying data] with a custom transformer, you just need to define your tasks on the client node that initiates the computation, and Ignite will upload the classes to the server nodes.
 
 When enabled, peer class loading is used to deploy the following classes:
 
 * Tasks and jobs submitted via the link:distributed-computing/distributed-computing[compute interface].
-* Transformers and filters used with link:key-value-api/using-scan-queries[scan queries] and link:key-value-api/continuous-queries[continuous queries].
+* Transformers and filters used with link:key-value-api/using-cache-queries[cache queries] and link:key-value-api/continuous-queries[continuous queries].
 * Stream transformers, receivers and visitors used with link:data-streaming#data-streamers[data streamers].
 * link:distributed-computing/collocated-computations#entry-processor[Entry processors].
 

@@ -41,8 +41,6 @@ public class IntegerIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        int okey = (int) o.key();
-
-        return Integer.compare(key, okey);
+        return Integer.compare(key, ((IntegerIndexKey)o).key);
     }
 }

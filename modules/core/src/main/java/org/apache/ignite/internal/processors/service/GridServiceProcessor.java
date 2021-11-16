@@ -103,6 +103,7 @@ import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -1298,7 +1299,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             final Service svc;
 
             try {
-                svc = copyAndInject(assigns.configuration());
+                svc = copyAndInject(assigns.configuration(), svcCtx);
 
                 // Initialize service.
                 svc.init(svcCtx);
@@ -1368,10 +1369,11 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
     /**
      * @param cfg Service configuration.
+     * @param svcCtx Service context to be injected into the service.
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
+    private Service copyAndInject(ServiceConfiguration cfg, ServiceContext svcCtx) throws IgniteCheckedException {
         Marshaller m = ctx.config().getMarshaller();
 
         if (cfg instanceof LazyServiceConfiguration) {
@@ -1379,7 +1381,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
             Service srvc = U.unmarshal(m, bytes, U.resolveClassLoader(null, ctx.config()));
 
-            ctx.resource().inject(srvc);
+            ctx.resource().inject(srvc, svcCtx);
 
             return srvc;
         }
@@ -1391,7 +1393,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
                 Service cp = U.unmarshal(m, bytes, U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
 
-                ctx.resource().inject(cp);
+                ctx.resource().inject(cp, svcCtx);
 
                 return cp;
             }

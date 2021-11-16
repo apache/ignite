@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
@@ -43,6 +45,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
@@ -227,10 +230,13 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         cfg.setName(consistencyCancheName);
         cfg.setBackups(SERVER_NODE_CNT - 1);
+        cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(1));
 
         IgniteCache<Integer, Integer> cache = client.getOrCreateCache(cfg);
 
-        for (int i = 0; i < 10_000; i++)
+        int entries = 10_000;
+
+        for (int i = 0; i < entries; i++)
             cache.put(i, i);
 
         AtomicInteger getCnt = new AtomicInteger();
@@ -247,7 +253,16 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
                 assertTrue(F.iterator0(jobs, true, repairJobFilter).hasNext()); // Found.
             }
 
-            int res = execute("--kill", "consistency");
+            int res = execute("--consistency", "status");
+
+            assertEquals(EXIT_CODE_OK, res);
+
+            assertContains(log, testOut.toString(), "Status: 1024/" + entries);
+            assertNotContains(log, testOut.toString(), VisorConsistencyStatusTask.NOTHING_FOUND);
+
+            testOut.reset();
+
+            res = execute("--kill", "consistency");
 
             assertEquals(EXIT_CODE_OK, res);
 
@@ -270,16 +285,25 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             thLatch.countDown();
         });
 
+        // GridNearGetRequest messages count required to pefrom getAll() with readRepair from all nodes twice.
+        // First will be finished (which generates status), second will be frozen.
+        int twiceGetMsgCnt = SERVER_NODE_CNT * (SERVER_NODE_CNT - 1) * 2;
+
         for (IgniteEx server : srvs) {
             TestRecordingCommunicationSpi spi =
                 ((TestRecordingCommunicationSpi)server.configuration().getCommunicationSpi());
 
+            AtomicInteger locLimit = new AtomicInteger(SERVER_NODE_CNT - 1);
+
             spi.blockMessages((node, message) -> {
                 if (message instanceof GridNearGetRequest) { // Get request caused by read repair operation.
-                    if (getCnt.incrementAndGet() == SERVER_NODE_CNT) // Each node should send a get request.
+                    // Each node should perform get twice.
+                    if (getCnt.incrementAndGet() == twiceGetMsgCnt)
                         th.start();
 
-                    return true; // Blocking to freeze '--consistency repair' operation.
+                    assertTrue(getCnt.get() <= twiceGetMsgCnt); // Cancellation should stop the process.
+
+                    return locLimit.decrementAndGet() < 0; // Blocking to freeze '--consistency repair' operation (except first get).
                 }
 
                 return false;
@@ -291,7 +315,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", consistencyCancheName, "0"));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
-        assertContains(log, testOut.toString(), "violations were NOT found [processed=0]");
+        assertContains(log, testOut.toString(), VisorConsistencyRepairTask.NOTHING_FOUND);
+        assertNotContains(log, testOut.toString(), VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND);
 
         thLatch.await();
 
@@ -301,5 +326,14 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
             spi.stopBlock();
         }
+
+        testOut.reset();
+
+        int res = execute("--consistency", "status");
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        assertContains(log, testOut.toString(), VisorConsistencyStatusTask.NOTHING_FOUND);
+        assertNotContains(log, testOut.toString(), "Status");
     }
 }

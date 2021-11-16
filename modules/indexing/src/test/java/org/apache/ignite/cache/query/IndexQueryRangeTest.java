@@ -17,14 +17,17 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -35,6 +38,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,9 +74,6 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     private Ignite crd;
 
     /** */
-    private int duplicates;
-
-    /** */
     private IgniteCache<Long, Person> cache;
 
     /** */
@@ -96,40 +97,31 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     public int backups;
 
     /** */
-    @Parameterized.Parameters(name = "qryPar={0} atomicity={1} mode={2} node={3} backups={4}")
+    @Parameterized.Parameter(5)
+    public String idxName;
+
+    /** Number of duplicates of indexed value. */
+    @Parameterized.Parameter(6)
+    public int duplicates;
+
+    /** */
+    @Parameterized.Parameters(name = "qryPar={0} atomicity={1} mode={2} node={3} backups={4} idxName={5} duplicates={6}")
     public static Collection<Object[]> testParams() {
-        return Arrays.asList(
-            new Object[] {1, TRANSACTIONAL, REPLICATED, "CRD", 0},
-            new Object[] {1, TRANSACTIONAL, PARTITIONED, "CRD", 0},
-            new Object[] {4, TRANSACTIONAL, PARTITIONED, "CRD", 0},
+        List<Object[]> params = new ArrayList<>();
 
-            new Object[] {1, ATOMIC, REPLICATED, "CRD", 0},
-            new Object[] {1, ATOMIC, PARTITIONED, "CRD", 0},
-            new Object[] {4, ATOMIC, PARTITIONED, "CRD", 0},
+        Stream.of("CRD", "CLN").forEach(node ->
+            Stream.of(0, 2).forEach(backups ->
+                Stream.of(1, 10).forEach(duplicates ->
+                    Stream.of(IDX, DESC_IDX).forEach(idx -> {
+                        params.add(new Object[] {1, TRANSACTIONAL, REPLICATED, node, backups, idx, duplicates});
+                        params.add(new Object[] {1, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates});
+                        params.add(new Object[] {4, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates});
+                    })
+                )
+            )
+        );
 
-            new Object[] {1, TRANSACTIONAL, REPLICATED, "CLN", 0},
-            new Object[] {1, TRANSACTIONAL, PARTITIONED, "CLN", 0},
-            new Object[] {4, TRANSACTIONAL, PARTITIONED, "CLN", 0},
-
-            new Object[] {1, ATOMIC, REPLICATED, "CLN", 0},
-            new Object[] {1, ATOMIC, PARTITIONED, "CLN", 0},
-            new Object[] {4, ATOMIC, PARTITIONED, "CLN", 0},
-
-            new Object[] {1, TRANSACTIONAL, REPLICATED, "CRD", 2},
-            new Object[] {1, TRANSACTIONAL, PARTITIONED, "CRD", 2},
-            new Object[] {4, TRANSACTIONAL, PARTITIONED, "CRD", 2},
-
-            new Object[] {1, ATOMIC, REPLICATED, "CRD", 2},
-            new Object[] {1, ATOMIC, PARTITIONED, "CRD", 2},
-            new Object[] {4, ATOMIC, PARTITIONED, "CRD", 2},
-
-            new Object[] {1, TRANSACTIONAL, REPLICATED, "CLN", 2},
-            new Object[] {1, TRANSACTIONAL, PARTITIONED, "CLN", 2},
-            new Object[] {4, TRANSACTIONAL, PARTITIONED, "CLN", 2},
-
-            new Object[] {1, ATOMIC, REPLICATED, "CLN", 2},
-            new Object[] {1, ATOMIC, PARTITIONED, "CLN", 2},
-            new Object[] {4, ATOMIC, PARTITIONED, "CLN", 2});
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -172,166 +164,104 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRangeQueries() {
-        duplicates = 1;
-
-        checkRangeQueries();
-    }
-
-    /** */
-    @Test
-    public void testRangeDescQueries() {
-        duplicates = 1;
-
-        checkRangeDescQueries();
-    }
-
-    /** */
-    @Test
-    public void testRangeQueriesWithDuplicatedData() {
-        duplicates = 10;
-
-        checkRangeQueries();
-    }
-
-    /** */
-    @Test
-    public void testRangeDescQueriesWithDuplicatedData() {
-        duplicates = 10;
-
-        checkRangeDescQueries();
-    }
-
-    /** */
-    public void checkRangeQueries() {
+    public void testRangeQueries() throws Exception {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, idxName);
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Add data
         insertData();
 
+        qry = new IndexQuery<>(Person.class, idxName);
+
+        check(qry, 0, CNT);
+
+        // Range queries.
+        String fld = idxName.equals(IDX) ? "id" : "descId";
+
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(eq("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(eq(fld, pivot));
 
-        check(cache.query(qry), pivot, pivot + 1);
+        check(qry, pivot, pivot + 1);
 
         // Lt.
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(lt(fld, pivot));
 
-        check(cache.query(qry), 0, pivot);
+        check(qry, 0, pivot);
 
         // Lte.
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(lte("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(lte(fld, pivot));
 
-        check(cache.query(qry), 0, pivot + 1);
+        check(qry, 0, pivot + 1);
 
         // Gt.
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(gt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(gt(fld, pivot));
 
-        check(cache.query(qry), pivot + 1, CNT);
+        check(qry, pivot + 1, CNT);
 
         // Gte.
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(gte("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(gte(fld, pivot));
 
-        check(cache.query(qry), pivot, CNT);
+        check(qry, pivot, CNT);
 
         // Between.
         int lower = new Random().nextInt(CNT / 2);
         int upper = lower + CNT / 20;
 
-        qry = new IndexQuery<Long, Person>(Person.class, IDX)
-            .setCriteria(between("id", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(between(fld, lower, upper));
 
-        check(cache.query(qry), lower, upper + 1);
-    }
-
-    /** */
-    public void checkRangeDescQueries() {
-        // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(lt("descId", Integer.MAX_VALUE));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        // Add data
-        insertData();
-
-        int pivot = new Random().nextInt(CNT);
-
-        // Eq.
-        qry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(eq("descId", pivot));
-
-        check(cache.query(qry), pivot, pivot + 1);
-
-        // Lt, desc index.
-        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(lt("descId", pivot));
-
-        check(cache.query(descQry), 0, pivot);
-
-        // Lte, desc index.
-        descQry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(lte("descId", pivot));
-
-        check(cache.query(descQry), 0, pivot + 1);
-
-        // Gt, desc index.
-        descQry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(gt("descId", pivot));
-
-        check(cache.query(descQry), pivot + 1, CNT);
-
-        // Gte, desc index.
-        descQry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(gte("descId", pivot));
-
-        check(cache.query(descQry), pivot, CNT);
-
-        // Between, desc index.
-        int lower = new Random().nextInt(CNT / 2);
-        int upper = lower + CNT / 20;
-
-        descQry = new IndexQuery<Long, Person>(Person.class, DESC_IDX)
-            .setCriteria(between("descId", lower, upper));
-
-        check(cache.query(descQry), lower, upper + 1);
+        check(qry, lower, upper + 1);
     }
 
     /**
      * @param left First cache key, inclusive.
      * @param right Last cache key, exclusive.
      */
-    private void check(QueryCursor<Cache.Entry<Long, Person>> cursor, int left, int right) {
-        List<Cache.Entry<Long, Person>> all = cursor.getAll();
+    private void check(Query<Cache.Entry<Long, Person>> qry, int left, int right) throws Exception {
+        QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
-        assertFalse(all.isEmpty());
+        int expSize = (right - left) * duplicates;
 
-        assertEquals((right - left) * duplicates, all.size());
+        Set<Long> expKeys = new HashSet<>(expSize);
+        List<Integer> expOrderedValues = new LinkedList<>();
 
-        Set<Long> expKeys = LongStream
-            .range((long) left * duplicates, (long) right * duplicates).boxed()
-            .collect(Collectors.toSet());
+        boolean desc = idxName.equals(DESC_IDX);
 
-        for (int i = 0; i < all.size(); i++) {
-            Cache.Entry<Long, Person> entry = all.get(i);
+        int from = desc ? right - 1 : left;
+        int to = desc ? left - 1 : right;
+        IntUnaryOperator op = (i) -> desc ? i - 1 : i + 1;
+
+        for (int i = from; i != to; i = op.applyAsInt(i)) {
+            for (int j = 0; j < duplicates; j++) {
+                expOrderedValues.add(i);
+                expKeys.add((long) CNT * j + i);
+            }
+        }
+
+        AtomicInteger actSize = new AtomicInteger();
+
+        ((QueryCursorEx<Cache.Entry<Long, Person>>)cursor).getAll(entry -> {
+            assertEquals(expOrderedValues.remove(0).intValue(), entry.getValue().id);
 
             assertTrue(expKeys.remove(entry.getKey()));
 
-            int persId = entry.getKey().intValue() / duplicates;
+            int persId = entry.getKey().intValue() % CNT;
 
-            assertEquals(new Person(persId), all.get(i).getValue());
-        }
+            assertEquals(new Person(persId), entry.getValue());
+
+            actSize.incrementAndGet();
+        });
+
+        assertEquals(expSize, actSize.get());
 
         assertTrue(expKeys.isEmpty());
     }
@@ -342,7 +272,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             for (int persId = 0; persId < CNT; persId++) {
                 // Create duplicates of data.
                 for (int i = 0; i < duplicates; i++)
-                    streamer.addData((long) persId * duplicates + i, new Person(persId));
+                    streamer.addData((long) CNT * i + persId, new Person(persId));
             }
         }
     }

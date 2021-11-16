@@ -22,24 +22,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.SystemProperty;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+
 /**
  * Write to a log recommendation for inline size.
  */
 public class InlineRecommender {
-    /** @see #IGNITE_THROTTLE_INLINE_SIZE_CALCULATION */
+    /** Default throttle frequency for an index row inline size calculation and logging index inline size recommendation. */
     public static final int DFLT_THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
-
-    /** */
-    @SystemProperty(value = "How often real invocation of inline size calculation will be skipped.", type = Long.class,
-        defaults = "" + DFLT_THROTTLE_INLINE_SIZE_CALCULATION)
-    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final AtomicLong inlineSizeCalculationCntr = new AtomicLong();
@@ -105,8 +100,7 @@ public class InlineRecommender {
                     break;
             }
 
-            String cols = def.indexKeyDefinitions().stream()
-                .map(IndexKeyDefinition::name)
+            String cols = def.indexKeyDefinitions().keySet().stream()
                 .collect(Collectors.joining(", ", "(", ")"));
 
             String type = def.primary() ? "PRIMARY KEY" : def.affinity() ? "AFFINITY KEY (implicit)" : "SECONDARY";

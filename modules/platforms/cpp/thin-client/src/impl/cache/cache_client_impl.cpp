@@ -102,6 +102,27 @@ namespace ignite
                 }
 
                 template<typename ReqT, typename RspT>
+                SP_DataChannel CacheClientImpl::SyncMessageSql(const ReqT& req, RspT& rsp)
+                {
+                    SP_DataChannel channel;
+                    try {
+                        channel = router.Get()->SyncMessage(req, rsp);
+                    }
+                    catch (IgniteError& err)
+                    {
+                        std::string msg("08001: ");
+                        msg += err.GetText();
+
+                        throw IgniteError(err.GetCode(), msg.c_str());
+                    }
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    return channel;
+                }
+
+                template<typename ReqT, typename RspT>
                 void CacheClientImpl::TransactionalSyncCacheKeyMessage(const WritableKey &key, ReqT &req,
                     RspT &rsp)
                 {
@@ -334,7 +355,7 @@ namespace ignite
                     SqlFieldsQueryRequest req(id, qry);
                     SqlFieldsQueryResponse rsp;
 
-                    SP_DataChannel channel = SyncMessage(req, rsp);
+                    SP_DataChannel channel = SyncMessageSql(req, rsp);
 
                     query::SP_QueryFieldsCursorImpl cursorImpl(
                         new query::QueryFieldsCursorImpl(
