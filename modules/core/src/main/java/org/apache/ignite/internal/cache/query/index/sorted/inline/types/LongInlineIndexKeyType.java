@@ -27,14 +27,14 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndexKey> {
     /** Constructor. */
     public LongInlineIndexKeyType() {
-        super(IndexKeyTypes.LONG, (short) 8);
+        super(IndexKeyTypes.LONG, (short)8);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, LongIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type());
         // +1 shift after type
-        PageUtils.putLong(pageAddr, off + 1, (long) key.key());
+        PageUtils.putLong(pageAddr, off + 1, (long)key.key());
 
         return keySize + 1;
     }
@@ -51,7 +51,7 @@ public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<LongIndex
     @Override public int compare0(long pageAddr, int off, LongIndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        return Integer.signum(Long.compare(val1, (long) key.key()));
+        return Integer.signum(Long.compare(val1, (long)key.key()));
     }
 
     /** {@inheritDoc} */

@@ -163,7 +163,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
     private void insertData(Ignite ignite, IgniteCache cache) {
         try (IgniteDataStreamer<Long, Person> streamer = ignite.dataStreamer(cache.getName())) {
             for (int i = 0; i < CNT; i++)
-                streamer.addData((long) i, new Person(i));
+                streamer.addData((long)i, new Person(i));
         }
     }
 
@@ -190,7 +190,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id);
         }

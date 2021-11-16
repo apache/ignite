@@ -742,7 +742,7 @@ public class TestsHelper {
             if (i % 2 != 0)
                 price = price / 2;
             else
-                price = (float) Math.sqrt(price);
+                price = (float)Math.sqrt(price);
 
             i++;
         }

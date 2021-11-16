@@ -2472,7 +2472,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertEquals(1, (int) cache.getAndPutIfAbsentAsync("key2", 3).get());
+            assertEquals(1, (int)cache.getAndPutIfAbsentAsync("key2", 3).get());
 
             if (tx != null)
                 tx.commit();

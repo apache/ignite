@@ -195,7 +195,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return new HashMap<>(Collections.singletonMap(1, 1));
 
                 case TYPE_BINARY:
-                    Integer field = (Integer) ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_BINARY);
+                    Integer field = (Integer)ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_BINARY);
 
                     return new PlatformComputeBinarizable(field);
 

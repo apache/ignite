@@ -256,7 +256,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
 
                 /** */
                 @Override public void run() {
-                    MaintenanceRegistry mntcRegistry = ((IgniteEx) ignite).context().maintenanceRegistry();
+                    MaintenanceRegistry mntcRegistry = ((IgniteEx)ignite).context().maintenanceRegistry();
 
                     List<MaintenanceAction<?>> actions = mntcRegistry
                         .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);

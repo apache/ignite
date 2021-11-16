@@ -517,7 +517,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         assertTrue(bObj instanceof BinaryObject);
         assertEquals(Collections.singletonList(null).getClass(), cBinary.getClass());
 
-        assertEquals(Integer.valueOf(123), ((BinaryObject) bObj).field("val"));
+        assertEquals(Integer.valueOf(123), ((BinaryObject)bObj).field("val"));
     }
 
     /**
@@ -1438,7 +1438,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey) o;
+            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey)o;
 
             return secondField.equals(that.secondField) &&
                 thirdField.equals(that.thirdField);

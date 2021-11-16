@@ -105,7 +105,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     public void testPrimaryAndBackupDead() throws Exception {
         backupCnt = 1;
 
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(4);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(4);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);

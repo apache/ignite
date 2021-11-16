@@ -41,7 +41,7 @@ public class StringIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        String okey = (String) o.key();
+        String okey = (String)o.key();
 
         return key.compareTo(okey);
     }

@@ -101,7 +101,7 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
                         orgCache.destroy();
                     }
                     else if (GridQueryCancelRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
-                        GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
+                        GridQueryCancelRequest req = (GridQueryCancelRequest)(gridMsg.message());
 
                         if (reqId == req.queryRequestId())
                             orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0)

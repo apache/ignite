@@ -615,7 +615,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            KeyClass keyClass = (KeyClass) o;
+            KeyClass keyClass = (KeyClass)o;
 
             return id == keyClass.id;
 
@@ -623,7 +623,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return (int) (id ^ (id >>> 32));
+            return (int)(id ^ (id >>> 32));
         }
     }
 

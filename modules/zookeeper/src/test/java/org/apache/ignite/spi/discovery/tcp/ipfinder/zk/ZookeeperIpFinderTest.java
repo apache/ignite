@@ -50,7 +50,7 @@ import org.junit.rules.Timeout;
 public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** ZK Cluster size. */
     private static final int ZK_CLUSTER_SIZE = 3;

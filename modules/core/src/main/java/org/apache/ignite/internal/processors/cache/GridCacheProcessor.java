@@ -473,7 +473,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.walState().onNodeLeft(task0.node().id());
         }
         else if (task instanceof FinishPreloadingTask) {
-            FinishPreloadingTask task0 = (FinishPreloadingTask) task;
+            FinishPreloadingTask task0 = (FinishPreloadingTask)task;
 
             CacheGroupContext grp = cacheGroup(task0.groupId());
 
@@ -5354,7 +5354,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache configuration splitter with or without old format support depending on cluster state.
      */
     private CacheConfigurationSplitter backwardCompatibleSplitter() {
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
 
         boolean oldFormat = !spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 

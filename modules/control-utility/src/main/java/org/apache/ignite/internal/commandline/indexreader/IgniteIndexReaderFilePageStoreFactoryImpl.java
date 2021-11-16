@@ -86,7 +86,7 @@ public class IgniteIndexReaderFilePageStoreFactoryImpl implements IgniteIndexRea
         int ver = storeFactory.latestVersion();
 
         FilePageStore store =
-            (FilePageStore)storeFactory.createPageStore(type, (IgniteOutClosure<Path>) null, allocationTracker::add);
+            (FilePageStore)storeFactory.createPageStore(type, (IgniteOutClosure<Path>)null, allocationTracker::add);
 
         return store.header(type, storeFactory.headerSize(ver));
     }

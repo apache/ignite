@@ -104,9 +104,9 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         g.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
-                CacheEvent e = (CacheEvent) evt;
+                CacheEvent e = (CacheEvent)evt;
 
-                oldVal.set((String) e.oldValue());
+                oldVal.set((String)e.oldValue());
 
                 latch.countDown();
 

@@ -4348,7 +4348,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ctx.security().enabled()) {
             assert msg instanceof GridIoSecurityAwareMessage;
 
-            return ((GridIoSecurityAwareMessage) msg).secSubjId();
+            return ((GridIoSecurityAwareMessage)msg).secSubjId();
         }
 
         return null;

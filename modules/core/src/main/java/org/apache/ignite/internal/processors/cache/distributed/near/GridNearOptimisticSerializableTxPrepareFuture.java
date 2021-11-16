@@ -149,7 +149,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         for (IgniteInternalFuture<?> fut : futures()) {
             if (isMini(fut)) {
-                MiniFuture f = (MiniFuture) fut;
+                MiniFuture f = (MiniFuture)fut;
 
                 if (f.primary().id().equals(nodeId)) {
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +

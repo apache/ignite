@@ -82,7 +82,7 @@ public class ObjectPartitionStatisticsImpl extends ObjectStatisticsImpl {
         if (!super.equals(o))
             return false;
 
-        ObjectPartitionStatisticsImpl that = (ObjectPartitionStatisticsImpl) o;
+        ObjectPartitionStatisticsImpl that = (ObjectPartitionStatisticsImpl)o;
 
         return partId == that.partId &&
             updCnt == that.updCnt;

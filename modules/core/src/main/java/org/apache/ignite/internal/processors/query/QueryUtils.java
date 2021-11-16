@@ -1209,7 +1209,7 @@ public class QueryUtils {
 
         long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 
-        return (int) tmp;
+        return (int)tmp;
     }
 
     /**

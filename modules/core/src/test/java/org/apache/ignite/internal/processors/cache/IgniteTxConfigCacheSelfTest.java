@@ -138,7 +138,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @return Internal cache instance.
      */
     protected IgniteInternalCache<Object, Object> getSystemCache(final Ignite ignite, final String cacheName) {
-        return ((IgniteKernal) ignite).context().cache().cache(cacheName);
+        return ((IgniteKernal)ignite).context().cache().cache(cacheName);
     }
 
     /**

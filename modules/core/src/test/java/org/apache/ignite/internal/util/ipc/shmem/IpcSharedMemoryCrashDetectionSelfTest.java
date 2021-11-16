@@ -106,7 +106,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
 
         try {
             // Run client endpoint.
-            client = (IpcSharedMemoryClientEndpoint) IpcEndpointFactory.connectEndpoint(
+            client = (IpcSharedMemoryClientEndpoint)IpcEndpointFactory.connectEndpoint(
                 "shmem:" + IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log);
 
             OutputStream os = client.outputStream();

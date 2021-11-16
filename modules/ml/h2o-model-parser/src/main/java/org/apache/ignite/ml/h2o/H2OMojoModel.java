@@ -62,15 +62,15 @@ public class H2OMojoModel implements Model<NamedVector, Double> {
      */
     private static double extractRawValue(AbstractPrediction prediction) {
         if (prediction instanceof BinomialModelPrediction)
-            return ((BinomialModelPrediction) prediction).labelIndex;
+            return ((BinomialModelPrediction)prediction).labelIndex;
         else if (prediction instanceof MultinomialModelPrediction)
-            return ((MultinomialModelPrediction) prediction).labelIndex;
+            return ((MultinomialModelPrediction)prediction).labelIndex;
         else if (prediction instanceof RegressionModelPrediction)
-            return ((RegressionModelPrediction) prediction).value;
+            return ((RegressionModelPrediction)prediction).value;
         else if (prediction instanceof OrdinalModelPrediction)
-            return ((OrdinalModelPrediction) prediction).labelIndex;
+            return ((OrdinalModelPrediction)prediction).labelIndex;
         else if (prediction instanceof ClusteringModelPrediction)
-            return ((ClusteringModelPrediction) prediction).cluster;
+            return ((ClusteringModelPrediction)prediction).cluster;
         else
             throw new UnsupportedOperationException("Prediction " + prediction + " cannot be converted to a raw value.");
     }

@@ -42,7 +42,7 @@ public class DecimalIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        BigDecimal okey = (BigDecimal) o.key();
+        BigDecimal okey = (BigDecimal)o.key();
 
         return key.compareTo(okey);
     }

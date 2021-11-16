@@ -89,7 +89,7 @@ public class ObjectStatisticsImpl implements Cloneable, ObjectStatistics {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ObjectStatisticsImpl that = (ObjectStatisticsImpl) o;
+        ObjectStatisticsImpl that = (ObjectStatisticsImpl)o;
 
         return rowsCnt == that.rowsCnt
             && Objects.equals(colNameToStat, that.colNameToStat);

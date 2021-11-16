@@ -122,14 +122,14 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
      */
     public static long map(RandomAccessFile f, int mode, long start, long size) throws IOException {
         try {
-            return (Long) map0.invoke(f.getChannel(), mode, start, size);
+            return (Long)map0.invoke(f.getChannel(), mode, start, size);
         }
         catch (IllegalAccessException e) {
             throw new IllegalStateException(e);
         }
         catch (InvocationTargetException e) {
             Throwable target = e.getTargetException();
-            throw (target instanceof IOException) ? (IOException) target : new IOException(target);
+            throw (target instanceof IOException) ? (IOException)target : new IOException(target);
         }
     }
 

@@ -1424,7 +1424,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         m.setAccessible(true);
 
-        return (DiscoverySpi) m.invoke(discoverySpi);
+        return (DiscoverySpi)m.invoke(discoverySpi);
     }
 
     /**

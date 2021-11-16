@@ -561,9 +561,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    boolean ping1 = ((IgniteEx) srv1).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping1 = ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
 
-                    boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping2 = ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
 
                     return ping1 && ping2;
                 } catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
@@ -1278,7 +1278,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             startClientNodes(1);
 
             assertEquals(G.ignite("server-0").cluster().localNode().id(),
-                ((TcpDiscoveryNode) G.ignite("client-0").cluster().localNode()).clientRouterNodeId());
+                ((TcpDiscoveryNode)G.ignite("client-0").cluster().localNode()).clientRouterNodeId());
 
             checkNodes(2, 1);
 

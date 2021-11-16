@@ -301,7 +301,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            return obj instanceof Person && F.eq(((Person) obj).name, name);
+            return obj instanceof Person && F.eq(((Person)obj).name, name);
         }
     }
 

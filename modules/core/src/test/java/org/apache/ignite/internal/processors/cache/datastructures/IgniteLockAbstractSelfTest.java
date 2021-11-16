@@ -1644,7 +1644,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 l.lock();
 
                                 try {
-                                    long opsCounter = (long) ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
+                                    long opsCounter = (long)ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
 
                                     if (opsCounter == opsCount)
                                         break;

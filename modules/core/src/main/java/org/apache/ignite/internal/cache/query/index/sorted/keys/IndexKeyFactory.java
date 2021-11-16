@@ -62,31 +62,31 @@ public class IndexKeyFactory {
 
         switch (keyType) {
             case IndexKeyTypes.BOOLEAN:
-                return new BooleanIndexKey((boolean) o);
+                return new BooleanIndexKey((boolean)o);
             case IndexKeyTypes.BYTE:
-                return new ByteIndexKey((byte) o);
+                return new ByteIndexKey((byte)o);
             case IndexKeyTypes.SHORT:
-                return new ShortIndexKey((short) o);
+                return new ShortIndexKey((short)o);
             case IndexKeyTypes.INT:
-                return new IntegerIndexKey((int) o);
+                return new IntegerIndexKey((int)o);
             case IndexKeyTypes.LONG:
-                return new LongIndexKey((long) o);
+                return new LongIndexKey((long)o);
             case IndexKeyTypes.DECIMAL:
-                return new DecimalIndexKey((BigDecimal) o);
+                return new DecimalIndexKey((BigDecimal)o);
             case IndexKeyTypes.DOUBLE:
-                return new DoubleIndexKey((double) o);
+                return new DoubleIndexKey((double)o);
             case IndexKeyTypes.FLOAT:
-                return new FloatIndexKey((float) o);
+                return new FloatIndexKey((float)o);
             case IndexKeyTypes.BYTES:
                 return keyTypeSettings.binaryUnsigned() ?
-                    new BytesIndexKey((byte[]) o) : new SignedBytesIndexKey((byte[]) o);
+                    new BytesIndexKey((byte[])o) : new SignedBytesIndexKey((byte[])o);
             case IndexKeyTypes.STRING:
-                return new StringIndexKey((String) o);
+                return new StringIndexKey((String)o);
             case IndexKeyTypes.UUID:
-                return new UuidIndexKey((UUID) o);
+                return new UuidIndexKey((UUID)o);
             case IndexKeyTypes.JAVA_OBJECT:
                 if (BinaryObjectImpl.class == o.getClass())
-                    return new CacheJavaObjectIndexKey((CacheObject) o, coctx);
+                    return new CacheJavaObjectIndexKey((CacheObject)o, coctx);
 
                 return new PlainJavaObjectIndexKey(o, null);
         }

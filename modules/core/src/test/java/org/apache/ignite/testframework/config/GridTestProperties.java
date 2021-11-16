@@ -310,7 +310,7 @@ public final class GridTestProperties {
                 fileProps.load(in);
 
                 for (Entry<Object, Object> prop : fileProps.entrySet())
-                    props.put((String) prop.getKey(), (String) prop.getValue());
+                    props.put((String)prop.getKey(), (String)prop.getValue());
 
                 for (Entry<String, String> prop : props.entrySet())
                     prop.setValue(substituteProperties(prop.getValue()));

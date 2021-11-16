@@ -213,7 +213,7 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             if (id != person.id) return false;
             if (age != person.age) return false;

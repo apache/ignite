@@ -159,7 +159,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             Map res;
 
             if (i == JAVA_ID)
-                res = ((CombinedMap) allCaches.get(JAVA_ID)).userMap;
+                res = ((CombinedMap)allCaches.get(JAVA_ID)).userMap;
             else
                 res = allCaches.get(i);
 

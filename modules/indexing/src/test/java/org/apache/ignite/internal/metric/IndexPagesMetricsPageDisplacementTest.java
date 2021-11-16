@@ -161,8 +161,8 @@ public class IndexPagesMetricsPageDisplacementTest extends GridCommonAbstractTes
      * Returns IDs of index pages currently residing in the storage.
      */
     private List<Long> getIdxPagesOnDisk(int grpId) throws IgniteCheckedException {
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager) grid.context().cache().context().pageStore();
-        FilePageStore pageStore = (FilePageStore) pageStoreMgr.getStore(grpId, PageIdAllocator.INDEX_PARTITION);
+        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)grid.context().cache().context().pageStore();
+        FilePageStore pageStore = (FilePageStore)pageStoreMgr.getStore(grpId, PageIdAllocator.INDEX_PARTITION);
 
         List<Long> result = new ArrayList<>();
 

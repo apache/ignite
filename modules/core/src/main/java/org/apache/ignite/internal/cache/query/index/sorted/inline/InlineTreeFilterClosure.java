@@ -71,7 +71,7 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
         boolean val = filter == null || applyFilter((InlineIO)io, pageAddr, idx);
 
         if (mvccSnapshot != null)
-            return val && applyMvcc((InlineIO) io, pageAddr, idx);
+            return val && applyMvcc((InlineIO)io, pageAddr, idx);
 
         return val;
     }

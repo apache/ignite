@@ -46,7 +46,7 @@ public abstract class JavaObjectIndexKey implements IndexKey {
 
         // Keep old logic there and below.
         if (isComparable && otherIsComparable && haveCommonComparableSuperclass(o1.getClass(), o2.getClass()))
-            return ((Comparable) o1).compareTo(o2);
+            return ((Comparable)o1).compareTo(o2);
 
         else if (o1.getClass() != o2.getClass()) {
             if (isComparable != otherIsComparable)
@@ -59,7 +59,7 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int h2 = o2.hashCode();
 
             if (h1 == h2)
-                return o1.equals(o2) ? 0 : BytesCompareUtils.compareNotNullSigned(bytesNoCopy(), ((JavaObjectIndexKey) o).bytesNoCopy());
+                return o1.equals(o2) ? 0 : BytesCompareUtils.compareNotNullSigned(bytesNoCopy(), ((JavaObjectIndexKey)o).bytesNoCopy());
             else
                 return h1 > h2 ? 1 : -1;
         }

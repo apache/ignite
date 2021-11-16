@@ -259,7 +259,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
         ).mapToLong(p -> {
             try {
-                final FilePageStore store = (FilePageStore) ((PageStoreCollection) grp.shared().pageStore()).getStore(grpId, p);
+                final FilePageStore store = (FilePageStore)((PageStoreCollection)grp.shared().pageStore()).getStore(grpId, p);
 
                 return new File(store.getFileAbsolutePath()).length();
             } catch (IgniteCheckedException e) {

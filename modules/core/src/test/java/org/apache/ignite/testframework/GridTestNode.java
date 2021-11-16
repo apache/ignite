@@ -246,7 +246,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     @Override public boolean equals(Object obj) {
         assert obj instanceof ClusterNode;
 
-        return ((ClusterNode) obj).id().equals(id);
+        return ((ClusterNode)obj).id().equals(id);
     }
 
     /** {@inheritDoc} */

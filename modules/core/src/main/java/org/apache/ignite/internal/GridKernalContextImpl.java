@@ -504,7 +504,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridEncryptionManager)
             encryptionMgr = (GridEncryptionManager)comp;
         else if (comp instanceof GridTracingManager)
-            tracingMgr = (GridTracingManager) comp;
+            tracingMgr = (GridTracingManager)comp;
 
         /*
          * Processors.
@@ -588,7 +588,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof DurableBackgroundTasksProcessor)
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
         else if (comp instanceof MaintenanceProcessor)
-            maintenanceProc = (MaintenanceProcessor) comp;
+            maintenanceProc = (MaintenanceProcessor)comp;
         else if (comp instanceof PerformanceStatisticsProcessor)
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)

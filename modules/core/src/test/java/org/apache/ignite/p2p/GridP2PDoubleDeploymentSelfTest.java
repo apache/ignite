@@ -74,7 +74,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
 
             ignite1.compute().localDeployTask(taskCls, ldr);
 
-            Integer res1 = (Integer) ignite1.compute().execute(taskCls.getName(), 1);
+            Integer res1 = (Integer)ignite1.compute().execute(taskCls.getName(), 1);
 
             ignite1.compute().undeployTask(taskCls.getName());
 
@@ -84,7 +84,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
             ignite1.compute().localDeployTask(taskCls, ldr);
             ignite2.compute().localDeployTask(taskCls, ldr);
 
-            Integer res2 = (Integer) ignite2.compute().execute(taskCls.getName(), 2);
+            Integer res2 = (Integer)ignite2.compute().execute(taskCls.getName(), 2);
 
             info("Checking results...");
 

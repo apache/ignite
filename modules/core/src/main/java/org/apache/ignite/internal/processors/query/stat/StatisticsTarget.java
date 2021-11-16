@@ -83,7 +83,7 @@ public class StatisticsTarget {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        StatisticsTarget that = (StatisticsTarget) o;
+        StatisticsTarget that = (StatisticsTarget)o;
 
         return Objects.equals(key, that.key) &&
             Arrays.equals(columns, that.columns);

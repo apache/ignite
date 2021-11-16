@@ -61,7 +61,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        Assert.assertNotNull(((ANNClassificationModel) mdl).getCandidates());
+        Assert.assertNotNull(((ANNClassificationModel)mdl).getCandidates());
 
         assertTrue(mdl.toString().contains("weighted = [false]"));
         assertTrue(mdl.toString(true).contains("weighted = [false]"));
@@ -82,7 +82,7 @@ public class ANNClassificationTest extends TrainerTest {
             .withEpsilon(1e-4)
             .withDistance(new EuclideanDistance());
 
-        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.fit(
+        ANNClassificationModel originalMdl = (ANNClassificationModel)trainer.fit(
             cacheMock,
             parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
@@ -90,14 +90,14 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel) trainer.update(originalMdl,
+        ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel)trainer.update(originalMdl,
             cacheMock, parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.update(originalMdl,
+        ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel)trainer.update(originalMdl,
             new HashMap<>(), parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)

@@ -69,7 +69,7 @@ public class ClientMessage implements Message, Externalizable {
 
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
-                buf.put((byte) ((msgSize >> (8 * (4 + cnt))) & 0xFF));
+                buf.put((byte)((msgSize >> (8 * (4 + cnt))) & 0xFF));
 
             if (cnt < 0)
                 return false;

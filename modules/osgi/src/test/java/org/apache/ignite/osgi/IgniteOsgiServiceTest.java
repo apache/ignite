@@ -107,7 +107,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
         assertNotNull(ignite);
         assertEquals("testGrid", ignite.name());
 
-        TestOsgiFlags flags = (TestOsgiFlags) bundleCtx.getService(
+        TestOsgiFlags flags = (TestOsgiFlags)bundleCtx.getService(
             bundleCtx.getAllServiceReferences(TestOsgiFlags.class.getName(), null)[0]);
 
         assertNotNull(flags);

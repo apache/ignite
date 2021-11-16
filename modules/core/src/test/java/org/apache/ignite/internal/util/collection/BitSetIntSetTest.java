@@ -92,16 +92,16 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(3);
         Iterator<Integer> iter = intSet.iterator();
 
-        assertEquals(1, (int) iter.next());
+        assertEquals(1, (int)iter.next());
 
         iter.hasNext();
         iter.hasNext();
         iter.hasNext();
-        assertEquals(2, (int) iter.next());
+        assertEquals(2, (int)iter.next());
 
         iter.hasNext();
         iter.hasNext();
-        assertEquals(3, (int) iter.next());
+        assertEquals(3, (int)iter.next());
     }
 
     /** */

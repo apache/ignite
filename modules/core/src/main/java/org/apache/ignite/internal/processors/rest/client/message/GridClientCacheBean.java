@@ -124,7 +124,7 @@ public class GridClientCacheBean implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        GridClientCacheBean other = (GridClientCacheBean) obj;
+        GridClientCacheBean other = (GridClientCacheBean)obj;
 
         return name == null ? other.name == null : name.equals(other.name);
     }

@@ -243,7 +243,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             tx.rollback();
         }
 
-        assertEquals(1, (int) cache.get(key));
+        assertEquals(1, (int)cache.get(key));
 
         t.join();
     }

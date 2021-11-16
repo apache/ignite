@@ -197,7 +197,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 DiscoveryNotification notification
             ) {
                 DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                        : (DiscoveryCustomMessage) U.field(notification.getCustomMsgData(), "delegate");
+                        : (DiscoveryCustomMessage)U.field(notification.getCustomMsgData(), "delegate");
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator

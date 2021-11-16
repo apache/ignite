@@ -155,7 +155,7 @@ public abstract class StatisticsStorageTest extends StatisticsStorageAbstractTes
 
         Thread.sleep(TIMEOUT);
 
-        ObjectStatisticsImpl locStat2 = (ObjectStatisticsImpl) statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+        ObjectStatisticsImpl locStat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         assertNull(locStat2);
     }
@@ -167,10 +167,10 @@ public abstract class StatisticsStorageTest extends StatisticsStorageAbstractTes
     public void testDoublePartialDeletion() throws Exception {
         statisticsMgr(0).dropStatistics(new StatisticsTarget(SCHEMA, "SMALL", "B"));
 
-        assertTrue(GridTestUtils.waitForCondition(() -> null == ((ObjectStatisticsImpl) statisticsMgr(0)
+        assertTrue(GridTestUtils.waitForCondition(() -> null == ((ObjectStatisticsImpl)statisticsMgr(0)
             .getLocalStatistics(SMALL_KEY)).columnsStatistics().get("B"), TIMEOUT));
 
-        ObjectStatisticsImpl locStat = (ObjectStatisticsImpl) statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+        ObjectStatisticsImpl locStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         assertNotNull(locStat);
         assertNotNull(locStat.columnsStatistics().get("A"));
@@ -184,7 +184,7 @@ public abstract class StatisticsStorageTest extends StatisticsStorageAbstractTes
 
         Thread.sleep(TIMEOUT);
 
-        ObjectStatisticsImpl locStat2 = (ObjectStatisticsImpl) statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+        ObjectStatisticsImpl locStat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         assertNotNull(locStat2);
         assertNotNull(locStat.columnsStatistics().get("A"));

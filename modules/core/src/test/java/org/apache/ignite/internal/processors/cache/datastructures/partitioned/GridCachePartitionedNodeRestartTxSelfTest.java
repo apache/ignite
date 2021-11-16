@@ -156,9 +156,9 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
             try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Integer val = (Integer) grid(i).cache(DEFAULT_CACHE_NAME).get(key);
+                Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
-                assertEquals("Simple check failed for node: " + i, (Integer) i, val);
+                assertEquals("Simple check failed for node: " + i, (Integer)i, val);
 
                 grid(i).cache(DEFAULT_CACHE_NAME).put(key, i + 1);
 
@@ -183,11 +183,11 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, "testGroup");
 
-                GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).cache(DEFAULT_CACHE_NAME).get(key));
+                GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue)grid(i).cache(DEFAULT_CACHE_NAME).get(key));
 
                 assertNotNull(atomicVal);
 
-                assertEquals("Custom check failed for node: " + i, (long) i, atomicVal.get());
+                assertEquals("Custom check failed for node: " + i, (long)i, atomicVal.get());
 
                 atomicVal.set(i + 1);
 

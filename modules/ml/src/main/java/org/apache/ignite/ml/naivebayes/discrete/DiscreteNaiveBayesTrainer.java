@@ -84,7 +84,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                     LabeledVector lv = extractor.apply(entity.getKey(), entity.getValue());
                     Vector features = lv.features();
-                    Double lb = (Double) lv.label();
+                    Double lb = (Double)lv.label();
 
                     long[][] valuesInBucket;
 

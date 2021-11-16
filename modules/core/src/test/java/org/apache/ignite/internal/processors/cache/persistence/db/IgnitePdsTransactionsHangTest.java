@@ -292,7 +292,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         private static TestEntity newTestEntity(Random random) {
             TestEntity entity = new TestEntity();
 
-            entity.setLongVal((long) random.nextInt(1_000));
+            entity.setLongVal((long)random.nextInt(1_000));
             entity.setIntVal(random.nextInt(1_000));
             entity.setStrVal("test" + random.nextInt(1_000));
 

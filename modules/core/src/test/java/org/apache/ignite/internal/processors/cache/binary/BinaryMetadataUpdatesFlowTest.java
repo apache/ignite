@@ -199,11 +199,11 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         discoveryHook = new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage) {
-                    if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                    if (((MetadataUpdateProposedMessage)customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);
                 }
                 else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                    if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                    if (((MetadataUpdateAcceptedMessage)customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);
                 }
             }

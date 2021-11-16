@@ -112,7 +112,7 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
     private void executeTest() throws Exception {
         startGrid(0);
 
-        IgniteKernal ignite = (IgniteKernal) startGrid("secondNode");
+        IgniteKernal ignite = (IgniteKernal)startGrid("secondNode");
 
         GridCacheProcessor cacheProc = ignite.context().cache();
 

@@ -80,7 +80,7 @@ public final class MarshallerMappingItem implements Serializable {
         if (!(obj instanceof MarshallerMappingItem))
             return false;
 
-        MarshallerMappingItem that = (MarshallerMappingItem) obj;
+        MarshallerMappingItem that = (MarshallerMappingItem)obj;
 
         return platformId == that.platformId
                 && typeId == that.typeId

@@ -48,7 +48,7 @@ public class CatboostRegressionModel implements Model<NamedVector, Double> {
         float[] floatInput = new float[input.size()];
         int index = 0;
         for (String key: model.getFeatureNames()) {
-            floatInput[index] = (float) input.get(key);
+            floatInput[index] = (float)input.get(key);
             index++;
         }
 

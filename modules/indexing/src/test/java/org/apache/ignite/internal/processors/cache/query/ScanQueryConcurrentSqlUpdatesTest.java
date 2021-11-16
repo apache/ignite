@@ -78,7 +78,7 @@ public class ScanQueryConcurrentSqlUpdatesTest extends ScanQueryConcurrentUpdate
     @SuppressWarnings("unchecked")
     private String tableName(IgniteCache<Integer, Integer> cache) {
         CacheConfiguration<Integer, Integer> cacheCfg =
-                (CacheConfiguration<Integer, Integer>) cache.getConfiguration(CacheConfiguration.class);
+                (CacheConfiguration<Integer, Integer>)cache.getConfiguration(CacheConfiguration.class);
         QueryEntity qe = cacheCfg.getQueryEntities().iterator().next();
 
         return qe.getTableName();

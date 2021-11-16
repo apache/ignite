@@ -463,7 +463,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
 
             doWork();
 
-            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache(DEFAULT_CACHE_NAME);
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME);
             GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
@@ -698,7 +698,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
         private <T> Object get(String cacheKey, String terminalId) {
             Object key = new AffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(DEFAULT_CACHE_NAME).get(key);
+            return (T)ignite.cache(DEFAULT_CACHE_NAME).get(key);
         }
     }
 

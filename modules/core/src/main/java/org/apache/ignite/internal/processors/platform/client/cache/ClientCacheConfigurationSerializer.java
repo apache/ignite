@@ -359,7 +359,7 @@ public class ClientCacheConfigurationSerializer {
                     break;
 
                 case PARTITION_LOSS_POLICY:
-                    cfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte) reader.readInt()));
+                    cfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)reader.readInt()));
                     break;
 
                 case QUERY_DETAIL_METRICS_SIZE:

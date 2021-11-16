@@ -105,6 +105,6 @@ public class Chromosome implements Comparable {
 
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull Object o) {
-        return (int) Math.signum(getFitness() - ((Chromosome) o).getFitness());
+        return (int)Math.signum(getFitness() - ((Chromosome)o).getFitness());
     }
 }

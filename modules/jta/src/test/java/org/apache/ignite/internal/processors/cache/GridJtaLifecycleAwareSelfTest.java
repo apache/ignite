@@ -133,7 +133,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
     @SuppressWarnings("OverlyStrongTypeCast")
     @Override protected void afterGridStart(Ignite ignite) {
         TestTxLookup tmLookup =
-            (TestTxLookup)((IgniteKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
+            (TestTxLookup)((IgniteKernal)ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
 
         assertNotNull(tmLookup);
 

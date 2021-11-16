@@ -633,7 +633,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue that = (TestValue) o;
+            TestValue that = (TestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }

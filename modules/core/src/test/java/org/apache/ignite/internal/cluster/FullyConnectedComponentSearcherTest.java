@@ -39,7 +39,7 @@ import org.junit.runners.Parameterized;
 public class FullyConnectedComponentSearcherTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Adjacency matrix provider for each test. */
     private AdjacencyMatrixProvider provider;

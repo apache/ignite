@@ -83,7 +83,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
             InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
 
             // The only way to invoke inline comparation again.
-            return ((NullableInlineIndexKeyType) highType).compare0(pageAddr, off, objHighOrder);
+            return ((NullableInlineIndexKeyType)highType).compare0(pageAddr, off, objHighOrder);
         }
 
         return COMPARE_UNSUPPORTED;

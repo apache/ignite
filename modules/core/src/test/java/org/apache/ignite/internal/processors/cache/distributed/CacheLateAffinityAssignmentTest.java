@@ -1394,7 +1394,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         TestRecordingCommunicationSpi spi0 =
-            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi(), spi2, spi3;
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi(), spi2, spi3;
 
         // Prevent exchange completion.
         spi0.blockMessages(GridDhtPartitionsFullMessage.class, ignite2.name());

@@ -336,7 +336,7 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             for (Index idx: idxs) {
                 if (idx instanceof AbstractIndex)
-                    ((AbstractIndex) idx).markIndexRebuild(val);
+                    ((AbstractIndex)idx).markIndexRebuild(val);
             }
 
         }

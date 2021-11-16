@@ -84,16 +84,16 @@ public class MvccVersionImpl implements MvccVersion, Message {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MvccVersionImpl that = (MvccVersionImpl) o;
+        MvccVersionImpl that = (MvccVersionImpl)o;
 
         return crdVer == that.crdVer && cntr == that.cntr;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = (int) (crdVer ^ (crdVer >>> 32));
+        int res = (int)(crdVer ^ (crdVer >>> 32));
 
-        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
+        res = 31 * res + (int)(cntr ^ (cntr >>> 32));
 
         return res;
     }

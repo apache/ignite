@@ -107,7 +107,7 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testUnlimitedMaxArchiveSizeConfiguration() throws Exception {
         DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
-            .setWalSegmentSize((int) U.MB)
+            .setWalSegmentSize((int)U.MB)
             .setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setPersistenceEnabled(true)

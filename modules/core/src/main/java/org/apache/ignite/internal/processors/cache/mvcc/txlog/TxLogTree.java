@@ -81,6 +81,6 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
     /** {@inheritDoc} */
     @Override public TxRow getRow(BPlusIO<TxKey> io, long pageAddr,
                                   int idx, Object ignored) throws IgniteCheckedException {
-        return (TxRow) io.getLookupRow(this, pageAddr, idx);
+        return (TxRow)io.getLookupRow(this, pageAddr, idx);
     }
 }

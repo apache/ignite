@@ -93,7 +93,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
             List<List<?>> res = cache.query(new SqlFieldsQuery(
                     "explain select _key from String where _val > 'value1'").setLocal(true)).getAll();
 
-            assertTrue("__ explain: \n" + res, ((String) res.get(0).get(0)).toLowerCase().contains("_val_idx"));
+            assertTrue("__ explain: \n" + res, ((String)res.get(0).get(0)).toLowerCase().contains("_val_idx"));
 
             cache.destroy();
         }

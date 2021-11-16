@@ -31,7 +31,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** */
     public ObjectByteArrayInlineIndexKeyType(BytesInlineIndexKeyType delegate) {
-        super(IndexKeyTypes.JAVA_OBJECT, (short) -1);
+        super(IndexKeyTypes.JAVA_OBJECT, (short)-1);
 
         this.delegate = delegate;
     }
@@ -46,7 +46,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** {@inheritDoc} */
     @Override protected JavaObjectIndexKey get0(long pageAddr, int off) {
-        byte[] b = (byte[]) delegate.get0(pageAddr, off).key();
+        byte[] b = (byte[])delegate.get0(pageAddr, off).key();
 
         return new PlainJavaObjectIndexKey(null, b);
     }

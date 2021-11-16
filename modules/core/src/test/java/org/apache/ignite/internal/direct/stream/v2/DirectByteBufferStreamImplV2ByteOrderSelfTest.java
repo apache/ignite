@@ -243,7 +243,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
         short[] arr = new short[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
-            arr[i] = (short) RND.nextInt();
+            arr[i] = (short)RND.nextInt();
 
         testWriteArrayInternal(arr, false, false, 1);
         testWriteArrayInternal(arr, false, true, 1);

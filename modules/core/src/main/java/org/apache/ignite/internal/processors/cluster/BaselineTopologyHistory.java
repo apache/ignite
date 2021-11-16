@@ -46,7 +46,7 @@ public class BaselineTopologyHistory implements Serializable {
     /** */
     void restoreHistory(ReadOnlyMetastorage metastorage, int lastId) throws IgniteCheckedException {
         for (int i = 0; i < lastId; i++) {
-            BaselineTopologyHistoryItem histItem = (BaselineTopologyHistoryItem) metastorage.read(METASTORE_BLT_HIST_PREFIX + i);
+            BaselineTopologyHistoryItem histItem = (BaselineTopologyHistoryItem)metastorage.read(METASTORE_BLT_HIST_PREFIX + i);
 
             if (histItem != null)
                 hist.add(histItem);

@@ -116,7 +116,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
 
         final int problemNode = 2;
 
-        IgniteEx node = (IgniteEx) ignite(problemNode);
+        IgniteEx node = (IgniteEx)ignite(problemNode);
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
         ignite.cluster().active(false);

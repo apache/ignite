@@ -306,7 +306,7 @@ public class IndexQueryProcessor {
         IndexRowComparator keyCmp = idxDef.rowComparator();
 
         for (IndexQueryCriterion c: idxQryDesc.criteria()) {
-            RangeIndexQueryCriterion crit = (RangeIndexQueryCriterion) c;
+            RangeIndexQueryCriterion crit = (RangeIndexQueryCriterion)c;
 
             String fldName = idxFlds.containsKey(crit.field()) ? crit.field()
                 : QueryUtils.normalizeObjectName(crit.field(), false);
@@ -426,8 +426,8 @@ public class IndexQueryProcessor {
 
             qry.criteria[i] = criterion;
 
-            IndexKey l = (IndexKey) criterion.lower();
-            IndexKey u = (IndexKey) criterion.upper();
+            IndexKey l = (IndexKey)criterion.lower();
+            IndexKey u = (IndexKey)criterion.upper();
 
             if (l != null)
                 lowerAllNulls = false;
@@ -456,7 +456,7 @@ public class IndexQueryProcessor {
      * @return Prepared query for index range.
      */
     private IndexRangeQuery prepareQuery(SortedSegmentedIndex idx, IndexQueryDesc idxQryDesc) throws IgniteCheckedException {
-        SortedIndexDefinition idxDef = (SortedIndexDefinition) idxProc.indexDefinition(idx.id());
+        SortedIndexDefinition idxDef = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
 
         // For PK indexes will serialize _KEY column.
         if (F.isEmpty(idxQryDesc.criteria()))
@@ -515,7 +515,7 @@ public class IndexQueryProcessor {
         // Step 2. Scan and filter.
         return new GridCursor<IndexRow>() {
             /** */
-            private final IndexRowComparator rowCmp = ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator();
+            private final IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
 
             /** {@inheritDoc} */
             @Override public boolean next() throws IgniteCheckedException {

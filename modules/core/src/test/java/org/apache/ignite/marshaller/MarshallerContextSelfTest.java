@@ -109,7 +109,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         marshCtx.onMarshallerProcessorStarted(ctx, null);
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClassName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClassName);
 
         marshCtx.onMappingProposed(item);
 
@@ -146,7 +146,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerContextImpl marshCtx0 = ((IgniteKernal)grid0).context().marshallerContext();
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClassName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClassName);
 
         marshCtx0.onMappingProposed(item);
 
@@ -156,7 +156,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerContextImpl marshCtx1 = ((IgniteKernal)grid1).context().marshallerContext();
 
-        assertEquals(nonJavaClassName, marshCtx1.getClassName((byte) 2, 101));
+        assertEquals(nonJavaClassName, marshCtx1.getClassName((byte)2, 101));
     }
 
     /**
@@ -178,7 +178,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         checkFileName("java.lang.String", Paths.get(workDir + "/1.classname0"));
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
         ctx.onMappingAccepted(item2);
@@ -205,7 +205,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         ctx.onMappingAccepted(item1);
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
 
@@ -239,7 +239,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         ctx.onMappingAccepted(item1);
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 1, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)1, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
 

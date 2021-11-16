@@ -52,9 +52,9 @@ public class BucketMeta implements Serializable {
      */
     public int getBucketId(Double val) {
         if (featureMeta.isCategoricalFeature())
-            return (int) Math.rint(val);
+            return (int)Math.rint(val);
 
-        return (int) Math.rint((val - minVal) / bucketSize);
+        return (int)Math.rint((val - minVal) / bucketSize);
     }
 
     /**
@@ -65,7 +65,7 @@ public class BucketMeta implements Serializable {
      */
     public double bucketIdToValue(int bucketId) {
         if (featureMeta.isCategoricalFeature())
-            return (double) bucketId;
+            return (double)bucketId;
 
         return minVal + (bucketId + 0.5) * bucketSize;
     }

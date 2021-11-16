@@ -69,7 +69,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
         short type = mvcc ? PageIO.T_H2_EX_REF_MVCC_INNER_START : PageIO.T_H2_EX_REF_INNER_START;
 
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
-            short ioType = (short) (type + payload - 1);
+            short ioType = (short)(type + payload - 1);
 
             AbstractInlineInnerIO io = mvcc ? new MvccInlineInnerIO(ioType, payload) : new InlineInnerIO(ioType, payload);
 
@@ -121,10 +121,10 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
             long mvccCntr = mvccCounter(pageAddr, idx);
             int mvccOpCntr = mvccOperationCounter(pageAddr, idx);
 
-            return ((InlineIndexTree) tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return ((InlineIndexTree)tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
-        return ((InlineIndexTree) tree).createIndexRow(link);
+        return ((InlineIndexTree)tree).createIndexRow(link);
     }
 
     /** {@inheritDoc} */
@@ -137,7 +137,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
 
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
 
-        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO) srcIo, srcPageAddr, srcIdx, storeMvccInfo());
+        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO)srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
     /** {@inheritDoc} */

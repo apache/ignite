@@ -244,7 +244,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
         }
         catch (Exception e) {
             if (jdbc) {
-                e = (Exception) e.getCause();
+                e = (Exception)e.getCause();
 
                 assert e instanceof SQLException : e.getClass().getName();
             }

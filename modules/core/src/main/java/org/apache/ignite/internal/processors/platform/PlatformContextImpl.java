@@ -377,7 +377,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         else {
             writer.writeBoolean(true);
 
-            BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
+            BinaryMetadata meta0 = ((BinaryTypeImpl)meta).metadata();
 
             PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }

@@ -149,7 +149,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      */
     private void assertMetric(boolean exp) throws Exception {
         assertTrue(waitForCondition(() -> allGrids().stream().allMatch(ignite -> {
-            BooleanMetric rebalancedMetric = ((IgniteEx) ignite)
+            BooleanMetric rebalancedMetric = ((IgniteEx)ignite)
                 .context()
                 .metric()
                 .registry(CLUSTER_METRICS)
@@ -169,13 +169,13 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     private TestRecordingCommunicationSpi startGridWithRebalanceBlocked(int idx) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) cfg.getCommunicationSpi();
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)cfg.getCommunicationSpi();
 
         spi.blockMessages((node, msg) -> {
             if (!(msg instanceof GridDhtPartitionDemandMessage))
                 return false;
 
-            GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage) msg;
+            GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
             return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
         });

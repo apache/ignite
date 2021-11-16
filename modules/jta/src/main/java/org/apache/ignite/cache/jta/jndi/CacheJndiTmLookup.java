@@ -62,7 +62,7 @@ public class CacheJndiTmLookup implements CacheTmLookup {
                 Object obj = ctx.lookup(s);
 
                 if (obj != null && obj instanceof TransactionManager)
-                    return (TransactionManager) obj;
+                    return (TransactionManager)obj;
             }
         }
         catch (NamingException e) {

@@ -54,7 +54,7 @@ import static org.junit.Assert.assertNull;
 public class IgniteBinaryTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /**
      * Unmarshalling schema-less Ignite binary objects into Java static types.

@@ -199,7 +199,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
         if (shouldFail) {
             WALPointer[] lastReadPtrRef = new WALPointer[1];
 
-            IgniteException igniteException = (IgniteException) GridTestUtils.assertThrows(log, () -> {
+            IgniteException igniteException = (IgniteException)GridTestUtils.assertThrows(log, () -> {
                 try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
                     for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
                         WALPointer ptr = tuple.get1();

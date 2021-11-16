@@ -87,7 +87,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<CacheSearchRow> srcIo, long srcPageAddr,
         int srcIdx) {
-        RowLinkIO rowIo = (RowLinkIO) srcIo;
+        RowLinkIO rowIo = (RowLinkIO)srcIo;
 
         long link = rowIo.getLink(srcPageAddr, srcIdx);
         int hash = rowIo.getHash(srcPageAddr, srcIdx);

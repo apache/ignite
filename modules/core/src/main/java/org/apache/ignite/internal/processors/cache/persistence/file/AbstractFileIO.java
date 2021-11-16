@@ -137,7 +137,7 @@ public abstract class AbstractFileIO implements FileIO {
     private int available(int requested, long position) throws IOException {
         long avail = size() - position;
 
-        return requested > avail ? (int) avail : requested;
+        return requested > avail ? (int)avail : requested;
     }
 
 }

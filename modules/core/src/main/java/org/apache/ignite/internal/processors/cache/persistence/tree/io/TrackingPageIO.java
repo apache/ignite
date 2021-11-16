@@ -175,7 +175,7 @@ public class TrackingPageIO extends PageIO {
                 }
 
                 for (; i < len; i++) {
-                    byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
+                    byte newVal = (byte)(buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
 
                     newSize += Integer.bitCount(newVal & 0xFF);
 

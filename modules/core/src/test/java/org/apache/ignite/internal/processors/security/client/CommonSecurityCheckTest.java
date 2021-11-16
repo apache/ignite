@@ -90,7 +90,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
 
         cfg.setPluginProviders(getPluginProvider(name));
 
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory)GridTestUtils.sslFactory();
 
         cfg.setSslContextFactory(sslFactory);
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
@@ -154,7 +154,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return SSL context factory for clients.
      */
     @NotNull protected SslContextFactory getClientSslContextFactory() {
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory)GridTestUtils.sslFactory();
 
         sslFactory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.client.path"))
             .getAbsolutePath());

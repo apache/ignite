@@ -95,7 +95,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
-                TestAffinityFunction aff = (TestAffinityFunction) cctx.config().getAffinity();
+                TestAffinityFunction aff = (TestAffinityFunction)cctx.config().getAffinity();
 
                 assertNotNull(aff);
 

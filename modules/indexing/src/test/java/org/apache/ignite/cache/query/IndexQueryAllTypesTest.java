@@ -508,7 +508,7 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
             if (other == null || getClass() != other.getClass())
                 return false;
 
-            PojoField pojo = (PojoField) other;
+            PojoField pojo = (PojoField)other;
 
             return intVal == pojo.intVal
                 && Objects.equals(strVal, pojo.strVal)
@@ -538,7 +538,7 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
 
             strVal = bld.toString();
 
-            tsVal = (Timestamp) in.readObject();
+            tsVal = (Timestamp)in.readObject();
         }
     }
 }

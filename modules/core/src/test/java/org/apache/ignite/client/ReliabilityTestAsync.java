@@ -29,7 +29,7 @@ public class ReliabilityTestAsync extends ReliabilityTest {
             cache.putAsync(key, val).get();
         } catch (InterruptedException | ExecutionException e) {
             if (e.getCause() instanceof RuntimeException)
-                throw (RuntimeException) e.getCause();
+                throw (RuntimeException)e.getCause();
 
             throw new RuntimeException(e);
         }

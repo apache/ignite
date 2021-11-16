@@ -122,7 +122,7 @@ public class IgniteWalConverter {
                     boolean print = true;
 
                     if (record instanceof TimeStampRecord)
-                        print = withinTimeRange((TimeStampRecord) record, params.getFromTime(), params.getToTime());
+                        print = withinTimeRange((TimeStampRecord)record, params.getFromTime(), params.getToTime());
 
                     final String recordStr = toString(record, params.getProcessSensitiveData());
 

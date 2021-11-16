@@ -354,7 +354,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                         assertEquals(1, clients.size());
 
-                        final GridNioServer<?> srv = ((GridNioServerWrapper) U.field(spi, "nioSrvWrapper")).nio();
+                        final GridNioServer<?> srv = ((GridNioServerWrapper)U.field(spi, "nioSrvWrapper")).nio();
 
                         final int conns = pairedConnections ? 2 : 1;
 

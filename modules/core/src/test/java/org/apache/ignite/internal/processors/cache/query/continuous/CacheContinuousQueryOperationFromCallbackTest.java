@@ -818,7 +818,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            QueryTestValue that = (QueryTestValue) o;
+            QueryTestValue that = (QueryTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }

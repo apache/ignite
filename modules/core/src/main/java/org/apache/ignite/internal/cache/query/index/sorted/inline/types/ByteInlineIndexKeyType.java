@@ -27,20 +27,20 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndexKey> {
     /** */
     public ByteInlineIndexKeyType() {
-        super(IndexKeyTypes.BYTE, (short) 1);
+        super(IndexKeyTypes.BYTE, (short)1);
     }
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, ByteIndexKey key) {
         byte byte1 = PageUtils.getByte(pageAddr, off + 1);
 
-        return Integer.signum(byte1 - (byte) key.key());
+        return Integer.signum(byte1 - (byte)key.key());
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, ByteIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putByte(pageAddr, off + 1, (byte) key.key());
+        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off + 1, (byte)key.key());
 
         return keySize + 1;
     }

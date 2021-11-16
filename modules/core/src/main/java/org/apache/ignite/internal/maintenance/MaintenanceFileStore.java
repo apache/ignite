@@ -133,7 +133,7 @@ public class MaintenanceFileStore {
 
     /** */
     private void readTasksFromFile() throws IOException {
-        int len = (int) mntcTasksFileIO.size();
+        int len = (int)mntcTasksFileIO.size();
 
         if (len == 0)
             return;

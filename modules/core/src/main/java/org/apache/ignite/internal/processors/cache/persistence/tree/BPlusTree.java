@@ -835,15 +835,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.failureProcessor = failureProcessor;
 
         // Initialize page handlers.
-        askNeighbor = (PageHandler<Get, Result>) wrap(this, new AskNeighbor());
-        search = (PageHandler<Get, Result>) wrap(this, new Search());
-        lockTail = (PageHandler<Remove, Result>) wrap(this, new LockTail());
-        lockTailForward = (PageHandler<Remove, Result>) wrap(this, new LockTailForward());
-        lockBackAndTail = (PageHandler<Remove, Result>) wrap(this, new LockBackAndTail());
-        lockBackAndRmvFromLeaf = (PageHandler<Remove, Result>) wrap(this, new LockBackAndRmvFromLeaf());
-        rmvFromLeaf = (PageHandler<Remove, Result>) wrap(this, new RemoveFromLeaf());
-        insert = (PageHandler<Put, Result>) wrap(this, new Insert());
-        replace = (PageHandler<Put, Result>) wrap(this, new Replace());
+        askNeighbor = (PageHandler<Get, Result>)wrap(this, new AskNeighbor());
+        search = (PageHandler<Get, Result>)wrap(this, new Search());
+        lockTail = (PageHandler<Remove, Result>)wrap(this, new LockTail());
+        lockTailForward = (PageHandler<Remove, Result>)wrap(this, new LockTailForward());
+        lockBackAndTail = (PageHandler<Remove, Result>)wrap(this, new LockBackAndTail());
+        lockBackAndRmvFromLeaf = (PageHandler<Remove, Result>)wrap(this, new LockBackAndRmvFromLeaf());
+        rmvFromLeaf = (PageHandler<Remove, Result>)wrap(this, new RemoveFromLeaf());
+        insert = (PageHandler<Put, Result>)wrap(this, new Insert());
+        replace = (PageHandler<Put, Result>)wrap(this, new Replace());
     }
 
     /**

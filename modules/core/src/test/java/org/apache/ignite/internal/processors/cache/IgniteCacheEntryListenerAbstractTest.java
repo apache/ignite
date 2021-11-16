@@ -1517,7 +1517,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            ListenerTestValue that = (ListenerTestValue) o;
+            ListenerTestValue that = (ListenerTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }

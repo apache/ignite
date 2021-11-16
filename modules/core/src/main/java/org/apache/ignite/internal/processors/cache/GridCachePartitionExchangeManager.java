@@ -657,7 +657,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         .onAffinityChangeMessage(evt.eventNode(), msg);
             }
             else if (customMsg instanceof DynamicCacheChangeFailureMessage) {
-                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage) customMsg;
+                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage)customMsg;
 
                 if (msg.exchangeId().topologyVersion().topologyVersion() >=
                     affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
@@ -665,7 +665,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         .onDynamicCacheChangeFail(evt.eventNode(), msg);
             }
             else if (customMsg instanceof SnapshotDiscoveryMessage
-                && ((SnapshotDiscoveryMessage) customMsg).needExchange()) {
+                && ((SnapshotDiscoveryMessage)customMsg).needExchange()) {
                 exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
@@ -2669,7 +2669,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
             if (task instanceof GridDhtPartitionsExchangeFuture) {
-                GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture) task;
+                GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
                 if (fut.initialVersion().compareTo(resVer) > 0) {
                     if (log.isInfoEnabled()) {

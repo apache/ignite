@@ -109,7 +109,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
             MaintenanceTask task = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-            File workDir = ((FilePageStoreManager) ignite.context().cache().context().pageStore()).workDir();
+            File workDir = ((FilePageStoreManager)ignite.context().cache().context().pageStore()).workDir();
 
             switch (backupSettings.cleanAndBackupType()) {
                 case ALL:

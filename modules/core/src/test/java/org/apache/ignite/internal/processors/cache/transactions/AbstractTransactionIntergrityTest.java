@@ -379,7 +379,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            AccountState that = (AccountState) o;
+            AccountState that = (AccountState)o;
             return Objects.equals(txId, that.txId) &&
                 Objects.equals(coins, that.coins);
         }

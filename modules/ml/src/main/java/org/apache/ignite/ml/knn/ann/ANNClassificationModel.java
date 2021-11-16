@@ -257,7 +257,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
             List<double[]> listOfCandidates = new ArrayList<>();
             ProbableLabel[] labels = new ProbableLabel[candidates.rowSize()];
             for (int i = 0; i < candidates.rowSize(); i++) {
-                labels[i] = (ProbableLabel) candidates.getRow(i).getLb();
+                labels[i] = (ProbableLabel)candidates.getRow(i).getLb();
                 listOfCandidates.add(candidates.features(i).asArray());
             }
 

@@ -640,7 +640,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
         if (protoVer > V1) {
             diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
-            diskPageCompressionLevel = (Integer) in.readObject();
+            diskPageCompressionLevel = (Integer)in.readObject();
         }
     }
 

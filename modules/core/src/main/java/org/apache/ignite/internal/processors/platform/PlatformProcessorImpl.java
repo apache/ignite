@@ -473,7 +473,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
-                return loggerIsLevelEnabled((int) val) ? TRUE : FALSE;
+                return loggerIsLevelEnabled((int)val) ? TRUE : FALSE;
             }
 
             case OP_RELEASE_START: {

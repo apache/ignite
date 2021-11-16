@@ -268,7 +268,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 return msg instanceof GridDhtPartitionsFullMessage &&
-                    ((GridDhtPartitionsFullMessage) msg).exchangeId() == null;
+                    ((GridDhtPartitionsFullMessage)msg).exchangeId() == null;
             }
         });
 

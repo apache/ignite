@@ -42,7 +42,7 @@ public class UuidIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        UUID okey = (UUID) o.key();
+        UUID okey = (UUID)o.key();
 
         // Keep old logic.
         if (key.getMostSignificantBits() == okey.getMostSignificantBits())

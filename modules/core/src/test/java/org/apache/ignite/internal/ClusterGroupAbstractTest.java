@@ -427,13 +427,13 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void call3(AtomicInteger cnt) throws Exception {
-        IgniteFuture<String> fut = compute(prj).applyAsync(clrJob, (String) null);
+        IgniteFuture<String> fut = compute(prj).applyAsync(clrJob, (String)null);
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        compute(prj).apply(clrJob, (String) null);
+        compute(prj).apply(clrJob, (String)null);
 
         waitForValue(cnt, 1);
     }

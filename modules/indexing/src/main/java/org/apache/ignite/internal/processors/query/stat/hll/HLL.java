@@ -722,7 +722,7 @@ public class HLL implements Cloneable {
 
                     if (other.explicitStorage.size() <= explicitThreshold) {
                         type = HLLType.EXPLICIT;
-                        explicitStorage = (HashSet<Long>) other.explicitStorage.clone();
+                        explicitStorage = (HashSet<Long>)other.explicitStorage.clone();
                     }
                     else {
                         if (!sparseOff)

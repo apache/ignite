@@ -74,7 +74,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                     LabeledVector lv = extractor.apply(entity.getKey(), entity.getValue());
                     Vector features = lv.features();
-                    Double label = (Double) lv.label();
+                    Double label = (Double)lv.label();
 
                     double[] toMeans;
                     double[] sqSum;

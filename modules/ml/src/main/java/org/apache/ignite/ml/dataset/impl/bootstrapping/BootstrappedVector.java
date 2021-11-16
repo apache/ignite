@@ -82,6 +82,6 @@ public class BootstrappedVector extends LabeledVector<Double> {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        counters = (int[]) in.readObject();
+        counters = (int[])in.readObject();
     }
 }

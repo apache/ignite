@@ -116,7 +116,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
             byte[] data;
 
             try {
-                IgniteInternalCache<?, ?> cache = ((IgniteEx) ignite).cachex(cacheName);
+                IgniteInternalCache<?, ?> cache = ((IgniteEx)ignite).cachex(cacheName);
 
                 assert cache != null;
 

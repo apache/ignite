@@ -105,7 +105,7 @@ public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
                 }
 
             } else {
-                res[resIdx] = (double) tmpObj;
+                res[resIdx] = (double)tmpObj;
                 resIdx++;
             }
         }

@@ -170,7 +170,7 @@ public class LocalModelsTest {
             Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            ANNModelFormat load = (ANNModelFormat) exporter.load(mdlFilePath);
+            ANNModelFormat load = (ANNModelFormat)exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
 

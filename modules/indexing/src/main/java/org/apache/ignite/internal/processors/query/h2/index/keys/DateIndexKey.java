@@ -28,7 +28,7 @@ public class DateIndexKey extends AbstractDateIndexKey implements H2ValueWrapper
 
     /** */
     public DateIndexKey(Object obj) {
-        date = (ValueDate) wrapToValue(obj, type());
+        date = (ValueDate)wrapToValue(obj, type());
     }
 
     /** */

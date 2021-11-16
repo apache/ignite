@@ -156,7 +156,7 @@ public class ColumnStatistics {
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ColumnStatistics that = (ColumnStatistics) o;
+        ColumnStatistics that = (ColumnStatistics)o;
         return nulls == that.nulls &&
             distinct == that.distinct &&
             total == that.total &&

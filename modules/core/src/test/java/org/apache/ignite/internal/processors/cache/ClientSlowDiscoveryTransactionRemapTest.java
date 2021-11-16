@@ -456,7 +456,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
 
         // After resume second client join, transaction should be timed out and rolled back.
         if (concurrency == PESSIMISTIC) {
-            assertThrowsWithCause((Callable<Object>) txFut::get, TransactionTimeoutException.class);
+            assertThrowsWithCause((Callable<Object>)txFut::get, TransactionTimeoutException.class);
 
             // Check that initial data is not changed by rollbacked transaction.
             for (int k = 0; k < KEYS_SET; k++)

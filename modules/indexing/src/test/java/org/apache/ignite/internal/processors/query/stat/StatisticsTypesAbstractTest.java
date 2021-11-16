@@ -114,7 +114,7 @@ public abstract class StatisticsTypesAbstractTest extends StatisticsAbstractTest
             case "DECIMAL":
             case "DOUBLE":
             case "REAL":
-                return String.valueOf((double) cntr / 100);
+                return String.valueOf((double)cntr / 100);
 
             case "TIME":
                 return "'" + TIME_FORMATTER.format(TIMESTART.plus(cntr, ChronoUnit.SECONDS)) + "'";

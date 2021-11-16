@@ -706,11 +706,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (cacheMsg instanceof GridNearAtomicAbstractUpdateRequest)
             return ((GridNearAtomicAbstractUpdateRequest)cacheMsg).futureId();
         else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
-            return ((GridNearAtomicUpdateResponse) cacheMsg).futureId();
+            return ((GridNearAtomicUpdateResponse)cacheMsg).futureId();
         else if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest)
             return ((GridDhtAtomicAbstractUpdateRequest)cacheMsg).futureId();
         else if (cacheMsg instanceof GridDhtAtomicUpdateResponse)
-            return ((GridDhtAtomicUpdateResponse) cacheMsg).futureId();
+            return ((GridDhtAtomicUpdateResponse)cacheMsg).futureId();
         else if (cacheMsg instanceof GridNearAtomicCheckUpdateRequest)
             return ((GridNearAtomicCheckUpdateRequest)cacheMsg).futureId();
 

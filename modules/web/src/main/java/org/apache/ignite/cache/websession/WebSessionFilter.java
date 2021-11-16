@@ -486,7 +486,7 @@ public class WebSessionFilter implements Filter {
         HttpSession ses = httpReq.getSession(false);
 
         if (ses != null && ses instanceof WebSession) {
-            Collection<T2<String, Object>> updates = ((WebSession) ses).updates();
+            Collection<T2<String, Object>> updates = ((WebSession)ses).updates();
 
             if (updates != null)
                 updateAttributes(transformSessionId(sesId), updates, ses.getMaxInactiveInterval());
@@ -1012,7 +1012,7 @@ public class WebSessionFilter implements Filter {
 
                 if (create) {
                     try {
-                        ses = createSessionV2((HttpServletRequest) getRequest());
+                        ses = createSessionV2((HttpServletRequest)getRequest());
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -1032,7 +1032,7 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public String changeSessionId() {
-            final HttpServletRequest req = (HttpServletRequest) getRequest();
+            final HttpServletRequest req = (HttpServletRequest)getRequest();
 
             final String newId = req.changeSessionId();
 

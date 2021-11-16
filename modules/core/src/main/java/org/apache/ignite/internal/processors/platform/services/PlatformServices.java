@@ -206,7 +206,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 PlatformUtils.writeNullableCollection(writer, svcs,
                     new PlatformWriterClosure<Service>() {
                         @Override public void write(BinaryRawWriterEx writer, Service svc) {
-                            writer.writeLong(((PlatformService) svc).pointer());
+                            writer.writeLong(((PlatformService)svc).pointer());
                         }
                     },
                     new IgnitePredicate<Service>() {

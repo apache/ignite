@@ -299,7 +299,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        IgniteTxManager txManager = ((IgniteEx) ig).context().cache().context().tm();
+        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

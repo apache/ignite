@@ -52,7 +52,7 @@ import static org.junit.Assert.assertTrue;
 public class ClientConfigurationTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Serialization/deserialization. */
     @Test

@@ -77,7 +77,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
         boolean lazy = reader.readBoolean();
-        int timeout = (int) reader.readLong();
+        int timeout = (int)reader.readLong();
         includeFieldNames = reader.readBoolean();
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE

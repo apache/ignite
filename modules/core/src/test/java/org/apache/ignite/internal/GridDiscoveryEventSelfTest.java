@@ -165,7 +165,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     latch.countDown();
 
@@ -232,7 +232,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                     assert evt.type() == EVT_NODE_JOINED
                         || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     latch.countDown();
 
@@ -349,10 +349,10 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED : evt;
 
-                    X.println(">>>>>>> Joined " + F.viewReadOnly(((DiscoveryEvent) evt).topologyNodes(),
+                    X.println(">>>>>>> Joined " + F.viewReadOnly(((DiscoveryEvent)evt).topologyNodes(),
                         NODE_2ID));
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     return true;
                 }
@@ -401,7 +401,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                 g.events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
-                        DiscoveryEvent discoEvt = (DiscoveryEvent) evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         if (discoEvt.topologyNodes().size() != 3)
                             err.compareAndSet(null, new IgniteCheckedException("Invalid discovery event [evt=" + discoEvt +

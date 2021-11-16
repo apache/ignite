@@ -230,7 +230,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected) {
         for (Ignite ign : G.allGrids()) {
-            IgniteEx ignEx = (IgniteEx) ign;
+            IgniteEx ignEx = (IgniteEx)ign;
 
             if (ign.configuration().isClientMode())
                 continue;

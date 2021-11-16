@@ -142,7 +142,7 @@ public class ThinClientPartitionAwarenessDiscoveryTest extends ThinClientAbstrac
 
         ClientAddressFinder addrFinder = () ->
             IgnitionEx.allGrids().stream().map(node -> {
-                int port = (Integer) node.cluster().localNode().attributes().get(CLIENT_LISTENER_PORT);
+                int port = (Integer)node.cluster().localNode().attributes().get(CLIENT_LISTENER_PORT);
 
                 if (exclude.contains(port - DFLT_PORT))
                     return null;

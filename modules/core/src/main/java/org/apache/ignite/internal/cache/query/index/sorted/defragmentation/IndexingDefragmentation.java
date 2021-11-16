@@ -148,7 +148,7 @@ public class IndexingDefragmentation {
             for (InlineIndex oldIdx : indexes.idxs) {
                 InlineIndexRowHandler oldRowHnd = oldIdx.segment(0).rowHandler();
 
-                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.indexDefinition(oldIdx.id());
+                SortedIndexDefinition idxDef = (SortedIndexDefinition)indexing.indexDefinition(oldIdx.id());
 
                 InlineIndexImpl newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
                     .createIndex(cctx, idxDef)
@@ -177,7 +177,7 @@ public class IndexingDefragmentation {
                         IndexRow row = theTree.getRow(h2IO, pageAddr, idx);
 
                         if (!row.indexSearchRow()) {
-                            IndexRowImpl r = (IndexRowImpl) row;
+                            IndexRowImpl r = (IndexRowImpl)row;
 
                             CacheDataRow cacheDataRow = r.cacheDataRow();
 
@@ -191,7 +191,7 @@ public class IndexingDefragmentation {
 
                             CacheDataRow newDataRow;
 
-                             if (((MvccIO) io).storeMvccInfo()) {
+                             if (((MvccIO)io).storeMvccInfo()) {
                                  newDataRow = new MvccDataRow(newLink);
                                  newDataRow.mvccVersion(row);
                              } else

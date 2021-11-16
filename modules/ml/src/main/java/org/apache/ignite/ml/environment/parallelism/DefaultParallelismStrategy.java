@@ -41,7 +41,7 @@ public class DefaultParallelismStrategy implements ParallelismStrategy {
 
     /** {@inheritDoc} */
     @Override public int getParallelism() {
-        return ((ForkJoinPool) pool).getParallelism();
+        return ((ForkJoinPool)pool).getParallelism();
     }
 
     /**

@@ -89,13 +89,13 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      */
     protected List<Path> getIndexBinPaths(String cacheName) {
         return G.allGrids().stream()
-            .map(grid -> (IgniteEx) grid)
+            .map(grid -> (IgniteEx)grid)
             .map(grid -> {
                 IgniteInternalCache<Object, Object> cachex = grid.cachex(cacheName);
 
                 assertNotNull(cachex);
 
-                FilePageStoreManager pageStoreMgr = (FilePageStoreManager) cachex.context().shared().pageStore();
+                FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cachex.context().shared().pageStore();
 
                 assertNotNull(pageStoreMgr);
 

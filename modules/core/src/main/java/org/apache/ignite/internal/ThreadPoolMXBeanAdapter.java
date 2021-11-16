@@ -102,7 +102,7 @@ public class ThreadPoolMXBeanAdapter implements ThreadPoolMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean isTerminating() {
-        return exec instanceof ThreadPoolExecutor && ((ThreadPoolExecutor) exec).isTerminating();
+        return exec instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)exec).isTerminating();
     }
 
     /** {@inheritDoc} */

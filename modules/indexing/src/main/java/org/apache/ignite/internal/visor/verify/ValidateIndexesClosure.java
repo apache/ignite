@@ -565,7 +565,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         boolean mvccEnabled = context.mvccEnabled();
 
                         if (mvccEnabled)
-                            mvccSnapshot = ((QueryContext) session.getVariable(H2Utils.QCTX_VARIABLE_NAME).getObject()).mvccSnapshot();
+                            mvccSnapshot = ((QueryContext)session.getVariable(H2Utils.QCTX_VARIABLE_NAME).getObject()).mvccSnapshot();
 
                         GridIterator<CacheDataRow> iterator = grpCtx.offheap().cachePartitionIterator(
                             context.cacheId(),
@@ -690,7 +690,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             if (res == null)
                 continue; // Tolerate - (k, v) is just not indexed.
 
-            IgniteH2Indexing indexing = (IgniteH2Indexing) qryProcessor.getIndexing();
+            IgniteH2Indexing indexing = (IgniteH2Indexing)qryProcessor.getIndexing();
 
             GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(cacheCtx.name(), res.tableName());
 
@@ -743,11 +743,11 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         boolean mvccEnabled = cctx.mvccEnabled();
 
         if (mvccEnabled) {
-            ConnectionManager connMgr = ((IgniteH2Indexing) ignite.context().query().getIndexing()).connections();
+            ConnectionManager connMgr = ((IgniteH2Indexing)ignite.context().query().getIndexing()).connections();
 
-            JdbcConnection connection = (JdbcConnection) connMgr.connection().connection();
+            JdbcConnection connection = (JdbcConnection)connMgr.connection().connection();
 
-            session = (Session) connection.getSession();
+            session = (Session)connection.getSession();
 
             MvccQueryTracker tracker = MvccUtils.mvccTracker(cctx, true);
 

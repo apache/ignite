@@ -87,7 +87,7 @@ public class IgniteLostPartitionsOnLeaveBaselineSelfTest extends GridCommonAbstr
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }

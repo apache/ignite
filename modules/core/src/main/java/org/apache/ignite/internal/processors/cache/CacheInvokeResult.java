@@ -100,7 +100,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     @Override public T get() throws EntryProcessorException {
         if (err != null) {
             if (err instanceof UnregisteredClassException || err instanceof UnregisteredBinaryTypeException)
-                throw (IgniteException) err;
+                throw (IgniteException)err;
 
             if (err instanceof EntryProcessorException)
                 throw (EntryProcessorException)err;

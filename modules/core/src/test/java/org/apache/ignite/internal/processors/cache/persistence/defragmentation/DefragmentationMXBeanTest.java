@@ -295,7 +295,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
 
         fut.get();
 
-        ((GridCacheDatabaseSharedManager) grid(0).context().cache().context().database())
+        ((GridCacheDatabaseSharedManager)grid(0).context().cache().context().database())
             .defragmentationManager()
             .completionFuture()
             .get();

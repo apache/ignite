@@ -63,7 +63,7 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
             .map(x -> Math.pow(Math.abs(x), p))
             .times(internalWeights)
             .sum(),
-        1 / (double) p
+        1 / (double)p
     );
   }
 

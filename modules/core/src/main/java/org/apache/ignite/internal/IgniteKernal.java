@@ -1571,7 +1571,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             poolQSize = exec.getQueue().size();
         }
         else if (execSvc instanceof StripedExecutor) {
-            StripedExecutor exec = (StripedExecutor) execSvc;
+            StripedExecutor exec = (StripedExecutor)execSvc;
 
             poolSize = exec.stripesCount();
             poolActiveThreads = exec.activeStripesCount();

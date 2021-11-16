@@ -46,7 +46,7 @@ public class ClientCacheGetConfigurationRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        CacheConfiguration cfg = ((IgniteCache<Object, Object>) rawCache(ctx))
+        CacheConfiguration cfg = ((IgniteCache<Object, Object>)rawCache(ctx))
                 .getConfiguration(CacheConfiguration.class);
 
         return new ClientCacheGetConfigurationResponse(requestId(), cfg, protocolCtx);

@@ -96,7 +96,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
         if (cfg.addrRslvr() == null)
             cfg.addrRslvr(addrRslvr);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -139,7 +139,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
         if (cfg.localAddress() == null)
             cfg.localAddress(locAddr);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -163,7 +163,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setLocalPort(int locPort) {
         cfg.localPort(locPort);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -239,7 +239,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setUsePairedConnections(boolean usePairedConnections) {
         cfg.usePairedConnections(usePairedConnections);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -255,7 +255,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setConnectionsPerNode(int maxConnectionsPerNode) {
         cfg.connectionsPerNode(maxConnectionsPerNode);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -281,7 +281,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setSharedMemoryPort(int shmemPort) {
         cfg.shmemPort(shmemPort);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -306,7 +306,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setIdleConnectionTimeout(long idleConnTimeout) {
         cfg.idleConnectionTimeout(idleConnTimeout);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -340,7 +340,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setSocketWriteTimeout(long sockWriteTimeout) {
         cfg.socketWriteTimeout(sockWriteTimeout);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -364,7 +364,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setAckSendThreshold(int ackSndThreshold) {
         cfg.ackSendThreshold(ackSndThreshold);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -388,7 +388,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setUnacknowledgedMessagesBufferSize(int unackedMsgsBufSize) {
         cfg.unackedMsgsBufferSize(unackedMsgsBufSize);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -410,7 +410,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
 
         failureDetectionTimeoutEnabled(false);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -443,7 +443,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
 
         failureDetectionTimeoutEnabled(false);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -472,7 +472,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
 
         failureDetectionTimeoutEnabled(false);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -499,7 +499,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setDirectBuffer(boolean directBuf) {
         cfg.directBuffer(directBuf);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -532,7 +532,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setDirectSendBuffer(boolean directSndBuf) {
         cfg.directSendBuffer(directSndBuf);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -547,7 +547,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setSelectorsCount(int selectorsCnt) { ;
         cfg.selectorsCount(selectorsCnt);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -580,7 +580,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setSelectorSpins(long selectorSpins) {
         cfg.selectorSpins(selectorSpins);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /** */
@@ -608,7 +608,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setTcpNoDelay(boolean tcpNoDelay) {
         cfg.tcpNoDelay(tcpNoDelay);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -644,7 +644,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setFilterReachableAddresses(boolean filterReachableAddresses) {
         cfg.filterReachableAddresses(filterReachableAddresses);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -659,7 +659,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setSocketReceiveBuffer(int sockRcvBuf) {
         cfg.socketReceiveBuffer(sockRcvBuf);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -683,7 +683,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     public TcpCommunicationSpi setSocketSendBuffer(int sockSndBuf) {
 cfg.socketSendBuffer(sockSndBuf);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -710,7 +710,7 @@ cfg.socketSendBuffer(sockSndBuf);
     public TcpCommunicationSpi setMessageQueueLimit(int msgQueueLimit) {
         cfg.messageQueueLimit(msgQueueLimit);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -779,7 +779,7 @@ cfg.socketSendBuffer(sockSndBuf);
     public TcpCommunicationSpi setForceClientToServerConnections(boolean forceClientToSrvConnections) {
         cfg.forceClientToSrvConnections(forceClientToSrvConnections);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -799,7 +799,7 @@ cfg.socketSendBuffer(sockSndBuf);
     public TcpCommunicationSpi setSlowClientQueueLimit(int slowClientQueueLimit) {
         cfg.slowClientQueueLimit(slowClientQueueLimit);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /**
@@ -813,7 +813,7 @@ cfg.socketSendBuffer(sockSndBuf);
     @Override public TcpCommunicationSpi setName(String name) {
         super.setName(name);
 
-        return (TcpCommunicationSpi) this;
+        return (TcpCommunicationSpi)this;
     }
 
     /** {@inheritDoc} */

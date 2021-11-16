@@ -279,10 +279,10 @@ public final class UpdatePlan {
 
         if (cctx.binaryMarshaller()) {
             if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder) key).build();
+                key = ((BinaryObjectBuilder)key).build();
 
             if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder) val).build();
+                val = ((BinaryObjectBuilder)val).build();
         }
 
         desc.validateKeyAndValue(key, val);
@@ -360,7 +360,7 @@ public final class UpdatePlan {
         if (cctx.binaryMarshaller() && hasProps) {
             assert newVal instanceof BinaryObjectBuilder;
 
-            newVal = ((BinaryObjectBuilder) newVal).build();
+            newVal = ((BinaryObjectBuilder)newVal).build();
         }
 
         desc.validateKeyAndValue(key, newVal);

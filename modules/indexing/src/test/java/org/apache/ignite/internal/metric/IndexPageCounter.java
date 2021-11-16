@@ -69,7 +69,7 @@ class IndexPageCounter {
 
             if (persistenceEnabled) {
                 // if persistence is enabled, avoid loading a displaced page into memory
-                PageMemoryImpl pageMemoryImpl = (PageMemoryImpl) dataRegion.pageMemory();
+                PageMemoryImpl pageMemoryImpl = (PageMemoryImpl)dataRegion.pageMemory();
 
                 if (!pageMemoryImpl.hasLoadedPage(new FullPageId(pageId, grpId)))
                     continue;

@@ -1588,7 +1588,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             snapshotMgr.onCacheGroupStop(gctx, destroy);
 
-            PageMemoryEx pageMem = (PageMemoryEx) dataRegion.pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
 
             Collection<Integer> grpIds = destroyed.computeIfAbsent(pageMem, k -> new HashSet<>());
 
@@ -1940,7 +1940,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (mntcTask != null) {
             log.warning("Maintenance task found, stop restoring memory");
 
-            File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
+            File workDir = ((FilePageStoreManager)cctx.pageStore()).workDir();
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                 new CorruptedPdsMaintenanceCallback(workDir,
@@ -2841,7 +2841,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PARTITION_CLEARING_START_RECORD:
-                        PartitionClearingStartRecord rec0 = (PartitionClearingStartRecord) rec;
+                        PartitionClearingStartRecord rec0 = (PartitionClearingStartRecord)rec;
 
                         CacheGroupContext grp = this.ctx.cache().cacheGroup(rec0.groupId());
 

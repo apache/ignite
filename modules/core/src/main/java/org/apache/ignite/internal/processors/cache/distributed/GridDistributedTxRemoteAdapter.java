@@ -963,9 +963,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (e instanceof IgniteCheckedException)
                 throw new IgniteException(e);
             else if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
+                throw (RuntimeException)e;
             else
-                throw (Error) e;
+                throw (Error)e;
         }
     }
 

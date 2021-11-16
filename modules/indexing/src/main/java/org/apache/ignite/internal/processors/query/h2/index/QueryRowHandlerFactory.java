@@ -37,7 +37,7 @@ public class QueryRowHandlerFactory implements InlineIndexRowHandlerFactory {
     @Override public InlineIndexRowHandler create(SortedIndexDefinition sdef, IndexKeyTypeSettings keyTypeSettings)
         throws IgniteCheckedException {
 
-        QueryIndexDefinition def = (QueryIndexDefinition) sdef;
+        QueryIndexDefinition def = (QueryIndexDefinition)sdef;
 
         LinkedHashMap<String, IndexKeyDefinition> keyDefs = def.indexKeyDefinitions();
         List<IndexColumn> h2IdxColumns = def.getColumns();

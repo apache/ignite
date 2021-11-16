@@ -144,7 +144,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             File[] tmpFile = pageStore.cacheWorkDir(true, ODD_GROUP_NAME).listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
@@ -193,7 +193,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             StoredCacheData corrData = cacheDescr.toStoredData(ig.context().cache().splitter());
 
@@ -217,7 +217,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             StoredCacheData data = cacheDescr.toStoredData(ig.context().cache().splitter());
 
@@ -243,7 +243,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             StoredCacheData data = cacheDescr.toStoredData(ig.context().cache().splitter());
 

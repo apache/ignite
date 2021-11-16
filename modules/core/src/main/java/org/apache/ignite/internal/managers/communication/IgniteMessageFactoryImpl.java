@@ -40,7 +40,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     private static final int ARR_SIZE = 1 << Short.SIZE;
 
     /** Message suppliers. */
-    private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[]) Array.newInstance(Supplier.class, ARR_SIZE);
+    private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[])Array.newInstance(Supplier.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private boolean initialized;

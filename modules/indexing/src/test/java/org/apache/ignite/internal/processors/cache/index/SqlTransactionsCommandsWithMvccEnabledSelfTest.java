@@ -191,7 +191,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
                         Class[] types;
 
                         if (F.isEmpty(args))
-                            types = (Class[]) X.EMPTY_OBJECT_ARRAY;
+                            types = (Class[])X.EMPTY_OBJECT_ARRAY;
                         else {
                             types = new Class[args.length];
 

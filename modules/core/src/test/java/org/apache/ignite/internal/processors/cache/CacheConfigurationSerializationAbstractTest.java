@@ -145,7 +145,7 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
     }
 
     /**

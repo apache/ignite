@@ -513,7 +513,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
             if (o == null || getClass() != o.getClass()) return false;
 
-            TestKey testKey = (TestKey) o;
+            TestKey testKey = (TestKey)o;
 
             return key == testKey.key;
 

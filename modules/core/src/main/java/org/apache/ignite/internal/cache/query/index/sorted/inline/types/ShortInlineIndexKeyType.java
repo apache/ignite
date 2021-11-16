@@ -34,13 +34,13 @@ public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<ShortInd
     @Override public int compare0(long pageAddr, int off, ShortIndexKey key) {
         short val1 = PageUtils.getShort(pageAddr, off + 1);
 
-        return Integer.signum(val1 - (short) key.key());
+        return Integer.signum(val1 - (short)key.key());
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, ShortIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putShort(pageAddr, off + 1, (short) key.key());
+        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putShort(pageAddr, off + 1, (short)key.key());
 
         return keySize + 1;
     }

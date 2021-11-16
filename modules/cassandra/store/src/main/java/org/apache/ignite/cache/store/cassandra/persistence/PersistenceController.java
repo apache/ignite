@@ -447,7 +447,7 @@ public class PersistenceController {
             Object val = field.getValueFromObject(obj, serializer);
 
             if (val instanceof byte[])
-                val = ByteBuffer.wrap((byte[]) val);
+                val = ByteBuffer.wrap((byte[])val);
 
             values[offset] = val;
 

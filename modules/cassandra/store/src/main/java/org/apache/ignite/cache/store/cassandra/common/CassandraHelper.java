@@ -108,7 +108,7 @@ public class CassandraHelper {
                     KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;
 
-            if (e instanceof NoHostAvailableException && ((NoHostAvailableException) e).getErrors() != null) {
+            if (e instanceof NoHostAvailableException && ((NoHostAvailableException)e).getErrors() != null) {
                 NoHostAvailableException ex = (NoHostAvailableException)e;
 
                 for (Map.Entry<InetSocketAddress, Throwable> entry : ex.getErrors().entrySet()) {

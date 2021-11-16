@@ -465,7 +465,7 @@ public class IgniteDiagnosticMessage implements Message {
      */
     public static IgniteInternalFuture<String> dumpCommunicationInfo(GridKernalContext ctx, UUID nodeId) {
         if (ctx.config().getCommunicationSpi() instanceof TcpCommunicationSpi)
-            return ((TcpCommunicationSpi) ctx.config().getCommunicationSpi()).dumpNodeStatistics(nodeId);
+            return ((TcpCommunicationSpi)ctx.config().getCommunicationSpi()).dumpNodeStatistics(nodeId);
         else
             return new GridFinishedFuture<>("Unexpected communication SPI: " + ctx.config().getCommunicationSpi());
     }

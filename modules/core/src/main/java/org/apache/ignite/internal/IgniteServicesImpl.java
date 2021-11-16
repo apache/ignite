@@ -370,7 +370,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
-        return (T) serviceProxy(name, svcItf, sticky, 0);
+        return (T)serviceProxy(name, svcItf, sticky, 0);
     }
 
     /** {@inheritDoc} */

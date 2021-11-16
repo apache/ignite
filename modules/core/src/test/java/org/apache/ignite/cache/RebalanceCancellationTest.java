@@ -273,7 +273,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         // Trigger rebalancing.
         IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
-        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)cfg1.getCommunicationSpi();
         spi2.blockMessages(TestRecordingCommunicationSpi.blockDemandMessageForGroup(CU.cacheId(cache0Name)));
 
         GridTestUtils.runAsync(new Callable<Void>() {

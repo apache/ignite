@@ -222,7 +222,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
             @Override public Integer call() throws Exception {
                 info("Start operation.");
 
-                Integer put = (Integer) clientCache().get(1);
+                Integer put = (Integer)clientCache().get(1);
 
                 info("Stop operation.");
 

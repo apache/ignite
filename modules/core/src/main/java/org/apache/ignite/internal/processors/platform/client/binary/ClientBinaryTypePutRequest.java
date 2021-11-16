@@ -46,7 +46,7 @@ public class ClientBinaryTypePutRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.kernalContext().cacheObjects()).binaryContext();
+        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext();
 
         binCtx.updateMetadata(meta.typeId(), meta, false);
 

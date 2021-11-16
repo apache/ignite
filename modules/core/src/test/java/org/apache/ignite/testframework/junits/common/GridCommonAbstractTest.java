@@ -2617,7 +2617,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             assert dbMgr instanceof GridCacheDatabaseSharedManager;
 
-            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager) dbMgr;
+            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager)dbMgr;
 
             fut.add(dbMgr0.enableCheckpoints(enable));
         }

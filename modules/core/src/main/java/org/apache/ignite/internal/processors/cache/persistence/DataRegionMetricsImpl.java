@@ -696,7 +696,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             return;
 
         if (rateTimeInterval / subInts < 10)
-            subInts = (int) rateTimeInterval / 10;
+            subInts = (int)rateTimeInterval / 10;
 
         allocRate.reset(rateTimeInterval, subInts);
         evictRate.reset(rateTimeInterval, subInts);

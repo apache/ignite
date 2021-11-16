@@ -113,10 +113,10 @@ public class StopNodeOnRebuildIndexFailureTest extends GridCommonAbstractTest {
                                 throw (Error)t;
 
                             if (t instanceof RuntimeException)
-                                throw (RuntimeException) t;
+                                throw (RuntimeException)t;
 
                             if (t instanceof IgniteCheckedException)
-                                throw (IgniteCheckedException) t;
+                                throw (IgniteCheckedException)t;
                         }
                         catch (Throwable t) {
                             exceptionWasThrown.set(true);

@@ -50,7 +50,7 @@ public class EncryptedSqlTemplateTableTest extends EncryptedCacheRestartTest {
     /** {@inheritDoc} */
     @Override protected void checkData(IgniteEx grid0) {
         IgniteCache cache = grid0.cache(cacheName());
-        CacheConfiguration cacheConfiguration = (CacheConfiguration) cache.getConfiguration(CacheConfiguration.class);
+        CacheConfiguration cacheConfiguration = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
         assertTrue(cacheConfiguration.isEncryptionEnabled());
 
         for (int i = 0; i < 100; i++) {

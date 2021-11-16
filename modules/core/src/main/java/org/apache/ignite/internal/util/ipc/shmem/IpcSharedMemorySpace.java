@@ -216,7 +216,7 @@ public class IpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            return (int) IpcSharedMemoryUtils.readSharedMemory(shmemPtr, buf, off, len, timeout);
+            return (int)IpcSharedMemoryUtils.readSharedMemory(shmemPtr, buf, off, len, timeout);
         }
         finally {
             lock.readLock().unlock();
@@ -247,7 +247,7 @@ public class IpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            return (int) IpcSharedMemoryUtils.readSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
+            return (int)IpcSharedMemoryUtils.readSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
         }
         finally {
             lock.readLock().unlock();

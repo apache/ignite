@@ -452,7 +452,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
         String metaKey = getPartKeyPrefix(key) + partId;
 
         try {
-            return StatisticsUtils.toObjectPartitionStatistics(null, (StatisticsObjectData) readMeta(metaKey));
+            return StatisticsUtils.toObjectPartitionStatistics(null, (StatisticsObjectData)readMeta(metaKey));
         }
         catch (IgniteCheckedException e) {
             log.warning(String.format("Error while reading local partition statistics %s.%s:%d",

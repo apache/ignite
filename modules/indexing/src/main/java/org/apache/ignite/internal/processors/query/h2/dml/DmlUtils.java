@@ -89,7 +89,7 @@ public class DmlUtils {
             // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
             // precise Date instance. Let's satisfy it.
             if (val instanceof Date && currCls != Date.class && expCls == Date.class)
-                return new Date(((Date) val).getTime());
+                return new Date(((Date)val).getTime());
 
             // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
             if (type == Value.UUID && currCls == byte[].class) {
@@ -290,7 +290,7 @@ public class DmlUtils {
         }
 
         return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
-            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl)cursor).partitionResult() : null);
     }
 
     /**
@@ -402,7 +402,7 @@ public class DmlUtils {
         }
 
         return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
-            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl)cursor).partitionResult() : null);
     }
 
     /**

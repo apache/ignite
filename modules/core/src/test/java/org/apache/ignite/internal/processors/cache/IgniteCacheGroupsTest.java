@@ -4228,7 +4228,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             if (key instanceof MapperTestKey1)
                 return ((MapperTestKey1)key).p1;
             else if (key instanceof BinaryObject)
-                ((BinaryObject) key).field("p1");
+                ((BinaryObject)key).field("p1");
 
             return key;
         }
@@ -4248,7 +4248,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             if (key instanceof MapperTestKey1)
                 return ((MapperTestKey1)key).p2;
             else if (key instanceof BinaryObject)
-                ((BinaryObject) key).field("p2");
+                ((BinaryObject)key).field("p2");
 
             return key;
         }

@@ -85,21 +85,21 @@ class SqlAstTraverser {
         GridSqlAst where = null;
 
         if (ast instanceof GridSqlJoin) {
-            join = (GridSqlJoin) ast;
+            join = (GridSqlJoin)ast;
             where = upWhere;
         }
         else if (ast instanceof GridSqlSelect) {
-            GridSqlSelect select = (GridSqlSelect) ast;
+            GridSqlSelect select = (GridSqlSelect)ast;
 
             if (select.from() instanceof GridSqlJoin) {
-                join = (GridSqlJoin) select.from();
+                join = (GridSqlJoin)select.from();
                 where = select.where();
             }
         }
         else if (ast instanceof GridSqlSubquery)
             hasSubQueries = true;
         else if (ast instanceof GridSqlTable)
-            hasPartitionedTables |= ((GridSqlTable) ast).dataTable().isPartitioned();
+            hasPartitionedTables |= ((GridSqlTable)ast).dataTable().isPartitioned();
 
         // No joins on this level. Traverse AST deeper.
         if (join == null) {
@@ -191,7 +191,7 @@ class SqlAstTraverser {
             rightTblAls, rightAffKeys, pkRight);
 
         if (!joinIsValid && where instanceof GridSqlElement)
-            joinIsValid = checkPartitionedCondition((GridSqlElement) where,
+            joinIsValid = checkPartitionedCondition((GridSqlElement)where,
                 leftTblAls, leftAffKeys, pkLeft,
                 rightTblAls, rightAffKeys, pkRight);
 
@@ -207,7 +207,7 @@ class SqlAstTraverser {
     /** Extract table instance from an AST element. */
     private GridSqlTable getTable(GridSqlElement el) {
         if (el instanceof GridSqlTable)
-            return (GridSqlTable) el;
+            return (GridSqlTable)el;
 
         if (el instanceof GridSqlAlias && el.child() instanceof GridSqlTable)
             return el.child();
@@ -258,7 +258,7 @@ class SqlAstTraverser {
         if (!(condition instanceof GridSqlOperation))
             return false;
 
-        GridSqlOperation op = (GridSqlOperation) condition;
+        GridSqlOperation op = (GridSqlOperation)condition;
 
         // It is may be a part of affinity condition.
         if (GridSqlOperationType.EQUAL == op.operationType())
@@ -297,8 +297,8 @@ class SqlAstTraverser {
         if (!(equalOp.child(1) instanceof GridSqlColumn))
             return;
 
-        String leftTblAls = ((GridSqlColumn) equalOp.child(0)).tableAlias();
-        String rightTblAls = ((GridSqlColumn) equalOp.child(1)).tableAlias();
+        String leftTblAls = ((GridSqlColumn)equalOp.child(0)).tableAlias();
+        String rightTblAls = ((GridSqlColumn)equalOp.child(1)).tableAlias();
 
         int leftColIdx = leftTbl.equals(leftTblAls) ? 0 : leftTbl.equals(rightTblAls) ? 1 : -1;
         int rightColIdx = rightTbl.equals(rightTblAls) ? 1 : rightTbl.equals(leftTblAls) ? 0 : -1;
@@ -306,8 +306,8 @@ class SqlAstTraverser {
         if (leftColIdx == -1 || rightColIdx == -1)
             return;
 
-        String leftCol = ((GridSqlColumn) equalOp.child(leftColIdx)).columnName();
-        String rightCol = ((GridSqlColumn) equalOp.child(rightColIdx)).columnName();
+        String leftCol = ((GridSqlColumn)equalOp.child(leftColIdx)).columnName();
+        String rightCol = ((GridSqlColumn)equalOp.child(rightColIdx)).columnName();
 
         // This is part of the affinity join condition.
         if (leftCols.contains(leftCol) && rightCols.contains(rightCol)) {

@@ -67,7 +67,7 @@ public class GridCacheQueryEmbeddedValue implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        GridCacheQueryEmbeddedValue that = (GridCacheQueryEmbeddedValue) o;
+        GridCacheQueryEmbeddedValue that = (GridCacheQueryEmbeddedValue)o;
 
         if (embeddedField1 != that.embeddedField1) return false;
         if (embeddedField2 != that.embeddedField2) return false;

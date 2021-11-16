@@ -119,7 +119,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
     @Test
     @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "1")
     public void testPartitionClearingNotBlockExchange() throws Exception {
-        IgniteEx ig = (IgniteEx) startGrids(3);
+        IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
@@ -255,7 +255,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         // Check no data loss.
         for (int k = 1; k <= keysCnt; k++) {
-            Integer val = (Integer) ignite.cache(CACHE_NAME).get(k);
+            Integer val = (Integer)ignite.cache(CACHE_NAME).get(k);
             Assert.assertNotNull("Value for " + k + " is null", val);
             Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }

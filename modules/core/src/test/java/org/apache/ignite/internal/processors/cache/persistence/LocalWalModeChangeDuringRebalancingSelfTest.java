@@ -606,8 +606,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int k = 0; k < 2500; k++)
             cache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager)ig1.context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
@@ -696,8 +696,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int k = 0; k < 2500; k++)
             cache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager)ig1.context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
@@ -736,7 +736,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             private Ignite ig;
 
             @Override public void run() {
-                MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
+                MaintenanceRegistry mntcRegistry = ((IgniteEx)ig).context().maintenanceRegistry();
 
                 List<MaintenanceAction<?>> actions = mntcRegistry
                     .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);

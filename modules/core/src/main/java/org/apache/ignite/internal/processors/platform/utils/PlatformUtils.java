@@ -623,10 +623,10 @@ public class PlatformUtils {
      */
     private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
         switch (evtType) {
-            case CREATED: writer.writeByte((byte) 0); break;
-            case UPDATED: writer.writeByte((byte) 1); break;
-            case REMOVED: writer.writeByte((byte) 2); break;
-            case EXPIRED: writer.writeByte((byte) 3); break;
+            case CREATED: writer.writeByte((byte)0); break;
+            case UPDATED: writer.writeByte((byte)1); break;
+            case REMOVED: writer.writeByte((byte)2); break;
+            case EXPIRED: writer.writeByte((byte)3); break;
             default:
                 throw new IllegalArgumentException("Unknown event type: " + evtType);
         }
@@ -717,7 +717,7 @@ public class PlatformUtils {
      * @return Platform processor.
      */
     public static PlatformProcessor platformProcessor(Ignite grid) {
-        GridKernalContext ctx = ((IgniteKernal) grid).context();
+        GridKernalContext ctx = ((IgniteKernal)grid).context();
 
         return ctx.platform();
     }

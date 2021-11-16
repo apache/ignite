@@ -233,8 +233,8 @@ public class Dataset<Row extends DatasetRow> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        data = (Row[]) in.readObject();
-        meta = (FeatureMetadata[]) in.readObject();
+        data = (Row[])in.readObject();
+        meta = (FeatureMetadata[])in.readObject();
         rowSize = in.readInt();
         colSize = in.readInt();
     }

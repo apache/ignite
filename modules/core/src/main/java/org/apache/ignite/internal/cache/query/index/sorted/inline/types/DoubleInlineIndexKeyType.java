@@ -27,20 +27,20 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class DoubleInlineIndexKeyType extends NullableInlineIndexKeyType<DoubleIndexKey> {
     /** */
     public DoubleInlineIndexKeyType() {
-        super(IndexKeyTypes.DOUBLE, (short) 8);
+        super(IndexKeyTypes.DOUBLE, (short)8);
     }
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, DoubleIndexKey v) {
         double val1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
 
-        return Integer.signum(Double.compare(val1, (double) v.key()));
+        return Integer.signum(Double.compare(val1, (double)v.key()));
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, DoubleIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits((double) key.key()));
+        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits((double)key.key()));
 
         return keySize + 1;
     }

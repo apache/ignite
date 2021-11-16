@@ -30,7 +30,7 @@ public class JacksonHelper {
     public static void readAndValidateBasicJsonModelProperties(Path path, ObjectMapper mapper, String className) throws IOException {
         Map jsonAsMap = mapper.readValue(new File(path.toAbsolutePath().toString()), LinkedHashMap.class);
         String formatVersion = jsonAsMap.get("formatVersion").toString();
-        Long timestamp = (Long) jsonAsMap.get("timestamp");
+        Long timestamp = (Long)jsonAsMap.get("timestamp");
         String uid = jsonAsMap.get("uid").toString();
         String modelClass = jsonAsMap.get("modelClass").toString();
 

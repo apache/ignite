@@ -2286,7 +2286,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         for (final IgniteInternalTx tx : activeTransactions()) {
             if (!tx.local() && nearVer.equals(tx.nearXidVersion()))
-                fut.add((IgniteInternalFuture) tx.finishFuture());
+                fut.add((IgniteInternalFuture)tx.finishFuture());
         }
 
         fut.markInitialized();

@@ -162,7 +162,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         }
 
         if (cause instanceof IgniteCheckedException)
-            return U.convertException((IgniteCheckedException) cause);
+            return U.convertException((IgniteCheckedException)cause);
         else if (cause instanceof EntryProcessorException)
             return new IgniteException(cause.getMessage(), cause);
         else {

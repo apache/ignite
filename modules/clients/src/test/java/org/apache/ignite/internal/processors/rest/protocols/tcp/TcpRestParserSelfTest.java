@@ -170,7 +170,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
         assertTrue(msg instanceof GridClientCacheRequest);
 
-        GridClientCacheRequest res = (GridClientCacheRequest) msg;
+        GridClientCacheRequest res = (GridClientCacheRequest)msg;
 
         assertEquals("Invalid operation", req.operation(), res.operation());
         assertEquals("Invalid clientId", req.clientId(), res.clientId());

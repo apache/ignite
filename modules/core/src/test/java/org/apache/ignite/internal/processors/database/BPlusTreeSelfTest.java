@@ -1352,11 +1352,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         boolean DEBUG_PRINT = false;
 
-        int itemCnt = (int) Math.pow(MAX_PER_PAGE, 5) + rnd.nextInt(MAX_PER_PAGE * MAX_PER_PAGE);
+        int itemCnt = (int)Math.pow(MAX_PER_PAGE, 5) + rnd.nextInt(MAX_PER_PAGE * MAX_PER_PAGE);
 
         Long[] items = new Long[itemCnt];
         for (int i = 0; i < itemCnt; ++i)
-            items[i] = (long) i;
+            items[i] = (long)i;
 
         TestTree testTree = createTestTree(true);
         TreeMap<Long, Long> goldenMap = new TreeMap<>();
@@ -1535,8 +1535,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
-        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+        asyncRunFut.add((IgniteInternalFuture)putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
 
         asyncRunFut.markInitialized();
 
@@ -1713,9 +1713,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
-        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+        asyncRunFut.add((IgniteInternalFuture)putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
 
         asyncRunFut.markInitialized();
 
@@ -1850,8 +1850,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) putRmvFut);
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)putRmvFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
 
         asyncRunFut.markInitialized();
 
@@ -1967,10 +1967,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
-        asyncRunFut.add((IgniteInternalFuture) rmvFut);
-        asyncRunFut.add((IgniteInternalFuture) putFut);
-        asyncRunFut.add((IgniteInternalFuture) treePrintFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)rmvFut);
+        asyncRunFut.add((IgniteInternalFuture)putFut);
+        asyncRunFut.add((IgniteInternalFuture)treePrintFut);
 
         asyncRunFut.markInitialized();
 
@@ -2111,11 +2111,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         asyncRunFut = new GridCompoundFuture<>();
 
-        asyncRunFut.add((IgniteInternalFuture) sizeFut);
-        asyncRunFut.add((IgniteInternalFuture) rmvFut);
-        asyncRunFut.add((IgniteInternalFuture) findFut);
-        asyncRunFut.add((IgniteInternalFuture) putFut);
-        asyncRunFut.add((IgniteInternalFuture) lockPrintingFut);
+        asyncRunFut.add((IgniteInternalFuture)sizeFut);
+        asyncRunFut.add((IgniteInternalFuture)rmvFut);
+        asyncRunFut.add((IgniteInternalFuture)findFut);
+        asyncRunFut.add((IgniteInternalFuture)putFut);
+        asyncRunFut.add((IgniteInternalFuture)lockPrintingFut);
 
         asyncRunFut.markInitialized();
 

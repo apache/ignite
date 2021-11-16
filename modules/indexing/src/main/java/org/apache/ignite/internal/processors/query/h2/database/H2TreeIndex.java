@@ -238,7 +238,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             return null;
 
         else if (row instanceof H2CacheRow)
-            return new IndexRowImpl(rowHnd, (CacheDataRow) row, getCachedKeys((H2CacheRow) row));
+            return new IndexRowImpl(rowHnd, (CacheDataRow)row, getCachedKeys((H2CacheRow)row));
         else
             return preparePlainIndexKey(row, rowHnd);
     }

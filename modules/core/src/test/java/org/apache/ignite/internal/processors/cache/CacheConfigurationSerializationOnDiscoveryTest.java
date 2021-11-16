@@ -65,7 +65,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends CacheConfigu
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }
@@ -93,7 +93,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends CacheConfigu
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }
@@ -123,7 +123,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends CacheConfigu
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }
@@ -153,7 +153,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends CacheConfigu
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }
@@ -183,7 +183,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends CacheConfigu
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
+            checkCaches((IgniteEx)node);
 
         restartNodesAndCheck(persistenceEnabled);
     }

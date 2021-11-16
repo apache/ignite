@@ -498,7 +498,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             return this == o || !(o == null || getClass() != o.getClass())
-                && key.equals(((KeyEventFilter) o).key);
+                && key.equals(((KeyEventFilter)o).key);
         }
 
         /** {@inheritDoc} */

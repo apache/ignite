@@ -123,7 +123,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assertEquals("Unexpected event: " + evt, evt.type(), EventType.EVT_NODE_FAILED);
 
-                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
                     assertEquals(slowClientNode, evt0.eventNode());
                     assertEquals(6L, evt0.topologyVersion());

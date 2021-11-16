@@ -72,7 +72,7 @@ import static org.mockito.Mockito.when;
 public class IgnitePageMemReplaceDelayedWriteUnitTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** CPU count. */
     private static final int CPUS = 32;

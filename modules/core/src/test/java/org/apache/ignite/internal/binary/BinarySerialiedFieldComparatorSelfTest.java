@@ -566,7 +566,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
                 builder.setField((String)parts[i++], parts[i++]);
         }
 
-        return (BinaryObjectImpl) builder.build();
+        return (BinaryObjectImpl)builder.build();
     }
 
     /**

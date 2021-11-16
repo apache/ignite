@@ -72,7 +72,7 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (getTestIgniteInstanceName(NODES_CNT - 1).equals(igniteInstanceName)) {
-            ((TestTcpDiscoverySpi) cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
+            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
                 @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                     if (customMsg instanceof ServiceClusterDeploymentResultBatch) {
                         fullMsgReceivedLatch.countDown();

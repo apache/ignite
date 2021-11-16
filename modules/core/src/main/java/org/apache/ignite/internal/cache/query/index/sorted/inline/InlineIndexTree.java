@@ -341,7 +341,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 return ret;
         }
 
-        return mvccCompare((MvccIO) io, pageAddr, idx, row);
+        return mvccCompare((MvccIO)io, pageAddr, idx, row);
     }
 
     /** */

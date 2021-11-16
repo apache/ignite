@@ -702,7 +702,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (!(topReadyFut instanceof GridDhtPartitionsExchangeFuture))
             return;
 
-        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture) topReadyFut;
+        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture)topReadyFut;
 
         boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 

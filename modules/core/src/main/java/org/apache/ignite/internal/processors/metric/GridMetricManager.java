@@ -271,10 +271,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     try {
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)val));
 
                         metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])val));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -282,11 +282,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)newVal));
 
                     metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])newVal));
                 }
 
                 /** {@inheritDoc} */
@@ -523,7 +523,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        return (T) m;
+        return (T)m;
     }
 
     /**
@@ -568,7 +568,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     private long totalSysMemory() {
         try {
-            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
+            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
 
             return sunOs.getTotalPhysicalMemorySize();
         }
@@ -629,7 +629,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
 
                 cpuTime = sunOs.getProcessCpuTime();
             }

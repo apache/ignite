@@ -116,7 +116,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long startTime = cctx.kernalContext().discovery().gridStartTime();
 
         if (startTime != 0)
-            offset = (int) ((startTime - TOP_VER_BASE_TIME) / 1000);
+            offset = (int)((startTime - TOP_VER_BASE_TIME) / 1000);
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
@@ -289,9 +289,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long ord = order.incrementAndGet();
 
         GridCacheVersion next = new GridCacheVersion(
-            (int) topVer,
+            (int)topVer,
             ord,
-            (int) nodeOrder,
+            (int)nodeOrder,
             dataCenterId);
 
         last = next;
@@ -310,9 +310,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long ord = loadOrder.incrementAndGet();
 
         GridCacheVersion next = new GridCacheVersion(
-            (int) topVer,
+            (int)topVer,
             ord,
-            (int) nodeOrder,
+            (int)nodeOrder,
             dataCenterId);
 
         last = next;
@@ -365,7 +365,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * Update grid start time.
      */
     public void gridStartTime(long startTime) {
-        offset = (int) ((startTime - TOP_VER_BASE_TIME) / 1000);
+        offset = (int)((startTime - TOP_VER_BASE_TIME) / 1000);
 
         isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
     }

@@ -309,7 +309,7 @@ public class IgniteStatisticsConfigurationManager {
     public Collection<StatisticsObjectConfiguration> getAllConfig() throws IgniteCheckedException {
         List<StatisticsObjectConfiguration> res = new ArrayList<>();
 
-        distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> res.add((StatisticsObjectConfiguration) v));
+        distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> res.add((StatisticsObjectConfiguration)v));
 
         return res;
     }

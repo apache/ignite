@@ -321,7 +321,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     private File indexPartition(Ignite ig, String groupName) {
         IgniteEx ig0 = (IgniteEx)ig;
 
-        FilePageStoreManager pageStoreManager = ((FilePageStoreManager) ig0.context().cache().context().pageStore());
+        FilePageStoreManager pageStoreManager = ((FilePageStoreManager)ig0.context().cache().context().pageStore());
 
         return new File(pageStoreManager.cacheWorkDir(true, groupName), INDEX_FILE_NAME);
     }

@@ -183,9 +183,9 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
                 return false;
 
             if (name instanceof Object[])
-                return Arrays.equals((Object[])name, (Object[])((Person) obj).name);
+                return Arrays.equals((Object[])name, (Object[])((Person)obj).name);
 
-            return F.eq(name, ((Person) obj).name);
+            return F.eq(name, ((Person)obj).name);
         }
     }
 

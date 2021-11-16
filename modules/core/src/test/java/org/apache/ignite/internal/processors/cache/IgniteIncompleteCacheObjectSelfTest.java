@@ -47,7 +47,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         int off = 0;
         int len = 3;
 
-        final TestCacheObject obj = new TestCacheObject((byte) 1);
+        final TestCacheObject obj = new TestCacheObject((byte)1);
 
         // Write part of the cache object and cut on header (3 bytes instead of 5)
         assert CacheObjectAdapter.putValue(obj.cacheObjectType(), dataBuf, off, len, data, 0);

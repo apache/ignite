@@ -125,7 +125,7 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
-            if (isDeploymentResponse((GridIoMessage) msg)) {
+            if (isDeploymentResponse((GridIoMessage)msg)) {
                 log.info(">>> Delaying deployment message: " + msg);
 
                 try {

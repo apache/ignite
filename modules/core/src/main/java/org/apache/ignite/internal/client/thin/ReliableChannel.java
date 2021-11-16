@@ -375,7 +375,7 @@ final class ReliableChannel implements AutoCloseable {
                             }
 
                             if (err instanceof ClientConnectionException) {
-                                ClientConnectionException failure = (ClientConnectionException) err;
+                                ClientConnectionException failure = (ClientConnectionException)err;
 
                                 int attemptsLimit = getRetryLimit() - 1;
 

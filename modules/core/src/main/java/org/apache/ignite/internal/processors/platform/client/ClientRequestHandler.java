@@ -170,17 +170,17 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
      */
     private int getStatus(Throwable e) {
         if (e instanceof IgniteClientException)
-            return ((IgniteClientException) e).statusCode();
+            return ((IgniteClientException)e).statusCode();
 
         if (e instanceof IgniteIllegalStateException) {
-            IgniteIllegalStateException ex = (IgniteIllegalStateException) e;
+            IgniteIllegalStateException ex = (IgniteIllegalStateException)e;
 
             if (ex.getMessage().startsWith("Grid is in invalid state"))
                 return ClientStatus.INVALID_NODE_STATE;
         }
 
         if (e instanceof IllegalStateException) {
-            IllegalStateException ex = (IllegalStateException) e;
+            IllegalStateException ex = (IllegalStateException)e;
 
             if (ex.getMessage().contains("grid is stopping"))
                 return ClientStatus.INVALID_NODE_STATE;

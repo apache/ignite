@@ -81,7 +81,7 @@ public class ClientNotification extends ClientListenerResponse implements Client
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         writer.writeLong(rsrcId);
 
-        short flags = (short) (ClientFlag.NOTIFICATION | (status() == ClientStatus.SUCCESS ? 0 : ClientFlag.ERROR));
+        short flags = (short)(ClientFlag.NOTIFICATION | (status() == ClientStatus.SUCCESS ? 0 : ClientFlag.ERROR));
 
         writer.writeShort(flags);
 

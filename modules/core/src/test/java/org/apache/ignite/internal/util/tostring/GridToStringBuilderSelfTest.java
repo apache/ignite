@@ -292,7 +292,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private <T, V> void testArr(V v, int limit) throws Exception {
-        T[] arrOf = (T[]) Array.newInstance(v.getClass(), limit + 1);
+        T[] arrOf = (T[])Array.newInstance(v.getClass(), limit + 1);
         Arrays.fill(arrOf, v);
         T[] arr = Arrays.copyOf(arrOf, limit);
 

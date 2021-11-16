@@ -591,7 +591,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                MiniFuture mini = (MiniFuture) future(i);
+                MiniFuture mini = (MiniFuture)future(i);
 
                 if (mini.futureId().equals(miniId)) {
                     if (!mini.isDone())

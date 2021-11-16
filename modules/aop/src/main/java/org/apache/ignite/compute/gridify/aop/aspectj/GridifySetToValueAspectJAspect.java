@@ -60,7 +60,7 @@ public class GridifySetToValueAspectJAspect extends GridifySetToValueAbstractAsp
     @Around("execution(@org.apache.ignite.compute.gridify.GridifySetToValue * *(..)) && " +
         "!cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
     public Object gridify(ProceedingJoinPoint joinPnt) throws Throwable {
-        Method mtd = ((MethodSignature) joinPnt.getSignature()).getMethod();
+        Method mtd = ((MethodSignature)joinPnt.getSignature()).getMethod();
 
         GridifySetToValue ann = mtd.getAnnotation(GridifySetToValue.class);
 
@@ -124,7 +124,7 @@ public class GridifySetToValueAspectJAspect extends GridifySetToValueAbstractAsp
                 ann.threshold(), ann.splitSize(), ann.timeout());
         }
         catch (Exception e) {
-            for (Class<?> ex : ((MethodSignature) joinPnt.getSignature()).getMethod().getExceptionTypes()) {
+            for (Class<?> ex : ((MethodSignature)joinPnt.getSignature()).getMethod().getExceptionTypes()) {
                 // Descend all levels down.
                 Throwable cause = e.getCause();
 

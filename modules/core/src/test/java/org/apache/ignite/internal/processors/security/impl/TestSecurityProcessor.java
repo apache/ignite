@@ -115,7 +115,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         if (perms == null) {
             perms = new SecurityBasicPermissionSet();
-            ((SecurityBasicPermissionSet) perms).setDefaultAllowAll(true);
+            ((SecurityBasicPermissionSet)perms).setDefaultAllowAll(true);
         }
 
         SecurityContext res = new TestSecurityContext(

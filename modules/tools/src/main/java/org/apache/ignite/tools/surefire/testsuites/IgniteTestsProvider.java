@@ -114,7 +114,7 @@ public class IgniteTestsProvider extends AbstractProvider {
 
             RunListener reporter = reporterFactory.createReporter();
 
-            startCapture((ConsoleOutputReceiver) reporter);
+            startCapture((ConsoleOutputReceiver)reporter);
 
             reporter.testFailed(report);
             reporter.testSetCompleted(report);

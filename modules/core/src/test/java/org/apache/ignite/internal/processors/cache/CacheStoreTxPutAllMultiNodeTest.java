@@ -95,7 +95,7 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
 
         startGrid(3);
 
-        IgniteTxManager txMgr = ((IgniteEx) client).context().cache().context().tm();
+        IgniteTxManager txMgr = ((IgniteEx)client).context().cache().context().tm();
 
         long curTime = U.currentTimeMillis();
 

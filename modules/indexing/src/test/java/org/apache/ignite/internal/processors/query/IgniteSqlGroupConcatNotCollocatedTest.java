@@ -123,8 +123,8 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
         for (int i = 0; i < res.size(); i++) {
             List<Object> row = res.get(i);
 
-            Integer idx = (Integer) row.get(0);
-            String s0 = (String) row.get(1);
+            Integer idx = (Integer)row.get(0);
+            String s0 = (String)row.get(1);
             String s1 = Stream.of(s0.split("\\.")).sorted().collect(Collectors.joining("."));
 
             assertEqualsCollections(expRes.get(idx - 1), Arrays.asList(idx, s1));

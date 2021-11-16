@@ -138,7 +138,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
         for (int i = 0; i < res.size(); i++) {
             List<Object> row = res.get(i);
 
-            Integer idx = (Integer) row.get(0);
+            Integer idx = (Integer)row.get(0);
 
             assertEqualsCollections(expRes.get(idx - 1), row);
         }

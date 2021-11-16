@@ -222,7 +222,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     @Test
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
-        GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();
+        GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
 
         Collection<ClusterNode> nodes = discoMgr.allNodes();
 

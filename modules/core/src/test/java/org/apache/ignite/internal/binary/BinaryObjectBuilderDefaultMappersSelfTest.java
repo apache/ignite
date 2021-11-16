@@ -165,7 +165,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals((byte) 1, po.<Byte>field("byteField").byteValue());
+        assertEquals((byte)1, po.<Byte>field("byteField").byteValue());
     }
 
     /**
