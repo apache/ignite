@@ -75,8 +75,8 @@ public class BusyExecutor {
      * Allow operations.
      */
     public synchronized void activate() {
-
         busyLock = new GridBusyLock();
+        
         active = true;
 
         if (log.isDebugEnabled())
