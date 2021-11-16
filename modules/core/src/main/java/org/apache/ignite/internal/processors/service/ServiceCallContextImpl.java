@@ -74,4 +74,8 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         attrs = U.readMap(in);
     }
+
+    Map<String, byte[]> values() {
+        return attrs;
+    }
 }

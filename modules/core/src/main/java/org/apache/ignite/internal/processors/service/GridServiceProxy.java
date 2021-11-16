@@ -287,8 +287,11 @@ public class GridServiceProxy<T> implements Serializable {
         Object[] args,
         @Nullable ServiceCallContext callCtx
     ) throws Exception {
-        if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
-            return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
+        if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd)) {
+            Map<String, byte[]> callAttrs = callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values();
+
+            return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, callAttrs);
+        }
         else
             return callServiceMethod(svc, mtd, args, callCtx);
     }
@@ -531,7 +534,7 @@ public class GridServiceProxy<T> implements Serializable {
         /** */
         private Object callPlatformService(PlatformService srv) {
             try {
-                return srv.invokeMethod(mtdName, false, true, args);
+                return srv.invokeMethod(mtdName, false, true, args, callCtx != null ? ((ServiceCallContextImpl)callCtx).values() : null);
             }
             catch (PlatformNativeException ne) {
                 throw new ServiceProxyException(U.convertException(ne));

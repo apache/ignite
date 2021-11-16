@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
                 ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
-                    method, args, PlatformType.DotNet);
+                    method, args, PlatformType.DotNet, null);
 
                 inStream.SynchronizeOutput();
 
@@ -293,8 +293,9 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 2) call InvokeServiceMethod
                 string mthdName;
                 object[] mthdArgs;
+                ServiceCallContext callCtx;
 
-                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out callCtx);
 
                 var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 

@@ -65,5 +65,11 @@ namespace Apache.Ignite.Core.Services
         /// Affinity key, possibly null.
         /// </value>
         object AffinityKey { get; }
+
+         /// <summary>
+         /// Gets context of the current service call. 
+         /// </summary>
+         /// <returns>Context of the current service call.</returns>
+        ServiceCallContext CurrentCallContext();
     }
 }

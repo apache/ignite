@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
 
@@ -27,6 +30,13 @@ namespace Apache.Ignite.Core.Impl.Services
     /// </summary>
     internal class ServiceContext : IServiceContext
     {
+        /** Service call context of the current thread. */
+        private static readonly ThreadLocal<ServiceCallContext> locCallCtx = new ThreadLocal<ServiceCallContext>();
+
+        /** Read-only empty context. */
+        private static readonly ServiceCallContext emptyCtx = 
+            new ServiceCallContextImpl(new ReadOnlyDictionary<object, object>(new Dictionary<object, object>(0)));
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContext"/> class.
         /// </summary>
@@ -56,5 +66,21 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** <inheritdoc /> */
         public object AffinityKey { get; private set; }
+
+        /** <inheritdoc /> */
+        public ServiceCallContext CurrentCallContext()
+        {
+            ServiceCallContext callCtx = locCallCtx.Value;
+
+            return callCtx == null ? emptyCtx : callCtx;
+        }
+
+        /// <summary>
+        /// Sets service call context for the current thread.
+        /// </summary>
+        /// <param name="callCtx">Service call context for the current thread.</param>
+        internal static void CurrentCallContext(ServiceCallContext callCtx) {
+            locCallCtx.Value = callCtx;
+        }
     }
 }

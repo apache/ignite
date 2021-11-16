@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
+import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -285,8 +286,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
+                Map<String, byte[]> callAttrs = reader.readMap();
+
                 try {
-                    Object result = svc.invoke(mthdName, srvKeepBinary, args);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args, callAttrs);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -605,13 +608,14 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param mthdName Method name.
          * @param srvKeepBinary Binary flag.
          * @param args Args.
+         * @param callAttrs Service call context attributes.
          * @return Invocation result.
          * @throws IgniteCheckedException On error.
          * @throws NoSuchMethodException On error.
          */
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args, Map<String, byte[]> callAttrs) throws Throwable {
             if (isPlatformService())
-                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
+                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, false, args, callAttrs);
             else {
                 assert proxy instanceof GridServiceProxy;
 
@@ -622,7 +626,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Method mtd = getMethod(serviceClass, mthdName, args);
                 convertArrayArgs(args, mtd);
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args, null);
+                return ((GridServiceProxy)proxy)
+                    .invokeMethod(mtd, args, callAttrs == null ? null : new ServiceCallContextImpl(callAttrs));
             }
         }
 

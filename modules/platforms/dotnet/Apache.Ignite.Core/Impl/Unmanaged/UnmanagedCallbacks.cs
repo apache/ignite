@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -1105,16 +1106,28 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 string mthdName;
                 object[] mthdArgs;
+                ServiceCallContext callCtx;
 
-                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out callCtx);
+                
+                if (callCtx != null)
+                    ServiceContext.CurrentCallContext(callCtx);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
+                try
+                {
+                    var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
 
-                stream.Reset();
+                    stream.Reset();
 
-                ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+                    ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
 
-                stream.SynchronizeOutput();
+                    stream.SynchronizeOutput();
+                }
+                finally
+                {
+                    if (callCtx != null)
+                        ServiceContext.CurrentCallContext(null);
+                }
 
                 return 0;
             }
