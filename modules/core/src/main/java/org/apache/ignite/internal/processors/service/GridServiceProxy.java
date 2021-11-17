@@ -74,7 +74,7 @@ public class GridServiceProxy<T> implements Serializable {
     static {
         try {
             PLATFORM_SERVICE_INVOKE_METHOD = PlatformService.class.getMethod("invokeMethod", String.class,
-                    boolean.class, Object[].class);
+                    boolean.class, boolean.class, Object[].class, Map.class);
         }
         catch (NoSuchMethodException e) {
             throw new ExceptionInInitializerError("'invokeMethod' is not defined in " + PlatformService.class.getName());

@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (svc0 != null)
                     Assert.IsNull(svc0.ContextAttribute(attrName));
 
-                var ctx = ServiceCallContext.Create().Put(attrName, attrValue);
+                var ctx = new ServiceCallContextBuilder().Put(attrName, attrValue).Build();
 
                 var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, ctx);
                 
@@ -301,8 +301,6 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
-                
-                
             }
         }
 
@@ -1162,9 +1160,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Create test context for the service proxy.
         /// </summary>
         /// <returns>Test context for the service proxy.</returns>
-        private ServiceCallContext callContext()
+        private IServiceCallContext callContext()
         {
-            return ServiceCallContext.Create().Put("attr", "value");
+            return new ServiceCallContextBuilder().Put("attr", "value").Build();
         }
 
         /// <summary>
@@ -1643,7 +1641,9 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public object ContextAttribute(string name)
             {
-                return _context.CurrentCallContext().Attribute(name);
+                IServiceCallContext ctx = _context.CurrentCallContext();
+                
+                return ctx == null ? null : ctx.Attribute(name);
             }
 
             /** <inheritdoc /> */

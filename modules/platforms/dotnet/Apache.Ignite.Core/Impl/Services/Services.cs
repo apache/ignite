@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public T GetServiceProxy<T>(string name, bool sticky, ServiceCallContext callCtx) where T : class
+        public T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public dynamic GetDynamicServiceProxy(string name, bool sticky, ServiceCallContext callCtx)
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
@@ -446,7 +446,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType, ServiceCallContext callCtx)
+            MethodBase method, object[] args, PlatformType platformType, IServiceCallContext callCtx)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 

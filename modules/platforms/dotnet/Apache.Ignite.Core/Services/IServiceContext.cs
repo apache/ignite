@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Represents service execution context.
@@ -66,10 +67,11 @@ namespace Apache.Ignite.Core.Services
         /// </value>
         object AffinityKey { get; }
 
-         /// <summary>
-         /// Gets context of the current service call. 
-         /// </summary>
-         /// <returns>Context of the current service call.</returns>
-        ServiceCallContext CurrentCallContext();
+        /// <summary>
+        /// Gets context of the current service call. 
+        /// </summary>
+        /// <returns>Context of the current service call.</returns>
+        [IgniteExperimental]
+        IServiceCallContext CurrentCallContext();
     }
 }

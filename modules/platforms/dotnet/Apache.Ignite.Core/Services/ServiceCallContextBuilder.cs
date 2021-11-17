@@ -17,52 +17,63 @@
 
 namespace Apache.Ignite.Core.Services
 {
+    using System;
+    using System.Collections;
+    using System.Linq;
+    using System.Text;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
 
     /// <summary>
-    /// Service call context.
-    /// todo extended doc with examples
+    /// Service call context builder.
     /// </summary>
-    public abstract class ServiceCallContext
+    public class ServiceCallContextBuilder
     {
+        /** Context attributes. */
+        private readonly IDictionary _attrs = new Hashtable();
+        
         /// <summary>
-        /// Factory method for creating an internal implementation.
+        /// Put string attribute.
         /// </summary>
-        /// <returns></returns>
-        public static ServiceCallContext Create() {
-            return new ServiceCallContextImpl();
+        /// <param name="name">Attribute name.</param>
+        /// <param name="value">Attribute value.</param>
+        /// <returns>This for chaining.</returns>
+        public ServiceCallContextBuilder Put(string name, string value)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(value, "value");
+
+            _attrs[name] = Encoding.UTF8.GetBytes(value);
+
+            return this;
         }
 
         /// <summary>
-        /// Gets the string attribute.
-        /// </summary>
-        /// <param name="name">Attribute name.</param>
-        /// <returns>String attribute value.</returns>
-        public abstract string Attribute(string name);
-
-        /// <summary>
-        /// Gets the binary attribute.
-        /// </summary>
-        /// <param name="name">Attribute name.</param>
-        /// <returns>Binary attribute value.</returns>
-        public abstract byte[] BinaryAttribute(string name);
-        
-        /// <summary>
-        /// Put new string attribute.
-        /// If the context previously contained a mapping for the key, the old value is replaced by the specified value.
+        /// Put binary attribute.
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <param name="value">Attribute value.</param>
         /// <returns>This for chaining.</returns>
-        public abstract ServiceCallContext Put(string name, string value);
+        public ServiceCallContextBuilder Put(string name, byte[] value)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(value, "value");
+
+            _attrs[name] = value;//.ToArray();
+            
+            return this;
+        }
 
         /// <summary>
-        /// Put new string attribute.
-        /// If the context previously contained a mapping for the key, the old value is replaced by the specified value.
+        /// Create context.
         /// </summary>
-        /// <param name="name">Attribute name.</param>
-        /// <param name="value">Attribute value.</param>
-        /// <returns>This for chaining.</returns>
-        public abstract ServiceCallContext Put(string name, byte[] value);
+        /// <returns>Service call context.</returns>
+        public IServiceCallContext Build()
+        {
+            if (_attrs.Count == 0)
+                throw new InvalidOperationException("Cannot create an empty context.");
+
+            return new ServiceCallContext(_attrs);
+        }
     }
 }

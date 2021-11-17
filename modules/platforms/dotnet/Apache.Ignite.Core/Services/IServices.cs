@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Services
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Defines functionality to deploy distributed services in the Ignite.
@@ -282,7 +283,8 @@ namespace Apache.Ignite.Core.Services
         /// service or try to load-balance between services.</param>
         /// <param name="callCtx">Service call context.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
-        T GetServiceProxy<T>(string name, bool sticky, ServiceCallContext callCtx) where T : class;
+        [IgniteExperimental]
+        T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class;
 
         /// <summary>
         /// Gets a remote handle on the service as a dynamic object. If service is available locally,
@@ -323,7 +325,8 @@ namespace Apache.Ignite.Core.Services
         /// service or try to load-balance between services.</param>
         /// <param name="callCtx">Service proxy context.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
-        dynamic GetDynamicServiceProxy(string name, bool sticky, ServiceCallContext callCtx);
+        [IgniteExperimental]
+        dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.

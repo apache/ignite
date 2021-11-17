@@ -1106,7 +1106,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 string mthdName;
                 object[] mthdArgs;
-                ServiceCallContext callCtx;
+                IServiceCallContext callCtx;
 
                 ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out callCtx);
                 
