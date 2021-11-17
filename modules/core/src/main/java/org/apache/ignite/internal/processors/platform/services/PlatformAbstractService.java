@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.ServiceContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base platform service implementation.
@@ -181,20 +182,13 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
-            throws IgniteCheckedException {
-        return invokeMethod(mthdName, srvKeepBinary, false, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult, Object[] args)
-        throws IgniteCheckedException {
-        return invokeMethod(mthdName, srvKeepBinary, deserializeResult, args, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, boolean deserializeResult,
-        Object[] args, Map<String, byte[]> callAttrs) throws IgniteCheckedException {
+    @Override public Object invokeMethod(
+        String mthdName,
+        boolean srvKeepBinary,
+        boolean deserializeResult,
+        @Nullable Object[] args,
+        @Nullable Map<String, byte[]> callAttrs
+    ) throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
 
