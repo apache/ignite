@@ -530,9 +530,13 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals("HR", iter.next().getName());
             assertEquals("IT", iter.next().getName());
 
-            List<Department> res = new ArrayList<>();
+            Collection<Department> res = new ArrayList<>();
 
-            res.add(new Department("Executive"));
+            Department d = new Department();
+
+            d.setName("Executive");
+
+            res.add(d);
 
             return res;
         }

@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client
         protected const string RequestNamePrefixStreamer = "streamer.ClientDataStreamer";
 
         /** Grid count. */
-        protected readonly int _gridCount = 1;
+        private readonly int _gridCount = 1;
 
         /** SSL. */
         private readonly bool _enableSsl;
