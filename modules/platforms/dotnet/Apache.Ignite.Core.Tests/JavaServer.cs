@@ -73,6 +73,9 @@ namespace Apache.Ignite.Core.Tests
                 file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
                 arg1: Os.IsWindows ? "/c" : "-c",
                 arg2: string.Format("{0} {1}", MavenPath, MavenCommandExec),
+                envVars: Jvm.IsJava9()
+                    ? "MAVEN_OPTS#" + string.Join(" ", Jvm.Java9Options)
+                    : string.Empty,
                 workDir: JavaServerSourcePath,
                 waitForOutput: "Ignite node started OK");
 

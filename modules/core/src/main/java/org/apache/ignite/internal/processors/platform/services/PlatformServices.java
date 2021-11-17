@@ -383,7 +383,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
                     ? services.serviceProxy(name, PlatformService.class, sticky)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
-                        platformCtx.kernalContext());
+                        platformCtx.kernalContext(), null);
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
@@ -622,7 +622,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Method mtd = getMethod(serviceClass, mthdName, args);
                 convertArrayArgs(args, mtd);
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args, null);
             }
         }
 
