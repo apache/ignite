@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Ignore escaped characters in compiler-generated type names.
                     // Return any non-separator character to continue parsing.
-                    return default;
+                    return default(char);
                 }
 
                 return _typeName[_pos];
