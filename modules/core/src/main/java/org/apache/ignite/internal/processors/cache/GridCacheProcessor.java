@@ -25,10 +25,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -37,11 +39,11 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -5552,64 +5554,72 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (log.isInfoEnabled())
                 log.info("Restoring partition state for local groups.");
 
-            AtomicLong totalProcessed = new AtomicLong();
-
             AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
 
             ExecutorService sysPool = ctx.pools().getSystemExecutorService();
 
-            CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
-
-            AtomicReference<SortedSet<T3<Long, Long, GroupPartitionId>>> topPartRef = new AtomicReference<>();
+            SortedSet<T3<Long, Long, GroupPartitionId>> topParts = new TreeSet<>(processedPartitionComparator());
 
             long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
 
-            for (CacheGroupContext grp : forGroups) {
+            int poolSize = ctx.config().getSystemThreadPoolSize();
+
+            List<RestorePartitionStateBatch> batches = new ArrayList<>(poolSize);
+
+            for (int i = 0; i < poolSize; i++)
+                batches.add(new RestorePartitionStateBatch());
+
+            int cntr = 0;
+
+            for (CacheGroupContext ctx : forGroups) {
+                for (int i = 0; i < ctx.affinity().partitions(); i++)
+                    batches.get(cntr++ % poolSize).partIds().add(new GroupPartitionId(ctx.groupId(), i));
+            }
+
+            batches.forEach(RestorePartitionStateBatch::markInitialized);
+
+            CountDownLatch completionLatch = new CountDownLatch(cntr);
+
+            final int topPartLimit = 5;
+
+            for (int i = 0; i < poolSize; i++) {
+                final int batchIdx = i;
+
                 sysPool.execute(() -> {
-                    try {
-                        Map<Integer, Long> processed = grp.offheap().restorePartitionStates(partStates);
+                    RestorePartitionStateBatch batch = batches.get(batchIdx);
 
-                        totalProcessed.addAndGet(processed.size());
+                    GroupPartitionId grpPartId;
 
-                        if (log.isInfoEnabled()) {
-                            TreeSet<T3<Long, Long, GroupPartitionId>> top =
-                                new TreeSet<>(processedPartitionComparator());
+                    while ((grpPartId = batch.partIds().poll()) != null) {
+                        CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpPartId.getGroupId());
 
-                            long ts = System.currentTimeMillis();
+                        try {
+                            long time = grpCtx.offheap().restoreStateOfPartition(grpPartId.getPartitionId(),
+                                partStates.get(grpPartId));
 
-                            for (Map.Entry<Integer, Long> e : processed.entrySet()) {
-                                top.add(new T3<>(e.getValue(), ts, new GroupPartitionId(grp.groupId(), e.getKey())));
+                            if (log.isInfoEnabled()) {
+                                batch.processingTime().add(new T3<>(time, U.currentTimeMillis(), grpPartId));
 
-                                trimToSize(top, 5);
+                                trimToSize(batch.processingTime(), topPartLimit);
                             }
-
-                            topPartRef.updateAndGet(top0 -> {
-                                if (top0 == null)
-                                    return top;
-
-                                for (T3<Long, Long, GroupPartitionId> t2 : top0) {
-                                    top.add(t2);
-
-                                    trimToSize(top, 5);
-                                }
-
-                                return top;
-                            });
                         }
-                    }
-                    catch (IgniteCheckedException | RuntimeException | Error e) {
-                        U.error(log, "Failed to restore partition state for " +
-                            "groupName=" + grp.name() + " groupId=" + grp.groupId(), e);
+                        catch (IgniteCheckedException | RuntimeException | Error e) {
+                            U.error(log, "Failed to restore partition state for " +
+                                "groupName=" + grpCtx.name() + " groupId=" + grpCtx.groupId(), e);
 
-                        restoreStateError.compareAndSet(
-                            null,
-                            e instanceof IgniteCheckedException
+                            IgniteCheckedException ex = e instanceof IgniteCheckedException
                                 ? ((IgniteCheckedException)e)
-                                : new IgniteCheckedException(e)
-                        );
-                    }
-                    finally {
-                        completionLatch.countDown();
+                                : new IgniteCheckedException(e);
+
+                            if (!restoreStateError.compareAndSet(null, ex))
+                                restoreStateError.get().addSuppressed(ex);
+                        }
+                        finally {
+                            completionLatch.countDown();
+
+                            if (batch.processedCount() == grpCtx.affinity().partitions())
+                                grpCtx.offheap().confirmPartitionStatesRestored();
+                        }
                     }
                 });
             }
@@ -5625,15 +5635,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     while (!completionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
                         if (log.isInfoEnabled()) {
-                            @Nullable SortedSet<T3<Long, Long, GroupPartitionId>> top = topPartRef.get();
+                            long totalProcessed = 0;
+
+                            for (RestorePartitionStateBatch batch : batches) {
+                                topParts.addAll(batch.processingTime());
+
+                                totalProcessed += batch.processedCount();
+                            }
+
+                            trimToSize(topParts, topPartLimit);
 
                             log.info("Restore partitions state progress [grpCnt=" +
                                 (forGroups.size() - completionLatch.getCount()) + '/' + forGroups.size() +
-                                ", partitionCnt=" + totalProcessed.get() + '/' + totalPart + (top == null ? "" :
-                                ", topProcessedPartitions=" + toStringTopProcessingPartitions(top, forGroups)) + ']');
+                                ", partitionCnt=" + totalProcessed + '/' + totalPart + (topParts.isEmpty() ? "" :
+                                ", topProcessedPartitions=" + toStringTopProcessingPartitions(topParts, forGroups)) + ']');
                         }
 
                         timeout = TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS / 5;
+
                         printTop = true;
                     }
                 }
@@ -5647,11 +5666,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw restoreStateError.get();
 
             if (log.isInfoEnabled()) {
-                SortedSet<T3<Long, Long, GroupPartitionId>> t = printTop ? topPartRef.get() : null;
+                @Nullable SortedSet<T3<Long, Long, GroupPartitionId>> t = printTop ? topParts : null;
+
+                long totalProcessed = batches.stream().mapToLong(RestorePartitionStateBatch::processedCount).sum();
 
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
-                    ", partitionsProcessed=" + totalProcessed.get() +
+                    ", partitionsProcessed=" + totalProcessed +
                     ", time=" + U.humanReadableDuration(U.currentTimeMillis() - startRestorePart) +
                     (t == null ? "" : ", topProcessedPartitions=" + toStringTopProcessingPartitions(t, forGroups)) +
                     "]");
@@ -5980,5 +6001,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Comparator<T3<Long, Long, GroupPartitionId>> comp = Comparator.comparing(T3::get1);
 
         return comp.thenComparing(T3::get2).thenComparing(T3::get3);
+    }
+
+    /**
+     * Batch of restored partitions to process it in single thread.
+     */
+    private static class RestorePartitionStateBatch {
+        /** Partition processing time map. */
+        private final SortedSet<T3<Long, Long, GroupPartitionId>> processingTime =
+            new ConcurrentSkipListSet<>(processedPartitionComparator());
+
+        /** Partitions queue. */
+        private final Queue<GroupPartitionId> partIds = new LinkedList<>();
+
+        /** Initial size of partitions queue. */
+        private volatile int initialQueueSize;
+
+        /** Processing time. */
+        public SortedSet<T3<Long, Long, GroupPartitionId>> processingTime() {
+            return processingTime;
+        }
+
+        /** Partitions queue. */
+        public Queue<GroupPartitionId> partIds() {
+            return partIds;
+        }
+
+        /** This method should be called after partitions queue is filled. */
+        public void markInitialized() {
+            this.initialQueueSize = partIds.size();
+        }
+
+        /** Count of partitions that are already processed. */
+        public int processedCount() {
+            return initialQueueSize - partIds.size();
+        }
     }
 }
