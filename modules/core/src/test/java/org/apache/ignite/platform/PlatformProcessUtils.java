@@ -41,10 +41,11 @@ public class PlatformProcessUtils {
      * @param file Executable name.
      * @param arg1 Argument.
      * @param arg2 Argument.
+     * @param env Environment.
      * @param workDir Work directory.
      * @param waitForOutput A string to look for in the output.
      */
-    public static void startProcess(String file, String arg1, String arg2, String workDir, String waitForOutput)
+    public static void startProcess(String file, String arg1, String arg2, String env, String workDir, String waitForOutput)
             throws Exception {
         if (process != null)
             throw new Exception("PlatformProcessUtils can't start more than one process at a time.");
@@ -52,6 +53,16 @@ public class PlatformProcessUtils {
         ProcessBuilder pb = new ProcessBuilder(file, arg1, arg2);
         pb.directory(new File(workDir));
         pb.redirectErrorStream(true);
+        
+        if (env != null && !env.isEmpty()) {
+            for (String pair : env.split("\\|")) {
+                String[] kv = pair.split("#");
+                assert kv.length == 2;
+                
+                pb.environment().put(kv[0], kv[1]);
+            }
+        }
+        
         process = pb.start();
 
         InputStreamReader isr = new InputStreamReader(process.getInputStream());

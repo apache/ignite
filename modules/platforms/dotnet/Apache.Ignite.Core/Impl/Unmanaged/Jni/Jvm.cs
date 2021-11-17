@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private const int JNI_VERSION_9 = 0x00090000;
 
         /** Options to enable startup on Java 9. */
-        private static readonly string[] Java9Options =
+        public static readonly string[] Java9Options =
         {
             "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
             "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Determines whether we are on Java 9.
         /// </summary>
-        private static bool IsJava9()
+        public static bool IsJava9()
         {
             var args = new JvmInitArgs
             {
