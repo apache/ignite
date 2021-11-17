@@ -114,6 +114,11 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
      */
     @Test
     public void testContextAttribute() {
+        ServiceCallContext callCtx = ServiceCallContext.builder()
+            .put(STR_ATTR_NAME, "attrVal")
+            .put(BIN_ATTR_NAME, "binVal")
+            .build();
+
         for (int i = 0; i < NODES_CNT; i++) {
             String strVal = String.valueOf(i);
             byte[] binVal = strVal.getBytes();
@@ -125,6 +130,8 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
 
             assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(false)));
             assertTrue(Arrays.equals(binVal, proxy.binaryAttribute(true)));
+
+            proxy.attribute2(null);
         }
     }
 
@@ -205,6 +212,8 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
          * @return Context attribute value.
          */
         public byte[] binaryAttribute(boolean useInjectedSvc);
+
+        public String attribute2(ServiceCallContext ctx);
     }
 
     /** */
@@ -233,6 +242,12 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
             ServiceCallContext callCtx = ctx.currentCallContext();
 
             return useInjectedSvc ? injected.binaryAttribute(false) : callCtx.binaryAttribute(BIN_ATTR_NAME);
+        }
+
+        @Override public String attribute2(ServiceCallContext ctx) {
+            if (ctx == null)
+                return null;
+            return ctx.attribute(STR_ATTR_NAME);
         }
     }
 }

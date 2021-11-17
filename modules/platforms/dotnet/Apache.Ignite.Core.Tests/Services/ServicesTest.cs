@@ -284,7 +284,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 var svc0 = grid.GetServices().GetService<ITestIgniteService>(SvcName);
 
-                if (svc0 != null)
+                bool local = svc0 != null;
+                
+                if (local)
                     Assert.IsNull(svc0.ContextAttribute(attrName));
 
                 var ctx = ServiceCallContext.Create().Put(attrName, attrValue);
@@ -297,10 +299,10 @@ namespace Apache.Ignite.Core.Tests.Services
                 var dynamicProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, false, ctx);
                 var dynamicStickyProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, true, ctx);
 
-                Assert.AreEqual(attrValue, proxy.ContextAttribute(attrName));
-                Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
-                Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
-                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
+                Assert.AreEqual(attrValue, proxy.ContextAttribute(attrName), " local=" + local);
+                Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName), " local=" + local);
+                Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName), " local=" + local);
+                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName), " local=" + local);
                 
                 
             }

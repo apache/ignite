@@ -216,7 +216,14 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
                     writer.writeObjectDetached(arg);
             }
 
-            writer.writeMap(callAttrs);
+//            assert callAttrs == null : callAttrs;
+
+            if (callAttrs == null)
+                writer.writeBoolean(false);
+            else {
+                writer.writeBoolean(true);
+                writer.writeMap(callAttrs);
+            }
 
             out.synchronize();
 
