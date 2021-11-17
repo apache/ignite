@@ -75,6 +75,9 @@ public class ServiceCallContextImpl implements ServiceCallContext {
         attrs = U.readMap(in);
     }
 
+    /**
+     * @return Service call context attributes.
+     */
     Map<String, byte[]> values() {
         return attrs;
     }

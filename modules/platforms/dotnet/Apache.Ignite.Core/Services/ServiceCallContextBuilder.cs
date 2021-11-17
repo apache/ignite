@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Services
     public class ServiceCallContextBuilder
     {
         /** Context attributes. */
-        private readonly IDictionary _attrs = new Hashtable();
+        private readonly Hashtable _attrs = new Hashtable();
         
         /// <summary>
         /// Put string attribute.
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(value, "value");
 
-            _attrs[name] = value;//.ToArray();
+            _attrs[name] = value.ToArray();
             
             return this;
         }
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Services
             if (_attrs.Count == 0)
                 throw new InvalidOperationException("Cannot create an empty context.");
 
-            return new ServiceCallContext(_attrs);
+            return new ServiceCallContext((IDictionary)_attrs.Clone());
         }
     }
 }

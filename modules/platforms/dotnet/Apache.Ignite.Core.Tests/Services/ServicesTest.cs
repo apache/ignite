@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -279,19 +280,27 @@ namespace Apache.Ignite.Core.Tests.Services
 
             foreach (var grid in Grids)
             {
+                var nodeId = grid.GetCluster().ForLocal().GetNode().Id;
+
                 var attrName = grid.Name;
-                var attrValue = Guid.NewGuid().ToString();
+                var attrBinName = "bin-" + grid.Name;
+                var attrValue = nodeId.ToString();
+                var attrBinValue = nodeId.ToByteArray();
 
                 var svc0 = grid.GetServices().GetService<ITestIgniteService>(SvcName);
 
                 if (svc0 != null)
                     Assert.IsNull(svc0.ContextAttribute(attrName));
 
-                var ctx = new ServiceCallContextBuilder().Put(attrName, attrValue).Build();
+                var ctx = new ServiceCallContextBuilder()
+                    .Put(attrName, attrValue)
+                    .Put(attrBinName, attrBinValue)
+                    .Build();
 
                 var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, ctx);
                 
                 Assert.IsNull(proxy.ContextAttribute("not-exist-attribute"));
+                Assert.IsNull(proxy.ContextBinaryAttribute("not-exist-attribute"));
 
                 var stickyProxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, true, ctx);
                 var dynamicProxy = grid.GetServices().GetDynamicServiceProxy(SvcName, false, ctx);
@@ -301,6 +310,11 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
+                
+                Assert.AreEqual(attrBinValue, proxy.ContextBinaryAttribute(attrBinName));
+                Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
+                Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
+                Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
             }
         }
 
@@ -1513,6 +1527,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object ContextAttribute(string name);
+            
+            /** */
+            object ContextBinaryAttribute(string name);
         }
 
         /// <summary>
@@ -1644,6 +1661,14 @@ namespace Apache.Ignite.Core.Tests.Services
                 IServiceCallContext ctx = _context.CurrentCallContext();
                 
                 return ctx == null ? null : ctx.Attribute(name);
+            }
+            
+            /** <inheritdoc /> */
+            public object ContextBinaryAttribute(string name)
+            {
+                IServiceCallContext ctx = _context.CurrentCallContext();
+                
+                return ctx == null ? null : ctx.BinaryAttribute(name);
             }
 
             /** <inheritdoc /> */
