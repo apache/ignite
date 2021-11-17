@@ -1132,6 +1132,13 @@ public final class IgniteSystemProperties {
         "This property is intended for integration or performance tests")
     public static final String IGNITE_PREFER_WAL_REBALANCE = "IGNITE_PREFER_WAL_REBALANCE";
 
+    /**
+     * Threshold of the checkpoint quantity since the last earliest checkpoint map snapshot.
+     * After this thresold is reached, a snapshot of the earliest checkpoint map will be captured.
+     * Default is {@code 5}.
+     */
+    public static final String IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD = "IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD";
+
     /** Ignite page memory concurrency level. */
     @SystemProperty(value = "Ignite page memory concurrency level", type = Integer.class)
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";

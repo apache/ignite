@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -106,6 +107,7 @@ public class CheckpointManager {
      * @param failureProcessor Failure processor.
      * @param cacheProcessor Cache processor.
      * @param cpFreqDeviation Distributed checkpoint frequency deviation.
+     * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
      * @throws IgniteCheckedException if fail.
      */
     public CheckpointManager(
@@ -126,7 +128,8 @@ public class CheckpointManager {
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
         GridCacheProcessor cacheProcessor,
-        Supplier<Integer> cpFreqDeviation
+        Supplier<Integer> cpFreqDeviation,
+        Executor checkpointMapSnapshotExecutor
     ) throws IgniteCheckedException {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
@@ -137,14 +140,17 @@ public class CheckpointManager {
 
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
+        CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
+
         checkpointMarkersStorage = new CheckpointMarkersStorage(
+            igniteInstanceName,
             logger,
             cpHistory,
             ioFactory,
-            pageStoreManager.workDir().getAbsolutePath()
+            pageStoreManager.workDir().getAbsolutePath(),
+            lock,
+            checkpointMapSnapshotExecutor
         );
-
-        CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
 
         checkpointWorkflow = new CheckpointWorkflow(
             logger,
@@ -259,6 +265,13 @@ public class CheckpointManager {
      */
     public File checkpointDirectory() {
         return checkpointMarkersStorage.cpDir;
+    }
+
+    /**
+     * @return Checkpoint storage.
+     */
+    public CheckpointMarkersStorage checkpointMarkerStorage() {
+        return checkpointMarkersStorage;
     }
 
     /**
