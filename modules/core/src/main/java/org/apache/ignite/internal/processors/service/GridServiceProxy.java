@@ -46,7 +46,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
-import org.apache.ignite.internal.processors.platform.services.PlatformAbstractService;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,15 +71,10 @@ public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final Method PLATFORM_SERVICE_INVOKE_METHOD;
 
-    private static final Method PLATFORM_SERVICE_INVOKE_METHOD2;
-
     static {
         try {
             PLATFORM_SERVICE_INVOKE_METHOD = PlatformService.class.getMethod("invokeMethod", String.class,
-                boolean.class, boolean.class, Object[].class, Map.class);
-
-            PLATFORM_SERVICE_INVOKE_METHOD2 = PlatformAbstractService.class.getMethod("invokeMethod", String.class,
-                boolean.class, boolean.class, Object[].class, Map.class);
+                    boolean.class, Object[].class);
         }
         catch (NoSuchMethodException e) {
             throw new ExceptionInInitializerError("'invokeMethod' is not defined in " + PlatformService.class.getName());
@@ -293,16 +287,8 @@ public class GridServiceProxy<T> implements Serializable {
         Object[] args,
         @Nullable ServiceCallContext callCtx
     ) throws Exception {
-        if (svc instanceof PlatformService) {
+        if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd)) {
             Map<String, byte[]> callAttrs = callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values();
-
-            if (PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
-                return ((PlatformService)svc)
-                    .invokeMethod((String)args[0], (boolean)args[1], (boolean)args[2], (Object[])args[3], callAttrs);
-//
-//            assert callCtx == null : "ctx is not null";
-//            assert callAttrs != null : "callAttrs " + callAttrs;
-
 
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, callAttrs);
         }
@@ -539,19 +525,9 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
-            if (ctx.service() instanceof PlatformService) {
-                if (PLATFORM_SERVICE_INVOKE_METHOD2.equals(mtd)) {
-                    try {
-                        return ((PlatformService)ctx.service())
-                            .invokeMethod((String)args[0], (boolean)args[1], (boolean)args[2], (Object[])args[3],
-                                callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values());
-                    } catch (PlatformNativeException e) {
-                        throw new ServiceProxyException(e);
-                    }
-                }
-
+            if (ctx.service() instanceof PlatformService && mtd == null)
                 return callPlatformService((PlatformService)ctx.service());
-            } else
+            else
                 return callService(ctx.service(), mtd);
         }
 

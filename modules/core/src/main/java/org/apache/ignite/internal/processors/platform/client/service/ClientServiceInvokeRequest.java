@@ -154,7 +154,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 // Never deserialize platform service arguments and result: may contain platform-only types.
                 PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), false, args, null);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args);
             }
             else {
                 // Deserialize Java service arguments when not in keepBinary mode.

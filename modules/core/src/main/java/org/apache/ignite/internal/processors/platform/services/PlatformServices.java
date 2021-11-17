@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -287,10 +286,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
-//                Map<String, byte[]> callAttrs = reader.readMap();
+                Map<String, byte[]> callAttrs = reader.readMap();
 
                 try {
-                    Object result = svc.invoke(mthdName, srvKeepBinary, args, null);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args, callAttrs);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -378,7 +377,6 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_SERVICE_PROXY: {
                 String name = reader.readString();
                 boolean sticky = reader.readBoolean();
-                ServiceCallContext callCtx = reader.readBoolean() ? new ServiceCallContextImpl(reader.readMap()) : null;
 
                 ServiceDescriptor d = findDescriptor(name);
 
@@ -386,9 +384,9 @@ public class PlatformServices extends PlatformAbstractTarget {
                     throw new IgniteException("Failed to find deployed service: " + name);
 
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
-                    ? services.serviceProxy(name, PlatformService.class, sticky, callCtx)
+                    ? services.serviceProxy(name, PlatformService.class, sticky)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
-                        platformCtx.kernalContext(), callCtx == null ? null : () -> callCtx);
+                        platformCtx.kernalContext(), null);
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }

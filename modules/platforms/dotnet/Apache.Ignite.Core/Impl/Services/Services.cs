@@ -387,20 +387,12 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 w.WriteString(name);
                 w.WriteBoolean(sticky);
-
-                if (callCtx != null)
-                {
-                    w.WriteBoolean(true);
-                    w.WriteDictionary(((ServiceCallContextImpl) callCtx).Values());
-                }
-                else
-                    w.WriteBoolean(false);
             });
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
-                InvokeProxyMethod(javaProxy, method.Name, method, args, platform));
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, callCtx));
         }
 
         /** <inheritDoc /> */
@@ -433,20 +425,12 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 w.WriteString(name);
                 w.WriteBoolean(sticky);
-                
-                if (callCtx != null)
-                {
-                    w.WriteBoolean(true);
-                    w.WriteDictionary(((ServiceCallContextImpl) callCtx).Values());
-                }
-                else
-                    w.WriteBoolean(false);
             });
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
 
             return new DynamicServiceProxy((methodName, args) =>
-                InvokeProxyMethod(javaProxy, methodName, null, args, platform));
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, callCtx));
         }
 
         /// <summary>
@@ -457,11 +441,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
         /// <param name="platformType">The platform.</param>
+        /// <param name="callCtx">Service call context.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType)
+            MethodBase method, object[] args, PlatformType platformType, ServiceCallContext callCtx)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
@@ -473,7 +458,7 @@ namespace Apache.Ignite.Core.Impl.Services
             try
             {
                 return DoOutInOp(OpInvokeMethod,
-                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType),
+                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, callCtx),
                     (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
                     proxy);
             }
