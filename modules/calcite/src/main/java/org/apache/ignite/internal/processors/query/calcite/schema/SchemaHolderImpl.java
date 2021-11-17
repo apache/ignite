@@ -27,6 +27,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.TableImpl;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
@@ -52,8 +53,8 @@ public class SchemaHolderImpl implements SchemaHolder {
 
     /** {@inheritDoc} */
     @Override
-    public SchemaPlus schema() {
-        return calciteSchema;
+    public SchemaPlus schema(@Nullable String schema) {
+        return schema != null ? calciteSchema.getSubSchema(schema) : calciteSchema;
     }
 
     public synchronized void onSchemaCreated(String schemaName) {

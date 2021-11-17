@@ -34,8 +34,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -44,7 +45,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Runtime context allowing access to the tables in a database.
  */
-public class ExecutionContext<RowT> implements DataContext {
+public class ExecutionContext<RowT> extends AbstractQueryContext implements DataContext {
     private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
 
     /**
@@ -52,15 +53,21 @@ public class ExecutionContext<RowT> implements DataContext {
      */
     private static final Locale LOCALE = Locale.ENGLISH;
 
-    private final UUID qryId;
+    private final BaseQueryContext qctx;
 
-    private final PlanningContext ctx;
+    private final QueryTaskExecutor executor;
+
+    private final UUID qryId;
 
     private final FragmentDescription fragmentDesc;
 
     private final Map<String, Object> params;
 
-    private final QueryTaskExecutor executor;
+    private final String locNodeId;
+
+    private final String originatingNodeId;
+
+    private final long topVer;
 
     private final RowHandler<RowT> handler;
 
@@ -80,7 +87,7 @@ public class ExecutionContext<RowT> implements DataContext {
      * Constructor.
      *
      * @param executor     Task executor.
-     * @param ctx          Parent context.
+     * @param qctx          Base query context.
      * @param qryId        Query ID.
      * @param fragmentDesc Partitions information.
      * @param handler      Row handler.
@@ -88,31 +95,36 @@ public class ExecutionContext<RowT> implements DataContext {
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ExecutionContext(
+            BaseQueryContext qctx,
             QueryTaskExecutor executor,
-            PlanningContext ctx,
             UUID qryId,
+            String locNodeId,
+            String originatingNodeId,
+            long topVer,
             FragmentDescription fragmentDesc,
             RowHandler<RowT> handler,
             Map<String, Object> params
     ) {
+        super(qctx);
+
         this.executor = executor;
-        this.ctx = ctx;
+        this.qctx = qctx;
         this.qryId = qryId;
         this.fragmentDesc = fragmentDesc;
         this.handler = handler;
         this.params = params;
+        this.locNodeId = locNodeId;
+        this.originatingNodeId = originatingNodeId;
+        this.topVer = topVer;
 
-        expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
+        expressionFactory = new ExpressionFactoryImpl<>(
+                this,
+                this.qctx.typeFactory(),
+                this.qctx.config().getParserConfig().conformance()
+        );
 
         long ts = System.currentTimeMillis();
         startTs = ts + TIME_ZONE.getOffset(ts);
-    }
-
-    /**
-     * Get parent context.
-     */
-    public PlanningContext planningContext() {
-        return ctx;
     }
 
     /**
@@ -181,19 +193,33 @@ public class ExecutionContext<RowT> implements DataContext {
      * Get originating node ID.
      */
     public String originatingNodeId() {
-        return planningContext().originatingNodeId();
+        return originatingNodeId;
+    }
+
+    /**
+     * Get local node ID.
+     */
+    public String localNodeId() {
+        return locNodeId;
+    }
+
+    /**
+     * Get topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */
     @Override
     public SchemaPlus getRootSchema() {
-        return ctx.schema();
+        return qctx.schema();
     }
 
     /** {@inheritDoc} */
     @Override
     public IgniteTypeFactory getTypeFactory() {
-        return ctx.typeFactory();
+        return qctx.typeFactory();
     }
 
     /** {@inheritDoc} */

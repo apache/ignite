@@ -47,7 +47,6 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.Primitives;
@@ -82,7 +81,7 @@ public class AccumulatorsFactory<RowT> implements Supplier<List<AccumulatorWrapp
     }
 
     private static Function<Object, Object> cast0(Pair<RelDataType, RelDataType> types) {
-        IgniteTypeFactory typeFactory = PlanningContext.empty().typeFactory();
+        IgniteTypeFactory typeFactory = Commons.typeFactory();
 
         RelDataType from = types.left;
         RelDataType to = types.right;

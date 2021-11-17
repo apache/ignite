@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -88,10 +89,10 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
      * @param rel Relational node.
      * @return Fragment meta information.
      */
-    public FragmentMapping fragmentMapping(RelNode rel) {
-        for (; ; ) {
+    public FragmentMapping fragmentMapping(RelNode rel, MappingQueryContext ctx) {
+        for (;;) {
             try {
-                return sourceDistributionHandler.fragmentMapping(rel, this);
+                return sourceDistributionHandler.fragmentMapping(rel, this, ctx);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
                 sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMappingMetadata.DEF);
             }

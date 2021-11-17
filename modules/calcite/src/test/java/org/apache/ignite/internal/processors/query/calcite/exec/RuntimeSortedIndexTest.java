@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.common.collect.ImmutableMap;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelCollations;
@@ -32,8 +34,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.util.Cursor;
@@ -104,13 +106,18 @@ public class RuntimeSortedIndexTest extends IgniteAbstractTest {
     private RuntimeSortedIndex<Object[]> generate(RelDataType rowType, final List<Integer> idxCols, int notUnique) {
         RuntimeSortedIndex<Object[]> idx = new RuntimeSortedIndex<>(
                 new ExecutionContext<>(
-                        null,
-                        PlanningContext.builder()
+                        BaseQueryContext.builder()
+                                .logger(log)
                                 .build(),
                         null,
+                        UUID.randomUUID(),
+                        "fake-test-node",
+                        "fake-test-node",
+                        0,
                         null,
                         ArrayRowHandler.INSTANCE,
-                        null),
+                        ImmutableMap.of()
+                ),
                 RelCollations.of(ImmutableIntList.copyOf(idxCols)),
                 (o1, o2) -> {
                     for (int colIdx : idxCols) {

@@ -41,7 +41,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -77,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.TableDescripto
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
@@ -113,7 +114,7 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
     private String lastErrorMsg;
 
     interface TestVisitor {
-        public void visit(RelNode node, int ordinal, RelNode parent);
+        void visit(RelNode node, int ordinal, RelNode parent);
     }
 
     /**
@@ -205,10 +206,15 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
                 .add("PUBLIC", publicSchema);
 
         PlanningContext ctx = PlanningContext.builder()
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
-                        .build())
+                .parentContext(BaseQueryContext.builder()
+                        .frameworkConfig(
+                                newConfigBuilder(FRAMEWORK_CONFIG)
+                                        .defaultSchema(schema)
+                                        .build()
+                        )
+                        .logger(log)
+                        .build()
+                )
                 .query(sql)
                 .build();
 
@@ -480,22 +486,21 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
             nodes.add(UUID.randomUUID().toString());
         }
 
-        PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(nodes))
-                .originatingNodeId(first(nodes))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
-                        .build())
+        BaseQueryContext ctx = BaseQueryContext.builder()
+                .frameworkConfig(
+                        newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build()
+                )
+                .logger(log)
                 .build();
+
 
         List<RelNode> deserializedNodes = new ArrayList<>();
 
-        try (IgnitePlanner ignored = ctx.planner()) {
-            for (String s : serialized) {
-                RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
-                deserializedNodes.add(reader.read(s));
-            }
+        for (String s : serialized) {
+            RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
+            deserializedNodes.add(reader.read(s));
         }
 
         List<RelNode> expectedRels = fragments.stream()
@@ -662,7 +667,7 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
         /** {@inheritDoc} */
         @Override
-        public ColocationGroup colocationGroup(PlanningContext ctx) {
+        public ColocationGroup colocationGroup(MappingQueryContext ctx) {
             throw new AssertionError();
         }
 

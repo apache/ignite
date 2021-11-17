@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 /**
  * Implementation of {@link QueryPlanCache} that simply wraps a {@link Caffeine} cache.
@@ -41,9 +42,9 @@ public class QueryPlanCacheImpl implements QueryPlanCache {
 
     /** {@inheritDoc} */
     @Override
-    public QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
+    public QueryPlan queryPlan(CacheKey key, Supplier<QueryPlan> planSupplier) {
         Map<CacheKey, QueryPlan> cache = this.cache;
-        QueryPlan plan = cache.computeIfAbsent(key, k -> factory.create(ctx));
+        QueryPlan plan = cache.computeIfAbsent(key, k -> planSupplier.get());
 
         return plan.copy();
     }

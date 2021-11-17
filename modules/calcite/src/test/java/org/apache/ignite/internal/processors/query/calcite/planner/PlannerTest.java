@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.FRAMEWORK_CONFIG;
-import static org.apache.ignite.internal.util.CollectionUtils.first;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
@@ -44,6 +42,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
@@ -60,6 +59,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.CollectionUtils;
 import org.apache.ignite.network.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -101,7 +103,7 @@ public class PlannerTest extends AbstractPlannerTest {
             }
 
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                         select(NODES, 0, 1),
                         select(NODES, 1, 2),
@@ -122,7 +124,7 @@ public class PlannerTest extends AbstractPlannerTest {
                     .add("NAME", f.createJavaType(String.class))
                     .add("VER", f.createJavaType(Integer.class))
                     .build()) {
-            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(NODES, 0, 1),
                     select(NODES, 1, 2),
@@ -151,11 +153,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "ON d.id = p.id0";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build())
                         .build())
                 .query(sql)
                 .parameters(2)
@@ -167,12 +169,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -190,7 +191,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("PROJECTID", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 0, 1, 2, 3));
             }
 
@@ -207,7 +208,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("VER", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 0, 1, 2, 3));
             }
 
@@ -232,11 +233,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build())
                         .build())
                 .query(sql)
                 .parameters(2)
@@ -246,12 +247,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -269,7 +269,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("PROJECTID", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 0));
             }
 
@@ -286,7 +286,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("VER", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                         select(NODES, 1, 2),
                         select(NODES, 2, 3),
@@ -316,11 +316,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build())
                         .build())
                 .query(sql)
                 .parameters(2)
@@ -330,12 +330,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -351,7 +350,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("PROJECTID", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 1, 2, 3));
             }
 
@@ -368,7 +367,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("VER", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                         select(NODES, 0),
                         select(NODES, 1),
@@ -398,11 +397,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build())
                         .build())
                 .query(sql)
                 .parameters(2)
@@ -412,12 +411,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -435,7 +433,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("PROJECTID", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 0));
             }
 
@@ -451,7 +449,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("VER", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                         select(NODES, 1),
                         select(NODES, 2),
@@ -481,11 +479,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build())
                         .build())
                 .query(sql)
                 .parameters(2)
@@ -495,12 +493,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -516,7 +513,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("PROJECTID", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 2));
             }
 
@@ -533,7 +530,7 @@ public class PlannerTest extends AbstractPlannerTest {
                         .add("VER", f.createJavaType(Integer.class))
                         .build()) {
             @Override
-            public ColocationGroup colocationGroup(PlanningContext ctx) {
+            public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forNodes(select(NODES, 0, 1));
             }
 
@@ -559,11 +556,11 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "WHERE (d.projectId + 1) > ?";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .build())
                         .build())
                 .query(sql)
                 .parameters(2)
@@ -573,12 +570,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
-                new Splitter().go(phys)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null);
 
         assertNotNull(plan);
 
-        plan.init(ctx);
+        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -612,17 +608,6 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "   FROM TEST \n"
                 + "   WHERE VAL = 10) \n"
                 + "WHERE VAL = 10";
-
-        PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
-                        .build())
-                .query(sql)
-                .parameters(2)
-                .build();
 
         RelNode phys = physicalPlan(sql, publicSchema);
 
@@ -693,12 +678,12 @@ public class PlannerTest extends AbstractPlannerTest {
                 + "where d.deptno + e.deptno = 2";
 
         PlanningContext ctx = PlanningContext.builder()
-                .localNodeId(first(NODES))
-                .originatingNodeId(first(NODES))
-                .parentContext(Contexts.empty())
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                        .defaultSchema(schema)
-                        .costFactory(new IgniteCostFactory(1, 100, 1, 1))
+                .parentContext(BaseQueryContext.builder()
+                        .logger(log)
+                        .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                                .defaultSchema(schema)
+                                .costFactory(new IgniteCostFactory(1, 100, 1, 1))
+                                .build())
                         .build())
                 .query(sql)
                 .build();

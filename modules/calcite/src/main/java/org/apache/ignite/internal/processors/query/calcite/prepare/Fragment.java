@@ -22,7 +22,6 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.tostring.IgniteToStringExclude;
 import org.apache.ignite.internal.tostring.S;
 import org.jetbrains.annotations.NotNull;
@@ -106,9 +106,9 @@ public class Fragment {
         return mapping;
     }
 
-    private FragmentMapping mapping(PlanningContext ctx, RelMetadataQuery mq, Supplier<List<String>> nodesSource) {
+    private FragmentMapping mapping(MappingQueryContext ctx, RelMetadataQuery mq, Supplier<List<String>> nodesSource) {
         try {
-            FragmentMapping mapping = IgniteMdFragmentMapping.fragmentMappingForMetadataQuery(root, mq);
+            FragmentMapping mapping = IgniteMdFragmentMapping.fragmentMappingForMetadataQuery(root, mq, ctx);
 
             if (rootFragment()) {
                 mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
@@ -141,24 +141,8 @@ public class Fragment {
         return !(root instanceof IgniteSender);
     }
 
-    /**
-     * Attach.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     */
-    public Fragment attach(PlanningContext ctx) {
-        RelOptCluster cluster = ctx.cluster();
-
-        return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
-    }
-
-    /**
-     * Detach.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
-     */
-    public Fragment detach() {
-        RelOptCluster cluster = PlanningContext.empty().cluster();
-
-        return root.getCluster() == cluster ? this : new Cloner(cluster).go(this);
+    public Fragment copy() {
+        return new Cloner(Commons.cluster()).go(this);
     }
 
     /**
@@ -167,9 +151,7 @@ public class Fragment {
      * @param ctx Planner context.
      * @param mq  Metadata query.
      */
-    Fragment map(MappingService mappingSrvc, PlanningContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
-        assert root.getCluster() == ctx.cluster() : "Fragment is detached [fragment=" + this + "]";
-
+    Fragment map(MappingService mappingSrvc, MappingQueryContext ctx, RelMetadataQuery mq) throws FragmentMappingException {
         if (mapping != null) {
             return this;
         }
@@ -178,7 +160,7 @@ public class Fragment {
     }
 
     @NotNull
-    private Supplier<List<String>> nodesSource(MappingService mappingSrvc, PlanningContext ctx) {
+    private Supplier<List<String>> nodesSource(MappingService mappingSrvc, MappingQueryContext ctx) {
         return () -> mappingSrvc.executionNodes(ctx.topologyVersion(), single(), null);
     }
 

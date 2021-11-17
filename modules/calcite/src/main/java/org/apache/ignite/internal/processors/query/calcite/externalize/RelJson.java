@@ -114,8 +114,6 @@ import org.apache.ignite.lang.IgniteException;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 class RelJson {
-    private final RelOptCluster cluster;
-
     @SuppressWarnings("PublicInnerClass")
     @FunctionalInterface
     public interface RelFactory extends Function<RelInput, RelNode> {
@@ -225,8 +223,7 @@ class RelJson {
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    RelJson(RelOptCluster cluster) {
-        this.cluster = cluster;
+    RelJson() {
     }
 
     Function<RelInput, RelNode> factory(String type) {
@@ -381,7 +378,7 @@ class RelJson {
 
     private Object toJson(RexNode node) {
         // removes calls to SEARCH and the included Sarg and converts them to comparisons
-        node = RexUtil.expandSearch(cluster.getRexBuilder(), null, node);
+        node = RexUtil.expandSearch(Commons.cluster().getRexBuilder(), null, node);
 
         Map<String, Object> map;
         switch (node.getKind()) {

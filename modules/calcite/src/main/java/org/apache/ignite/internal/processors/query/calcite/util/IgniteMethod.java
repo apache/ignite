@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.BiScalar;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.SingleScalar;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMappingMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 
 /**
  * Contains methods used in metadata definitions.
@@ -56,8 +57,8 @@ public enum IgniteMethod {
 
     SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class),
 
-    /** See {@link FragmentMappingMetadata#fragmentMapping()}. */
-    FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
+    /** See {@link FragmentMappingMetadata#fragmentMapping(MappingQueryContext)}. */
+    FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping", MappingQueryContext.class);
 
     private final Method method;
 

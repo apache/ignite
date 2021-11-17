@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -59,7 +58,7 @@ public class RelJsonWriter implements RelWriter {
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public static String toJson(RelNode rel) {
-        RelJsonWriter writer = new RelJsonWriter(rel.getCluster(), PRETTY_PRINT);
+        RelJsonWriter writer = new RelJsonWriter(PRETTY_PRINT);
         rel.explain(writer);
 
         return writer.asString();
@@ -69,10 +68,10 @@ public class RelJsonWriter implements RelWriter {
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public RelJsonWriter(RelOptCluster cluster, boolean pretty) {
+    public RelJsonWriter(boolean pretty) {
         this.pretty = pretty;
 
-        relJson = new RelJson(cluster);
+        relJson = new RelJson();
     }
 
     /** {@inheritDoc} */

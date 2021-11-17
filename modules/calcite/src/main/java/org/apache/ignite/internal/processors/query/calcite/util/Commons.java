@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import static org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext.CLUSTER;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 import java.io.Reader;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorI
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractMultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
@@ -318,17 +320,24 @@ public final class Commons {
     }
 
     /**
-     * Extracts planner context.
+     * Standalone type factory.
      */
-    public static PlanningContext context(RelNode rel) {
+    public static IgniteTypeFactory typeFactory() {
+        return typeFactory(cluster());
+    }
+
+    /**
+     * Extracts query context.
+     */
+    public static BaseQueryContext context(RelNode rel) {
         return context(rel.getCluster());
     }
 
     /**
-     * Extracts planner context.
+     * Extracts query context.
      */
-    public static PlanningContext context(RelOptCluster cluster) {
-        return context(cluster.getPlanner().getContext());
+    public static BaseQueryContext context(RelOptCluster cluster) {
+        return Objects.requireNonNull(cluster.getPlanner().getContext().unwrap(BaseQueryContext.class));
     }
 
     /**
@@ -811,5 +820,13 @@ public final class Commons {
         SqlParser parser = SqlParser.create(reader, parserCfg);
 
         return parser.parseStmtList();
+    }
+
+    public static RelOptCluster cluster() {
+        return CLUSTER;
+    }
+
+    public static MappingQueryContext mapContext(String locNodeId, long topVer) {
+        return new MappingQueryContext(locNodeId, topVer);
     }
 }

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
 import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.jetbrains.annotations.NotNull;
@@ -67,14 +67,17 @@ public class AbstractExecutionTest extends IgniteAbstractTest {
     protected ExecutionContext<Object[]> executionContext() {
         FragmentDescription fragmentDesc = new FragmentDescription(0, null, null, null);
         return new ExecutionContext<>(
-                taskExecutor,
-                PlanningContext.builder()
-                        .localNodeId(UUID.randomUUID().toString())
+                BaseQueryContext.builder()
+                        .logger(log)
                         .build(),
+                taskExecutor,
                 UUID.randomUUID(),
+                "fake-test-node",
+                "fake-test-node",
+                0,
                 fragmentDesc,
                 ArrayRowHandler.INSTANCE,
-                Map.of()
+                ImmutableMap.of()
         );
     }
 

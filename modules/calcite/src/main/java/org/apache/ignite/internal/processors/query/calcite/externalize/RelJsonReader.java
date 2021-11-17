@@ -46,7 +46,7 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.lang.IgniteException;
 
@@ -61,8 +61,6 @@ public class RelJsonReader {
 
     private final ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
-    private final RelOptCluster cluster;
-
     private final RelOptSchema relOptSchema;
 
     private final RelJson relJson;
@@ -75,8 +73,8 @@ public class RelJsonReader {
      * FromJson.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public static <T extends RelNode> T fromJson(PlanningContext ctx, String json) {
-        RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
+    public static <T extends RelNode> T fromJson(BaseQueryContext ctx, String json) {
+        RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
 
         return (T) reader.read(json);
     }
@@ -85,11 +83,10 @@ public class RelJsonReader {
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public RelJsonReader(RelOptCluster cluster, RelOptSchema relOptSchema) {
-        this.cluster = cluster;
+    public RelJsonReader(RelOptSchema relOptSchema) {
         this.relOptSchema = relOptSchema;
 
-        relJson = new RelJson(cluster);
+        relJson = new RelJson();
     }
 
     /**
@@ -133,13 +130,13 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override
         public RelOptCluster getCluster() {
-            return cluster;
+            return Commons.cluster();
         }
 
         /** {@inheritDoc} */
         @Override
         public RelTraitSet getTraitSet() {
-            return cluster.traitSet();
+            return Commons.cluster().traitSet();
         }
 
         /** {@inheritDoc} */
@@ -277,7 +274,7 @@ public class RelJsonReader {
         @Override
         public RelDataType getRowType(String tag) {
             Object o = jsonRel.get(tag);
-            return relJson.toType(Commons.typeFactory(cluster), o);
+            return relJson.toType(Commons.typeFactory(), o);
         }
 
         /** {@inheritDoc} */
@@ -286,7 +283,7 @@ public class RelJsonReader {
             List<RexNode> expressionList = getExpressionList(expressionsTag);
             List<String> names =
                     (List<String>) get(fieldsTag);
-            return Commons.typeFactory(cluster).createStructType(
+            return Commons.typeFactory().createStructType(
                     new AbstractList<Map.Entry<String, RelDataType>>() {
                         @Override
                         public Map.Entry<String, RelDataType> get(int index) {
@@ -359,7 +356,7 @@ public class RelJsonReader {
             Boolean distinct = (Boolean) jsonAggCall.get("distinct");
             List<Integer> operands = (List<Integer>) jsonAggCall.get("operands");
             Integer filterOperand = (Integer) jsonAggCall.get("filter");
-            RelDataType type = relJson.toType(Commons.typeFactory(cluster), jsonAggCall.get("type"));
+            RelDataType type = relJson.toType(Commons.typeFactory(), jsonAggCall.get("type"));
             String name = (String) jsonAggCall.get("name");
             return AggregateCall.create(aggregation, distinct, false, false, operands,
                     filterOperand == null ? -1 : filterOperand,

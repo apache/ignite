@@ -183,7 +183,7 @@ public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>>
 
         IgniteDistribution distr = rel.distribution();
         Destination<RowT> dest = distr.destination(ctx, affSrvc, ctx.group(rel.sourceId()));
-        String localNodeId = ctx.planningContext().localNodeId();
+        String localNodeId = ctx.localNodeId();
 
         FilterNode<RowT> node = new FilterNode<>(ctx, rel.getRowType(), r -> Objects.equals(localNodeId, first(dest.targets(r))));
 
@@ -330,7 +330,7 @@ public class LogicalRelImplementor<RowT> implements IgniteRelVisitor<Node<RowT>>
                 ctx,
                 rowType,
                 tbl,
-                group.partitions(ctx.planningContext().localNodeId()),
+                group.partitions(ctx.localNodeId()),
                 filters,
                 prj,
                 requiredColumns

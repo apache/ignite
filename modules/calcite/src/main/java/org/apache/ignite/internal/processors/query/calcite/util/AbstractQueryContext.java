@@ -15,18 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import org.apache.calcite.schema.SchemaPlus;
-import org.jetbrains.annotations.Nullable;
+import org.apache.calcite.plan.Context;
 
 /**
- * SchemaHolder interface.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+ * Abstract query context.
  */
-public interface SchemaHolder {
-    /**
-     * Return specified schema if the schema name is specified or default schema when {@code schema} is {@code null}.
-     */
-    SchemaPlus schema(@Nullable String schema);
+public class AbstractQueryContext implements Context {
+    private final Context parentCtx;
+
+    public AbstractQueryContext(Context parentCtx) {
+        this.parentCtx = parentCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <C> C unwrap(Class<C> cls) {
+        if (cls == getClass()) {
+            return cls.cast(this);
+        }
+
+        return parentCtx.unwrap(cls);
+    }
 }

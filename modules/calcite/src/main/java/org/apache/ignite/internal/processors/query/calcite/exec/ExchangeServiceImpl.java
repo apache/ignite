@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMes
 import org.apache.ignite.internal.processors.query.calcite.message.SqlQueryMessageGroup;
 import org.apache.ignite.internal.processors.query.calcite.message.SqlQueryMessagesFactory;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -48,6 +48,8 @@ public class ExchangeServiceImpl implements ExchangeService {
 
     private static final SqlQueryMessagesFactory FACTORY = new SqlQueryMessagesFactory();
 
+    private final String localNodeId;
+
     private final QueryTaskExecutor taskExecutor;
 
     private final MailboxRegistry mailboxRegistry;
@@ -59,10 +61,12 @@ public class ExchangeServiceImpl implements ExchangeService {
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
     public ExchangeServiceImpl(
+            String localNodeId,
             QueryTaskExecutor taskExecutor,
             MailboxRegistry mailboxRegistry,
             MessageService msgSrvc
     ) {
+        this.localNodeId = localNodeId;
         this.taskExecutor = taskExecutor;
         this.mailboxRegistry = mailboxRegistry;
         this.msgSrvc = msgSrvc;
@@ -246,11 +250,14 @@ public class ExchangeServiceImpl implements ExchangeService {
      */
     private ExecutionContext<?> baseInboxContext(String nodeId, UUID qryId, long fragmentId) {
         return new ExecutionContext<>(
-                taskExecutor,
-                PlanningContext.builder()
-                        .originatingNodeId(nodeId)
+                BaseQueryContext.builder()
+                        .logger(LOG)
                         .build(),
+                taskExecutor,
                 qryId,
+                localNodeId,
+                nodeId,
+                -1,
                 new FragmentDescription(
                         fragmentId,
                         null,

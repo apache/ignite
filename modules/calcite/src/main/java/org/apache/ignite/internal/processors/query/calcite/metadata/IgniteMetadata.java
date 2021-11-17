@@ -26,6 +26,7 @@ import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
@@ -53,19 +54,18 @@ public class IgniteMetadata {
                             DefaultRelMetadataProvider.INSTANCE));
 
     /**
-     * FragmentMappingMetadata interface.
-     * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+     * Describes the method signature for the methods of the {@link IgniteMdFragmentMapping}.
      */
     public interface FragmentMappingMetadata extends Metadata {
         MetadataDef<FragmentMappingMetadata> DEF = MetadataDef.of(FragmentMappingMetadata.class,
                 FragmentMappingMetadata.Handler.class, IgniteMethod.FRAGMENT_MAPPING.method());
 
         /** Determines how the rows are distributed. */
-        FragmentMapping fragmentMapping();
+        FragmentMapping fragmentMapping(MappingQueryContext ctx);
 
         /** Handler API. */
         interface Handler extends MetadataHandler<FragmentMappingMetadata> {
-            FragmentMapping fragmentMapping(RelNode r, RelMetadataQuery mq);
+            FragmentMapping fragmentMapping(RelNode r, RelMetadataQuery mq, MappingQueryContext ctx);
         }
     }
 }

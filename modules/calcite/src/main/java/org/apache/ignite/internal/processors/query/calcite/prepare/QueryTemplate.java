@@ -39,8 +39,6 @@ import org.jetbrains.annotations.NotNull;
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
 public class QueryTemplate {
-    private final MappingService mappingService;
-
     private final List<Fragment> fragments;
 
     private final AtomicReference<ExecutionPlan> executionPlan = new AtomicReference<>();
@@ -49,12 +47,11 @@ public class QueryTemplate {
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public QueryTemplate(MappingService mappingService, List<Fragment> fragments) {
-        this.mappingService = mappingService;
+    public QueryTemplate(List<Fragment> fragments) {
 
         List<Fragment> frgs = new ArrayList<>(fragments.size());
         for (Fragment fragment : fragments) {
-            frgs.add(fragment.detach());
+            frgs.add(fragment.copy());
         }
 
         this.fragments = List.copyOf(frgs);
@@ -64,19 +61,19 @@ public class QueryTemplate {
      * Map.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
      */
-    public ExecutionPlan map(PlanningContext ctx) {
+    public ExecutionPlan map(MappingService mappingService, MappingQueryContext ctx) {
         ExecutionPlan executionPlan = this.executionPlan.get();
         if (executionPlan != null && Objects.equals(executionPlan.topologyVersion(), ctx.topologyVersion())) {
             return executionPlan;
         }
 
-        List<Fragment> fragments = Commons.transform(this.fragments, f -> f.attach(ctx));
+        List<Fragment> fragments = Commons.transform(this.fragments, Fragment::copy);
 
         Exception ex = null;
         RelMetadataQuery mq = first(fragments).root().getCluster().getMetadataQuery();
         for (int i = 0; i < 3; i++) {
             try {
-                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(fragments, ctx, mq));
+                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(mappingService, fragments, ctx, mq));
 
                 if (executionPlan == null || executionPlan.topologyVersion() < executionPlan0.topologyVersion()) {
                     this.executionPlan.compareAndSet(executionPlan, executionPlan0);
@@ -98,11 +95,11 @@ public class QueryTemplate {
     }
 
     @NotNull
-    private List<Fragment> map(List<Fragment> fragments, PlanningContext ctx, RelMetadataQuery mq) {
+    private List<Fragment> map(MappingService mappingService, List<Fragment> fragments, MappingQueryContext ctx, RelMetadataQuery mq) {
         List<Fragment> frgs = new ArrayList<>();
 
         for (Fragment fragment : fragments) {
-            frgs.add(fragment.map(mappingService, ctx, mq).detach());
+            frgs.add(fragment.map(mappingService, ctx, mq));
         }
 
         return List.copyOf(frgs);

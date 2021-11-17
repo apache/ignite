@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.calcite.schema.SchemaPlus;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.lang.IgniteException;
 
 /**
- * SchemaHolder interface.
- * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
+ * The exception is thrown if a query was cancelled or timed out while executing.
  */
-public interface SchemaHolder {
+public class QueryCancelledException extends IgniteException {
+    private static final long serialVersionUID = 0L;
+
+    public static final String ERR_MSG = "The query was cancelled while executing.";
+
     /**
-     * Return specified schema if the schema name is specified or default schema when {@code schema} is {@code null}.
+     * Default constructor.
      */
-    SchemaPlus schema(@Nullable String schema);
+    public QueryCancelledException() {
+        super(ERR_MSG);
+    }
 }
