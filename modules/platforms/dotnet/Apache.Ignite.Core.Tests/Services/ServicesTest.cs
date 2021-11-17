@@ -1794,5 +1794,24 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 #endif
+
+        /// <summary> Tests with UserTypedArray = true. </summary>
+        public class ServicesTestTypedArrays : ServicesTest
+        {
+            [SetUp]
+            public override void SetUp()
+            {
+                TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
+
+                base.SetUp();
+            }
+
+            [TestFixtureTearDown]
+            public override void FixtureTearDown()
+            {
+                base.FixtureTearDown();
+                TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
+            }
+        }
     }
 }

@@ -20,52 +20,7 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using NUnit.Framework;
 
-    /// <summary>
-    /// Tests calling platform service from java.
-    /// </summary>
-    public class CallPlatformServiceTestTypedArrays : CallPlatformServiceTest
-    {
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
-
-            base.SetUp();
-        }
-
-        [TearDown]
-        public override void TearDown()
-        {
-            base.TearDown();
-
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
-        }
-    }
-
-    /// <summary>
-    /// Services tests.
-    /// </summary>
-    public class ServicesTestTypedArrays : ServicesTest
-    {
-        [SetUp]
-        public override void SetUp()
-        {
-            TestUtils.UseTypedArray = !TestUtils.DfltUseTypedArray;
-
-            base.SetUp();
-        }
-
-        [TestFixtureTearDown]
-        public override void FixtureTearDown()
-        {
-            base.FixtureTearDown();
-            TestUtils.UseTypedArray = TestUtils.DfltUseTypedArray;
-        }
-    }
-
-    /// <summary>
-    /// Services async tests.
-    /// </summary>
+    /// <summary> Tests with UserTypedArray = true. </summary>
     public class ServicesTestAsyncTypedArrays : ServicesTestAsync
     {
         [SetUp]
@@ -84,9 +39,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
     }
 
-    /// <summary>
-    /// Services test with compact footers disabled.
-    /// </summary>
+    /// <summary> Tests with UserTypedArray = true. </summary>
     public class ServicesTestFullFooterTypedArrays : ServicesTestFullFooter
     {
         [SetUp]
