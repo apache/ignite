@@ -1125,10 +1125,16 @@ public class SnapshotRestoreProcess {
     ) {
         Map<UUID, Map<Integer, Set<Integer>>> nodeToSnp = new HashMap<>();
 
-        for (Map.Entry<UUID, List<SnapshotMetadata>> e : metas.entrySet()) {
+        List<UUID> nodes = new ArrayList<>(metas.keySet());
+        Collections.shuffle(nodes);
+
+        Map<UUID, List<SnapshotMetadata>> shuffleMetas = new LinkedHashMap<>();
+        nodes.forEach(k -> shuffleMetas.put(k, metas.get(k)));
+
+        for (Map.Entry<UUID, List<SnapshotMetadata>> e : shuffleMetas.entrySet()) {
             UUID nodeId = e.getKey();
 
-            for (SnapshotMetadata meta : ofNullable(e.getValue()).orElse(new ArrayList<>())) {
+            for (SnapshotMetadata meta : ofNullable(e.getValue()).orElse(Collections.emptyList())) {
                 Map<Integer, Set<Integer>> parts = ofNullable(meta.partitions()).orElse(Collections.emptyMap());
 
                 for (Map.Entry<Integer, Set<Integer>> metaParts : parts.entrySet()) {
@@ -1143,13 +1149,7 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        List<UUID> list = new ArrayList<>(nodeToSnp.keySet());
-        Collections.shuffle(list);
-
-        Map<UUID, Map<Integer, Set<Integer>>> shuffleMap = new LinkedHashMap<>();
-        list.forEach(k -> shuffleMap.put(k, nodeToSnp.get(k)));
-
-        return shuffleMap;
+        return nodeToSnp;
     }
 
     /**

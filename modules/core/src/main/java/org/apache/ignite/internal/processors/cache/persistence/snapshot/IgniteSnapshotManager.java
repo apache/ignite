@@ -2415,27 +2415,35 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private volatile boolean stopping;
 
         /**
-         * @param next New task for scheduling. May produce <tt>null</tt> value if the queue is empty.
+         * @param next New task for scheduling.
          */
-        public synchronized void submit(@Nullable IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
+        public synchronized void submit(IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
+            assert next != null;
+
             RemoteSnapshotFilesRecevier curr = active;
-            RemoteSnapshotFilesRecevier next0 = next == null ? queue.poll() : next;
 
             if (curr == null || curr.isDone()) {
-                if (next0 == null)
-                    return;
+                next.listen(f -> scheduleNext());
 
-                next0.listen(f -> submit(null));
-
-                active = next0;
+                active = next;
 
                 if (stopping)
-                    next0.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+                    next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
                 else
-                    next0.init();
+                    next.init();
             }
-            else if (next0 != null)
-                queue.offer(next0);
+            else
+                queue.offer(next);
+        }
+
+        /** Schedule next async receiver. */
+        private synchronized void scheduleNext() {
+            RemoteSnapshotFilesRecevier next = queue.poll();
+
+            if (next == null)
+                return;
+
+            submit(next);
         }
 
         /** Stopping handler. */
