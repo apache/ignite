@@ -287,6 +287,8 @@ public class GridServiceProxy<T> implements Serializable {
         Object[] args,
         @Nullable ServiceCallContext callCtx
     ) throws Exception {
+        assert false : "Unexpected local execution";
+
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
         else
