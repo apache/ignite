@@ -59,7 +59,7 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 

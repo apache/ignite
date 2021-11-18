@@ -716,7 +716,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                 List<List<?>> res = ign.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql)).getAll();
 
                 return checker.test(res);
-            }, 1000));
+            }, TIMEOUT));
         }
     }
 }
