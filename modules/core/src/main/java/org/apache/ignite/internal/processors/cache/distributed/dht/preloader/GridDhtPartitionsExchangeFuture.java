@@ -1875,7 +1875,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param latchId Distributed latch Id.
      * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      * @param doRollback If {@code true} tries to rollback transactions which lock partitions. Avoids unnecessary calls
-     * of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
+     *      of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -3925,16 +3925,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
-                    Set<String> caches = exchActions.cachesToResetLostPartitions();
+                        Set<String> caches = exchActions.cachesToResetLostPartitions();
 
-                    if (!F.isEmpty(caches))
-                        resetLostPartitions(caches);
+                        if (!F.isEmpty(caches))
+                            resetLostPartitions(caches);
 
                         Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
-                            .map(grp -> grp.descriptor().groupId()),
-                        exchActions.cachesToResetLostPartitions().stream()
-                            .map(CU::cacheId))
-                        .collect(Collectors.toSet());
+                                .map(grp -> grp.descriptor().groupId()),
+                            exchActions.cachesToResetLostPartitions().stream()
+                                .map(CU::cacheId))
+                            .collect(Collectors.toSet());
 
                         assignPartitionsStates(cacheGroupsToResetOwners);
                     }
@@ -4241,7 +4241,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param cacheGroupsToResetOwners Set of cache groups which need to reset partitions state,
-     * null if reset partitions state for all cache groups needed
+     *                                 null if reset partitions state for all cache groups needed
      */
     private void assignPartitionsStates(Set<Integer> cacheGroupsToResetOwners) {
         Map<String, List<SupplyPartitionInfo>> supplyInfoMap = log.isInfoEnabled() ?
