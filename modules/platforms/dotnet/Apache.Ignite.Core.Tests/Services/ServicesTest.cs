@@ -22,14 +22,15 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
-    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Platform.Model;
     using NUnit.Framework;
 
@@ -1171,9 +1172,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Create test context for the service proxy.
+        /// Creates a test caller context.
         /// </summary>
-        /// <returns>Test context for the service proxy.</returns>
+        /// <returns>Caller context.</returns>
         private IServiceCallContext callContext()
         {
             return new ServiceCallContextBuilder().Put("attr", "value").Build();
@@ -1353,7 +1354,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             if (!CompactFooter)
             {
-                springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
             }
 
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -1863,14 +1864,14 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (date.Kind == DateTimeKind.Local)
                     date = date.ToUniversalTime();
 
-                Impl.Binary.BinaryUtils.ToJavaDate(date, out high, out low);
+                BinaryUtils.ToJavaDate(date, out high, out low);
             }
 
             /** <inheritdoc /> */
             public DateTime FromJavaTicks(long high, int low)
             {
                 return new DateTime(
-                    Impl.Binary.BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                    BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
                     DateTimeKind.Utc);
             }
         }

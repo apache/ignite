@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Services
             else
                 mthdArgs = null;
 
-            var attrs = reader.ReadDictionary();
+            var attrs = reader.ReadDictionaryAsGeneric<string, byte[]>();
 
             callCtx = attrs == null ? null : new ServiceCallContext(attrs);
         }

@@ -44,7 +44,7 @@ public final class MarshallerExclusions {
      * Note that this list supersedes {@link #EXCL_CLASSES}.
      */
     private static final Class<?>[] INCL_CLASSES = new Class[] {
-        // Ignite classes.ridServiceProxy.java
+        // Ignite classes.
         GridLoggerProxy.class,
         GridExecutorService.class
     };
