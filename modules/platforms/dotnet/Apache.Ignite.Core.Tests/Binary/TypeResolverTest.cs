@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Reflection.Emit;
 #if !NETCOREAPP
     using System.Linq;
-    using System.Reflection;
 #endif
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
