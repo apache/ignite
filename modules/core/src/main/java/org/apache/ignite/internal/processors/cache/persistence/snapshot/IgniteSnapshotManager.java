@@ -2420,6 +2420,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         public synchronized void submit(IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
             assert next != null;
 
+            if (stopping) {
+                next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+
+                RemoteSnapshotFilesRecevier r;
+
+                while ((r = queue.poll()) != null)
+                    r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+
+                return;
+            }
+
             RemoteSnapshotFilesRecevier curr = active;
 
             if (curr == null || curr.isDone()) {
@@ -2427,10 +2439,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 active = next;
 
-                if (stopping)
-                    next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-                else
-                    next.init();
+                next.init();
             }
             else
                 queue.offer(next);
@@ -2482,17 +2491,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return The set of currently scheduled tasks, some of them may be already completed.
          */
         private Set<RemoteSnapshotFilesRecevier> activeTasks() {
-            Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>();
 
-            RemoteSnapshotFilesRecevier curr = active;
-            RemoteSnapshotFilesRecevier changed;
+            Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
 
-            do {
-                futs.addAll(queue);
-                futs.add(curr);
-
-                changed = curr;
-            } while ((curr = active) != changed);
+            futs.add(active);
 
             return futs.stream()
                 .filter(Objects::nonNull)
