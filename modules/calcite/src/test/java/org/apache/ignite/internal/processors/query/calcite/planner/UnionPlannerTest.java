@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 /**
  * Union test.
  */
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class UnionPlannerTest extends AbstractPlannerTest {
     @Test
     public void testUnion() throws Exception {

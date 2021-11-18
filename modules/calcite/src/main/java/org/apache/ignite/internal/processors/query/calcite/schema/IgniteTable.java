@@ -83,16 +83,19 @@ public interface IgniteTable extends TranslatableTable, Wrapper {
     IgniteDistribution distribution();
 
     /** {@inheritDoc} */
+    @Override
     default Schema.TableType getJdbcTableType() {
         return Schema.TableType.TABLE;
     }
 
     /** {@inheritDoc} */
+    @Override
     default boolean isRolledUp(String column) {
         return false;
     }
 
     /** {@inheritDoc} */
+    @Override
     default boolean rolledUpColumnValidInsideAgg(String column, SqlCall call,
             @Nullable SqlNode parent,
             @Nullable CalciteConnectionConfig config) {
@@ -100,6 +103,7 @@ public interface IgniteTable extends TranslatableTable, Wrapper {
     }
 
     /** {@inheritDoc} */
+    @Override
     default Statistic getStatistic() {
         return new Statistic() {
             @Override
