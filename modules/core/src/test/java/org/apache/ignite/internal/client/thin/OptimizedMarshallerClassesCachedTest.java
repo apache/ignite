@@ -49,16 +49,22 @@ public class OptimizedMarshallerClassesCachedTest extends GridCommonAbstractTest
             srv.getOrCreateCache(Config.DEFAULT_CACHE_NAME).put(1, LocalDateTime.now());
 
             IgniteClient cli = new TcpIgniteClient((cfg0, hnd) -> new TcpClientChannel(cfg0, hnd) {
-                @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
-                    Function<PayloadInputChannel, T> payloadReader) throws ClientException {
+                @Override public <T> T service(
+                    ClientOperation op,
+                    Consumer<PayloadOutputChannel> payloadWriter,
+                    Function<PayloadInputChannel, T> payloadReader
+                ) throws ClientException {
                     if (op == ClientOperation.GET_BINARY_TYPE_NAME)
                         cnt.incrementAndGet();
 
                     return super.service(op, payloadWriter, payloadReader);
                 }
 
-                @Override public <T> CompletableFuture<T> serviceAsync(ClientOperation op,
-                    Consumer<PayloadOutputChannel> payloadWriter, Function<PayloadInputChannel, T> payloadReader) {
+                @Override public <T> CompletableFuture<T> serviceAsync(
+                    ClientOperation op,
+                    Consumer<PayloadOutputChannel> payloadWriter,
+                    Function<PayloadInputChannel, T> payloadReader
+                ) {
                     if (op == ClientOperation.GET_BINARY_TYPE_NAME)
                         cnt.incrementAndGet();
 
