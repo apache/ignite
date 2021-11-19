@@ -384,7 +384,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
                     ? services.serviceProxy(name, PlatformService.class, sticky)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
-                        platformCtx.kernalContext());
+                        platformCtx.kernalContext(), null);
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
@@ -620,7 +620,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else {
                     assert proxy instanceof GridServiceProxy;
 
-                    // Deserialize arguments for Java service when not in binary mode
+                    // Deserialize arguments for Java service when not in binary mode.
                     if (!srvKeepBinary)
                         args = PlatformUtils.unwrapBinariesInArray(args);
 
@@ -629,7 +629,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     if (!BinaryArray.useTypedArrays())
                         convertArrayArgs(args, mtd);
 
-                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args, null);
                 }
             }
             finally {

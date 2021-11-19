@@ -172,14 +172,14 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 }
 
                 GridServiceProxy<?> proxy = new GridServiceProxy<>(grp, name, Service.class, false, timeout,
-                    ctx.kernalContext());
+                    ctx.kernalContext(), null);
 
                 Method method = resolveMethod(ctx, svcCls);
 
                 if (!BinaryArray.useTypedArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
-                res = proxy.invokeMethod(method, args);
+                res = proxy.invokeMethod(method, args, null);
             }
 
             return new ClientObjectResponse(requestId(), res);

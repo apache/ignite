@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -57,6 +58,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 
@@ -119,14 +122,16 @@ public class GridServiceProxy<T> implements Serializable {
      * @param sticky Whether multi-node request should be done.
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
+     * @param callCtxProvider Caller context provider.
      */
     public GridServiceProxy(ClusterGroup prj,
         String name,
         Class<? super T> svc,
         boolean sticky,
         long timeout,
-        GridKernalContext ctx)
-    {
+        GridKernalContext ctx,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider
+    ) {
         assert timeout >= 0 : timeout;
 
         this.prj = prj;
@@ -142,7 +147,7 @@ public class GridServiceProxy<T> implements Serializable {
         proxy = (T)Proxy.newProxyInstance(
             svc.getClassLoader(),
             new Class[] {svc},
-            new ProxyInvocationHandler()
+            new ProxyInvocationHandler(callCtxProvider)
         );
     }
 
@@ -164,10 +169,15 @@ public class GridServiceProxy<T> implements Serializable {
      *
      * @param mtd Method.
      * @param args Arugments.
+     * @param callCtx Service call context.
      * @return Result.
      */
     @SuppressWarnings("BusyWait")
-    public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
+    public Object invokeMethod(
+        final Method mtd,
+        final Object[] args,
+        @Nullable ServiceCallContext callCtx
+    ) throws Throwable {
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -197,7 +207,7 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null)
-                                return callServiceLocally(svc, mtd, args);
+                                return callServiceLocally(svc, mtd, args, callCtx);
                         }
                     }
                     else {
@@ -210,7 +220,8 @@ public class GridServiceProxy<T> implements Serializable {
                                 methodName(mtd),
                                 name,
                                 mtd.getParameterTypes(),
-                                args
+                                args,
+                                callCtx
                             );
                         }
                         else {
@@ -218,7 +229,8 @@ public class GridServiceProxy<T> implements Serializable {
                                 methodName(mtd),
                                 name,
                                 mtd.getParameterTypes(),
-                                args
+                                args,
+                                callCtx
                             );
                         }
 
@@ -292,13 +304,44 @@ public class GridServiceProxy<T> implements Serializable {
      * @param svc Service to be called.
      * @param mtd Method to call.
      * @param args Method args.
+     * @param callCtx Service call context.
      * @return Invocation result.
      */
-    private Object callServiceLocally(Service svc, Method mtd, Object[] args) throws Exception {
+    private Object callServiceLocally(
+        Service svc,
+        Method mtd,
+        Object[] args,
+        @Nullable ServiceCallContext callCtx
+    ) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args);
         else
+            return callServiceMethod(svc, mtd, args, callCtx);
+    }
+
+    /**
+     * @param svc Service to be called.
+     * @param mtd Method to call.
+     * @param args Method args.
+     * @param callCtx Service call context.
+     * @return Invocation result.
+     */
+    private static Object callServiceMethod(
+        Service svc,
+        Method mtd,
+        Object[] args,
+        @Nullable ServiceCallContext callCtx
+    ) throws InvocationTargetException, IllegalAccessException {
+        if (callCtx != null)
+            ServiceCallContextHolder.current(callCtx);
+
+        try {
             return mtd.invoke(svc, BinaryUtils.rawArrayInArgs(args, false));
+        }
+        finally {
+            if (callCtx != null)
+                ServiceCallContextHolder.current(null);
+        }
     }
 
     /**
@@ -424,10 +467,19 @@ public class GridServiceProxy<T> implements Serializable {
      * Invocation handler for service proxy.
      */
     private class ProxyInvocationHandler implements InvocationHandler {
+        /** Caller context provider. */
+        private final Supplier<ServiceCallContext> callCtxProvider;
+
+        /**
+         * @param callCtxProvider Caller context provider.
+         */
+        public ProxyInvocationHandler(@Nullable Supplier<ServiceCallContext> callCtxProvider) {
+            this.callCtxProvider = callCtxProvider;
+        }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
-            return invokeMethod(mtd, args);
+            return invokeMethod(mtd, args, callCtxProvider != null ? callCtxProvider.get() : null);
         }
     }
 
@@ -452,8 +504,14 @@ public class GridServiceProxy<T> implements Serializable {
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
          */
-        private BinaryServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args) {
-            super(mtdName, svcName, argTypes, args);
+        private BinaryServiceProxyCallable(
+            String mtdName,
+            String svcName,
+            Class<?>[] argTypes,
+            Object[] args,
+            @Nullable ServiceCallContext callCtx
+        ) {
+            super(mtdName, svcName, argTypes, args, callCtx);
         }
     }
 
@@ -476,6 +534,9 @@ public class GridServiceProxy<T> implements Serializable {
         /** Args. */
         private Object[] args;
 
+        /** Service call context. */
+        private ServiceCallContext callCtx;
+
         /** Grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -492,12 +553,20 @@ public class GridServiceProxy<T> implements Serializable {
          * @param svcName Service name.
          * @param argTypes Argument types.
          * @param args Arguments for invocation.
+         * @param callCtx Service call context.
          */
-        private ServiceProxyCallable(String mtdName, String svcName, Class<?>[] argTypes, Object[] args) {
+        private ServiceProxyCallable(
+            String mtdName,
+            String svcName,
+            Class<?>[] argTypes,
+            Object[] args,
+            @Nullable ServiceCallContext callCtx
+        ) {
             this.mtdName = mtdName;
             this.svcName = svcName;
             this.argTypes = argTypes;
             this.args = args;
+            this.callCtx = callCtx;
         }
 
         /** {@inheritDoc} */
@@ -536,7 +605,7 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return mtd.invoke(srv, BinaryUtils.rawArrayInArgs(args, false));
+                return callServiceMethod(srv, mtd, args, callCtx);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
@@ -549,6 +618,13 @@ public class GridServiceProxy<T> implements Serializable {
             U.writeString(out, mtdName);
             U.writeArray(out, argTypes);
             U.writeArray(out, args);
+
+            if (callCtx != null) {
+                out.writeBoolean(true);
+                callCtx.writeExternal(out);
+            }
+            else
+                out.writeBoolean(false);
         }
 
         /** {@inheritDoc} */
@@ -557,6 +633,11 @@ public class GridServiceProxy<T> implements Serializable {
             mtdName = U.readString(in);
             argTypes = U.readClassArray(in);
             args = U.readArray(in);
+
+            if (in.readBoolean()) {
+                callCtx = new ServiceCallContextImpl();
+                callCtx.readExternal(in);
+            }
         }
 
         /** {@inheritDoc} */

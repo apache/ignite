@@ -49,8 +49,13 @@ namespace Apache.Ignite.Core.Client
 
             var sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
 
-            var cert = new X509Certificate2(CertificatePath, CertificatePassword);
-            var certs = new X509CertificateCollection(new X509Certificate[] { cert });
+            var cert = string.IsNullOrEmpty(CertificatePath)
+                ? null
+                : new X509Certificate2(CertificatePath, CertificatePassword);
+
+            var certs = cert == null
+                ? null
+                : new X509CertificateCollection(new X509Certificate[] { cert });
 
             sslStream.AuthenticateAsClient(targetHost, certs, SslProtocols, CheckCertificateRevocation);
 
