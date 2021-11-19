@@ -2515,47 +2515,58 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     String rqId = reqMsg0.requestId();
                     String snpName = reqMsg0.snapshotName();
 
-                    synchronized (this) {
-                        AbstractSnapshotFutureTask<?> task = lastScheduledSnapshotResponseRemoteTask(nodeId);
+                    try {
+                        synchronized (this) {
+                            AbstractSnapshotFutureTask<?> task = lastScheduledSnapshotResponseRemoteTask(nodeId);
 
-                        if (task != null) {
-                            // Task will also be removed from local map due to the listener on future done.
-                            task.cancel();
+                            if (task != null) {
+                                // Task will also be removed from local map due to the listener on future done.
+                                task.cancel();
 
-                            log.info("Snapshot request has been cancelled due to another request received " +
-                                "[prevSnpResp=" + task + ", msg0=" + reqMsg0 + ']');
+                                log.info("Snapshot request has been cancelled due to another request received " +
+                                    "[prevSnpResp=" + task + ", msg0=" + reqMsg0 + ']');
+                            }
                         }
+
+                        AbstractSnapshotFutureTask<?> task = registerTask(rqId,
+                            new SnapshotResponseRemoteFutureTask(cctx,
+                                nodeId,
+                                snpName,
+                                tmpWorkDir,
+                                ioFactory,
+                                rmtSndrFactory.apply(rqId, nodeId),
+                                reqMsg0.parts()));
+
+                        task.listen(f -> {
+                            if (f.error() == null)
+                                return;
+
+                            U.error(log, "Failed to process request of creating a snapshot " +
+                                "[from=" + nodeId + ", msg=" + reqMsg0 + ']', f.error());
+
+                            try {
+                                cctx.gridIO().sendToCustomTopic(nodeId,
+                                    DFLT_INITIAL_SNAPSHOT_TOPIC,
+                                    new SnapshotFilesFailureMessage(reqMsg0.requestId(), f.error().getMessage()),
+                                    SYSTEM_POOL);
+                            }
+                            catch (IgniteCheckedException ex0) {
+                                U.error(log, "Fail to send the response message with processing snapshot request " +
+                                    "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
+                            }
+                        });
+
+                        task.start();
                     }
+                    catch (Throwable t) {
+                        U.error(log, "Error processing snapshot file request message " +
+                            "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', t);
 
-                    AbstractSnapshotFutureTask<?> task = registerTask(rqId,
-                        new SnapshotResponseRemoteFutureTask(cctx,
-                            nodeId,
-                            snpName,
-                            tmpWorkDir,
-                            ioFactory,
-                            rmtSndrFactory.apply(rqId, nodeId),
-                            reqMsg0.parts()));
-
-                    task.listen(f -> {
-                        if (f.error() == null)
-                            return;
-
-                        U.error(log, "Failed to process request of creating a snapshot " +
-                            "[from=" + nodeId + ", msg=" + reqMsg0 + ']', f.error());
-
-                        try {
-                            cctx.gridIO().sendToCustomTopic(nodeId,
-                                DFLT_INITIAL_SNAPSHOT_TOPIC,
-                                new SnapshotFilesFailureMessage(reqMsg0.requestId(), f.error().getMessage()),
-                                SYSTEM_POOL);
-                        }
-                        catch (IgniteCheckedException ex0) {
-                            U.error(log, "Fail to send the response message with processing snapshot request " +
-                                "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
-                        }
-                    });
-
-                    task.start();
+                        cctx.gridIO().sendToCustomTopic(nodeId,
+                            DFLT_INITIAL_SNAPSHOT_TOPIC,
+                            new SnapshotFilesFailureMessage(reqMsg0.requestId(), t.getMessage()),
+                            SYSTEM_POOL);
+                    }
                 }
                 else if (msg instanceof SnapshotFilesFailureMessage) {
                     SnapshotFilesFailureMessage respMsg0 = (SnapshotFilesFailureMessage)msg;
