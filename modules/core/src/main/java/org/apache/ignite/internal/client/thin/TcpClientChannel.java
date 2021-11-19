@@ -242,7 +242,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
      * @return Request future.
      */
-    private ClientRequestFuture send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
+    ClientRequestFuture send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
         throws ClientException {
         long id = reqId.getAndIncrement();
 
@@ -704,6 +704,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /**
      *
      */
-    private static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
+    static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
     }
 }
