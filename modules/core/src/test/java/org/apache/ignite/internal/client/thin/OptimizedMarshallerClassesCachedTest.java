@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
@@ -47,13 +49,20 @@ public class OptimizedMarshallerClassesCachedTest extends GridCommonAbstractTest
             srv.getOrCreateCache(Config.DEFAULT_CACHE_NAME).put(1, LocalDateTime.now());
 
             IgniteClient cli = new TcpIgniteClient((cfg0, hnd) -> new TcpClientChannel(cfg0, hnd) {
-                @Override protected ClientRequestFuture send(ClientOperation op,
-                    Consumer<PayloadOutputChannel> payloadWriter) throws ClientException {
-
+                @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
+                    Function<PayloadInputChannel, T> payloadReader) throws ClientException {
                     if (op == ClientOperation.GET_BINARY_TYPE_NAME)
                         cnt.incrementAndGet();
 
-                    return super.send(op, payloadWriter);
+                    return super.service(op, payloadWriter, payloadReader);
+                }
+
+                @Override public <T> CompletableFuture<T> serviceAsync(ClientOperation op,
+                    Consumer<PayloadOutputChannel> payloadWriter, Function<PayloadInputChannel, T> payloadReader) {
+                    if (op == ClientOperation.GET_BINARY_TYPE_NAME)
+                        cnt.incrementAndGet();
+
+                    return super.serviceAsync(op, payloadWriter, payloadReader);
                 }
             }, new ClientConfiguration().setAddresses(Config.SERVER));
 
