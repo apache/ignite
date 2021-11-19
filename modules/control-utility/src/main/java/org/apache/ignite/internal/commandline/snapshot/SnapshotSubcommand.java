@@ -21,6 +21,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,7 +40,10 @@ public enum SnapshotSubcommand {
     CHECK("check", VisorSnapshotCheckTask.class.getName()),
 
     /** Sub-command to restore snapshot. */
-    RESTORE("restore", VisorSnapshotRestoreTask.class.getName());
+    RESTORE("restore", VisorSnapshotRestoreTask.class.getName()),
+
+    /** Sub-command to get consistent IDs of the nodes on which the snapshot operation is in progress. */
+    STATUS("status", VisorSnapshotStatusTask.class.getName());
 
     /** Sub-command name. */
     private final String name;

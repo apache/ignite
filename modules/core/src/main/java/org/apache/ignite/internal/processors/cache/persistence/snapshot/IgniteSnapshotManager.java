@@ -66,6 +66,7 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -132,6 +134,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -967,6 +972,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 true);
 
         return new IgniteFutureImpl<>(fut0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Map<Object, Boolean>> statusSnapshot() {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        return ((ClusterGroupAdapter) cctx.kernalContext().cluster().get().forServers()).compute()
+                .executeAsync(new StatusSnapshotTask(), new VisorTaskArgument<>());
     }
 
     /**
@@ -2469,6 +2482,51 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
+        }
+    }
+
+    /** Get the status of a cluster snapshot operation. */
+    @GridInternal
+    private static class StatusSnapshotTask extends VisorMultiNodeTask<Void, Map<Object, Boolean>, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override protected SnapshotStatusJob job(Void arg) {
+            return new SnapshotStatusJob(arg, debug);
+        }
+
+        /**  */
+        private static class SnapshotStatusJob extends VisorJob<Void, Boolean> {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            /**
+             * Create job without specified argument.
+             *
+             * @param arg Job argument.
+             * @param debug Flag indicating whether debug information should be printed into node log.
+             */
+            protected SnapshotStatusJob(@Nullable Void arg, boolean debug) {
+                super(arg, debug);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected Boolean run(@Nullable Void arg) {
+                return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Collection<UUID> jobNodes(VisorTaskArgument<Void> arg) {
+            return ignite.context().discovery().aliveServerNodes().stream()
+                    .map(ClusterNode::id).collect(Collectors.toSet());
+        }
+
+        @Override protected Map<Object, Boolean> reduce0(List<ComputeJobResult> results)
+                throws IgniteException {
+            return results.stream().collect(
+                    Collectors.toMap(jobRslt -> jobRslt.getNode().consistentId(), ComputeJobResult::getData));
         }
     }
 

@@ -32,6 +32,9 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
@@ -41,6 +44,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CHECK;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.RESTORE;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.STATUS;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.of;
 
 /**
@@ -71,6 +75,9 @@ public class SnapshotCommand extends AbstractCommand<Object> {
                 ((IdleVerifyResultV2)res).print(log::info, true);
 
             if (cmd == RESTORE)
+                log.info(String.valueOf(res));
+
+            if (cmd == STATUS)
                 log.info(String.valueOf(res));
 
             return res;
