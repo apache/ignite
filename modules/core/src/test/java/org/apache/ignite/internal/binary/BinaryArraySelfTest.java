@@ -271,7 +271,6 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals(2, res.length);
         assertTrue(res[0] instanceof TestClass1);
         assertTrue(res[1] instanceof TestClass1);
-
     }
 
     /** */

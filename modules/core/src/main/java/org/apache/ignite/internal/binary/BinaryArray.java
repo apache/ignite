@@ -68,6 +68,9 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     @GridToStringInclude(sensitive = true)
     private Object[] arr;
 
+    /** */
+    private transient boolean wasDeserialized;
+
     /**
      * {@link Externalizable} support.
      */
@@ -112,6 +115,13 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
 
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
+
+            // To reduce memory consumption in case of Object[] deserialization happens in place so no need to perform deserialization
+            // Prepared result is in arr, already.
+            if (Object.class == compType && wasDeserialized)
+                return (T)arr;
+
+            wasDeserialized = true;
 
             Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 

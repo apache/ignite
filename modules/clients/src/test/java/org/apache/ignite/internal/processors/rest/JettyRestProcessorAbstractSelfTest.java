@@ -1859,34 +1859,37 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
+        try {
+            Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        String ret = content("", GridRestCommand.CACHE_METADATA);
+            String ret = content("", GridRestCommand.CACHE_METADATA);
 
-        info("Cache metadata: " + ret);
+            info("Cache metadata: " + ret);
 
-        JsonNode arrRes = validateJsonResponse(ret);
+            JsonNode arrRes = validateJsonResponse(ret);
 
-        // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
-        // int cachesCnt = grid(1).cacheNames().size();
-        // assertEquals(cachesCnt, arrRes.size());
+            // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
+            // int cachesCnt = grid(1).cacheNames().size();
+            // assertEquals(cachesCnt, arrRes.size());
 
-        testMetadata(metas, arrRes);
+            testMetadata(metas, arrRes);
 
-        ret = content("person", GridRestCommand.CACHE_METADATA);
+            ret = content("person", GridRestCommand.CACHE_METADATA);
 
-        info("Cache metadata with cacheName parameter: " + ret);
+            info("Cache metadata with cacheName parameter: " + ret);
 
-        arrRes = validateJsonResponse(ret);
+            arrRes = validateJsonResponse(ret);
 
-        assertEquals(1, arrRes.size());
+            assertEquals(1, arrRes.size());
 
-        testMetadata(metas, arrRes);
+            testMetadata(metas, arrRes);
 
-        assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
-            "Failed to request meta data. nonExistingCacheName is not found");
-
-        grid(1).destroyCache("partial");
+            assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
+                "Failed to request meta data. nonExistingCacheName is not found");
+        }
+        finally {
+            grid(1).destroyCache("partial");
+        }
     }
 
     /**

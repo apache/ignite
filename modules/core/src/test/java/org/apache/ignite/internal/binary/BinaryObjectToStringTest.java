@@ -84,8 +84,6 @@ public class BinaryObjectToStringTest extends AbstractTypedArrayTest {
 
         assertStringFormMatches(new TestContainer(new TestExternalizable(newExtInstance1())),
             failedStrPattern("ExternalTestClass1"));
-
-        stopAllGrids();
     }
 
     /** */
@@ -228,5 +226,12 @@ public class BinaryObjectToStringTest extends AbstractTypedArrayTest {
         private TestIntContainer(int i) {
             this.i = i;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 }
