@@ -136,6 +136,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -371,6 +373,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new);
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
         factory.register((short)177, TcpInverseConnectionResponseMessage::new);
+        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
+        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR
