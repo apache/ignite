@@ -18,8 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
@@ -64,16 +62,16 @@ namespace Apache.Ignite.Core.Impl.Services
         public object AffinityKey { get; private set; }
 
         /** <inheritdoc /> */
-        public IServiceCallContext CurrentCallContext()
+        public IServiceCallContext CurrentCallContext
         {
-            return locCallCtx.Value;
+            get { return locCallCtx.Value; }
         }
 
         /// <summary>
         /// Sets service call context for the current thread.
         /// </summary>
         /// <param name="callCtx">Service call context for the current thread.</param>
-        internal static void CurrentCallContext(IServiceCallContext callCtx) {
+        internal static void SetCurrentCallContext(IServiceCallContext callCtx) {
             locCallCtx.Value = callCtx;
         }
     }

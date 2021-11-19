@@ -294,8 +294,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     Assert.IsNull(svc0.ContextAttribute(attrName));
 
                 var ctx = new ServiceCallContextBuilder()
-                    .Put(attrName, attrValue)
-                    .Put(attrBinName, attrBinValue)
+                    .Set(attrName, attrValue)
+                    .Set(attrBinName, attrBinValue)
                     .Build();
 
                 var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, ctx);
@@ -1177,7 +1177,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <returns>Caller context.</returns>
         private IServiceCallContext callContext()
         {
-            return new ServiceCallContextBuilder().Put("attr", "value").Build();
+            return new ServiceCallContextBuilder().Set("attr", "value").Build();
         }
 
         /// <summary>
@@ -1659,17 +1659,17 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public object ContextAttribute(string name)
             {
-                IServiceCallContext ctx = _context.CurrentCallContext();
+                IServiceCallContext ctx = _context.CurrentCallContext;
                 
-                return ctx == null ? null : ctx.Attribute(name);
+                return ctx == null ? null : ctx.GetAttribute(name);
             }
             
             /** <inheritdoc /> */
             public object ContextBinaryAttribute(string name)
             {
-                IServiceCallContext ctx = _context.CurrentCallContext();
+                IServiceCallContext ctx = _context.CurrentCallContext;
                 
-                return ctx == null ? null : ctx.BinaryAttribute(name);
+                return ctx == null ? null : ctx.GetBinaryAttribute(name);
             }
 
             /** <inheritdoc /> */

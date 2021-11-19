@@ -43,14 +43,14 @@ namespace Apache.Ignite.Core.Services
     /// 
     ///     public string Call(string msg)
     ///     {
-    ///         return msg + ctx.CurrentCallContext().Attribute("user");
+    ///         return msg + ctx.CurrentCallContext.Attribute("user");
     ///     }
     ///     ...
     /// }
     /// ...
     ///
     /// // Call this service with context.
-    /// IServiceCallContext callCtx = new ServiceCallContextBuilder().Put("user", "John").build();
+    /// IServiceCallContext callCtx = new ServiceCallContextBuilder().Set("user", "John").build();
     /// HelloService helloSvc = ignite.GetServices().GetServiceProxy&lt;HelloService&gt;("hello-service", false, callCtx);
     /// // Print "Hello John".
     /// Console.WriteLine( helloSvc.call("Hello ") );
@@ -63,13 +63,13 @@ namespace Apache.Ignite.Core.Services
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <returns>String attribute value.</returns>
-        string Attribute(string name);
+        string GetAttribute(string name);
 
         /// <summary>
         /// Gets the binary attribute.
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <returns>Binary attribute value.</returns>
-        byte[] BinaryAttribute(string name);
+        byte[] GetBinaryAttribute(string name);
     }
 }

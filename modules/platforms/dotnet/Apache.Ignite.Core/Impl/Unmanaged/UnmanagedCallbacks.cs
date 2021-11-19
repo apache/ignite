@@ -1111,7 +1111,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out callCtx);
                 
                 if (callCtx != null)
-                    ServiceContext.CurrentCallContext(callCtx);
+                    ServiceContext.SetCurrentCallContext(callCtx);
 
                 try
                 {
@@ -1126,7 +1126,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 finally
                 {
                     if (callCtx != null)
-                        ServiceContext.CurrentCallContext(null);
+                        ServiceContext.SetCurrentCallContext(null);
                 }
 
                 return 0;

@@ -134,7 +134,7 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
          * Gets service proxy.
          */
         TestPlatformService serviceProxy() {
-            ServiceCallContext callCtx = ServiceCallContext.builder().put("attr", "value").build();
+            ServiceCallContext callCtx = ServiceCallContext.builder().set("attr", "value").build();
 
             return ignite.services().serviceProxy(srvcName, TestPlatformService.class, false, callCtx, 0);
         }

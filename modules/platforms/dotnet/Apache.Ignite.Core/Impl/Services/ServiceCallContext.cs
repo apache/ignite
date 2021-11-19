@@ -42,9 +42,9 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public string Attribute(string name)
+        public string GetAttribute(string name)
         {
-            byte[] bytes = BinaryAttribute(name);
+            byte[] bytes = GetBinaryAttribute(name);
 
             if (bytes != null)
                 return Encoding.UTF8.GetString(bytes);
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public byte[] BinaryAttribute(string name)
+        public byte[] GetBinaryAttribute(string name)
         {
             byte[] bytes;
 

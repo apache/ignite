@@ -33,12 +33,12 @@ namespace Apache.Ignite.Core.Services
         private readonly Dictionary<string, byte[]> _attrs = new Dictionary<string, byte[]>();
         
         /// <summary>
-        /// Put string attribute.
+        /// Set string attribute.
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <param name="value">Attribute value.</param>
         /// <returns>This for chaining.</returns>
-        public ServiceCallContextBuilder Put(string name, string value)
+        public ServiceCallContextBuilder Set(string name, string value)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(value, "value");
@@ -49,12 +49,12 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
-        /// Put binary attribute.
+        /// Set binary attribute.
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <param name="value">Attribute value.</param>
         /// <returns>This for chaining.</returns>
-        public ServiceCallContextBuilder Put(string name, byte[] value)
+        public ServiceCallContextBuilder Set(string name, byte[] value)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(value, "value");
