@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Services
 {
+    using Apache.Ignite.Core.Common;
+
     /// <summary>
     /// Represents service call context.
     /// <para />
@@ -56,6 +58,7 @@ namespace Apache.Ignite.Core.Services
     /// Console.WriteLine( helloSvc.call("Hello ") );
     /// </code>
     /// </summary>
+    [IgniteExperimental]
     public interface IServiceCallContext
     {
         /// <summary>

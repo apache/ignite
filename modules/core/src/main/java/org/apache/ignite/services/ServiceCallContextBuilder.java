@@ -50,6 +50,8 @@ public class ServiceCallContextBuilder {
 
     /**
      * Put binary attribute.
+     * <p>
+     * <b>Note:</b> it is recommended to pass a copy of the array if the original can be changed later.
      *
      * @param name Attribute name.
      * @param value Attribute value.
@@ -59,7 +61,7 @@ public class ServiceCallContextBuilder {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
-        attrs.put(name, Arrays.copyOf(value, value.length));
+        attrs.put(name, value);
 
         return this;
     }

@@ -20,12 +20,14 @@ namespace Apache.Ignite.Core.Services
     using System;
     using System.Collections;
     using System.Linq;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
 
     /// <summary>
     /// Service call context builder.
     /// </summary>
+    [IgniteExperimental]
     public class ServiceCallContextBuilder
     {
         /** Context attributes. */
@@ -49,6 +51,8 @@ namespace Apache.Ignite.Core.Services
 
         /// <summary>
         /// Set binary attribute.
+        /// <p/>
+        /// <b>Note:</b> it is recommended to pass a copy of the array if the original can be changed later.
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <param name="value">Attribute value.</param>
@@ -58,7 +62,7 @@ namespace Apache.Ignite.Core.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(value, "value");
 
-            _attrs[name] = value.ToArray();
+            _attrs[name] = value;
             
             return this;
         }
