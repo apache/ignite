@@ -29,8 +29,6 @@
  import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
  import org.apache.ignite.testframework.GridTestUtils;
  import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
- import org.junit.Assume;
- import org.junit.Before;
  import org.junit.Test;
 
  /**
@@ -42,12 +40,6 @@
   * because it may be nullified in PME process at the end of exchange in {@link GridDhtPartitionsExchangeFuture#onDone()}.
   */
  public class ServiceDeploymentDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
-     /** */
-     @Before
-     public void check() {
-         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
-     }
-
      /**
       * <b>Strongly depends on internal implementation of {@link GridEventStorageManager}.</b>
       * <p/>

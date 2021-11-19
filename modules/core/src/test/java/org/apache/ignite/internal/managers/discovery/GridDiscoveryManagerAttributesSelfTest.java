@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -241,17 +240,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServiceProcessorModeProperty() throws Exception {
-        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true, false, true);
-        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false, true, true);
-        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true, true, false);
-        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false, false, false);
     }
 
     /**

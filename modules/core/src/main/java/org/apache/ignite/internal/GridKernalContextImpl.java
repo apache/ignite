@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -93,7 +92,7 @@ import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
@@ -235,7 +234,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private ServiceProcessorAdapter srvcProc;
+    private IgniteServiceProcessor srvcProc;
 
     /** */
     @GridToStringInclude
@@ -541,8 +540,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             portProc = (GridPortProcessor)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
-        else if (comp instanceof ServiceProcessorAdapter)
-            srvcProc = (ServiceProcessorAdapter)comp;
+        else if (comp instanceof IgniteServiceProcessor)
+            srvcProc = (IgniteServiceProcessor)comp;
         else if (comp instanceof IgniteScheduleProcessorAdapter)
             scheduleProc = (IgniteScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
@@ -726,7 +725,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ServiceProcessorAdapter service() {
+    @Override public IgniteServiceProcessor service() {
         return srvcProc;
     }
 
