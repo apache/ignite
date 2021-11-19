@@ -48,7 +48,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * ...
  *
  * // Call this service with context.
- * ServiceCallContext callCtx = ServiceCallContext.builder().set("user", "John").build();
+ * ServiceCallContext callCtx = ServiceCallContext.builder().put("user", "John").build();
  * HelloService helloSvc = ignite.services().serviceProxy("hello-service", HelloService.class, false, callCtx, 0);
  * // Print "Hello John".
  * System.out.println( helloSvc.call("Hello ") );

@@ -185,8 +185,8 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
      */
     private TestService createProxyWithContext(Ignite node, String attrVal, byte[] binVal) {
         ServiceCallContext callCtx = ServiceCallContext.builder()
-            .set(STR_ATTR_NAME, attrVal)
-            .set(BIN_ATTR_NAME, binVal)
+            .put(STR_ATTR_NAME, attrVal)
+            .put(BIN_ATTR_NAME, binVal)
             .build();
 
         return node.services().serviceProxy(SVC_NAME, TestService.class, sticky, callCtx);

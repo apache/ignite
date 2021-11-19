@@ -33,13 +33,13 @@ public class ServiceCallContextBuilder {
     private final Map<String, Object> attrs = new HashMap<>();
 
     /**
-     * Set string attribute.
+     * Put string attribute.
      *
      * @param name Attribute name.
      * @param value Attribute value.
      * @return This for chaining.
      */
-    public ServiceCallContextBuilder set(String name, String value) {
+    public ServiceCallContextBuilder put(String name, String value) {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
@@ -49,13 +49,13 @@ public class ServiceCallContextBuilder {
     }
 
     /**
-     * Set binary attribute.
+     * Put binary attribute.
      *
      * @param name Attribute name.
      * @param value Attribute value.
      * @return This for chaining.
      */
-    public ServiceCallContextBuilder set(String name, byte[] value) {
+    public ServiceCallContextBuilder put(String name, byte[] value) {
         A.notNullOrEmpty(name, "name");
         A.notNull(value, "value");
 
