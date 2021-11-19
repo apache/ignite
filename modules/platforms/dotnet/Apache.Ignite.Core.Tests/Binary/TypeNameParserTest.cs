@@ -251,6 +251,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 @"Foo.Bar+<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1");
 
             Assert.AreEqual(@"<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1", res2.GetName());
+
+            var res3 = TypeNameParser.Parse(
+                @"Program\+IFoo`2\[\[System.Int32\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=567\]\,\[System.String\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=123\]\]");
+
+            Assert.AreEqual(@"TODO", res3.GetName());
         }
 
         /// <summary>
