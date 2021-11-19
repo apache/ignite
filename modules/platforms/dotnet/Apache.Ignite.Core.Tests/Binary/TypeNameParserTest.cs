@@ -240,22 +240,19 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         [Test]
-        public void TestCompilerGeneratedTypes()
+        public void TestCompilerGeneratedTypes([Values(
+                @"Foo.Bar+<Abc-Def<System-String\,System-Byte\[\]>-Convert>d__0",
+                @"Foo.Bar+<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1",
+                @"Program\+IFoo`2\[\[System.Int32\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=567\]\,\[System.String\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=123\]\]"
+                )]
+            string typeName)
         {
-            var res = TypeNameParser.Parse(
-                @"Foo.Bar+<Abc-Def<System-String\,System-Byte\[\]>-Convert>d__0");
+            var res = TypeNameParser.Parse(typeName);
 
-            Assert.AreEqual(@"<Abc-Def<System-String\,System-Byte\[\]>-Convert>d__0", res.GetName());
-
-            var res2 = TypeNameParser.Parse(
-                @"Foo.Bar+<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1");
-
-            Assert.AreEqual(@"<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1", res2.GetName());
-
-            var res3 = TypeNameParser.Parse(
-                @"Program\+IFoo`2\[\[System.Int32\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=567\]\,\[System.String\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=123\]\]");
-
-            Assert.AreEqual(@"TODO", res3.GetName());
+            Assert.AreEqual(typeName, res.GetName());
+            Assert.IsNull(res.GetAssemblyName());
+            Assert.IsNull(res.GetArray());
+            Assert.IsFalse(res.HasNamespace());
         }
 
         /// <summary>
