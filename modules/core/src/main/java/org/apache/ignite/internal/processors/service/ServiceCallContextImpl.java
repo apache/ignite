@@ -34,7 +34,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     private static final long serialVersionUID = 0L;
 
     /** Service call context attributes. */
-    private Map<String, byte[]> attrs;
+    private Map<String, Object> attrs;
 
     /**
      * Default contructor.
@@ -46,23 +46,18 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /**
      * @param attrs Service call context attributes.
      */
-    public ServiceCallContextImpl(Map<String, byte[]> attrs) {
-        this.attrs = new HashMap<>(attrs);
+    public ServiceCallContextImpl(Map<String, Object> attrs) {
+        this.attrs = attrs;
     }
 
     /** {@inheritDoc} */
     @Override public String attribute(String name) {
-        byte[] bytes = attrs.get(name);
-
-        if (bytes == null)
-            return null;
-
-        return new String(bytes, StandardCharsets.UTF_8);
+        return (String)attrs.get(name);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] binaryAttribute(String name) {
-        return attrs.get(name);
+        return (byte[])attrs.get(name);
     }
 
     /** {@inheritDoc} */
@@ -78,7 +73,7 @@ public class ServiceCallContextImpl implements ServiceCallContext {
     /**
      * @return Service call context attributes.
      */
-    Map<String, byte[]> values() {
+    Map<String, Object> values() {
         return attrs;
     }
 }

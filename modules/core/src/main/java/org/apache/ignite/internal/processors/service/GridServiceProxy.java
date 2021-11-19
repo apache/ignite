@@ -288,7 +288,7 @@ public class GridServiceProxy<T> implements Serializable {
         @Nullable ServiceCallContext callCtx
     ) throws Exception {
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd)) {
-            Map<String, byte[]> callAttrs = callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values();
+            Map<String, Object> callAttrs = callCtx == null ? null : ((ServiceCallContextImpl)callCtx).values();
 
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, callAttrs);
         }

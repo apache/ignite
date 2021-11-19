@@ -17,8 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System.Collections.Generic;
-    using System.Text;
+    using System.Collections;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
@@ -28,13 +27,13 @@ namespace Apache.Ignite.Core.Impl.Services
     internal class ServiceCallContext : IServiceCallContext
     {
         /** Context attributes. */
-        private Dictionary<string, byte[]> _attrs;
+        private IDictionary _attrs;
 
         /// <summary>
         /// Constructs context from dictionary.
         /// </summary>
         /// <param name="attrs">Context attributes.</param>
-        internal ServiceCallContext(Dictionary<string, byte[]> attrs)
+        internal ServiceCallContext(IDictionary attrs)
         {
             IgniteArgumentCheck.NotNull(attrs, "attrs");
 
@@ -44,30 +43,20 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public string GetAttribute(string name)
         {
-            byte[] bytes = GetBinaryAttribute(name);
-
-            if (bytes != null)
-                return Encoding.UTF8.GetString(bytes);
-
-            return null;
+            return (string) _attrs[name];
         }
 
         /** <inheritDoc /> */
         public byte[] GetBinaryAttribute(string name)
         {
-            byte[] bytes;
-
-            if (_attrs.TryGetValue(name, out bytes))
-                return bytes;
-
-            return null;
+            return (byte[]) _attrs[name];
         }
         
         /// <summary>
         /// Gets call context attributes.
         /// </summary>
         /// <returns>Service call context attributes.</returns>
-        internal Dictionary<string, byte[]> Values()
+        internal IDictionary Values()
         {
             return _attrs;
         }

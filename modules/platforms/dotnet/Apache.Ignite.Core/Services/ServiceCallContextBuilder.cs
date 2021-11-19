@@ -18,9 +18,8 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections;
     using System.Linq;
-    using System.Text;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
 
@@ -30,7 +29,7 @@ namespace Apache.Ignite.Core.Services
     public class ServiceCallContextBuilder
     {
         /** Context attributes. */
-        private readonly Dictionary<string, byte[]> _attrs = new Dictionary<string, byte[]>();
+        private readonly Hashtable _attrs = new Hashtable();
         
         /// <summary>
         /// Set string attribute.
@@ -43,7 +42,7 @@ namespace Apache.Ignite.Core.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(value, "value");
 
-            _attrs[name] = Encoding.UTF8.GetBytes(value);
+            _attrs[name] = value;
 
             return this;
         }
@@ -73,7 +72,7 @@ namespace Apache.Ignite.Core.Services
             if (_attrs.Count == 0)
                 throw new InvalidOperationException("Cannot create an empty context.");
 
-            return new ServiceCallContext(_attrs.ToDictionary(e => e.Key, e => e.Value));
+            return new ServiceCallContext((Hashtable)_attrs.Clone());
         }
     }
 }

@@ -187,7 +187,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         boolean srvKeepBinary,
         boolean deserializeResult,
         @Nullable Object[] args,
-        @Nullable Map<String, byte[]> callAttrs
+        @Nullable Map<String, Object> callAttrs
     ) throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;

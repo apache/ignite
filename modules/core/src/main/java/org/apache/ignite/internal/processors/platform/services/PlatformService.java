@@ -42,7 +42,7 @@ public interface PlatformService extends Service {
         boolean srvKeepBinary,
         boolean deserializeResult,
         @Nullable Object[] args,
-        @Nullable Map<String, byte[]> callAttrs
+        @Nullable Map<String, Object> callAttrs
     ) throws IgniteCheckedException;
 
     /**

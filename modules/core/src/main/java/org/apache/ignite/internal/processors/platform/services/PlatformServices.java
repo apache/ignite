@@ -286,7 +286,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 else
                     args = null;
 
-                Map<String, byte[]> callAttrs = reader.readMap();
+                Map<String, Object> callAttrs = reader.readMap();
 
                 try {
                     Object result = svc.invoke(mthdName, srvKeepBinary, args, callAttrs);
@@ -613,7 +613,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws IgniteCheckedException On error.
          * @throws NoSuchMethodException On error.
          */
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args, Map<String, byte[]> callAttrs) throws Throwable {
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args, Map<String, Object> callAttrs) throws Throwable {
             if (isPlatformService())
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, false, args, callAttrs);
             else {
