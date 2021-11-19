@@ -2422,7 +2422,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (stopping) {
                 next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+
+                if (active != null)
+                    active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
                 RemoteSnapshotFilesRecevier r;
 
@@ -2494,11 +2496,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
 
-            futs.add(active);
+            RemoteSnapshotFilesRecevier active0 = active;
 
-            return futs.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+            if (active0 != null)
+                futs.add(active0);
+
+            return futs;
         }
 
         /** {@inheritDoc} */
