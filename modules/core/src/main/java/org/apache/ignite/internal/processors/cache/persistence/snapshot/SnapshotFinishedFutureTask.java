@@ -17,35 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.IgniteCheckedException;
 
-/**
- * Compound snapshot verification exception from the nodes where the verification process executed.
- */
-public class IgniteSnapshotVerifyException extends IgniteException {
-    /** Serial version UID. */
-    private static final long serialVersionUID = 0L;
-
-    /** Map of received exceptions. */
-    private final Map<ClusterNode, Exception> exs = new HashMap<>();
-
+/** */
+public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void> {
     /**
-     * @param map Map of received exceptions.
+     * @param e Finished snapshot task future with particular exception.
      */
-    public IgniteSnapshotVerifyException(Map<ClusterNode, ? extends Exception> map) {
-        super(F.first(map.values()));
+    public SnapshotFinishedFutureTask(IgniteCheckedException e) {
+        super(null, null, null, null, null, null, null);
 
-        exs.putAll(map);
+        onDone(e);
     }
 
-    /**
-     * @return Map of received exceptions.
-     */
-    public Map<ClusterNode, Exception> exceptions() {
-        return exs;
+    /** {@inheritDoc} */
+    @Override public boolean start() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void acceptException(Throwable th) {
+        onDone(th);
     }
 }
