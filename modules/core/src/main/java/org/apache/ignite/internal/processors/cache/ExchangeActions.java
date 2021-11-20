@@ -446,10 +446,10 @@ public class ExchangeActions {
      *
      */
     public static class CacheGroupActionData {
-        /** */
+        /** Cache group descriptor. */
         private final CacheGroupDescriptor desc;
 
-        /** */
+        /** Destroy flag. */
         private final boolean destroy;
 
         /**
