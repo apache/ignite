@@ -600,6 +600,9 @@ public class TcpIgniteClient implements IgniteClient {
                 catch (ClientException e) {
                     throw new IgniteCheckedException(e);
                 }
+
+                if (clsName != null)
+                    cache.putIfAbsent(typeId, clsName);
             }
 
             if (clsName == null)
