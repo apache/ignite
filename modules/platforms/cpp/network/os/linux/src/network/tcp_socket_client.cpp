@@ -27,6 +27,7 @@
 #include <sstream>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/network/utils.h>
 
 #include <ignite/ignite_error.h>
 #include "network/tcp_socket_client.h"
@@ -66,7 +67,7 @@ namespace ignite
             int res = getaddrinfo(hostname, strPort.c_str(), &hints, &result);
 
             if (res != 0)
-                ThrowNetworkError("Can not resolve host: " + std::string(hostname) + ":" + strPort);
+                utils::ThrowNetworkError("Can not resolve host: " + std::string(hostname) + ":" + strPort);
 
             std::string lastErrorMsg = "Failed to resolve host";
             bool isTimeout = false;
@@ -126,7 +127,7 @@ namespace ignite
                 if (isTimeout)
                     return false;
 
-                ThrowNetworkError(lastErrorMsg);
+                utils::ThrowNetworkError(lastErrorMsg);
             }
 
             return true;

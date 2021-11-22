@@ -73,7 +73,7 @@ namespace ignite
                 /** Version 1.6.0. Expiration Policy Configuration. */
                 static const ProtocolVersion VERSION_1_6_0;
 
-                /** Version 1.6.0. Features introduced. */
+                /** Version 1.7.0. Features introduced. */
                 static const ProtocolVersion VERSION_1_7_0;
 
                 /** Current version. */
@@ -221,24 +221,6 @@ namespace ignite
                 }
 
                 /**
-                 * Send message stored in memory and synchronously receives
-                 * response and stores it in the same memory.
-                 *
-                 * @param mem Memory.
-                 * @param timeout Operation timeout.
-                 */
-                void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
-
-                /**
-                 * Send message stored in memory and synchronously receives
-                 * response and stores it in the same memory.
-                 *
-                 * @param mem Memory.
-                 * @param timeout Operation timeout.
-                 */
-                void InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout);
-
-                /**
                  * Get remote node.
                  * @return Node.
                  */
@@ -259,6 +241,24 @@ namespace ignite
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataChannel);
+
+                /**
+                 * Send message stored in memory and synchronously receives
+                 * response and stores it in the same memory.
+                 *
+                 * @param mem Memory.
+                 * @param timeout Operation timeout.
+                 */
+                void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
+
+                /**
+                 * Send message stored in memory and synchronously receives
+                 * response and stores it in the same memory.
+                 *
+                 * @param mem Memory.
+                 * @param timeout Operation timeout.
+                 */
+                void InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout);
 
                 /**
                  * Generate request ID.

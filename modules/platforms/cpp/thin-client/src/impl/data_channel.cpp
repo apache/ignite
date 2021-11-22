@@ -86,7 +86,7 @@ namespace ignite
                         config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
                 }
                 else
-                    socket.reset(network::ssl::MakeTcpSocketClient());
+                    socket.reset(network::MakeTcpSocketClient());
 
                 node = IgniteNode(host, port);
 

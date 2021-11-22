@@ -34,11 +34,6 @@ namespace ignite
                 SslGateway::GetInstance().LoadAll();
             }
 
-            IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient()
-            {
-                return new TcpSocketClient;
-            }
-
             IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const std::string& certPath,
                 const std::string& keyPath, const std::string& caPath)
             {
@@ -46,6 +41,17 @@ namespace ignite
 
                 return new SecureSocketClient(certPath, keyPath, caPath);
             }
+        }
+
+        IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient()
+        {
+            return new TcpSocketClient;
+        }
+
+        IGNITE_IMPORT_EXPORT AsyncClientPool* MakeAsyncClientPool()
+        {
+            // TODO: Implement me.
+            return 0;
         }
     }
 }

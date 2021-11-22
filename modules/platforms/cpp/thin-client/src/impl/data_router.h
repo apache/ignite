@@ -90,27 +90,6 @@ namespace ignite
                 void Close();
 
                 /**
-                 * Update affinity if needed.
-                 *
-                 * @param rsp Response.
-                 */
-                template <typename RspT>
-                void CheckAffinity(RspT& rsp)
-                {
-                    const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
-
-                    if (ver != 0 && config.IsPartitionAwareness())
-                        affinityManager.UpdateAffinity(*ver);
-                }
-
-                /**
-                 * Process meta if needed.
-                 *
-                 * @param metaVer Version of meta.
-                 */
-                void ProcessMeta(int32_t metaVer);
-
-                /**
                  * Synchronously send request message and receive response.
                  *
                  * @param req Request message.
@@ -252,7 +231,7 @@ namespace ignite
                  *
                  * @return IO timeout.
                  */
-                int32_t GetIoTimeout()
+                int32_t GetIoTimeout() const
                 {
                     return ioTimeout;
                 }
@@ -266,6 +245,27 @@ namespace ignite
                  * @param channel Data channel.
                  */
                 void InvalidateChannel(SP_DataChannel& channel);
+
+                /**
+                 * Process meta if needed.
+                 *
+                 * @param metaVer Version of meta.
+                 */
+                void ProcessMeta(int32_t metaVer);
+
+                /**
+                 * Update affinity if needed.
+                 *
+                 * @param rsp Response.
+                 */
+                template <typename RspT>
+                void CheckAffinity(RspT& rsp)
+                {
+                    const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
+
+                    if (ver != 0 && config.IsPartitionAwareness())
+                        affinityManager.UpdateAffinity(*ver);
+                }
 
                 /**
                  * Synchronously send request message and receive response.
@@ -323,14 +323,6 @@ namespace ignite
                  * @return Random data channel or null, if not connected.
                  */
                 SP_DataChannel GetRandomChannelUnsafe();
-
-                /**
-                 * Check whether the provided end point is provided by user using configuration.
-                 *
-                 * @param endPoint End point to check.
-                 * @return @c true if provided by user using configuration.
-                 */
-                bool IsProvidedByUser(const network::EndPoint& endPoint);
 
                 /**
                  * Get the best data channel.

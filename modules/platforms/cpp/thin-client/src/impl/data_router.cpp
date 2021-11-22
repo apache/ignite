@@ -19,7 +19,6 @@
 #include <cstddef>
 #include <cstdlib>
 
-#include <sstream>
 #include <iterator>
 #include <algorithm>
 
@@ -237,19 +236,6 @@ namespace ignite
                 std::advance(it, idx);
 
                 return it->second;
-            }
-
-            bool DataRouter::IsProvidedByUser(const network::EndPoint& endPoint)
-            {
-                for (std::vector<network::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
-                {
-                    if (it->host == endPoint.host &&
-                        endPoint.port >= it->port &&
-                        endPoint.port <= it->port + it->range)
-                        return true;
-                }
-
-                return false;
             }
 
             SP_DataChannel DataRouter::GetBestChannel(const Guid& hint)

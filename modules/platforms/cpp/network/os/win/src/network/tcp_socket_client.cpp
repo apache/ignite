@@ -22,6 +22,7 @@
 #include <ignite/ignite_error.h>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/network/utils.h>
 
 #include "network/tcp_socket_client.h"
 
@@ -57,7 +58,7 @@ namespace ignite
                     networkInited = WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
 
                     if (!networkInited)
-                        ThrowNetworkError("Networking initialisation failed: " + sockets::GetLastSocketErrorMessage());
+                        utils::ThrowNetworkError("Networking initialisation failed: " + sockets::GetLastSocketErrorMessage());
                 }
             }
 
@@ -78,7 +79,7 @@ namespace ignite
             int res = getaddrinfo(hostname, strPort.c_str(), &hints, &result);
 
             if (res != 0)
-                ThrowNetworkError("Can not resolve host: " + std::string(hostname) + ":" + strPort);
+                utils::ThrowNetworkError("Can not resolve host: " + std::string(hostname) + ":" + strPort);
 
             std::string lastErrorMsg = "Failed to resolve host";
             bool isTimeout = false;
@@ -93,7 +94,7 @@ namespace ignite
                 socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
                 if (socketHandle == INVALID_SOCKET)
-                    ThrowNetworkError("Socket creation failed: " + sockets::GetLastSocketErrorMessage());
+                    utils::ThrowNetworkError("Socket creation failed: " + sockets::GetLastSocketErrorMessage());
 
                 TrySetOptions();
 
@@ -134,7 +135,7 @@ namespace ignite
                 if (isTimeout)
                     return false;
 
-                ThrowNetworkError(lastErrorMsg);
+                utils::ThrowNetworkError(lastErrorMsg);
             }
 
             return true;

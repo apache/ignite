@@ -136,7 +136,7 @@ namespace ignite
             return InternalEstablish(config);
         }
 
-        void Connection::Establish(const config::Configuration cfg)
+        void Connection::Establish(const config::Configuration& cfg)
         {
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
@@ -147,7 +147,7 @@ namespace ignite
 
             if (sslMode == ssl::SslMode::DISABLE)
             {
-                socket.reset(network::ssl::MakeTcpSocketClient());
+                socket.reset(network::MakeTcpSocketClient());
 
                 return SqlResult::AI_SUCCESS;
             }
