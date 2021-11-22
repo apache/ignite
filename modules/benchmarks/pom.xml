@@ -32,7 +32,7 @@
 
     <artifactId>ignite-benchmarks</artifactId>
     <version>${revision}</version>
-    <url>https://ignite.apache.org</url>
+    <url>${url}</url>
 
     <properties>
         <uberjar.name>benchmarks</uberjar.name>

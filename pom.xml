@@ -20,7 +20,8 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -33,6 +34,7 @@
     <artifactId>apache-ignite</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
+    <url>${url}</url>
 
     <scm>
         <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
@@ -213,7 +215,9 @@
                                     </tagletArtifact>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+                                    <subpackages>org.apache.ignite -exclude
+                                        org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest
+                                    </subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -241,19 +245,20 @@
                                     <target>
                                         <copy todir="${basedir}/target/javadoc/core">
                                             <fileset dir="assembly/docfiles">
-                                                <include name="img/**" />
-                                                <include name="*.js" />
+                                                <include name="img/**"/>
+                                                <include name="*.js"/>
                                             </fileset>
                                         </copy>
 
-                                            <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
+                                        <taskdef name="doctask"
+                                                 classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
 
-                                            <doctask css="dotted" dir="target/javadoc/core">
-                                                <include name="**/*.html" />
-                                                <exclude name="overview-frame.html" />
-                                                <exclude name="allclasses-frame.html" />
-                                                <exclude name="**/class-use/*" />
-                                            </doctask>
+                                        <doctask css="dotted" dir="target/javadoc/core">
+                                            <include name="**/*.html"/>
+                                            <exclude name="overview-frame.html"/>
+                                            <exclude name="allclasses-frame.html"/>
+                                            <exclude name="**/class-use/*"/>
+                                        </doctask>
                                     </target>
                                 </configuration>
                             </execution>
@@ -303,7 +308,7 @@
             <id>release</id>
             <build>
                 <plugins>
-                     <plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
@@ -325,112 +330,128 @@
                                 <configuration>
                                     <target>
                                         <replaceregexp byline="true">
-                                            <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
-                                            <substitution expression="pushd &quot;%~dp0&quot;/.." />
+                                            <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?"/>
+                                            <substitution expression="pushd &quot;%~dp0&quot;/.."/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.bat" />
+                                                <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="IGNITE_HOME_TMP=&quot;\$\(dirname &quot;\$\{IGNITE_HOME_TMP\}&quot;\)&quot;(\s*#.*)?" />
-                                            <substitution expression="" />
+                                            <regexp
+                                                pattern="IGNITE_HOME_TMP=&quot;\$\(dirname &quot;\$\{IGNITE_HOME_TMP\}&quot;\)&quot;(\s*#.*)?"/>
+                                            <substitution expression=""/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.sh" />
+                                                <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?" />
-                                            <substitution expression="set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin" />
+                                            <regexp pattern="set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?"/>
+                                            <substitution expression="set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin"/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.bat" />
+                                                <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="SCRIPTS_HOME=&quot;\$\{IGNITE_HOME_TMP\}/bin&quot;(\s*#.*)?" />
-                                            <substitution expression="SCRIPTS_HOME=&quot;$${IGNITE_HOME_TMP}/bin&quot;" />
+                                            <regexp
+                                                pattern="SCRIPTS_HOME=&quot;\$\{IGNITE_HOME_TMP\}/bin&quot;(\s*#.*)?"/>
+                                            <substitution
+                                                expression="SCRIPTS_HOME=&quot;$${IGNITE_HOME_TMP}/bin&quot;"/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.sh" />
+                                                <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/build-classpath.sh(\s*#.*)?" />
-                                            <substitution expression="" />
+                                            <regexp
+                                                pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/build-classpath.sh(\s*#.*)?"/>
+                                            <substitution expression=""/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.sh" />
+                                                <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?" />
-                                            <substitution expression="" />
+                                            <regexp
+                                                pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?"/>
+                                            <substitution expression=""/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.bat" />
+                                                <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
-                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;" />
+                                            <regexp pattern="ENABLE_ASSERTIONS=.*"/>
+                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.sh" />
+                                                <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
-                                            <substitution expression="ENABLE_ASSERTIONS=0" />
+                                            <regexp pattern="ENABLE_ASSERTIONS=.*"/>
+                                            <substitution expression="ENABLE_ASSERTIONS=0"/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.bat" />
+                                                <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="-DIGNITE_UPDATE_NOTIFIER=false" />
-                                            <substitution expression="" />
+                                            <regexp pattern="-DIGNITE_UPDATE_NOTIFIER=false"/>
+                                            <substitution expression=""/>
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.sh" />
-                                                <include name="**/*.bat" />
+                                                <include name="**/*.sh"/>
+                                                <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
-                                        <replaceregexp file="${basedir}/target/release-package-${ignite.edition}/examples/pom.xml" byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version" />
-                                            <substitution expression="${project.version}" />
+                                        <replaceregexp
+                                            file="${basedir}/target/release-package-${ignite.edition}/examples/pom.xml"
+                                            byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
+                                            <substitution expression="${project.version}"/>
                                         </replaceregexp>
 
-                                        <replaceregexp file="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/pom.xml" byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version" />
-                                            <substitution expression="${project.version}" />
+                                        <replaceregexp
+                                            file="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/pom.xml"
+                                            byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
+                                            <substitution expression="${project.version}"/>
                                         </replaceregexp>
 
-                                        <chmod dir="${basedir}/target/release-package-${ignite.edition}" perm="755" includes="**/*.sh" />
+                                        <chmod dir="${basedir}/target/release-package-${ignite.edition}" perm="755"
+                                               includes="**/*.sh"/>
 
                                         <!--
                                         Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
                                         end-of-line characters for Linux shell scripts
                                         -->
-                                        <fixcrlf srcdir="${basedir}/target/release-package-${ignite.edition}" eol="lf" eof="remove">
-                                            <include name="**/*.sh" />
+                                        <fixcrlf srcdir="${basedir}/target/release-package-${ignite.edition}" eol="lf"
+                                                 eof="remove">
+                                            <include name="**/*.sh"/>
                                         </fixcrlf>
 
-                                        <zip destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
-                                                <include name="**/*.sh" />
-                                                <include name="**/configure" />
-                                                <include name="**/install-sh" />
-                                                <include name="**/compile" />
-                                                <include name="**/missing" />
+                                        <zip
+                                            destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip"
+                                            encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}"
+                                                        prefix="${ignite.edition}-${project.version}-bin"
+                                                        filemode="755">
+                                                <include name="**/*.sh"/>
+                                                <include name="**/configure"/>
+                                                <include name="**/install-sh"/>
+                                                <include name="**/compile"/>
+                                                <include name="**/missing"/>
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
-                                                <exclude name="**/*.sh" />
-                                                <exclude name="**/configure" />
-                                                <exclude name="**/install-sh" />
-                                                <exclude name="**/compile" />
-                                                <exclude name="**/missing" />
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}"
+                                                        prefix="${ignite.edition}-${project.version}-bin">
+                                                <exclude name="**/*.sh"/>
+                                                <exclude name="**/configure"/>
+                                                <exclude name="**/install-sh"/>
+                                                <exclude name="**/compile"/>
+                                                <exclude name="**/missing"/>
                                             </zipfileset>
                                         </zip>
                                     </target>
@@ -455,7 +476,8 @@
                                     <descriptors>
                                         <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
                                     </descriptors>
-                                    <outputDirectory>${basedir}/target/release-package-${ignite.edition}</outputDirectory>
+                                    <outputDirectory>${basedir}/target/release-package-${ignite.edition}
+                                    </outputDirectory>
                                     <finalName>libs</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
@@ -555,7 +577,9 @@
             <id>scala</id>
 
             <activation>
-                <property><name>!scala-2.10</name></property>
+                <property>
+                    <name>!scala-2.10</name>
+                </property>
             </activation>
 
             <modules>
@@ -570,7 +594,9 @@
             <id>spark-2.4</id>
 
             <activation>
-                <property><name>!scala-2.10</name></property>
+                <property>
+                    <name>!scala-2.10</name>
+                </property>
             </activation>
 
             <modules>
@@ -583,7 +609,9 @@
             <id>scala-2.10</id>
 
             <activation>
-                <property><name>scala-2.10</name></property>
+                <property>
+                    <name>scala-2.10</name>
+                </property>
             </activation>
 
             <modules>
@@ -627,28 +655,28 @@
                                     <target>
                                         <script language="javascript">
                                             function setClientVersion(ggVer, clientVer) {
-                                                var p = project.getProperty(ggVer);
+                                            var p = project.getProperty(ggVer);
 
-                                                var digitVer = /\d+\.\d+\.\d+/.exec(p);
+                                            var digitVer = /\d+\.\d+\.\d+/.exec(p);
 
-                                                if (digitVer != null)
-                                                {
-                                                    // Date of the last major release
-                                                    var startDate = new Date(2015,1,1);
+                                            if (digitVer != null)
+                                            {
+                                            // Date of the last major release
+                                            var startDate = new Date(2015,1,1);
 
-                                                    // Number of hours since the last major release
-                                                    var buildNum = Math.round((new Date() - startDate)/(3600*1000));
-                                                    var ver = digitVer[0] + "." + buildNum;
+                                            // Number of hours since the last major release
+                                            var buildNum = Math.round((new Date() - startDate)/(3600*1000));
+                                            var ver = digitVer[0] + "." + buildNum;
 
-                                                    project.setProperty(clientVer, ver);
-                                                }
-                                                else
-                                                    project.setProperty(clientVer, p);
+                                            project.setProperty(clientVer, ver);
+                                            }
+                                            else
+                                            project.setProperty(clientVer, p);
                                             }
 
                                             function fix(dest, source) {
-                                                project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
-                                                ""));
+                                            project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
+                                            ""));
                                             }
 
                                             fix('ignite.version.fixed', 'project.version');
@@ -657,55 +685,58 @@
                                             setClientVersion('new.ignite.version.fixed', 'new.client.version');
                                         </script>
 
-                                        <echo message="Update ignite.version in .NET" />
-                                        <echo message="${new.client.version}" />
+                                        <echo message="Update ignite.version in .NET"/>
+                                        <echo message="${new.client.version}"/>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
-                                            <substitution expression="\1${new.client.version}\3" />
+                                            <regexp
+                                                pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])"/>
+                                            <substitution expression="\1${new.client.version}\3"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/SharedAssemblyInfo.cs" />
+                                                <include name="**/SharedAssemblyInfo.cs"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
-                                            <substitution expression="\1${new.ignite.version.fixed}\2" />
+                                            <regexp
+                                                pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])"/>
+                                            <substitution expression="\1${new.ignite.version.fixed}\2"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/SharedAssemblyInfo.cs" />
+                                                <include name="**/SharedAssemblyInfo.cs"/>
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in C++" />
+                                        <echo message="Update ignite.version in C++"/>
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
-                                            <substitution expression="\1${new.client.version}\2" />
+                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))"/>
+                                            <substitution expression="\1${new.client.version}\2"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/CMakeLists.txt" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(Version=.+)\d+\.\d+\.\d+\.\d+(.+)" />
-                                            <substitution expression="\1${new.client.version}\2" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/*.wxs" />
+                                                <include name="**/CMakeLists.txt"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)" />
-                                            <substitution expression="\1${new.client.version}\3" />
+                                            <regexp pattern="(Version=.+)\d+\.\d+\.\d+\.\d+(.+)"/>
+                                            <substitution expression="\1${new.client.version}\2"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/resource.h" />
+                                                <include name="**/*.wxs"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp
+                                                pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)"/>
+                                            <substitution expression="\1${new.client.version}\3"/>
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/resource.h"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(Version&quot;, &quot;)\d+\.\d+\.\d+\.\d+(&quot;)" />
-                                            <substitution expression="\1${new.client.version}\2" />
+                                            <regexp pattern="(Version&quot;, &quot;)\d+\.\d+\.\d+\.\d+(&quot;)"/>
+                                            <substitution expression="\1${new.client.version}\2"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/Resource.rc" />
+                                                <include name="**/Resource.rc"/>
                                             </fileset>
                                         </replaceregexp>
 
@@ -724,46 +755,46 @@
                                         </script>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_BIN_WIN )\d,\d,\d,\d" />
-                                            <substitution expression="\1${new.bin.version}" />
+                                            <regexp pattern="(define GG_VERSION_BIN_WIN )\d,\d,\d,\d"/>
+                                            <substitution expression="\1${new.bin.version}"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/resource.h" />
+                                                <include name="**/resource.h"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(VERSION )\d,\d,\d,\d" />
-                                            <substitution expression="\1${new.bin.version}" />
+                                            <regexp pattern="(VERSION )\d,\d,\d,\d"/>
+                                            <substitution expression="\1${new.bin.version}"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/Resource.rc" />
+                                                <include name="**/Resource.rc"/>
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in other resource files" />
+                                        <echo message="Update ignite.version in other resource files"/>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(ignite.version=).+$" />
-                                            <substitution expression="\1${new.ignite.version}" />
+                                            <regexp pattern="(ignite.version=).+$"/>
+                                            <substitution expression="\1${new.ignite.version}"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/ignite.properties" />
+                                                <include name="**/ignite.properties"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(ignVer = )'.+'" />
-                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <regexp pattern="(ignVer = )'.+'"/>
+                                            <substitution expression="\1'${new.ignite.version}'"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="**/build.gradle" />
+                                                <include name="**/build.gradle"/>
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in ducktests" />
+                                        <echo message="Update ignite.version in ducktests"/>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(__version__ = ).*$"/>
-                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <substitution expression="\1'${new.ignite.version}'"/>
                                             <fileset dir="${basedir}/">
-                                                <include name="modules/ducktests/tests/ignitetest/__init__.py" />
+                                                <include name="modules/ducktests/tests/ignitetest/__init__.py"/>
                                             </fileset>
                                         </replaceregexp>
                                     </target>
@@ -804,7 +835,7 @@
                                 <configuration>
                                     <target>
                                         <delete>
-                                            <fileset dir="${basedir}/modules/tools/target/classes/META-INF/services" />
+                                            <fileset dir="${basedir}/modules/tools/target/classes/META-INF/services"/>
                                         </delete>
                                     </target>
                                 </configuration>
