@@ -41,7 +41,7 @@ class ScaleCubeMessagingService extends AbstractMessagingService {
     /**
      * Inner representation of a ScaleCube cluster.
      */
-    private Cluster cluster;
+    private volatile Cluster cluster;
     
     /**
      * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.

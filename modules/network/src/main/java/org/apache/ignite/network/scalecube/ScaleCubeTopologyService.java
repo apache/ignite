@@ -17,6 +17,7 @@
 
 package org.apache.ignite.network.scalecube;
 
+import io.scalecube.cluster.Cluster;
 import io.scalecube.cluster.Member;
 import io.scalecube.cluster.membership.MembershipEvent;
 import java.util.Collection;
@@ -37,22 +38,21 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     /** Logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ScaleCubeTopologyService.class);
 
-    /** Local member node. */
-    private ClusterNode localMember;
+    /**
+     * Inner representation of a ScaleCube cluster.
+     */
+    private volatile Cluster cluster;
 
     /** Topology members. */
     private final ConcurrentMap<NetworkAddress, ClusterNode> members = new ConcurrentHashMap<>();
 
     /**
-     * Sets the ScaleCube's local {@link Member}.
+     * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.
      *
-     * @param member Local member.
+     * @param cluster Cluster.
      */
-    void setLocalMember(Member member) {
-        localMember = fromMember(member);
-
-        // emit an artificial event as if the local member has joined the topology (ScaleCube doesn't do that)
-        onMembershipEvent(MembershipEvent.createAdded(member, null, System.currentTimeMillis()));
+    void setCluster(Cluster cluster) {
+        this.cluster = cluster;
     }
 
     /**
@@ -122,9 +122,11 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     /** {@inheritDoc} */
     @Override
     public ClusterNode localMember() {
+        Member localMember = cluster.member();
+
         assert localMember != null : "Cluster has not been started";
 
-        return localMember;
+        return fromMember(localMember);
     }
 
     /** {@inheritDoc} */
