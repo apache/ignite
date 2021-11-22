@@ -843,7 +843,9 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArra
      */
     @Test
     public void testMetaData() throws Exception {
-        BinaryObjectBuilder builder = builder("org.test.MetaTest");
+        String cls = "org.test.MetaTest" + (useTypedArrays ? "0" : "");
+
+        BinaryObjectBuilder builder = builder(cls);
 
         builder.setField("intField", 1);
         builder.setField("byteArrayField", new byte[] {1, 2, 3});
@@ -852,27 +854,19 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArra
 
         BinaryType meta = po.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
+        assertEquals(expectedTypeName(cls), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
-        switch (fields.size()) {
-            case 3:
-                assertTrue(fields.contains("uuidField"));
+        assertEquals(2, fields.size());
 
-            case 2:
-                assertTrue(fields.contains("intField"));
-                assertTrue(fields.contains("byteArrayField"));
-
-                break;
-            default:
-                fail("Expected 2 or 3 fields but got " + fields.size());
-        }
+        assertTrue(fields.contains("intField"));
+        assertTrue(fields.contains("byteArrayField"));
 
         assertEquals("int", meta.fieldTypeName("intField"));
         assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
 
-        builder = builder("org.test.MetaTest");
+        builder = builder(cls);
 
         builder.setField("intField", 2);
         builder.setField("uuidField", UUID.randomUUID());
@@ -881,7 +875,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractTypedArra
 
         meta = po.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
+        assertEquals(expectedTypeName(cls), meta.typeName());
 
         fields = meta.fieldNames();
 
