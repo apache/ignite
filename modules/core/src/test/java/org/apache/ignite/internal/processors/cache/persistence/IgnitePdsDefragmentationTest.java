@@ -250,6 +250,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         validateLeftovers(workDir);
     }
 
+    /** */
     protected long[] partitionSizes(CacheGroupContext grp) {
         final int grpId = grp.groupId();
 

@@ -191,9 +191,9 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             stripeHolder[0] = stripe;
 
             // Blocks stripe processing for rollback request on node1.
-            grid(1).context().getStripedExecutorService().execute(stripe, () -> U.awaitQuiet(stripeBlockLatch));
+            grid(1).context().pools().getStripedExecutorService().execute(stripe, () -> U.awaitQuiet(stripeBlockLatch));
             // Dummy task to ensure msg is processed.
-            grid(1).context().getStripedExecutorService().execute(stripe, () -> {});
+            grid(1).context().pools().getStripedExecutorService().execute(stripe, () -> {});
 
             runAsync(() -> {
                 spi(client).waitForBlocked();
@@ -223,7 +223,7 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
             // Wait until sequential processing is finished.
             assertTrue("sequential processing", GridTestUtils.waitForCondition(() ->
-                grid(1).context().getStripedExecutorService().queueStripeSize(stripeHolder[0]) == 0, 5_000));
+                grid(1).context().pools().getStripedExecutorService().queueStripeSize(stripeHolder[0]) == 0, 5_000));
 
             // Unblock recovery message from g1 to g0 because tx is in RECOVERY_FINISH state and waits for recovery end.
             spi(grid(1)).stopBlock();
@@ -244,7 +244,7 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
         // Wait until finish message is processed.
         assertTrue("concurrent processing", GridTestUtils.waitForCondition(() ->
-            grid(1).context().getStripedExecutorService().queueStripeSize(stripeHolder[0]) == 0, 5_000));
+            grid(1).context().pools().getStripedExecutorService().queueStripeSize(stripeHolder[0]) == 0, 5_000));
 
         // Proceed with recovery on grid1 -> grid0. Tx0 is committed so tx1 also should be committed.
         spi(grid(1)).stopBlock();

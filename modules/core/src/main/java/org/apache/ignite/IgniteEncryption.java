@@ -68,6 +68,7 @@ public interface IgniteEncryption {
      * master key. The node should re-encrypt group keys during recovery on startup. The actual master key
      * name should be set via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
      *
+     * @param masterKeyName Name of the master key.
      * @return Future for this operation.
      */
     public IgniteFuture<Void> changeMasterKey(String masterKeyName);

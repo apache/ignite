@@ -24,7 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/** */
 public class JacksonHelper {
+    /** */
     public static void readAndValidateBasicJsonModelProperties(Path path, ObjectMapper mapper, String className) throws IOException {
         Map jsonAsMap = mapper.readValue(new File(path.toAbsolutePath().toString()), LinkedHashMap.class);
         String formatVersion = jsonAsMap.get("formatVersion").toString();

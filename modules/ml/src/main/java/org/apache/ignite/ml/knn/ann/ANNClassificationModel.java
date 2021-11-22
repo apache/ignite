@@ -280,6 +280,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         /** Centers of clusters. */
         public List<double[]> candidateFeatures;
 
+        /** */
         public ProbableLabel[] candidateLabels;
 
         /** Distance measure. */

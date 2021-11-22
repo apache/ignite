@@ -48,6 +48,7 @@ public class ExamplesUtils {
     /**
      * Returns URL resolved by class loader for classes in examples project.
      *
+     * @param path Path to the resource.
      * @return Resolved URL.
      */
     public static URL url(String path) {

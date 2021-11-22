@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -77,11 +79,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -162,6 +166,97 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             checkWAL((IgniteEx)ignite, new LinkedList<>(ops), 6);
         }
+    }
+
+    /**
+     * There is a key that was removed while a primary node was stopped.
+     * After restart a primary node there is a full rebalance with clearing.
+     * So the remove operation was not writen to WAL. Also the partition was not chekpointed.
+     * After second restart a primary node need to repeat the partition clearing to clear the key.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionConsistencyNotRebalancedRemoveOpWithPrimaryRestart() throws Exception {
+        testPartitionConsistencyNotRebalancedRemoveOpWithNodeRestart(true);
+    }
+
+    /**
+     * There is a key that was removed while a backup node was stopped.
+     * After restart a backup node there is a full rebalance with clearing.
+     * So the remove operation was not writen to WAL. Also the partition was not chekpointed.
+     * After second restart a backup node need to repeat the partition clearing to clear the key.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionConsistencyNotRebalancedRemoveOpWithBackupRestart() throws Exception {
+        testPartitionConsistencyNotRebalancedRemoveOpWithNodeRestart(false);
+    }
+
+    /**
+     * @param primary Restart primary or backup node.
+     * @throws Exception If failed.
+     */
+    public void testPartitionConsistencyNotRebalancedRemoveOpWithNodeRestart(boolean primary) throws Exception {
+        backups = 1;
+
+        Ignite srv = startGridsMultiThreaded(2);
+
+        IgniteEx client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        List<Integer> cacheKeys;
+
+        if (primary)
+            cacheKeys = primaryKeys(srv.cache(DEFAULT_CACHE_NAME), partitions() * 4);
+        else
+            cacheKeys = backupKeys(srv.cache(DEFAULT_CACHE_NAME), partitions() * 4, 0);
+
+        List<Integer> partKeys = new ArrayList<>();
+
+        int partId = -1;
+
+        for (Integer key : cacheKeys) {
+            if (partId == -1 || srv.affinity(DEFAULT_CACHE_NAME).partition(key) == partId) {
+                if (partId == -1)
+                    partId = srv.affinity(DEFAULT_CACHE_NAME).partition(key);
+
+                partKeys.add(key);
+
+                if (partKeys.size() == 3)
+                    break;
+            }
+        }
+
+        assertTrue("Failed to find the required number of keys.", partKeys.size() == 3);
+
+        if (log().isInfoEnabled())
+            log().info("partKeys: " + partKeys);
+
+        for (int i = 0; i < 2; i++) {
+            if (i == 0)
+                cache.put(partKeys.get(0), 1234567);
+
+            stopGrid(true, srv.name());
+
+            awaitPartitionMapExchange();
+
+            if (i == 0) {
+                cache.remove(partKeys.get(0));
+                cache.put(partKeys.get(1), 112233);
+            }
+
+            startGrid(srv.name());
+
+            awaitPartitionMapExchange(true, true, null);
+
+            if (i == 0)
+                cache.put(partKeys.get(2), 7654321);
+        }
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -1084,6 +1179,59 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
+     * Tests if a clear version comparison works properly during a partition clearing caused by full preloading.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "false")
+    public void testClearVersion() throws Exception {
+        backups = 1;
+
+        IgniteEx g0 = startGrid(0);
+        IgniteEx g1 = startGrid(1);
+
+        g0.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = g0.cache(DEFAULT_CACHE_NAME);
+
+        int[] parts = g0.affinity(DEFAULT_CACHE_NAME).primaryPartitions(g0.localNode());
+
+        int prim = parts[0];
+
+        List<Integer> keys = partitionKeys(cache, prim, 2_000, 0);
+
+        long topVer = g0.cachex(DEFAULT_CACHE_NAME).context().topology().readyTopologyVersion().topologyVersion();
+
+        // Move the version forward.
+        int c = 100_000;
+
+        // Simulating load by incrementing local version.
+        GridCacheVersion next = null;
+
+        while (c-- > 0)
+            next = g0.context().cache().context().versions().next(topVer);
+
+        assertTrue(next.order() - U.currentTimeMillis() > 60_000);
+
+        for (Integer key : keys)
+            cache.put(key, key);
+
+        assertPartitionsSame(idleVerify(g0, DEFAULT_CACHE_NAME));
+
+        g1.close();
+
+        for (Integer key : keys)
+            cache.remove(key);
+
+        g1 = startGrid(1);
+        g1.close();
+        g1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(g0, DEFAULT_CACHE_NAME));
+    }
+
+    /**
      * The scenario:
      * <p>
      * 1. Start updates only to primary partitions what will be switched when this node has left.
@@ -1184,8 +1332,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             grid(0).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
         }
-
-        prim.context().cache().context().exchange().rebalanceDelay(500);
 
         Random r = new Random();
 

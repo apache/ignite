@@ -120,7 +120,7 @@ public class MvccUtils {
     /**
      *
      */
-    private MvccUtils(){
+    private MvccUtils() {
     }
 
     /**

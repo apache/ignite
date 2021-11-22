@@ -134,6 +134,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
     /** */
+    public static final Predicate<File> DATA_DIR_FILTER = dir ->
+        dir.getName().startsWith(CACHE_DIR_PREFIX) ||
+        dir.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
+        dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
+
+    /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
@@ -231,7 +237,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-        storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+        storeWorkDir = folderSettings.persistentStoreNodePath();
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
 
@@ -586,12 +592,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionCreated(int grpId, int partId) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+    @Override public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException {
         assert partId <= MAX_PARTITION_ID;
 
         PageStore store = getStore(grpId, partId);
@@ -684,19 +685,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
         if (encrypted) {
-            pageStoreFileIoFactory = new EncryptedFileIOFactory(
-                this.pageStoreFileIoFactory,
-                grpId,
-                pageSize(),
-                cctx.kernalContext().encryption(),
-                cctx.gridConfig().getEncryptionSpi());
-
-            pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
-                this.pageStoreV1FileIoFactory,
-                grpId,
-                pageSize(),
-                cctx.kernalContext().encryption(),
-                cctx.gridConfig().getEncryptionSpi());
+            pageStoreFileIoFactory = encryptedFileIoFactory(this.pageStoreFileIoFactory, grpId);
+            pageStoreV1FileIoFactory = encryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId);
         }
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
@@ -713,6 +703,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         return pageStoreFactory;
+    }
+
+    /**
+     * @param plainFileIOFactory Not-encrypting file io factory.
+     * @param cacheGrpId Cache group id.
+     * @return Encrypted file IO factory.
+     */
+    public EncryptedFileIOFactory encryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+        return new EncryptedFileIOFactory(
+            plainFileIOFactory,
+            cacheGrpId,
+            pageSize(),
+            cctx.kernalContext().encryption(),
+            cctx.gridConfig().getEncryptionSpi());
     }
 
     /**
@@ -1017,13 +1021,31 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (files == null)
             return Collections.emptyList();
 
-        return Arrays.stream(dir.listFiles())
+        return Arrays.stream(files)
             .sorted()
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
-                f.getName().equals(MetaStorage.METASTORAGE_DIR_NAME))
+            .filter(DATA_DIR_FILTER)
             .filter(f -> names.test(cacheGroupName(f)))
             .collect(Collectors.toList());
+    }
+
+    /**
+     * @param dir Directory to check.
+     * @param grpId Cache group id
+     * @return Files that match cache or cache group pattern.
+     */
+    public static File cacheDirectory(File dir, int grpId) {
+        File[] files = dir.listFiles();
+
+        if (files == null)
+            return null;
+
+        return Arrays.stream(files)
+            .filter(File::isDirectory)
+            .filter(DATA_DIR_FILTER)
+            .filter(f -> CU.cacheId(cacheGroupName(f)) == grpId)
+            .findAny()
+            .orElse(null);
     }
 
     /**
@@ -1184,7 +1206,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
-        return cacheDirName(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
     }
 
     /**

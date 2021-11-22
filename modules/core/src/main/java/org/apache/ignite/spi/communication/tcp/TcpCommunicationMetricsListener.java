@@ -113,7 +113,10 @@ public class TcpCommunicationMetricsListener {
     /** Message type map. */
     private volatile Map<Short, String> msgTypeMap;
 
-    /** */
+    /**
+     * @param ignite Ignite instance.
+     * @param spiCtx Ignite SPI context.
+     */
     public TcpCommunicationMetricsListener(Ignite ignite, IgniteSpiContext spiCtx) {
         this.ignite = ignite;
         this.spiCtx = spiCtx;
@@ -185,7 +188,7 @@ public class TcpCommunicationMetricsListener {
         return msgCntrsByType;
     }
 
-    /** Metrics registry. */
+    /** @return Metrics registry. */
     public MetricRegistry metricRegistry() {
         return mreg;
     }
@@ -431,12 +434,22 @@ public class TcpCommunicationMetricsListener {
         }
     }
 
-    /** Generate metric name by message direct type id. */
+    /**
+     * Generate metric name by message direct type id.
+     *
+     * @param directType Direct type ID of sent message.
+     * @return Metric name for sent message.
+     */
     public static String sentMessagesByTypeMetricName(Short directType) {
         return metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }
 
-    /** Generate metric name by message direct type id. */
+    /**
+     * Generate metric name by message direct type id.
+     *
+     * @param directType Direct type ID of the received message.
+     * @return Metric name for the received message.
+     */
     public static String receivedMessagesByTypeMetricName(Short directType) {
         return metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }

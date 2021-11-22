@@ -61,6 +61,9 @@ public interface IgniteSecurity {
      */
     public OperationSecurityContext withContext(UUID nodeId);
 
+    /** @return {@code True} if current thread executed in default security context. */
+    public boolean isDefaultContext();
+
     /**
      * @return SecurityContext of holder {@link OperationSecurityContext}.
      */
@@ -152,4 +155,11 @@ public interface IgniteSecurity {
      * @throws IgniteCheckedException If error occurred.
      */
     public void dropUser(String login) throws IgniteCheckedException;
+
+    /**
+     * Callback for local join events for which the regular events are not generated.
+     * <p/>
+     * Local join event is expected in cases of joining to topology or client reconnect.
+     */
+    public void onLocalJoin();
 }

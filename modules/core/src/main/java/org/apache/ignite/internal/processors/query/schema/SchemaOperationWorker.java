@@ -67,7 +67,7 @@ public class SchemaOperationWorker extends GridWorker {
     private final AtomicBoolean startGuard = new AtomicBoolean();
 
     /** Cancellation token. */
-    private final SchemaIndexOperationCancellationToken cancelToken = new SchemaIndexOperationCancellationToken();
+    private final IndexRebuildCancelToken cancelTok = new IndexRebuildCancelToken();
 
     /** Workers registry. */
     private final WorkersRegistry workersRegistry;
@@ -111,7 +111,7 @@ public class SchemaOperationWorker extends GridWorker {
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
         try {
             // Execute.
-            qryProc.processSchemaOperationLocal(op, type, depId, cancelToken);
+            qryProc.processSchemaOperationLocal(op, type, depId, cancelTok);
 
             fut.onDone();
         }
@@ -184,7 +184,7 @@ public class SchemaOperationWorker extends GridWorker {
      * Cancel operation.
      */
     @Override public void cancel() {
-        if (cancelToken.cancel()) {
+        if (cancelTok.cancel(new SchemaIndexOperationCancellationException("Index creation was cancelled."))) {
             try {
                 fut.get(workersRegistry.getSystemWorkerBlockedTimeout());
             }

@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -78,7 +79,9 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -943,9 +946,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout)
-        throws IgniteException {
+    @Override public <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {
@@ -954,7 +962,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (ctx != null) {
                 Service srvc = ctx.service();
 
-                if (srvc != null) {
+                if (srvc != null && callCtxProvider == null) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
@@ -965,7 +973,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider).proxy();
     }
 
     /**
@@ -1188,7 +1196,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             final Service srvc;
 
             try {
-                srvc = copyAndInject(cfg);
+                srvc = copyAndInject(cfg, srvcCtx);
 
                 // Initialize service.
                 srvc.init(srvcCtx);
@@ -1253,10 +1261,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * @param cfg Service configuration.
+     * @param svcCtx Service context to be injected into the service.
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
+    private Service copyAndInject(ServiceConfiguration cfg, ServiceContext svcCtx) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
@@ -1267,7 +1276,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             Service srvc = U.unmarshal(marsh, bytes,
                 U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
-            ctx.resource().inject(srvc);
+            ctx.resource().inject(srvc, svcCtx);
 
             return srvc;
         }
@@ -1279,7 +1288,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 Service cp = U.unmarshal(marsh, bytes, U.resolveClassLoader(srvc.getClass().getClassLoader(), ctx.config()));
 
-                ctx.resource().inject(cp);
+                ctx.resource().inject(cp, svcCtx);
 
                 return cp;
             }

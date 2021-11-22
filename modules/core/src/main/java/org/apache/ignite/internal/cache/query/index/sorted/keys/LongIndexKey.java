@@ -41,8 +41,6 @@ public class LongIndexKey implements IndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        long okey = (long) o.key();
-
-        return Long.compare(key, okey);
+        return Long.compare(key, ((LongIndexKey)o).key);
     }
 }

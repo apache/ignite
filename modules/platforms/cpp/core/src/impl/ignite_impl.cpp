@@ -130,12 +130,14 @@ namespace ignite
         {
             SP_ClusterGroupImpl serversCluster = prjImpl.Get().Get()->ForServers();
 
-            return serversCluster.Get()->GetCompute();
+            return GetCompute(serversCluster);
         }
 
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute(ClusterGroup grp)
         {
-            return this->GetProjection().Get()->GetCompute(grp);
+            SP_ClusterGroupImpl grpImpl = grp.GetImpl();
+
+            return SP_ComputeImpl(new compute::ComputeImpl(GetEnvironmentPointer(), grpImpl));
         }
 
         void IgniteImpl::DisableWal(std::string cacheName)

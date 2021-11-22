@@ -63,9 +63,11 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
         this.internalToExternalLblMapping = internalToExternalLblMapping;
     }
 
+    /** */
     private GDBModel() {
     }
 
+    /** */
     public GDBModel withLblMapping(IgniteFunction<Double, Double> internalToExternalLblMapping) {
         this.internalToExternalLblMapping = internalToExternalLblMapping;
         return this;

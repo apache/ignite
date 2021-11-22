@@ -120,13 +120,16 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * Test cache value.
      */
     private static class CacheValue {
+        /** */
         @QuerySqlField
         private final int val;
 
+        /** */
         CacheValue(int val) {
             this.val = val;
         }
 
+        /** */
         int value() {
             return val;
         }

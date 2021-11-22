@@ -78,8 +78,20 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * Sets Node id and instantiates {@link FileHandler} delegate.
      *
      * @param nodeId Node id.
+     * @param workDir param.
      */
     public void nodeId(UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
+        nodeId(null, nodeId, workDir);
+    }
+
+    /**
+     * Sets Node id and instantiates {@link FileHandler} delegate.
+     *
+     * @param app Application name.
+     * @param workDir Path to the work directory.
+     * @param nodeId Node id.
+     */
+    public void nodeId(@Nullable String app, UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
         if (delegate != null)
             return;
 
@@ -88,9 +100,13 @@ public final class JavaLoggerFileHandler extends StreamHandler {
         String ptrn = manager.getProperty(clsName + ".pattern");
 
         if (ptrn == null)
-            ptrn = "ignite-%{id8}.%g.log";
+            ptrn = "%{app}-%{id8}.%g.log";
 
-        ptrn = new File(logDirectory(workDir), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
+        String fileName = ptrn
+            .replace("%{app}", app != null ? app : "ignite")
+            .replace("%{id8}", U.id8(nodeId));
+
+        ptrn = new File(logDirectory(workDir), fileName).getAbsolutePath();
 
         int limit = getIntProperty(clsName + ".limit", 0);
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.NodeFileLockHolder;
 
 /**
  * Resolves folders for PDS mode, may have side effect as setting random UUID as local node consistent ID.
@@ -29,5 +30,5 @@ public interface PdsFoldersResolver {
      * @return PDS folder settings, consistentID and prelocked DB file lock.
      * @throws IgniteCheckedException if failed.
      */
-    public PdsFolderSettings resolveFolders() throws IgniteCheckedException;
+    public PdsFolderSettings<NodeFileLockHolder> resolveFolders() throws IgniteCheckedException;
 }

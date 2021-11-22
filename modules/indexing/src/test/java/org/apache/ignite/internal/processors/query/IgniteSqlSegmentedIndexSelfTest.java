@@ -333,7 +333,9 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         }
     }
 
+    /** */
     private static class PersonKey {
+        /** */
         @QuerySqlField
         int id;
 
@@ -342,6 +344,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         @QuerySqlField
         Integer orgId;
 
+        /** */
         public PersonKey(int id, Integer orgId) {
             this.id = id;
             this.orgId = orgId;

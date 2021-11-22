@@ -19,11 +19,9 @@ package org.apache.ignite.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -61,13 +60,6 @@ public class IgniteDiagnosticMessage implements Message {
 
     /** */
     private static final int REQUEST_FLAG_MASK = 0x01;
-
-    /** */
-    private static final ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>() {
-        @Override protected DateFormat initialValue() {
-            return new SimpleDateFormat("HH:mm:ss.SSS");
-        }
-    };
 
     /** */
     private byte flags;
@@ -483,7 +475,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @return Time string.
      */
     private static String formatTime(long time) {
-        return dateFormat.get().format(new Date(time));
+        return IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(time));
     }
 
     /** {@inheritDoc} */

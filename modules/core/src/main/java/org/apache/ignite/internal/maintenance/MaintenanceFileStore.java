@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceTask;
@@ -64,7 +63,7 @@ public class MaintenanceFileStore {
     private static final int MAX_MNTC_TASK_PARTS_COUNT = 3;
 
     /** */
-    private final boolean inMemoryMode;
+    private final boolean disabled;
 
     /** */
     private final PdsFoldersResolver pdsFoldersResolver;
@@ -85,11 +84,11 @@ public class MaintenanceFileStore {
     private final IgniteLogger log;
 
     /** */
-    public MaintenanceFileStore(boolean inMemoryMode,
+    public MaintenanceFileStore(boolean disabled,
                                 PdsFoldersResolver pdsFoldersResolver,
                                 FileIOFactory ioFactory,
                                 IgniteLogger log) {
-        this.inMemoryMode = inMemoryMode;
+        this.disabled = disabled;
         this.pdsFoldersResolver = pdsFoldersResolver;
         this.ioFactory = ioFactory;
         this.log = log;
@@ -97,11 +96,10 @@ public class MaintenanceFileStore {
 
     /** */
     public void init() throws IgniteCheckedException, IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
-        PdsFolderSettings folderSettings = pdsFoldersResolver.resolveFolders();
-        File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
+        File storeDir = pdsFoldersResolver.resolveFolders().persistentStoreNodePath();
         U.ensureDirectory(storeDir, "store directory for node persistent data", log);
 
         mntcTasksFile = new File(storeDir, MAINTENANCE_FILE_NAME);
@@ -126,7 +124,7 @@ public class MaintenanceFileStore {
      * Stops
      */
     public void stop() throws IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         if (mntcTasksFileIO != null)
@@ -200,7 +198,7 @@ public class MaintenanceFileStore {
 
     /** */
     public Map<String, MaintenanceTask> getAllTasks() {
-        if (inMemoryMode)
+        if (disabled)
             return null;
 
         return Collections.unmodifiableMap(tasksInSync);
@@ -208,7 +206,7 @@ public class MaintenanceFileStore {
 
     /** */
     public void writeMaintenanceTask(MaintenanceTask task) throws IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         tasksInSync.put(task.name(), task);
@@ -218,7 +216,7 @@ public class MaintenanceFileStore {
 
     /** */
     public void deleteMaintenanceTask(String taskName) throws IOException {
-        if (inMemoryMode)
+        if (disabled)
             return;
 
         tasksInSync.remove(taskName);

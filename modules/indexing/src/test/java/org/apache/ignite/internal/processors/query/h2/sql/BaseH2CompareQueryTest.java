@@ -718,11 +718,13 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         }
     }
 
+    /** */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /** */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
@@ -957,12 +959,15 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * Address class. Stored at replicated cache.
      */
     private static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         private int id;
 
+        /** */
         @QuerySqlField(index = true)
         private String street;
 
+        /** */
         Address(int id, String street) {
             this.id = id;
             this.street = street;

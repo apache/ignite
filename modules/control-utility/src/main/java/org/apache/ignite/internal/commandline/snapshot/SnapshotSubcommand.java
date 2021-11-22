@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.snapshot;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,7 +36,10 @@ public enum SnapshotSubcommand {
     CANCEL("cancel", VisorSnapshotCancelTask.class.getName()),
 
     /** Sub-command to check snapshot. */
-    CHECK("check", VisorSnapshotCheckTask.class.getName());
+    CHECK("check", VisorSnapshotCheckTask.class.getName()),
+
+    /** Sub-command to restore snapshot. */
+    RESTORE("restore", VisorSnapshotRestoreTask.class.getName());
 
     /** Sub-command name. */
     private final String name;
@@ -53,7 +57,7 @@ public enum SnapshotSubcommand {
      * @param text Command text (case insensitive).
      * @return Command for the text. {@code Null} if there is no such command.
      */
-     @Nullable public static SnapshotSubcommand of(String text) {
+    @Nullable public static SnapshotSubcommand of(String text) {
         for (SnapshotSubcommand cmd : values()) {
             if (cmd.name.equalsIgnoreCase(text))
                 return cmd;

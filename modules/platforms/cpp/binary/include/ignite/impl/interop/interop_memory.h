@@ -48,7 +48,25 @@ namespace ignite
 
             /** Flag: acquired. */
             const int IGNITE_MEM_FLAG_ACQUIRED = 0x4;
-                
+
+            /**
+             * A helper union to bitwise conversion from int32_t to float and back.
+             */
+            union BinaryFloatInt32
+            {
+                float f;
+                int32_t i;
+            };
+
+            /**
+             * A helper union to bitwise conversion from int64_t to double and back.
+             */
+            union BinaryDoubleInt64
+            {
+                double d;
+                int64_t i;
+            };
+
             /**
              * Interop memory.
              */

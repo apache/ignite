@@ -69,20 +69,20 @@ namespace Apache.Ignite
                         return;
                     }
 
-                    if (Svc.Equals(first))
+                    if (Svc.Equals(first, StringComparison.Ordinal))
                     {
                         args = RemoveFirstArg(args);
 
                         svc = true;
                     }
 
-                    else if (SvcInstall.Equals(first))
+                    else if (SvcInstall.Equals(first, StringComparison.Ordinal))
                     {
                         args = RemoveFirstArg(args);
 
                         install = true;
                     }
-                    else if (SvcUninstall.Equals(first))
+                    else if (SvcUninstall.Equals(first, StringComparison.Ordinal))
                     {
                         IgniteService.Uninstall();
 
@@ -110,9 +110,11 @@ namespace Apache.Ignite
                             // Wait until stopped.
                             using (var evt = new ManualResetEventSlim(false))
                             {
+                                // ReSharper disable AccessToDisposedClosure
                                 ignite.Stopped += (s, a) => evt.Set();
                                 Console.CancelKeyPress += (s, a) => evt.Set();
                                 evt.Wait();
+                                // ReSharper restore AccessToDisposedClosure
                             }
                         }
                     }

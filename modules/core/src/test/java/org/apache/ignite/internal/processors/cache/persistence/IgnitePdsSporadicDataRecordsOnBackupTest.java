@@ -158,7 +158,7 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
         params.bufferSize(1024 * 1024);
         params.filesOrDirs(walDir, walArchiveDir);
-        params.filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD);
+        params.filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
         int cacheId = CU.cacheId(TX_CACHE_NAME);
 

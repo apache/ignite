@@ -146,29 +146,25 @@ See the link:tools/control-script#checking-snapshot-consistency[Control Script] 
 commands.
 
 == Restoring From Snapshot
+A snapshot can be restored either manually on a stopped cluster or automatically on an active cluster. Both procedures are described below.
 
-Currently, the data restore procedure has to be performed manually. In a nutshell, you need to stop the cluster,
-replace persistence data and other files with the data from the snapshot, and restart the nodes.
+=== Manual Snapshot Restore Procedure
+Stop the cluster, then replace persistence data and other files with the data from the snapshot, and restart the nodes.
 
 The detailed procedure looks as follows:
 
 . Stop the cluster you intend to restore
 . Remove all files from the checkpoint `$IGNITE_HOME/work/cp` directory
-. Do the following on each node. Clean the
-link:link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if
-it's not located under the Ignite `work` dir:
-    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/binary_meta` directory
-    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory
-    - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the
-    - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory.
-If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
+. Do the following on each node:
+    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/binary_meta` directory.
+    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory.
+    - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if it's not located under the Ignite `work` dir.
+    - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory. If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
 . Restart the cluster
 
 *Restore On Cluster of Different Topology*
 
-Sometimes you might want to create a snapshot of an N-node cluster and use it to restore on an M-node cluster. The table
-below explains what options are supported:
-
+You may want to create a snapshot of an N-node cluster and use it to restore on an M-node cluster. The table below explains what options are supported:
 [cols="1,1",opts="header"]
 |===
 |Condition | Description
@@ -178,9 +174,59 @@ the topology and wait while the data gets rebalanced and indexes are rebuilt.
 |N > M | Unsupported.
 |===
 
+=== Automatic Snapshot Restore Procedure
+
+The automatic restore procedure allows the user to restore cache groups from a snapshot on an active cluster by using the Java API or link:tools/control-script[command line script].
+
+Currently, this procedure has several limitations, that will be resolved in future releases:
+
+* Restoring is possible only if all parts of the snapshot are present in the cluster. Each node looks for a local snapshot data in the configured snapshot path by the given snapshot name and consistent node ID.
+* The restore procedure can be applied only to cache groups created by the user.
+* Cache groups to be restored from the snapshot must not be present in the cluster. If they are present, they must be link:key-value-api/basic-cache-operations#destroying-caches[destroyed] by the user before starting this operation.
+* Concurrent restore operations are not allowed. Thus, if one operation has been started, the other can only be started after the first is completed.
+
+==== Restoring Cache Group from the Snapshot
+
+The following code snippet demonstrates how to restore an individual cache group from a snapshot.
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/Snapshots.java[tags=restore, indent=0]
+----
+
+tab:CLI[]
+[source,shell]
+----
+# Restore cache group "snapshot-cache" from the snapshot "snapshot_02092020".
+control.(sh|bat) --snapshot restore snapshot_02092020 --start snapshot-cache
+----
+--
+
+==== Using CLI to control restore operation
+The `control.sh|bat` script provides the ability to start, stop, and get the status of the restore operation.
+
+[source,shell]
+----
+# Start restoring all user-created cache groups from the snapshot "snapshot_09062021".
+control.(sh|bat) --snapshot restore snapshot_09062021 --start
+
+# Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021".
+control.(sh|bat) --snapshot restore snapshot_09062021 --start cache-group1,cache-group2
+
+# Get the status of the restore operation for "snapshot_09062021".
+control.(sh|bat) --snapshot restore snapshot_09062021 --status
+
+# Cancel the restore operation for "snapshot_09062021".
+control.(sh|bat) --snapshot restore snapshot_09062021 --cancel
+----
+
 == Consistency Guarantees
 
-All snapshots are fully consistent in terms of concurrent cluster-wide operations as well as ongoing changes with Ignite
+All snapshots are fully consistent in terms of concurrent cluster-wide operations as well as ongoing changes with Ignite.
 Persistence data, index, schema, binary metadata, marshaller and other files on nodes.
 
 The cluster-wide snapshot consistency is achieved by triggering the link:https://cwiki.apache.org/confluence/display/IGNITE/%28Partition+Map%29+Exchange+-+under+the+hood[Partition-Map-Exchange]

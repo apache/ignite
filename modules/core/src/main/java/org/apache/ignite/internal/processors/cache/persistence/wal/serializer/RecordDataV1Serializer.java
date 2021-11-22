@@ -39,11 +39,14 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -121,7 +124,9 @@ import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
@@ -406,7 +411,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case PARTITION_DESTROY:
                 return /*cacheId*/4 + /*partId*/4;
 
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)record;
 
                 return 4 + dataSize(dataRec);
@@ -562,6 +567,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case REENCRYPTION_START_RECORD:
                 return ((ReencryptionStartRecord)record).dataSize();
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                return ((IndexRenameRootPageRecord) record).dataSize();
+
+            case PARTITION_CLEARING_START_RECORD:
+                return 4 + 4 + 8;
+
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -667,12 +678,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_RECORD:
+            case DATA_RECORD_V2:
                 int entryCnt = in.readInt();
 
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readPlainDataEntry(in));
+                    entries.add(readPlainDataEntry(in, type));
 
                 res = new DataRecord(entries, 0L);
 
@@ -680,12 +692,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case ENCRYPTED_DATA_RECORD:
             case ENCRYPTED_DATA_RECORD_V2:
+            case ENCRYPTED_DATA_RECORD_V3:
                 entryCnt = in.readInt();
 
                 entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readEncryptedDataEntry(in, type == ENCRYPTED_DATA_RECORD_V2));
+                    entries.add(readEncryptedDataEntry(in, type));
 
                 res = new DataRecord(entries, 0L);
 
@@ -1264,6 +1277,20 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                res = new IndexRenameRootPageRecord(in);
+
+                break;
+
+            case PARTITION_CLEARING_START_RECORD:
+                int partId0 = in.readInt();
+                int grpId = in.readInt();
+                long clearVer = in.readLong();
+
+                res = new PartitionClearingStartRecord(partId0, grpId, clearVer);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1351,7 +1378,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case DATA_RECORD:
+            case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());
@@ -1891,6 +1918,22 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INDEX_ROOT_PAGE_RENAME_RECORD:
+                ((IndexRenameRootPageRecord)rec).writeRecord(buf);
+
+                break;
+
+            case PARTITION_CLEARING_START_RECORD:
+                PartitionClearingStartRecord partitionClearingStartRecord = (PartitionClearingStartRecord)rec;
+
+                buf.putInt(partitionClearingStartRecord.partitionId());
+
+                buf.putInt(partitionClearingStartRecord.groupId());
+
+                buf.putLong(partitionClearingStartRecord.clearVersion());
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + rec.type());
         }
@@ -1956,6 +1999,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
+
+        if (!(entry instanceof MvccDataEntry))
+            buf.put(entry.flags());
     }
 
     /**
@@ -2002,13 +2048,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param in Input to read from.
-     * @param readKeyId If {@code true} encryption key identifier will be read from {@code in}.
+     * @param recType Record type.
      * @return Read entry.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, boolean readKeyId) throws IOException, IgniteCheckedException {
+    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, RecordType recType) throws IOException, IgniteCheckedException {
         boolean needDecryption = in.readByte() == ENCRYPTED;
+
+        RecordType dataRecordType = recType == ENCRYPTED_DATA_RECORD_V3 ? DATA_RECORD_V2 : DATA_RECORD;
 
         if (needDecryption) {
             if (encSpi == null) {
@@ -2017,22 +2065,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return new EncryptedDataEntry();
             }
 
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false, readKeyId);
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false,
+                recType == ENCRYPTED_DATA_RECORD_V2 || recType == ENCRYPTED_DATA_RECORD_V3);
 
             if (clData.get1() == null)
                 return null;
 
-            return readPlainDataEntry(clData.get1());
+            return readPlainDataEntry(clData.get1(), dataRecordType);
         }
 
-        return readPlainDataEntry(in);
+        return readPlainDataEntry(in, dataRecordType);
     }
 
     /**
      * @param in Input to read from.
      * @return Read entry.
      */
-    DataEntry readPlainDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readPlainDataEntry(ByteBufferBackedDataInput in, RecordType type) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();
@@ -2061,6 +2110,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
+        byte flags = type == DATA_RECORD_V2 ? in.readByte() : (byte)0;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2083,7 +2133,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr
+                    partCntr,
+                    flags
             );
         }
         else
@@ -2099,7 +2150,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr);
+                    partCntr,
+                    flags
+            );
     }
 
     /**
@@ -2113,10 +2166,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (needEncryption(rec))
             return ENCRYPTED_RECORD_V2;
 
-        if (rec.type() != DATA_RECORD)
+        if (rec.type() != DATA_RECORD && rec.type() != DATA_RECORD_V2)
             return rec.type();
 
-        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V2 : DATA_RECORD;
+        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V3 : rec.type();
     }
 
     /**
@@ -2235,7 +2288,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8;
+            /*part cnt*/8 +
+            /*primary*/(entry instanceof MvccDataEntry ? 0 : 1);
     }
 
     /**
@@ -2268,7 +2322,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0);
+            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
         }
     }
 }

@@ -37,6 +37,7 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
     /**
      * @param creatorNodeId Creator node ID.
      * @param nodeToPing Pinged client node ID.
+     * @param res Result of the node ping.
      */
     public TcpDiscoveryClientPingResponse(UUID creatorNodeId, @Nullable UUID nodeToPing, boolean res) {
         super(creatorNodeId);

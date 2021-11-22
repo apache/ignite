@@ -63,7 +63,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private UUID id;
+    private volatile UUID id;
 
     /** Consistent ID. */
     @GridToStringInclude

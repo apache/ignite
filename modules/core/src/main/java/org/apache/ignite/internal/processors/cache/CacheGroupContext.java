@@ -598,7 +598,6 @@ public class CacheGroupContext {
                     hasOldVal,
                     null,
                     null,
-                    null,
                     keepBinary);
     }
 
@@ -640,7 +639,7 @@ public class CacheGroupContext {
     /**
      * @return Cache shared context.
      */
-    public GridCacheSharedContext shared() {
+    public GridCacheSharedContext<?, ?> shared() {
         return ctx;
     }
 
@@ -759,14 +758,7 @@ public class CacheGroupContext {
      * @return Group name if it is specified, otherwise cache name.
      */
     public String cacheOrGroupName() {
-        return cacheOrGroupName(ccfg);
-    }
-
-    /**
-     * @return Group name if it is specified, otherwise cache name.
-     */
-    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
+        return CU.cacheOrGroupName(ccfg);
     }
 
     /**
@@ -1061,17 +1053,7 @@ public class CacheGroupContext {
     public void start() throws IgniteCheckedException {
         GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
 
-        if (affCache != null)
-            aff = affCache;
-        else
-            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-                cacheOrGroupName(),
-                grpId,
-                ccfg.getAffinity(),
-                ccfg.getNodeFilter(),
-                ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
-            );
+        aff = affCache == null ? GridAffinityAssignmentCache.create(ctx.kernalContext(), ccfg.getAffinity(), ccfg) : affCache;
 
         if (ccfg.getCacheMode() != LOCAL) {
             top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
@@ -1305,12 +1287,14 @@ public class CacheGroupContext {
 
     /**
      * Removes statistics metrics registries.
+     *
+     * @param destroy Group destroy flag.
      */
-    public void removeIOStatistic() {
+    public void removeIOStatistic(boolean destroy) {
         if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName(), destroy);
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
     }
 }

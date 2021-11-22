@@ -322,6 +322,18 @@ namespace ignite
                     SP_DataChannel SyncMessage(const ReqT& req, RspT& rsp);
 
                     /**
+                     * Synchronously send message and receive response.
+                     * Modified to properly set SQL state on connection errors.
+                     *
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @return Channel that was used for request.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    SP_DataChannel SyncMessageSql(const ReqT& req, RspT& rsp);
+
+                    /**
                      * Synchronously send request message and receive response taking in account that it can be
                      * transactional.
                      *

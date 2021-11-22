@@ -381,7 +381,7 @@ public class GridReduceQueryExecutor {
 
         final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
-        final int segmentsPerIndex = qry.explain() || qry.isReplicatedOnly() ? 1 :
+        final int segmentsPerIdx = qry.explain() || qry.isReplicatedOnly() || singlePartMode ? 1 :
             mapper.findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
         final long retryTimeout = retryTimeout(timeoutMillis);
@@ -426,7 +426,7 @@ public class GridReduceQueryExecutor {
 
             try {
                 final ReduceQueryRun r = createReduceQueryRun(conn, mapQueries, nodes,
-                    pageSize, segmentsPerIndex, skipMergeTbl, qry.explain(), dataPageScanEnabled);
+                    pageSize, segmentsPerIdx, skipMergeTbl, qry.explain(), dataPageScanEnabled);
 
                 runs.put(qryReqId, r);
 

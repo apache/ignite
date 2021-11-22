@@ -35,7 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,6 +59,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -155,14 +156,6 @@ public class VisorTaskUtils {
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
             return Long.compare(f2.getLastModified(), f1.getLastModified());
-        }
-    };
-
-    /** Debug date format. */
-    private static final ThreadLocal<SimpleDateFormat> DEBUG_DATE_FMT = new ThreadLocal<SimpleDateFormat>() {
-        /** {@inheritDoc} */
-        @Override protected SimpleDateFormat initialValue() {
-            return new SimpleDateFormat("HH:mm:ss,SSS");
         }
     };
 
@@ -806,8 +799,12 @@ public class VisorTaskUtils {
                 log.warning(msg);
         }
         else
-            X.println(String.format("[%s][%s]%s",
-                DEBUG_DATE_FMT.get().format(time), Thread.currentThread().getName(), msg));
+            X.println(String.format(
+                "[%s][%s]%s",
+                IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(time)),
+                Thread.currentThread().getName(),
+                msg
+            ));
     }
 
     /**

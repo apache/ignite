@@ -107,6 +107,11 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(ioMutex);
 
+                InternalSyncMessageUnguarded(mem, timeout);
+            }
+
+            void DataChannel::InternalSyncMessageUnguarded(interop::InteropUnpooledMemory& mem, int32_t timeout)
+            {
                 bool success = Send(mem.Data(), mem.Length(), timeout);
 
                 if (!success)
@@ -115,20 +120,20 @@ namespace ignite
 
                     if (!success)
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Can not send message to remote host: timeout");
+                                          "Can not send message to remote host: timeout");
 
                     success = Send(mem.Data(), mem.Length(), timeout);
 
                     if (!success)
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Can not send message to remote host: timeout");
+                                          "Can not send message to remote host: timeout");
                 }
 
                 success = Receive(mem, timeout);
 
                 if (!success)
                     throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                        "Can not receive message response from the remote host: timeout");
+                                      "Can not receive message response from the remote host: timeout");
             }
 
             bool DataChannel::Send(const int8_t* data, size_t len, int32_t timeout)

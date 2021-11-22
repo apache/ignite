@@ -425,6 +425,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SCHEMAS",
                 "SYS.NODE_METRICS",
                 "SYS.BASELINE_NODES",
+                "SYS.BASELINE_NODE_ATTRIBUTES",
                 "SYS.INDEXES",
                 "SYS.LOCAL_CACHE_GROUPS_IO",
                 "SYS.SQL_QUERIES",
@@ -452,7 +453,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DS_ATOMICSTAMPED",
                 "SYS.DS_COUNTDOWNLATCHES",
                 "SYS.DS_SEMAPHORES",
-                "SYS.DS_REENTRANTLOCKS"
+                "SYS.DS_REENTRANTLOCKS",
+                "SYS.STATISTICS_LOCAL_DATA",
+                "SYS.STATISTICS_PARTITION_DATA",
+                "SYS.STATISTICS_CONFIGURATION"
             ))
         );
     }
@@ -653,6 +657,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             expectedCols = new HashSet<>(Arrays.asList(
                 "SYS.BASELINE_NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.BASELINE_NODES.ONLINE.null.1",
+                "SYS.BASELINE_NODE_ATTRIBUTES.NODE_CONSISTENT_ID.null.2147483647",
+                "SYS.BASELINE_NODE_ATTRIBUTES.NAME.null.2147483647",
+                "SYS.BASELINE_NODE_ATTRIBUTES.VALUE.null.2147483647",
                 "SYS.CACHES.CACHE_GROUP_ID.null.10",
                 "SYS.CACHES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.CACHES.CACHE_ID.null.10",
@@ -1074,7 +1081,41 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DS_SETS.ID.null.2147483647",
                 "SYS.DS_SETS.NAME.null.2147483647",
                 "SYS.DS_SETS.REMOVED.null.1",
-                "SYS.DS_SETS.SIZE.null.10"
+                "SYS.DS_SETS.SIZE.null.10",
+                "SYS.STATISTICS_LOCAL_DATA.LAST_UPDATE_TIME.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.NAME.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.TOTAL.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.VERSION.null.19",
+                "SYS.STATISTICS_CONFIGURATION.TYPE.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.NAME.null.2147483647",
+                "SYS.STATISTICS_CONFIGURATION.COLUMN.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.ROWS_COUNT.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.TYPE.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.DISTINCT.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.SIZE.null.10",
+                "SYS.STATISTICS_PARTITION_DATA.LAST_UPDATE_TIME.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MAX_PARTITION_OBSOLESCENCE_PERCENT.null.3",
+                "SYS.STATISTICS_LOCAL_DATA.VERSION.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.COLUMN.null.2147483647",
+                "SYS.STATISTICS_CONFIGURATION.SCHEMA.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.TOTAL.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.PARTITION.null.10",
+                "SYS.STATISTICS_PARTITION_DATA.SCHEMA.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.ROWS_COUNT.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.SIZE.null.10",
+                "SYS.STATISTICS_PARTITION_DATA.UPDATE_COUNTER.null.19",
+                "SYS.STATISTICS_CONFIGURATION.NAME.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.DISTINCT.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.NULLS.null.19",
+                "SYS.STATISTICS_CONFIGURATION.VERSION.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_SIZE.null.10",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_DISTINCT.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_NULLS.null.19",
+                "SYS.STATISTICS_CONFIGURATION.MANUAL_TOTAL.null.19",
+                "SYS.STATISTICS_LOCAL_DATA.TYPE.null.2147483647",
+                "SYS.STATISTICS_PARTITION_DATA.NULLS.null.19",
+                "SYS.STATISTICS_PARTITION_DATA.COLUMN.null.2147483647",
+                "SYS.STATISTICS_LOCAL_DATA.SCHEMA.null.2147483647"
                 ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);

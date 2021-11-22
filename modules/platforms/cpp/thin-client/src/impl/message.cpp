@@ -42,7 +42,10 @@ namespace ignite
                     FAILURE = 1,
 
                     /** Affinity topology change flag. */
-                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+
+                    /** Server notification flag. */
+                    NOTIFICATION = 1 << 2
                 };
             };
 
@@ -205,8 +208,11 @@ namespace ignite
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());
 
-                // Affinity Key Field name.
-                writer.WriteNull();
+                const std::string& affFieldName = snapshot.GetAffinityFieldName();
+                if (affFieldName.empty())
+                    writer.WriteNull();
+                else
+                    writer.WriteString(affFieldName);
 
                 const binary::Snap::FieldMap& fields = snapshot.GetFieldMap();
 
@@ -233,11 +239,10 @@ namespace ignite
                 std::string typeName;
                 reader.ReadString(typeName);
 
-                // Unused for now.
-                std::string affKeyFieldNameUnused;
-                reader.ReadString(affKeyFieldNameUnused);
+                std::string affKeyFieldName;
+                reader.ReadString(affKeyFieldName);
 
-                snapshot = binary::SPSnap(new binary::Snap(typeName, typeId));
+                snapshot = binary::SPSnap(new binary::Snap(typeName, affKeyFieldName, typeId));
 
                 int32_t fieldsNum = reader.ReadInt32();
 
@@ -411,6 +416,50 @@ namespace ignite
             void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
             {
                 cursorPage.Get()->Read(reader);
+            }
+
+            void ComputeTaskExecuteRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                // To be changed when Cluster API is implemented.
+                int32_t nodesNum = 0;
+
+                writer.WriteInt32(nodesNum);
+                writer.WriteInt8(flags);
+                writer.WriteInt64(timeout);
+                writer.WriteString(taskName);
+                arg.Write(writer);
+            }
+
+            void ComputeTaskExecuteResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
+            {
+                taskId = reader.ReadInt64();
+            }
+
+            void ComputeTaskFinishedNotification::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                int16_t flags = reader.ReadInt16();
+                if (!(flags & Flag::NOTIFICATION))
+                {
+                    IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Was expecting notification but got "
+                        "different kind of message", "flags", flags)
+                }
+
+                int16_t opCode = reader.ReadInt16();
+                if (opCode != RequestType::COMPUTE_TASK_FINISHED)
+                {
+                    IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_GENERIC, "Unexpected notification type",
+                        "expected", (int)RequestType::COMPUTE_TASK_FINISHED, "actual", opCode)
+                }
+
+                if (flags & Flag::FAILURE)
+                {
+                    status = reader.ReadInt32();
+                    reader.ReadString(errorMessage);
+                }
+                else
+                {
+                    result.Read(reader);
+                }
             }
         }
     }

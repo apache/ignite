@@ -158,7 +158,7 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
      * no queries are executed at the moment; {@code false} otherwise.
      */
     private boolean queryPoolIsEmpty(IgniteEx node) {
-        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().getQueryExecutorService();
+        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().pools().getQueryExecutorService();
 
         return qryPool.getQueue().isEmpty() && qryPool.getActiveCount() == 0;
     }

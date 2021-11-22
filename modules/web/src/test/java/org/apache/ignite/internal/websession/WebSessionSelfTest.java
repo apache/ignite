@@ -131,6 +131,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         testImplicitlyModification("ignite-webapp-config.xml");
     }
 
+    /** */
     @Test
     public void testSessionCookie() throws Exception {
         testSessionCookie("/modules/core/src/test/config/websession/example-cache.xml");

@@ -34,24 +34,30 @@ set(SOURCES src/impl/data_channel.cpp
         src/impl/message.cpp
         src/impl/cache/cache_client_proxy.cpp
         src/impl/cache/cache_client_impl.cpp
+        src/impl/compute/compute_client_impl.cpp
         src/impl/transactions/transaction_impl.cpp
         src/impl/transactions/transactions_impl.cpp
         src/impl/transactions/transactions_proxy.cpp
+        src/compute/compute_client.cpp
         src/ignite_client.cpp
-		src/cache/query/query_fields_cursor.cpp
-		src/cache/query/query_fields_row.cpp)
+        src/cache/query/query_fields_cursor.cpp
+        src/cache/query/query_fields_row.cpp)
 
 add_library(${TARGET} SHARED ${SOURCES})
 
 set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
 if (WIN32)
-	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.thin-client")
+    set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.thin-client")
 endif()
 
 target_link_libraries(${TARGET} ignite-binary ignite-network)
 
 target_include_directories(${TARGET} INTERFACE include)
 
-install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
+install(TARGETS ${TARGET} 
+    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")

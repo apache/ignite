@@ -236,9 +236,14 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      *
      */
     private enum CustomEnum {
-        /** */ONE(1),
-        /** */TWO(2),
-        /** */THREE(3);
+        /** */
+        ONE(1),
+
+        /** */
+        TWO(2),
+
+        /** */
+        THREE(3);
 
         /** Value. */
         private final Object val;

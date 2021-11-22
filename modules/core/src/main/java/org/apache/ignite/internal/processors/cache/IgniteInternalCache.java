@@ -1562,14 +1562,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> rebalance();
 
     /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Client ID.
-     * @return Internal projection.
-     */
-    public IgniteInternalCache<K, V> forSubjectId(UUID subjId);
-
-    /**
      * Store DR data.
      *
      * @param drMap DR map.

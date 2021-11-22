@@ -62,4 +62,13 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when restore operation finished.
      */
     public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> cacheGroupNames);
+
+    /**
+     * Cancel snapshot restore operation.
+     *
+     * @param name Snapshot name.
+     * @return Future that will be finished when the process is complete on all nodes. The result of this
+     * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
 }

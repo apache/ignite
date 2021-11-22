@@ -86,6 +86,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.calculateSegment;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
@@ -216,29 +217,34 @@ public class GridMapQueryExecutor {
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
         boolean treatReplicatedAsPartitioned = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED_AS_PARTITIONED);
 
-        Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
+        try {
+            Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
-        final List<Integer> cacheIds = req.caches();
+            final List<Integer> cacheIds = req.caches();
 
-        int segments = explain || replicated || F.isEmpty(cacheIds) ? 1 :
-            CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
+            final boolean singlePart = parts != null && parts.length == 1;
+            final int parallelism = explain || replicated || F.isEmpty(cacheIds) ? 1 :
+                CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
-        final Object[] params = req.parameters();
+            final int segments = explain || replicated || singlePart ? 1 : parallelism;
+            final int singleSegment = singlePart ? calculateSegment(parallelism, parts[0]) : 0;
 
-        final int timeout = req.timeout() > 0 || req.explicitTimeout()
-            ? req.timeout()
-            : (int)h2.distributedConfiguration().defaultQueryTimeout();
+            final Object[] params = req.parameters();
 
-        for (int i = 1; i < segments; i++) {
-            assert !F.isEmpty(cacheIds);
+            final int timeout = req.timeout() > 0 || req.explicitTimeout()
+                ? req.timeout()
+                : (int)h2.distributedConfiguration().defaultQueryTimeout();
 
-            final int segment = i;
+            for (int i = 1; i < segments; i++) {
+                assert !F.isEmpty(cacheIds);
 
-            Span span = MTC.span();
+                final int segment = i;
 
-            ctx.closure().callLocal(
-                (GridPlainCallable<Void>)() -> {
-                    try (TraceSurroundings ignored = MTC.supportContinual(span)) {
+                Span span = MTC.span();
+
+                ctx.closure().callLocal(
+                    (GridPlainCallable<Void>)() -> {
+                        try (TraceSurroundings ignored = MTC.supportContinual(span)) {
                             onQueryRequest0(node,
                                 req.requestId(),
                                 segment,
@@ -263,29 +269,33 @@ public class GridMapQueryExecutor {
                             return null;
                         }
                     },
-                QUERY_POOL);
-        }
+                    QUERY_POOL);
+            }
 
-        onQueryRequest0(node,
-            req.requestId(),
-            0,
-            req.schemaName(),
-            req.queries(),
-            cacheIds,
-            req.topologyVersion(),
-            partsMap,
-            parts,
-            req.pageSize(),
-            distributedJoins,
-            enforceJoinOrder,
-            replicated,
-            timeout,
-            params,
-            lazy,
-            req.mvccSnapshot(),
-            dataPageScanEnabled,
-            treatReplicatedAsPartitioned
-        );
+            onQueryRequest0(node,
+                req.requestId(),
+                singleSegment,
+                req.schemaName(),
+                req.queries(),
+                cacheIds,
+                req.topologyVersion(),
+                partsMap,
+                parts,
+                req.pageSize(),
+                distributedJoins,
+                enforceJoinOrder,
+                replicated,
+                timeout,
+                params,
+                lazy,
+                req.mvccSnapshot(),
+                dataPageScanEnabled,
+                treatReplicatedAsPartitioned
+            );
+        }
+        catch (Throwable e) {
+            sendError(node, req.requestId(), e);
+        }
     }
 
     /**

@@ -1098,6 +1098,7 @@ class OptimizedClassDescriptor {
         /** Fields. */
         private final List<FieldInfo> fields;
 
+        /** */
         private final Map<String, Integer> nameToIndex;
 
         /**

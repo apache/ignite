@@ -180,6 +180,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
     }
 
+    /** */
     @Test
     public void testUseStringSerVer2() throws Exception {
         String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);

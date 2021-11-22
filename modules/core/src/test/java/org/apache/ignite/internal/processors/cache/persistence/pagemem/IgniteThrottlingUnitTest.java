@@ -121,6 +121,29 @@ public class IgniteThrottlingUnitTest {
     }
 
     /**
+     * Test that time to park is calculated according to both cpSpeed and mark dirty speed (in case if
+     * checkpoint buffer is not full).
+     */
+    @Test
+    public void testCorrectTimeToPark() {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+
+        int markDirtySpeed = 34422;
+        int cpWriteSpeed = 19416;
+        long time = throttle.getParkTime(0.04,
+                ((903150 + 227217) / 2),
+                903150,
+                1,
+                markDirtySpeed,
+                cpWriteSpeed);
+
+        long mdSpeed = TimeUnit.SECONDS.toNanos(1) / markDirtySpeed;
+        long cpSpeed = TimeUnit.SECONDS.toNanos(1) / cpWriteSpeed;
+
+        assertEquals((cpSpeed - mdSpeed), time);
+    }
+
+    /**
      * @throws InterruptedException if interrupted.
      */
     @Test

@@ -132,9 +132,9 @@ include::{sourceCodeFile}[tag=key-value-operations,indent=0]
 -------------------------------------------------------------------------------
 
 === Executing Scan Queries
-Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a normal link:key-value-api/using-scan-queries[scan query].
+Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a regular link:key-value-api/using-cache-queries[scan query].
 
-The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If you don't provide any predicate, the query returns all cache entries.
+The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If there is no predicate provided, the query returns all cache entries.
 
 NOTE: The classes of the predicates must be available on the server nodes of the cluster.
 
@@ -196,6 +196,29 @@ include::{sourceCodeFile}[tag=binary-example,indent=0]
 -------------------------------------------------------------------------------
 
 Refer to the link:key-value-api/binary-objects[Working with Binary Objects] page for detailed information.
+
+=== Cache Entry Listening
+
+When a cache is modified (an entry is inserted, updated, deleted, or expired), an event can be sent to notify the client.
+To listen to these events, you can use one of the following approaches:
+
+* Continuous queries
+* Cache `registerCacheEntryListener` methods
+
+Both approaches require a local listener to be provided, which is triggered on every cache modification event.
+
+For both approaches you can also specify a remote filter to narrow down the range of entries that are monitored for updates. This filter is executed for each updated entry on the server-side and evaluates whether the event should be propagated to the client's local listener.
+
+NOTE: The classes of the remote filter factory must be available on the server nodes of the cluster.
+
+Refer to the link:key-value-api/continuous-queries[thick client continuous queries] page for more information about continuous queries.
+
+In case of connection to server failure, a thin client cannot silently reconnect with guarantees that no events are lost, so continuous queries and registered cache event listeners are closed after the server disconnection. There are also several methods with the additional parameter: disconnect listener. This listener allows to catch server disconnection events and react appropriately.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=continuous-queries,indent=0]
+-------------------------------------------------------------------------------
 
 == Executing SQL Statements
 

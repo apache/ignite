@@ -1111,7 +1111,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            ctx.getSystemExecutorService().execute(this);
+            ctx.pools().getSystemExecutorService().execute(this);
         }
     }
 }

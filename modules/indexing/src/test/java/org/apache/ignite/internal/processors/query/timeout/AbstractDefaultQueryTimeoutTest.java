@@ -32,24 +32,16 @@ import org.junit.Test;
  *
  */
 public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCommonTest {
-    /** Update query. */
-    private final boolean updateQuery;
-
-    /** */
-    protected AbstractDefaultQueryTimeoutTest() {
-        this(false);
-    }
-
-    /** */
-    protected AbstractDefaultQueryTimeoutTest(boolean updateQuery) {
-        this.updateQuery = updateQuery;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /** */
+    protected boolean updateQuery() {
+        return false;
     }
 
     /**
@@ -216,7 +208,7 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
 
         helper.createCache(ign);
 
-        String qryText = updateQuery ? helper.buildTimedUpdateQuery() : helper.buildTimedQuery();
+        String qryText = updateQuery() ? helper.buildTimedUpdateQuery() : helper.buildTimedQuery();
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(() -> {
             executeQuery(qryText, 500);
@@ -261,7 +253,7 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
         helper.createCache(grid(0));
 
         Callable<Void> c = () -> {
-            String qryText = updateQuery ? helper.buildTimedUpdateQuery() : helper.buildTimedQuery();
+            String qryText = updateQuery() ? helper.buildTimedUpdateQuery() : helper.buildTimedQuery();
 
             if (explicitTimeout != null)
                 executeQuery(qryText, explicitTimeout);

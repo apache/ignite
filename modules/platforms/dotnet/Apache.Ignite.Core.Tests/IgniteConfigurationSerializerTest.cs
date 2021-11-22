@@ -344,6 +344,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(17, ds.WalSegmentSize);
             Assert.AreEqual("wal-store", ds.WalPath);
             Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
+            Assert.AreEqual(TimeSpan.FromSeconds(19), ds.WalForceArchiveTimeout);
             Assert.IsTrue(ds.WriteThrottlingEnabled);
             Assert.AreEqual(DiskPageCompression.Zstd, ds.WalPageCompression);
 
@@ -1033,6 +1034,7 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
+                    WalForceArchiveTimeout = TimeSpan.FromSeconds(20),
                     WalPageCompression = DiskPageCompression.Lz4,
                     WalPageCompressionLevel = 10,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration

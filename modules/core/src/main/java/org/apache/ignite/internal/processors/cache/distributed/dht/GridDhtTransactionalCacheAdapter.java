@@ -103,6 +103,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -338,7 +339,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.isInvalidate(),
                                     req.timeout(),
                                     req.txSize(),
-                                    req.subjectId(),
+                                    securitySubjectId(ctx),
                                     req.taskNameHash(),
                                     !req.skipStore() && req.storeUsed(),
                                     req.txLabel());
@@ -727,7 +728,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.subjectId(),
                 req.taskNameHash(),
                 req.mvccSnapshot());
         }
@@ -1123,7 +1123,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             false,
                             req.txSize(),
                             null,
-                            req.subjectId(),
+                            securitySubjectId(ctx),
                             req.taskNameHash(),
                             req.txLabel(),
                             null);
@@ -1452,7 +1452,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         /*read-through*/false,
                                         /*update-metrics*/true,
                                         /*event notification*/req.returnValue(i),
-                                        CU.subjectId(tx, ctx.shared()),
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
@@ -1979,7 +1978,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.subjectId(),
                 req.taskNameHash(),
                 req.mvccSnapshot());
         }
@@ -2044,7 +2042,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.subjectId(),
                 req.taskNameHash(),
                 req.mvccSnapshot());
         }
@@ -2099,7 +2096,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param topVer Topology version.
      * @param nearThreadId Near node thread id.
      * @param timeout Timeout.
-     * @param txSubjectId Transaction subject id.
      * @param txTaskNameHash Transaction task name hash.
      * @param snapshot Mvcc snapsht.
      * @return Transaction.
@@ -2113,7 +2109,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         AffinityTopologyVersion topVer,
         long nearThreadId,
         long timeout,
-        UUID txSubjectId,
         int txTaskNameHash,
         MvccSnapshot snapshot
     ) throws IgniteException, IgniteCheckedException {
@@ -2184,7 +2179,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     -1,
                     null,
-                    txSubjectId,
+                    securitySubjectId(ctx),
                     txTaskNameHash,
                     null,
                     null);
@@ -2293,7 +2288,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     req0.timeout(),
                     -1,
-                    req0.subjectId(),
+                    securitySubjectId(ctx),
                     req0.taskNameHash(),
                     false,
                     null);

@@ -114,7 +114,7 @@ class GridAffinityUtils {
             U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.
-        ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()), src);
+        ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()).get1(), src);
 
         return src;
     }

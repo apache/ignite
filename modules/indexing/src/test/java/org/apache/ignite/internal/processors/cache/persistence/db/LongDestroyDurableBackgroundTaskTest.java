@@ -49,17 +49,21 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.InlineIndexTreeFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.NoopRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandlerFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -71,8 +75,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendi
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
@@ -89,8 +93,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Tests case when long index deletion operation happens.
@@ -124,20 +134,24 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     private CountDownLatch idxsRebuildLatch;
 
     /** */
-    private final LogListener pendingDelFinishedLsnr =
-        new CallbackExecutorLogListener(".*?Execution of durable background task completed.*", () -> pendingDelLatch.countDown());
+    private final LogListener pendingDelFinishedLsnr = new CallbackExecutorLogListener(
+        ".*?Execution of durable background task completed.*",
+        () -> pendingDelLatch.countDown()
+    );
 
     /** */
-    private final LogListener idxsRebuildFinishedLsnr =
-        new CallbackExecutorLogListener("Indexes rebuilding completed for all caches.", () -> idxsRebuildLatch.countDown());
+    private final LogListener idxsRebuildFinishedLsnr = new CallbackExecutorLogListener(
+        "Indexes rebuilding completed for all caches.",
+        () -> idxsRebuildLatch.countDown()
+    );
 
     /** */
-    private final LogListener taskLifecycleListener =
+    private final LogListener taskLifecycleLsnr =
         new MessageOrderLogListener(
-            ".*?Executing durable background task: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
-            ".*?Could not execute durable background task: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
-            ".*?Executing durable background task: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
-            ".*?Execution of durable background task completed: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*"
+            ".*?Executing durable background task: drop-sql-index-SQL_PUBLIC_T-" + IDX_NAME + "-.*",
+            ".*?Could not execute durable background task: drop-sql-index-SQL_PUBLIC_T-" + IDX_NAME + "-.*",
+            ".*?Executing durable background task: drop-sql-index-SQL_PUBLIC_T-" + IDX_NAME + "-.*",
+            ".*?Execution of durable background task completed: drop-sql-index-SQL_PUBLIC_T-" + IDX_NAME + "-.*"
         );
 
     /**
@@ -153,14 +167,14 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         blockedSysCriticalThreadLsnr,
         pendingDelFinishedLsnr,
         idxsRebuildFinishedLsnr,
-        taskLifecycleListener
+        taskLifecycleLsnr
     );
 
     /** */
-    private InlineIndexFactory regularIdxFactory;
-
-    /** */
     private DurableBackgroundTaskTestListener durableBackgroundTaskTestLsnr;
+
+    /** Original {@link DurableBackgroundCleanupIndexTreeTaskV2#idxTreeFactory}. */
+    private InlineIndexTreeFactory originalFactory;
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -184,9 +198,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             .setCacheConfiguration(
                 new CacheConfiguration(DEFAULT_CACHE_NAME)
                     .setBackups(1)
-                    .setSqlSchema("PUBLIC"),
+                    .setSqlSchema(DFLT_SCHEMA),
                 new CacheConfiguration<Integer, Integer>("TEST")
-                    .setSqlSchema("PUBLIC")
+                    .setSqlSchema(DFLT_SCHEMA)
                     .setBackups(1)
                     .setDataRegionName("dr1")
             )
@@ -199,27 +213,27 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        regularIdxFactory = IgniteH2Indexing.idxFactory;
-
-        IgniteH2Indexing.idxFactory = new InlineIndexFactoryTest();
-
         blockedSysCriticalThreadLsnr.reset();
 
         pendingDelLatch = new CountDownLatch(1);
         idxsRebuildLatch = new CountDownLatch(1);
+
+        originalFactory = idxTreeFactory;
+        idxTreeFactory = new InlineIndexTreeFactoryEx();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         blockedSysCriticalThreadLsnr.reset();
 
-        IgniteH2Indexing.idxFactory = regularIdxFactory;
-
         stopAllGrids();
 
         cleanPersistenceDir();
 
         durableBackgroundTaskTestLsnr = null;
+
+        idxTreeFactory = originalFactory;
+        originalFactory = null;
 
         super.afterTest();
     }
@@ -525,7 +539,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                     .addCheckpointListener(durableBackgroundTaskTestLsnr);
         }
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
 
@@ -673,7 +687,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      */
     @Test
     public void testDestroyTaskLifecycle() throws Exception {
-        taskLifecycleListener.reset();
+        taskLifecycleLsnr.reset();
 
         IgniteEx ignite = prepareAndPopulateCluster(1, false, false);
 
@@ -681,9 +695,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         checkSelectAndPlan(cache, false);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(INACTIVE);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         ignite.cache(DEFAULT_CACHE_NAME).indexReadyFuture().get();
 
@@ -697,7 +711,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
 
-        assertTrue(taskLifecycleListener.check());
+        assertTrue(taskLifecycleLsnr.check());
     }
 
     /**
@@ -709,13 +723,15 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     public void testRemoveIndexesOnTableDrop() throws Exception {
         IgniteEx ignite = startGrids(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        query(cache, "create table t1 (id integer primary key, p integer, f integer) with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
+        query(cache, "create table t1 (id integer primary key, p integer, f integer) " +
+            "with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
 
-        query(cache, "create table t2 (id integer primary key, p integer, f integer) with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
+        query(cache, "create table t2 (id integer primary key, p integer, f integer) " +
+            "with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
 
         query(cache, "create index t2_idx on t2 (p)");
 
@@ -723,11 +739,11 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         forceCheckpoint();
 
-        CountDownLatch inxDeleteInAsyncTaskLatch = new CountDownLatch(1);
+        CountDownLatch inxDelInAsyncTaskLatch = new CountDownLatch(1);
 
         LogListener lsnr = new CallbackExecutorLogListener(
-            ".*?Execution of durable background task completed: DROP_SQL_INDEX-PUBLIC.T2_IDX-.*",
-            () -> inxDeleteInAsyncTaskLatch.countDown()
+            ".*?Execution of durable background task completed: drop-sql-index-SQL_PUBLIC_T2-T2_IDX-.*",
+            inxDelInAsyncTaskLatch::countDown
         );
 
         testLog.registerListener(lsnr);
@@ -735,8 +751,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         ignite.destroyCache("SQL_PUBLIC_T2");
 
         awaitLatch(
-            inxDeleteInAsyncTaskLatch,
-            "Failed to await for index deletion in async task (either index failed to delete in 1 minute or async task not started)"
+            inxDelInAsyncTaskLatch,
+            "Failed to await for index deletion in async task " +
+                "(either index failed to delete in 1 minute or async task not started)"
         );
     }
 
@@ -758,28 +775,36 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         assertTrue(durableBackgroundTaskTestLsnr.check());
     }
 
-    /** */
-    private class InlineIndexFactoryTest extends InlineIndexFactory {
-        /** */
-        @Override protected InlineIndexTree createIndexSegment(GridCacheContext<?, ?> cctx, SortedIndexDefinition def,
-            RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender, int segmentNum) throws Exception {
-            return new InlineIndexTreeTest(
-                def,
-                cctx,
-                def.treeName(),
-                cctx.offheap(),
-                cctx.offheap().reuseListForIndex(def.treeName()),
-                cctx.dataRegion().pageMemory(),
-                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
-                rootPage.pageId().pageId(),
-                rootPage.isAllocated(),
-                def.inlineSize(),
-                def.keyTypeSettings(),
-                def.idxRowCache(),
-                stats,
-                def.rowHandlerFactory(),
-                recommender);
-        }
+    /**
+     * Checking the converting of the old problem into the new one.
+     */
+    @Test
+    public void testConvertOldTaskToNew() {
+        String grpName = "grpTest";
+        String cacheName = "cacheTest";
+        String treeName = "treeTest";
+        String idxName = "idxTest";
+
+        List<Long> pages = F.asList(100L);
+
+        DurableBackgroundCleanupIndexTreeTask oldTask = new DurableBackgroundCleanupIndexTreeTask(
+            pages,
+            emptyList(),
+            grpName,
+            cacheName,
+            new IndexName(cacheName, "schemaTest", "tableTest", idxName),
+            treeName
+        );
+
+        DurableBackgroundTask convertedTask = oldTask.convertAfterRestoreIfNeeded();
+        assertTrue(convertedTask instanceof DurableBackgroundCleanupIndexTreeTaskV2);
+
+        assertEquals(grpName, getFieldValue(convertedTask, "grpName"));
+        assertEquals(cacheName, getFieldValue(convertedTask, "cacheName"));
+        assertEquals(treeName, getFieldValue(convertedTask, "oldTreeName"));
+        assertNotNull(getFieldValue(convertedTask, "newTreeName"));
+        assertEquals(idxName, getFieldValue(convertedTask, "idxName"));
+        assertEquals(pages.size(), (int)getFieldValue(convertedTask, "segments"));
     }
 
     /** */
@@ -787,7 +812,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         /** */
         public InlineIndexTreeTest(
             SortedIndexDefinition def,
-            GridCacheContext<?, ?> cctx,
+            CacheGroupContext grpCtx,
             String treeName,
             IgniteCacheOffheapManager offheap,
             ReuseList reuseList,
@@ -796,6 +821,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             long metaPageId,
             boolean initNew,
             int configuredInlineSize,
+            int maxInlineSize,
             IndexKeyTypeSettings keyTypeSettings,
             IndexRowCache rowCache,
             IoStatisticsHolder stats,
@@ -804,7 +830,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         ) throws IgniteCheckedException {
             super(
                 def,
-                cctx,
+                grpCtx,
                 treeName,
                 offheap,
                 reuseList,
@@ -813,6 +839,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 metaPageId,
                 initNew,
                 configuredInlineSize,
+                maxInlineSize,
                 keyTypeSettings,
                 rowCache,
                 stats,
@@ -906,6 +933,37 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public void beforeCheckpointBegin(Context ctx) {
             /* No op. */
+        }
+    }
+
+    /**
+     * Extension {@link InlineIndexTreeFactory} for test.
+     */
+    private class InlineIndexTreeFactoryEx extends InlineIndexTreeFactory {
+        /** {@inheritDoc} */
+        @Override protected InlineIndexTree create(
+            CacheGroupContext grpCtx,
+            RootPage rootPage,
+            String treeName
+        ) throws IgniteCheckedException {
+            return new InlineIndexTreeTest(
+                null,
+                grpCtx,
+                treeName,
+                grpCtx.offheap(),
+                grpCtx.offheap().reuseListForIndex(treeName),
+                grpCtx.dataRegion().pageMemory(),
+                PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+                rootPage.pageId().pageId(),
+                false,
+                0,
+                0,
+                new IndexKeyTypeSettings(),
+                null,
+                null,
+                new NoopRowHandlerFactory(),
+                null
+            );
         }
     }
 }

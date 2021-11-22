@@ -24,7 +24,6 @@
 #include <ignite/ignite_predicate.h>
 
 #include <ignite/impl/interop/interop_target.h>
-#include <ignite/impl/compute/compute_impl.h>
 #include <ignite/impl/cluster/cluster_node_impl.h>
 
 namespace ignite
@@ -53,7 +52,6 @@ namespace ignite
             class IGNITE_FRIEND_EXPORT ClusterGroupImpl : private interop::InteropTarget
             {
                 typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
-                typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
                 typedef common::concurrent::SharedPointer<std::vector<ignite::cluster::ClusterNode> > SP_ClusterNodes;
                 typedef common::concurrent::SharedPointer<ClusterNodePredicateHolder> SP_PredicateHolder;
             public:
@@ -266,20 +264,6 @@ namespace ignite
                 std::vector<ignite::cluster::ClusterNode> GetNodes();
 
                 /**
-                 * Get compute instance over this cluster group.
-                 *
-                 * @return Pointer to compute instance.
-                 */
-                SP_ComputeImpl GetCompute();
-
-                /**
-                 * Get compute instance over specified cluster group.
-                 *
-                 * @return Pointer to compute instance.
-                 */
-                SP_ComputeImpl GetCompute(ignite::cluster::ClusterGroup grp);
-
-                /**
                  * Check if the Ignite grid is active.
                  *
                  * @return True if grid is active and false otherwise.
@@ -348,6 +332,13 @@ namespace ignite
                 IgnitePredicate<ignite::cluster::ClusterNode>* GetPredicate();
 
                 /**
+                 * Get predicate that defines a subset of nodes for this cluster group.
+                 *
+                 * @return Pointer to predicate.
+                 */
+                const IgnitePredicate<ignite::cluster::ClusterNode>* GetPredicate() const;
+
+                /**
                  * Get a topology by version.
                  *
                  * @param version Topology version.
@@ -361,6 +352,13 @@ namespace ignite
                  * @return Current topology version.
                  */
                 int64_t GetTopologyVersion();
+
+                /**
+                 * Get a compute processor for the cluster group.
+                 *
+                 * @return Compute processor instance reference.
+                 */
+                jobject GetComputeProcessor();
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl);
@@ -391,13 +389,6 @@ namespace ignite
                 SP_ClusterGroupImpl FromTarget(jobject javaRef);
 
                 /**
-                 * Get instance of compute internally.
-                 *
-                 * @return Pointer to compute.
-                 */
-                SP_ComputeImpl InternalGetCompute();
-
-                /**
                  * Read cluster nodes from stream.
                  *
                  * @return Pointer to container of cluster nodes.
@@ -414,12 +405,12 @@ namespace ignite
                 /**
                  * Get container of refreshed cluster nodes over this cluster group.
                  *
-                 * @return Instance of compute.
+                 * @return Cluster nodes.
                  */
                 std::vector<ignite::cluster::ClusterNode> RefreshNodes();
 
-                /** Compute for the cluster group. */
-                SP_ComputeImpl computeImpl;
+                /** Cluster node predicate. */
+                SP_PredicateHolder predHolder;
 
                 /** Cluster nodes. */
                 SP_ClusterNodes nodes;
@@ -429,9 +420,6 @@ namespace ignite
 
                 /** Cluster nodes top version. */
                 int64_t topVer;
-
-                /** Cluster node predicate. */
-                SP_PredicateHolder predHolder;
             };
         }
     }

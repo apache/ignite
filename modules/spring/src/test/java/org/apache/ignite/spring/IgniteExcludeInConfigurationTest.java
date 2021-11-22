@@ -34,6 +34,7 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
  * Checks excluding properties, beans with not existing classes in spring.
  */
 public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
+    /** */
     private URL cfgLocation = U.resolveIgniteUrl(
         "modules/spring/src/test/java/org/apache/ignite/spring/sprint-exclude.xml");
 

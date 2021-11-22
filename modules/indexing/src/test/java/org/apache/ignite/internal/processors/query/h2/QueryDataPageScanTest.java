@@ -188,6 +188,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void doTestConcurrentUpdates(boolean enableMvcc) throws Exception {
         final String cacheName = "test_updates";
 
@@ -340,12 +341,14 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         doTestLazySql(serverCache, keysCnt);
     }
 
+    /** */
     private void doTestLazySql(IgniteCache<Long, TestData> cache, int keysCnt) {
         checkLazySql(cache, false, keysCnt);
         checkLazySql(cache, true, keysCnt);
         checkLazySql(cache, null, keysCnt);
     }
 
+    /** */
     private void checkLazySql(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
         CacheDataTree.isLastFindWithDataPageScan();
 
@@ -388,6 +391,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void doTestDml(IgniteCache<Long, TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
@@ -406,6 +410,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
+    /** */
     private void checkDml(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled) {
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
@@ -417,6 +422,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         checkSqlLastFindDataPageScan(dataPageScanEnabled);
     }
 
+    /** */
     private void checkSqlLastFindDataPageScan(Boolean dataPageScanEnabled) {
         if (dataPageScanEnabled == FALSE)
             assertNull(CacheDataTree.isLastFindWithDataPageScan()); // HashIdx was not used.
@@ -424,6 +430,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 
+    /** */
     private void doTestSqlQuery(IgniteCache<Long, TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
@@ -442,6 +449,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
+    /** */
     private void checkSqlQuery(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled) {
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
@@ -454,6 +462,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         checkSqlLastFindDataPageScan(dataPageScanEnabled);
     }
 
+    /** */
     private void doTestScanQuery(IgniteCache<Long, TestData> cache, int keysCnt) {
         // Scan query (data page scan must be disabled by default).
         TestPredicate.callsCnt.set(0);
@@ -476,6 +485,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
     }
 
+    /** */
     private void checkScanQuery(IgniteCache<Long, TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
         assertTrue(cache.query(new ScanQuery<>(new TestPredicate())).getAll().isEmpty());
         assertEquals(expLastDataPageScan, CacheDataTree.isLastFindWithDataPageScan());
@@ -569,29 +579,36 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * Externalizable class to make it non-binary.
      */
     static class Person implements Externalizable {
+        /** */
         String name;
 
+        /** */
         int age;
 
+        /** */
         public Person() {
             // No-op
         }
 
+        /** */
         Person(String name, int age) {
             this.name = Objects.requireNonNull(name);
             this.age = age;
         }
 
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeUTF(name);
             out.writeInt(age);
         }
 
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             name = in.readUTF();
             age = in.readInt();
         }
 
+        /** */
         static LinkedHashMap<String, String> getFields() {
             LinkedHashMap<String, String> m = new LinkedHashMap<>();
 

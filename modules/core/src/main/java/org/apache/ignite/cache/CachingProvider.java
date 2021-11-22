@@ -164,6 +164,7 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
 
     /**
      * @param ignite Ignite.
+     * @return Cache manager implementation.
      */
     public javax.cache.CacheManager findManager(Ignite ignite) {
         synchronized (cacheManagers) {

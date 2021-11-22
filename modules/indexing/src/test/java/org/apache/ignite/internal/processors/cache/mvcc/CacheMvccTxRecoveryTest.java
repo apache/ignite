@@ -77,14 +77,20 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /** */
     public enum TxEndResult {
-        /** */ COMMIT,
-        /** */ ROLLBAK
+        /** */
+        COMMIT,
+
+        /** */
+        ROLLBAK
     }
 
     /** */
     public enum NodeMode {
-        /** */ SERVER,
-        /** */ CLIENT
+        /** */
+        SERVER,
+
+        /** */
+        CLIENT
     }
 
     /** {@inheritDoc} */

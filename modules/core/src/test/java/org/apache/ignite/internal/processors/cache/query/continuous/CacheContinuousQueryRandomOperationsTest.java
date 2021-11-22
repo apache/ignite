@@ -1884,7 +1884,14 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      *
      */
     protected enum ContinuousDeploy {
-        CLIENT, SERVER, ALL
+        /** */
+        CLIENT,
+
+        /** */
+        SERVER,
+
+        /** */
+        ALL
     }
 
     /**

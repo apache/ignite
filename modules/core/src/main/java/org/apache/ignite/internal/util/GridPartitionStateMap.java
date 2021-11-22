@@ -215,7 +215,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     }
 
     /** */
-    private GridDhtPartitionState state(int part) {
+    public GridDhtPartitionState state(int part) {
         int off = part * BITS;
 
         int st = 0;

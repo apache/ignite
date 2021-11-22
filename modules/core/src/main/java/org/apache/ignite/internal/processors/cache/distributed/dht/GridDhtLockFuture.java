@@ -584,7 +584,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      */
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -598,6 +600,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -952,7 +957,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             cnt,
                             0,
                             inTx() ? tx.size() : cnt,
-                            inTx() ? tx.subjectId() : null,
                             inTx() ? tx.taskNameHash() : 0,
                             read ? accessTtl : -1L,
                             skipStore,
@@ -1146,7 +1150,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     false,
                                     topVer,
                                     GridDrType.DR_LOAD,
-                                    true);
+                                    true,
+                                    false);
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 assert false : "Should not get removed exception while holding lock on entry " +
@@ -1400,11 +1405,12 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     true,
                                     topVer,
                                     replicate ? DR_PRELOAD : DR_NONE,
+                                    false,
                                     false)) {
                                     if (rec && !entry.isInternal())
                                         cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                             null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                            false, null, null, null, false);
+                                            false, null, null, false);
                                 }
                             }
                             finally {

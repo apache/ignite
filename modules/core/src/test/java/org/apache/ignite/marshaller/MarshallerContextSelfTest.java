@@ -58,9 +58,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         ctx = newContext();
         execSvc = Executors.newSingleThreadExecutor();
 
-        ctx.setSystemExecutorService(execSvc);
-
-        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new PoolProcessor(ctx) {
+            @Override public ExecutorService getSystemExecutorService() {
+                return execSvc;
+            }
+        });
 
         ctx.add(new GridClosureProcessor(ctx));
     }

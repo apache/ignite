@@ -473,6 +473,22 @@ public final class GridTestUtils {
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
+        return assertThrows(log, call, cls, msg, null);
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @param notThrowsMsg Optional exception message if expected exception wasn't thrown.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
         assert call != null;
         assert cls != null;
 
@@ -506,7 +522,9 @@ public final class GridTestUtils {
             return e;
         }
 
-        throw new AssertionError("Exception has not been thrown.");
+        String asrtMsg = notThrowsMsg == null ? "Exception has not been thrown." : notThrowsMsg;
+
+        throw new AssertionError(asrtMsg);
     }
 
     /**
@@ -2021,10 +2039,12 @@ public final class GridTestUtils {
         return factory;
     }
 
+    /** */
     public static String keyStorePassword() {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
+    /** */
     @NotNull public static String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
@@ -2125,7 +2145,9 @@ public final class GridTestUtils {
     public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
         final AtomicBoolean stop = new AtomicBoolean();
 
+        /** */
         class Stopper extends TimerTask {
+            /** {@inheritDoc} */
             @Override public void run() {
                 stop.set(true);
             }

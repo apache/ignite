@@ -155,6 +155,29 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
     }
 
     /**
+     * Tests the {@link IntHashMap#clear} method.
+     */
+    @Test
+    public void testClear() {
+        IntMap<String> map = new IntHashMap<>();
+
+        IntStream.range(0, 10).forEach(i -> map.put(i, String.valueOf(i)));
+
+        assertThat(map.size(), is(10));
+
+        map.clear();
+
+        assertThat(map.size(), is(0));
+
+        IntStream.range(0, 10).forEach(i -> assertThat(map.containsKey(i), is(false)));
+
+        // clear an empty map
+        map.clear();
+
+        assertThat(map.size(), is(0));
+    }
+
+    /**
      * @param initSize Initial size.
      */
     private static int realCapacityForInitialSize(int initSize) {

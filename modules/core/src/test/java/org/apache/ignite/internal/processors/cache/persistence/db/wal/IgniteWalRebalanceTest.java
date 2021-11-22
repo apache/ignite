@@ -95,6 +95,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -744,6 +745,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15364")
     @Test
     public void testSwitchHistoricalRebalanceToFullAndClientJoin() throws Exception {
         testSwitchHistoricalRebalanceToFull(IgniteWalRebalanceTest::injectFailingIOFactory, true);
@@ -782,7 +784,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     new GridCacheVersion(0, 1, 1, 0),
                     0,
                     0,
-                    0
+                    0,
+                    DataEntry.EMPTY_FLAGS
                 )));
 
                 File walDir = U.field(walMgr, "walWorkDir");

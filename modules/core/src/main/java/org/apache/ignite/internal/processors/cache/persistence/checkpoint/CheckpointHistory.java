@@ -621,7 +621,7 @@ public class CheckpointHistory {
      * @param searchCntrMap Search map contains (Group Id, partition, counter).
      * @return Map of group-partition on checkpoint entry or empty map if nothing found.
      */
-    @Nullable public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
+    public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
         Map<T2<Integer, Integer>, Long> searchCntrMap
     ) {
         if (F.isEmpty(searchCntrMap))

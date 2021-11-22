@@ -73,6 +73,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
@@ -249,6 +250,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
 
         cfg.setDaemon(igniteInstanceName.startsWith(DAEMON_NODE_NAME_PREFIX));
+
+        cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION); // Extend if necessary.
 
         if (encryptionEnabled) {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -428,19 +431,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * </table>
      *
      * @param ignite Ignite.
+     * @param cacheName Cache name.
      * @param countEntries Count of entries.
      * @param partitions Partitions count.
      * @param filter Node filter.
      */
     protected void createCacheAndPreload(
         Ignite ignite,
+        String cacheName,
         int countEntries,
         int partitions,
         @Nullable IgnitePredicate<ClusterNode> filter
     ) {
         assert nonNull(ignite);
 
-        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cacheName)
             .setAffinity(new RendezvousAffinityFunction(false, partitions))
             .setBackups(1)
             .setEncryptionEnabled(encryptionEnabled);
@@ -450,7 +455,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         ignite.createCache(ccfg);
 
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.cache(cacheName);
         for (int i = 0; i < countEntries; i++)
             cache.put(i, i);
     }
@@ -462,6 +467,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param countEntries Count of entries.
      */
     protected void createCacheAndPreload(Ignite ignite, int countEntries) {
-        createCacheAndPreload(ignite, countEntries, 32, null);
+        createCacheAndPreload(ignite, DEFAULT_CACHE_NAME, countEntries, 32, null);
     }
 }

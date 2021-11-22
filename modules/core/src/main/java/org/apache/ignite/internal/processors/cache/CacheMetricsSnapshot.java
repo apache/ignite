@@ -886,10 +886,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return totalPartitionsCnt;
     }
 
+    /** {@inheritDoc} */
     @Override public long getRebalancedKeys() {
         return rebalancedKeys;
     }
 
+    /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingKeys() {
         return estimatedRebalancingKeys;
     }

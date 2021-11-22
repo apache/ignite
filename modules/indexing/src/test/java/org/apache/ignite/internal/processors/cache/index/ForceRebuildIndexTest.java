@@ -21,7 +21,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.query.aware.IndexRebuildFutureStorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
@@ -49,21 +49,21 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
         // The forced rebuild has begun - no rejected.
         assertEqualsCollections(emptyList(), forceRebuildIndexes(n, cacheCtx));
 
         IgniteInternalFuture<?> idxRebFut0 = checkStartRebuildIndexes(n, cacheCtx);
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
         assertFalse(idxRebFut0.isDone());
 
         // There will be no forced rebuilding since the previous one has not ended - they will be rejected.
         assertEqualsCollections(F.asList(cacheCtx), forceRebuildIndexes(n, cacheCtx));
         assertTrue(idxRebFut0 == indexRebuildFuture(n, cacheCtx.cacheId()));
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         idxRebFut0.get(getTestTimeout());
 
@@ -77,10 +77,10 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
 
         IgniteInternalFuture<?> idxRebFut1 = checkStartRebuildIndexes(n, cacheCtx);
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
         assertFalse(idxRebFut1.isDone());
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
         idxRebFut1.get(getTestTimeout());
 
         checkFinishRebuildIndexes(n, cacheCtx, 100);
@@ -102,13 +102,13 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
 
         prepareBeforeNodeStart();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, DEFAULT_CACHE_NAME);
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, DEFAULT_CACHE_NAME);
 
         n = startGrid(0);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
 
         IgniteInternalFuture<?> idxRebFut0 = checkStartRebuildIndexes(n, cacheCtx);
         checkRebuildAfterExchange(n, cacheCtx.cacheId(), true);
@@ -118,7 +118,7 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
         assertTrue(idxRebFut0 == indexRebuildFuture(n, cacheCtx.cacheId()));
         checkRebuildAfterExchange(n, cacheCtx.cacheId(), true);
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         idxRebFut0.get(getTestTimeout());
 
@@ -134,10 +134,10 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
         IgniteInternalFuture<?> idxRebFut1 = checkStartRebuildIndexes(n, cacheCtx);
         checkRebuildAfterExchange(n, cacheCtx.cacheId(), false);
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
         assertFalse(idxRebFut1.isDone());
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
         idxRebFut1.get(getTestTimeout());
 
         checkFinishRebuildIndexes(n, cacheCtx, 100);
@@ -160,13 +160,13 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
 
         prepareBeforeNodeStart();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, DEFAULT_CACHE_NAME);
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, DEFAULT_CACHE_NAME);
 
         n = startGrid(0);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
 
         IgniteInternalFuture<?> idxRebFut = checkStartRebuildIndexes(n, cacheCtx);
 
@@ -175,7 +175,7 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
 
         assertTrue(idxRebFut == indexRebuildFuture(n, cacheCtx.cacheId()));
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         idxRebFut.get(getTestTimeout());
 

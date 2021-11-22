@@ -43,7 +43,7 @@ public class Dataset<Row extends DatasetRow> implements Externalizable {
     /**
      * Default constructor (required by Externalizable).
      */
-    public Dataset(){}
+    public Dataset() {}
 
     /**
      * Creates new Dataset by given data.

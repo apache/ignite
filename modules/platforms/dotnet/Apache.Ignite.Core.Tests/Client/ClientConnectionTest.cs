@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Security.Authentication;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
@@ -283,6 +284,17 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(
                 "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: 127.0.0.1:10800..10700",
                 ex.Message);
+        }
+
+        /// <summary>
+        /// Tests that invalid protocol causes a socket exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidProtocolThrowsSocketException()
+        {
+            var cfg = new IgniteClientConfiguration("bad_proto://foo.bar:12345");
+
+            Assert.Catch<SocketException>(() => Ignition.StartClient(cfg));
         }
 
         /// <summary>
@@ -652,6 +664,67 @@ namespace Apache.Ignite.Core.Tests.Client
 
             TestUtils.WaitForTrueCondition(() => logger.Entries.Any(
                 e => e.Message == string.Format("Receiver thread #{0} stopped.", threadId)));
+        }
+
+        /// <summary>
+        /// Tests SSL connection with client-side SSL certificate.
+        /// </summary>
+        [Test]
+        public void TestSslConnectionWithClientAuth()
+        {
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
+            });
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1:11110" },
+                SslStreamFactory = new SslStreamFactory
+                {
+                    CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
+                    CertificatePassword = "123456",
+                    SkipServerCertificateValidation = true,
+                    CheckCertificateRevocation = true,
+                    SslProtocols = SslProtocols.Tls12
+                }
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
+            }
+
+            // Does not connect without client certificate.
+            cfg.SslStreamFactory = new SslStreamFactory { SkipServerCertificateValidation = true };
+            Assert.Catch<Exception>(() => Ignition.StartClient(cfg));
+        }
+
+        /// <summary>
+        /// Tests SSL connection without client-side SSL certificate.
+        /// </summary>
+        [Test]
+        public void TestSslConnectionWithoutClientAuth()
+        {
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl-no-client-auth.xml"),
+            });
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1:11120" },
+                SslStreamFactory = new SslStreamFactory
+                {
+                    SkipServerCertificateValidation = true,
+                    SslProtocols = SslProtocols.Tls12
+                }
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
+            }
         }
 
         /// <summary>

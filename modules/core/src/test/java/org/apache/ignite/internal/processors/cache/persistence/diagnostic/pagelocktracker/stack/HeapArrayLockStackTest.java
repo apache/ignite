@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory;
 
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_STACK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
 
 /** */
 public class HeapArrayLockStackTest extends PageLockStackTest {
     /** {@inheritDoc} */
     @Override protected LockStack createLockStackTracer(String name) {
-        return (LockStack)LockTrackerFactory.create(HEAP_STACK, name);
+        return (LockStack)PageLockTrackerFactory.create(HEAP_STACK, name);
     }
 }

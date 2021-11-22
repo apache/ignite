@@ -51,6 +51,7 @@ public interface EventStorageSpi extends IgniteSpi {
      * by given predicate filter.
      *
      * @param p Event predicate filter.
+     * @param <T> Type of events.
      * @return Collection of events.
      */
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p);

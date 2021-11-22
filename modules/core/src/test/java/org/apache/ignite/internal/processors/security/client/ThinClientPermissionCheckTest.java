@@ -23,18 +23,30 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableSet;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.eviction.paged.TestObject;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -47,6 +59,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
@@ -89,6 +103,18 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Cache to test system oper permissions. */
     private static final String DYNAMIC_CACHE = "DYNAMIC_TEST_CACHE";
 
+    /** Cache for testing object expiration with security enabled. */
+    protected static final String EXPIRATION_TEST_CACHE = "EXPIRATION_TEST_CACHE";
+
+    /** Off-heap cache for testing object eviction with security enabled. */
+    protected static final String EVICTION_TEST_CACHE = "EVICTION_TEST_CACHE";
+
+    /** Name of the data region for object eviction testing. */
+    protected static final String EVICTION_TEST_DATA_REGION_NAME = "EVICTION_TEST_DATA_REGION_NAME";
+
+    /** Size of the data region for object eviction testing. */
+    protected static final int EVICTION_TEST_DATA_REGION_SIZE = 20 * (1 << 20);
+
     /** Remove all task name. */
     public static final String REMOVE_ALL_TASK =
         "org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter$RemoveAllTask";
@@ -108,20 +134,31 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      * @param idx Index.
      * @param clientData Array of client security data.
      */
-    private IgniteConfiguration getConfiguration(int idx, TestSecurityData... clientData) throws Exception {
+    protected IgniteConfiguration getConfiguration(int idx, TestSecurityData... clientData) throws Exception {
         String instanceName = getTestIgniteInstanceName(idx);
 
         return getConfiguration(
-            instanceName,
-            securityPluginProvider(instanceName, clientData)
-        ).setCacheConfiguration(cacheConfigurations());
+                instanceName,
+                securityPluginProvider(instanceName, clientData))
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setName(EVICTION_TEST_DATA_REGION_NAME)
+                    .setPageEvictionMode(RANDOM_LRU)
+                    .setMaxSize(EVICTION_TEST_DATA_REGION_SIZE)
+                    .setInitialSize(EVICTION_TEST_DATA_REGION_SIZE / 2)))
+            .setCacheConfiguration(cacheConfigurations())
+            .setIncludeEventTypes(EVT_CACHE_OBJECT_EXPIRED);
     }
 
     /** Gets cache configurations */
     protected CacheConfiguration[] cacheConfigurations() {
         return new CacheConfiguration[] {
             new CacheConfiguration().setName(CACHE),
-            new CacheConfiguration().setName(FORBIDDEN_CACHE)
+            new CacheConfiguration().setName(FORBIDDEN_CACHE),
+            new CacheConfiguration<>(EXPIRATION_TEST_CACHE)
+                .setExpiryPolicyFactory(new PlatformExpiryPolicyFactory(10, 10, 10)),
+            new CacheConfiguration<>(EVICTION_TEST_CACHE)
+                .setDataRegionName(EVICTION_TEST_DATA_REGION_NAME)
         };
     }
 
@@ -152,6 +189,8 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
                 new TestSecurityData(CLIENT_PUT,
                     SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                         .appendCachePermissions(CACHE, CACHE_PUT)
+                        .appendCachePermissions(EXPIRATION_TEST_CACHE, CACHE_PUT)
+                        .appendCachePermissions(EVICTION_TEST_CACHE, CACHE_PUT)
                         .build()
                 ),
                 new TestSecurityData(CLIENT_REMOVE,
@@ -271,6 +310,59 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         try (IgniteClient client = startClient(CLIENT_READ)) {
             assertThrowsWithCause(() -> client.cache(CACHE).put("key", "value"), ClientAuthorizationException.class);
             assertNull(client.cache(CACHE).get("key"));
+        }
+    }
+
+    /**
+     * Tests that the expiration of a cache entry does not require any special permissions from the user who adds the
+     * entry.
+     */
+    @Test
+    public void testCacheEntryExpiration() throws Exception {
+        CountDownLatch cacheObjExpiredLatch = new CountDownLatch(G.allGrids().size());
+
+        for (Ignite ignite : G.allGrids()) {
+            ignite.events().localListen(evt -> {
+                if ((evt.type() == EVT_CACHE_OBJECT_EXPIRED && EXPIRATION_TEST_CACHE.equals(((CacheEvent)evt).cacheName())))
+                    cacheObjExpiredLatch.countDown();
+
+                return true;
+            }, EVT_CACHE_OBJECT_EXPIRED);
+        }
+
+        try (IgniteClient client = startClient(CLIENT_PUT)) {
+            ClientCache<Object, Object> cache = client.cache(EXPIRATION_TEST_CACHE);
+
+            cache.put("key", "val");
+
+            cacheObjExpiredLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+            for (Ignite ignite : G.allGrids())
+                assertNull(ignite.cache(EXPIRATION_TEST_CACHE).get("key"));
+        }
+    }
+
+    /**
+     * Tests that the eviction of a cache entry does not require any special permissions from the user who adds the
+     * entry.
+     */
+    @Test
+    public void testCacheEntryEviction() throws Exception {
+        try (IgniteClient client = startClient(CLIENT_PUT)) {
+            ClientCache<Object, Object> cache = client.cache(EVICTION_TEST_CACHE);
+
+            int entrySize = 4 * (1 << 10);
+
+            int entriesCnt = 2 * EVICTION_TEST_DATA_REGION_SIZE / entrySize;
+
+            for (int i = 0; i < entriesCnt; i++)
+                cache.put(i, new TestObject(entrySize / 4));
+
+            for (Ignite ignite : G.allGrids()) {
+                Set<Integer> insertedKeys = IntStream.range(0, entriesCnt).boxed().collect(Collectors.toSet());
+
+                assertTrue(ignite.cache(EVICTION_TEST_CACHE).getAll(insertedKeys).size() < entriesCnt);
+            }
         }
     }
 

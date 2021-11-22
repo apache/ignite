@@ -308,6 +308,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      * Sets number of jobs that can be executed in parallel.
      *
      * @param activeJobsThreshold Number of jobs that can be executed in parallel.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public JobStealingCollisionSpi setActiveJobsThreshold(int activeJobsThreshold) {

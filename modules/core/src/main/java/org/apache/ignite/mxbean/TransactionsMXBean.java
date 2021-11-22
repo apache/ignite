@@ -36,6 +36,7 @@ public interface TransactionsMXBean {
      * @param order Order.
      * @param detailed Detailed.
      * @param kill Kill.
+     * @return If {@code detailed} flag is set - description of each transaction, else transactions count.
      */
     @MXBeanDescription("Returns or kills transactions matching the filter conditions.")
     public String getActiveTransactions(

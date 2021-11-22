@@ -17,17 +17,49 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
-/**
- * Interface for page lock tracker structures dump.
- */
-public interface PageLockDump {
-    /**
-     * @param dumpProcessort Apply dump processor.
-     */
-    void apply(DumpProcessor dumpProcessort);
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper;
 
-    /**
-     * @return Dump creation time.
-     */
-    long time();
+/**
+ * Base page lock tracker structures dump.
+ */
+public abstract class PageLockDump {
+    /** Page lock log name. */
+    public final String name;
+
+    /** Dump creation time. */
+    public final long time;
+
+    /** Head position. */
+    public final int headIdx;
+
+    /** Next operation. */
+    public final int nextOp;
+
+    /** Next data structure. */
+    public final int nextOpStructureId;
+
+    /** Next page id. */
+    public final long nextOpPageId;
+
+    /** */
+    protected PageLockDump(
+        String name,
+        long time,
+        int headIdx,
+        int nextOp,
+        int nextOpStructureId,
+        long nextOpPageId
+    ) {
+        this.name = name;
+        this.time = time;
+        this.headIdx = headIdx;
+        this.nextOp = nextOp;
+        this.nextOpStructureId = nextOpStructureId;
+        this.nextOpPageId = nextOpPageId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return ToStringDumpHelper.toStringDump(this);
+    }
 }

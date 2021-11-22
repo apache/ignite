@@ -36,6 +36,7 @@ public interface ClientServices {
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
+     * @param <T> Service type.
      * @return Proxy over remote service.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf);
@@ -50,6 +51,7 @@ public interface ClientServices {
      * @param svcItf Interface for the service.
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
+     * @param <T> Service type.
      * @return Proxy over remote service.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, long timeout);

@@ -43,18 +43,6 @@ namespace ignite
     {
         namespace interop 
         {
-            union BinaryFloatInt32
-            {
-                float f;
-                int32_t i;                
-            };
-
-            union BinaryDoubleInt64
-            {
-                double d;
-                int64_t i;                
-            };
-
             InteropOutputStream::InteropOutputStream(InteropMemory* mem)
             {
                 this->mem = mem;

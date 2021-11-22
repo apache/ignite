@@ -45,6 +45,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+/** */
 public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAbstractTest {
     /** Latch which blocks DynamicCacheChangeFailureMessage until main thread has sent node fail signal. */
     private static volatile CountDownLatch latch;

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConne
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
+import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
@@ -109,10 +110,12 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageT
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMetricsTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestionsTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
@@ -129,6 +132,7 @@ import org.apache.ignite.plugin.PluginConfigurationTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpiLoggingTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.MessageOrderLogListenerTest;
 import org.apache.ignite.testframework.test.ConfigVariationsExecutionTest;
@@ -207,6 +211,8 @@ import org.junit.runners.Suite;
 
     IgniteExceptionInNioWorkerSelfTest.class,
     IgniteLocalNodeMapBeforeStartTest.class,
+
+    ClientListenerMetricsTest.class,
     OdbcConfigurationValidationSelfTest.class,
     OdbcEscapeSequenceSelfTest.class,
     SqlListenerUtilsTest.class,
@@ -236,6 +242,7 @@ import org.junit.runners.Suite;
     IndexStorageSelfTest.class,
     CacheFreeListSelfTest.class,
     DataRegionMetricsSelfTest.class,
+    MetricsClusterActivationTest.class,
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
     ImmutableIntSetTest.class,
@@ -317,7 +324,10 @@ import org.junit.runners.Suite;
 
     // Other tests
     CacheLockCandidatesThreadTest.class,
-    RemoveAllDeadlockTest.class
+    RemoveAllDeadlockTest.class,
+
+    NoopCheckpointSpiLoggingTest.class,
+    JvmConfigurationSuggestionsTest.class
 })
 public class IgniteBasicTestSuite {
 }

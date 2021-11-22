@@ -2060,6 +2060,11 @@
                                 <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="walForceArchiveTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Time interval (in milliseconds) for force archiving of incompletely WAL segment.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="checkpointReadLockTimeout" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>

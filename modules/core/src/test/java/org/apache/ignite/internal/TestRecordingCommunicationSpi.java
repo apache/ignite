@@ -284,7 +284,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
     /**
      * @param cls Message class.
-     * @param nodeName Node name.
+     * @param nodeName Name of the node where message is sent to.
      */
     public void blockMessages(Class<?> cls, String nodeName) {
         synchronized (this) {

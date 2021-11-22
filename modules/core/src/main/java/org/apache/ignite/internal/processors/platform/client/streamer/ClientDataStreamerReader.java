@@ -66,6 +66,9 @@ class ClientDataStreamerReader {
         if (obj == null)
             return null;
 
+        if (obj instanceof CacheObject)
+            return (T) obj;
+
         int pos1 = in.position();
 
         in.position(pos0);

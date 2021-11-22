@@ -22,6 +22,8 @@ Ignite Persistence, or Native Persistence, is a set of features designed to prov
 When it is enabled, Ignite always stores all the data on disk, and loads as much data as it can into RAM for processing.
 For example, if there are 100 entries and RAM has the capacity to store only 20, then all 100 are stored on disk and only 20 are cached in RAM for better performance.
 
+NOTE: For more information on Native Persistence, watch link:https://www.youtube.com/watch?v=6Yg5QW-XFVc&list=PLMc7NR20hA-KF8c_hVICKpzKnWkjzfC2V&index=19[the architectural deep dive, window=_blank] on the internals of the Ignite storage engine.
+
 When Native persistence is turned off and no external storage is used, Ignite behaves as a pure in-memory store.
 
 When persistence is enabled, every server node persists a subset of the data that only includes the partitions that are assigned to that node (including link:data-modeling/data-partitioning#backup-partitions[backup partitions] if backups are enabled).

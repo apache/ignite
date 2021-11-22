@@ -49,6 +49,7 @@ public class DataRegionMetricsAdapter implements MemoryMetrics {
      * Converts collection of {@link DataRegionMetrics} into collection of legacy {@link MemoryMetrics}.
      *
      * @param dataRegionMetrics Data region metrics collection.
+     * @return Collection of legacy {@link MemoryMetrics}.
      */
     public static Collection<MemoryMetrics> collectionOf(Collection<DataRegionMetrics> dataRegionMetrics) {
         if (dataRegionMetrics == null)

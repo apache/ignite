@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -29,21 +31,28 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
+import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Base class for testing index rebuilds.
@@ -54,6 +63,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
+        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -64,6 +74,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         super.afterTest();
 
         IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
+        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -90,38 +101,92 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Registering a {@link StopRebuildIndexConsumer} for cache.
+     * Registering a {@link StopBuildIndexConsumer} to {@link IndexesRebuildTaskEx#addCacheRowConsumer}.
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @return New instance of {@link StopRebuildIndexConsumer}.
+     * @return New instance of {@link StopBuildIndexConsumer}.
      */
-    protected StopRebuildIndexConsumer addStopRebuildIndexConsumer(IgniteEx n, String cacheName) {
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
+    protected StopBuildIndexConsumer addStopRebuildIndexConsumer(IgniteEx n, String cacheName) {
+        StopBuildIndexConsumer consumer = new StopBuildIndexConsumer(getTestTimeout());
 
-        addCacheRowConsumer(nodeName(n), cacheName, stopRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), cacheName, consumer);
 
-        return stopRebuildIdxConsumer;
+        return consumer;
     }
 
     /**
-     * Registering a {@link BreakRebuildIndexConsumer} for cache.
+     * Registering a {@link BreakBuildIndexConsumer} to {@link IndexesRebuildTaskEx#addCacheRowConsumer}.
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @param breakPred Predicate for throwing an {@link IgniteCheckedException}.
-     * @return New instance of {@link BreakRebuildIndexConsumer}.
+     * @param breakCnt Count of rows processed, after which an {@link IgniteCheckedException} will be thrown.
+     * @return New instance of {@link BreakBuildIndexConsumer}.
      */
-    protected BreakRebuildIndexConsumer addBreakRebuildIndexConsumer(
+    protected BreakBuildIndexConsumer addBreakRebuildIndexConsumer(IgniteEx n, String cacheName, int breakCnt) {
+        BreakBuildIndexConsumer consumer = new BreakBuildIndexConsumer(
+            getTestTimeout(),
+            (c, r) -> c.visitCnt.get() >= breakCnt
+        );
+
+        addCacheRowConsumer(nodeName(n), cacheName, consumer);
+
+        return consumer;
+    }
+
+    /**
+     * Registering a {@link SlowdownBuildIndexConsumer} to {@link IndexesRebuildTaskEx#addCacheRowConsumer}.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @param sleepTime Sleep time after processing each cache row in milliseconds.
+     * @return New instance of {@link SlowdownBuildIndexConsumer}.
+     */
+    protected SlowdownBuildIndexConsumer addSlowdownRebuildIndexConsumer(
         IgniteEx n,
         String cacheName,
-        IgniteThrowableBiPredicate<BreakRebuildIndexConsumer, CacheDataRow> breakPred
+        long sleepTime
     ) {
-        BreakRebuildIndexConsumer breakRebuildIdxConsumer = new BreakRebuildIndexConsumer(getTestTimeout(), breakPred);
+        SlowdownBuildIndexConsumer consumer = new SlowdownBuildIndexConsumer(getTestTimeout(), sleepTime);
 
-        addCacheRowConsumer(nodeName(n), cacheName, breakRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), cacheName, consumer);
 
-        return breakRebuildIdxConsumer;
+        return consumer;
+    }
+
+    /**
+     * Registering a {@link SlowdownBuildIndexConsumer} to {@link IgniteH2IndexingEx#addIdxCreateCacheRowConsumer}.
+     *
+     * @param n Node.
+     * @param idxName Index name.
+     * @param sleepTime Sleep time after processing each cache row in milliseconds.
+     * @return New instance of {@link SlowdownBuildIndexConsumer}.
+     */
+    protected SlowdownBuildIndexConsumer addSlowdownIdxCreateConsumer(IgniteEx n, String idxName, long sleepTime) {
+        SlowdownBuildIndexConsumer consumer = new SlowdownBuildIndexConsumer(getTestTimeout(), sleepTime);
+
+        addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
+
+        return consumer;
+    }
+
+    /**
+     * Registering a {@link BreakBuildIndexConsumer} to {@link IgniteH2IndexingEx#addIdxCreateCacheRowConsumer}.
+     *
+     * @param n Node.
+     * @param idxName Index name.
+     * @param breakCnt Count of rows processed, after which an {@link IgniteCheckedException} will be thrown.
+     * @return New instance of {@link BreakBuildIndexConsumer}.
+     */
+    protected BreakBuildIndexConsumer addBreakIdxCreateConsumer(IgniteEx n, String idxName, int breakCnt) {
+        BreakBuildIndexConsumer consumer = new BreakBuildIndexConsumer(
+            getTestTimeout(),
+            (c, r) -> c.visitCnt.get() >= breakCnt
+        );
+
+        addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
+
+        return consumer;
     }
 
     /**
@@ -214,5 +279,86 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     protected void populate(IgniteCache<Integer, Person> cache, int cnt) {
         for (int i = 0; i < cnt; i++)
             cache.put(i, new Person(i, "name_" + i));
+    }
+
+    /**
+     * Getting {@code GridQueryProcessor#idxBuildStatusStorage}.
+     *
+     * @param n Node.
+     * @return Index build status storage.
+     */
+    protected IndexBuildStatusStorage indexBuildStatusStorage(IgniteEx n) {
+        return getFieldValue(n.context().query(), "idxBuildStatusStorage");
+    }
+
+    /**
+     * Getting {@code IndexBuildStatusStorage#statuses}.
+     *
+     * @param n Node.
+     * @return Index build status storage.
+     */
+    protected ConcurrentMap<String, IndexBuildStatusHolder> statuses(IgniteEx n) {
+        return getFieldValue(indexBuildStatusStorage(n), "statuses");
+    }
+
+    /**
+     * Creation of a new index for the cache of {@link Person}.
+     * SQL: CREATE INDEX " + idxName + " ON Person(name)
+     *
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index creation result.
+     */
+    protected List<List<?>> createIdx(IgniteCache<Integer, Person> cache, String idxName) {
+        String sql = "CREATE INDEX " + idxName + " ON Person(name)";
+
+        return cache.query(new SqlFieldsQuery(sql)).getAll();
+    }
+
+    /**
+     * Enable checkpoints.
+     *
+     * @param n Node.
+     * @param reason Reason for checkpoint wakeup if it would be required.
+     * @param enable Enable/disable.
+     */
+    protected Void enableCheckpoints(IgniteEx n, String reason, boolean enable) throws Exception {
+        if (enable) {
+            dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+
+            forceCheckpoint(F.asList(n), reason);
+        }
+        else {
+            forceCheckpoint(F.asList(n), reason);
+
+            dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+        }
+
+        return null;
+    }
+
+    /**
+     * Getting index description.
+     *
+     * @param idx Index.
+     * @return Index description.
+     */
+    protected SortedIndexDefinition indexDefinition(Index idx) {
+        return getFieldValue(idx, "def");
+    }
+
+    /**
+     * Getting the cache index.
+     *
+     * @param n Node.
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index.
+     */
+    @Nullable protected Index index(IgniteEx n, IgniteCache<Integer, Person> cache, String idxName) {
+        return n.context().indexProcessor().indexes(cacheContext(cache)).stream()
+            .filter(i -> idxName.equals(i.name()))
+            .findAny()
+            .orElse(null);
     }
 }

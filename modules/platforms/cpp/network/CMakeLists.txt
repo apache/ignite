@@ -45,11 +45,11 @@ list(APPEND _target_libs ${TARGET})
 if (WIN32)
     add_library(${TARGET}-objlib OBJECT ${SOURCES})
     
-	add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
+    add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
 
     list(APPEND _target_libs ${TARGET}-objlib)
-	
-	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.network")
+    
+    set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.network")
 else()
     add_library(${TARGET} SHARED ${SOURCES})
 endif()
@@ -73,5 +73,9 @@ foreach(_target_lib IN LISTS _target_libs)
 endforeach()
 unset(_target_libs)
 
-install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
+install(TARGETS ${TARGET} 
+    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")

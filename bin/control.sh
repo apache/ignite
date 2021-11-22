@@ -166,7 +166,7 @@ elif [ $version -ge 11 ] ; then
         ${CONTROL_JVM_OPTS}"
 fi
 
-if [ -n "${JVM_OPTS}" ] ; then
+if [ -n "${JVM_OPTS:-}" ] ; then
   echo "JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS"
   echo "JVM_OPTS=${JVM_OPTS}"
 fi

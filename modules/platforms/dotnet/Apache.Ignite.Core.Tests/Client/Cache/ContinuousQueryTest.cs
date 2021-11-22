@@ -48,7 +48,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Initializes a new instance of <see cref="ContinuousQueryTest"/>.
         /// </summary>
-        public ContinuousQueryTest() : base(gridCount: 2, enableServerListLogging: true)
+        public ContinuousQueryTest()
+            : base(
+                gridCount: 2,
+                enableServerListLogging: true,
+                serverListLoggerLevels: new [] { LogLevel.Error, LogLevel.Warn })
         {
             // No-op.
         }
@@ -268,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestClientContinuousQueryReceivesEventsFromServerCache()
         {
-            const int count = 10000;
+            const int count = 100;
 
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 

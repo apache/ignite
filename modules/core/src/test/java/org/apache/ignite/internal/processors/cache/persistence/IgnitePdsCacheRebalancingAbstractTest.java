@@ -753,10 +753,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         /** Flag indicates that value has removed. */
         private final boolean removed;
 
+        /** */
         private TestValue(long order, int v1, int v2) {
             this(order, v1, v2, false);
         }
 
+        /** */
         private TestValue(long order, int v1, int v2, boolean removed) {
             this.order = order;
             this.v1 = v1;

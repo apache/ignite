@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -358,4 +359,13 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param typeId Type ID.
      */
     public void removeType(int typeId);
+
+    /**
+     * Register binary type for specified class.
+     *
+     * @param cls Class.
+     * @return Metadata.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerClass(Class<?> cls) throws BinaryObjectException;
 }

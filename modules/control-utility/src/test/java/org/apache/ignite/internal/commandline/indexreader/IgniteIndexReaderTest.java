@@ -891,7 +891,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
             boolean idxReadingErr = isReportIdxAndPartFilesReadingErr();
             boolean partReadingErr = isReportIdxAndPartFilesReadingErr();
 
-            checkOutput(output, 19, 24, 0, 1, idxReadingErr, partReadingErr, false);
+            checkOutput(output, 19, 25, 0, 1, idxReadingErr, partReadingErr, false);
 
             for (int i = 0; i < CREATED_TABLES_CNT; i++)
                 checkIdxs(output, TableInfo.generate(i), true);
@@ -926,7 +926,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
 
             boolean partReadingErr = isReportIdxAndPartFilesReadingErr();
 
-            checkOutput(output, 19, 22, 0, 0, false, partReadingErr, true);
+            checkOutput(output, 19, 23, 0, 0, false, partReadingErr, true);
 
             for (int i = 0; i < CREATED_TABLES_CNT; i++)
                 checkIdxs(output, TableInfo.generate(i), true);

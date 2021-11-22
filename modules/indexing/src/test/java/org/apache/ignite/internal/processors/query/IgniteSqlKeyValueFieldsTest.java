@@ -121,6 +121,7 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
         super.afterTest();
     }
 
+    /** */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(NODE_BAD_CONF_MISS_KEY_FIELD)) {
             CacheConfiguration ccfg = new CacheConfiguration(NODE_BAD_CONF_MISS_KEY_FIELD);

@@ -35,17 +35,21 @@ class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
     /** Rows count for each label */
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
 
+    /** */
     public GaussianNaiveBayesSumsHolder() {
     }
 
+    /** */
     public Map<Double, double[]> getFeatureSumsPerLbl() {
         return featureSumsPerLbl;
     }
 
+    /** */
     public Map<Double, double[]> getFeatureSquaredSumsPerLbl() {
         return featureSquaredSumsPerLbl;
     }
 
+    /** */
     public Map<Double, Integer> getFeatureCountersPerLbl() {
         return featureCountersPerLbl;
     }

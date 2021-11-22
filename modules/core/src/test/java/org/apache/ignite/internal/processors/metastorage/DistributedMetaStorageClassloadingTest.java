@@ -166,13 +166,15 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
      * Class that would be excluded on the certain npde.
      */
     public static final class BamboozleClass implements Serializable {
-
+        /** */
         private final int i;
 
+        /** */
         public BamboozleClass(int i) {
             this.i = i;
         }
 
+        /** */
         public int getI() {
             return i;
         }

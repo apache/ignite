@@ -357,7 +357,7 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * * @return The value of this flag. See {@link #setAllowDuplicateRegistrations(boolean)} for more details.
+     * @return The value of this flag. See {@link #setAllowDuplicateRegistrations(boolean)} for more details.
      */
     public boolean isAllowDuplicateRegistrations() {
         return allowDuplicateRegistrations;

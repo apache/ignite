@@ -291,7 +291,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         };
 
                         if (stripe >= 0)
-                            cctx.kernalContext().getStripedExecutorService().execute(stripe, c);
+                            cctx.kernalContext().pools().getStripedExecutorService().execute(stripe, c);
                         else {
                             try {
                                 cctx.kernalContext().pools().poolForPolicy(plc).execute(c);

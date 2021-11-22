@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -39,7 +41,7 @@ import org.h2.value.CompareMode;
  */
 public class QueryIndexDefinition implements SortedIndexDefinition {
     /** Wrapped key definitions. */
-    private List<IndexKeyDefinition> keyDefs;
+    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** List of unwrapped index columns. */
     private List<IndexColumn> h2UnwrappedCols;
@@ -69,13 +71,13 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     private final boolean isAffinity;
 
     /** Index row comparator. */
-    private H2RowComparator rowComparator;
+    private final H2RowComparator rowComparator;
 
     /** Index key type settings. */
-    private IndexKeyTypeSettings keyTypeSettings;
+    private final IndexKeyTypeSettings keyTypeSettings;
 
     /** Index rows cache. */
-    private IndexRowCache idxRowCache;
+    private final IndexRowCache idxRowCache;
 
     /** Row handler factory. */
     private final QueryRowHandlerFactory rowHndFactory = new QueryRowHandlerFactory();
@@ -125,7 +127,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+    @Override public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions() {
         if (keyDefs == null)
             throw new IllegalStateException("Index key definitions is not initialized yet.");
 
@@ -202,5 +204,12 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     /** */
     public List<IndexColumn> getColumns() {
         return h2UnwrappedCols != null ? h2UnwrappedCols : h2WrappedCols;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        String flds = getColumns().stream().map(c -> c.columnName).collect(Collectors.joining(", "));
+
+        return "QueryIndex[name=" + idxName.idxName() + ", fields=" + flds + "]";
     }
 }

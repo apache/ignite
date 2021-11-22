@@ -28,12 +28,12 @@ import org.jetbrains.annotations.Nullable;
  */
 class SegmentReservationStorage extends SegmentObservable {
     /**
-     * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments which has
-     * index >= reserved segment index. Guarded by {@code this}.
+     * Maps absolute segment index to reservation counter. Guarded by {@code this}.
+     * If counter > 0 then we wouldn't delete all segments which has index >= reserved segment index.
      */
     private final NavigableMap<Long, Integer> reserved = new TreeMap<>();
 
-    /** Maximum segment index that can be reserved. */
+    /** Maximum segment index that can be reserved. Guarded by {@code this}. */
     private long minReserveIdx = -1;
 
     /**
@@ -71,22 +71,17 @@ class SegmentReservationStorage extends SegmentObservable {
     }
 
     /**
+     * Segment release.
+     *
      * @param absIdx Reserved index.
      */
     void release(long absIdx) {
         Long minReservedIdx;
 
         synchronized (this) {
-            minReservedIdx = trackingMinReservedIdx(reserved -> {
-                Integer cur = reserved.get(absIdx);
-
-                assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
-
-                if (cur == 1)
-                    reserved.remove(absIdx);
-                else
-                    reserved.put(absIdx, cur - 1);
-            });
+            minReservedIdx = trackingMinReservedIdx(
+                reserved -> reserved.computeIfPresent(absIdx, (i, cnt) -> cnt == 1 ? null : cnt - 1)
+            );
         }
 
         if (minReservedIdx != null)
@@ -128,5 +123,34 @@ class SegmentReservationStorage extends SegmentObservable {
         Long newMin = newMinE == null ? null : newMinE.getKey();
 
         return Objects.equals(oldMin, newMin) ? null : newMin == null ? -1 : newMin;
+    }
+
+    /**
+     * Forces the release of reserved segments.
+     * Also increases minimum segment index that can be reserved.
+     *
+     * @param absIdx Absolute segment index up (and including) to which the
+     *      segments will be released, and it will also not be possible to reserve segments.
+     */
+    void forceRelease(long absIdx) {
+        Long minReservedIdx;
+
+        synchronized (this) {
+            minReservedIdx = trackingMinReservedIdx(reserved -> reserved.headMap(absIdx, true).clear());
+
+            minReserveIdx = Math.max(minReserveIdx, absIdx);
+        }
+
+        if (minReservedIdx != null)
+            notifyObservers(minReservedIdx);
+    }
+
+    /**
+     * Getting maximum segment index that can be reserved.
+     *
+     * @return Absolute segment index.
+     */
+    synchronized long minReserveIdx() {
+        return minReserveIdx;
     }
 }

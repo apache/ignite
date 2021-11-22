@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/** */
 @IgniteCodeGeneratingFail
 public class ClientMessage implements Message, Externalizable {
     /** */

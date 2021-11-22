@@ -716,7 +716,10 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * Enumeration for tests.
      */
     public enum EnumType {
+        /** */
         ONE,
+
+        /** */
         TWO
     }
 
@@ -724,17 +727,23 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * Enumeration for tests.
      */
     public enum DeclaredBodyEnum {
+        /** */
         ONE {
+            /** {@inheritDoc} */
             @Override boolean isSupported() {
                 return false;
             }
         },
+
+        /** */
         TWO {
+            /** {@inheritDoc} */
             @Override boolean isSupported() {
                 return false;
             }
         };
 
+        /** */
         abstract boolean isSupported();
     }
 }

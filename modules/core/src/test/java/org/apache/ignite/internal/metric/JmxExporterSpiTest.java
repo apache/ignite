@@ -43,6 +43,7 @@ import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
+import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -70,8 +71,10 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -86,8 +89,6 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
-import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.FILTER_OPERATION;
 import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.VIEWS;
@@ -112,6 +113,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGN
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
@@ -261,6 +264,26 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         DynamicMBean bean2 = metricRegistry(ignite.name(), "other", "prefix2");
 
         assertEquals(44L, bean2.getAttribute("test3"));
+    }
+
+    /** */
+    @Test
+    public void testRemoveFilteredRegistry() {
+        String regName = MetricUtils.metricName(FILTERED_PREFIX, "registry-for-remove");
+
+        GridMetricManager mmgr = ignite.context().metric();
+
+        mmgr.registry(regName);
+
+        assertTrue(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
+
+        mmgr.remove(regName);
+
+        assertFalse(Iterators.tryFind(mmgr.iterator(), mreg -> regName.equals(mreg.name())).isPresent());
+
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), null, regName), IgniteException.class);
     }
 
     /** */
@@ -950,7 +973,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSysStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite.context().getStripedExecutorService(),
+        checkStripeExecutorView(ignite.context().pools().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
     }
@@ -958,7 +981,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testStreamerStripedExecutor() throws Exception {
-        checkStripeExecutorView(ignite.context().getDataStreamerExecutorService(),
+        checkStripeExecutorView(ignite.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
     }

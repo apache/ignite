@@ -421,7 +421,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         readThrough,
                         /*metrics*/retVal,
                         /*event*/evt,
-                        tx.subjectId(),
                         entryProc,
                         tx.resolveTaskName(),
                         null,
@@ -540,7 +539,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*readThrough*/false,
                             /*metrics*/false,
                             /*event*/false,
-                            /*subjectId*/tx.subjectId(),
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
@@ -618,7 +616,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -637,6 +637,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -1446,7 +1449,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.nearXidVersion(),
                 true,
                 tx.onePhaseCommit(),
-                tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
@@ -1561,7 +1563,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.nearXidVersion(),
                     true,
                     tx.onePhaseCommit(),
-                    tx.subjectId(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
@@ -2003,11 +2004,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 true,
                                 topVer,
                                 drType,
+                                false,
                                 false)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null, false);
+                                        false, null, null, false);
 
                                 if (retVal && !invoke) {
                                     ret.value(

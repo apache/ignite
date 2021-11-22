@@ -1409,6 +1409,9 @@ public class BinaryContext {
             if (e.getValue().userType())
                 it.remove();
         }
+
+        // Unregister Serializable and Externalizable type descriptors.
+        optmMarsh.clearClassDescriptorsCache();
     }
 
     /**
@@ -1437,6 +1440,8 @@ public class BinaryContext {
                     it.remove();
             }
         }
+
+        optmMarsh.onUndeploy(ldr);
 
         U.clearClassCache(ldr);
     }
