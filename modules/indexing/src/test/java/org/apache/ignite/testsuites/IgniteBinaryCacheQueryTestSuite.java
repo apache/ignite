@@ -216,6 +216,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlGroupConcatNotColloc
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlNotNullConstraintTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlQueryDecimalArgumentsWithTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlQueryParallelismTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
@@ -496,6 +497,7 @@ import org.junit.runners.Suite;
     GridCacheQueryIndexingDisabledSelfTest.class,
     GridOrderedMessageCancelSelfTest.class,
     CacheQueryEvictDataLostTest.class,
+    IgniteSqlQueryDecimalArgumentsWithTest.class,
 
     // Full text queries.
     GridCacheFullTextQueryFailoverTest.class,

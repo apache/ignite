@@ -26,6 +26,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -68,7 +69,7 @@ public class H2RowComparator extends IndexRowCompartorImpl {
         if (cmp != COMPARE_UNSUPPORTED)
             return cmp;
 
-        int objType = InlineIndexKeyTypeRegistry.get(key, curType, keyTypeSettings).type();
+        int objType = key == NullIndexKey.INSTANCE ? curType : key.type();
 
         int highOrder = Value.getHigherOrder(curType, objType);
 
@@ -82,8 +83,9 @@ public class H2RowComparator extends IndexRowCompartorImpl {
 
             InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(objHighOrder, highOrder, keyTypeSettings);
 
-            // The only way to invoke inline comparation again.
-            return ((NullableInlineIndexKeyType)highType).compare0(pageAddr, off, objHighOrder);
+            // The only way to invoke inline comparison again.
+            if (highType != null)
+                return ((NullableInlineIndexKeyType) highType).compare0(pageAddr, off, objHighOrder);
         }
 
         return COMPARE_UNSUPPORTED;

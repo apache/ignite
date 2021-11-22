@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.Nullable;
 
@@ -133,7 +134,9 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
          * Gets service proxy.
          */
         TestPlatformService serviceProxy() {
-            return ignite.services().serviceProxy(srvcName, TestPlatformService.class, false);
+            ServiceCallContext callCtx = ServiceCallContext.builder().put("attr", "value").build();
+
+            return ignite.services().serviceProxy(srvcName, TestPlatformService.class, false, callCtx, 0);
         }
 
         /**
@@ -209,6 +212,10 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
         /** */
         @PlatformServiceMethod("AddOne")
         BinarizableTestValue addOne(BinarizableTestValue val);
+
+        /** */
+        @PlatformServiceMethod("contextAttribute")
+        String contextAttribute(String name);
     }
 
     /** */
