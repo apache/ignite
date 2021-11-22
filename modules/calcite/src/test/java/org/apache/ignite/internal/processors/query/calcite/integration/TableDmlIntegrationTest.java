@@ -255,7 +255,6 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("INSERT INTO test2 VALUES (0, '0')");
         executeSql("INSERT INTO test2 VALUES (2, '2')");
 
-
         String sql = "MERGE INTO test2 dst USING test1 src ON dst.a = src.a " +
             "WHEN MATCHED THEN UPDATE SET a = src.a, b = src.b " +
             "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (src.a, src.b)";
