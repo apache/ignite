@@ -18,14 +18,27 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.lang.reflect.Field;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -36,6 +49,13 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Test correct clean up cache configuration data after destroying cache.
  */
 public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest {
+    /** */
+    @Override public IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        return super.getConfiguration(instanceName)
+            .setFailureHandler(new StopNodeFailureHandler())
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
+    }
+    
     /**
      *  Test destroy non grouped caches.
      *
@@ -190,5 +210,54 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
             ignite.destroyCache(cacheName);
 
         fut.get();
+    }
+
+    /**
+     * Tests correctness of concurrent cache destroy and implicit tx`s.
+     */
+    @Test
+    public void cacheDestroyWithConcImplicitTx() throws Exception {
+        final IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
+
+        crd.cluster().state(ClusterState.ACTIVE);
+
+        crd.createCache(new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setBackups(1).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setGroupName("test"));
+
+        crd.createCache(new CacheConfiguration(DEFAULT_CACHE_NAME + "_1")
+            .setBackups(1).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setGroupName("test"));
+
+        Set<Integer> pkeys = new TreeSet<>();
+        try (final IgniteDataStreamer<Object, Object> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 100; i++) {
+                streamer.addData(i, i);
+
+                if (crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.localNode(), i))
+                    pkeys.add(i);
+            }
+        }
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+        spi.blockMessages(GridDhtTxPrepareRequest.class, getTestIgniteInstanceName(1));
+
+        for (Integer pkey : pkeys)
+            crd.cache(DEFAULT_CACHE_NAME).removeAsync(pkey);
+
+        spi.waitForBlocked();
+
+        spi.blockMessages(GridDhtPartitionsFullMessage.class, getTestIgniteInstanceName(1));
+
+        IgniteInternalFuture destr = GridTestUtils.runAsync(() -> grid(1).destroyCache(DEFAULT_CACHE_NAME));
+
+        spi.waitForBlocked();
+
+        spi.stopBlock(true, (msg) -> msg.ioMessage().message() instanceof GridDhtPartitionsFullMessage);
+
+        spi.stopBlock();
+
+        destr.get();
+
+        assertFalse(GridTestUtils.waitForCondition(() -> G.allGrids().size() < 3, 5_000));
     }
 }
