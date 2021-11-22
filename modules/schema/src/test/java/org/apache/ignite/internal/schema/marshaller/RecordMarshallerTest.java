@@ -347,13 +347,21 @@ public class RecordMarshallerTest {
      */
     @Test
     public void ensureAllTypesChecked() {
-        Set<NativeTypeSpec> testedTypes = Stream.concat(Arrays.stream(keyColumns()), Arrays.stream(valueColumnsAllTypes()))
-                .map(c -> c.type().spec())
+        ensureAllTypesChecked(Stream.concat(Arrays.stream(keyColumns()), Arrays.stream(valueColumnsAllTypes())));
+    }
+    
+    /**
+     * Ensure specified columns contains all type spec, presented in NativeTypeSpec.
+     *
+     * @param allColumns Columns to test.
+     */
+    public static void ensureAllTypesChecked(Stream<Column> allColumns) {
+        Set<NativeTypeSpec> testedTypes = allColumns.map(c -> c.type().spec())
                 .collect(Collectors.toSet());
-        
+    
         Set<NativeTypeSpec> missedTypes = Arrays.stream(NativeTypeSpec.values())
                 .filter(t -> !testedTypes.contains(t)).collect(Collectors.toSet());
-        
+    
         assertEquals(Collections.emptySet(), missedTypes);
     }
     
