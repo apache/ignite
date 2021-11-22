@@ -3123,9 +3123,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
     public void testReadDetachedTypedArray() throws Exception {
         Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
 
-        testReadDetachObjectProperly(arr, obj0 -> {
-            Object[] obj = useTypedArrays ? ((BinaryArray)obj0).deserialize() : (Value[])obj0;
-
+        testReadDetachObjectProperly(arr, obj -> {
             assertArrayEquals(arr, (Value[])obj);
 
             Object[] args = new Object[] {obj};
@@ -3143,9 +3141,7 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
     @Test
     public void testReadArrayOfCollections() throws Exception {
         Collection[] arr = new Collection[] { Arrays.asList(new Value(1), new Value(2), new Value(3)) };
-        testReadDetachObjectProperly(arr, obj0 -> {
-            Object[] obj = useTypedArrays ? ((BinaryArray)obj0).deserialize() : (Collection[])obj0;
-
+        testReadDetachObjectProperly(arr, obj -> {
             assertArrayEquals(arr, (Collection[])obj);
 
             Object[] args = new Object[] {obj};
