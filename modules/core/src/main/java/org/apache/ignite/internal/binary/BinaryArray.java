@@ -44,7 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
  */
 public class BinaryArray implements BinaryObjectEx, Externalizable {
     /** Default value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = true;
+    public static final boolean DFLT_IGNITE_USE_TYPED_ARRAYS = false;
 
     /** Value of {@link IgniteSystemProperties#IGNITE_USE_TYPED_ARRAYS}. */
     private static boolean USE_TYPED_ARRAYS =
@@ -130,7 +130,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
             for (int i = 0; i < arr.length; i++) {
                 Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], keepBinary, false, ldr);
 
-                if (!keepBinary && obj != null && BinaryObject.class.isAssignableFrom(obj.getClass()))
+                if (!keepBinary && obj instanceof BinaryObject)
                     obj = ((BinaryObject)obj).deserialize(ldr);
 
                 res[i] = obj;
