@@ -33,8 +33,10 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteGateway;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.InternalIgnite
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
  * Implementation class for {@link RelMetadataQueryEx#fragmentMapping(RelNode, MappingQueryContext)} method call.
@@ -103,10 +106,9 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery, MappingQueryContext)}.
      *
      * <p>{@link ColocationMappingException} may be thrown on two children nodes locations merge. This means that the fragment
-     * (which part the parent node is) cannot be executed on any node and additional exchange is needed.
-     * This case we throw {@link NodeMappingException} with an edge, where we need the additional exchange.
-     * After the exchange is put into the fragment and the fragment is split into two ones,
-     * fragment meta information will be recalculated for all fragments.
+     * (which part the parent node is) cannot be executed on any node and additional exchange is needed. This case we throw {@link
+     * NodeMappingException} with an edge, where we need the additional exchange. After the exchange is put into the fragment and the
+     * fragment is split into two ones, fragment meta information will be recalculated for all fragments.
      */
     public FragmentMapping fragmentMapping(BiRel rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         RelNode left = rel.getLeft();
@@ -139,10 +141,9 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery, MappingQueryContext)}
      *
      * <p>{@link ColocationMappingException} may be thrown on two children nodes locations merge. This means that the
-     * fragment (which part the parent node is) cannot be executed on any node and additional exchange is needed. This
-     * case we throw {@link NodeMappingException} with an edge, where we need the additional exchange. After the
-     * exchange is put into the fragment and the fragment is split into two ones, fragment meta information will be
-     * recalculated for all fragments.
+     * fragment (which part the parent node is) cannot be executed on any node and additional exchange is needed. This case we throw {@link
+     * NodeMappingException} with an edge, where we need the additional exchange. After the exchange is put into the fragment and the
+     * fragment is split into two ones, fragment meta information will be recalculated for all fragments.
      */
     public FragmentMapping fragmentMapping(SetOp rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         FragmentMapping res = null;
@@ -217,6 +218,19 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteValues rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         return FragmentMapping.create();
+    }
+
+    /**
+     * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery, MappingQueryContext)}.
+     */
+    public FragmentMapping fragmentMapping(IgniteGateway rel, RelMetadataQuery mq, MappingQueryContext ctx) {
+        var extension = ctx.extension(rel.extensionName());
+
+        if (extension == null) {
+            throw new IgniteInternalException("Unknown SQL extension \"" + rel.extensionName() + "\"");
+        }
+
+        return FragmentMapping.create(rel.sourceId(), extension.colocationGroup((IgniteRel) rel.getInput()));
     }
 
     /**

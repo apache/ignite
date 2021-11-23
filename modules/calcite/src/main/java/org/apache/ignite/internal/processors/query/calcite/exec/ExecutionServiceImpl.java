@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.extension.SqlExtension;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
@@ -142,6 +143,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
 
     private final DdlSqlToCommandConverter ddlConverter;
 
+    private final Map<String, SqlExtension> extensions;
+
     /**
      * Constructor.
      * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
@@ -152,13 +155,15 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             QueryPlanCache planCache,
             SchemaHolder schemaHolder,
             QueryTaskExecutor taskExecutor,
-            RowHandler<RowT> handler
+            RowHandler<RowT> handler,
+            Map<String, SqlExtension> extensions
     ) {
         this.topSrvc = topSrvc;
         this.handler = handler;
         this.msgSrvc = msgSrvc;
         this.schemaHolder = schemaHolder;
         this.taskExecutor = taskExecutor;
+        this.extensions = extensions;
 
         locNodeId = topSrvc.localMember().id();
         qryPlanCache = planCache;
@@ -227,7 +232,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
             BaseQueryContext qctx,
             Object[] params
     ) {
-        plan.init(mappingSrvc, new MappingQueryContext(locNodeId, topologyVersion()));
+        plan.init(mappingSrvc, new MappingQueryContext(qctx, locNodeId, topologyVersion()));
 
         List<Fragment> fragments = plan.fragments();
 
@@ -365,6 +370,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
                                 .build()
                 )
                 .logger(LOG)
+                .extensions(extensions)
                 .build();
     }
 
@@ -383,9 +389,9 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
         ValidationResult validated = planner.validateAndGetTypeMetadata(sqlNode);
 
         sqlNode = validated.sqlNode();
-        
+
         IgniteRel igniteRel = optimize(sqlNode, planner);
-        
+
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
@@ -444,7 +450,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
 
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner);
-        
+
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
@@ -471,7 +477,7 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService {
 
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sql, planner);
-        
+
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
         return new ExplainPlan(plan, explainFieldsMetadata(ctx));

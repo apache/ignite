@@ -17,47 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import static org.apache.ignite.internal.util.ArrayUtils.asList;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Cloner.
  * TODO Documentation https://issues.apache.org/jira/browse/IGNITE-15859
  */
-public class Cloner implements IgniteRelVisitor<IgniteRel> {
+public class Cloner {
     private final RelOptCluster cluster;
 
     private List<IgniteReceiver> remotes;
@@ -94,182 +65,21 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
         return c.visit(r);
     }
 
-    private IgniteReceiver collect(IgniteReceiver receiver) {
-        if (remotes != null) {
-            remotes.add(receiver);
+    private IgniteRel collect(IgniteRel rel) {
+        if (rel instanceof IgniteReceiver && remotes != null) {
+            remotes.add((IgniteReceiver) rel);
         }
 
-        return receiver;
+        return rel;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteSender rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteFilter rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteTrimExchange rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteProject rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteTableModify rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteNestedLoopJoin rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getLeft()),
-                visit((IgniteRel) rel.getRight())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getLeft()),
-                visit((IgniteRel) rel.getRight())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteMergeJoin rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getLeft()),
-                visit((IgniteRel) rel.getRight())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteIndexScan rel) {
-        return rel.clone(cluster, asList());
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteTableScan rel) {
-        return rel.clone(cluster, asList());
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteValues rel) {
-        return rel.clone(cluster, asList());
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteUnionAll rel) {
-        return rel.clone(cluster, Commons.transform(rel.getInputs(), rel0 -> visit((IgniteRel) rel0)));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteSort rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteTableSpool rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteSortedIndexSpool rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteLimit rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteReceiver rel) {
-        return collect((IgniteReceiver) rel.clone(cluster, asList()));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteExchange rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteSingleHashAggregate rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteMapHashAggregate rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteReduceHashAggregate rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteSingleSortAggregate rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteMapSortAggregate rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteReduceSortAggregate rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteHashIndexSpool rel) {
-        return rel.clone(cluster, asList(visit((IgniteRel) rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteSetOp rel) {
-        return rel.clone(cluster, Commons.transform(rel.getInputs(), rel0 -> visit((IgniteRel) rel0)));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteRel visit(IgniteTableFunctionScan rel) {
-        return rel.clone(cluster, asList());
-    }
-
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Clones and associates a plan with a new cluster.
+     *
+     * @param rel The head of the relational tree.
+     * @return A new tree.
+     */
     public IgniteRel visit(IgniteRel rel) {
-        return rel.accept(this);
+        return collect(rel.clone(cluster, Commons.transform(rel.getInputs(), rel0 -> visit((IgniteRel) rel0))));
     }
 }

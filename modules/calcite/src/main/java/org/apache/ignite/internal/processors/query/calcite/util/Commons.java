@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorI
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractMultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
@@ -824,9 +823,5 @@ public final class Commons {
 
     public static RelOptCluster cluster() {
         return CLUSTER;
-    }
-
-    public static MappingQueryContext mapContext(String locNodeId, long topVer) {
-        return new MappingQueryContext(locNodeId, topVer);
     }
 }

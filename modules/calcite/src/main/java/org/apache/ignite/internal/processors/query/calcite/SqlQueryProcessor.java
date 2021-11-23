@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -28,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionService
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.extension.SqlExtension;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
@@ -52,12 +56,6 @@ public class SqlQueryProcessor implements QueryProcessor {
     /** Size of the cache for query plans. */
     public static final int PLAN_CACHE_SIZE = 1024;
 
-    private volatile ExecutionService executionSrvc;
-
-    private volatile MessageService msgSrvc;
-
-    private volatile QueryTaskExecutor taskExecutor;
-
     private final ClusterService clusterSrvc;
 
     private final TableManager tableManager;
@@ -69,7 +67,15 @@ public class SqlQueryProcessor implements QueryProcessor {
     private final QueryPlanCache planCache = new QueryPlanCacheImpl(PLAN_CACHE_SIZE);
 
     /** Event listeners to close. */
-    private final List<Pair<TableEvent, EventListener>> evtLsnrs = new ArrayList<>();
+    private final List<Pair<TableEvent, EventListener<TableEventParameters>>> evtLsnrs = new ArrayList<>();
+
+    private volatile ExecutionService executionSrvc;
+
+    private volatile MessageService msgSrvc;
+
+    private volatile QueryTaskExecutor taskExecutor;
+
+    private volatile Map<String, SqlExtension> extensions;
 
     public SqlQueryProcessor(
             ClusterService clusterSrvc,
@@ -90,6 +96,16 @@ public class SqlQueryProcessor implements QueryProcessor {
                 taskExecutor
         );
 
+        List<SqlExtension> extensionList = new ArrayList<>();
+
+        ServiceLoader<SqlExtension> loader = ServiceLoader.load(SqlExtension.class);
+
+        loader.reload();
+
+        loader.forEach(extensionList::add);
+
+        extensions = extensionList.stream().collect(Collectors.toMap(SqlExtension::name, Function.identity()));
+
         SchemaHolderImpl schemaHolder = new SchemaHolderImpl(planCache::clear);
 
         executionSrvc = new ExecutionServiceImpl<>(
@@ -98,7 +114,8 @@ public class SqlQueryProcessor implements QueryProcessor {
                 planCache,
                 schemaHolder,
                 taskExecutor,
-                ArrayRowHandler.INSTANCE
+                ArrayRowHandler.INSTANCE,
+                extensions
         );
 
         registerTableListener(TableEvent.CREATE, new TableCreatedListener(schemaHolder));
@@ -109,6 +126,8 @@ public class SqlQueryProcessor implements QueryProcessor {
         msgSrvc.start();
         executionSrvc.start();
         planCache.start();
+
+        extensionList.forEach(ext -> ext.init(catalog -> schemaHolder.registerExternalCatalog(ext.name(), catalog)));
     }
 
     private void registerTableListener(TableEvent evt, AbstractTableEventListener lsnr) {
@@ -118,21 +137,34 @@ public class SqlQueryProcessor implements QueryProcessor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override
     public void stop() throws Exception {
         busyLock.block();
 
-        List<AutoCloseable> toClose = new ArrayList<>(Arrays.asList(
+        List<AutoCloseable> toClose = new ArrayList<>();
+
+        Map<String, SqlExtension> extensions = this.extensions;
+        if (extensions != null) {
+            toClose.addAll(
+                    extensions.values().stream()
+                            .map(ext -> (AutoCloseable) ext::stop)
+                            .collect(Collectors.toList())
+            );
+        }
+
+        Stream<AutoCloseable> closableComponents = Stream.of(
                 executionSrvc::stop,
                 msgSrvc::stop,
                 taskExecutor::stop,
                 planCache::stop
-        ));
+        );
 
-        toClose.addAll(evtLsnrs.stream()
-                .map((p) -> (AutoCloseable) () -> tableManager.removeListener(p.left, p.right))
-                .collect(Collectors.toList()));
+        Stream<AutoCloseable> closableListeners = evtLsnrs.stream()
+                .map((p) -> () -> tableManager.removeListener(p.left, p.right));
+
+        toClose.addAll(
+                Stream.concat(closableComponents, closableListeners).collect(Collectors.toList())
+        );
 
         IgniteUtils.closeAll(toClose);
     }

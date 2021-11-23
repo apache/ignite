@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.CollectionUtils;
 import org.apache.ignite.network.ClusterNode;
 import org.jetbrains.annotations.Nullable;
@@ -173,7 +172,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
+        plan.init(this::intermediateMapping, mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -251,7 +250,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
+        plan.init(this::intermediateMapping, mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -334,7 +333,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
+        plan.init(this::intermediateMapping, mapContext(CollectionUtils.first(NODES), 0L));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -415,7 +414,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
+        plan.init(this::intermediateMapping, mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -497,7 +496,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
+        plan.init(this::intermediateMapping, mapContext(CollectionUtils.first(NODES), 0L));
 
         assertEquals(3, plan.fragments().size());
     }
@@ -574,7 +573,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(CollectionUtils.first(NODES), 0L));
+        plan.init(this::intermediateMapping, mapContext(CollectionUtils.first(NODES), 0L));
 
         assertNotNull(plan);
 
@@ -834,5 +833,9 @@ public class PlannerTest extends AbstractPlannerTest {
     private List<String> intermediateMapping(long topVer, boolean single,
             @Nullable Predicate<ClusterNode> filter) {
         return single ? select(NODES, 0) : select(NODES, 0, 1, 2, 3);
+    }
+
+    private static MappingQueryContext mapContext(String locNodeId, long topVer) {
+        return new MappingQueryContext(null, locNodeId, topVer);
     }
 }

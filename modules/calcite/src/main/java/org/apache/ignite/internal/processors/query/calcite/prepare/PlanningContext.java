@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.List;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -27,6 +28,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
+import org.apache.ignite.internal.processors.query.calcite.extension.SqlExtension;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
 import org.jetbrains.annotations.NotNull;
@@ -63,6 +65,15 @@ public final class PlanningContext implements Context {
      */
     public FrameworkConfig config() {
         return unwrap(BaseQueryContext.class).config();
+    }
+
+    /**
+     * Get list of extensions.
+     *
+     * @return List of extensions.
+     */
+    public List<SqlExtension> extensions() {
+        return unwrap(BaseQueryContext.class).extensions();
     }
 
     /**

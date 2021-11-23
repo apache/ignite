@@ -165,6 +165,11 @@ public interface IgniteRelVisitor<T> {
     T visit(IgniteTableFunctionScan rel);
 
     /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}.
+     */
+    T visit(IgniteGateway rel);
+
+    /**
      * Visits a relational node and calculates a result on the basis of node meta information.
      *
      * @param rel Relational node.

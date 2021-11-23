@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.ignite.internal.processors.query.calcite.extension.SqlExtension;
+import org.apache.ignite.internal.processors.query.calcite.util.BaseQueryContext;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Query mapping context.
  */
 public class MappingQueryContext {
+    private final BaseQueryContext qctx;
+
     private final String locNodeId;
 
     private final long topVer;
@@ -31,9 +37,19 @@ public class MappingQueryContext {
      * @param locNodeId Local node identifier.
      * @param topVer    Topology version to map.
      */
-    public MappingQueryContext(String locNodeId, long topVer) {
+    public MappingQueryContext(BaseQueryContext qctx, String locNodeId, long topVer) {
+        this.qctx = qctx;
         this.locNodeId = locNodeId;
         this.topVer = topVer;
+    }
+
+    /**
+     * Get an extensions by it's name.
+     *
+     * @return An extensions or {@code null} if there is no extension with given name.
+     */
+    public @Nullable SqlExtension extension(String name) {
+        return qctx.extension(name);
     }
 
     public String localNodeId() {

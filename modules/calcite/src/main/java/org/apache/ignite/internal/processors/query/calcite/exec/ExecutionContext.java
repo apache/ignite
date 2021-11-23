@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.extension.SqlExtension;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime context allowing access to the tables in a database.
@@ -76,8 +78,8 @@ public class ExecutionContext<RowT> extends AbstractQueryContext implements Data
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     /**
-     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value
-     * throughout the query.
+     * Need to store timestamp, since SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the
+     * query.
      */
     private final long startTs;
 
@@ -87,7 +89,7 @@ public class ExecutionContext<RowT> extends AbstractQueryContext implements Data
      * Constructor.
      *
      * @param executor     Task executor.
-     * @param qctx          Base query context.
+     * @param qctx         Base query context.
      * @param qryId        Query ID.
      * @param fragmentDesc Partitions information.
      * @param handler      Row handler.
@@ -208,6 +210,15 @@ public class ExecutionContext<RowT> extends AbstractQueryContext implements Data
      */
     public long topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * Get an extensions by it's name.
+     *
+     * @return An extensions or {@code null} if there is no extension with given name.
+     */
+    public @Nullable SqlExtension extension(String name) {
+        return qctx.extension(name);
     }
 
     /** {@inheritDoc} */

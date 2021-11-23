@@ -20,25 +20,30 @@ package org.apache.ignite.internal.processors.query.calcite.extension;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.calcite.SqlQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Entry point to extend current sql engine with external storage or even custom execution.
+ *
+ * <h3>Extension lifecycle</h3>
+ * All extensions are created in a start phase of {@link SqlQueryProcessor} and initialized after all other components
+ * of {@link SqlQueryProcessor} have been started.
+ *
+ * <p>All extensions are stopped in the very beginning of the stop phase of {@link SqlQueryProcessor}, just before the other components.
  */
 public interface SqlExtension {
     /**
      * Returns the name of the current extension.
      *
      * <p>This name will be used to distinguish between different
-     * extensions. Also the {@link CatalogUpdateListener} will register
-     * provided catalog with the same name.
+     * extensions. Also the {@link CatalogUpdateListener} will register provided catalog with the same name.
      *
      * @return Name of the extension.
      */
@@ -47,20 +52,20 @@ public interface SqlExtension {
     /**
      * Initializes the extension before use.
      *
-     * @param ignite Instance of the current Ignite node.
-     * @param catalogUpdateListener Listener to notify when new table or schema
-     *                              are available. Note: the catalog listener creates
-     *                              copy of the provided catalog, so its not enough
-     *                              to just update {@link ExternalCatalog catalog} or
-     *                              {@link ExternalSchema schema}, the listener should
-     *                              be called explicitly to register changes.
+     * @param catalogUpdateListener Listener to notify when new table or schema are available. Note: the catalog listener creates copy of
+     *                              the provided catalog, so its not enough to just update {@link ExternalCatalog catalog} or {@link
+     *                              ExternalSchema schema}, the listener should be called explicitly to register changes.
      * @see ExternalSchema
      * @see ExternalCatalog
      */
     void init(
-            Ignite ignite,
             CatalogUpdateListener catalogUpdateListener
     );
+
+    /**
+     * Stops the extension.
+     */
+    default void stop() {}
 
     /**
      * Returns a set of optimization rules for given optimization phase.
@@ -69,7 +74,7 @@ public interface SqlExtension {
      * @return Set of rules, or empty set if there are no rules for given phase.
      */
     Set<? extends RelOptRule> getOptimizerRules(PlannerPhase phase);
-    
+
     /**
      * Returns an implementor of relations provided by current extension.
      *
@@ -80,7 +85,7 @@ public interface SqlExtension {
      * @see RelImplementor
      */
     <RowT> RelImplementor<RowT> implementor();
-    
+
     /**
      * Returns colocation group for given relational tree.
      *
@@ -91,7 +96,7 @@ public interface SqlExtension {
      * @return Colocation of given relation tree.
      */
     ColocationGroup colocationGroup(IgniteRel node);
-    
+
     /**
      * Implementer to create execution nodes from provided relational nodes.
      *
@@ -108,36 +113,36 @@ public interface SqlExtension {
          * <p>It's guaranteed that the tree will only consist of the relations
          * provided by the current extension.
          *
-         * @param ctx An execution context.
+         * @param ctx  An execution context.
          * @param node A root of the relational tree.
          * @return A root of the resulting execution tree.
          */
         Node<RowT> implement(ExecutionContext<RowT> ctx, IgniteRel node);
     }
-    
+
     /**
      * Represents an external SQL schema that is simply a group different tables.
      */
     interface ExternalSchema {
         /** Returns list of all tables provided by current schema. */
         List<String> tableNames();
-    
+
         /**
          * Returns table by its name.
          *
          * @param name Name of the table.
          * @return The table, or {@code null} if there is no table with given name.
          */
-        @Nullable RelOptTable table(String name);
+        @Nullable IgniteTable table(String name);
     }
-    
+
     /**
      * Represents an external SQL catalog that is simply a group different schemas.
      */
     interface ExternalCatalog {
         /** Returns list of all schemas provided by current catalog. */
         List<String> schemaNames();
-    
+
         /**
          * Returns schema by its name.
          *
