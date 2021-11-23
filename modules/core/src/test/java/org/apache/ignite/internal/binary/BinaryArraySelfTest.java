@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -327,6 +331,35 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
         assertEquals("string", arr[0]);
         assertEquals(1L, arr[1]);
         assertNull(arr[2]);
+    }
+
+    /** */
+    @Test
+    public void testArrayOfCollectionSerDe() {
+        List<TestClass1> l1 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
+        List<TestClass1> l2 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
+        List<TestClass1> l3 = new ArrayList<>(F.asList(new TestClass1(), new TestClass1()));
+
+        List[] arr = new List[] { l1, l2, l3 };
+
+        Object res = server.binary().toBinary(arr);
+        Object[] res0;
+
+        if (useTypedArrays) {
+            assertTrue(res instanceof BinaryArray);
+
+            res0 = ((BinaryArray)res).deserialize();
+        }
+        else {
+            assertTrue(res instanceof Object[]);
+
+            res0 = PlatformUtils.unwrapBinariesInArray((Object[])res);
+        }
+
+        assertEquals(arr.length, res0.length);
+
+        for (int i = 0; i < arr.length; i++)
+            assertEqualsCollections(arr[i], (Collection<?>)res0[i]);
     }
 
     /** */

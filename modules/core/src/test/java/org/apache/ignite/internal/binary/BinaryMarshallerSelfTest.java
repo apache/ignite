@@ -5780,6 +5780,21 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
 
         /** */
         private SimpleObject obj = TestClass0.constSimpleObject();
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            TestClass1 class1 = (TestClass1)o;
+            return intVal == class1.intVal && Objects.equals(strVal, class1.strVal) && Objects.equals(obj, class1.obj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(intVal, strVal, obj);
+        }
     }
 
     /**

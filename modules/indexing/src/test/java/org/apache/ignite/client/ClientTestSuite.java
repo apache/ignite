@@ -25,6 +25,7 @@ import org.apache.ignite.internal.client.thin.ComputeTaskTest;
 import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
 import org.apache.ignite.internal.client.thin.ServicesTest;
+import org.apache.ignite.internal.client.thin.ServicesTypedArrayTests;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStableTopologyTest;
@@ -58,6 +59,7 @@ import org.junit.runners.Suite;
     ClusterApiTest.class,
     ClusterGroupTest.class,
     ServicesTest.class,
+    ServicesTypedArrayTests.class,
     CacheEntryListenersTest.class,
     ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
