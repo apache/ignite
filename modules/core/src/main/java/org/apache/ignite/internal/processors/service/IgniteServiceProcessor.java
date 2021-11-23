@@ -376,18 +376,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
 
-            SecurityException authE;
-
             try (OperationSecurityContext ignored = ctx.security().withContext(data.joiningNodeId())) {
-                authE = checkPermissions(desc.name(), SERVICE_DEPLOY);
-            }
+                if (checkPermissions(desc.name(), SERVICE_DEPLOY) != null) {
+                    U.warn(log, "Failed to register service configuration received from joining node :" +
+                        " [nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]." +
+                        " Joining node is not authorized to deploy the service.");
 
-            if (authE != null) {
-                U.warn(log, "Failed to register service configuration received from joining node :" +
-                    " [nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]." +
-                    " Joining node is not authorized to deploy the service.");
-
-                continue;
+                    continue;
+                }
             }
 
             ServiceInfo oldDesc = registeredServices.get(desc.serviceId());

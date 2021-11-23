@@ -57,31 +57,31 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.testframework.LogListener.matches;
 
-/** */
+/** Tests permissions that are required to perform service operations. */
 @RunWith(Parameterized.class)
 public class ServiceAuthorizationTest extends AbstractSecurityTest {
-    /** */
+    /** Name of the test service.*/
     private static final String TEST_SERVICE_NAME = "test-service-name";
 
-    /** */
+    /** Test service call context. */
     private static final ServiceCallContext SERVICE_CALL_CTX = ServiceCallContext.builder()
         .put("key", "val")
         .build();
 
-    /** */
+    /** Error that occurs in case service deployment fails. */
     private static final String DEPLOYMENT_AUTHORIZATION_FAILED_ERR =
         "Authorization failed [perm=SERVICE_DEPLOY, name=" + TEST_SERVICE_NAME;
 
-    /** */
+    /** Index of the node that is allowed to perform test operation. */
     private static final int ALLOWED_NODE_IDX = 1;
 
-    /** */
+    /** Index of the node that is forbidden to perform test operation. */
     private static final int FORBIDDEN_NODE_IDX = 2;
 
-    /** */
+    /** Instance of the test logger to check logged messages. */
     private static ListeningTestLogger listeningLog;
 
-    /** */
+    /** Whether a client node is an initiator of the test operations. */
     @Parameterized.Parameter()
     public boolean isClient;
 
@@ -119,7 +119,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Tests that all service cancel calls requires {@link SecurityPermission#SERVICE_CANCEL} permission. */
     @Test
     public void testServiceCancel() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE, SERVICE_CANCEL));
@@ -135,7 +135,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         checkCancel(srvcs -> srvcs.cancelAllAsync().get());
     }
 
-    /** */
+    /** Tests that all service invoke calls requires {@link SecurityPermission#SERVICE_INVOKE} permission. */
     @Test
     public void testServiceInvoke() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE));
@@ -157,7 +157,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         );
     }
 
-    /** */
+    /** Tests that all service deploy calls requires {@link SecurityPermission#SERVICE_DEPLOY} permission. */
     @Test
     public void testServiceDeploy() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE, SERVICE_CANCEL));
@@ -196,7 +196,10 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         );
     }
 
-    /** */
+    /**
+     * Tests that service deployment that was initiated during new node join process requires
+     * {@link SecurityPermission#SERVICE_DEPLOY} permission.
+     */
     @Test
     public void testPreconfiguredServiceDeployment() throws Exception {
         startClientAllowAll(getTestIgniteInstanceName(1));
@@ -243,8 +246,8 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
             checkServiceOnAllNodes(TEST_SERVICE_NAME, false);
         }
     }
-    
-    /** */
+
+    /** @return Test service configuration. */
     private ServiceConfiguration serviceConfiguration() {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
@@ -255,7 +258,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         return srvcCfg;
     }
 
-    /** */
+    /** @return Ignite node configuration. */
     private IgniteConfiguration configuration(int idx, SecurityPermission... perms) throws Exception {
         String name = getTestIgniteInstanceName(idx);
 
@@ -279,7 +282,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         ).setClientMode(isClient);
     }
 
-    /** */
+    /** Checks that service with specified service name is deployed or not on all nodes. */
     private void checkServiceOnAllNodes(String name, boolean deployed) {
         for (Ignite node : G.allGrids()) {
             if (!node.cluster().localNode().isClient()) {
@@ -293,7 +296,10 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
+    /**
+     * Checks that execution of the specified {@link Runnable} failed and that the exception was caused by the lack of
+     * the specified permission.
+     */
     private void checkFailed(SecurityPermission perm, RunnableX r) {
         if (perm == SERVICE_DEPLOY) {
             Throwable e = assertThrowsWithCause(r, ServiceDeploymentException.class);
@@ -317,7 +323,11 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
+    /**
+     * Uses the specified consumer to perform a service cancellation operation on a node that has the required
+     * permissions to perform this operation and on a node that does not. And checks that in the second case operation
+     * is aborted.
+     */
     private void checkCancel(Consumer<IgniteServices> c) {
         grid(ALLOWED_NODE_IDX).services().deploy(serviceConfiguration());
 
@@ -332,7 +342,14 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         checkServiceOnAllNodes(TEST_SERVICE_NAME, false);
     }
 
-    /** */
+    /**
+     * Uses the specified function to perform a service invocation operation on a node that has the required
+     * permissions to perform this operation and on a node that does not. And checks that in the second case operation
+     * is aborted.
+     *
+     * @param f Function to perform a service invocation operation.
+     * @param isProxy Whether invocation result is service proxy.
+     */
     private void checkInvoke(Function<IgniteServices, Object> f, boolean isProxy) throws Exception {
         checkFailed(SERVICE_INVOKE, () -> f.apply(grid(FORBIDDEN_NODE_IDX).services()));
 
@@ -348,8 +365,15 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
             ((Service)res).execute();
     }
 
-    /** */
-    private void checkDeploy(Consumer<IgniteServices> c, boolean singleton) {
+    /**
+     * Uses the specified consumer to perform a service deployment operation on a node that has the required
+     * permissions to perform this operation and on a node that does not. And checks that in the second case operation
+     * is aborted.
+     *
+     * @param c Consumer to perform a service deployment operation.
+     * @param isSingleton Whether deployed service is singleton.
+     */
+    private void checkDeploy(Consumer<IgniteServices> c, boolean isSingleton) {
         grid(ALLOWED_NODE_IDX).services().cancel(TEST_SERVICE_NAME);
 
         checkServiceOnAllNodes(TEST_SERVICE_NAME, false);
@@ -360,13 +384,13 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
 
         c.accept(grid(ALLOWED_NODE_IDX).services());
 
-        if (!singleton)
+        if (!isSingleton)
             checkServiceOnAllNodes(TEST_SERVICE_NAME, true);
         else
             assertTrue(G.allGrids().stream().anyMatch(ignite -> ignite.services().service(TEST_SERVICE_NAME) != null));
     }
     
-    /** */
+    /** Test service. */
     public static class TestService implements Service {
         // No-op.
     }
