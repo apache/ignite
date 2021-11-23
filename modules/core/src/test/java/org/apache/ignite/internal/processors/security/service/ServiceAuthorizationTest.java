@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.security.service;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteServices;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
