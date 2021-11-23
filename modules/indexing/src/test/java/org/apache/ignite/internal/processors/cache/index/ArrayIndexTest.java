@@ -23,18 +23,24 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
 
 /**
  * Checks that sql operation works by arrays.
@@ -161,12 +167,62 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
 
     }
 
+    /** */
+    @Test
+    public void shouldSupportTableExpressions() throws Exception {
+        checkTableExpression(false);
+    }
+
+    /** */
+    @Test
+    public void shouldSupportTableExpressionsWithTypedArrays() throws Exception {
+        checkTableExpression(true);
+    }
+
+    /** */
+    private void checkTableExpression(boolean useTypedArrays) throws Exception {
+        System.setProperty(IGNITE_USE_TYPED_ARRAYS, Boolean.toString(useTypedArrays));
+        BinaryArray.initUseTypedArrays();
+
+        try (IgniteEx ex = startGrid(0);
+            IgniteEx cli = startClientGrid(1);
+            IgniteClient thinCli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+
+            ex.cluster().active(true);
+
+            executeSql(cli, "CREATE TABLE T1 (id int not null, name varchar(1), PRIMARY KEY(id))");
+
+            String insertQry = "INSERT INTO T1(id, name) VALUES (?, ?)";
+
+            executeSql(cli, insertQry, 1, "A");
+            executeSql(cli, insertQry, 2, "B");
+            executeSql(cli, insertQry, 3, "C");
+
+            String select = "select T1._KEY, T1._VAL from T1 inner join table (id2 int = ?) T2 on (T1.id = T2.id2)";
+            List<List<?>> res = executeSql(
+                cli,
+                select,
+                (Object)new Integer[] {1, 2}
+            );
+
+            assertNotNull(res);
+
+            List<List<?>> all = thinCli.query(new SqlFieldsQuery(select).setArgs(new Integer[] {1, 2})).getAll();
+
+            assertNotNull(all);
+        }
+        finally {
+            System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
+            BinaryArray.initUseTypedArrays();
+        }
+    }
+
     /**
      *
      */
-    private List<List<?>> executeSql(IgniteEx node, String sqlText) throws Exception {
+    private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) throws Exception {
         GridQueryProcessor qryProc = node.context().query();
 
-        return qryProc.querySqlFields(new SqlFieldsQuery(sqlText), true).getAll();
+        return qryProc.querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 }
