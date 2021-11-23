@@ -345,7 +345,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         List<RelNode> deserializedNodes = new ArrayList<>();
 
         for (String s : serialized) {
-            RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
+            RelJsonReader reader = new RelJsonReader(ctx);
 
             deserializedNodes.add(reader.read(s));
         }

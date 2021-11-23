@@ -475,6 +475,8 @@ public class SchemaManager implements GridQuerySchemaManager {
                         cls.getName() + '.' + m.getName() + '"';
 
                     connMgr.executeStatement(schema, clause);
+
+                    lsnr.onFunctionCreated(schema, alias, m);
                 }
             }
         }
@@ -938,6 +940,9 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDescriptor) {}
+
+        /** {@inheritDoc} */
+        @Override public void onFunctionCreated(String schemaName, String name, Method method) {}
     }
 
     /** */
@@ -965,7 +970,7 @@ public class SchemaManager implements GridQuerySchemaManager {
          * {@inheritDoc}
          */
         @Override public void onSchemaDropped(String schemaName) {
-            lsnrs.forEach(lsnr -> lsnr.onSchemaCreated(schemaName));
+            lsnrs.forEach(lsnr -> lsnr.onSchemaDropped(schemaName));
         }
 
         /**
@@ -1010,6 +1015,11 @@ public class SchemaManager implements GridQuerySchemaManager {
          */
         @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
             lsnrs.forEach(lsnr -> lsnr.onIndexDropped(schemaName, tblName, idxName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+            lsnrs.forEach(lsnr -> lsnr.onFunctionCreated(schemaName, name, method));
         }
     }
 

@@ -73,16 +73,16 @@ public class RelJsonReader {
 
     /** */
     public static <T extends RelNode> T fromJson(BaseQueryContext ctx, String json) {
-        RelJsonReader reader = new RelJsonReader(ctx.catalogReader());
+        RelJsonReader reader = new RelJsonReader(ctx);
 
         return (T)reader.read(json);
     }
 
     /** */
-    public RelJsonReader(RelOptSchema relOptSchema) {
-        this.relOptSchema = relOptSchema;
+    public RelJsonReader(BaseQueryContext qctx) {
+        relOptSchema = qctx.catalogReader();
 
-        relJson = new RelJson();
+        relJson = new RelJson(qctx);
     }
 
     /** */

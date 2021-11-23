@@ -86,13 +86,6 @@ public final class PlanningContext implements Context {
 
     // Helper methods
     /**
-     * @return Sql operators table.
-     */
-    public SqlOperatorTable opTable() {
-        return config().getOperatorTable();
-    }
-
-    /**
      * @return Sql conformance.
      */
     public SqlConformance conformance() {
@@ -128,6 +121,13 @@ public final class PlanningContext implements Context {
      */
     public IgniteTypeFactory typeFactory() {
         return unwrap(BaseQueryContext.class).typeFactory();
+    }
+
+    /**
+     * @return Sql operators table.
+     */
+    public SqlOperatorTable opTable() {
+        return unwrap(BaseQueryContext.class).opTable();
     }
 
     /**

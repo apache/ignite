@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.lang.reflect.Method;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -89,4 +90,13 @@ public interface SchemaChangeListener {
      * @param idxName Index name.
      */
     public void onIndexDropped(String schemaName, String tblName, String idxName);
+
+    /**
+     * Callback on function creation.
+     *
+     * @param schemaName Schema name.
+     * @param name Function name.
+     * @param method Public static method, implementing this function.
+     */
+    public void onFunctionCreated(String schemaName, String name, Method method);
 }
