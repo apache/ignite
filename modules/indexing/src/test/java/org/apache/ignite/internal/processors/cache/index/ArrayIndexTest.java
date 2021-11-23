@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -41,6 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_TYPED_ARRAYS;
+import static org.apache.ignite.client.Config.SERVER;
 
 /**
  * Checks that sql operation works by arrays.
@@ -185,8 +187,8 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
         BinaryArray.initUseTypedArrays();
 
         try (IgniteEx ex = startGrid(0);
-            IgniteEx cli = startClientGrid(1);
-            IgniteClient thinCli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+             IgniteEx cli = startClientGrid(1);
+             IgniteClient thinCli = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER))) {
 
             ex.cluster().active(true);
 
@@ -198,18 +200,23 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
             executeSql(cli, insertQry, 2, "B");
             executeSql(cli, insertQry, 3, "C");
 
-            String select = "select T1._KEY, T1._VAL from T1 inner join table (id2 int = ?) T2 on (T1.id = T2.id2)";
-            List<List<?>> res = executeSql(
-                cli,
-                select,
-                (Object)new Integer[] {1, 2}
-            );
+            String select = "SELECT T1.ID, T1.NAME FROM T1 INNER JOIN TABLE (id2 int = ?) T2 on (T1.id = T2.id2) ORDER BY id";
+            Object arg = new Integer[] {1, 2};
 
-            assertNotNull(res);
+            Consumer<List<List<?>>> checker = res -> {
+                assertNotNull(res);
 
-            List<List<?>> all = thinCli.query(new SqlFieldsQuery(select).setArgs(new Integer[] {1, 2})).getAll();
+                assertEquals(2, res.size());
 
-            assertNotNull(all);
+                assertEquals(1, res.get(0).get(0));
+                assertEquals("A", res.get(0).get(1));
+                assertEquals(2, res.get(1).get(0));
+                assertEquals("B", res.get(1).get(1));
+            };
+
+            checker.accept(executeSql(ex, select, arg));
+            checker.accept(executeSql(cli, select, arg));
+            checker.accept(thinCli.query(new SqlFieldsQuery(select).setArgs(arg)).getAll());
         }
         finally {
             System.clearProperty(IGNITE_USE_TYPED_ARRAYS);
