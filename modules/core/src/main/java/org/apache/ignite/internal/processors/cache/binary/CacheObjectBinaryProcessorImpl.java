@@ -510,7 +510,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             return new BinaryArray(
                 binaryCtx,
-                binaryCtx.typeId(!isBinaryArr ? compCls.getName() : Object.class.getName()),
+                // In case of interface rely on class name, because interfaces not registered as binary types.
+                compCls.isInterface()
+                    ? GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+                    : binaryCtx.typeId(!isBinaryArr ? compCls.getName() : Object.class.getName()),
                 !isBinaryArr ? compCls.getName() : Object.class.getName(),
                 pArr
             );

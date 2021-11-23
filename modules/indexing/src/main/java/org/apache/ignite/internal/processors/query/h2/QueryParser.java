@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -181,7 +180,7 @@ public class QueryParser {
             timeout = (int)idx.distributedConfiguration().defaultQueryTimeout();
 
         return new QueryParameters(
-            BinaryUtils.rawArrayInArgs(qry.getArgs(), true),
+            qry.getArgs(),
             qry.getPartitions(),
             timeout,
             qry.isLazy(),
@@ -301,8 +300,7 @@ public class QueryParser {
             if (!F.isEmpty(parser.remainingSql())) {
                 checkRemainingAllowed(remainingAllowed);
 
-                remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(
-                    BinaryUtils.rawArrayInArgs(qry.getArgs(), true));
+                remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(qry.getArgs());
             }
 
             QueryParserResultCommand cmd = new QueryParserResultCommand(nativeCmd, null, false);
@@ -397,7 +395,7 @@ public class QueryParser {
 
                 final int paramsCnt = prepared.getParameters().size();
 
-                Object[] argsOrig = BinaryUtils.rawArrayInArgs(qry.getArgs(), true);
+                Object[] argsOrig = qry.getArgs();
 
                 Object[] args = null;
                 Object[] remainingArgs = null;
