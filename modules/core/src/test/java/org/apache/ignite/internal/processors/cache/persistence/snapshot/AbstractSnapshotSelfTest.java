@@ -112,7 +112,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Number of cache keys to pre-create at node start. */
-    protected static final int CACHE_KEYS_RANGE = 1024;
+    protected static final int CACHE_KEYS_RANGE = GridTestUtils.SF.applyLB(1024, 16);
 
     /** Timeout in milliseconds to await for snapshot operation being completed. */
     protected static final long TIMEOUT = 15_000;
