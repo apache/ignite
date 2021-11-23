@@ -30,6 +30,28 @@ import org.junit.Test;
  * Test SQL data types.
  */
 public class DataTypesTest extends AbstractBasicIntegrationTest {
+    @Test
+    public void test1(){
+        executeSql("CREATE TABLE mydata(iv INTEGER, sv VARCHAR)");
+        executeSql("INSERT INTO mydata VALUES (11,'A'), (12,'b'), (13,'c'), (14,'d'), (15,'e'), (16,'f')");
+
+        executeSql("CREATE TABLE second(iv2 INTEGER)");
+        executeSql("INSERT INTO second VALUES (15), (16)");
+
+        executeSql("SELECT * from mydata where iv = (select iv2 from second)");
+    }
+
+    @Test
+    public void test(){
+        executeSql("CREATE TABLE mydata(i INTEGER)");
+        executeSql("INSERT INTO mydata VALUES (11), (12), (13), (14), (15), (16)");
+
+
+        executeSql("SELECT i1.i, (SELECT i1.i + i2.i FROM mydata i2) AS j FROM mydata i1");
+//        executeSql("SELECT i1.i, (SELECT i1.i + i2.i FROM mydata i2 where i2.i<15) AS j FROM mydata i1");
+
+    }
+
     /**
      * Tests numeric types mapping on Java types.
      */
