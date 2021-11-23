@@ -288,13 +288,13 @@ public class CacheMetricsImpl implements CacheMetrics {
             "The total number of cache invocations, caused no updates.");
 
         entryProcessorInvokeTimeNanos = mreg.longMetric("EntryProcessorInvokeTimeNanos",
-            "The total time of cache invocations, in nanoseconds.");
+            "The total time of cache invocations for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
-            "So far, the minimum time to execute cache invokes.");
+            "So far, the minimum time to execute cache invokes for which this node is the initiator.");
 
         entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
-            "So far, the maximum time to execute cache invokes.");
+            "So far, the maximum time to execute cache invokes for which this node is the initiator.");
 
         entryProcessorHits = mreg.longMetric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
@@ -323,13 +323,13 @@ public class CacheMetricsImpl implements CacheMetrics {
         rmCnt = mreg.longMetric("CacheRemovals", "The total number of removals from the cache.");
 
         putTimeTotal = mreg.longMetric("PutTimeTotal",
-            "The total time of cache puts, in nanoseconds.");
+            "The total time of cache puts for which this node is the initiator, in nanoseconds.");
 
         getTimeTotal = mreg.longMetric("GetTimeTotal",
-            "The total time of cache gets, in nanoseconds.");
+            "The total time of cache gets for which this node is the initiator, in nanoseconds.");
 
         rmvTimeTotal = mreg.longMetric("RemoveTimeTotal",
-            "The total time of cache removal, in nanoseconds.");
+            "The total time of cache removal for which this node is the initiator, in nanoseconds.");
 
         commitTimeTotal = mreg.longMetric("CommitTimeTotal",
             "The total time of commit, in nanoseconds.");
@@ -388,17 +388,23 @@ public class CacheMetricsImpl implements CacheMetrics {
         mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
             "True if index rebuild is in progress.");
 
-        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
+        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS,
+            "Get time for which this node is the initiator, in nanoseconds.");
 
-        getAllTime = mreg.histogram("GetAllTime", HISTOGRAM_BUCKETS, "GetAll time in nanoseconds.");
+        getAllTime = mreg.histogram("GetAllTime", HISTOGRAM_BUCKETS,
+            "GetAll time for which this node is the initiator, in nanoseconds.");
 
-        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS, "Put time in nanoseconds.");
+        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS,
+            "Put time for which this node is the initiator, in nanoseconds.");
 
-        putAllTime = mreg.histogram("PutAllTime", HISTOGRAM_BUCKETS, "PutAll time in nanoseconds.");
+        putAllTime = mreg.histogram("PutAllTime", HISTOGRAM_BUCKETS,
+            "PutAll time for which this node is the initiator, in nanoseconds.");
 
-        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS, "Remove time in nanoseconds.");
+        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS,
+            "Remove time for which this node is the initiator, in nanoseconds.");
 
-        rmvAllTime = mreg.histogram("RemoveAllTime", HISTOGRAM_BUCKETS, "RemoveAll time in nanoseconds.");
+        rmvAllTime = mreg.histogram("RemoveAllTime", HISTOGRAM_BUCKETS,
+            "RemoveAll time for which this node is the initiator, in nanoseconds.");
 
         commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
 

@@ -10,6 +10,7 @@
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>Apache.Ignite.Log4Net.snk</AssemblyOriginatorKeyFile>
     <IsPackable>true</IsPackable>
+    <PackageId>Apache.Ignite.Log4Net</PackageId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>Apache Ignite log4net Logger.</Description>
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>

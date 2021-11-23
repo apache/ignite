@@ -45,9 +45,9 @@ Refer to a service example implementation in the Apache Ignite link:{githubUrl}/
 A service implements the javadoc:org.apache.ignite.services.Service[Service] interface.
 The `Service` interface has three methods:
 
-* `init(ServiceContext)`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
-* `execute(ServiceContext)`: starts execution of the service
-* `cancel(ServiceContext)`:  cancels service execution
+* `init()`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
+* `execute()`: starts execution of the service
+* `cancel()`:  cancels service execution
 
 //The service must be available in the classpash of all server nodes. *TODO: deployment options*
 

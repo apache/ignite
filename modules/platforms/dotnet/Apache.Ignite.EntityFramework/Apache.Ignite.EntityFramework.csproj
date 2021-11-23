@@ -10,6 +10,7 @@
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>Apache.Ignite.EntityFramework.snk</AssemblyOriginatorKeyFile>
     <IsPackable>true</IsPackable>
+    <PackageId>Apache.Ignite.EntityFramework</PackageId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>Apache Ignite EntityFramework Second Level Cache: caches EF query results in a distributed in-memory cache.</Description>
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>

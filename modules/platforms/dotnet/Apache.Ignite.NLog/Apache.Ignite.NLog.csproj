@@ -10,6 +10,7 @@
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>Apache.Ignite.NLog.snk</AssemblyOriginatorKeyFile>
     <IsPackable>true</IsPackable>
+    <PackageId>Apache.Ignite.NLog</PackageId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>Apache Ignite NLog Logger.</Description>
     <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>

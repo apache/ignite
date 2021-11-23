@@ -77,7 +77,7 @@ if (WIN32)
             os/win/src/system/ui/custom_window.cpp
             os/win/src/system/ui/dsn_configuration_window.cpp
             os/win/src/system/ui/window.cpp
-            project/vs/module.def)
+            module.def)
 endif ()
 
 add_library(${TARGET} SHARED ${SOURCES})
@@ -156,7 +156,11 @@ endif()
 
 target_include_directories(${TARGET} INTERFACE include)
 
-install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
+install(TARGETS ${TARGET} 
+    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
 
 if (WIN32 AND ${WITH_ODBC_MSI})
    install(FILES ${WIX_INSTALLER_PREFIX}.msi DESTINATION bin)
