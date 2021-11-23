@@ -112,7 +112,7 @@ public class ClientTableTest extends AbstractClientTableTest {
         FakeSchemaRegistry.setLastVer(1);
 
         try (var client2 = startClient()) {
-            RecordView<Tuple> table2 = client2.tables().table(table.tableName()).recordView();
+            RecordView<Tuple> table2 = client2.tables().table(table.name()).recordView();
             var tuple2 = tuple();
             var resTuple = table2.get(tuple2);
 

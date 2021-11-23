@@ -406,7 +406,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     raftMgr.stopRaftGroup(raftGroupName(table.tableId(), p));
                 }
             } catch (Exception e) {
-                LOG.error("Failed to stop a table {}", e, table.tableName());
+                LOG.error("Failed to stop a table {}", e, table.name());
             }
         }
 
@@ -563,7 +563,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
             assert table != null : "Table is undefined [tblId=" + tblId + ']';
 
-            ExtendedTableConfiguration tblCfg = ((ExtendedTableConfiguration) tablesCfg.tables().get(table.tableName()));
+            ExtendedTableConfiguration tblCfg = ((ExtendedTableConfiguration) tablesCfg.tables().get(table.name()));
 
             if (schemaVer <= table.schemaView().lastSchemaVersion()) {
                 return getSchemaDescriptorLocally(schemaVer, tblCfg);

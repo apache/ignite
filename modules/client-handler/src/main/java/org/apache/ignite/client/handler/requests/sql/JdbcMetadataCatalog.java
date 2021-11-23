@@ -75,7 +75,7 @@ public class JdbcMetadataCatalog {
             .thenComparingInt(o -> o.getSecond().schemaIndex());
     
     /** Comparator for {@link JdbcTableMeta} by table type then schema then table name. */
-    private static final Comparator<Table> byTblTypeThenSchemaThenTblName = Comparator.comparing(Table::tableName);
+    private static final Comparator<Table> byTblTypeThenSchemaThenTblName = Comparator.comparing(Table::name);
     
     /**
      * Initializes info.
@@ -102,8 +102,8 @@ public class JdbcMetadataCatalog {
         String tlbNameRegex = translateSqlWildcardsToRegex(tblNamePtrn);
         
         tables.tables().stream()
-                .filter(t -> matches(getTblSchema(t.tableName()), schemaNameRegex))
-                .filter(t -> matches(getTblName(t.tableName()), tlbNameRegex))
+                .filter(t -> matches(getTblSchema(t.name()), schemaNameRegex))
+                .filter(t -> matches(getTblName(t.name()), tlbNameRegex))
                 .forEach(tbl -> {
                     JdbcPrimaryKeyMeta meta = createPrimaryKeyMeta(tbl);
                     
@@ -131,13 +131,13 @@ public class JdbcMetadataCatalog {
         String tlbNameRegex = translateSqlWildcardsToRegex(tblNamePtrn);
         
         List<Table> tblsMeta = tables.tables().stream()
-                .filter(t -> matches(getTblSchema(t.tableName()), schemaNameRegex))
-                .filter(t -> matches(getTblName(t.tableName()), tlbNameRegex))
+                .filter(t -> matches(getTblSchema(t.name()), schemaNameRegex))
+                .filter(t -> matches(getTblName(t.name()), tlbNameRegex))
                 .collect(Collectors.toList());
         
         return tblsMeta.stream()
                 .sorted(byTblTypeThenSchemaThenTblName)
-                .map(t -> new JdbcTableMeta(getTblSchema(t.tableName()), getTblName(t.tableName()), TBL_TYPE))
+                .map(t -> new JdbcTableMeta(getTblSchema(t.name()), getTblName(t.name()), TBL_TYPE))
                 .collect(Collectors.toList());
     }
     
@@ -159,8 +159,8 @@ public class JdbcMetadataCatalog {
         String colNameRegex = translateSqlWildcardsToRegex(colNamePtrn);
         
         tables.tables().stream()
-                .filter(t -> matches(getTblSchema(t.tableName()), schemaNameRegex))
-                .filter(t -> matches(getTblName(t.tableName()), tlbNameRegex))
+                .filter(t -> matches(getTblSchema(t.name()), schemaNameRegex))
+                .filter(t -> matches(getTblName(t.name()), tlbNameRegex))
                 .flatMap(
                         tbl -> {
                             SchemaDescriptor schema = ((TableImpl) tbl).schemaView().schema();
@@ -168,11 +168,11 @@ public class JdbcMetadataCatalog {
                             List<Pair<String, Column>> tblColPairs = new ArrayList<>();
     
                             for (Column column : schema.keyColumns().columns()) {
-                                tblColPairs.add(new Pair<>(tbl.tableName(), column));
+                                tblColPairs.add(new Pair<>(tbl.name(), column));
                             }
     
                             for (Column column : schema.valueColumns().columns()) {
-                                tblColPairs.add(new Pair<>(tbl.tableName(), column));
+                                tblColPairs.add(new Pair<>(tbl.name(), column));
                             }
                             
                             return tblColPairs.stream();
@@ -208,7 +208,7 @@ public class JdbcMetadataCatalog {
         }
         
         tables.tables().stream()
-                .map(tbl -> getTblSchema(tbl.tableName()))
+                .map(tbl -> getTblSchema(tbl.name()))
                 .filter(schema -> matches(schema, schemaNameRegex))
                 .forEach(schemas::add);
         
@@ -222,8 +222,8 @@ public class JdbcMetadataCatalog {
      * @return Jdbc primary key metadata.
      */
     private JdbcPrimaryKeyMeta createPrimaryKeyMeta(Table tbl) {
-        String schemaName = getTblSchema(tbl.tableName());
-        String tblName = getTblName(tbl.tableName());
+        String schemaName = getTblSchema(tbl.name());
+        String tblName = getTblName(tbl.name());
         
         final String keyName = PK + tblName;
         

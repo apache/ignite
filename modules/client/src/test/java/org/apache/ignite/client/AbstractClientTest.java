@@ -89,7 +89,7 @@ public abstract class AbstractClientTest {
     @BeforeEach
     public void beforeEach() {
         for (var t : server.tables().tables()) {
-            server.tables().dropTable(t.tableName());
+            server.tables().dropTable(t.name());
         }
     }
     

@@ -87,7 +87,7 @@ public class ClientTable implements Table {
     
     /** {@inheritDoc} */
     @Override
-    public @NotNull String tableName() {
+    public @NotNull String name() {
         return name;
     }
     

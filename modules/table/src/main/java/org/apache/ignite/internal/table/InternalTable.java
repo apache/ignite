@@ -52,7 +52,7 @@ public interface InternalTable extends AutoCloseable {
      *
      * @return Table name.
      */
-    @NotNull String tableName();
+    @NotNull String name();
 
     /**
      * Asynchronously gets a row with same key columns values as given one from the table.

@@ -136,7 +136,7 @@ public class ItThinClientConnectionTest extends IgniteAbstractTest {
                 assertEquals(1, tables.size());
 
                 Table table = tables.get(0);
-                assertEquals(String.format("%s.%s", SCHEMA_NAME, TABLE_NAME), table.tableName());
+                assertEquals(String.format("%s.%s", SCHEMA_NAME, TABLE_NAME), table.name());
 
                 var tuple = Tuple.create().set(keyCol, 1).set(valCol, "Hello");
                 var keyTuple = Tuple.create().set(keyCol, 1);

@@ -36,7 +36,7 @@ public interface Table {
      *
      * @return Table name.
      */
-    @NotNull String tableName();
+    @NotNull String name();
 
     /**
      * Creates record view of table for record class mapper provided.

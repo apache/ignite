@@ -140,7 +140,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override
-    public String tableName() {
+    public String name() {
         return tableName;
     }
 

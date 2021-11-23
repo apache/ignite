@@ -78,7 +78,7 @@ public class FakeInternalTable implements InternalTable {
     
     /** {@inheritDoc} */
     @Override
-    public @NotNull String tableName() {
+    public @NotNull String name() {
         return tableName;
     }
     

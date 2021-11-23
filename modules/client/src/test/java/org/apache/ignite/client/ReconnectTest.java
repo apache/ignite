@@ -50,7 +50,7 @@ public class ReconnectTest {
                     .retryLimit(100)
                     .build();
 
-            assertEquals("t", client.tables().tables().get(0).tableName());
+            assertEquals("t", client.tables().tables().get(0).name());
 
             stop(srv);
 
@@ -62,7 +62,7 @@ public class ReconnectTest {
                     10,
                     ignite2);
 
-            assertEquals("t2", client.tables().tables().get(0).tableName());
+            assertEquals("t2", client.tables().tables().get(0).name());
         } finally {
             stop(srv);
             stop(srv2);
@@ -87,7 +87,7 @@ public class ReconnectTest {
                     .retryLimit(100)
                     .build();
 
-            assertEquals("t", client.tables().tables().get(0).tableName());
+            assertEquals("t", client.tables().tables().get(0).name());
 
             stop(srv);
 

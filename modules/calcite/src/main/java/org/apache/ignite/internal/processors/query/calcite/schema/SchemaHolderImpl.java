@@ -93,7 +93,7 @@ public class SchemaHolderImpl implements SchemaHolder {
 
         TableDescriptorImpl desc = new TableDescriptorImpl(colDescriptors);
 
-        schema.addTable(removeSchema(schemaName, table.tableName()), new IgniteTableImpl(desc, table));
+        schema.addTable(removeSchema(schemaName, table.name()), new IgniteTableImpl(desc, table));
 
         rebuild();
     }

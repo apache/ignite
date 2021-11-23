@@ -40,7 +40,7 @@ public class TableEventParameters implements EventParameters {
      * @param table Table instance.
      */
     public TableEventParameters(TableImpl table) {
-        this(table.tableId(), table.tableName(), table);
+        this(table.tableId(), table.name(), table);
     }
 
     /**

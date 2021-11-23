@@ -118,7 +118,7 @@ public class StopCalciteModuleTest {
     
         schemaReg = new SchemaRegistryImpl(0, (v) -> schemaDesc, () -> INITIAL_SCHEMA_VERSION);
     
-        when(tbl.tableName()).thenReturn("PUBLIC.TEST");
+        when(tbl.name()).thenReturn("PUBLIC.TEST");
     
         // Mock create table (notify on register listener).
         doAnswer(invocation -> {

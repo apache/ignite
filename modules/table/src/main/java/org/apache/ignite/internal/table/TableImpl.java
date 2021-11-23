@@ -68,8 +68,8 @@ public class TableImpl implements Table {
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull String tableName() {
-        return tbl.tableName();
+    @Override public @NotNull String name() {
+        return tbl.name();
     }
 
     /**

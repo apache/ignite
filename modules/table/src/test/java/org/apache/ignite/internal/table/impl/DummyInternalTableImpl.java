@@ -114,7 +114,7 @@ public class DummyInternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull String tableName() {
+    public @NotNull String name() {
         return null;
     }
 

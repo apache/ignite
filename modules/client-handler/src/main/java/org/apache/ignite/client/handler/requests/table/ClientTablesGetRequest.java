@@ -44,7 +44,7 @@ public class ClientTablesGetRequest {
                 var tableImpl = (TableImpl) table;
 
                 out.packIgniteUuid(tableImpl.tableId());
-                out.packString(table.tableName());
+                out.packString(table.name());
             }
         });
     }

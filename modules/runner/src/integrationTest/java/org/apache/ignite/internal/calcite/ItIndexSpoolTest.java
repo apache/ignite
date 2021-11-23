@@ -54,7 +54,7 @@ public class ItIndexSpoolTest extends AbstractBasicIntegrationTest {
         }
 
         CLUSTER_NODES.get(0).tables().tables().stream()
-                .map(Table::tableName)
+                .map(Table::name)
                 .forEach(CLUSTER_NODES.get(0).tables()::dropTable);
 
         if (LOG.isInfoEnabled()) {
