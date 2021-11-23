@@ -39,7 +39,7 @@ public class ItTransferableObjectProcessorTest {
     /**
      * Package name of the test sources.
      */
-    private static final String RESOURCE_PACKAGE_NAME = "org.apache.ignite.internal.network.processor.";
+    private static final String RESOURCE_PACKAGE_NAME = "org.apache.ignite.internal.network.processor";
 
     /**
      * Compiler instance configured with the annotation processor being tested.
@@ -169,9 +169,11 @@ public class ItTransferableObjectProcessorTest {
     void testMissingMessageGroup() {
         Compilation compilation = compiler.compile(sources("AllTypesMessage"));
 
-        assertThat(compilation).hadErrorContaining(
-                "No message groups (classes annotated with @MessageGroup) found"
-        );
+        assertThat(compilation).hadErrorContaining(String.format(
+                "No message groups (classes annotated with @%s) found while processing messages from the following packages: [%s]",
+                MessageGroup.class.getSimpleName(),
+                RESOURCE_PACKAGE_NAME
+        ));
     }
 
     /**
@@ -183,12 +185,13 @@ public class ItTransferableObjectProcessorTest {
                 sources("AllTypesMessage", "ConflictingTypeMessage", "ITTestMessageGroup", "SecondGroup")
         );
 
-        assertThat(compilation).hadErrorContaining(
-                "Invalid number of message groups (classes annotated with @MessageGroup), "
-                        + "only one can be present in a compilation unit: "
-                        + "[org.apache.ignite.internal.network.processor.ITTestMessageGroup, "
-                        + "org.apache.ignite.internal.network.processor.SecondGroup]"
-        );
+        assertThat(compilation).hadErrorContaining(String.format(
+                "Invalid number of message groups (classes annotated with @%s), "
+                        + "only one can be present in a compilation unit: [%s.ITTestMessageGroup, %s.SecondGroup]",
+                MessageGroup.class.getSimpleName(),
+                RESOURCE_PACKAGE_NAME,
+                RESOURCE_PACKAGE_NAME
+        ));
     }
 
     /**
@@ -247,12 +250,12 @@ public class ItTransferableObjectProcessorTest {
      */
     private static List<JavaFileObject> sources(String... sources) {
         return Arrays.stream(sources)
-                .map(source -> RESOURCE_PACKAGE_NAME.replace('.', '/') + source + ".java")
+                .map(source -> RESOURCE_PACKAGE_NAME.replace('.', '/') + '/' + source + ".java")
                 .map(JavaFileObjects::forResource)
                 .collect(Collectors.toList());
     }
     
     private static String fileName(String className) {
-        return RESOURCE_PACKAGE_NAME + className;
+        return RESOURCE_PACKAGE_NAME + '.' + className;
     }
 }

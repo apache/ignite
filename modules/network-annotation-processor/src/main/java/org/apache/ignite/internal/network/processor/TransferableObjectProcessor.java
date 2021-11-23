@@ -31,7 +31,10 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.network.processor.messages.MessageBuilderGenerator;
 import org.apache.ignite.internal.network.processor.messages.MessageFactoryGenerator;
@@ -228,11 +231,23 @@ public class TransferableObjectProcessor extends AbstractProcessor {
     /**
      * Extracts and validates the declared message group types marked with the {@link MessageGroup} annotation.
      */
-    private static MessageGroupWrapper getMessageGroup(RoundEnvironment roundEnv) {
+    private MessageGroupWrapper getMessageGroup(RoundEnvironment roundEnv) {
         Set<? extends Element> messageGroupSet = roundEnv.getElementsAnnotatedWith(MessageGroup.class);
 
         if (messageGroupSet.isEmpty()) {
-            throw new ProcessingException("No message groups (classes annotated with @MessageGroup) found");
+            Elements elements = processingEnv.getElementUtils();
+
+            Set<String> packageNames = roundEnv.getRootElements().stream()
+                    .map(elements::getPackageOf)
+                    .map(PackageElement::getQualifiedName)
+                    .map(Name::toString)
+                    .collect(Collectors.toSet());
+
+            throw new ProcessingException(String.format(
+                    "No message groups (classes annotated with @%s) found while processing messages from the following packages: %s",
+                    MessageGroup.class.getSimpleName(),
+                    packageNames
+            ));
         }
 
         if (messageGroupSet.size() != 1) {
@@ -241,10 +256,11 @@ public class TransferableObjectProcessor extends AbstractProcessor {
                     .sorted()
                     .collect(Collectors.toList());
 
-            throw new ProcessingException(
-                    "Invalid number of message groups (classes annotated with @MessageGroup), "
-                            + "only one can be present in a compilation unit: " + sortedNames
-            );
+            throw new ProcessingException(String.format(
+                    "Invalid number of message groups (classes annotated with @%s), only one can be present in a compilation unit: %s",
+                    MessageGroup.class.getSimpleName(),
+                    sortedNames
+            ));
         }
 
         Element singleElement = messageGroupSet.iterator().next();
