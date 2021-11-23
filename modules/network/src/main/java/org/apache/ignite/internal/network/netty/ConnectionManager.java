@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.schemas.network.OutboundView;
 import org.apache.ignite.internal.network.handshake.HandshakeManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -58,9 +59,6 @@ public class ConnectionManager {
     
     /** Client bootstrap. */
     private final Bootstrap clientBootstrap;
-    
-    /** Client socket channel handler event loop group. */
-    private final EventLoopGroup clientWorkerGroup;
     
     /** Server. */
     private final NettyServer server;
@@ -97,27 +95,31 @@ public class ConnectionManager {
      * @param consistentId                  Consistent id of this node.
      * @param serverHandshakeManagerFactory Server handshake manager factory.
      * @param clientHandshakeManagerFactory Client handshake manager factory.
+     * @param bootstrapFactory              Bootstrap factory.
      */
     public ConnectionManager(
             NetworkView networkConfiguration,
             MessageSerializationRegistry registry,
             String consistentId,
             Supplier<HandshakeManager> serverHandshakeManagerFactory,
-            Supplier<HandshakeManager> clientHandshakeManagerFactory
+            Supplier<HandshakeManager> clientHandshakeManagerFactory,
+            NettyBootstrapFactory bootstrapFactory
     ) {
         this.serializationRegistry = registry;
         this.consistentId = consistentId;
         this.clientHandshakeManagerFactory = clientHandshakeManagerFactory;
+
         this.server = new NettyServer(
                 consistentId,
                 networkConfiguration,
                 serverHandshakeManagerFactory,
                 this::onNewIncomingChannel,
                 this::onMessage,
-                serializationRegistry
+                serializationRegistry,
+                bootstrapFactory
         );
-        this.clientWorkerGroup = NamedNioEventLoopGroup.create(consistentId + "-client");
-        this.clientBootstrap = createClientBootstrap(clientWorkerGroup, networkConfiguration.outbound());
+        
+        this.clientBootstrap = bootstrapFactory.createClientBootstrap();
     }
     
     /**
@@ -269,8 +271,6 @@ public class ConnectionManager {
         
         try {
             stopFut.join();
-            // TODO: IGNITE-14538 quietPeriod and timeout should be configurable.
-            clientWorkerGroup.shutdownGracefully(0L, 15, TimeUnit.SECONDS).sync();
         } catch (Exception e) {
             LOG.warn("Failed to stop the ConnectionManager: {}", e.getMessage());
         }

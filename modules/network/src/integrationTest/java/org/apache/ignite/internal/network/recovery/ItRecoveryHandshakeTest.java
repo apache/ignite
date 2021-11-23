@@ -47,6 +47,7 @@ import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.handshake.HandshakeAction;
 import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.internal.network.netty.NettySender;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.TestMessagesFactory;
@@ -65,6 +66,9 @@ public class ItRecoveryHandshakeTest {
     /** Started connection managers. */
     private final List<ConnectionManager> startedManagers = new ArrayList<>();
 
+    /** Started bootstrap factories. */
+    private final List<NettyBootstrapFactory> startedBootstrapFactories = new ArrayList<>();
+
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
     /** Reusable network configuration object. */
@@ -75,8 +79,12 @@ public class ItRecoveryHandshakeTest {
      * After each.
      */
     @AfterEach
-    final void tearDown() {
+    final void tearDown() throws Exception {
         startedManagers.forEach(ConnectionManager::stop);
+
+        for (NettyBootstrapFactory startedBootstrapFactory : startedBootstrapFactories) {
+            startedBootstrapFactory.stop();
+        }
     }
 
     /**
@@ -380,7 +388,7 @@ public class ItRecoveryHandshakeTest {
     /**
      * Starts a {@link ConnectionManager} adding it to the {@link #startedManagers} list.
      *
-     * @param port                  Port for the {@link ConnectionManager#server}.
+     * @param port                  Port for the server.
      * @param serverHandshakeFailAt At what stage to fail server handshake.
      * @param clientHandshakeFailAt At what stage to fail client handshake.
      * @return Connection manager.
@@ -400,13 +408,18 @@ public class ItRecoveryHandshakeTest {
         networkConfiguration.port().update(port).join();
 
         NetworkView cfg = networkConfiguration.value();
-
+    
+        NettyBootstrapFactory bootstrapFactory = new NettyBootstrapFactory(networkConfiguration, consistentId);
+        bootstrapFactory.start();
+        startedBootstrapFactories.add(bootstrapFactory);
+        
         var manager = new ConnectionManager(
                 cfg,
                 registry,
                 consistentId,
                 () -> new FailingRecoveryServerHandshakeManager(launchId, consistentId, serverHandshakeFailAt, messageFactory),
-                () -> new FailingRecoveryClientHandshakeManager(launchId, consistentId, clientHandshakeFailAt, messageFactory)
+                () -> new FailingRecoveryClientHandshakeManager(launchId, consistentId, clientHandshakeFailAt, messageFactory),
+                bootstrapFactory
         );
 
         manager.start();
@@ -433,13 +446,18 @@ public class ItRecoveryHandshakeTest {
         networkConfiguration.port().update(port).join();
 
         NetworkView cfg = networkConfiguration.value();
-
+    
+        NettyBootstrapFactory bootstrapFactory = new NettyBootstrapFactory(networkConfiguration, consistentId);
+        bootstrapFactory.start();
+        startedBootstrapFactories.add(bootstrapFactory);
+        
         var manager = new ConnectionManager(
                 cfg,
                 registry,
                 consistentId,
                 () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
-                () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
+                () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory),
+                bootstrapFactory
         );
 
         manager.start();

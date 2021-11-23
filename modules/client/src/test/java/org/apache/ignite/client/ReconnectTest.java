@@ -22,88 +22,75 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.concurrent.CompletionException;
 import org.apache.ignite.client.fakes.FakeIgnite;
-import org.apache.ignite.client.handler.ClientHandlerModule;
-import org.apache.ignite.internal.configuration.ConfigurationRegistry;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests thin client reconnect.
  */
 public class ReconnectTest {
+    /** Test server. */
+    TestServer server;
+    
+    /** Test server 2. */
+    TestServer server2;
+    
+    @AfterEach
+    void tearDown() throws Exception {
+        IgniteUtils.closeAll(server, server2);
+    }
+    
     @Test
     public void clientReconnectsToAnotherAddressOnNodeFail() throws Exception {
-        IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv = null;
-        IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv2 = null;
-
-        try {
-            FakeIgnite ignite1 = new FakeIgnite();
-            ignite1.tables().createTable("t", c -> c.changeName("t"));
-
-            srv = AbstractClientTest.startServer(
-                    10900,
-                    10,
-                    ignite1);
-
-            var client = IgniteClient.builder()
-                    .addresses("127.0.0.1:10900..10910", "127.0.0.1:10950..10960")
-                    .retryLimit(100)
-                    .build();
-
-            assertEquals("t", client.tables().tables().get(0).name());
-
-            stop(srv);
-
-            FakeIgnite ignite2 = new FakeIgnite();
-            ignite2.tables().createTable("t2", c -> c.changeName("t2"));
-
-            srv2 = AbstractClientTest.startServer(
-                    10950,
-                    10,
-                    ignite2);
-
-            assertEquals("t2", client.tables().tables().get(0).name());
-        } finally {
-            stop(srv);
-            stop(srv2);
-        }
+        FakeIgnite ignite1 = new FakeIgnite();
+        ignite1.tables().createTable("t", c -> c.changeName("t"));
+    
+        server = AbstractClientTest.startServer(
+                10900,
+                10,
+                ignite1);
+    
+        var client = IgniteClient.builder()
+                .addresses("127.0.0.1:10900..10910", "127.0.0.1:10950..10960")
+                .retryLimit(100)
+                .build();
+    
+        assertEquals("t", client.tables().tables().get(0).name());
+    
+        server.close();
+    
+        FakeIgnite ignite2 = new FakeIgnite();
+        ignite2.tables().createTable("t2", c -> c.changeName("t2"));
+    
+        server2 = AbstractClientTest.startServer(
+                10950,
+                10,
+                ignite2);
+    
+        assertEquals("t2", client.tables().tables().get(0).name());
     }
 
     @Test
     public void testOperationFailsWhenAllServersFail() throws Exception {
-        IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv = null;
-
-        try {
-            FakeIgnite ignite1 = new FakeIgnite();
-            ignite1.tables().createTable("t", c -> c.changeName("t"));
-
-            srv = AbstractClientTest.startServer(
-                    10900,
-                    10,
-                    ignite1);
-
-            var client = IgniteClient.builder()
-                    .addresses("127.0.0.1:10900..10910", "127.0.0.1:10950..10960")
-                    .retryLimit(100)
-                    .build();
-
-            assertEquals("t", client.tables().tables().get(0).name());
-
-            stop(srv);
-
-            var ex = assertThrows(CompletionException.class, () -> client.tables().tables());
-            assertEquals(ex.getCause().getMessage(), "Channel is closed");
-        } finally {
-            stop(srv);
-        }
-    }
-
-    private void stop(IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv) throws Exception {
-        if (srv == null) {
-            return;
-        }
-
-        srv.get1().stop();
-        srv.get2().stop();
+        FakeIgnite ignite1 = new FakeIgnite();
+        ignite1.tables().createTable("t", c -> c.changeName("t"));
+    
+        server = AbstractClientTest.startServer(
+                10900,
+                10,
+                ignite1);
+    
+        var client = IgniteClient.builder()
+                .addresses("127.0.0.1:10900..10910", "127.0.0.1:10950..10960")
+                .retryLimit(100)
+                .build();
+    
+        assertEquals("t", client.tables().tables().get(0).name());
+    
+        server.close();
+    
+        var ex = assertThrows(CompletionException.class, () -> client.tables().tables());
+        assertEquals(ex.getCause().getMessage(), "Channel is closed");
     }
 }

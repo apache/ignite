@@ -46,7 +46,6 @@ import org.apache.ignite.internal.network.NetworkMessageTypes;
 import org.apache.ignite.lang.NodeStoppingException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NodeFinder;
@@ -421,7 +420,7 @@ class ItScaleCubeNetworkMessagingTest {
      */
     private static final class Cluster {
         /** Network factory. */
-        private final ClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
+        private final TestScaleCubeClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
 
         /** Serialization registry. */
         private final MessageSerializationRegistry serializationRegistry = new TestMessageSerializationRegistryImpl();

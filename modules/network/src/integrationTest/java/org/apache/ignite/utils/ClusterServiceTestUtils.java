@@ -31,12 +31,13 @@ import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.MessagingService;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
 import org.apache.ignite.network.TopologyService;
+import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.TestInfo;
 
@@ -60,10 +61,10 @@ public class ClusterServiceTestUtils {
             int port,
             NodeFinder nodeFinder,
             MessageSerializationRegistry msgSerializationRegistry,
-            ClusterServiceFactory clusterSvcFactory
+            TestScaleCubeClusterServiceFactory clusterSvcFactory
     ) {
         var ctx = new ClusterLocalConfiguration(testNodeName(testInfo, port), msgSerializationRegistry);
-        
+    
         ConfigurationManager nodeConfigurationMgr = new ConfigurationManager(
                 Collections.singleton(NetworkConfiguration.KEY),
                 Map.of(),
@@ -71,11 +72,15 @@ public class ClusterServiceTestUtils {
                 List.of(),
                 List.of()
         );
+    
+        NetworkConfiguration configuration = nodeConfigurationMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY);
+        
+        var bootstrapFactory = new NettyBootstrapFactory(configuration, ctx.getName());
         
         var clusterSvc = clusterSvcFactory.createClusterService(
                 ctx,
-                nodeConfigurationMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY)
-        );
+                configuration,
+                bootstrapFactory);
         
         assert nodeFinder instanceof StaticNodeFinder : "Only StaticNodeFinder is supported at the moment";
         
@@ -117,14 +122,21 @@ public class ClusterServiceTestUtils {
                                         )
                                 )
                 ).join();
+    
+                bootstrapFactory.start();
                 
                 clusterSvc.start();
             }
             
             @Override
             public void stop() {
-                clusterSvc.stop();
-                nodeConfigurationMgr.stop();
+                try {
+                    clusterSvc.stop();
+                    bootstrapFactory.stop();
+                    nodeConfigurationMgr.stop();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         };
     }

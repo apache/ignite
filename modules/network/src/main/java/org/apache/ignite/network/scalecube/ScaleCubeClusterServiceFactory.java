@@ -37,19 +37,29 @@ import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManage
 import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterServiceFactory;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.NodeFinderFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
- * {@link ClusterServiceFactory} implementation that uses ScaleCube for messaging and topology services.
+ * Cluster service factory that uses ScaleCube for messaging and topology services.
  */
-public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
-    /** {@inheritDoc} */
-    @Override
-    public ClusterService createClusterService(ClusterLocalConfiguration context, NetworkConfiguration networkConfiguration) {
+public class ScaleCubeClusterServiceFactory {
+    /**
+     * Creates a new {@link ClusterService} using the provided context. The created network will not be in the "started" state.
+     *
+     * @param context               Cluster context.
+     * @param networkConfiguration  Network configuration.
+     * @param nettyBootstrapFactory Bootstrap factory.
+     * @return New cluster service.
+     */
+    public ClusterService createClusterService(
+            ClusterLocalConfiguration context,
+            NetworkConfiguration networkConfiguration,
+            NettyBootstrapFactory nettyBootstrapFactory
+    ) {
         var topologyService = new ScaleCubeTopologyService();
 
         var messagingService = new ScaleCubeMessagingService();
@@ -77,7 +87,8 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
                         registry,
                         consistentId,
                         () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
-                        () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
+                        () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory),
+                        nettyBootstrapFactory
                 );
 
                 var transport = new ScaleCubeDirectMarshallerTransport(connectionMgr, topologyService, messageFactory);

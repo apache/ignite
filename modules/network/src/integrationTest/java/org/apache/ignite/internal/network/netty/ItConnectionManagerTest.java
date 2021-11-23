@@ -47,7 +47,9 @@ import org.apache.ignite.internal.configuration.testframework.InjectConfiguratio
 import org.apache.ignite.internal.network.NetworkMessagesFactory;
 import org.apache.ignite.internal.network.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.internal.network.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
@@ -65,6 +67,9 @@ public class ItConnectionManagerTest {
     /** Started connection managers. */
     private final List<ConnectionManager> startedManagers = new ArrayList<>();
 
+    /** Started bootstrap factories. */
+    private final List<NettyBootstrapFactory> startedBootstrapFactories = new ArrayList<>();
+
     /** Message factory. */
     private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
@@ -76,8 +81,12 @@ public class ItConnectionManagerTest {
      * After each.
      */
     @AfterEach
-    final void tearDown() {
+    final void tearDown() throws Exception {
         startedManagers.forEach(ConnectionManager::stop);
+
+        for (NettyBootstrapFactory startedBootstrapFactory : startedBootstrapFactories) {
+            startedBootstrapFactory.stop();
+        }
     }
 
     /**
@@ -92,8 +101,8 @@ public class ItConnectionManagerTest {
         int port1 = 4000;
         int port2 = 4001;
 
-        ConnectionManager manager1 = startManager(port1);
-        ConnectionManager manager2 = startManager(port2);
+        ConnectionManager manager1 = startManager(port1).get1();
+        ConnectionManager manager2 = startManager(port2).get1();
 
         var fut = new CompletableFuture<NetworkMessage>();
 
@@ -124,8 +133,8 @@ public class ItConnectionManagerTest {
         int port1 = 4000;
         int port2 = 4001;
 
-        ConnectionManager manager1 = startManager(port1);
-        ConnectionManager manager2 = startManager(port2);
+        ConnectionManager manager1 = startManager(port1).get1();
+        ConnectionManager manager2 = startManager(port2).get1();
 
         var fut = new CompletableFuture<NetworkMessage>();
 
@@ -170,8 +179,8 @@ public class ItConnectionManagerTest {
         int port1 = 4000;
         int port2 = 4001;
 
-        ConnectionManager manager1 = startManager(port1);
-        ConnectionManager manager2 = startManager(port2);
+        ConnectionManager manager1 = startManager(port1).get1();
+        ConnectionManager manager2 = startManager(port2).get1();
 
         NettySender sender1 = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
         NettySender sender2 = manager2.channel(null, new InetSocketAddress(port1)).get(3, TimeUnit.SECONDS);
@@ -205,14 +214,16 @@ public class ItConnectionManagerTest {
         int port1 = 4000;
         int port2 = 4001;
 
-        ConnectionManager manager1 = startManager(port1);
-        ConnectionManager manager2 = startManager(port2);
+        ConnectionManager manager1 = startManager(port1).get1();
+
+        IgniteBiTuple<ConnectionManager, NettyBootstrapFactory> manager2 = startManager(port2);
 
         NettySender sender = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
 
         TestMessage testMessage = messageFactory.testMessage().msg(msgText).build();
 
-        manager2.stop();
+        manager2.get1().stop();
+        manager2.get2().stop();
 
         final NettySender finalSender = sender;
 
@@ -228,7 +239,7 @@ public class ItConnectionManagerTest {
 
         var fut = new CompletableFuture<NetworkMessage>();
 
-        manager2.addListener((address, message) -> fut.complete(message));
+        manager2.get1().addListener((address, message) -> fut.complete(message));
 
         sender = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
 
@@ -244,9 +255,9 @@ public class ItConnectionManagerTest {
      */
     @Test
     public void testConnectMisconfiguredServer() throws Exception {
-        ConnectionManager client = startManager(4000);
+        ConnectionManager client = startManager(4000).get1();
 
-        ConnectionManager server = startManager(4001, mockSerializationRegistry());
+        ConnectionManager server = startManager(4001, mockSerializationRegistry()).get1();
 
         try {
             client.channel(null, server.getLocalAddress()).get(3, TimeUnit.SECONDS);
@@ -260,9 +271,9 @@ public class ItConnectionManagerTest {
      */
     @Test
     public void testConnectMisconfiguredClient() throws Exception {
-        ConnectionManager client = startManager(4000, mockSerializationRegistry());
+        ConnectionManager client = startManager(4000, mockSerializationRegistry()).get1();
 
-        ConnectionManager server = startManager(4001);
+        ConnectionManager server = startManager(4001).get1();
 
         try {
             client.channel(null, server.getLocalAddress()).get(3, TimeUnit.SECONDS);
@@ -276,7 +287,7 @@ public class ItConnectionManagerTest {
      */
     @Test
     public void testStartTwice() {
-        ConnectionManager server = startManager(4000);
+        ConnectionManager server = startManager(4000).get1();
 
         assertThrows(IgniteInternalException.class, server::start);
     }
@@ -286,7 +297,7 @@ public class ItConnectionManagerTest {
      */
     @Test
     public void testStopTwice() {
-        ConnectionManager server = startManager(4000);
+        ConnectionManager server = startManager(4000).get1();
 
         server.stop();
         server.stop();
@@ -310,7 +321,7 @@ public class ItConnectionManagerTest {
      * @param port Port for the connection manager to listen on.
      * @return Connection manager.
      */
-    private ConnectionManager startManager(int port) {
+    private IgniteBiTuple<ConnectionManager, NettyBootstrapFactory> startManager(int port) {
         return startManager(port, new TestMessageSerializationRegistryImpl());
     }
 
@@ -321,7 +332,7 @@ public class ItConnectionManagerTest {
      * @param registry Serialization registry.
      * @return Connection manager.
      */
-    private ConnectionManager startManager(int port, MessageSerializationRegistry registry) {
+    private IgniteBiTuple<ConnectionManager, NettyBootstrapFactory> startManager(int port, MessageSerializationRegistry registry) {
         UUID launchId = UUID.randomUUID();
         String consistentId = UUID.randomUUID().toString();
 
@@ -330,19 +341,24 @@ public class ItConnectionManagerTest {
         networkConfiguration.port().update(port).join();
 
         NetworkView cfg = networkConfiguration.value();
-
+    
+        NettyBootstrapFactory bootstrapFactory = new NettyBootstrapFactory(networkConfiguration, consistentId);
+        bootstrapFactory.start();
+        startedBootstrapFactories.add(bootstrapFactory);
+        
         var manager = new ConnectionManager(
                 cfg,
                 registry,
                 consistentId,
                 () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
-                () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
+                () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory),
+                bootstrapFactory
         );
 
         manager.start();
 
         startedManagers.add(manager);
 
-        return manager;
+        return new IgniteBiTuple<>(manager, bootstrapFactory);
     }
 }

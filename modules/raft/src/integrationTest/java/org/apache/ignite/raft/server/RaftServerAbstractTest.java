@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.StaticNodeFinder;
@@ -42,7 +41,7 @@ abstract class RaftServerAbstractTest {
     protected static final RaftMessagesFactory FACTORY = new RaftMessagesFactory();
 
     /** Network factory. */
-    protected static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
+    protected static final TestScaleCubeClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
     /**
      * Server port offset.

@@ -31,13 +31,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.msgpack.core.MessagePack;
 
 /**
@@ -51,11 +54,13 @@ public class ItClientHandlerTest {
     
     private ConfigurationManager configurationManager;
     
+    private NettyBootstrapFactory bootstrapFactory;
+    
     private int serverPort;
     
     @BeforeEach
-    public void setUp() {
-        serverModule = startServer();
+    public void setUp(TestInfo testInfo) {
+        serverModule = startServer(testInfo);
         serverPort = ((InetSocketAddress) Objects.requireNonNull(serverModule.localAddress())).getPort();
     }
     
@@ -63,6 +68,7 @@ public class ItClientHandlerTest {
     public void tearDown() throws Exception {
         serverModule.stop();
         configurationManager.stop();
+        bootstrapFactory.stop();
     }
     
     @Test
@@ -176,9 +182,9 @@ public class ItClientHandlerTest {
         }
     }
     
-    private ClientHandlerModule startServer() {
+    private ClientHandlerModule startServer(TestInfo testInfo) {
         configurationManager = new ConfigurationManager(
-                List.of(ClientConnectorConfiguration.KEY),
+                List.of(ClientConnectorConfiguration.KEY, NetworkConfiguration.KEY),
                 Map.of(),
                 new TestConfigurationStorage(LOCAL),
                 List.of(),
@@ -193,7 +199,11 @@ public class ItClientHandlerTest {
                 local -> local.changePort(10800).changePortRange(10)
         ).join();
         
-        var module = new ClientHandlerModule(mock(QueryProcessor.class), mock(IgniteTables.class), registry);
+        bootstrapFactory = new NettyBootstrapFactory(registry.getConfiguration(NetworkConfiguration.KEY), testInfo.getDisplayName());
+        
+        bootstrapFactory.start();
+        
+        var module = new ClientHandlerModule(mock(QueryProcessor.class), mock(IgniteTables.class), registry, bootstrapFactory);
         
         module.start();
         

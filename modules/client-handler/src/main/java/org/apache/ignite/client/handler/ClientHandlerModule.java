@@ -20,12 +20,8 @@ package org.apache.ignite.client.handler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.net.BindException;
 import java.net.SocketAddress;
 import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
@@ -35,6 +31,7 @@ import org.apache.ignite.internal.manager.IgniteComponent;
 import org.apache.ignite.internal.processors.query.calcite.QueryProcessor;
 import org.apache.ignite.lang.IgniteException;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.network.NettyBootstrapFactory;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,23 +52,33 @@ public class ClientHandlerModule implements IgniteComponent {
     private volatile Channel channel;
 
     /** Processor. */
-    private QueryProcessor processor;
-
+    private final QueryProcessor processor;
+    
+    /** Netty bootstrap factory. */
+    private final NettyBootstrapFactory bootstrapFactory;
+    
     /**
      * Constructor.
      *
-     * @param processor    Sql query processor.
-     * @param igniteTables Ignite.
-     * @param registry     Configuration registry.
+     * @param processor         Sql query processor.
+     * @param igniteTables      Ignite.
+     * @param registry          Configuration registry.
+     * @param bootstrapFactory  Bootstrap factory.
      */
-    public ClientHandlerModule(QueryProcessor processor, IgniteTables igniteTables, ConfigurationRegistry registry) {
+    public ClientHandlerModule(
+            QueryProcessor processor,
+            IgniteTables igniteTables,
+            ConfigurationRegistry registry,
+            NettyBootstrapFactory bootstrapFactory) {
         assert igniteTables != null;
         assert registry != null;
         assert processor != null;
-
+        assert bootstrapFactory != null;
+        
         this.processor = processor;
         this.igniteTables = igniteTables;
         this.registry = registry;
+        this.bootstrapFactory = bootstrapFactory;
     }
 
     /** {@inheritDoc} */
@@ -123,14 +130,10 @@ public class ClientHandlerModule implements IgniteComponent {
 
         int port = 0;
         Channel ch = null;
-
-        // TODO: Reuse Netty infrastructure from network module IGNITE-15307.
-        EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
-        ServerBootstrap b = new ServerBootstrap();
-
-        b.group(eventLoopGroup)
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new ChannelInitializer<>() {
+    
+        ServerBootstrap bootstrap = bootstrapFactory.createServerBootstrap();
+    
+        bootstrap.childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(Channel ch) {
                         ch.pipeline().addLast(
@@ -138,21 +141,17 @@ public class ClientHandlerModule implements IgniteComponent {
                                 new ClientInboundMessageHandler(igniteTables, processor));
                     }
                 })
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout())
-                .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childOption(ChannelOption.TCP_NODELAY, true);
-
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeout());
+    
         for (int portCandidate = desiredPort; portCandidate <= desiredPort + portRange; portCandidate++) {
-            ChannelFuture bindRes = b.bind(portCandidate).await();
+            ChannelFuture bindRes = bootstrap.bind(portCandidate).await();
 
             if (bindRes.isSuccess()) {
                 ch = bindRes.channel();
-                ch.closeFuture().addListener((ChannelFutureListener) fut -> eventLoopGroup.shutdownGracefully());
 
                 port = portCandidate;
                 break;
             } else if (!(bindRes.cause() instanceof BindException)) {
-                eventLoopGroup.shutdownGracefully();
                 throw new IgniteException(bindRes.cause());
             }
         }
@@ -162,8 +161,6 @@ public class ClientHandlerModule implements IgniteComponent {
                     + "All ports in range [" + desiredPort + ", " + (desiredPort + portRange) + "] are in use.";
 
             LOG.error(msg);
-
-            eventLoopGroup.shutdownGracefully();
 
             throw new IgniteException(msg);
         }

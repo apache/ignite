@@ -17,22 +17,15 @@
 
 package org.apache.ignite.client;
 
-import static org.apache.ignite.configuration.annotation.ConfigurationType.LOCAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.netty.util.ResourceLeakDetector;
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.fakes.FakeIgnite;
 import org.apache.ignite.client.handler.ClientHandlerModule;
-import org.apache.ignite.configuration.schemas.clientconnector.ClientConnectorConfiguration;
-import org.apache.ignite.internal.configuration.ConfigurationRegistry;
-import org.apache.ignite.internal.configuration.storage.TestConfigurationStorage;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,9 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 public abstract class AbstractClientTest {
     protected static final String DEFAULT_TABLE = "default_test_table";
     
-    protected static ConfigurationRegistry configurationRegistry;
-    
-    protected static ClientHandlerModule clientHandlerModule;
+    protected static TestServer testServer;
     
     protected static Ignite server;
     
@@ -63,12 +54,9 @@ public abstract class AbstractClientTest {
         
         server = new FakeIgnite();
         
-        IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> srv = startServer(10800, 10, server);
+        testServer = startServer(10800, 10, server);
         
-        clientHandlerModule = srv.get1();
-        configurationRegistry = srv.get2();
-        
-        serverPort = getPort(clientHandlerModule);
+        serverPort = getPort(testServer.module());
         
         client = startClient();
     }
@@ -79,8 +67,7 @@ public abstract class AbstractClientTest {
     @AfterAll
     public static void afterAll() throws Exception {
         client.close();
-        clientHandlerModule.stop();
-        configurationRegistry.stop();
+        testServer.close();
     }
     
     /**
@@ -117,29 +104,12 @@ public abstract class AbstractClientTest {
      * @param ignite Ignite.
      * @return Server.
      */
-    public static IgniteBiTuple<ClientHandlerModule, ConfigurationRegistry> startServer(
+    public static TestServer startServer(
             int port,
             int portRange,
             Ignite ignite
     ) {
-        var cfg = new ConfigurationRegistry(
-                List.of(ClientConnectorConfiguration.KEY),
-                Map.of(),
-                new TestConfigurationStorage(LOCAL),
-                List.of(),
-                List.of()
-        );
-        
-        cfg.start();
-        
-        cfg.getConfiguration(ClientConnectorConfiguration.KEY).change(
-                local -> local.changePort(port).changePortRange(portRange)
-        ).join();
-        
-        var module = new ClientHandlerModule(((FakeIgnite) ignite).queryEngine(), ignite.tables(), cfg);
-        module.start();
-        
-        return new IgniteBiTuple<>(module, cfg);
+        return new TestServer(port, portRange, ignite);
     }
     
     /**

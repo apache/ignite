@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NodeFinder;
 import org.apache.ignite.network.StaticNodeFinder;
@@ -47,7 +46,7 @@ class ItNodeRestartsTest {
     private final MessageSerializationRegistry serializationRegistry = new TestMessageSerializationRegistryImpl();
 
     /** Network factory. */
-    private final ClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
+    private final TestScaleCubeClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
 
     /** Created {@link ClusterService}s. Needed for resource management. */
     private List<ClusterService> services;
