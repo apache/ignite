@@ -34,8 +34,6 @@ import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.fun.SqlLibrary;
-import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -79,7 +77,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
-import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
@@ -121,14 +120,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withSqlConformance(IgniteSqlConformance.INSTANCE)
             .withTypeCoercionFactory(IgniteTypeCoercion::new))
         // Dialects support.
-        .operatorTable(SqlOperatorTables.chain(
-            SqlLibraryOperatorTableFactory.INSTANCE
-                .getOperatorTable(
-                    SqlLibrary.STANDARD,
-                    SqlLibrary.POSTGRESQL,
-                    SqlLibrary.ORACLE,
-                    SqlLibrary.MYSQL),
-            IgniteSqlOperatorTable.instance()))
+        .operatorTable(SqlOperatorTables.chain(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance()))
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
         .context(Contexts.empty())
         // Custom cost factory to use during optimization

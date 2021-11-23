@@ -1285,7 +1285,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String queries[] = {
             "select REVERSE(val) from TEST", // MYSQL
-            "select TO_DATE(val, 'yyyymmdd') from TEST" // ORACLE
+            "select DECODE(id, 0, val, '') from TEST" // ORACLE
         };
 
         for (String sql : queries) {
