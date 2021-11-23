@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlArray;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunction;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin;
@@ -516,7 +517,14 @@ public class GridSubqueryJoinOptimizer {
             return false;
 
         GridSqlAst subCol = GridSqlAlias.unwrap(subS.columns(false).get(0));
-
+        
+        // If a constant is selected in a subquery, we cannot put it in parent query without
+        // consequences for the correctness of the result.
+        // For example, select (select 1 from x where id = 1) becomes select 1 left join x...,
+        // and the where condition becomes meaningless.
+        
+        if (subCol instanceof GridSqlConst)
+            return false;
         if (targetEl != null)
             targetEl.child(childInd, subCol);
         else
