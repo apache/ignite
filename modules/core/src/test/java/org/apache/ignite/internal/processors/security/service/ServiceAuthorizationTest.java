@@ -119,7 +119,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         stopAllGrids();
     }
 
-    /** Tests that all service cancel calls requires {@link SecurityPermission#SERVICE_CANCEL} permission. */
+    /** Tests that all service cancel calls require {@link SecurityPermission#SERVICE_CANCEL} permission. */
     @Test
     public void testServiceCancel() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE, SERVICE_CANCEL));
@@ -135,7 +135,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         checkCancel(srvcs -> srvcs.cancelAllAsync().get());
     }
 
-    /** Tests that all service invoke calls requires {@link SecurityPermission#SERVICE_INVOKE} permission. */
+    /** Tests that all calls to obtain service instance require {@link SecurityPermission#SERVICE_INVOKE} permission. */
     @Test
     public void testServiceInvoke() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE));
@@ -148,16 +148,16 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
             checkInvoke(srvcs -> srvcs.services(TEST_SERVICE_NAME), false);
         }
 
-        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, Service.class, false), true);
-        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, Service.class, false, getTestTimeout()), true);
-        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, Service.class, false, SERVICE_CALL_CTX), true);
+        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false), true);
+        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false, getTestTimeout()), true);
+        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false, SERVICE_CALL_CTX), true);
         checkInvoke(srvcs ->
-            srvcs.serviceProxy(TEST_SERVICE_NAME, Service.class, false, SERVICE_CALL_CTX, getTestTimeout()),
+            srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false, SERVICE_CALL_CTX, getTestTimeout()),
             true
         );
     }
 
-    /** Tests that all service deploy calls requires {@link SecurityPermission#SERVICE_DEPLOY} permission. */
+    /** Tests that all service deploy calls require {@link SecurityPermission#SERVICE_DEPLOY} permission. */
     @Test
     public void testServiceDeploy() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE, SERVICE_CANCEL));
@@ -169,29 +169,29 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         checkDeploy(srvcs -> srvcs.deployAll(Collections.singleton(serviceConfiguration())), false);
         checkDeploy(srvcs -> srvcs.deployAllAsync(Collections.singleton(serviceConfiguration())).get(), false);
 
-        checkDeploy(srvcs -> srvcs.deployMultiple(TEST_SERVICE_NAME, new TestService(), isClient ? 1 : 3, 1), false);
+        checkDeploy(srvcs -> srvcs.deployMultiple(TEST_SERVICE_NAME, new TestServiceImpl(), isClient ? 1 : 3, 1), false);
         checkDeploy(srvcs ->
-            srvcs.deployMultipleAsync(TEST_SERVICE_NAME, new TestService(), isClient ? 1 : 3, 1).get(),
+            srvcs.deployMultipleAsync(TEST_SERVICE_NAME, new TestServiceImpl(), isClient ? 1 : 3, 1).get(),
             false
         );
 
-        checkDeploy(srvcs -> srvcs.deployNodeSingleton(TEST_SERVICE_NAME, new TestService()), false);
-        checkDeploy(srvcs -> srvcs.deployNodeSingletonAsync(TEST_SERVICE_NAME, new TestService()).get(), false);
+        checkDeploy(srvcs -> srvcs.deployNodeSingleton(TEST_SERVICE_NAME, new TestServiceImpl()), false);
+        checkDeploy(srvcs -> srvcs.deployNodeSingletonAsync(TEST_SERVICE_NAME, new TestServiceImpl()).get(), false);
 
-        checkDeploy(srvcs -> srvcs.deployClusterSingleton(TEST_SERVICE_NAME, new TestService()), true);
-        checkDeploy(srvcs -> srvcs.deployClusterSingletonAsync(TEST_SERVICE_NAME, new TestService()).get(), true);
+        checkDeploy(srvcs -> srvcs.deployClusterSingleton(TEST_SERVICE_NAME, new TestServiceImpl()), true);
+        checkDeploy(srvcs -> srvcs.deployClusterSingletonAsync(TEST_SERVICE_NAME, new TestServiceImpl()).get(), true);
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
         int key = keyForNode(grid(0).affinity(DEFAULT_CACHE_NAME), new AtomicInteger(0), grid(0).cluster().localNode());
 
         checkDeploy(srvcs ->
-            srvcs.deployKeyAffinitySingleton(TEST_SERVICE_NAME, new TestService(), DEFAULT_CACHE_NAME, key),
+            srvcs.deployKeyAffinitySingleton(TEST_SERVICE_NAME, new TestServiceImpl(), DEFAULT_CACHE_NAME, key),
             true
         );
 
         checkDeploy(srvcs ->
-            srvcs.deployKeyAffinitySingletonAsync(TEST_SERVICE_NAME, new TestService(), DEFAULT_CACHE_NAME, key).get(),
+            srvcs.deployKeyAffinitySingletonAsync(TEST_SERVICE_NAME, new TestServiceImpl(), DEFAULT_CACHE_NAME, key).get(),
             true
         );
     }
@@ -253,7 +253,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
 
         srvcCfg.setMaxPerNodeCount(1);
         srvcCfg.setName(TEST_SERVICE_NAME);
-        srvcCfg.setService(new TestService());
+        srvcCfg.setService(new TestServiceImpl());
         
         return srvcCfg;
     }
@@ -343,11 +343,12 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
-     * Uses the specified function to perform a service invocation operation on a node that has the required
+     * Uses the specified function to perform a service obtaining operation on a node that has the required
      * permissions to perform this operation and on a node that does not. And checks that in the second case operation
-     * is aborted.
+     * is aborted. Note that {@link SecurityPermission#SERVICE_INVOKE} is checked once before returning service
+     * instance to the user.
      *
-     * @param f Function to perform a service invocation operation.
+     * @param f Function to perform a service obtaining operation.
      * @param isProxy Whether invocation result is service proxy.
      */
     private void checkInvoke(Function<IgniteServices, Object> f, boolean isProxy) throws Exception {
@@ -356,13 +357,25 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         Object res = f.apply(grid(ALLOWED_NODE_IDX).services());
 
         if (!isProxy) {
-            if (res instanceof Collection)
-                assertFalse(((Collection<TestService>)res).isEmpty());
-            else
-                assertTrue((res instanceof TestService));
+            TestService srvc;
+
+            if (res instanceof Collection) {
+                Collection<TestService> srvcs = (Collection<TestService>)res;
+
+                assertFalse(srvcs.isEmpty());
+
+                srvc = srvcs.iterator().next();
+            }
+            else {
+                assertTrue(res instanceof TestService);
+
+                srvc = (TestService)res;
+            }
+
+            assertTrue(srvc.doWork());
         }
         else
-            ((Service)res).execute();
+            assertTrue(((TestService)res).doWork());
     }
 
     /**
@@ -390,8 +403,17 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
             assertTrue(G.allGrids().stream().anyMatch(ignite -> ignite.services().service(TEST_SERVICE_NAME) != null));
     }
     
-    /** Test service. */
-    public static class TestService implements Service {
-        // No-op.
+    /** Test service interface. */
+    public static interface TestService extends Service {
+        /** Dummy test service method. */
+        public boolean doWork();
+    }
+
+    /** Test service implementation. */
+    public static class TestServiceImpl implements TestService {
+        /** {@inheritDoc} */
+        @Override public boolean doWork() {
+            return true;
+        }
     }
 }
