@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -76,6 +77,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -95,6 +97,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
 /**
  * Ignite service processor.
@@ -370,6 +373,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
 
+            try (OperationSecurityContext ignored = ctx.security().withContext(data.joiningNodeId())) {
+                if (checkPermissions(desc.name(), SERVICE_DEPLOY) != null) {
+                    U.warn(log, "Failed to register service configuration received from joining node :" +
+                        " [nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]." +
+                        " Joining node is not authorized to deploy the service.");
+
+                    continue;
+                }
+            }
+
             ServiceInfo oldDesc = registeredServices.get(desc.serviceId());
 
             if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
@@ -586,8 +599,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 err = e;
             }
 
-            if (err == null)
-                err = checkPermissions(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
+            if (err == null && (isLocalNodeCoordinator() || ctx.discovery().localJoinFuture().isDone()))
+                err = checkPermissions(cfg.getName(), SERVICE_DEPLOY);
 
             if (err == null) {
                 try {
