@@ -309,6 +309,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
       cache-name  - Cache to be checked/repaired.
       partition   - Cache's partition to be checked/repaired.
 
+  [EXPERIMENTAL]
+  Cache consistency check/repair operations status:
+    control.(sh|bat) --consistency status
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

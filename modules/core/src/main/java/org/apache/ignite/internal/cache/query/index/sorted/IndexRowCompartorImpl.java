@@ -33,14 +33,6 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
  * 2. Comparison of different types is not supported.
  */
 public class IndexRowCompartorImpl implements IndexRowComparator {
-    /** Key type settings for this index. */
-    protected final IndexKeyTypeSettings keyTypeSettings;
-
-    /** */
-    public IndexRowCompartorImpl(IndexKeyTypeSettings keyTypeSettings) {
-        this.keyTypeSettings = keyTypeSettings;
-    }
-
     /** {@inheritDoc} */
     @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, int curType) {
         if (curType == IndexKeyTypes.UNKNOWN)

@@ -123,6 +123,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         private boolean isExecuted;
 
+        /** */
+        private ServiceContext svcCtx;
+
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             isCancelled = true;
@@ -130,6 +133,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
+            svcCtx = ctx;
+
             isInitialized = true;
         }
 
@@ -642,6 +647,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** */
+        public Object contextAttribute(String name) {
+            return svcCtx.currentCallContext().attribute(name);
         }
     }
 

@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -67,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -263,10 +263,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Long> restorePartitionStates(
-        Map<GroupPartitionId, Integer> partRecoveryStates
-    ) throws IgniteCheckedException {
-        return Collections.emptyMap(); // No-op.
+    @Override public long restoreStateOfPartition(int p, @Nullable Integer recoveryState) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePartitionStates() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void confirmPartitionStatesRestored() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -1444,7 +1452,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         protected final PartitionUpdateCounter pCntr;
 
         /** Partition size. */
-        private final AtomicLong storageSize = new AtomicLong();
+        private final LongAdder storageSize = new LongAdder();
 
         /** */
         private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap<>();
@@ -1551,7 +1559,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return size != null ? (int)size.get() : 0;
             }
 
-            return storageSize.get();
+            return storageSize.sum();
         }
 
         /** {@inheritDoc} */
@@ -1568,7 +1576,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long fullSize() {
-            return storageSize.get();
+            return storageSize.sum();
         }
 
         /**
@@ -1580,7 +1588,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                  * TODO https://issues.apache.org/jira/browse/IGNITE-10082
                  * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
                  */
-                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
+                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.sum() == 0;
             }
             catch (IgniteCheckedException e) {
                 U.error(grp.shared().logger(IgniteCacheOffheapManagerImpl.class), "Failed to perform operation.", e);
@@ -1591,7 +1599,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
-            storageSize.addAndGet(delta);
+            storageSize.add(delta);
 
             if (grp.sharedGroup()) {
                 AtomicLong size = cacheSizes.get(cacheId);
@@ -3069,7 +3077,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
             pCntr.init(updCntr, cntrUpdData);
 
-            storageSize.set(size);
+            storageSize.reset();
+            storageSize.add(size);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
