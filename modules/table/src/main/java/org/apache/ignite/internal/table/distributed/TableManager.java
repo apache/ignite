@@ -695,100 +695,93 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             boolean exceptionWhenExist
     ) {
         CompletableFuture<Table> tblFut = new CompletableFuture<>();
-
-        tableAsync(name, true).thenAccept(tbl -> {
-            if (tbl != null) {
-                if (exceptionWhenExist) {
-                    tblFut.completeExceptionally(new TableAlreadyExistsException(
-                            LoggerMessageHelper.format("Table already exists [name={}]", name)));
-                } else {
-                    tblFut.complete(tbl);
+    
+        IgniteUuid tblId = TABLE_ID_GENERATOR.randomUuid();
+    
+        EventListener<TableEventParameters> clo = new EventListener<>() {
+            @Override
+            public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
+                IgniteUuid notificationTblId = parameters.tableId();
+            
+                if (!tblId.equals(notificationTblId)) {
+                    return false;
                 }
-            } else {
-                IgniteUuid tblId = TABLE_ID_GENERATOR.randomUuid();
-
-                EventListener<TableEventParameters> clo = new EventListener<>() {
-                    @Override
-                    public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
-                        IgniteUuid notificationTblId = parameters.tableId();
-
-                        if (!tblId.equals(notificationTblId)) {
-                            return false;
-                        }
-
-                        if (e == null) {
-                            tblFut.complete(parameters.table());
-                        } else {
-                            tblFut.completeExceptionally(e);
-                        }
-
-                        return true;
-                    }
-
-                    @Override
-                    public void remove(@NotNull Throwable e) {
-                        tblFut.completeExceptionally(e);
-                    }
-                };
-
-                listen(TableEvent.CREATE, clo);
-
-                tablesCfg.tables()
-                        .change(
-                                change -> change.create(
-                                        name,
-                                        (ch) -> {
-                                            tableInitChange.accept(ch);
-                                            ((ExtendedTableChange) ch)
-                                                    // Table id specification.
-                                                    .changeId(tblId.toString())
-                                                    // Affinity assignments calculation.
-                                                    .changeAssignments(
-                                                            ByteUtils.toBytes(
-                                                                    AffinityUtils.calculateAssignments(
-                                                                            baselineMgr.nodes(),
-                                                                            ch.partitions(),
-                                                                            ch.replicas()
-                                                                    )
-                                                            )
-                                                    )
-                                                    // Table schema preparation.
-                                                    .changeSchemas(
-                                                            schemasCh -> schemasCh.create(
-                                                                    String.valueOf(INITIAL_SCHEMA_VERSION),
-                                                                    schemaCh -> {
-                                                                        SchemaDescriptor schemaDesc;
-
-                                                                        //TODO IGNITE-15747 Remove try-catch and force configuration
-                                                                        // validation here to ensure a valid configuration passed to
-                                                                        // prepareSchemaDescriptor() method.
-                                                                        try {
-                                                                            schemaDesc = SchemaUtils.prepareSchemaDescriptor(
-                                                                                    ((ExtendedTableView) ch).schemas().size(),
-                                                                                    ch
-                                                                            );
-                                                                        } catch (IllegalArgumentException ex) {
-                                                                            throw new ConfigurationValidationException(ex.getMessage());
-                                                                        }
-
-                                                                        schemaCh.changeSchema(
-                                                                                SchemaSerializerImpl.INSTANCE.serialize(schemaDesc));
-                                                                    }
-                                                            )
-                                                    );
-                                        }
-                                )
-                        )
-                        .exceptionally(t -> {
-                            LOG.error(LoggerMessageHelper.format("Table wasn't created [name={}]", name), t);
-
-                            removeListener(TableEvent.CREATE, clo, new IgniteInternalCheckedException(t));
-
-                            return null;
-                        });
+            
+                if (e == null) {
+                    tblFut.complete(parameters.table());
+                } else {
+                    tblFut.completeExceptionally(e);
+                }
+            
+                return true;
             }
+        
+            @Override
+            public void remove(@NotNull Throwable e) {
+                tblFut.completeExceptionally(e);
+            }
+        };
+    
+        listen(TableEvent.CREATE, clo);
+    
+        tablesCfg.tables().change(change -> {
+            if (change.get(name) != null) {
+                throw new TableAlreadyExistsException(name);
+            }
+    
+            change.create(name, (ch) -> {
+                        tableInitChange.accept(ch);
+                
+                        ((ExtendedTableChange) ch)
+                                // Table id specification.
+                                .changeId(tblId.toString())
+                                // Affinity assignments calculation.
+                                .changeAssignments(ByteUtils.toBytes(AffinityUtils.calculateAssignments(
+                                        baselineMgr.nodes(),
+                                        ch.partitions(),
+                                        ch.replicas())))
+                                // Table schema preparation.
+                                .changeSchemas(schemasCh -> schemasCh.create(
+                                        String.valueOf(INITIAL_SCHEMA_VERSION),
+                                        schemaCh -> {
+                                            SchemaDescriptor schemaDesc;
+                                    
+                                            //TODO IGNITE-15747 Remove try-catch and force configuration
+                                            // validation here to ensure a valid configuration passed to
+                                            // prepareSchemaDescriptor() method.
+                                            try {
+                                                schemaDesc = SchemaUtils.prepareSchemaDescriptor(
+                                                        ((ExtendedTableView) ch).schemas().size(),
+                                                        ch);
+                                            } catch (IllegalArgumentException ex) {
+                                                throw new ConfigurationValidationException(ex.getMessage());
+                                            }
+                                    
+                                            schemaCh.changeSchema(SchemaSerializerImpl.INSTANCE.serialize(schemaDesc));
+                                        }
+                                ));
+                    }
+            );
+        }).exceptionally(t -> {
+            Throwable ex = t.getCause();
+        
+            if (ex instanceof TableAlreadyExistsException) {
+                tableAsync(name, false).thenAccept(table -> {
+                    if (!exceptionWhenExist) {
+                        tblFut.complete(table);
+                    }
+                
+                    removeListener(TableEvent.CREATE, clo, new IgniteInternalCheckedException(ex));
+                });
+            } else {
+                LOG.error(LoggerMessageHelper.format("Table wasn't created [name={}]", name), t);
+            
+                removeListener(TableEvent.CREATE, clo, new IgniteInternalCheckedException(ex));
+            }
+        
+            return null;
         });
-
+    
         return tblFut;
     }
 
@@ -873,61 +866,50 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 };
 
                 listen(TableEvent.ALTER, clo);
-
-                tablesCfg.tables()
-                        .change(ch -> {
-                            ch.createOrUpdate(name, tableChange);
-                            ch.createOrUpdate(name, tblCh ->
-                                    ((ExtendedTableChange) tblCh).changeSchemas(
-                                            schemasCh ->
-                                                    schemasCh.createOrUpdate(
-                                                            String.valueOf(schemasCh.size() + 1),
-                                                            schemaCh -> {
-                                                                ExtendedTableView currTableView = (ExtendedTableView) tablesCfg.tables()
-                                                                        .get(name).value();
-
-                                                                SchemaDescriptor descriptor;
-
-                                                                //TODO IGNITE-15747 Remove try-catch and force configuration validation
-                                                                // here to ensure a valid configuration passed to prepareSchemaDescriptor()
-                                                                // method.
-                                                                try {
-                                                                    descriptor = SchemaUtils.prepareSchemaDescriptor(
-                                                                            ((ExtendedTableView) tblCh).schemas().size(),
-                                                                            tblCh
-                                                                    );
-
-                                                                    descriptor.columnMapping(SchemaUtils.columnMapper(
-                                                                            tablesById.get(tblId).schemaView()
-                                                                                    .schema(currTableView.schemas().size()),
-                                                                            currTableView,
-                                                                            descriptor,
-                                                                            tblCh
-                                                                    ));
-                                                                } catch (IllegalArgumentException ex) {
-                                                                    // Convert unexpected exceptions here,
-                                                                    // because validation actually happens later,
-                                                                    // when bulk configuration update is applied.
-                                                                    ConfigurationValidationException e =
-                                                                            new ConfigurationValidationException(ex.getMessage());
-
-                                                                    e.addSuppressed(ex);
-
-                                                                    throw e;
-                                                                }
-
-                                                                schemaCh.changeSchema(SchemaSerializerImpl.INSTANCE.serialize(descriptor));
-                                                            }
-                                                    )
-                                    ));
-                        })
-                        .exceptionally(t -> {
-                            LOG.error(LoggerMessageHelper.format("Table wasn't altered [name={}]", name), t);
-
-                            removeListener(TableEvent.ALTER, clo, new IgniteInternalCheckedException(t));
-
-                            return null;
-                        });
+    
+                tablesCfg.tables().change(ch -> ch.createOrUpdate(name, tblCh -> {
+                            tableChange.accept(tblCh);
+                
+                            ((ExtendedTableChange) tblCh).changeSchemas(schemasCh ->
+                                    schemasCh.createOrUpdate(String.valueOf(schemasCh.size() + 1), schemaCh -> {
+                                        ExtendedTableView currTableView = (ExtendedTableView) tablesCfg.tables().get(name).value();
+                            
+                                        SchemaDescriptor descriptor;
+                            
+                                        //TODO IGNITE-15747 Remove try-catch and force configuration validation
+                                        // here to ensure a valid configuration passed to prepareSchemaDescriptor() method.
+                                        try {
+                                            descriptor = SchemaUtils.prepareSchemaDescriptor(
+                                                    ((ExtendedTableView) tblCh).schemas().size(),
+                                                    tblCh);
+                                
+                                            descriptor.columnMapping(SchemaUtils.columnMapper(
+                                                    tablesById.get(tblId).schemaView().schema(currTableView.schemas().size()),
+                                                    currTableView,
+                                                    descriptor,
+                                                    tblCh));
+                                        } catch (IllegalArgumentException ex) {
+                                            // Convert unexpected exceptions here,
+                                            // because validation actually happens later,
+                                            // when bulk configuration update is applied.
+                                            ConfigurationValidationException e =
+                                                    new ConfigurationValidationException(ex.getMessage());
+                                
+                                            e.addSuppressed(ex);
+                                
+                                            throw e;
+                                        }
+                            
+                                        schemaCh.changeSchema(SchemaSerializerImpl.INSTANCE.serialize(descriptor));
+                                    }));
+                        }
+                )).exceptionally(t -> {
+                    LOG.error(LoggerMessageHelper.format("Table wasn't altered [name={}]", name), t);
+        
+                    removeListener(TableEvent.ALTER, clo, new IgniteInternalCheckedException(t.getCause()));
+        
+                    return null;
+                });
             }
         });
 
@@ -1000,9 +982,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         .change(change -> change.delete(name))
                         .exceptionally(t -> {
                             LOG.error(LoggerMessageHelper.format("Table wasn't dropped [name={}]", name), t);
-
-                            removeListener(TableEvent.DROP, clo, new IgniteInternalCheckedException(t));
-
+                            
+                            removeListener(TableEvent.DROP, clo, new IgniteInternalCheckedException(t.getCause()));
+                            
                             return null;
                         });
             }

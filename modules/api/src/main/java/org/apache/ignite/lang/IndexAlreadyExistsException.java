@@ -18,15 +18,15 @@
 package org.apache.ignite.lang;
 
 /**
- * This exception is thrown when a new table failed to be created, because a table with same name already exists.
+ * This exception is thrown when a new index failed to be created, because another index with the same name already exists.
  */
-public class TableAlreadyExistsException extends IgniteException {
+public class IndexAlreadyExistsException extends IgniteException {
     /**
-     * Create a new exception with given table name.
+     * Create a new exception with given index name.
      *
-     * @param name Table name.
+     * @param name Index name.
      */
-    public TableAlreadyExistsException(String name) {
-        super(LoggerMessageHelper.format("Table already exists [name={}]", name));
+    public IndexAlreadyExistsException(String name) {
+        super(LoggerMessageHelper.format("Index already exists [name={}]", name));
     }
 }
