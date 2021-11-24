@@ -259,6 +259,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         startSpi();
 
+        // In case standalone kernal start.
+        if (ctx.internalSubscriptionProcessor() == null)
+            return;
+
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
                 /** {@inheritDoc} */

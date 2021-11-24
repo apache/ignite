@@ -73,6 +73,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
@@ -249,6 +250,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
 
         cfg.setDaemon(igniteInstanceName.startsWith(DAEMON_NODE_NAME_PREFIX));
+
+        cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION); // Extend if necessary.
 
         if (encryptionEnabled) {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();

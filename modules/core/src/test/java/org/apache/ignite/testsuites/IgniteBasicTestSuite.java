@@ -115,6 +115,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestionsTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
@@ -131,6 +132,7 @@ import org.apache.ignite.plugin.PluginConfigurationTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpiLoggingTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.MessageOrderLogListenerTest;
 import org.apache.ignite.testframework.test.ConfigVariationsExecutionTest;
@@ -322,7 +324,10 @@ import org.junit.runners.Suite;
 
     // Other tests
     CacheLockCandidatesThreadTest.class,
-    RemoveAllDeadlockTest.class
+    RemoveAllDeadlockTest.class,
+
+    NoopCheckpointSpiLoggingTest.class,
+    JvmConfigurationSuggestionsTest.class
 })
 public class IgniteBasicTestSuite {
 }

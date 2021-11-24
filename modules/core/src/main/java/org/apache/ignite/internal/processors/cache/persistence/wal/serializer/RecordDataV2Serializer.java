@@ -114,6 +114,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case TRACKING_PAGE_REPAIR_DELTA:
                 return 4 + 8;
 
+            case PARTITION_CLEARING_START_RECORD:
+                return 4 + 4 + 8;
+
             default:
                 return super.plainSize(rec);
         }

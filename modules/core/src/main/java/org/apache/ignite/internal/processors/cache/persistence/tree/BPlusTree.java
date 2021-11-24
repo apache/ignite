@@ -52,7 +52,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
-import org.apache.ignite.internal.processors.cache.persistence.AbstractCorruptedPersistenceException;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -1109,7 +1109,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             return cursor;
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -1145,7 +1145,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         try {
             cursor.iterate();
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -1290,7 +1290,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
             }
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -1336,7 +1336,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return gLast.find();
             }
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -1380,7 +1380,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             return (R)g.row;
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -1946,7 +1946,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
             }
         }
-        catch (UnregisteredClassException | UnregisteredBinaryTypeException | AbstractCorruptedPersistenceException e) {
+        catch (UnregisteredClassException | UnregisteredBinaryTypeException | CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -2107,7 +2107,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
             }
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -2463,7 +2463,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
             }
         }
-        catch (AbstractCorruptedPersistenceException e) {
+        catch (CorruptedDataStructureException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
@@ -3121,10 +3121,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         void checkLockRetry() throws IgniteCheckedException {
             if (lockRetriesCnt == 0) {
-                IgniteCheckedException e = new IgniteCheckedException("Maximum number of retries " +
-                    getLockRetries() + " reached for " + getClass().getSimpleName() + " operation " +
-                    "(the tree may be corrupted). Increase " + IGNITE_BPLUS_TREE_LOCK_RETRIES + " system property " +
-                    "if you regularly see this message (current value is " + getLockRetries() + ").");
+                String errMsg = lockRetryErrorMessage(getClass().getSimpleName());
+
+                IgniteCheckedException e = new IgniteCheckedException(errMsg);
 
                 processFailure(FailureType.CRITICAL_ERROR, e);
 
@@ -5667,7 +5666,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         readUnlock(pageId, page, pageAddr);
                     }
                 }
-                catch (AbstractCorruptedPersistenceException e) {
+                catch (CorruptedDataStructureException e) {
                     throw e;
                 }
                 catch (RuntimeException | AssertionError e) {
@@ -6160,7 +6159,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return New CorruptedTreeException instance.
      */
     protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
-        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, pageIds);
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, grpId, pageIds);
 
         processFailure(FailureType.CRITICAL_ERROR, e);
 
@@ -6185,5 +6184,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public long getMetaPageId() {
         return metaPageId;
+    }
+
+    /**
+     * Create an error message when reaching the maximum
+     * number of repetitions to capture a lock in the B+Tree.
+     *
+     * @param op Operation name, for example: GET, PUT.
+     * @return Error message.
+     */
+    protected String lockRetryErrorMessage(String op) {
+        return "Maximum number of retries " +
+            getLockRetries() + " reached for " + op + " operation " +
+            "(the tree may be corrupted). Increase " + IGNITE_BPLUS_TREE_LOCK_RETRIES + " system property " +
+            "if you regularly see this message (current value is " + getLockRetries() + "). " +
+            getClass().getSimpleName() + " [grpName=" + grpName + ", treeName=" + name() + ", metaPageId=" +
+            U.hexLong(metaPageId) + "].";
     }
 }

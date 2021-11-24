@@ -27,12 +27,10 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 
-# pylint: disable=W0223
 class RebalanceInMemoryTest(IgniteTest):
     """
     Tests rebalance scenarios in in-memory mode.
     """
-    # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
@@ -47,7 +45,6 @@ class RebalanceInMemoryTest(IgniteTest):
                           backups, cache_count, entry_count, entry_size, preloaders,
                           thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
-    # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
@@ -62,7 +59,6 @@ class RebalanceInMemoryTest(IgniteTest):
                           backups, cache_count, entry_count, entry_size, preloaders,
                           thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
-    # pylint: disable=too-many-arguments, too-many-locals
     def __run(self, ignite_version, trigger_event,
               backups, cache_count, entry_count, entry_size, preloaders,
               thread_pool_size, batch_size, batches_prefetch_count, throttle):

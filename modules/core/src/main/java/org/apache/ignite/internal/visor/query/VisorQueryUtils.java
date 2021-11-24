@@ -102,48 +102,15 @@ public class VisorQueryUtils {
         if (o instanceof Byte[])
             return "size=" + ((Byte[])o).length;
 
-        if (o instanceof Object[])
-            return "size=" + ((Object[])o).length + ", values=[" + mkString((Object[])o, 120) + "]";
+        if (o instanceof Object[]) {
+            return "size=" + ((Object[])o).length +
+                ", values=[" + S.joinToString(Arrays.asList((Object[])o), ", ", "...", 120, 0) + "]";
+        }
 
         if (o instanceof BinaryObject)
             return binaryToString((BinaryObject)o);
 
         return o.toString();
-    }
-
-    /**
-     * @param arr Object array.
-     * @param maxSz Maximum string size.
-     * @return Fixed size string.
-     */
-    private static String mkString(Object[] arr, int maxSz) {
-        String sep = ", ";
-
-        StringBuilder sb = new StringBuilder();
-
-        boolean first = true;
-
-        for (Object v : arr) {
-            if (first)
-                first = false;
-            else
-                sb.append(sep);
-
-            sb.append(v);
-
-            if (sb.length() > maxSz)
-                break;
-        }
-
-        if (sb.length() >= maxSz) {
-            String end = "...";
-
-            sb.setLength(maxSz - end.length());
-
-            sb.append(end);
-        }
-
-        return sb.toString();
     }
 
     /**

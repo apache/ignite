@@ -38,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Describe configuration of the statistic for a database object (e.g. TABLE).
  */
-public class StatisticsObjectConfiguration implements Serializable {
+public class StatisticsObjectConfiguration implements Serializable, Comparable<StatisticsObjectConfiguration> {
     /** Rows limit to renew partition statistics in percent. */
     public static final byte DEFAULT_OBSOLESCENCE_MAX_PERCENT = 15;
 
@@ -69,8 +69,7 @@ public class StatisticsObjectConfiguration implements Serializable {
         byte maxPartitionObsolescencePercent
     ) {
         this.key = key;
-        this.cols = (cols == null) ? null : cols.stream()
-            .collect(Collectors.toMap(StatisticsColumnConfiguration::name, Function.identity()));
+        this.cols = cols.stream().collect(Collectors.toMap(StatisticsColumnConfiguration::name, Function.identity()));
         this.maxPartitionObsolescencePercent = maxPartitionObsolescencePercent;
     }
 
@@ -232,6 +231,37 @@ public class StatisticsObjectConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StatisticsObjectConfiguration.class, this);
+    }
+
+    /**
+     * Compare only configuration from the same branch. I.e. can't correctly compare
+     * Cfg(A=v1,B=v3) vs Cfg(A=v2,B=v1)
+     * Cfg(A=v1,B=v3) vs Cfg(A=v1m C=v2)
+     * because there is no changes chain to get one from another.
+     *
+     * @param o Other configuration to compare.
+     * @return Comparison result.
+     */
+    @Override public int compareTo(@NotNull StatisticsObjectConfiguration o) {
+        if (this == o)
+            return 0;
+
+        if (cols.size() < o.cols.size())
+            return -1;
+
+        if (cols.size() > o.cols.size())
+            return 1;
+
+        for (StatisticsColumnConfiguration thisColCfg : cols.values()) {
+            StatisticsColumnConfiguration oColCfg = o.cols.get(thisColCfg.name());
+            if (oColCfg == null || thisColCfg.version() > oColCfg.version())
+                return 1;
+
+            if (thisColCfg.version() < oColCfg.version())
+                return -1;
+        }
+
+        return 0;
     }
 
     /**

@@ -473,6 +473,22 @@ public final class GridTestUtils {
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
+        return assertThrows(log, call, cls, msg, null);
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @param notThrowsMsg Optional exception message if expected exception wasn't thrown.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
         assert call != null;
         assert cls != null;
 
@@ -506,7 +522,9 @@ public final class GridTestUtils {
             return e;
         }
 
-        throw new AssertionError("Exception has not been thrown.");
+        String asrtMsg = notThrowsMsg == null ? "Exception has not been thrown." : notThrowsMsg;
+
+        throw new AssertionError(asrtMsg);
     }
 
     /**

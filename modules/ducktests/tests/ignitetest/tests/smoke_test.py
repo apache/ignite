@@ -28,7 +28,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
-# pylint: disable=W0223
 class SmokeServicesTest(IgniteTest):
     """
     Tests services implementations

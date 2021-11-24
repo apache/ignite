@@ -42,6 +42,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
@@ -506,7 +507,10 @@ public class GridResourceIoc {
         JOB_CONTEXT(JobContextResource.class),
 
         /** */
-        CACHE_STORE_SESSION(CacheStoreSessionResource.class);
+        CACHE_STORE_SESSION(CacheStoreSessionResource.class),
+
+        /** */
+        SERVICE_CONTEXT(ServiceContextResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;

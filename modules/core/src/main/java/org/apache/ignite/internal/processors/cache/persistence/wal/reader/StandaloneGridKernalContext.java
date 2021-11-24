@@ -126,6 +126,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
 
+    /** */
+    private GridResourceProcessor rsrcProc;
+
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
 
@@ -166,6 +169,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
+        this.rsrcProc = new GridResourceProcessor(this);
         this.metricMgr = new GridMetricManager(this);
         this.sysViewMgr = new GridSystemViewManager(this);
 
@@ -175,7 +179,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
+        comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
+        comps.add(metricMgr);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -226,6 +232,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+        cfg.setGridLogger(log);
 
         return cfg;
     }
@@ -269,14 +276,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Override public IgniteEx grid() {
         final IgniteEx kernal = new IgniteKernal();
         try {
-            Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
-            fieldCfg.setAccessible(true);
-            fieldCfg.set(kernal, cfg);
+            setField(kernal, "cfg", cfg);
+            setField(kernal, "igniteInstanceName", cfg.getIgniteInstanceName());
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             log.error("", e);
         }
         return kernal;
+    }
+
+    /** */
+    private void setField(IgniteEx kernal, String name, Object val) throws NoSuchFieldException, IllegalAccessException {
+        Field field = kernal.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(kernal, val);
     }
 
     /** {@inheritDoc} */
@@ -306,7 +319,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridResourceProcessor resource() {
-        return null;
+        return rsrcProc;
     }
 
     /** {@inheritDoc} */

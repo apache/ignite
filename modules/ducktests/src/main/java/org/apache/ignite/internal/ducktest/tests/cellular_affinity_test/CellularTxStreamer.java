@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.tests.cellular_affinity_test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,7 +31,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * Streams transactions to specified cell.
@@ -121,10 +121,10 @@ public class CellularTxStreamer extends IgniteAwareApplication {
         }
 
         List<String> result = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
         for (int i = 0; i < precision; i++)
-            result.add(Duration.ofNanos(latencies[i]).toMillis() + " ms at " +
-                IgniteUtils.DEBUG_DATE_FMT.format(opStartTimes[i]));
+            result.add(Duration.ofNanos(latencies[i]).toMillis() + " ms at " + formatter.format(opStartTimes[i]));
 
         recordResult("WORST_LATENCY", result.toString());
         recordResult("STREAMED", cnt - warmup);

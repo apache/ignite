@@ -22,7 +22,6 @@ from contextlib import contextmanager
 from ducktape.cluster.remoteaccount import LogMonitor
 
 
-# pylint: disable=W0703
 @contextmanager
 def monitor_log(node, log, from_the_beginning=False):
     """

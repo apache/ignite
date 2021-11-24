@@ -147,8 +147,8 @@ include::code-snippets/cpp/src/setting_work_directory.cpp[tag=setting-work-direc
 
 == Enabling Modules
 
-Ignite ships with a number of modules that provide various
-functionality. You can enable modules one by one, as required.
+Ignite ships with a number of modules and have a lot of extensions that provide various functionality.
+You can enable modules or extensions one by one, as required.
 
 All modules are included in the binary distribution, but by default they
 are disabled (except for the `ignite-core`, `ignite-spring`, and
@@ -156,7 +156,9 @@ are disabled (except for the `ignite-core`, `ignite-spring`, and
 directory of the distribution package (each module is located in a
 separate sub-directory).
 
-Depending on how you use Ignite, you can enable modules using one of
+Also, you can download any of Ignite extensions you require.
+
+Depending on how you use Ignite, you can enable modules or extensions using one of
 the following methods:
 
 * If you use the binary distribution, move the
@@ -201,20 +203,13 @@ The following modules are available:
 |ignite-aop | Ignite AOP module provides capability to turn any Java method to a distributed closure by
 adding @Gridify annotation to it.
 
-|ignite-aws |Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
-
-|ignite-azure| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
-
 |ignite-cassandra-serializers | The Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The module could be used as in conjunction with the Ignite Cassandra Store module.
 
 |ignite-cassandra-store | Ignite Cassandra Store provides a CacheStore implementation backed by the  Cassandra database.
 
 |ignite-cloud | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
 
-
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
-
-|ignite-gce | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
 
 |ignite-indexing | link:SQL/indexes[SQL querying and indexing]
 
@@ -259,10 +254,6 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-spark | This module provides an implementation of Spark RDD abstraction that enables easy access to Ignite caches.
 
-|ignite-spring-data | Ignite Spring Data provides an integration with Spring Data framework.
-
-|ignite-spring-data_2.0 | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
-
 |ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
 
 |ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
@@ -278,6 +269,23 @@ directory to discover other Ignite nodes.
 
 |=======================================================================
 
+The following extensions are available:
+
+[width="100%",cols="1,2",options="header",]
+|=======================================================================
+|Extension’s artifactId |Description
+|ignite-aws-ext|Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
+
+|ignite-azure-ext| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
+
+|ignite-gce-ext | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
+
+|ignite-spring-data-ext | Ignite Spring Data provides an integration with Spring Data framework.
+
+|ignite-spring-data_2.0-ext | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
+
+|ignite-spring-data_2.2-ext | Ignite Spring Data 2.2 provides an integration with Spring Data 2.2 framework.
+|=======================================================================
 
 == Setting JVM Options
 

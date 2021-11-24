@@ -21,10 +21,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -108,8 +113,17 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         assert e != null;
 
         int status = getStatus(e);
+        String msg = e.getMessage();
 
-        return new ClientResponse(req.requestId(), status, e.getMessage());
+        if (req instanceof ClientCacheSqlQueryRequest ||
+            req instanceof ClientCacheSqlFieldsQueryRequest ||
+            req instanceof ClientCacheQueryNextPageRequest) {
+
+            String sqlState = IgniteQueryErrorCode.codeToSqlState(SqlListenerUtils.exceptionToSqlErrorCode(e));
+            msg = sqlState + ": " + msg;
+        }
+
+        return new ClientResponse(req.requestId(), status, msg);
     }
 
     /** {@inheritDoc} */

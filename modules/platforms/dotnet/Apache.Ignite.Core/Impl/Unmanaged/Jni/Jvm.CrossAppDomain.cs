@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#if !NETCOREAPP
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Reflection;
 
     /// <summary>
@@ -40,15 +40,32 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             // In some cases default AppDomain is not able to locate Apache.Ignite.Core assembly.
             // First, use CreateInstanceFrom to set up the AssemblyResolve handler.
             var resHelpType = typeof(AssemblyResolver);
-            var resHelp = (AssemblyResolver)defDomain.CreateInstanceFrom(resHelpType.Assembly.Location, resHelpType.FullName)
-                .Unwrap();
+
+            var handle = InvokeMethod(defDomain, "CreateInstanceFrom", resHelpType.Assembly.Location, resHelpType.FullName);
+            var resHelp = (AssemblyResolver)InvokeMethod(handle, "Unwrap");
+
             resHelp.TrackResolve(resHelpType.Assembly.FullName, resHelpType.Assembly.Location);
 
             // Now use CreateInstance to get the domain helper of a properly loaded class.
             var type = typeof(CallbackAccessor);
-            var helper = (CallbackAccessor)defDomain.CreateInstance(type.Assembly.FullName, type.FullName).Unwrap();
+            var helperHandle = InvokeMethod(defDomain, "CreateInstance", type.Assembly.FullName, type.FullName);
+            var helper = (CallbackAccessor)InvokeMethod(helperHandle, "Unwrap");
 
             return helper.GetCallbacks();
+        }
+
+        /// <summary>
+        /// Invokes a method with reflection.
+        /// </summary>
+        private static object InvokeMethod(object o, string name, params object[] args)
+        {
+            return o.GetType().InvokeMember(
+                name,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.InvokeMethod,
+                null,
+                o,
+                args,
+                CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -92,4 +109,3 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
     }
 }
-#endif

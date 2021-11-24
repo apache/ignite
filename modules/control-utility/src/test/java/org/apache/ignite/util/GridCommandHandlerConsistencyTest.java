@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +42,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
@@ -170,11 +172,26 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
+    @Test
+    public void testRepairNonExistentCache() throws Exception {
+        startGrids(3);
+
+        injectTestSystemOut();
+
+        for (int i = 0; i < PARTITIONS; i++) {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--consistency", "repair", "non-existent", String.valueOf(i)));
+            assertContains(log, testOut.toString(), "Cache not found");
+        }
+    }
+
+    /**
+     *
+     */
     private void readRepairTx(AtomicInteger brokenParts, String cacheName) {
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i)));
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=1]");
+            assertContains(log, testOut.toString(), "[found=1, fixed=1");
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
@@ -195,7 +212,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) { // This may be a copy of previous (tx case), implement atomic repair to make this happen :)
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair", cacheName, String.valueOf(i)));
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
-            assertContains(log, testOut.toString(), "[found=1, fixed=0]"); // Nothing fixed.
+            assertContains(log, testOut.toString(), "[found=1, fixed=0"); // Nothing fixed.
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
             assertContains(log, testOut.toString(),
@@ -227,6 +244,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             Collections.shuffle(nodes);
 
             int val = key;
+            Object obj;
 
             for (Ignite node : nodes) {
                 IgniteInternalCache cache = ((IgniteEx)node).cachex(name);
@@ -235,8 +253,20 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
                 GridCacheEntryEx entry = adapter.entryEx(key);
 
+                val = incVal ? ++val : val;
+
+                if (binaryCache()) {
+                    BinaryObjectBuilder builder = node.binary().builder("org.apache.ignite.TestValue");
+
+                    builder.setField("val", val);
+
+                    obj = builder.build();
+                }
+                else
+                    obj = val;
+
                 boolean init = entry.initialValue(
-                    new CacheObjectImpl(incVal ? ++val : val, null), // Incremental or same value.
+                    new CacheObjectImpl(obj, null), // Incremental or same value.
                     mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
                     0,
                     0,
@@ -249,5 +279,12 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                 assertTrue("iterableKey " + key + " already inited", init);
             }
         }
+    }
+
+    /**
+     * Cache should be filled with binary objects.
+     */
+    protected boolean binaryCache() {
+        return false;
     }
 }

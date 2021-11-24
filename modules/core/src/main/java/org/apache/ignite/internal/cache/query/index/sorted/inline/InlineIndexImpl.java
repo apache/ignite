@@ -183,7 +183,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (!(v1 != null && v2 != null))
                 return false;
 
-            if (def.rowComparator().compareKey((IndexRow) r1, (IndexRow) r2, i) != 0)
+            if (def.rowComparator().compareRow(r1, r2, i) != 0)
                 return false;
         }
 

@@ -155,7 +155,7 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         ch.close();
     }
 
@@ -632,6 +632,9 @@ public class TcpIgniteClient implements IgniteClient {
                 catch (ClientException e) {
                     throw new IgniteCheckedException(e);
                 }
+
+                if (clsName != null)
+                    cache.putIfAbsent(typeId, clsName);
             }
 
             if (clsName == null)

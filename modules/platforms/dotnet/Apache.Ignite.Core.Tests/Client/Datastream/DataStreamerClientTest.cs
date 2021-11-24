@@ -26,8 +26,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Datastream;
@@ -447,6 +449,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.IsTrue(streamer.IsClosed);
         }
 
+#if NETCOREAPP // TODO: IGNITE-15710
         /// <summary>
         /// Tests that flush throws when exception happens in cache store.
         /// </summary>
@@ -474,6 +477,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             // Streamer is closed because of the flush failure.
             Assert.IsTrue(streamer.IsClosed);
         }
+#endif
 
         /// <summary>
         /// Tests that all add/remove operations throw <see cref="ObjectDisposedException"/> when streamer is closed.
@@ -684,6 +688,76 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.StartsWith("Cache does not exist", inner.Message);
         }
 
+        /// <summary>
+        /// Tests that streaming binary objects with a thin client results in those objects being
+        /// available through SQL in the cache's table.
+        /// </summary>
+        [Test]
+        public void TestBinaryStreamerCreatesSqlRecord()
+        {
+            var cacheCfg = new CacheClientConfiguration
+            {
+                Name = "TestBinaryStreamerCreatesSqlRecord",
+                SqlSchema = "persons",
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyTypeName = "PersonKey",
+                        ValueTypeName = "Person",
+                        Fields = new List<QueryField>
+                        {
+                            new QueryField
+                            {
+                                Name = "Id",
+                                FieldType = typeof(int),
+                                IsKeyField = true
+                            },
+                            new QueryField
+                            {
+                                Name = "Name",
+                                FieldType = typeof(string),
+                            },
+                            new QueryField
+                            {
+                                Name = "Age",
+                                FieldType = typeof(int)
+                            }
+                        }
+                    }
+                }
+            };
+
+            var cacheClientBinary = Client.GetOrCreateCache<int, IBinaryObject>(cacheCfg)
+                .WithKeepBinary<int, IBinaryObject>();
+
+            // Prepare a binary object.
+            var personKey = Client.GetBinary().GetBuilder("PersonKey")
+                .SetIntField("Id", 111)
+                .Build();
+
+            var person = Client.GetBinary().GetBuilder("Person")
+                .SetStringField("Name", "Jane")
+                .SetIntField("Age", 43)
+                .Build();
+
+            // Stream the binary object to the server.
+            using (var streamer = Client.GetDataStreamer<IBinaryObject, IBinaryObject>(cacheCfg.Name))
+            {
+                streamer.Add(personKey, person);
+                streamer.Flush();
+            }
+
+            // Check that SQL works.
+            var query = new SqlFieldsQuery("SELECT Id, Name, Age FROM \"PERSONS\".PERSON");
+            var fullResultAfterClientStreamer = cacheClientBinary.Query(query).GetAll();
+            Assert.IsNotNull(fullResultAfterClientStreamer);
+            Assert.AreEqual(1, fullResultAfterClientStreamer.Count);
+            Assert.AreEqual(111, fullResultAfterClientStreamer[0][0]);
+            Assert.AreEqual("Jane", fullResultAfterClientStreamer[0][1]);
+            Assert.AreEqual(43, fullResultAfterClientStreamer[0][2]);
+        }
+
 #if NETCOREAPP
 
         /// <summary>
@@ -789,7 +863,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
         private class BlockingCacheStore : CacheStoreAdapter<int, int>, IFactory<ICacheStore>
         {
-            private static readonly ManualResetEventSlim Gate = new ManualResetEventSlim();
+            private static readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
 
             public static void Block()
             {
@@ -803,7 +877,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             public override int Load(int key)
             {
-                throw new NotImplementedException();
+                throw new IgniteException("Error in Store");
             }
 
             public override void Write(int key, int val)
@@ -813,7 +887,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             public override void Delete(int key)
             {
-                throw new NotImplementedException();
+                throw new IgniteException("Error in Store");
             }
 
             public ICacheStore CreateInstance()

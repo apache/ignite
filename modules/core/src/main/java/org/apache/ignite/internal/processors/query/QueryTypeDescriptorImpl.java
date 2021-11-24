@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -135,6 +136,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      *
@@ -144,6 +148,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
+        this.log = coCtx.kernalContext().log(getClass());
     }
 
     /**
@@ -721,6 +726,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
                 else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
+                    // Check for classes/enums implementing indexed interfaces.
+                    String clsName = ((BinaryObject) propVal).type().typeName();
+                    try {
+                        final Class<?> cls = Class.forName(clsName);
+
+                        if (propType.isAssignableFrom(cls))
+                            continue;
+                    } catch (ClassNotFoundException e) {
+                        if (log.isDebugEnabled())
+                            U.error(log, "Failed to find child class: " + clsName, e);
+                    }
+
                     throw new IgniteSQLException("Type for a column '" + idxField +
                         "' is not compatible with index definition. Expected '" +
                         propType.getSimpleName() + "', actual type '" +

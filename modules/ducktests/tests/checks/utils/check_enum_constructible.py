@@ -34,14 +34,13 @@ class ConnectType(IntEnum):
 
 
 check_params = []
-# pylint: disable=E1101
+
 for name, value in ConnectType.__members__.items():
     check_params.append([name, value])
     check_params.append([int(value), value])
     check_params.append([value, value])
 
 
-# pylint: disable=no-self-use, no-member
 class CheckEnumConstructible:
     """
     Basic test of IntEnum decorated with @constructible.
