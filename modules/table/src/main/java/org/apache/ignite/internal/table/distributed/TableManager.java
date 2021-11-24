@@ -1446,7 +1446,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             List<ClusterNode> oldPartitionAssignment = oldAssignments.get(p);
             List<ClusterNode> newPartitionAssignment = newAssignments.get(p);
 
-            futures[i] = raftMgr.chagePeers(
+            futures[i] = raftMgr.changePeers(
                     raftGroupName(tblId, p),
                     oldPartitionAssignment,
                     newPartitionAssignment

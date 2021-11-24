@@ -188,6 +188,14 @@ public class MetaStorageManager implements IgniteComponent {
                 throw new IgniteException(
                         "Cannot start meta storage manager because there is no node in the cluster that hosts meta storage.");
             }
+    
+            // TODO: This is temporary solution. We need to prohibit starting several metastorage nodes
+            // as far as we do not have mechanism of changing raft peers when new metastorage node is joining to cluster.
+            // This will be rewritten in init phase https://issues.apache.org/jira/browse/IGNITE-14414
+            if (metastorageNodes.length > 1) {
+                throw new IgniteException(
+                        "Cannot start meta storage manager because it is not allowed to start several metastorage nodes.");
+            }
 
             storage.start();
 

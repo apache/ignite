@@ -180,9 +180,7 @@ class ItIgnitionTest {
         try {
             ig1 = IgnitionManager.start("node-0", "{\n"
                     + "    \"node\": {\n"
-                    + "        \"metastorageNodes\": [\n"
-                    + "            \"node-0\", \"node-1\", \"node-2\"\n"
-                    + "        ]\n"
+                    + "       \"metastorageNodes\":[ \"node-0\" ]\n"
                     + "    },\n"
                     + "    \"network\": {\n"
                     + "      \"port\": 3344,\n"
@@ -194,9 +192,7 @@ class ItIgnitionTest {
 
             ig2 = IgnitionManager.start("other-name", "{\n"
                     + "    \"node\": {\n"
-                    + "        \"metastorageNodes\": [\n"
-                    + "            \"node-0\", \"node-1\", \"node-2\"\n"
-                    + "        ]\n"
+                    + "        \"metastorageNodes\":[ \"node-0\" ]\n"
                     + "    },\n"
                     + "    \"network\": {\n"
                     + "      \"port\": 3345,\n"
@@ -211,7 +207,33 @@ class ItIgnitionTest {
             IgniteUtils.closeAll(ig2, ig1);
         }
     }
-
+    
+    /**
+     * Tests scenario when we try to start single-node cluster with several metastorage nodes in config.
+     * TODO: test should be rewritten after init phase will be developed https://issues.apache.org/jira/browse/IGNITE-14414
+     */
+    @Test
+    void testStartNodeClusterWithTwoMetastorageInConfig() throws Exception {
+        try {
+            IgnitionManager.start("node-0", "{\n"
+                    + "    \"node\": {\n"
+                    + "        \"metastorageNodes\": [\n"
+                    + "            \"node-0\", \"node-1\", \"node-2\"\n"
+                    + "        ]\n"
+                    + "    },\n"
+                    + "    \"network\": {\n"
+                    + "      \"port\": 3344,\n"
+                    + "      \"nodeFinder\": {\n"
+                    + "        \"netClusterNodes\": [ \"localhost:3345\"]\n"
+                    + "      }\n"
+                    + "    }\n"
+                    + "}", workDir.resolve("node-0"));
+        } catch (IgniteException e) {
+            assertEquals(e.getCause().getMessage(), "Cannot start meta storage manager "
+                    + "because it is not allowed to start several metastorage nodes.");
+        }
+    }
+    
     /**
      * Tests scenario when we try to start node with invalid configuration.
      */
