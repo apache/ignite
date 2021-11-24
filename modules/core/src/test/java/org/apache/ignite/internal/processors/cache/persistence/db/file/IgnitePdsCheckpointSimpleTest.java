@@ -49,7 +49,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setPageSize(4 * 1024)
+                .setPageSize(8 * 1024)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true))
                 .setCheckpointFrequency(cpFrequency));

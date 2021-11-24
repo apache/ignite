@@ -45,7 +45,7 @@ import org.junit.Test;
  */
 public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest {
     /** */
-    public static final int PAGE_SIZE = 1024;
+    public static final int PAGE_SIZE = 8 * 1024;
 
     /** */
     private static final int KEYS_COUNT = 100_000;
