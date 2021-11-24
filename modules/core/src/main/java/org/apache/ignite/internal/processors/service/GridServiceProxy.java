@@ -45,7 +45,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -320,7 +319,7 @@ public class GridServiceProxy<T> implements Serializable {
             ServiceCallContextHolder.current(callCtx);
 
         try {
-            return mtd.invoke(svc, BinaryUtils.rawArrayInArgs(args, false));
+            return mtd.invoke(svc, args);
         }
         finally {
             if (callCtx != null)

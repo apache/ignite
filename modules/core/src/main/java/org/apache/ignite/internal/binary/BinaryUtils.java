@@ -2606,22 +2606,6 @@ public class BinaryUtils {
     }
 
     /** */
-    public static Object[] rawArrayInArgs(Object[] args, boolean keepBinary) {
-        if (args == null)
-            return args;
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] instanceof BinaryArray) {
-                BinaryArray arr = (BinaryArray)args[i];
-
-                args[i] = keepBinary ? arr.array() : arr.deserialize();
-            }
-        }
-
-        return args;
-    }
-
-    /** */
     public static boolean isObjectArray(Class<?> cls) {
         return Object[].class == cls || BinaryArray.class == cls;
     }

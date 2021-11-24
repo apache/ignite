@@ -709,7 +709,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Object arg = args[i];
                 Class argType = wrap(argTypes[i]);
 
-                if (arg != null && !argType.isAssignableFrom(arg.getClass()))
+                if (arg == null)
+                    continue;
+
+                if (!argType.isAssignableFrom(arg.getClass()))
                     return false;
             }
 
