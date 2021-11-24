@@ -606,17 +606,20 @@ namespace Apache.Ignite.Core.Tests.Client
                     // First operation may fail or may not.
                     // Sometimes the client will switch to another socket in background due to
                     // OnAffinityTopologyVersionChange callback.
-                    try
-                    {
-                        Assert.AreEqual(0, client.GetCacheNames().Count);
-                    }
-                    catch (Exception e)
-                    {
-                        Assert.IsNotNull(GetSocketException(e));
-                    }
+                    var timeout = DateTime.Now.AddSeconds(0.3);
 
-                    // Second operation always succeeds.
-                    Assert.AreEqual(0, client.GetCacheNames().Count);
+                    while (DateTime.Now < timeout)
+                    {
+                        try
+                        {
+                            Assert.AreEqual(0, client.GetCacheNames().Count);
+                            break;
+                        }
+                        catch (Exception e)
+                        {
+                            Assert.IsNotNull(GetSocketException(e));
+                        }
+                    }
                 };
 
                 // Stop first node.
