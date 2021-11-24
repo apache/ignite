@@ -614,8 +614,17 @@ namespace Apache.Ignite.Core.Tests.Client
                 nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
-                // Check failure.
-                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                // Check failure or reconnect.
+                // Sometimes the client will switch to another socket in background due to
+                // OnAffinityTopologyVersionChange callback.
+                try
+                {
+                    Assert.AreEqual(0, client.GetCacheNames().Count);
+                }
+                catch (Exception e)
+                {
+                    Assert.IsNotNull(GetSocketException(e));
+                }
 
                 // Check reconnect.
                 Assert.AreEqual(0, client.GetCacheNames().Count);
