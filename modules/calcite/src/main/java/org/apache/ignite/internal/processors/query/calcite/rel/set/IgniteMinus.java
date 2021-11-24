@@ -24,22 +24,21 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.SetOp;
+import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  * Base class for physical MINUS (EXCEPT) set op.
  */
-public abstract class IgniteMinus extends SetOp implements IgniteSetOp {
+public abstract class IgniteMinus extends Minus implements IgniteSetOp {
     /** Count of counter fields used to aggregate results. */
     protected static final int COUNTER_FIELDS_CNT = 2;
 
     /** */
     IgniteMinus(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all) {
-        super(cluster, traits, inputs, SqlKind.EXCEPT, all);
+        super(cluster, traits, inputs, all);
     }
 
     /** {@inheritDoc} */
