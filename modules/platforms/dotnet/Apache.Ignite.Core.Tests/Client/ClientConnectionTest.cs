@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.Contains(
                     socketEx.SocketErrorCode,
-                    new[] {SocketError.ConnectionAborted, SocketError.ConnectionReset});
+                    new[] {SocketError.ConnectionAborted, SocketError.ConnectionReset, SocketError.ConnectionRefused});
             }
             else
             {
