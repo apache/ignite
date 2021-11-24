@@ -1151,19 +1151,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks exchnage-before-correlate and correct multy-value subquery error.
+     * Checks correlates are assigned before access.
      */
     @Test
-    public void testSubqueryMultyValueError() throws IgniteInterruptedCheckedException {
+    public void testCorrelatesAssignedBeforeAccess() throws IgniteInterruptedCheckedException {
         sql("create table test_tbl(v INTEGER)", true);
 
-        sql("INSERT INTO test_tbl VALUES (1), (2), (3), (4), (5)", true);
+        sql("INSERT INTO test_tbl VALUES (1)", true);
 
-        Throwable err = GridTestUtils.assertThrows(log,
-            () -> sql("SELECT t0.v, (SELECT t0.v + t1.v FROM test_tbl t1) AS j FROM test_tbl t0"),
-            IgniteSQLException.class, null);
-
-        assertTrue(X.hasCause(err, "Subquery returned more than 1 value", IllegalArgumentException.class));
+        sql("SELECT t0.v, (SELECT t0.v + t1.v FROM test_tbl t1) AS j FROM test_tbl t0");
     }
 
     /** */
