@@ -251,16 +251,20 @@ public class CheckpointWorkflow {
         WALPointer cpPtr = null;
 
         CheckpointContextImpl ctx0 = new CheckpointContextImpl(
-            curr, new PartitionAllocationMap(), checkpointCollectPagesInfoPool, workProgressDispatcher
+            curr, new PartitionAllocationMap(), checkpointCollectPagesInfoPool
         );
 
         checkpointReadWriteLock.readLock();
 
         try {
+            workProgressDispatcher.blockingSectionBegin();
+
             for (CheckpointListener lsnr : dbLsnrs)
                 lsnr.beforeCheckpointBegin(ctx0);
 
             ctx0.awaitPendingTasksFinished();
+
+            workProgressDispatcher.blockingSectionEnd();
         }
         finally {
             checkpointReadWriteLock.readUnlock();
@@ -275,11 +279,15 @@ public class CheckpointWorkflow {
 
             tracker.onMarkStart();
 
+            workProgressDispatcher.blockingSectionBegin();
+
             // Listeners must be invoked before we write checkpoint record to WAL.
             for (CheckpointListener lsnr : dbLsnrs)
                 lsnr.onMarkCheckpointBegin(ctx0);
 
             ctx0.awaitPendingTasksFinished();
+
+            workProgressDispatcher.blockingSectionEnd();
 
             tracker.onListenersExecuteEnd();
 
@@ -316,6 +324,8 @@ public class CheckpointWorkflow {
 
         curr.transitTo(LOCK_RELEASED);
 
+        workProgressDispatcher.blockingSectionBegin();
+
         for (CheckpointListener lsnr : dbLsnrs)
             lsnr.onCheckpointBegin(ctx0);
 
@@ -328,6 +338,8 @@ public class CheckpointWorkflow {
                     curr.snapshotOperation(), e);
             }
         }
+
+        workProgressDispatcher.blockingSectionEnd();
 
         if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
             tracker.onWalCpRecordFsyncStart();
@@ -591,7 +603,7 @@ public class CheckpointWorkflow {
         if (checkpointMarkersStorage != null)
             checkpointMarkersStorage.onCheckpointFinished(chp);
 
-        CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null, null);
+        CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null);
 
         Collection<DataRegion> checkpointedRegions = dataRegions.get();
 
