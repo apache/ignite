@@ -175,9 +175,15 @@ public class TraitUtils {
             return rel;
 
         RelTraitSet traits = rel.getTraitSet()
-            .replace(toTrait);
+            .replace(toTrait)
+            .replace(CorrelationTrait.UNCORRELATED);
 
-        return new IgniteTableSpool(rel.getCluster(), traits, Spool.Type.LAZY, rel);
+        return new IgniteTableSpool(
+            rel.getCluster(),
+            traits,
+            Spool.Type.LAZY,
+            RelOptRule.convert(rel, rel.getTraitSet().replace(CorrelationTrait.UNCORRELATED))
+        );
     }
 
     /** */
