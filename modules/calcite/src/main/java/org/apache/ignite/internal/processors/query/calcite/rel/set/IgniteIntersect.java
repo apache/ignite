@@ -24,18 +24,19 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Intersect;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 /**
  * Base class for physical INTERSECT set op.
  */
-public abstract class IgniteIntersect extends Intersect implements IgniteSetOp {
+public abstract class IgniteIntersect extends SetOp implements IgniteSetOp {
     /** */
     IgniteIntersect(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all) {
-        super(cluster, traits, inputs, all);
+        super(cluster, traits, inputs, SqlKind.INTERSECT, all);
     }
 
     /** {@inheritDoc} */
