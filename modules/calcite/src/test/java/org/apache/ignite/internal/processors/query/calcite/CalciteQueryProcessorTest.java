@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -1146,6 +1148,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .returns(1)
             .returns(new Object[]{null})
             .check();
+    }
+
+    /**
+     * Checks exchnage-before-correlate and correct multy-value subquery error.
+     */
+    @Test
+    public void testSubqueryMultyValueError() throws IgniteInterruptedCheckedException {
+        sql("create table test_tbl(v INTEGER)", true);
+
+        sql("INSERT INTO test_tbl VALUES (1), (2), (3), (4), (5)", true);
+
+        Throwable err = GridTestUtils.assertThrows(log,
+            () -> sql("SELECT t0.v, (SELECT t0.v + t1.v FROM test_tbl t1) AS j FROM test_tbl t0"),
+            IgniteSQLException.class, null);
+
+        assertTrue(X.hasCause(err, "Subquery returned more than 1 value", IllegalArgumentException.class));
     }
 
     /** */

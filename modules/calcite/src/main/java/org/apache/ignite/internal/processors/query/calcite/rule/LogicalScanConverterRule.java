@@ -81,6 +81,12 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     .replace(collation);
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+
+                if (!F.isEmpty(rel.projects())) {
+                    corrIds = new HashSet<>(corrIds);
+                    corrIds.addAll(RexUtils.extractCorrelationIds(rel.projects()));
+                }
+
                 if (!corrIds.isEmpty())
                     traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
