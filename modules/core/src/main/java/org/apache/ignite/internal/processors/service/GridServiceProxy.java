@@ -43,18 +43,19 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
-import org.apache.ignite.internal.processors.task.GridTaskWorker;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -213,35 +214,14 @@ public class GridServiceProxy<T> implements Serializable {
                     else {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
-                        ServiceProxyCallable svcCallable;
-
-                        if (KEEP_BINARY.get()) {
-                            svcCallable = new BinaryServiceProxyCallable(
-                                methodName(mtd),
-                                name,
-                                mtd.getParameterTypes(),
-                                args,
-                                callCtx
-                            );
-                        }
-                        else {
-                            svcCallable = new ServiceProxyCallable(
-                                methodName(mtd),
-                                name,
-                                mtd.getParameterTypes(),
-                                args,
-                                callCtx
-                            );
-                        }
-
                         // Execute service remotely.
-                        return ctx.closure().callAsyncNoFailover(
+                        return unmarshalResult(ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
-                            svcCallable,
+                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, callCtx),
                             Collections.singleton(node),
                             false,
                             waitTimeout,
-                            true).get();
+                            true).get());
                     }
                 }
                 catch (InvocationTargetException e) {
@@ -345,6 +325,18 @@ public class GridServiceProxy<T> implements Serializable {
             if (callCtx != null)
                 ServiceCallContextHolder.current(null);
         }
+    }
+
+    /** */
+    private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        if (KEEP_BINARY.get() && (marsh instanceof BinaryMarshaller)) {
+            // To avoid deserializing of enum types and BinaryArrays.
+            return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
+        }
+        else
+            return U.unmarshal(marsh, res, null);
     }
 
     /**
@@ -487,41 +479,9 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Copy of {@code ServiceProxyCallable} to distinguish between {@code keepBinary = true / false} modes.
-     * @see GridTaskWorker
-     */
-    public static class BinaryServiceProxyCallable extends ServiceProxyCallable {
-        /** Serial version UID. */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public BinaryServiceProxyCallable() {
-            // No-op.
-        }
-
-        /**
-         * @param mtdName Service method to invoke.
-         * @param svcName Service name.
-         * @param argTypes Argument types.
-         * @param args Arguments for invocation.
-         */
-        private BinaryServiceProxyCallable(
-            String mtdName,
-            String svcName,
-            Class<?>[] argTypes,
-            Object[] args,
-            @Nullable ServiceCallContext callCtx
-        ) {
-            super(mtdName, svcName, argTypes, args, callCtx);
-        }
-    }
-
-    /**
      * Callable proxy class.
      */
-    private static class ServiceProxyCallable implements IgniteCallable<Object>, Externalizable {
+    private static class ServiceProxyCallable implements IgniteCallable<byte[]>, Externalizable {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
@@ -573,7 +533,7 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
+        @Override public byte[] call() throws Exception {
             ServiceContextImpl ctx = ignite.context().service().serviceContext(svcName);
 
             if (ctx == null || ctx.service() == null)
@@ -583,10 +543,14 @@ public class GridServiceProxy<T> implements Serializable {
 
             Method mtd = ctx.method(key);
 
+            Object res;
+
             if (ctx.service() instanceof PlatformService && mtd == null)
-                return callPlatformService((PlatformService)ctx.service());
+                res = callPlatformService((PlatformService)ctx.service());
             else
-                return callService(ctx.service(), mtd);
+                res = callService(ctx.service(), mtd);
+
+            return U.marshal(ignite.configuration().getMarshaller(), res);
         }
 
         /** */
