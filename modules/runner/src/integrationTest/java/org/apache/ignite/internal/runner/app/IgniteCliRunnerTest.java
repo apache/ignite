@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import org.apache.ignite.app.IgniteCliRunner;
 import org.apache.ignite.internal.testframework.WorkDirectory;
 import org.apache.ignite.internal.testframework.WorkDirectoryExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -32,26 +31,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(WorkDirectoryExtension.class)
 public class IgniteCliRunnerTest {
-    @WorkDirectory
-    private Path workDir;
-
     /** TODO: Replace this test by full integration test on the cli side IGNITE-15097. */
     @Test
-    @Disabled("https://issues.apache.org/jira/browse/IGNITE-15729")
-    public void runnerArgsSmokeTest() {
+    public void runnerArgsSmokeTest(@WorkDirectory Path workDir) {
         assertNotNull(IgniteCliRunner.start(
-            new String[] {
-                "--config", workDir.resolve("node1").toAbsolutePath().toString(),
-                "--work-dir", workDir.resolve("node1").toAbsolutePath().toString(),
-                "node1"
-            }
+                new String[]{
+                        "--config", IgniteCliRunnerTest.class.getResource("/ignite-config.json").getPath(),
+                        "--work-dir", workDir.resolve("node1").toAbsolutePath().toString(),
+                        "node1"
+                }
         ));
-
+        
         assertNotNull(IgniteCliRunner.start(
-            new String[] {
-                "--work-dir", workDir.resolve("node2").toAbsolutePath().toString(),
-                "node2"
-            }
+                new String[]{
+                        "--work-dir", workDir.resolve("node2").toAbsolutePath().toString(),
+                        "node2"
+                }
         ));
     }
 }
