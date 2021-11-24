@@ -93,8 +93,10 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     /** */
     @Test
     public void testBinaryModeArray() {
-        doTestBinaryModeArray(srvCache);
-        doTestBinaryModeArray(cliCache);
+        putRegularGetInBinary(srvCache);
+        putRegularGetInBinary(cliCache);
+        putInBinaryGetRegular(srvCache);
+        putInBinaryGetRegular(cliCache);
     }
 
     /** */
@@ -194,7 +196,7 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
     }
 
     /** */
-    private void doTestBinaryModeArray(IgniteCache<Object, Object> c) {
+    private void putRegularGetInBinary(IgniteCache<Object, Object> c) {
         c.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
         Object obj = c.withKeepBinary().get(1);
 
@@ -204,6 +206,47 @@ public class BinaryArraySelfTest extends AbstractTypedArrayTest {
             assertEquals(TestClass1[].class, ((BinaryObject)obj).deserialize().getClass());
 
         assertTrue(c.remove(1));
+    }
+
+    /** */
+    private void putInBinaryGetRegular(IgniteCache<Object, Object> c) {
+        Runnable checker = () -> {
+            Object[] arr = (Object[])c.get(1);
+
+            assertTrue(arr[0] instanceof TestClass1);
+            assertTrue(arr[1] instanceof TestClass1);
+
+            assertTrue(c.withKeepBinary().remove(1));
+
+            assertNull(c.withKeepBinary().get(1));
+            assertNull(c.get(1));
+        };
+
+        {
+            BinaryObject[] src = new BinaryObject[] {
+                server.binary().toBinary(new TestClass1()),
+                server.binary().toBinary(new TestClass1())
+            };
+
+            c.withKeepBinary().put(1, src);
+
+            checker.run();
+        }
+
+        {
+            Object src = server.binary().toBinary(
+                new Object[] {
+                    server.binary().toBinary(new TestClass1()),
+                    server.binary().toBinary(new TestClass1())
+                }
+            );
+
+            assertEquals(useTypedArrays ? BinaryArray.class : Object[].class, src.getClass());
+
+            c.withKeepBinary().put(1, src);
+
+            checker.run();
+        }
     }
 
     /** */

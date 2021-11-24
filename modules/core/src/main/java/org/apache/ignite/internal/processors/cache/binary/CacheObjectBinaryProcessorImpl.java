@@ -508,13 +508,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
 
+            String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
             return new BinaryArray(
                 binaryCtx,
                 // In case of interface rely on class name, because interfaces not registered as binary types.
                 compCls.isInterface()
                     ? GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-                    : binaryCtx.typeId(!isBinaryArr ? compCls.getName() : Object.class.getName()),
-                !isBinaryArr ? compCls.getName() : Object.class.getName(),
+                    : binaryCtx.typeId(compClsName),
+                compClsName,
                 pArr
             );
         }
