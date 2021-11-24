@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -1109,7 +1108,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 IServiceCallContext callCtx;
 
                 ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out callCtx);
-                
+
                 if (callCtx != null)
                     ServiceContext.SetCurrentCallContext(callCtx);
 
