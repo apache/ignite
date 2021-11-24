@@ -114,7 +114,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Number of cache keys to pre-create at node start. */
-    protected static final int CACHE_KEYS_RANGE = GridTestUtils.SF.apply(1024 * 1024);
+    protected static final int CACHE_KEYS_RANGE = 1024;
 
     /** Number of partitions within a snapshot cache group. */
     protected static final int CACHE_PARTITIONS_COUNT = GridTestUtils.SF.apply(DFLT_PARTITION_COUNT);
