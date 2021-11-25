@@ -693,7 +693,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
-        assertCreateIndexEquals(exp, (GridSqlCreateIndex) stmt);
+        assertCreateIndexEquals(exp, (GridSqlCreateIndex)stmt);
     }
 
     /**
@@ -706,7 +706,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 
-        assertDropIndexEquals(exp, (GridSqlDropIndex) stmt);
+        assertDropIndexEquals(exp, (GridSqlDropIndex)stmt);
     }
 
     /**
@@ -741,7 +741,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlCreateTable);
 
-        assertCreateTableEquals(exp, (GridSqlCreateTable) stmt);
+        assertCreateTableEquals(exp, (GridSqlCreateTable)stmt);
     }
 
     /**
@@ -879,7 +879,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlDropTable);
 
-        assertDropTableEquals(exp, (GridSqlDropTable) stmt);
+        assertDropTableEquals(exp, (GridSqlDropTable)stmt);
     }
 
     /**

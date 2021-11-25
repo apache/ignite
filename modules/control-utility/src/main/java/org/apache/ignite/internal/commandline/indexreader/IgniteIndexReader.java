@@ -1553,7 +1553,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 final int cacheId;
 
                 if (io instanceof AbstractDataLeafIO && ((AbstractDataLeafIO)io).storeCacheId())
-                    cacheId = ((AbstractDataLeafIO) io).getCacheId(addr, idx);
+                    cacheId = ((AbstractDataLeafIO)io).getCacheId(addr, idx);
                 else
                     cacheId = nodeCtx.cacheId;
 
@@ -1592,7 +1592,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             PageIO dataIo = PageIO.getPageIO(getType(dataBuf), getVersion(dataBuf));
 
                             if (dataIo instanceof AbstractDataPageIO) {
-                                AbstractDataPageIO dataPageIO = (AbstractDataPageIO) dataIo;
+                                AbstractDataPageIO dataPageIO = (AbstractDataPageIO)dataIo;
 
                                 DataPagePayload payload = dataPageIO.readPayload(dataBufAddr, linkedItemId, pageSize);
 

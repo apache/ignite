@@ -1110,7 +1110,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         TestRecordingCommunicationSpi.spi(grid(1)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage) msg;
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
 
                     return msg0.exchangeId() == null && msg0.partitions().get(CU.cacheId(DEFAULT_CACHE_NAME)).
                         topologyVersion().equals(new AffinityTopologyVersion(4, 0));
@@ -1133,14 +1133,14 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             crd.cache(DEFAULT_CACHE_NAME).put(p, p + 1);
 
         IgniteConfiguration cfg2 = getConfiguration(getTestIgniteInstanceName(2));
-        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi) cfg2.getCommunicationSpi();
+        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)cfg2.getCommunicationSpi();
         spi2.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionDemandMessage)
                     return true; // Prevent any rebalancing to avoid switching partitions to owning.
 
                 if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage) msg;
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
 
                     return msg0.exchangeId() != null &&
                         msg0.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(5, 0));

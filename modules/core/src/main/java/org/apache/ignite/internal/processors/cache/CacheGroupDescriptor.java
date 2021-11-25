@@ -359,7 +359,7 @@ public class CacheGroupDescriptor {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheGroupDescriptor that = (CacheGroupDescriptor) o;
+        CacheGroupDescriptor that = (CacheGroupDescriptor)o;
 
         return grpId == that.grpId;
     }

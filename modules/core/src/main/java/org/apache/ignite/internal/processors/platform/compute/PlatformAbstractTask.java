@@ -103,7 +103,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
                 }
             }
 
-            ComputeJobResultPolicy plc0 = ComputeJobResultPolicy.fromOrdinal((byte) plc);
+            ComputeJobResultPolicy plc0 = ComputeJobResultPolicy.fromOrdinal((byte)plc);
 
             assert plc0 != null : plc;
 

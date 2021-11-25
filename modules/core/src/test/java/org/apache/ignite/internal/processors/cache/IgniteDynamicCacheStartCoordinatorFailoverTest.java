@@ -156,7 +156,7 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
             cache.put(i, i);
 
         for (int i = 0; i < cnt; ++i) {
-            Integer v = (Integer) cache.get(i);
+            Integer v = (Integer)cache.get(i);
 
             assertNotNull(v);
             assertEquals(i, v.intValue());
@@ -189,9 +189,9 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
                 GridIoMessage msg0 = (GridIoMessage)msg;
 
                 if (msg0.message() instanceof GridDhtPartitionsSingleMessage) {
-                    Boolean attr = (Boolean) node.attributes().get(COORDINATOR_ATTRIBUTE);
+                    Boolean attr = (Boolean)node.attributes().get(COORDINATOR_ATTRIBUTE);
 
-                    GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg0.message();
+                    GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg0.message();
 
                     Exception err = singleMsg.getError();
 

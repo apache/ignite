@@ -151,7 +151,7 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
 
         assertThat(actualKeys, arrayContainingInAnyOrder(expectedKeys));
 
-        expected.forEach((key, expectedVal) -> assertThat(actual.get(key), is((Object) expectedVal)));
+        expected.forEach((key, expectedVal) -> assertThat(actual.get(key), is((Object)expectedVal)));
     }
 
     /**
@@ -181,6 +181,6 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
      * @param initSize Initial size.
      */
     private static int realCapacityForInitialSize(int initSize) {
-        return ((Object[]) U.field(new IntHashMap<String>(initSize), "entries")).length;
+        return ((Object[])U.field(new IntHashMap<String>(initSize), "entries")).length;
     }
 }

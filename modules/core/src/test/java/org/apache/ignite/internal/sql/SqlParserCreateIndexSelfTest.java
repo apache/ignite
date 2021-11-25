@@ -282,7 +282,7 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
             SqlIndexColumn col = colIter.next();
 
             String expColName = (String)expColDefs[i++];
-            Boolean expDesc = (Boolean) expColDefs[i++];
+            Boolean expDesc = (Boolean)expColDefs[i++];
 
             assertEquals(expColName, col.name());
             assertEquals(expDesc, (Boolean)col.descending());

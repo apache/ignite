@@ -88,10 +88,10 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
                     GridP2PRemoteTestJob.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task2 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
@@ -145,10 +145,10 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
                     GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task2 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 

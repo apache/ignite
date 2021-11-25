@@ -182,8 +182,8 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @return the key
      */
     private static IntegerKey ensureKey(Object key) {
-        Object converted = key instanceof BinaryObject ? ((BinaryObject) key).deserialize() : key;
-        return converted instanceof IntegerKey ? (IntegerKey) converted : null;
+        Object converted = key instanceof BinaryObject ? ((BinaryObject)key).deserialize() : key;
+        return converted instanceof IntegerKey ? (IntegerKey)converted : null;
     }
 
     /**
@@ -512,7 +512,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 return false;
 
             if (IntegerKey.class.equals(o.getClass())) {
-                IntegerKey that = (IntegerKey) o;
+                IntegerKey that = (IntegerKey)o;
                 return this.val == that.val;
             }
 
@@ -693,7 +693,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Integer, Set<IntegerKey>> loadingMap = new ConcurrentHashMap<>();
 
         /** */
-        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>) new IgnitePredicate<Event>() {
+        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>)new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 // Handle:
                 // EVT_CACHE_OBJECT_PUT
@@ -701,7 +701,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 // EVT_CACHE_OBJECT_REMOVED
                 // EVT_CACHE_REBALANCE_OBJECT_UNLOADED
                 if (evt instanceof CacheEvent) {
-                    CacheEvent cacheEvt = (CacheEvent) evt;
+                    CacheEvent cacheEvt = (CacheEvent)evt;
                     int part = cacheEvt.partition();
 
                     // Oonly handle events for the test cache.
@@ -731,7 +731,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 // EVT_CACHE_REBALANCE_PART_UNLOADED
                 // EVT_CACHE_REBALANCE_PART_DATA_LOST
                 else if (evt instanceof CacheRebalancingEvent) {
-                    CacheRebalancingEvent rebalancingEvt = (CacheRebalancingEvent) evt;
+                    CacheRebalancingEvent rebalancingEvt = (CacheRebalancingEvent)evt;
 
                     int part = rebalancingEvt.partition();
 

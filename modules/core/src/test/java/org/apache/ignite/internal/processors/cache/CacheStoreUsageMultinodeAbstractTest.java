@@ -140,7 +140,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         assertTrue(((IgniteCacheProxy)cache0).context().store().configured());
         if (atomicityMode() != ATOMIC)
-            assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());
+            assertEquals(clientStore, ((IgniteCacheProxy)clientCache).context().store().configured());
 
         List<TransactionConcurrency> tcList = new ArrayList<>();
 

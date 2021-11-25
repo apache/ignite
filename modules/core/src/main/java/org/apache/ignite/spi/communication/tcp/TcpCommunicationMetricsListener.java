@@ -204,7 +204,7 @@ public class TcpCommunicationMetricsListener {
         assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
-            msg = ((GridIoMessage) msg).message();
+            msg = ((GridIoMessage)msg).message();
 
             updateMessageTypeMap(msg);
 
@@ -225,7 +225,7 @@ public class TcpCommunicationMetricsListener {
         assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
-            msg = ((GridIoMessage) msg).message();
+            msg = ((GridIoMessage)msg).message();
 
             updateMessageTypeMap(msg);
 
