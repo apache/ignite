@@ -132,6 +132,11 @@ public class ClientMessage implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    public boolean readFrom(ByteBuffer buf) throws IOException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8 * (4 + cnt));
@@ -140,10 +145,10 @@ public class ClientMessage implements Message, Externalizable {
                 return false;
 
             if (msgSize <= 0)
-                throw new IgniteException("Message size must be greater than 0: " + msgSize);
+                throw new IOException("Message size must be greater than 0: " + msgSize);
 
             if (isFirstMessage && msgSize > MAX_FIRST_MESSAGE_SIZE)
-                throw new IgniteException("Client handshake size limit exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
+                throw new IOException("Client handshake size limit exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
         }
 
         assert cnt >= 0;
@@ -171,7 +176,7 @@ public class ClientMessage implements Message, Externalizable {
                         return false;
 
                     if (firstMessageHeader != FIRST_MESSAGE_HEADER)
-                        throw new IgniteException("Invalid handshake first 3 bytes, expected " + FIRST_MESSAGE_HEADER + ", but was "
+                        throw new IOException("Invalid handshake first 3 bytes, expected " + FIRST_MESSAGE_HEADER + ", but was "
                                 + firstMessageHeader);
 
                     // Header is valid, create buffer and set first 3 bytes to 1 1 0.

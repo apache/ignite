@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -63,7 +64,7 @@ public class ClientListenerNioMessageParser implements GridNioParser {
             boolean finished = false;
 
             if (buf.hasRemaining())
-                finished = msg.readFrom(buf, null);
+                finished = msg.readFrom(buf);
 
             if (finished) {
                 ses.addMeta(FIRST_MESSAGE_RECEIVED_KEY, true);
