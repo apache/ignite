@@ -1055,8 +1055,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || MappingKey.class != o.getClass())
+                return false;
+
             MappingKey that = (MappingKey) o;
 
             return nearEntries == that.nearEntries && nodeId.equals(that.nodeId);

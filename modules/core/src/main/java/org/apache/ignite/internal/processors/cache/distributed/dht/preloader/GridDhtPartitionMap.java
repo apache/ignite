@@ -316,6 +316,9 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         if (this == o)
             return true;
 
+        if (o == null || GridDhtPartitionMap.class != o.getClass())
+            return false;
+
         GridDhtPartitionMap other = (GridDhtPartitionMap)o;
 
         return other.nodeId.equals(nodeId) && other.updateSeq == updateSeq;

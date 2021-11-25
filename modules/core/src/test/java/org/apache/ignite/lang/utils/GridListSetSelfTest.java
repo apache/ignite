@@ -246,6 +246,12 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || V1.class != o.getClass())
+                return false;
+
             V1 v = (V1)o;
 
             return v.val == val;
@@ -279,9 +285,15 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            V1 v = (V1)o;
+            if (this == o)
+                return true;
 
-            return v.val == value() && v.other == other();
+            if (o == null || V2.class != o.getClass())
+                return false;
+
+            V2 v = (V2)o;
+
+            return v.value() == value() && v.other() == other();
         }
 
         /** {@inheritDoc} */

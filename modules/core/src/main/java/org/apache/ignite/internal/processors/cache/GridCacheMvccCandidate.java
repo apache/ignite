@@ -677,11 +677,11 @@ public class GridCacheMvccCandidate implements Externalizable,
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (o == null)
-            return false;
-
         if (o == this)
             return true;
+
+        if (o == null || GridCacheMvccCandidate.class != o.getClass())
+            return false;
 
         GridCacheMvccCandidate other = (GridCacheMvccCandidate)o;
 
