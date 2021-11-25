@@ -2169,7 +2169,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 }
                 catch (Throwable e) {
                     if (e instanceof Error)
-                        throw (Error) e;
+                        throw (Error)e;
 
                     if (log.isDebugEnabled())
                         U.warn(log, "Failed to perform vacuum.", e);
@@ -2241,7 +2241,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     }
 
                     if (e instanceof Error)
-                        throw (Error) e;
+                        throw (Error)e;
                 }
             }
         }
@@ -2434,7 +2434,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                         if (rest != null) {
                             if (rest.getClass() == ArrayList.class) {
-                                for (MvccDataRow row : ((List<MvccDataRow>) rest))
+                                for (MvccDataRow row : ((List<MvccDataRow>)rest))
                                     part.dataStore().updateTxState(cctx, row);
                             }
                             else

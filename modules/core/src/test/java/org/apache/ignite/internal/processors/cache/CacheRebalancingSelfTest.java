@@ -119,7 +119,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     private static IgniteInternalFuture internalFuture(IgniteFuture fut) {
         assertTrue(fut.toString(), fut instanceof IgniteFutureImpl);
 
-        return ((IgniteFutureImpl) fut).internalFuture();
+        return ((IgniteFutureImpl)fut).internalFuture();
     }
 
     /**

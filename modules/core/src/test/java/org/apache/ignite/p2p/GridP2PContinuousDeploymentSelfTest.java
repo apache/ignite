@@ -139,7 +139,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
                     return true;
                 }
             },
-            (IgnitePredicate<Event>) cls.newInstance(),
+            (IgnitePredicate<Event>)cls.newInstance(),
             EventType.EVT_CACHE_OBJECT_PUT
         );
 
@@ -151,7 +151,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
                     return true;
                 }
             },
-            (IgnitePredicate<Event>) cls.newInstance(),
+            (IgnitePredicate<Event>)cls.newInstance(),
             EventType.EVT_CACHE_OBJECT_PUT
         );
 

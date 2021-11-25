@@ -186,7 +186,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handling task REST request: " + req);
 
-        GridRestTaskRequest req0 = (GridRestTaskRequest) req;
+        GridRestTaskRequest req0 = (GridRestTaskRequest)req;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 

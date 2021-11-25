@@ -113,13 +113,13 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
             return true;
 
         if (msg instanceof SnapshotDiscoveryMessage) {
-            SnapshotDiscoveryMessage snapMsg = (SnapshotDiscoveryMessage) msg;
+            SnapshotDiscoveryMessage snapMsg = (SnapshotDiscoveryMessage)msg;
 
             return snapMsg.needExchange() && snapMsg.needAssignPartitions();
         }
 
         if (msg instanceof DynamicCacheChangeBatch) {
-            DynamicCacheChangeBatch cacheMsg = (DynamicCacheChangeBatch) msg;
+            DynamicCacheChangeBatch cacheMsg = (DynamicCacheChangeBatch)msg;
 
             return cacheMsg.exchangeActions() != null &&
                     !cacheMsg.exchangeActions().cachesToResetLostPartitions().isEmpty();

@@ -1089,7 +1089,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (tx.empty() && !req.queryUpdate()) {
                 tx.setRollbackOnly();
 
-                onDone((GridNearTxPrepareResponse) null);
+                onDone((GridNearTxPrepareResponse)null);
             }
 
             this.req = req;

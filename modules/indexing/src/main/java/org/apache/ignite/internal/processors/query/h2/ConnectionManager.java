@@ -340,6 +340,6 @@ public class ConnectionManager {
      * @return H2 connection.
      */
     public JdbcConnection jdbcConnection() {
-        return (JdbcConnection) sysConn;
+        return (JdbcConnection)sysConn;
     }
 }

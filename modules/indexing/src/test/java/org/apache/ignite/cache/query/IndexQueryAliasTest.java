@@ -83,7 +83,7 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
         cache = crd.cache(CACHE);
 
         for (int i = 0; i < CNT; i++)
-            cache.put((long) i, new Person(i));
+            cache.put((long)i, new Person(i));
     }
 
     /** {@inheritDoc} */
@@ -189,7 +189,7 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return Objects.equals(id, person.id) && Objects.equals(descId, person.descId);
         }

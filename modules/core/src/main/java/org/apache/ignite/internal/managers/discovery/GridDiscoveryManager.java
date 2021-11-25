@@ -2466,7 +2466,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode clusterNode = ctx.discovery().localNode();
 
         boolean client = (clusterNode instanceof TcpDiscoveryNode) ?
-                (((TcpDiscoveryNode) clusterNode).clientRouterNodeId() != null) : clusterNode.isClient();
+                (((TcpDiscoveryNode)clusterNode).clientRouterNodeId() != null) : clusterNode.isClient();
 
         return client && (spi instanceof IgniteDiscoverySpi) &&
             ((IgniteDiscoverySpi)spi).clientReconnectSupported();
