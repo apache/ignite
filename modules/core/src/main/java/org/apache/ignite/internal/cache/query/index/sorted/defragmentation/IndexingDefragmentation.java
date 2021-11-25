@@ -192,7 +192,7 @@ public class IndexingDefragmentation {
                                 oldRowHnd,
                                 newLink,
                                 r,
-                                ((MvccIO) io).storeMvccInfo()
+                                ((MvccIO)io).storeMvccInfo()
                             );
 
                             newIdx.putIndexRow(newRow);
