@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 
 import java.io.OutputStream;
 import java.net.Socket;
@@ -84,11 +84,12 @@ public class ConnectionTest {
     public void testHandshakeTooLargeServerDropsConnection() throws Exception {
         try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
             Socket clientSocket = new Socket(IPv4_HOST, 10800);
-
             OutputStream stream = clientSocket.getOutputStream();
 
-            stream.write(new byte[]{1, 1, 1, 1, 1});
+            stream.write(new byte[]{1, 1, 1, 1});
             stream.flush();
+
+            assertEquals(-1, clientSocket.getInputStream().read());
         }
     }
 
@@ -97,16 +98,27 @@ public class ConnectionTest {
     public void testNegativeMessageSizeDropsConnection() throws Exception {
         try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
             Socket clientSocket = new Socket(IPv4_HOST, 10800);
-
             OutputStream stream = clientSocket.getOutputStream();
 
             byte b = (byte)255;
-            stream.write(new byte[]{b, b, b, b, b});
+            stream.write(new byte[]{b, b, b, b});
             stream.flush();
 
-            clientSocket.getInputStream().read();
+            assertEquals(-1, clientSocket.getInputStream().read());
+        }
+    }
 
-            assertFalse(clientSocket.isConnected());
+    /** */
+    @Test
+    public void testInvalidHandshakeHeaderDropsConnection() throws Exception {
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
+            Socket clientSocket = new Socket(IPv4_HOST, 10800);
+            OutputStream stream = clientSocket.getOutputStream();
+
+            stream.write(new byte[]{10, 0, 0, 0, 42, 42, 42});
+            stream.flush();
+
+            assertEquals(-1, clientSocket.getInputStream().read());
         }
     }
 
