@@ -17,6 +17,10 @@
 
 package org.apache.ignite.client;
 
+import static org.junit.Assert.assertFalse;
+
+import java.io.OutputStream;
+import java.net.Socket;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.junit.Ignore;
@@ -73,6 +77,37 @@ public class ConnectionTest {
     @Test
     public void testIPv6NodeAddresses() throws Exception {
         testConnection(IPv6_HOST, "[::1]:10800");
+    }
+
+    /** */
+    @Test
+    public void testHandshakeTooLargeServerDropsConnection() throws Exception {
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
+            Socket clientSocket = new Socket(IPv4_HOST, 10800);
+
+            OutputStream stream = clientSocket.getOutputStream();
+
+            stream.write(new byte[]{1, 1, 1, 1, 1});
+            stream.flush();
+        }
+    }
+
+    /** */
+    @Test
+    public void testNegativeMessageSizeDropsConnection() throws Exception {
+        try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
+            Socket clientSocket = new Socket(IPv4_HOST, 10800);
+
+            OutputStream stream = clientSocket.getOutputStream();
+
+            byte b = (byte)255;
+            stream.write(new byte[]{b, b, b, b, b});
+            stream.flush();
+
+            clientSocket.getInputStream().read();
+
+            assertFalse(clientSocket.isConnected());
+        }
     }
 
     /**

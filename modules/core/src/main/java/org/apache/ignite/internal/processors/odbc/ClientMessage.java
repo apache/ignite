@@ -133,18 +133,17 @@ public class ClientMessage implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         if (cnt < 0) {
-            // TODO: Can msgSize be negative here? Write a test.
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8 * (4 + cnt));
 
             if (cnt < 0)
                 return false;
 
-            if (isFirstMessage) {
-                if (msgSize > MAX_FIRST_MESSAGE_SIZE) {
-                    throw new IgniteException("Client handshake size exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
-                }
-            }
+            if (msgSize <= 0)
+                throw new IgniteException("Message size must be greater than 0: " + msgSize);
+
+            if (isFirstMessage && msgSize > MAX_FIRST_MESSAGE_SIZE)
+                throw new IgniteException("Client handshake size limit exceeded: " + msgSize + " > " + MAX_FIRST_MESSAGE_SIZE);
         }
 
         assert cnt >= 0;
