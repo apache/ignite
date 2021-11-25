@@ -38,8 +38,11 @@ public class ClientMessage implements Message, Externalizable {
     /** */
     private static final int MAX_HANDSHAKE_SIZE = 1024 * 1024;
 
-    /** First 3 bytes in handshake are always 1 1 0 (handshake = 1, major version = 1). */
+    /** First 3 bytes in handshake are either 1 1 0 (handshake = 1, major version = 1)... */
     private static final int HANDSHAKE_HEADER = 1 + (1 << 8);
+
+    /** ...or 1 2 0 (handshake = 1, major version = 2). */
+    private static final int HANDSHAKE_HEADER2 = 1 + (2 << 8);
 
     /** */
     private final boolean isFirstMessage;
@@ -179,14 +182,13 @@ public class ClientMessage implements Message, Externalizable {
                     if (cnt < 3)
                         return false;
 
-                    if (firstMessageHeader != HANDSHAKE_HEADER)
-                        throw new IOException("Invalid handshake first 3 bytes, expected " + HANDSHAKE_HEADER + ", but was "
-                                + firstMessageHeader);
+                    if (firstMessageHeader != HANDSHAKE_HEADER && firstMessageHeader != HANDSHAKE_HEADER2)
+                        throw new IOException("Handshake header check failed: " + firstMessageHeader);
 
-                    // Header is valid, create buffer and set first 3 bytes to 1 1 0.
+                    // Header is valid, create buffer and set first bytes.
                     data = new byte[msgSize];
                     data[0] = 1;
-                    data[1] = 1;
+                    data[1] = (byte) (firstMessageHeader >> 8);
                 }
 
                 if (data == null)
