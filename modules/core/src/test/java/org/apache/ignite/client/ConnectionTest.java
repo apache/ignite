@@ -89,6 +89,7 @@ public class ConnectionTest {
             stream.write(new byte[]{1, 1, 1, 1});
             stream.flush();
 
+            // Read returns -1 when end of stream has been reached, blocks otherwise.
             assertEquals(-1, clientSocket.getInputStream().read());
         }
     }
@@ -104,6 +105,7 @@ public class ConnectionTest {
             stream.write(new byte[]{b, b, b, b});
             stream.flush();
 
+            // Read returns -1 when end of stream has been reached, blocks otherwise.
             assertEquals(-1, clientSocket.getInputStream().read());
         }
     }
