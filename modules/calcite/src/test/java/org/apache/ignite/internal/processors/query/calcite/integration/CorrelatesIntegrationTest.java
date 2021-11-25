@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
 
 /**
- * Test correlated queries.
+ * Tests correlated queries.
  */
 public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
     /**
@@ -38,7 +38,7 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Check that correlates can't be moved under the table spool.
+     * Checks that correlates can't be moved under the table spool.
      */
     @Test
     public void testCorrelatesWithTableSpool() {
