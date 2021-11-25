@@ -208,8 +208,11 @@ namespace ignite
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());
 
-                // Affinity Key Field name.
-                writer.WriteNull();
+                const std::string& affFieldName = snapshot.GetAffinityFieldName();
+                if (affFieldName.empty())
+                    writer.WriteNull();
+                else
+                    writer.WriteString(affFieldName);
 
                 const binary::Snap::FieldMap& fields = snapshot.GetFieldMap();
 
@@ -236,11 +239,10 @@ namespace ignite
                 std::string typeName;
                 reader.ReadString(typeName);
 
-                // Unused for now.
-                std::string affKeyFieldNameUnused;
-                reader.ReadString(affKeyFieldNameUnused);
+                std::string affKeyFieldName;
+                reader.ReadString(affKeyFieldName);
 
-                snapshot = binary::SPSnap(new binary::Snap(typeName, typeId));
+                snapshot = binary::SPSnap(new binary::Snap(typeName, affKeyFieldName, typeId));
 
                 int32_t fieldsNum = reader.ReadInt32();
 

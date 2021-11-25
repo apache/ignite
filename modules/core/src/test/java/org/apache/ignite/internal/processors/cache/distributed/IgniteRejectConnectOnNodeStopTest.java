@@ -165,6 +165,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
      *
      */
     static class TestDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
         @Override public void spiStop() throws IgniteSpiException {
             // Called communication SPI onContextDestroyed, but do not allow discovery to stop.
             if (ignite.configuration().isClientMode()) {

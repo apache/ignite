@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
@@ -28,11 +29,14 @@ import org.junit.Test;
  * Test partition awareness of thin client on stable topology.
  */
 public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
+    /** Grids count. */
+    private static final int GRIDS_CNT = 3;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(3);
+        startGrids(GRIDS_CNT);
 
         awaitPartitionMapExchange();
     }
@@ -136,6 +140,36 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testPartitionedCache3Backups() throws Exception {
         testApplicableCache(PART_CACHE_3_BACKUPS_NAME, i -> i);
+    }
+
+    /**
+     * Test scan query.
+     */
+    @Test
+    public void testScanQuery() throws IgniteCheckedException {
+        ClientCache<Object, Object> clientCache = client.cache(PART_CACHE_NAME);
+
+        // Make any operation to request partitions.
+        clientCache.get(0);
+
+        opsQueue.clear(); // Clear partitions request and get operation.
+
+        for (int i = 0; i < GRIDS_CNT; i++) {
+            int part = grid(i).affinity(PART_CACHE_NAME).primaryPartitions(grid(i).localNode())[0];
+
+            // Client doesn't have connection with grid(0).
+            TestTcpClientChannel ch = i == 0 ? dfltCh : nodeChannel(grid(i).localNode().id());
+
+            // Test scan query with specified partition.
+            clientCache.query(new ScanQuery<>().setPartition(part)).getAll();
+
+            assertOpOnChannel(ch, ClientOperation.QUERY_SCAN);
+
+            // Test scan query without specified partition.
+            clientCache.query(new ScanQuery<>()).getAll();
+
+            assertOpOnChannel(dfltCh, ClientOperation.QUERY_SCAN);
+        }
     }
 
     /**

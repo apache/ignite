@@ -329,6 +329,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
+        dfltCacheCfg = null;
+
         startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
         Ignite client = startClientGrid(grids);
@@ -624,7 +626,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         cfg2.getDataStorageConfiguration()
             .setFileIOFactory(new HaltJvmFileIOFactory(new RandomAccessFileIOFactory(),
-                (Predicate<File> & Serializable) file -> {
+                (Predicate<File> & Serializable)file -> {
                     // Trying to create FileIO over partition file.
                     return file.getAbsolutePath().contains(SNAPSHOT_NAME);
                 }));

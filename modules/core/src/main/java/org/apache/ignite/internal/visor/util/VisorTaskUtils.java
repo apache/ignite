@@ -742,7 +742,7 @@ public class VisorTaskUtils {
      */
     public static Integer evictionPolicyMaxSize(@Nullable Factory plc) {
         if (plc instanceof AbstractEvictionPolicyFactory)
-            return ((AbstractEvictionPolicyFactory) plc).getMaxSize();
+            return ((AbstractEvictionPolicyFactory)plc).getMaxSize();
 
         return null;
     }
@@ -1258,6 +1258,6 @@ public class VisorTaskUtils {
     public static boolean isRestartingCache(IgniteEx ignite, String cacheName) {
         IgniteCacheProxy<Object, Object> proxy = ignite.context().cache().jcache(cacheName);
 
-        return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl) proxy).isRestarting();
+        return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl)proxy).isRestarting();
     }
 }

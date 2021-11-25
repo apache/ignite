@@ -77,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -643,11 +644,13 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?): " + taskName);
 
-                taskCls = dep.deployedClass(taskName);
+                IgniteBiTuple<Class<?>, Throwable> cls = dep.deployedClass(taskName);
 
-                if (taskCls == null)
+                if (cls.get1() == null)
                     throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
-                        "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
+                        "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']', cls.get2());
+
+                taskCls = cls.get1();
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
                     throw new IgniteCheckedException("Failed to auto-deploy task (deployed class is not a task) " +

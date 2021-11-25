@@ -97,6 +97,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private TestStore store;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

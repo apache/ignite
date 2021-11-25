@@ -37,6 +37,7 @@ public class IdleSession {
      * Creates instance of Cassandra driver session wrapper.
      *
      * @param ses Cassandra driver session.
+     * @param expirationTimeout Session expiration timeout.
      */
     public IdleSession(Session ses, long expirationTimeout) {
         this.ses = ses;

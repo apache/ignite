@@ -311,7 +311,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
 
             List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
 
-            assertEquals((long) expPersons, res.get(0).get(0));
+            assertEquals((long)expPersons, res.get(0).get(0));
         }
     }
 
@@ -333,7 +333,9 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         }
     }
 
+    /** */
     private static class PersonKey {
+        /** */
         @QuerySqlField
         int id;
 
@@ -342,6 +344,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         @QuerySqlField
         Integer orgId;
 
+        /** */
         public PersonKey(int id, Integer orgId) {
             this.id = id;
             this.orgId = orgId;

@@ -55,7 +55,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                         cache.withReadRepair().getAsync(key).get() :
                         cache.withReadRepair().get(key);
 
-            assertEquals(latest, res);
+            if (latest != null)
+                assertEquals(latest, res);
         }
     };
 
@@ -76,8 +77,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                     cache.withReadRepair().getEntriesAsync(keys).get() :
                     cache.withReadRepair().getEntries(keys);
 
-            for (CacheEntry<Integer, Integer> entry : res)
-                assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
+            for (CacheEntry<Integer, Integer> entry : res) {
+                Integer latest = data.data.get(entry.getKey()).latest;
+
+                if (latest != null)
+                    assertEquals(latest, entry.getValue());
+            }
         }
         else {
             Map<Integer, Integer> res =
@@ -85,8 +90,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                     cache.withReadRepair().getAllAsync(keys).get() :
                     cache.withReadRepair().getAll(keys);
 
-            for (Map.Entry<Integer, Integer> entry : res.entrySet())
-                assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
+            for (Map.Entry<Integer, Integer> entry : res.entrySet()) {
+                Integer latest = data.data.get(entry.getKey()).latest;
+
+                if (latest != null)
+                    assertEquals(latest, entry.getValue());
+            }
         }
     };
 
@@ -166,7 +175,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 cache.getEntry(key).getValue() :
                 cache.get(key);
 
-            assertEquals(latest, res);
+            if (latest != null)
+                assertEquals(latest, res);
         }
     };
 

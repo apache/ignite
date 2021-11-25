@@ -152,7 +152,6 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      *
      * @return Internal cancelable future task for backup cleaner.
      */
-    /*@java.test.only*/
     protected GridTimeoutProcessor.CancelableTask getCancelableTask() {
         return cancelableTask;
     }

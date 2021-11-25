@@ -376,9 +376,11 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int id;
 
+        /** */
         Person(int id) {
             this.id = id;
         }
@@ -388,12 +390,15 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Purchase implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int personId;
 
+        /** */
         @QuerySqlField(index = true)
         int productId;
 
+        /** */
         Purchase(int personId, int productId) {
             this.personId = personId;
             this.productId = productId;
@@ -404,9 +409,11 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Company implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int id;
 
+        /** */
         Company(int id) {
             this.id = id;
         }
@@ -416,12 +423,15 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      *
      */
     private static class Product implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         int id;
 
+        /** */
         @QuerySqlField(index = true)
         int companyId;
 
+        /** */
         Product(int id, int companyId) {
             this.id = id;
             this.companyId = companyId;

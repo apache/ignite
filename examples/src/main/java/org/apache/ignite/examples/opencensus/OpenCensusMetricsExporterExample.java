@@ -49,6 +49,9 @@ public class OpenCensusMetricsExporterExample {
     /** Export period. */
     private static final long PERIOD = 1_000L;
 
+    /**
+     * @param args Command line arguments.
+     */
     public static void main(String[] args) throws Exception {
         // Setting up prometheus stats collector.
         PrometheusStatsCollector.createAndRegister();

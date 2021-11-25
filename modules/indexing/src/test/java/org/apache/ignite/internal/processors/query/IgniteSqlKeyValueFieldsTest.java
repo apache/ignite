@@ -121,6 +121,7 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
         super.afterTest();
     }
 
+    /** */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(NODE_BAD_CONF_MISS_KEY_FIELD)) {
             CacheConfiguration ccfg = new CacheConfiguration(NODE_BAD_CONF_MISS_KEY_FIELD);
@@ -511,13 +512,13 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select _ver from Person where id = ?").setArgs(key));
         List<List<?>> results = cursor.getAll();
         assertEquals(1, results.size());
-        return ((GridCacheVersion) results.get(0).get(0));
+        return ((GridCacheVersion)results.get(0).get(0));
     }
 
     /** */
     private void checkInsert(IgniteCache<?, ?> cache, String qry, Object... args) throws Exception {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(qry).setArgs(args));
-        assertEquals(1, ((Number) cursor.getAll().get(0).get(0)).intValue());
+        assertEquals(1, ((Number)cursor.getAll().get(0).get(0)).intValue());
     }
 
     /** */

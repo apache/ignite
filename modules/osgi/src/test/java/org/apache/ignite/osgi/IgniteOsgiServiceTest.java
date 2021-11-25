@@ -57,6 +57,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
     @Inject @Filter("(ignite.name=testGrid)")
     private Ignite ignite;
 
+    /** */
     @Inject
     private BundleContext bundleCtx;
 
@@ -106,7 +107,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
         assertNotNull(ignite);
         assertEquals("testGrid", ignite.name());
 
-        TestOsgiFlags flags = (TestOsgiFlags) bundleCtx.getService(
+        TestOsgiFlags flags = (TestOsgiFlags)bundleCtx.getService(
             bundleCtx.getAllServiceReferences(TestOsgiFlags.class.getName(), null)[0]);
 
         assertNotNull(flags);

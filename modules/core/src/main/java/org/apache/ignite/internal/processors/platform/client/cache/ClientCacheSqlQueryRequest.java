@@ -49,7 +49,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
                 .setLocal(reader.readBoolean())
                 .setReplicatedOnly(reader.readBoolean())
                 .setPageSize(reader.readInt())
-                .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
+                .setTimeout((int)reader.readLong(), TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */

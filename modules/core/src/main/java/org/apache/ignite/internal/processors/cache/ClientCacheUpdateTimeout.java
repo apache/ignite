@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 
 /**
  *
@@ -25,6 +29,9 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements CachePartitionExchangeWorkerTask {
     /** */
     private final GridCacheSharedContext cctx;
+
+    /** Security context. */
+    @Nullable private final SecurityContext secCtx;
 
     /**
      * @param cctx Context.
@@ -34,11 +41,17 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
         super(timeout);
 
         this.cctx = cctx;
+        secCtx = remoteSecurityContext(cctx.kernalContext());
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public SecurityContext securityContext() {
+        return secCtx;
     }
 
     /** {@inheritDoc} */

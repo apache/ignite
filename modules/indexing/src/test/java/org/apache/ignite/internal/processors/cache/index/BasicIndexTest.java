@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -58,7 +59,7 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -1034,6 +1035,52 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME", "ADDRESS"));
     }
 
+    /**
+     * Tests that it's forbidden to create index with duplicated columns from SQL.
+     */
+    @Test
+    public void testFailToCreateSqlIndexWithDuplicatedColumn() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(0);
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, TEST_TBL_NAME, 1, "ID", "NAME");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME, NAME)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME ASC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME ASC, NAME DESC)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME ASC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(NAME DESC, ID, NAME)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: NAME DESC");
+
+        GridTestUtils.assertThrows(log, () -> {
+            String sqlIdx1 = String.format("create index \"idx1\" on %s(ID, ID)", TEST_TBL_NAME);
+
+            qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+
+            return null;
+        }, IgniteSQLException.class, "Already defined column in index: ID");
+    }
+
     /** */
     @Test
     public void testNoIndexesWithPersistence() throws Exception {
@@ -1528,9 +1575,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(100, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1587,9 +1634,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1615,9 +1662,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         assertEquals(10, data.size());
 
         for (List<?> row : data) {
-            Key key = (Key) row.get(0);
+            Key key = (Key)row.get(0);
 
-            Val val = (Val) row.get(1);
+            Val val = (Val)row.get(1);
 
             long i = key.keyLong;
 
@@ -1718,7 +1765,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Key key = (Key) o;
+            Key key = (Key)o;
 
             return keyLong == key.keyLong &&
                 Objects.equals(keyStr, key.keyStr) &&
@@ -1768,7 +1815,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Val val = (Val) o;
+            Val val = (Val)o;
 
             return valLong == val.valLong &&
                 Objects.equals(valStr, val.valStr) &&
@@ -1810,7 +1857,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Pojo pojo = (Pojo) o;
+            Pojo pojo = (Pojo)o;
 
             return pojoLong == pojo.pojoLong;
         }

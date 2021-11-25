@@ -275,17 +275,31 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      * Crash point.
      */
     private enum NodeStopPoint {
+        /** */
         BEFORE_WRITE_KEY_TO_META_STORE(false),
+
+        /** */
         AFTER_WRITE_KEY_TO_META_STORE(true),
+
+        /** */
         AFTER_CHECKPOINT_BEFORE_DISABLE_WAL(true),
+
+        /** */
         AFTER_DISABLE_WAL(true),
+
+        /** */
         AFTER_ENABLE_WAL(true),
+
+        /** */
         AFTER_CHECKPOINT_AFTER_ENABLE_WAL(true),
+
+        /** */
         AFTER_REMOVE_KEY_TO_META_STORE(false);
 
         /** Clean up flag. */
         private final boolean needCleanUp;
 
+        /** */
         NodeStopPoint(boolean up) {
             needCleanUp = up;
         }

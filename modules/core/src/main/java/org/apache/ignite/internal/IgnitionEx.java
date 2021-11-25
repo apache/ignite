@@ -1325,14 +1325,14 @@ public class IgnitionEx {
         if (dfltGrid0 != null) {
             IgniteKernal g = dfltGrid0.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
         for (IgniteNamedInstance grid : grids.values()) {
             IgniteKernal g = grid.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
@@ -1352,14 +1352,14 @@ public class IgnitionEx {
         if (dfltGrid0 != null) {
             IgniteKernal g = dfltGrid0.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
         for (IgniteNamedInstance grid : grids.values()) {
             IgniteKernal g = grid.grid();
 
-            if (g != null && g.getLocalNodeId().equals(locNodeId))
+            if (g != null && g.localNodeId().equals(locNodeId))
                 return g;
         }
 
@@ -1991,8 +1991,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
-                myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
+            initializeDefaultMBeanServer(myCfg);
 
             Marshaller marsh = myCfg.getMarshaller();
 
@@ -2350,7 +2349,7 @@ public class IgnitionEx {
                     if (safeToStop) {
                         try {
                             HashSet<UUID> newNodesToExclude = new HashSet<>(nodesToExclude);
-                            newNodesToExclude.add(grid.getLocalNodeId());
+                            newNodesToExclude.add(grid.localNodeId());
 
                             if (metaStorage.compareAndSet(GRACEFUL_SHUTDOWN_METASTORE_KEY, originalNodesToExclude,
                                 newNodesToExclude))
@@ -2421,7 +2420,7 @@ public class IgnitionEx {
             if (fullMap == null)
                 return false;
 
-            UUID localNodeId = grid.getLocalNodeId();
+            UUID localNodeId = grid.localNodeId();
 
             GridDhtPartitionMap localPartMap = fullMap.get(localNodeId);
 
@@ -2672,6 +2671,12 @@ public class IgnitionEx {
         public boolean hasStartLatchCompleted() {
             return startLatch.getCount() == 0;
         }
+    }
+
+    /** Initialize default mbean server. */
+    public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
+        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
+            myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
     }
 
     /**

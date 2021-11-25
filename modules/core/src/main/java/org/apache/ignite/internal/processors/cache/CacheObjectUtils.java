@@ -177,7 +177,7 @@ public class CacheObjectUtils {
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    private static Object unwrapBinary(
+    public static Object unwrapBinary(
         CacheObjectValueContext ctx,
         Object o,
         boolean keepBinary,

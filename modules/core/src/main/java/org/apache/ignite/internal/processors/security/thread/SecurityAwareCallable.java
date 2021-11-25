@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
  * Represents a {@link Callable} wrapper that executes the original {@link Callable} with the security context
  * current at the time the wrapper was created.
  */
-public class SecurityAwareCallable<T> implements Callable<T> {
+class SecurityAwareCallable<T> implements Callable<T> {
     /** Original callable. */
     private final Callable<T> delegate;
 
@@ -39,30 +39,38 @@ public class SecurityAwareCallable<T> implements Callable<T> {
     private final SecurityContext secCtx;
 
     /** */
-    public SecurityAwareCallable(IgniteSecurity security, Callable<T> delegate) {
+    private SecurityAwareCallable(IgniteSecurity security, Callable<T> delegate) {
         assert security.enabled();
         assert delegate != null;
 
         this.delegate = delegate;
         this.security = security;
-        secCtx = security.isDefaultContext() ? null : security.securityContext();
+        secCtx = security.securityContext();
     }
 
     /** {@inheritDoc} */
     @Override public T call() throws Exception {
-        if (secCtx == null)
-            return delegate.call();
-
         try (OperationSecurityContext ignored = security.withContext(secCtx)) {
             return delegate.call();
         }
     }
 
     /** */
-    public static <A> Collection<? extends Callable<A>> toSecurityAware(
+    static <A> Callable<A> of(IgniteSecurity sec, Callable<A> delegate) {
+        if (delegate == null || sec.isDefaultContext())
+            return delegate;
+
+        return new SecurityAwareCallable<>(sec, delegate);
+    }
+
+    /** */
+    static <A> Collection<? extends Callable<A>> of(
         IgniteSecurity sec,
         Collection<? extends Callable<A>> tasks
     ) {
-        return tasks.stream().map(t -> new SecurityAwareCallable<>(sec, t)).collect(Collectors.toList());
+        if (tasks == null || sec.isDefaultContext())
+            return tasks;
+
+        return tasks.stream().map(t -> t == null ? null : new SecurityAwareCallable<>(sec, t)).collect(Collectors.toList());
     }
 }

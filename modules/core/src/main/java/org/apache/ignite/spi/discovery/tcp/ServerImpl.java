@@ -177,14 +177,15 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteFeatures.TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
@@ -1255,21 +1256,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If any error occurs.
      */
     private void localAuthentication(SecurityCredentials locCred) {
-        assert spi.nodeAuth != null;
-        assert locCred != null || locNode.attribute(ATTR_AUTHENTICATION_ENABLED) != null;
-
         try {
-            SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
-
-            if (subj == null)
-                throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
-
-            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
-
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-
-            locNode.setAttributes(attrs);
-
+            locNode.setAttributes(withSecurityContext(
+                authenticateLocalNode(locNode, locCred, spi.nodeAuth),
+                locNode.attributes(),
+                spi.marshaller()
+            ));
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
@@ -3040,7 +3032,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 // If we read this message from socket.
                 if (fromSocket)
@@ -3173,7 +3165,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             notifiedDiscovery.set(false);
 
             if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().afterReceive(tMsg);
             }
@@ -3189,7 +3181,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             "ignoring message [msg=" + msg + ", locNode=" + locNode + ']');
 
                     if (msg instanceof TraceableMessage)
-                        ((TraceableMessage) msg).spanContainer().span()
+                        ((TraceableMessage)msg).spanContainer().span()
                             .addLog(() -> "Ring failed")
                             .setStatus(SpanStatus.ABORTED)
                             .end();
@@ -3224,7 +3216,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (msg instanceof TraceableMessage)
-                        ((TraceableMessage) msg).spanContainer().span()
+                        ((TraceableMessage)msg).spanContainer().span()
                             .addLog(() -> "Local node order not initialized")
                             .setStatus(SpanStatus.ABORTED)
                             .end();
@@ -3300,7 +3292,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 (msg instanceof TcpDiscoveryNodeAddedMessage
                     || msg instanceof TcpDiscoveryJoinRequestMessage
                     || notifiedDiscovery.get())) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().finishProcessing(tMsg);
             }
@@ -3404,7 +3396,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msgLsnr.apply(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().beforeSend((TraceableMessage) msg);
+                tracing.messages().beforeSend((TraceableMessage)msg);
 
             sendMessageToClients(msg);
 
@@ -4367,11 +4359,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             // Stick in authentication subject to node (use security-safe attributes for copy).
-                            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-
-                            node.setAttributes(attrs);
+                            node.setAttributes(withSecurityContext(subj, node.getAttributes(), spi.marshaller()));
                         }
                     }
                     catch (IgniteException | IgniteCheckedException e) {
@@ -6662,7 +6650,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     blockingSectionBegin();
 
                     try {
-                        sock = srvrSock.accept();
+                        sock = IgniteUtils.acceptServerSocket(srvrSock);
                     }
                     finally {
                         blockingSectionEnd();

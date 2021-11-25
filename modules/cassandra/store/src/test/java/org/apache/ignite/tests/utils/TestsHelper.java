@@ -469,6 +469,7 @@ public class TestsHelper {
         return map;
     }
 
+    /** */
     public static Collection<Long> getOrderIds(Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> orders) {
         Set<Long> ids = new HashSet<>();
 
@@ -741,7 +742,7 @@ public class TestsHelper {
             if (i % 2 != 0)
                 price = price / 2;
             else
-                price = (float) Math.sqrt(price);
+                price = (float)Math.sqrt(price);
 
             i++;
         }

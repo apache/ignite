@@ -62,6 +62,7 @@ public class RemoveConstantsFromQueryTest extends AbstractIndexingCommonTest {
         QueryUtils.INCLUDE_SENSITIVE = false;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 

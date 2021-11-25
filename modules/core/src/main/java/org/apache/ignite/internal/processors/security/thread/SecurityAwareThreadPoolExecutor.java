@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.security.thread.SecurityAwareCallable.toSecurityAware;
-
 /**
  * Extends {@link ThreadPoolExecutor} with the ability to execute tasks in security context that was actual when task was
  * added to executor's queue.
@@ -59,45 +57,45 @@ public class SecurityAwareThreadPoolExecutor extends IgniteThreadPoolExecutor {
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
-        return super.submit(task == null ? null : new SecurityAwareCallable<>(security, task));
+        return super.submit(SecurityAwareCallable.of(security, task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Runnable task, T res) {
-        return super.submit(task == null ? null : new SecurityAwareRunnable(security, task), res);
+        return super.submit(SecurityAwareRunnable.of(security, task), res);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
-        return super.submit(task == null ? null : new SecurityAwareRunnable(security, task));
+        return super.submit(SecurityAwareRunnable.of(security, task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(
         @NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return super.invokeAll(tasks == null ? null : toSecurityAware(security, tasks));
+        return super.invokeAll(SecurityAwareCallable.of(security, tasks));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException {
-        return super.invokeAll(tasks == null ? null : toSecurityAware(security, tasks), timeout, unit);
+        return super.invokeAll(SecurityAwareCallable.of(security, tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
-        return super.invokeAny(tasks == null ? null : toSecurityAware(security, tasks));
+        return super.invokeAny(SecurityAwareCallable.of(security, tasks));
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return super.invokeAny(tasks == null ? null : toSecurityAware(security, tasks), timeout, unit);
+        return super.invokeAny(SecurityAwareCallable.of(security, tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(cmd == null ? null : new SecurityAwareRunnable(security, cmd));
+        super.execute(SecurityAwareRunnable.of(security, cmd));
     }
 }

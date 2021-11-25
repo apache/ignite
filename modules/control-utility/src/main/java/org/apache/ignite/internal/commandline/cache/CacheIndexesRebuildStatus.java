@@ -36,7 +36,6 @@ import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusTask;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg.NODE_ID;
 
 /**

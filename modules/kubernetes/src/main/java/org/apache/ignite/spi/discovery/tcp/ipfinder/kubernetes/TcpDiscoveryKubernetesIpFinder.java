@@ -61,6 +61,8 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
     /**
      * Creates an instance of Kubernetes IP finder.
+     *
+     * @param cfg Kubernetes IP finder configuration.
      */
     public TcpDiscoveryKubernetesIpFinder(KubernetesConnectionConfiguration cfg) {
         setShared(true);
@@ -72,7 +74,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
         try {
             return new KubernetesServiceAddressResolver(cfg)
                 .getServiceAddresses()
-                .stream().map(addr -> new InetSocketAddress(addr, 0))
+                .stream().map(addr -> new InetSocketAddress(addr, cfg.getDiscoveryPort()))
                 .collect(Collectors.toCollection(ArrayList::new));
         } catch (Exception e) {
             throw new IgniteSpiException(e);
@@ -90,6 +92,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     }
 
     /**
+     * @param service Kubernetes service name.
      * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
      */
     @Deprecated
@@ -98,6 +101,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     }
 
     /**
+     * @param namespace Namespace of the Kubernetes service.
      * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
      */
     @Deprecated
@@ -106,6 +110,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     }
 
     /**
+     * @param master Host name of the Kubernetes API server.
      * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
      */
     @Deprecated
@@ -114,6 +119,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     }
 
     /**
+     * @param accountToken Path to the service token file.
      * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
      */
     @Deprecated
@@ -122,6 +128,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     }
 
     /**
+     * @param includeNotReadyAddresses Whether addresses of not-ready pods should be included.
      * @deprecated set parameters with {@code KubernetesConnectionConfiguration} instead.
      */
     @Deprecated

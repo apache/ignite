@@ -137,9 +137,11 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         @IgniteInstanceResource
         private transient Ignite ignite;
 
+        /** */
         @LoggerResource
         private IgniteLogger log;
 

@@ -45,7 +45,7 @@ public class SecurityAwareIoPool implements IoPool {
 
         executor = delegateExecutor == null ? null : new Executor() {
             @Override public void execute(@NotNull Runnable cmd) {
-                delegateExecutor.execute(new SecurityAwareRunnable(SecurityAwareIoPool.this.security, cmd));
+                delegateExecutor.execute(SecurityAwareRunnable.of(SecurityAwareIoPool.this.security, cmd));
             }
         };
     }

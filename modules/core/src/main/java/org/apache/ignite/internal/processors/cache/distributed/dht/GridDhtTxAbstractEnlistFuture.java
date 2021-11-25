@@ -844,7 +844,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
                 futId,
-                cctx.localNodeId(),
                 tx.topologyVersionSnapshot(),
                 lockVer,
                 mvccSnapshot.withoutActiveTransactions(),

@@ -78,7 +78,7 @@ public class GridByteArrayOutputStream extends OutputStream {
         if (newCnt > buf.length)
             buf = Arrays.copyOf(buf, Math.max(buf.length << 1, newCnt));
 
-        buf[cnt] = (byte) b;
+        buf[cnt] = (byte)b;
 
         cnt = newCnt;
     }

@@ -132,7 +132,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         ig.active(true);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
         dbMgr.enableCheckpoints(false).get();
 
@@ -170,7 +170,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         ig.active(true);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
         dbMgr.enableCheckpoints(false).get();
 

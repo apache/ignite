@@ -59,6 +59,7 @@ public class JensenShannonDistanceTest {
     );
   }
 
+  /** */
   private final TestData testData;
 
   /** */
@@ -77,15 +78,21 @@ public class JensenShannonDistanceTest {
         distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
   }
 
+  /** */
   private static class TestData {
+    /** */
     public final Vector vectorA;
 
+    /** */
     public final Vector vectorB;
 
+    /** */
     public final Double expRes;
 
+    /** */
     public final Double base;
 
+    /** */
     private TestData(double[] vectorA, double[] vectorB, Double base, Double expRes) {
       this.vectorA = new DenseVector(vectorA);
       this.vectorB = new DenseVector(vectorB);
@@ -93,6 +100,7 @@ public class JensenShannonDistanceTest {
       this.expRes = expRes;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
       return String.format("d(%s,%s;%s) = %s",
           Arrays.toString(vectorA.asArray()),

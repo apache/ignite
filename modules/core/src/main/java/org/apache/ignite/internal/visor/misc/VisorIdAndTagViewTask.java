@@ -39,6 +39,7 @@ public class VisorIdAndTagViewTask extends VisorOneNodeTask<Void, VisorIdAndTagV
         return new IdAndTagViewJob(arg, debug);
     }
 
+    /** */
     private static class IdAndTagViewJob extends VisorJob<Void, VisorIdAndTagViewTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;

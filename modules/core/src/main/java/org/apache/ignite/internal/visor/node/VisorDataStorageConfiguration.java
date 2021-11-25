@@ -402,6 +402,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         return walCompactionEnabled;
     }
 
+    /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
         return V2;
     }

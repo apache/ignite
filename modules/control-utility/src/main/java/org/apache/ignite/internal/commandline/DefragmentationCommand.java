@@ -35,7 +35,6 @@ import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskArg;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
-import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.DEFRAGMENTATION;
 import static org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands.CANCEL;
 import static org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands.SCHEDULE;

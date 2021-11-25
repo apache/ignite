@@ -146,7 +146,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     private void assertSetIteratorsCleared() {
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             for (IgniteCache cache : grid.caches()) {
                 GridCacheQueryManager queries = grid.internalCache(cache.getName()).context().queries();
@@ -154,7 +154,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
                 for (Object obj : map.values())
-                    assertEquals("Iterators not removed for grid " + i, 0, ((Map) obj).size());
+                    assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
             }
         }
     }

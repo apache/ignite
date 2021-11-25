@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -62,11 +63,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionMixedModeException;
-import org.apache.ignite.transactions.TransactionSerializationException;
-import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 
 import static java.sql.ResultSetMetaData.columnNoNulls;
 import static java.sql.ResultSetMetaData.columnNullable;
@@ -1026,19 +1022,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private static OdbcResponse exceptionToResult(Throwable e) {
         String msg = OdbcUtils.tryRetrieveH2ErrorMessage(e);
+        int errorCode = SqlListenerUtils.exceptionToSqlErrorCode(e);
 
-        if (e instanceof TransactionSerializationException)
-            return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, msg);
-        if (e instanceof TransactionAlreadyCompletedException)
-            return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, msg);
-        if (e instanceof TransactionMixedModeException)
-            return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, msg);
-        if (e instanceof TransactionUnsupportedConcurrencyException)
-            return new OdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, msg);
-        if (e instanceof TransactionDuplicateKeyException)
-            return new OdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, msg);
-
-        return new OdbcResponse(OdbcUtils.tryRetrieveSqlErrorCode(e), msg);
+        return new OdbcResponse(errorCode, msg);
     }
 
     /**

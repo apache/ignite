@@ -150,7 +150,7 @@ public class ServiceInfo implements ServiceDescriptor {
                     GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
 
                     if (srvcDep != null) {
-                        srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName);
+                        srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName).get1();
 
                         if (srvcCls != null)
                             return srvcCls;

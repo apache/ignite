@@ -141,7 +141,20 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     /**
      */
     private enum TestEnum {
-        A, B, C, D, E
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C,
+
+        /** */
+        D,
+
+        /** */
+        E
     }
 
     /**
@@ -165,6 +178,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         /** */
         private TestEnum[] enumArr;
 
+        /** */
         private SimpleObject otherObj;
 
         /** {@inheritDoc} */

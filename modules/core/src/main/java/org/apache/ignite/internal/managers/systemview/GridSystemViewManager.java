@@ -33,20 +33,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
-import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.internal.util.StripedExecutor.Stripe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
-import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
@@ -59,18 +54,6 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     implements ReadOnlySystemViewRegistry {
     /** Class name for a SQL view exporter of system views. */
     public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
-
-    /** Name of the system view for a system {@link StripedExecutor} queue view. */
-    public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
-
-    /** Description of the system view for a system {@link StripedExecutor} queue view. */
-    public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
-
-    /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
-    public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
-
-    /** Description of the system view for a data streamer {@link StripedExecutor} queue view. */
-    public static final String STREAM_POOL_QUEUE_VIEW_DESC = "Datastream thread pool task queue";
 
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
@@ -96,26 +79,6 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
-    }
-
-    /**
-     * Registers system views for a striped thread pools.
-     *
-     * @param stripedExecSvc Striped executor.
-     * @param dataStreamExecSvc Data streamer executor service.
-     */
-    public void registerThreadPools(StripedExecutor stripedExecSvc, StripedExecutor dataStreamExecSvc) {
-        ctx.systemView().registerInnerCollectionView(SYS_POOL_QUEUE_VIEW, SYS_POOL_QUEUE_VIEW_DESC,
-            new StripedExecutorTaskViewWalker(),
-            Arrays.asList(stripedExecSvc.stripes()),
-            Stripe::queue,
-            StripedExecutorTaskView::new);
-
-        ctx.systemView().registerInnerCollectionView(STREAM_POOL_QUEUE_VIEW, STREAM_POOL_QUEUE_VIEW_DESC,
-            new StripedExecutorTaskViewWalker(),
-            Arrays.asList(dataStreamExecSvc.stripes()),
-            Stripe::queue,
-            StripedExecutorTaskView::new);
     }
 
     /**

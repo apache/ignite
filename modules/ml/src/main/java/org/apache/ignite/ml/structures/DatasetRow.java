@@ -119,6 +119,7 @@ public class DatasetRow<V extends Vector> implements Externalizable {
         vector.set(idx, val);
     }
 
+    /** */
     public V getVector() {
         return vector;
     }

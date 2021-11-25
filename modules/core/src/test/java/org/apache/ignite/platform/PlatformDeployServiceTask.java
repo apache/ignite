@@ -110,6 +110,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -122,6 +123,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         private boolean isExecuted;
 
+        /** */
+        private ServiceContext svcCtx;
+
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             isCancelled = true;
@@ -129,6 +133,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
+            svcCtx = ctx;
+
             isInitialized = true;
         }
 
@@ -160,12 +166,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public byte test(byte arg) {
-            return (byte) (arg + 1);
+            return (byte)(arg + 1);
         }
 
         /** */
         public short test(short arg) {
-            return (short) (arg + 1);
+            return (short)(arg + 1);
         }
 
         /** */
@@ -195,7 +201,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public char test(char arg) {
-            return (char) (arg + 1);
+            return (char)(arg + 1);
         }
 
         /** */
@@ -220,12 +226,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Byte testWrapper(Byte arg) {
-            return arg == null ? null : (byte) (arg + 1);
+            return arg == null ? null : (byte)(arg + 1);
         }
 
         /** */
         public Short testWrapper(Short arg) {
-            return arg == null ? null : (short) (arg + 1);
+            return arg == null ? null : (short)(arg + 1);
         }
 
         /** */
@@ -255,7 +261,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Character testWrapper(Character arg) {
-            return arg == null ? null : (char) (arg + 1);
+            return arg == null ? null : (char)(arg + 1);
         }
 
         /** */
@@ -641,6 +647,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** */
+        public Object contextAttribute(String name) {
+            return svcCtx.currentCallContext().attribute(name);
         }
     }
 

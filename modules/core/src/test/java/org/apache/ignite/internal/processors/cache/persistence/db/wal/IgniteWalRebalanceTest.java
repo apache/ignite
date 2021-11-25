@@ -95,6 +95,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -157,10 +158,10 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(new WalRebalanceCheckingCommunicationSpi());
 
         if (blockMsgPred != null)
-            ((TestRecordingCommunicationSpi) cfg.getCommunicationSpi()).blockMessages(blockMsgPred);
+            ((TestRecordingCommunicationSpi)cfg.getCommunicationSpi()).blockMessages(blockMsgPred);
 
         if (recordMsgPred != null)
-            ((TestRecordingCommunicationSpi) cfg.getCommunicationSpi()).record(recordMsgPred);
+            ((TestRecordingCommunicationSpi)cfg.getCommunicationSpi()).record(recordMsgPred);
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
         cfg.setConsistentId(gridName);
@@ -335,7 +336,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+        Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
         Assert.assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
@@ -361,7 +362,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+        topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
         Assert.assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
@@ -435,7 +436,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+        Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
         Assert.assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
@@ -453,7 +454,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+        topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
         Assert.assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
@@ -512,7 +513,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Delay rebalance process for specified group.
         blockMsgPred = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage) msg).groupId() == grpId;
+                return ((GridDhtPartitionDemandMessage)msg).groupId() == grpId;
 
             return false;
         };
@@ -533,7 +534,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         FailingIOFactory ioFactory = injectFailingIOFactory(supplierNode);
 
         // Resume rebalance process.
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) demanderNode.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
 
         spi.stopBlock();
 
@@ -744,6 +745,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-15364")
     @Test
     public void testSwitchHistoricalRebalanceToFullAndClientJoin() throws Exception {
         testSwitchHistoricalRebalanceToFull(IgniteWalRebalanceTest::injectFailingIOFactory, true);
@@ -1101,7 +1103,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         CountDownLatch blockCheckpoint = new CountDownLatch(1);
         CountDownLatch unblockCheckpoint = new CountDownLatch(1);
 
-        ((GridCacheDatabaseSharedManager) demander
+        ((GridCacheDatabaseSharedManager)demander
             .context()
             .cache()
             .context()
@@ -1158,7 +1160,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Wait for starting the second rebalance (new chain of rebalance futures should be created at this point).
         demanderSpi.waitForBlocked();
 
-        GridFutureAdapter checkpointFut = ((GridCacheDatabaseSharedManager) demander
+        GridFutureAdapter checkpointFut = ((GridCacheDatabaseSharedManager)demander
             .context()
             .cache()
             .context()
@@ -1281,7 +1283,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             if (((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage) ((GridIoMessage)msg).message();
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)((GridIoMessage)msg).message();
 
                 IgniteDhtDemandedPartitionsMap map = demandMsg.partitions();
 

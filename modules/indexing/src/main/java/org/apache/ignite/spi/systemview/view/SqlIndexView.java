@@ -31,7 +31,10 @@ public class SqlIndexView {
     /** Index. */
     private final IndexInformation idx;
 
-    /** */
+    /**
+     * @param tbl H2 table implementation.
+     * @param idx Index information.
+     */
     public SqlIndexView(GridH2Table tbl, IndexInformation idx) {
         this.tbl = tbl;
         this.idx = idx;

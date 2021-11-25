@@ -1382,36 +1382,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Gets subject ID per call.
-     *
-     * @param subjId Optional already existing subject ID.
-     * @return Subject ID per call.
-     */
-    public UUID subjectIdPerCall(@Nullable UUID subjId) {
-        if (subjId != null)
-            return subjId;
-
-        return subjectIdPerCall(subjId, operationContextPerCall());
-    }
-
-    /**
-     * Gets subject ID per call.
-     *
-     * @param subjId Optional already existing subject ID.
-     * @param opCtx Optional thread local operation context.
-     * @return Subject ID per call.
-     */
-    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable CacheOperationContext opCtx) {
-        if (opCtx != null)
-            subjId = opCtx.subjectId();
-
-        if (subjId == null)
-            subjId = ctx.localNodeId();
-
-        return subjId;
-    }
-
-    /**
      * @return {@code true} if the skip store flag is set.
      */
     public boolean skipStore() {
@@ -2039,7 +2009,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final V1 v;
 
         if (!needVer)
-            v = (V1) val;
+            v = (V1)val;
         else if (getRes == null) {
             v = expireTime != 0 || ttl != 0
                 ? (V1)new EntryGetWithTtlResult(val, ver, false, expireTime, ttl)

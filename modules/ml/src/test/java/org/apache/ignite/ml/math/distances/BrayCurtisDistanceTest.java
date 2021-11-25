@@ -61,6 +61,7 @@ public class BrayCurtisDistanceTest {
     );
   }
 
+  /** */
   private final TestData testData;
 
   /** */
@@ -79,19 +80,25 @@ public class BrayCurtisDistanceTest {
         distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
   }
 
+  /** */
   private static class TestData {
+    /** */
     public final Vector vectorA;
 
+    /** */
     public final Vector vectorB;
 
+    /** */
     public final double expRes;
 
+    /** */
     private TestData(double[] vectorA, double[] vectorB, double expRes) {
       this.vectorA = new DenseVector(vectorA);
       this.vectorB = new DenseVector(vectorB);
       this.expRes = expRes;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
       return String.format("d(%s,%s) = %s",
           Arrays.toString(vectorA.asArray()),

@@ -48,7 +48,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
     /** */
     public BytesInlineIndexKeyType(int type, boolean compareBinaryUnsigned) {
-        super(type, (short) -1);
+        super(type, (short)-1);
 
         this.compareBinaryUnsigned = compareBinaryUnsigned;
     }
@@ -61,7 +61,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
         addr += 2; // Skip size.
 
-        byte[] arr = (byte[]) bytes.key();
+        byte[] arr = (byte[])bytes.key();
 
         int len2 = arr.length;
 
@@ -104,9 +104,9 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
     @Override protected int put0(long pageAddr, int off, BytesIndexKey key, int maxSize) {
         short size;
 
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type());
 
-        byte[] val = (byte[]) key.key();
+        byte[] val = (byte[])key.key();
 
         if (val.length + 3 <= maxSize) {
             size = (short)val.length;
@@ -133,7 +133,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(BytesIndexKey val) {
-        byte[] arr = (byte[]) val.key();
+        byte[] arr = (byte[])val.key();
 
         return arr.length + 3;
     }

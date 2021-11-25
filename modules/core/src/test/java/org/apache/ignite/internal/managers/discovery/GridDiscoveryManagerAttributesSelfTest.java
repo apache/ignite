@@ -119,7 +119,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
 
-            checkIsClientFlag((IgniteEx) g);
+            checkIsClientFlag((IgniteEx)g);
         }
 
         System.setProperty(PREFER_IPV4, "false");
@@ -180,6 +180,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
     }
 
+    /** */
     @Test
     public void testUseStringSerVer2() throws Exception {
         String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
@@ -396,7 +397,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
 
-            checkIsClientFlag((IgniteEx) g);
+            checkIsClientFlag((IgniteEx)g);
         }
     }
 

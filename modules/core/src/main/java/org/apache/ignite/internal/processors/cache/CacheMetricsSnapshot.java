@@ -584,7 +584,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         if (hits == 0 || reads == 0)
             return 0;
 
-        return (float) hits / reads * 100.0f;
+        return (float)hits / reads * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -597,7 +597,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         if (misses == 0 || reads == 0)
             return 0;
 
-        return (float) misses / reads * 100.0f;
+        return (float)misses / reads * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -745,7 +745,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         if (offHeapHits == 0 || offHeapGets == 0)
             return 0;
 
-        return (float) offHeapHits / offHeapGets * 100.0f;
+        return (float)offHeapHits / offHeapGets * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -758,7 +758,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         if (offHeapMisses == 0 || offHeapGets == 0)
             return 0;
 
-        return (float) offHeapMisses / offHeapGets * 100.0f;
+        return (float)offHeapMisses / offHeapGets * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -886,10 +886,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return totalPartitionsCnt;
     }
 
+    /** {@inheritDoc} */
     @Override public long getRebalancedKeys() {
         return rebalancedKeys;
     }
 
+    /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingKeys() {
         return estimatedRebalancingKeys;
     }

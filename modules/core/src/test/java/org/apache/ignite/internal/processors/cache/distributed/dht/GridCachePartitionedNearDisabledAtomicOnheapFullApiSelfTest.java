@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 
+/** */
 public class GridCachePartitionedNearDisabledAtomicOnheapFullApiSelfTest extends GridCachePartitionedNearDisabledOnheapFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {

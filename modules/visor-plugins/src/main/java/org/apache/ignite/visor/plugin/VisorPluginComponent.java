@@ -24,7 +24,7 @@ import javax.swing.JComponent;
  */
 public interface VisorPluginComponent {
     /**
-     * Get component container.
-     **/
+     * @return Component container.
+     */
     public JComponent container();
 }

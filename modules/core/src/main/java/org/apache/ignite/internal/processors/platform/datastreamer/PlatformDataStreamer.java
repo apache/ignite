@@ -189,12 +189,12 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_SET_PER_NODE_BUFFER_SIZE:
-                ldr.perNodeBufferSize((int) val);
+                ldr.perNodeBufferSize((int)val);
 
                 return TRUE;
             
             case OP_SET_PER_THREAD_BUFFER_SIZE:
-                ldr.perThreadBufferSize((int) val);
+                ldr.perThreadBufferSize((int)val);
 
                 return TRUE;
 
@@ -204,7 +204,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_SET_PER_NODE_PARALLEL_OPS:
-                ldr.perNodeParallelOperations((int) val);
+                ldr.perNodeParallelOperations((int)val);
 
                 return TRUE;
 

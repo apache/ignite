@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -79,9 +81,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -101,6 +106,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 
@@ -395,6 +401,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
 
+            try (OperationSecurityContext ignored = ctx.security().withContext(data.joiningNodeId())) {
+                if (checkPermissions(desc.name(), SERVICE_DEPLOY) != null) {
+                    U.warn(log, "Failed to register service configuration received from joining node :" +
+                        " [nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]." +
+                        " Joining node is not authorized to deploy the service.");
+
+                    continue;
+                }
+            }
+
             ServiceInfo oldDesc = registeredServices.get(desc.serviceId());
 
             if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
@@ -611,8 +627,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 err = e;
             }
 
-            if (err == null)
-                err = checkPermissions(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
+            if (err == null && (isLocalNodeCoordinator() || ctx.discovery().localJoinFuture().isDone()))
+                err = checkPermissions(cfg.getName(), SERVICE_DEPLOY);
 
             if (err == null) {
                 try {
@@ -968,9 +984,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout)
-        throws IgniteException {
+    @Override public <T> T serviceProxy(
+        ClusterGroup prj,
+        String name,
+        Class<? super T> srvcCls,
+        boolean sticky,
+        @Nullable Supplier<ServiceCallContext> callCtxProvider,
+        long timeout
+    ) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {
@@ -979,7 +1000,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (ctx != null && !ctx.isStatisticsEnabled()) {
                 Service srvc = ctx.service();
 
-                if (srvc != null) {
+                if (srvc != null && callCtxProvider == null) {
                     if (srvcCls.isAssignableFrom(srvc.getClass()))
                         return (T)srvc;
                     else if (!PlatformService.class.isAssignableFrom(srvc.getClass())) {
@@ -990,7 +1011,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx, callCtxProvider).proxy();
     }
 
     /**
@@ -1219,7 +1240,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             final Service srvc;
 
             try {
-                srvc = copyAndInject(cfg);
+                srvc = copyAndInject(cfg, srvcCtx);
 
                 // Initialize service.
                 srvc.init(srvcCtx);
@@ -1291,10 +1312,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * @param cfg Service configuration.
+     * @param svcCtx Service context to be injected into the service.
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
+    private Service copyAndInject(ServiceConfiguration cfg, ServiceContext svcCtx) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
             LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
 
@@ -1305,7 +1327,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             Service srvc = U.unmarshal(marsh, bytes,
                 U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
-            ctx.resource().inject(srvc);
+            ctx.resource().inject(srvc, svcCtx);
 
             return srvc;
         }
@@ -1317,7 +1339,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 Service cp = U.unmarshal(marsh, bytes, U.resolveClassLoader(srvc.getClass().getClassLoader(), ctx.config()));
 
-                ctx.resource().inject(cp);
+                ctx.resource().inject(cp, svcCtx);
 
                 return cp;
             }

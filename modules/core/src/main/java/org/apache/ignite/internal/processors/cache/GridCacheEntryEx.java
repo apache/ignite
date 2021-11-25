@@ -262,7 +262,6 @@ public interface GridCacheEntryEx {
      * @param readThrough Flag indicating whether to read through.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
@@ -276,7 +275,6 @@ public interface GridCacheEntryEx {
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -288,7 +286,6 @@ public interface GridCacheEntryEx {
      * @param tx Cache transaction.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
@@ -303,7 +300,6 @@ public interface GridCacheEntryEx {
         IgniteInternalTx tx,
         boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -314,7 +310,6 @@ public interface GridCacheEntryEx {
     /**
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param subjId Subject ID initiated this read.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
@@ -325,7 +320,6 @@ public interface GridCacheEntryEx {
      */
     public EntryGetResult innerGetAndReserveForLoad(boolean updateMetrics,
         boolean evt,
-        UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
@@ -435,7 +429,6 @@ public interface GridCacheEntryEx {
      * @param drType DR type.
      * @param drExpireTime DR expire time (if any).
      * @param explicitVer Explicit version (if any).
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param dhtVer Dht version for near cache entry.
      * @param updateCntr Update counter.
@@ -462,7 +455,6 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -482,7 +474,6 @@ public interface GridCacheEntryEx {
      * @param filter Filter.
      * @param drType DR type.
      * @param explicitVer Explicit version (if any).
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param dhtVer Dht version for near cache entry.
      * @return Tuple containing success flag and old value. If success is {@code false},
@@ -504,7 +495,6 @@ public interface GridCacheEntryEx {
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
@@ -534,7 +524,6 @@ public interface GridCacheEntryEx {
      * @param conflictVer DR version (if any).
      * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @param intercept If {@code true} then calls cache interceptor.
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param updateCntr Update counter.
      * @param fut Dht atomic future.
@@ -571,7 +560,6 @@ public interface GridCacheEntryEx {
         @Nullable GridCacheVersion conflictVer,
         boolean conflictResolve,
         boolean intercept,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
@@ -594,7 +582,6 @@ public interface GridCacheEntryEx {
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
      * @param intercept If {@code true} then calls cache interceptor.
-     * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param transformOp {@code True} if transform operation caused update.
      * @return Tuple containing success flag, old value and result for invoke operation.
@@ -615,7 +602,6 @@ public interface GridCacheEntryEx {
         boolean metrics,
         @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
-        @Nullable UUID subjId,
         String taskName,
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;

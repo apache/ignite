@@ -55,6 +55,7 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
     /** {@code true} to skip cache destroying. */
     private VisorViewCacheCmd cmd;
 
+    /** */
     @IgniteInstanceResource
     private Ignite ignite;
 

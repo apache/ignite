@@ -1677,10 +1677,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Compression level for internal network messages.
+     * Sets compression level for internal network messages.
+     * @param netCompressionLevel Compression level for internal network messages.
      * <p>
      * If not provided, then default value
-     * Deflater.BEST_SPEED is used.
+     * {@link Deflater#BEST_SPEED} is used.
      *
      */
     public void setNetworkCompressionLevel(int netCompressionLevel) {
@@ -1930,6 +1931,7 @@ public class IgniteConfiguration {
      * Sets SSL context factory that will be used for creating a secure socket  layer.
      *
      * @param sslCtxFactory Ssl context factory.
+     * @return {@code this} for chaining.
      * @see SslContextFactory
      */
     public IgniteConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
@@ -2599,6 +2601,7 @@ public class IgniteConfiguration {
      * Sets cache configurations.
      *
      * @param cacheCfg Cache configurations.
+     * @return {@code this} for chaining.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public IgniteConfiguration setCacheConfiguration(CacheConfiguration... cacheCfg) {
@@ -2644,6 +2647,7 @@ public class IgniteConfiguration {
      * Cache key configuration defines
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
@@ -2664,6 +2668,7 @@ public class IgniteConfiguration {
      * Sets configuration for Ignite Binary objects.
      *
      * @param binaryCfg Binary configuration object.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
@@ -3167,6 +3172,7 @@ public class IgniteConfiguration {
      * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
      * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
      * or the value can be represented as an absolute snapshot working path instead.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
         this.snapshotPath = snapshotPath;

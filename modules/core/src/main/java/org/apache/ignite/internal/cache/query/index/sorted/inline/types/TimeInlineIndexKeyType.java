@@ -28,7 +28,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractTimeIndexKey> {
     /** */
     public TimeInlineIndexKeyType() {
-        super(IndexKeyTypes.TIME, (short) 8);
+        super(IndexKeyTypes.TIME, (short)8);
     }
 
     /** {@inheritDoc} */
@@ -41,7 +41,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractT
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, AbstractTimeIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type());
         PageUtils.putLong(pageAddr, off + 1, key.nanos());
 
         return keySize + 1;
@@ -51,7 +51,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractT
     @Override protected AbstractTimeIndexKey get0(long pageAddr, int off) {
         long nanos = PageUtils.getLong(pageAddr, off + 1);
 
-        return (AbstractTimeIndexKey) IndexKeyFactory.wrapDateValue(type(), 0L, nanos);
+        return (AbstractTimeIndexKey)IndexKeyFactory.wrapDateValue(type(), 0L, nanos);
     }
 
     /** {@inheritDoc} */

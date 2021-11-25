@@ -419,7 +419,7 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             AtomicReference<GridDhtTxLocal> dhtTxLocRef = new AtomicReference<>();
 
             assertTrue(waitForCondition(() -> {
-                dhtTxLocRef.set((GridDhtTxLocal) txs(node0).stream()
+                dhtTxLocRef.set((GridDhtTxLocal)txs(node0).stream()
                     .filter(t -> t.state() == TransactionState.PREPARING)
                     .findFirst()
                     .orElse(null)
