@@ -133,6 +133,7 @@ public class ClientMessage implements Message, Externalizable {
             if (cnt < 0)
                 return false;
 
+            // TODO: Validate some handshake bytes to exit early on garbage data.
             if (isFirstMessage && msgSize > MAX_FIRST_MESSAGE_SIZE) {
                 // TODO: How should we handle this?
                 throw new IgniteException("TODO");
