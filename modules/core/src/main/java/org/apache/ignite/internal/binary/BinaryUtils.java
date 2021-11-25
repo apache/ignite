@@ -2065,8 +2065,14 @@ public class BinaryUtils {
 
         handles.setHandle(arr, hPos);
 
-        for (int i = 0; i < len; i++)
-            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+        for (int i = 0; i < len; i++) {
+            Object res = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+            if (deserialize && BinaryArray.useTypedArrays() && res instanceof BinaryObject)
+                arr[i] = ((BinaryObject)res).deserialize(ldr);
+            else
+                arr[i] = res;
+        }
 
         return arr;
     }
