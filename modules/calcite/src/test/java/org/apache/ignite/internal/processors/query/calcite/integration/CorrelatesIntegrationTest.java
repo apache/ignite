@@ -51,49 +51,4 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(4)
             .check();
     }
-
-    /**
-     * Check that correlates can't be moved under the table spool.
-     */
-    @Test
-    public void testCorrelatesWithOrder() {
-        sql("CREATE TABLE test (a INTEGER)");
-        sql("INSERT INTO test VALUES (1)");
-
-        assertQuery("SELECT (SELECT test.a FROM test t ORDER BY 1 LIMIT 1) FROM test")
-            .check();
-    }
-
-    /**
-     * Check that correlates can't be moved under the table spool.
-     */
-    @Test
-    public void testCorrelatesWithNull() {
-        sql("CREATE TABLE test (a INTEGER)");
-        sql("INSERT INTO test VALUES (1), (2), (null)");
-
-        assertQuery("SELECT (SELECT 1 FROM (SELECT 1) WHERE 1 = 0)")
-            .returns(new Object[]{null})
-            .check();
-
-        assertQuery("SELECT (SELECT 1 FROM test t WHERE a = test.a) FROM test")
-            .returns(1)
-            .returns(1)
-            .returns(new Object[]{null})
-            .check();
-    }
-
-    @Test
-    public void testOrderByWith() {
-        assertQuery("SELECT * FROM (SELECT 1) ORDER BY (WITH t AS (SELECT 1) SELECT * FROM t)")
-            .returns(1)
-            .check();
-    }
-
-    @Test
-    public void testCorr() {
-        sql("CREATE TABLE test (i INTEGER)");
-
-        sql("SELECT (SELECT (SELECT t.i)) FROM test t");
-    }
 }
