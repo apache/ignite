@@ -68,8 +68,9 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
     @GridToStringInclude(sensitive = true)
     private Object[] arr;
 
-    /** */
-    private transient boolean wasDeserialized;
+    /** Cached deserialized values. */
+    @GridToStringExclude
+    private transient boolean deserialized;
 
     /**
      * {@link Externalizable} support.
@@ -116,12 +117,12 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
-            // To reduce memory consumption in case of Object[] deserialization happens in place so no need to perform deserialization
+            // Skip deserialization if already deserialized.
             // Prepared result is in arr, already.
-            if (Object.class == compType && wasDeserialized)
+            if (deserialized)
                 return (T)arr;
 
-            wasDeserialized = true;
+            deserialized = true;
 
             Object[] res = Object.class == compType ? arr : (Object[])Array.newInstance(compType, arr.length);
 
@@ -134,7 +135,9 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
                 res[i] = obj;
             }
 
-            return (T)res;
+            arr = res;
+
+            return (T)arr;
         }
         finally {
             GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
@@ -145,6 +148,10 @@ public class BinaryArray implements BinaryObjectEx, Externalizable {
      * @return Underlying array.
      */
     public Object[] array() {
+        // Invocation of #deserialize modifies internal state in BinaryArray for performance reasons.
+        // Forbidden to query raw array after deserialization.
+        assert !deserialized;
+
         return arr;
     }
 

@@ -501,6 +501,33 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
         assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
+    /** */
+    @Test
+    public void testTypedArray() throws IgniteCheckedException {
+        TestClass1[] arr = new TestClass1[] {new TestClass1(), new TestClass1()};
+
+        assertArrayEquals(arr, marshalUnmarshal(arr));
+
+        Object[] arr1 = new Object[] {arr, arr};
+
+        Object[] arr2 = marshalUnmarshal(arr1);
+
+        Assert.assertSame("Same array should be returned because of HANDLE usage", arr2[0], arr2[1]);
+
+        assertArrayEquals(arr1, arr2);
+
+        ArrayFieldClass o1 = new ArrayFieldClass();
+
+        o1.arr1 = arr;
+        o1.arr2 = arr;
+
+        ArrayFieldClass o2 = marshalUnmarshal(o1);
+
+        Assert.assertSame("Same array should be returned because of HANDLE usage", o2.arr1, o2.arr2);
+
+        assertArrayEquals(o1.arr1, o2.arr1);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -5766,6 +5793,15 @@ public class BinaryMarshallerSelfTest extends AbstractTypedArrayTest {
 
             return obj;
         }
+    }
+
+    /** */
+    public static class ArrayFieldClass {
+        /** */
+        protected TestClass1[] arr1;
+
+        /** */
+        protected TestClass1[] arr2;
     }
 
     /**

@@ -2095,12 +2095,14 @@ public class BinaryUtils {
         
         Object[] arr = new Object[len];
 
-        handles.setHandle(arr, hPos);
+        BinaryArray res = new BinaryArray(ctx, compTypeId, compClsName, arr);
+
+        handles.setHandle(res, hPos);
 
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return new BinaryArray(ctx, compTypeId, compClsName, arr);
+        return res;
     }
 
     /**
